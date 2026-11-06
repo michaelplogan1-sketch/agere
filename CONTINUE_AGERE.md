@@ -1,3 +1,17 @@
+# Current Agere checkpoint — ACTIVE 2026-11-06T12:34:45.885991+00:00
+
+G3: Complete the remaining Q20source-interpretation/clinical-nomination requirement from the retained source-linked care-gap accounts through existing entity/relation/assertion and buyer-capability composition. Reuse the full native ACO/payer-prerequisite agenda and all population manifests; do not rerun passing measures, financial patients or the fullpaidQ14/Q21. First bind applicable actual program/buyer criteria and their source/effective dates; distinguish a documentary review nomination from clinical eligibility. Missing applicable definitions or qualified source interpretation must remain supported unknowns, not invented program mappings. Then qualify the ordinary automatic handoff on the changed shared tools, preserving original failed pairs. All25cases/tenareas, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies retained. BuildACTIVE/automationPAUSED.
+
+Replaced the dark multi-panel opening with a light conversation-first interface, readable prior turns, contextual scope/preferences and actual per-request activity. Native query row counts, model-attempt reservations and checked steps come from the existing immutable execution journal; no fake completion percentages or additional model role. Fixed saved-answer catalog reading all full histories on home load.
+
+Browser verified light home, live native2-row update, clarification reload/reply/resume with1source query across both phases, compact navigation/no overflow atCSS727, and the real4115-patient/2396490-record/237-category source connection. Native catalog100entries in0.027s; actualHTTP0.050s, avoiding full decode of174histories/42.2GB. Original history stats unchanged,0newproviderattempts;57086ledger rows/43historicalpending retained.
+
+Evidence: artifacts/agere-conversation-interface-2026-11-06/engineering-proof.json. Productcommitsd18bf791/03258c19. LocalappPID16965/session22208, receipt artifacts/agere-conversation-interface-2026-11-06/app-server.json.85integrationchecks,25changed-path checks,6startup checks,49catalog/integration checks and7finalcatalog checks pass (overlapping suites; not an MVP completion score). ActualUIconnected andsavedlistinghealthy; source/providercosts unchanged. WholeG3lastsealedreceipt unchanged.
+
+Research backend candidates are isolated/offline on codex/research-voi-20261106; preserve them and retain principal-review/source/buyer/clinical qualification boundaries. No main merge, publication or automation resume.
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — ACTIVE 2026-11-06T11:31:06.765371+00:00
 
 G3: Complete the remaining Q20source-interpretation/clinical-nomination requirement from the retained source-linked care-gap accounts through existing entity/relation/assertion and buyer-capability composition. Reuse the full native ACO/payer-prerequisite agenda and all population manifests; do not rerun passing measures, financial patients or the fullpaidQ14/Q21. First bind applicable actual program/buyer criteria and their source/effective dates; distinguish a documentary review nomination from clinical eligibility. Missing applicable definitions or qualified source interpretation must remain supported unknowns, not invented program mappings. Then qualify the ordinary automatic handoff on the changed shared tools, preserving original failed pairs. All25cases/tenareas, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies retained. BuildACTIVE/automationPAUSED.

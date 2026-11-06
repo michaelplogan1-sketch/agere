@@ -8,8 +8,8 @@
   "active_work": "G3: Complete the remaining Q20source-interpretation/clinical-nomination requirement from the retained source-linked care-gap accounts through existing entity/relation/assertion and buyer-capability composition. Reuse the full native ACO/payer-prerequisite agenda and all population manifests; do not rerun passing measures, financial patients or the fullpaidQ14/Q21. First bind applicable actual program/buyer criteria and their source/effective dates; distinguish a documentary review nomination from clinical eligibility. Missing applicable definitions or qualified source interpretation must remain supported unknowns, not invented program mappings. Then qualify the ordinary automatic handoff on the changed shared tools, preserving original failed pairs. All25cases/tenareas, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies retained. BuildACTIVE/automationPAUSED.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
-  "owned_server_pid": null,
-  "owned_server_session": null,
+  "owned_server_pid": 16965,
+  "owned_server_session": 22208,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
@@ -27,8 +27,8 @@
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
-  "last_observed_server_session": 2376,
-  "server_status": "All owned provider/build/test jobs terminal; temporary UI test server stopped. Source unfrozen. 57086 attempt rows/43 historical pending retained; clarification increment 0 new external attempts. Build ACTIVE / automation PAUSED.",
+  "last_observed_server_session": 22208,
+  "server_status": "Owned local app http://127.0.0.1:8885/ask is serving product03258c19, PID16965/session22208. Existing live provider connections and Claude subscription transport enabled; no provider/training/build run active. Catalog/source inventory GETs verified.57086attemptrows/43historicalpending retained. Sourceunfrozen; inspect actual request journal before future source edits/restarts. AutomationPAUSED.",
   "unsealed_work": {
     "status": "Q20_native_payer_prerequisite_and_partial_agenda_composition_verified",
     "product_commit": "31c837e6",
@@ -262,6 +262,18 @@
       "runtime_activation": false,
       "all_attempt_rows_retained": 57086,
       "historical_pending": 43
+    },
+    "user_interface": {
+      "status": "UI_and_native_catalog_engineering_verified",
+      "product_commits": [
+        "d18bf791",
+        "03258c19"
+      ],
+      "proof": "artifacts/agere-conversation-interface-2026-11-06/engineering-proof.json",
+      "runtime_activation": "Local presentation/progress/catalog only; no clinical/model qualification or research-threshold activation",
+      "owned_app_receipt": "artifacts/agere-conversation-interface-2026-11-06/app-server.json",
+      "provider_attempts": 0,
+      "source_frozen": false
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",

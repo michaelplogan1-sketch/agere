@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T11:31:06.765371+00:00",
+  "updated_at": "2026-11-06T12:34:45.885991+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -628,24 +628,25 @@
     "kind": "unsealed_connected_engineering_increment",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Added durable user-intent clarification and resume to the existing conversation/investigator path: option or free-text replies, exact source/code/cohort guards, native-result restoration without source-tool replay, ordinary cascade final checks, reloadable browser controls and an autonomous mode that continues independent work with unresolved intent explicit.",
-    "measured_failure_reduction": "Authored native workflow: two independent reads before pause, only one affected read after the reply, zero old read reexecutions. Browser reload and option click returned the retained roster with one source SQL execution across both phases. Duplicate replies dispatch no new provider call. Wrong conversation, injected population, source/policy change, same-slot reask and failure/partial preservation checked. Full received-input guard: 4115 patients/2396490 records, 0.0254s then0.0198s, exact stable guard and unchanged semantic identity. Zero external provider attempts.",
+    "user_behavior_delta": "Replaced the dark multi-panel opening with a light conversation-first interface, readable prior turns, contextual scope/preferences and actual per-request activity. Native query row counts, model-attempt reservations and checked steps come from the existing immutable execution journal; no fake completion percentages or additional model role. Fixed saved-answer catalog reading all full histories on home load.",
+    "measured_failure_reduction": "Browser verified light home, live native2-row update, clarification reload/reply/resume with1source query across both phases, compact navigation/no overflow atCSS727, and the real4115-patient/2396490-record/237-category source connection. Native catalog100entries in0.027s; actualHTTP0.050s, avoiding full decode of174histories/42.2GB. Original history stats unchanged,0newproviderattempts;57086ledger rows/43historicalpending retained.",
     "evidence": [
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-native-checks-2.log",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-join-proof.json",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/retained-agenda-proof.json",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/retained-agenda-native.json.gz",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q14/source-attribution-repair/workflow-proof.json",
-      "artifacts/agere-intent-clarification-2026-11-06/engineering-proof.json"
+      "artifacts/agere-intent-clarification-2026-11-06/engineering-proof.json",
+      "artifacts/agere-conversation-interface-2026-11-06/engineering-proof.json"
     ],
-    "remaining_gap": "The agenda explicitly leaves causes, clinical program nominations and realizable savings unresolved; source/buyer/clinical qualification and automatic original-question completion remain unqualified. This is connected partial capability evidence, not original Q20/Q24 acceptance or full MVP readiness. Clarification control flow is engineering-verified with authored model/review responses; live clarification judgment remains unqualified. No asynchronous background branch scheduler added. Intent-dependent answers do not become generic training/bottling defaults.",
+    "remaining_gap": "The agenda explicitly leaves causes, clinical program nominations and realizable savings unresolved; source/buyer/clinical qualification and automatic original-question completion remain unqualified. This is connected partial capability evidence, not original Q20/Q24 acceptance or full MVP readiness. Clarification control flow is engineering-verified with authored model/review responses; live clarification judgment remains unqualified. No asynchronous background branch scheduler added. Intent-dependent answers do not become generic training/bottling defaults. UI/catalog engineering is verified and the local app is serving; full large-history opening and narrower-device QA remain limited. This does not complete Q20 or qualify clinical/model behavior.",
     "next_action": "G3: Complete the remaining Q20source-interpretation/clinical-nomination requirement from the retained source-linked care-gap accounts through existing entity/relation/assertion and buyer-capability composition. Reuse the full native ACO/payer-prerequisite agenda and all population manifests; do not rerun passing measures, financial patients or the fullpaidQ14/Q21. First bind applicable actual program/buyer criteria and their source/effective dates; distinguish a documentary review nomination from clinical eligibility. Missing applicable definitions or qualified source interpretation must remain supported unknowns, not invented program mappings. Then qualify the ordinary automatic handoff on the changed shared tools, preserving original failed pairs. All25cases/tenareas, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies retained. BuildACTIVE/automationPAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
-    "coordination": "Allownedjobs terminal/sourceunfrozen;57086attemptrows/43historicalpending retained. Latest ACO stages0newproviderattempts. AutomationPAUSED.",
+    "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
       "Earlier ordinary failures and uncompleted connected workflows remain; all25cases/tenareas retained. Model/clinical qualification and deployment prerequisites remain separate."
     ],
-    "latest_progress": "Durable clarification/resume implemented and verified; no whole-MVP or live-model qualification claim. Return to Q20 source interpretation and actual dated program/buyer criteria. Automation stays PAUSED.",
+    "latest_progress": "Light conversation interface and recorded progress verified; local app8885serving03258c19 with existing live connections/subscription transport. Return to original G3 dated program/buyer criteria/source interpretation, then automatic handoff. Research candidates remain isolated/offline; automationPAUSED.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -693,10 +694,10 @@
       "full_mvp_acceptance": false,
       "applicability": "Current same-platform archive/install and saved-context inspection, plus explicitly scoped compatibility of existing full-ten-area capabilities. This adds current portable-operation evidence; it does not establish new first-question, clinical, model or customer-deployment performance."
     },
-    "latest_human_steering": "2026-11-06: Mike asked for a conversational layer that can clarify material intent during analysis, then explicitly said \"okay lets make sure we have that\". Implement this connected interaction increment and retain the existing whole-stack roadmap.",
+    "latest_human_steering": "2026-11-06: Mike asked what is next in the stack, requested a distinctive light conversation-first UI informed by GitHub and award-winning sites, and reaffirmed that research is fit assessment while core stack and product work continue.",
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T11:31:06.765371+00:00",
-    "workflow_change": "Added durable user-intent clarification and resume to the existing conversation/investigator path: option or free-text replies, exact source/code/cohort guards, native-result restoration without source-tool replay, ordinary cascade final checks, reloadable browser controls and an autonomous mode that continues independent work with unresolved intent explicit.",
+    "at": "2026-11-06T12:34:45.885991+00:00",
+    "workflow_change": "Replaced the dark multi-panel opening with a light conversation-first interface, readable prior turns, contextual scope/preferences and actual per-request activity. Native query row counts, model-attempt reservations and checked steps come from the existing immutable execution journal; no fake completion percentages or additional model role. Fixed saved-answer catalog reading all full histories on home load.",
     "unsealed_work": {
       "status": "Q20_native_payer_prerequisite_and_partial_agenda_composition_verified",
       "product_commit": "31c837e6",
@@ -1000,7 +1001,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Missing durable clarification/reply/resume behavior and disconnected UI reply/reload controls.",
+    "measured_failure_removed": "Confusing dark entry and opaque working state; home saved-answer listing scanning42.2GB of full historical results.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -1148,7 +1149,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-06T11:31:06.765371+00:00",
+    "updated_at": "2026-11-06T12:34:45.885991+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -4946,6 +4947,17 @@
       ],
       "scope_impact": "All25cases and all ten acceptance areas retained. Previous Q20/Q14/Q21 failures and G5/clinical/customer dependencies unchanged. Native independent work completes before an interactive pause; autonomous mode continues rather than waiting. Do not turn one user intent choice into a generic learned answer.",
       "next_action": "G3: Complete the remaining Q20source-interpretation/clinical-nomination requirement from the retained source-linked care-gap accounts through existing entity/relation/assertion and buyer-capability composition. Reuse the full native ACO/payer-prerequisite agenda and all population manifests; do not rerun passing measures, financial patients or the fullpaidQ14/Q21. First bind applicable actual program/buyer criteria and their source/effective dates; distinguish a documentary review nomination from clinical eligibility. Missing applicable definitions or qualified source interpretation must remain supported unknowns, not invented program mappings. Then qualify the ordinary automatic handoff on the changed shared tools, preserving original failed pairs. All25cases/tenareas, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies retained. BuildACTIVE/automationPAUSED."
+    },
+    {
+      "at": "2026-11-06T12:34:45.885991+00:00",
+      "decision": "Delivered Mike's explicit UI request within the existing modular product: light conversation, native recorded-progress projection and small saved-answer metadata. Actual connected-app check identified the42.2GBlisting defect; exact header/index repair verified without rerunning analyses or rewriting original histories.",
+      "evidence": [
+        "artifacts/agere-conversation-interface-2026-11-06/engineering-proof.json",
+        "artifacts/agere-conversation-interface-2026-11-06/catalog-performance-proof.json",
+        "artifacts/agere-conversation-interface-2026-11-06/live-catalog-proof.json"
+      ],
+      "scope_impact": "Existing fixed25cases/alltenareas retained. No architecture rewrite, new hosted service, paid campaign, narrowed population or clinical/superiority claim. Research work stays isolated and candidate; program/buyer criteria and ordinary automatic handoff remain the main sequence.",
+      "next_action": "G3: Complete the remaining Q20source-interpretation/clinical-nomination requirement from the retained source-linked care-gap accounts through existing entity/relation/assertion and buyer-capability composition. Reuse the full native ACO/payer-prerequisite agenda and all population manifests; do not rerun passing measures, financial patients or the fullpaidQ14/Q21. First bind applicable actual program/buyer criteria and their source/effective dates; distinguish a documentary review nomination from clinical eligibility. Missing applicable definitions or qualified source interpretation must remain supported unknowns, not invented program mappings. Then qualify the ordinary automatic handoff on the changed shared tools, preserving original failed pairs. All25cases/tenareas, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies retained. BuildACTIVE/automationPAUSED."
     }
   ],
   "unsealed_work": {
@@ -5181,6 +5193,18 @@
       "runtime_activation": false,
       "all_attempt_rows_retained": 57086,
       "historical_pending": 43
+    },
+    "user_interface": {
+      "status": "UI_and_native_catalog_engineering_verified",
+      "product_commits": [
+        "d18bf791",
+        "03258c19"
+      ],
+      "proof": "artifacts/agere-conversation-interface-2026-11-06/engineering-proof.json",
+      "runtime_activation": "Local presentation/progress/catalog only; no clinical/model qualification or research-threshold activation",
+      "owned_app_receipt": "artifacts/agere-conversation-interface-2026-11-06/app-server.json",
+      "provider_attempts": 0,
+      "source_frozen": false
     }
   },
   "current_visual_request": {
@@ -5304,8 +5328,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": null,
-  "owned_server_session": null,
+  "owned_server_pid": 16965,
+  "owned_server_session": 22208,
   "last_run_observation": {
     "at": "2026-11-05T21:59:01.649200+00:00",
     "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q07/pair-receipt.json",
