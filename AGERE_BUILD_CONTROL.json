@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T01:37:40.208501+00:00",
+  "updated_at": "2026-11-06T01:46:50.791410+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -629,17 +629,17 @@
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Native prose compilation recognizes source-bound rate scales/units, executed threshold/count-domain categories, contextual requested calendar years, explicit prior-year requirements and structural inline list ordinals. Observed quantities, patient/entity prose, wrong scales/units and unsupported constants still require source bindings. The same retained Q11draft now renders all8explanation fields and its unchanged128rows without another model or source query.",
-    "measured_failure_reduction": "RetainedQ16+10rejectionagainst10.0removed; exactrender+10.0andsurroundingtextpreserved. RetainedQ17calendarliteralfalsepositivesremoved; trueunbound0.05/1.96/3.09andoneobligationsremain.0.55s/0providers/0SQLreruns;169focusedcheckspass. Noordinarypostfixsuccessorspeedclaim.",
+    "measured_failure_reduction": "Q18falsemissingsavedcohort rejectionremoved in0.640snativeadmissioncheck/0providers. Exactfullquestionreachestheplannerinlegacyandsharedmodes;3externalreferenceadversariesremainblocked.179focusedchecks pass. Fullordinaryanswerunmeasureduntilcurrentpairreturns.",
     "evidence": [
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q18/stack/receipt.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q18/native-admission-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q18/local-antecedent-checks.log",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q18-admission-confirmation/pair-receipt.json",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q16/numeric-span-repair-proof.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q16/numeric-span-final-checks.log",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q16/numeric-span-check-history.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q17/comparison.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q17/independent-exposure-proof.json",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q15/source-policy-conflict.json"
     ],
-    "remaining_gap": "Q16baselineobservations/other-sourceproxyunqualified;Q17requestedeligibleexposure/methodreconciliationunfinished(35/47unmatchedEDvisits). Formatrepairdoesnotcertifytheseanswers. Q15source-policygradeconflictcorrectedwithoutfrozenreferencechange;actualannual92vs348faultremains. Final4questionsandconnected/deploymentdependenciesremain.",
-    "next_action": "G3: execute finaldistinctstandaloneQ18-Q21onceperarm sequentially on008636b7/protocol-native-spans-candidate.json via run_remaining_after_Q17.py. Inspectownedremaining-after-Q17-receipt.jsonbeforeanyjob; source/product/scoringfrozenwhileactive, noduplicate. Stopbetween cases on actualcontext/subscription/materialrunnerfailure or explicitstopreceipt; no paidretry. Independentlyscoreeachreturnedcase. Sharednumericspanrepairnowproven0providers/SQLreruns,169checks; nofurtherphrasewhitelists. Q14interruptedpartial/frontierunstarted,Q23missingbaseprogramdefinitions,Q24fromQ20,earlierfailedcases andall25/tenareas/G5/clinical/customerprerequisitesremain. AutomaticcontinuationPAUSED.",
+    "remaining_gap": "Q18provideranswer/source/followupcorrectnessstillrunning;thisproofisrequestadmissiononly. Q19-Q21unstarted;Q14interruption/Q23definitions/Q24fromQ20andearliergenuinefailuresremain. Noclinicalreadinessorsuperiorityclaim.",
+    "next_action": "G3: monitoronlyownedQ18-admission-confirmationpair PID99872/session97472on1cb7837f/protocol-local-cohort-candidate.json. Source/product/scoringfrozen;noduplicate. OriginalQ18stoppedbeforeproviders0attempts; currentconfirmationisthefirstactualQ18providerpair, keepinitialfailureseparate. Independentlyscoreindex/followup/censoringandallattemptswhenreturned; respectexplicitcohortdefinitionratherthanforcinganotherreferenceconvention. ThenunstartedQ19-Q21onceperarm. All25/tenareas,Q14interruption,Q23definitions,Q24fromQ20,earlierfailures/G5/clinical/customerdependenciesretained. AutomaticcontinuationPAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Q05 owned job terminal after cancellation; no orphan provider job assumed from pending ledger rows. One Q06pair launching, source/product/scoring frozen. Automatic continuation PAUSED.",
     "remaining_blockers": [
@@ -700,19 +700,19 @@
       "automatic_continuation": "PAUSED; no requested scheduler resume"
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T01:37:40.208501+00:00",
-    "workflow_change": "Existingtypedliteralbindingpreservesexplicitpositivepunctuationwhilekeepingthesameactualscalar. SharedvalidISOmonth/day/timestampandframedcalendarintervalrecognitionworksacrossnativeyearplaceholders. Literalclocktextandallsourceaddressesremainunchanged; wrongvalues/signs/invaliddates/counts/dosesstillfail.",
+    "at": "2026-11-06T01:46:50.791410+00:00",
+    "workflow_change": "Genericreduced-relative temporal possessives keepanexplicitlydefinedlocalpopulation asanewquestion acrossclinicalandfinancewording. Existingexplicitexternal/previous/thosecohortreferencesremainprotected. Originalquestionandallrequestedclausesforwardunchanged;noinheritanceorscopebroadening.",
     "unsealed_work": {
-      "status": "native_numeric_span_representation_repaired_Q17_scored_final4prepared",
-      "product_commit": "008636b7",
+      "status": "Q18_local_antecedent_admission_repaired_first_provider_pair_inflight",
+      "product_commit": "1cb7837f",
       "product_fix_commit": "b3f0a8d7",
       "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json",
       "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-      "source_frozen": false,
+      "source_frozen": true,
       "runtime_activation": false,
       "product_code_in_candidate_app": false,
       "answer_selected": false,
-      "affected_tests_passed": 169,
+      "affected_tests_passed": 179,
       "provider_calls_this_increment": 25,
       "ordinary_check_owner_reconciled": true,
       "previous_ordinary_run": {
@@ -759,10 +759,10 @@
       ],
       "study_checks_passed": 16,
       "native_profile_lineage_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-lineage-proof.json",
-      "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-native-spans-candidate.json",
-      "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/pair-receipt.json",
-      "ordinary_pair_session": null,
-      "ordinary_pair_status": "terminal_both_failed_original_native_compiler_recovery_separate",
+      "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-local-cohort-candidate.json",
+      "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q18-admission-confirmation/pair-receipt.json",
+      "ordinary_pair_session": 97472,
+      "ordinary_pair_status": "running",
       "ordinary_pair_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/comparison.json",
       "temporal_guard_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/temporal-guard-replay-proof.json",
       "temporal_guard_checks": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/temporal-guard-checks.json",
@@ -848,8 +848,8 @@
       "source_transport_check_api_equivalent_usd": 0.03139888,
       "source_transport_check_failures": 0,
       "native_parameter_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json",
-      "fixed_sequence_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/remaining-after-Q15-receipt.json",
-      "fixed_sequence_status": "stopped_before_next_case_by_explicit_stop_receipt",
+      "fixed_sequence_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/remaining-after-Q17-receipt.json",
+      "fixed_sequence_status": "stopped_on_material_failure_or_dependency",
       "native_copy_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/native-proof.json",
       "native_copy_source_check": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/run-receipt.json",
       "latest_increment_known_api_equivalent_usd": 0.00347992,
@@ -860,7 +860,11 @@
       "native_copy_calendar_source_check": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/run-receipt.json",
       "signed_binding_failure_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q16/signed-binding-failure-proof.json",
       "scoring_policy_correction": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/source-policy-conflict.json",
-      "numeric_span_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q16/numeric-span-repair-proof.json"
+      "numeric_span_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q16/numeric-span-repair-proof.json",
+      "latest_ordinary_failure": "artifacts/agere-ordinary-comparison-2026-11-05/Q18/stack/receipt.json",
+      "local_admission_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q18/native-admission-proof.json",
+      "all_attempts_before_Q18_confirmation": 56350,
+      "pending_before_Q18_confirmation": 42
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 47,
@@ -915,7 +919,17 @@
       "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/final-current-proof/receipt.json"
     },
     "provider_dependency": null,
-    "active_jobs": [],
+    "active_jobs": [
+      {
+        "kind": "ordinary_confirmation_pair",
+        "case": "Q18",
+        "pid": 99872,
+        "session": 97472,
+        "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q18-admission-confirmation/pair-receipt.json",
+        "source_frozen": true,
+        "status": "running"
+      }
+    ],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -1055,8 +1069,13 @@
       "estimate_scope": "Local synthetic engineering only; provisional, no guaranteed deadline; independent clinical/model/customer dependencies explicit."
     },
     "running_observation": {
-      "status": "all_owned_jobs_terminal",
-      "final_four_prepared": "artifacts/agere-ordinary-comparison-2026-11-05/run_remaining_after_Q17.py"
+      "kind": "ordinary_confirmation_pair",
+      "case": "Q18",
+      "pid": 99872,
+      "session": 97472,
+      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q18-admission-confirmation/pair-receipt.json",
+      "source_frozen": true,
+      "status": "running"
     },
     "prefix_preflight": {
       "native_actions": 28,
@@ -4705,19 +4724,41 @@
         "artifacts/agere-ordinary-comparison-2026-11-05/Q17/independent-exposure-proof.json",
         "artifacts/agere-ordinary-comparison-2026-11-05/Q15/source-policy-conflict.json"
       ]
+    },
+    {
+      "at": "2026-11-06T01:42:42.382541+00:00",
+      "gate": "G3",
+      "decision": "Q18fullstandalonequestionwasblockedbeforeproviderbyconversationanaphora heuristic. Fixgenericreduced-relative temporal possessives inexistingrequestscope; neverrestoreunknownexternalcohortsorreplacewithwholepopulation. No paidQ18analysisexists;after0providerroutingproof,oneexplicitconfirmationcanperformthefirstactualpairwhilepreservinginitial12.239s/0callfailure.",
+      "evidence": [
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q18/stack/receipt.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q18/stack/process.log"
+      ]
+    },
+    {
+      "at": "2026-11-06T01:46:50.791410+00:00",
+      "gate": "G3",
+      "decision": "ThecohortisdefinedintheQ18questionbeforetheir; priorresultinheritancewasfalse. Existingconversationgrammar nowrecognizesreduced-relative temporalpossessiveclauses usinggenericparticipial/temporalstructure, notdisease-specifichandlers.179checksandfullnativeAPIroutingproofpasswith0providers;externalreferencesstayprotected. Original0callfailurekept;oneexplicitfirst-providerconfirmationisrunning,separatefrominitialfailureandfromanymatched-correctnessclaim.",
+      "evidence": [
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q18/stack/receipt.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q18/native-admission-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q18/local-antecedent-checks.log",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q18-admission-confirmation/pair-receipt.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q16/numeric-span-repair-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q15/source-policy-conflict.json"
+      ]
     }
   ],
   "unsealed_work": {
-    "status": "native_numeric_span_representation_repaired_Q17_scored_final4prepared",
-    "product_commit": "008636b7",
+    "status": "Q18_local_antecedent_admission_repaired_first_provider_pair_inflight",
+    "product_commit": "1cb7837f",
     "product_fix_commit": "b3f0a8d7",
     "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-    "source_frozen": false,
+    "source_frozen": true,
     "runtime_activation": false,
     "product_code_in_candidate_app": false,
     "answer_selected": false,
-    "affected_tests_passed": 169,
+    "affected_tests_passed": 179,
     "provider_calls_this_increment": 25,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
@@ -4764,10 +4805,10 @@
     ],
     "study_checks_passed": 16,
     "native_profile_lineage_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-lineage-proof.json",
-    "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-native-spans-candidate.json",
-    "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/pair-receipt.json",
-    "ordinary_pair_session": null,
-    "ordinary_pair_status": "terminal_both_failed_original_native_compiler_recovery_separate",
+    "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-local-cohort-candidate.json",
+    "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q18-admission-confirmation/pair-receipt.json",
+    "ordinary_pair_session": 97472,
+    "ordinary_pair_status": "running",
     "ordinary_pair_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/comparison.json",
     "temporal_guard_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/temporal-guard-replay-proof.json",
     "temporal_guard_checks": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/temporal-guard-checks.json",
@@ -4853,8 +4894,8 @@
     "source_transport_check_api_equivalent_usd": 0.03139888,
     "source_transport_check_failures": 0,
     "native_parameter_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json",
-    "fixed_sequence_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/remaining-after-Q15-receipt.json",
-    "fixed_sequence_status": "stopped_before_next_case_by_explicit_stop_receipt",
+    "fixed_sequence_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/remaining-after-Q17-receipt.json",
+    "fixed_sequence_status": "stopped_on_material_failure_or_dependency",
     "native_copy_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/native-proof.json",
     "native_copy_source_check": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/run-receipt.json",
     "latest_increment_known_api_equivalent_usd": 0.00347992,
@@ -4865,7 +4906,11 @@
     "native_copy_calendar_source_check": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/run-receipt.json",
     "signed_binding_failure_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q16/signed-binding-failure-proof.json",
     "scoring_policy_correction": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/source-policy-conflict.json",
-    "numeric_span_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q16/numeric-span-repair-proof.json"
+    "numeric_span_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q16/numeric-span-repair-proof.json",
+    "latest_ordinary_failure": "artifacts/agere-ordinary-comparison-2026-11-05/Q18/stack/receipt.json",
+    "local_admission_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q18/native-admission-proof.json",
+    "all_attempts_before_Q18_confirmation": 56350,
+    "pending_before_Q18_confirmation": 42
   },
   "current_visual_request": {
     "status": "completed",
@@ -4898,8 +4943,18 @@
       }
     }
   },
-  "active_jobs": [],
-  "next_action": "G3: execute finaldistinctstandaloneQ18-Q21onceperarm sequentially on008636b7/protocol-native-spans-candidate.json via run_remaining_after_Q17.py. Inspectownedremaining-after-Q17-receipt.jsonbeforeanyjob; source/product/scoringfrozenwhileactive, noduplicate. Stopbetween cases on actualcontext/subscription/materialrunnerfailure or explicitstopreceipt; no paidretry. Independentlyscoreeachreturnedcase. Sharednumericspanrepairnowproven0providers/SQLreruns,169checks; nofurtherphrasewhitelists. Q14interruptedpartial/frontierunstarted,Q23missingbaseprogramdefinitions,Q24fromQ20,earlierfailedcases andall25/tenareas/G5/clinical/customerprerequisitesremain. AutomaticcontinuationPAUSED.",
+  "active_jobs": [
+    {
+      "kind": "ordinary_confirmation_pair",
+      "case": "Q18",
+      "pid": 99872,
+      "session": 97472,
+      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q18-admission-confirmation/pair-receipt.json",
+      "source_frozen": true,
+      "status": "running"
+    }
+  ],
+  "next_action": "G3: monitoronlyownedQ18-admission-confirmationpair PID99872/session97472on1cb7837f/protocol-local-cohort-candidate.json. Source/product/scoringfrozen;noduplicate. OriginalQ18stoppedbeforeproviders0attempts; currentconfirmationisthefirstactualQ18providerpair, keepinitialfailureseparate. Independentlyscoreindex/followup/censoringandallattemptswhenreturned; respectexplicitcohortdefinitionratherthanforcinganotherreferenceconvention. ThenunstartedQ19-Q21onceperarm. All25/tenareas,Q14interruption,Q23definitions,Q24fromQ20,earlierfailures/G5/clinical/customerdependenciesretained. AutomaticcontinuationPAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -5026,7 +5081,7 @@
     },
     "separate_pilot": "Q03, not pooled/repeated",
     "authored_generic_core": "Q25, scoped8engineering checks passed",
-    "next_case": "Q18",
+    "next_case": "Q18_admission_confirmation_inflight",
     "clinical_qualification": false,
     "completion_percent": null,
     "connected_workflows": {
