@@ -8,7 +8,8 @@ from ..request_lineage import component
 
 # Analytical reports only. Stateful identity decisions, monitors and care work
 # retain their own explicit workflows and are never certified read-only replay.
-ANALYTICAL={
+DOCUMENTARY={'assertion_review','source_state'}
+ANALYTICAL=DOCUMENTARY | {
     'aggregate','trajectory','survival','queueing','profile','calibration','demand','program_effect','uplift',
     'monitor','market','pathway','scheduling','early_signal','claims_review','network','contract_strategy',
     'target_trial','line_of_therapy','trial_feasibility','risk_outcomes','diagnostic_delay','loop_closure','vbc',
@@ -23,17 +24,25 @@ ANALYTICAL={
 
 def list_analyses():
     from .capability_registry import PRODUCT
-    return {'analyses':[{'operation':op,**PRODUCT[op]} for op in sorted(ANALYTICAL & PRODUCT.keys())],
+    from .graph_planner import CONTRACTS
+    return {'analyses':[{'operation':op,**(PRODUCT[op] if op in PRODUCT else
+                      {'population':'required','view':'table','use':CONTRACTS[op]['meaning']})}
+                      for op in sorted(ANALYTICAL & (PRODUCT.keys() | DOCUMENTARY))],
             'instruction':'Describe an operation for its typed parameters; execute it with the exact inherited or supplied population. No clinical actions are dispatched.'}
 
 
-def describe(operation):
+def describe(operation, *, path=None):
     from . import graph_contracts as G
     if operation not in ANALYTICAL:raise ValueError('Choose an analytical operation from list_analyses')
     catalog={'cohort_fields':{'record_fields':{}},'evidence_catalog':{},'source_streams':[]}
+    if operation in DOCUMENTARY:
+        if path is None:raise ValueError('Documentary discovery requires the current source path')
+        catalog=G.documentary_parameter_catalog(path)
     return {'operation':operation,'parameters':G.parameter_schema(operation,catalog),
             'population_contract':G.input_contract(operation),
-            'meaning':'The existing native validator remains authoritative. Parameters and assumptions are not inferred clinical facts.'}
+            'meaning':'The existing native validator remains authoritative. Parameters and assumptions are not inferred clinical facts.',
+            **({'documentary_scope':'Only explicitly mapped concepts and streams at the current snapshot. Selecting patients with a dated record does not restrict every assertion to that date window. Unknown qualifiers and machine interpretations remain unresolved; repeated text is not independent corroboration.'}
+               if operation in DOCUMENTARY else {})}
 
 
 def population(tools,patient_ids=None,patient_query_sql=None):
@@ -50,6 +59,29 @@ def population(tools,patient_ids=None,patient_query_sql=None):
         tools.in_scope(pid)
         if tools.db.execute('SELECT 1 FROM patient WHERE patient_id=?',(pid,)).fetchone() is None:raise ValueError('Unreceived patient: '+pid)
     return list(dict.fromkeys(patient_ids))
+
+
+def documentary_rows(path,operation,report):
+    """Complete, hash-bound patient receipts, not the engine's small preview."""
+    import json,zlib
+    from . import assertion_reconciliation,source_state
+    module=assertion_reconciliation if operation=='assertion_review' else source_state
+    table='receipts' if operation=='assertion_review' else 'source_states'
+    members=report['review_members']
+    if len(members)!=report['patients_evaluated'] or len({m['patient_id'] for m in members})!=len(members):
+        raise ValueError('Incomplete documentary population receipt')
+    db=module.storage(path);rows=[]
+    try:
+        for member in members:
+            raw=db.execute('SELECT payload FROM '+table+' WHERE id=?',(member['receipt_id'],)).fetchone()
+            if raw is None:raise ValueError('Missing documentary patient receipt')
+            row=json.loads(zlib.decompress(raw[0]))
+            if row['patient_id']!=member['patient_id'] or row['id']!=member['receipt_id'] or digest(row)!=member['receipt_digest']:
+                raise ValueError('Documentary patient receipt mismatch')
+            rows.append({'patient_id':row['patient_id'],'receipt_id':row['id'],'status':row['status'],
+                         'documentary_receipt':row})
+    finally:db.close()
+    return rows
 
 
 def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None):
@@ -71,8 +103,10 @@ def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None):
                 'method':'Explicit empty population; no estimate computed and engine not executed'}
     with component('analytical_engine',operation=operation,population_size=None if ids is None else len(ids)):
         result=A.execute(tools.stack,plan)
-    if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope/definitions changed during analysis')
     answer=result.get('answer') or {};rows=answer.get('table') or []
+    if operation in DOCUMENTARY:
+        rows=documentary_rows(tools.stack.path,operation,result['results'][-1]['result'])
+    if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope/definitions changed during analysis')
     if not isinstance(rows,list):raise ValueError('Native analysis did not return a table')
     columns=list(dict.fromkeys(k for row in rows for k in row)) if all(isinstance(r,dict) for r in rows) else []
     from .harness_improvement import semantic_result

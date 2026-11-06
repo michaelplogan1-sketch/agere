@@ -128,6 +128,32 @@ def validate_inputs(op, inputs, seen):
             raise ValueError('Worklist support inputs must be distinct registered review reports')
 
 
+def assertion_vocabulary(narrative=(), care=()):
+    """The same explicit bindings for every documentary planning surface."""
+    from . import native_assertions
+    return sorted(set(narrative) | native_assertions.CONCEPTS | set(care) |
+                  {'financial hardship', 'care nephrology'} |
+                  {'medication '+c for c in ('bb','acei','arb','arni','mra','sglt2')})
+
+
+def documentary_parameter_catalog(path, stream_fields=None):
+    """Use validated existing source metadata; never build an index for discovery."""
+    from pathlib import Path
+    from . import longitudinal, native_care_assertions
+    path=Path(path);narrative=[]
+    if (path/'longitudinal-link.json').exists():
+        db,meta=longitudinal.connect(path)
+        db.close()
+        narrative=meta['vocabulary']['concept']
+    care=native_care_assertions.concepts(path) if (path/'stack.sqlite3').exists() else []
+    fields=stream_fields or {}
+    if stream_fields is None:
+        from .request_plan import Catalog
+        fields=Catalog.load(path).stream_fields
+    return {'cohort_fields':{'record_fields':fields}, 'source_streams':sorted(fields),
+            'evidence_catalog':{'assertion_concepts':assertion_vocabulary(narrative,care)}}
+
+
 def parameter_schema(op, catalog):
     """Selected vocabulary shapes, derived from actual runtime registries."""
     from . import cohorts, source_state, functional_programs, domain_programs

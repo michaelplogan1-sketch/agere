@@ -416,8 +416,9 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
     from . import native_assertions, native_care_assertions
     compact_catalog['native_assertion_bindings'] = native_assertions.contracts()
     compact_catalog['native_care_assertion_bindings'] = native_care_assertions.contracts()
-    compact_catalog['assertion_concepts'] = sorted(set(longitudinal.get('vocabulary',{}).get('concept',[])) |
-        native_assertions.CONCEPTS | set(graph_catalog.get('native_care_concepts', [])) | {'financial hardship','care nephrology'} | {'medication '+c for c in ('bb','acei','arb','arni','mra','sglt2')})
+    from .graph_contracts import assertion_vocabulary
+    compact_catalog['assertion_concepts'] = assertion_vocabulary(
+        longitudinal.get('vocabulary',{}).get('concept',[]), graph_catalog.get('native_care_concepts', []))
     compact_catalog['clinical_state_available']=graph_catalog.get('clinical_state_available',False)
     compact_catalog['medication_terminology_available']=graph_catalog.get('medication_terminology_available',False)
     compact_catalog['documentary_contracts']=[{k:s[k] for k in ('id','title')} for s in graph_catalog.get('documentary_contracts',[])]

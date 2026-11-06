@@ -399,15 +399,24 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
     ranked_ops = sorted(operators, key=lambda op: -len(meaningful & set(re.findall(r'[a-z0-9]+', op+' '+operators[op]['meaning'].lower()))))
     suggested = [op for op in ranked_ops[:3] if len(meaningful & set(re.findall(r'[a-z0-9]+', op+' '+operators[op]['meaning'].lower()))) >= 2]
     selected_contracts = {}
+    documentary_catalog=None
     for op in dict.fromkeys([*operations, *suggested]):
         if op not in operators: continue
         selected_contracts[op] = dict(operators[op])
         try:
-            selected_contracts[op]['parameter_schema'] = parameter_schema(op, {
+            parameter_catalog={
                 'cohort_fields': {'record_fields': catalog.stream_fields},
-                'source_streams': sorted(catalog.stream_fields), 'evidence_catalog': {}})
-        except (KeyError, ValueError):
-            pass  # Legacy operators retain their explicit, runtime-validated wire contract.
+                'source_streams': sorted(catalog.stream_fields), 'evidence_catalog': {}}
+            if op in ('assertion_review','source_state','interpretation','pre_event_state'):
+                from .graph_contracts import documentary_parameter_catalog
+                if documentary_catalog is None:
+                    documentary_catalog=documentary_parameter_catalog(catalog.target.parent,catalog.stream_fields)
+                parameter_catalog=documentary_catalog
+            selected_contracts[op]['parameter_schema'] = parameter_schema(op,parameter_catalog)
+        except (KeyError, ValueError, OSError, sqlite3.Error) as exc:
+            # A legacy example is not a complete typed contract. Expose a
+            # failed metadata dependency rather than silently inviting a guess.
+            selected_contracts[op]['parameter_schema_unavailable']=str(exc)
         if op in ('aggregate', 'vbc', 'profile', 'survival'):
             selected_contracts[op]['date_bounds'] = 'Window/period start and end dates are inclusive. Calendar-year end is YYYY-12-31.'
     stream_names = sorted(catalog.stream_fields, key=lambda s: (-len(words & set(s.replace('_',' ').split())), s))

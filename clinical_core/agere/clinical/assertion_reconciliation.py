@@ -312,7 +312,7 @@ def execute(path, patient_ids, parameters, preview_limit=4):
     identity, meta, _ = dependency(path, p)
     db = sqlite3.connect((path/'stack.sqlite3').resolve().as_uri()+'?mode=ro', uri=True)
     events, _ = longitudinal.connect(path); out = storage(path)
-    ids = sorted(set(patient_ids)); statuses = Counter(); counts = Counter(); actions = Counter(); preview = []
+    ids = sorted(set(patient_ids)); statuses = Counter(); counts = Counter(); actions = Counter(); preview = []; members=[]
     try:
         if set(ids)-{r[0] for r in db.execute('SELECT id FROM patients')}: raise ValueError('Unknown assertion population patient')
         with out:
@@ -328,6 +328,7 @@ def execute(path, patient_ids, parameters, preview_limit=4):
                     out.execute('INSERT INTO receipts VALUES (?,?,?,?)', (key, patient, identity, zlib.compress(context.encode(row))))
                     counts['new_receipts'] += 1
                 statuses[row['status']] += 1; counts.update(row['counts'])
+                members.append({'patient_id':patient,'receipt_id':key,'receipt_digest':digest(row),'status':row['status']})
                 counts.update({k: row['coverage'][k] for k in ('received_source_units','units_with_in_scope_assertions','units_without_in_scope_assertions')})
                 actions.update(s['kind'] for s in row['next_evidence_steps'])
                 candidate = {k: row[k] for k in ('id','patient_id','status','counts','next_evidence_steps')}
@@ -338,6 +339,7 @@ def execute(path, patient_ids, parameters, preview_limit=4):
         return {'schema': VERSION, 'synthetic': True, 'identity': identity, 'parameters': p,
             'patients_evaluated': len(ids), 'population_digest': digest(ids), 'statuses': dict(statuses),
             'counts': dict(counts), 'patients_needing_evidence_step': dict(actions), 'patients': preview,
+            'review_members':members,
             'preview_selection': 'Opposing accounts first, then patients with assertions, then patient ID. Preview is not a prevalence sample.',
             'all_receipts_persisted': True, 'new_paid_api_calls': 0, 'elapsed_seconds': time.perf_counter()-start,
             'current_clinical_state_established': False, 'limits': LIMITS}

@@ -463,7 +463,7 @@ class Tools:
             if name=='list_analyses':
                 if args:raise ValueError('list_analyses takes no arguments')
                 return analysis_tools.list_analyses()
-            if name=='describe_analysis':return analysis_tools.describe(**args)
+            if name=='describe_analysis':return analysis_tools.describe(**args,path=self.stack.path)
             out=analysis_tools.execute(self,**args)
             self.subtool_accounting['new_paid_api_calls']+=out.get('new_paid_api_calls',0)
             if out.get('new_paid_api_calls'):self.subtool_accounting['api_cost_known']=False
