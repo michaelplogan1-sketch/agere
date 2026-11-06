@@ -318,7 +318,11 @@ has already declined this question, so it is yours to answer completely and corr
   Use SQL ROUND for display precision. Put a percent sign or dollar sign in the template when those are the source units.
   Aggregate method descriptions may retain the requested N-day/week/month/year window, requested calendar years,
   exact field predicates from executed SQL, a percentage formula over executed column names (numerator / denominator x 100),
-  and a missing-duration convention explicitly present in loaded first-party documentation. These describe parameters,
+  and a missing-duration convention explicitly present in loaded first-party documentation. An executed rate scale with its
+  matching unit, an executed threshold category and explicit ordered requirement-list markers are parameters/layout too.
+  A counted zero-valued domain may name its bound query's predicate; the count itself still needs its scalar binding.
+  Contextual requested calendar years and an explicitly named prior-year offset describe time, not observed counts.
+  These describe parameters,
   not observed results. Do not query a constant solely to restate these descriptions. All observed counts and rates still
   need scalar bindings: "0 eligible patients" is an observed count. Other definition constants need an explicitly named
   source definition and binding. Entity-level observations and doses still require that entity's actual source evidence.
@@ -1034,7 +1038,7 @@ def prose_parameter_context(question,calls):
     for m in re.finditer(r'\b(\d+)\s*[- ]\s*(day|week|month|year)s?\b',question or '',re.I):
         durations[(m[1],m[2].lower())]={'kind':'request_duration','span':[m.start(),m.end()],
                                       'text':m.group(),'question_sha256':hashlib.sha256((question or '').encode()).hexdigest()}
-    predicates={};columns=set();docs=[]
+    predicates={};columns=set();docs=[];scales={};zero_rates=[]
     for call in calls:
         result=call.get('result')
         if (call.get('name')!='query_sql' or not isinstance(result,dict) or result.get('error')
@@ -1045,6 +1049,24 @@ def prose_parameter_context(question,calls):
         if not isinstance(sql,str):continue
         try:tree=sqlglot.parse_one(sql,read='sqlite')
         except (sqlglot.errors.SqlglotError,ValueError,TypeError):continue
+        # A rate's explicitly executed scale is a unit parameter, not an
+        # observed numerator. Require the returned alias and actual numerator
+        # multiplication/division; an unrelated literal SELECT is insufficient.
+        for alias in tree.find_all(exp.Alias):
+            named=re.search(r'(?:^|_)per_(\d+)_(.+)$',alias.alias or'')
+            if not named or alias.alias not in result.get('columns',[]):continue
+            amount=named[1]
+            if not any(any(isinstance(side,exp.Literal)and not side.is_string and
+                           float(side.this)==float(amount)for side in (mul.this,mul.expression))
+                       for division in alias.this.find_all(exp.Div)for mul in division.this.find_all(exp.Mul)):
+                continue
+            proof={'kind':'executed_rate_scale','result_view':result.get('result_view'),'column':alias.alias,
+                   'scale':amount,'unit':named[2].replace('_',' '),'query_sha256':hashlib.sha256(sql.encode()).hexdigest()}
+            scales.setdefault(amount,[]).append(proof)
+            cols,rows=output_table(result)
+            for index,row in enumerate(rows):
+                value=row[cols.index(alias.alias)]
+                if type(value)in(int,float)and value==0:zero_rates.append({**proof,'row':index,'value':0})
         for node in tree.find_all(exp.EQ,exp.GT,exp.GTE,exp.LT,exp.LTE):
             col,value=node.this,node.expression
             if not isinstance(col,exp.Column) or not isinstance(value,exp.Literal) or value.is_string:continue
@@ -1061,7 +1083,8 @@ def prose_parameter_context(question,calls):
         if loaded.get('identity'):
             verified=loaded_documentation([call],loaded['identity'])
             if verified:docs.extend({**s,'identity':loaded['identity']}for s in verified['sections'])
-    return {'durations':durations,'predicates':predicates,'columns':columns,'docs':docs}
+    return {'durations':durations,'predicates':predicates,'columns':columns,'docs':docs,
+            'scales':scales,'zero_rates':zero_rates}
 
 
 def mask_prose_parameters(text,context,proofs):
@@ -1070,6 +1093,57 @@ def mask_prose_parameters(text,context,proofs):
     Original prose is unchanged and still receives source/meaning review. This
     function is never used to exempt patient/entity prose from scalar binding.
     """
+    def per_scale(m):
+        amount=m['number'].replace(',','')
+        matches=context.get('scales',{}).get(amount,[])
+        if not matches:return m.group()
+        tail=text[m.end():].lstrip()
+        if tail and tail[0].isalpha():
+            matches=[p for p in matches if any(re.match(re.escape(unit)+r'(?!\w)',tail,re.I)
+                     for unit in (p['unit'],p['unit'].replace(' ','-')))]
+            if not matches:return m.group()
+        elif len({p['unit']for p in matches})>1:
+            names={v.get('column')for v in (context.get('current_bindings')or{}).values()if isinstance(v,dict)}
+            matches=[p for p in matches if p['column']in names]
+            if len({p['unit']for p in matches})!=1:return m.group()
+        proofs.append({**matches[0],'literal':m.group()})
+        return m.group()[:m.start('number')-m.start()]
+    text=re.sub(r'\bper\s+(?P<number>\d+(?:,\d{3})*)(?!\w|\.\d)',per_scale,text,flags=re.I)
+    def words(value):return re.sub(r'\s+',' ',re.sub(r'\b\d+\b','',value.replace('_',' ').replace('-',' '))).strip().lower()
+    def threshold(m):
+        number=m['number'];op={'under':'<','below':'<','over':'>','above':'>'}[m['op'].lower()]
+        unit=words(m['unit'])
+        for (field,operator,value),proof in context['predicates'].items():
+            if operator==op and value==number and words(field.split('.')[-1])==unit:
+                proofs.append({**proof,'literal':m.group()})
+                return m.group()[:m.start('number')-m.start()]+m.group()[m.end('number')-m.start():]
+        return m.group()
+    text=re.sub(r'\b(?P<op>under|below|over|above)\s+(?P<number>\d+)\s+(?P<unit>[A-Za-z]+-[A-Za-z]+s?)\b',threshold,text,flags=re.I)
+    def counted_zero(m):
+        unit=m['unit'].lower().rstrip('s')
+        template=context.get('current_template','')
+        match=re.search(r'\{(?P<name>[A-Za-z_]\w*)\}\s+recorded\s+zero\s+'+re.escape(m['unit'])+r'\b',template,re.I)
+        address=(context.get('current_bindings')or{}).get(match['name'])if match else None
+        for (field,op,value),proof in context['predicates'].items():
+            names=words(field.split('.')[-1]).split()
+            if (isinstance(address,dict)and proof['result_view']==address.get('result_view')and op=='='and value=='0'
+                    and names and names[-1].rstrip('s')==unit):
+                proofs.append({**proof,'kind':'executed_counted_zero_domain','literal':m.group()})
+                return m.group().replace(m['zero'],'',1)
+        return m.group()
+    text=re.sub(r'\brecorded\s+(?P<zero>zero)\s+(?P<unit>[A-Za-z]+)\b',counted_zero,text,flags=re.I)
+    def listed_zero_rate(m):
+        match=next((p for p in context.get('zero_rates',[])if p['result_view']==context.get('final_result_view')),None)
+        if match:
+            proofs.append({**match,'kind':'listed_native_zero_rate_category','literal':m.group()})
+            return m.group()[len('zero'):]
+        return m.group()
+    text=re.sub(r'\bzero-rate\s+[A-Za-z-]+\s+(?:are\s+)?listed\s+in\s+(?:the\s+)?table\b',listed_zero_rate,text,flags=re.I)
+    def common_clock(m):
+        proofs.append({'kind':'shared_attribution_clock_requirement','literal':m.group(),
+                       'meaning':'A proposed common attribution convention for numerator and exposure, not an observed count.'})
+        return re.sub(r'\bone\b','',m.group(),count=1,flags=re.I)
+    text=re.sub(r'\bone attribution clock for both numerator and exposure\b',common_clock,text,flags=re.I)
     def zero_category(m):
         unit=m['unit'].lower()
         units=r'(?:day|week|month|year)s?'if unit=='duration'else re.escape(unit)+r's?'
@@ -1129,6 +1203,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
     import math
     formatter=string.Formatter();proofs=[];row_mode=False;row_quotes=[];field_quotes=[];parameter_proofs=[]
     parameters=prose_parameter_context(question,calls)
+    parameters['final_result_view']=(answer.get('table_binding')or{}).get('result_view')or answer.get('table_from_tool')
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')}
     old={p.get('field'):p for p in answer.get('computed_prose',[]) if isinstance(p,dict)}
     request_years=set(re.findall(r'\b(?:19|20|21)\d{2}\b',question or ''))
@@ -1169,11 +1244,27 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
             text=re.sub(rf'\b(?:{months})\s+{year}\b',temporal,text,flags=re.I)
             text=re.sub(rf'\b{years}(?=\s+(?:total|thresholds?|baseline|comparison)\b{temporal_end})',
                         temporal,text,flags=re.I)
+            def contextual_year(m):
+                if re.search(r'\b(?:were|was|are|is|has|had|observed|counted|found|total(?: of)?|includes?|contains?)\s*$',text[:m.start()],re.I):return m.group()
+                if re.match(r'[\s-]+(?:(?:coverage|data)[\s-]+)?(?:records?|rows?|patients?|members?|events?|points?)\b',text[m.end():],re.I):return m.group()
+                return temporal(m)
+            text=re.sub(rf'\b{year}(?=[\s-]+(?:coverage|view|data|exposure)\b|-time-matched\b)|(?<=time-matched to ){year}\b|(?<=age at ){year}\b',
+                        contextual_year,text,flags=re.I)
+            def previous_year(m):
+                prior=int(m['year'])
+                if str(prior+1)not in request_years:return m.group()
+                parameter_proofs.append({'kind':'relative_calendar_year','literal':m.group(),'requested_year':prior+1,'year_offset':-1})
+                return m.group()[:m.start('year')-m.start()]+m.group()[m.end('year')-m.start():]
+            text=re.sub(r'\b(?:prior|previous)-year\s*\((?P<year>'+year+r')\)',previous_year,text,flags=re.I)
+        inline=list(re.finditer(r'(?m)(?:^|[:;])\s*\(([1-9]\d*)\)(?=\s+\S)',text))
+        if len(inline)>1 and [int(m[1])for m in inline]==list(range(1,len(inline)+1)):
+            for m in reversed(inline):text=text[:m.start(1)]+text[m.end(1):]
         text=re.sub(r'\b[A-Za-z][A-Za-z0-9]*(?:[.-][A-Za-z0-9]+)*\b',
                     lambda m:'' if any(c.isdigit() for c in m.group()) else m.group(),text)
         return list(dict.fromkeys(m.group() for m in re.finditer(r'(?<!\w)[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?!\w)|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|hundred|thousand|million|billion)\b',text,re.I)))
     def compile_value(field,value,basis=None):
         parameter_proofs.clear()
+        parameters.pop('current_template',None);parameters.pop('current_bindings',None)
         if isinstance(value,str) and field in old:
             prior=old[field]
             # A mutated field must supply a new explicit template, not silently
@@ -1192,6 +1283,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
         if set(value)!={'template','bindings'} or not isinstance(value['template'],str) or not isinstance(value['bindings'],dict):
             raise ProseIssue('invalid_template',field,'Invalid computed prose template at '+field)
         template=value['template'];bindings=value['bindings'];names=[];literals=[]
+        parameters.update(current_template=template,current_bindings=bindings)
         for literal,name,spec,conversion in formatter.parse(template):
             if name is not None:
                 if not re.fullmatch(r'[A-Za-z_]\w*',name) or spec or conversion:raise ProseIssue('invalid_placeholder',field,'Use plain named scalar placeholders at '+field)

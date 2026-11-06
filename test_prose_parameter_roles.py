@@ -64,6 +64,49 @@ class ProseParameterRoles(unittest.TestCase):
             with self.subTest(text=text), self.assertRaises(B.ComputedProseError):
                 self.compile(text)
 
+    def rate_calls(self):
+        sql=('SELECT stays, member_months, 1000.0 * stays / member_months AS stays_per_1000_member_months '
+             'FROM practice WHERE member_months < 100')
+        return [{'name':'query_sql','input':{'sql':sql},'result':{
+            'native_sql_contract':B.NATIVE_SQL_CONTRACT,'result_view':'result','executed_query':sql,
+            'columns':['stays','member_months','stays_per_1000_member_months'],'rows':[[0,20,0.0]]}}]
+
+    def test_native_rate_scale_threshold_and_listed_zero_category_keep_their_units(self):
+        calls=self.rate_calls()
+        for text in ['Rate per 1,000 member-months.','Rate per 1,000.',
+                     'Category under 100 member-months.',
+                     'Zero-rate practices are listed in the table.']:
+            with self.subTest(text=text):self.assertEqual(self.compile(text,calls=calls)['headline'],text)
+        for text in ['1,000 patients.','Rate per 10,000.','Rate per 1,000 patients.','Rate per 1,000 mg.',
+                     'Category under 200 member-months.','Category over 100 member-months.',
+                     'Zero patients.','The observed rate is zero.']:
+            with self.subTest(text=text),self.assertRaises(B.ComputedProseError):self.compile(text,calls=calls)
+        calls[0]['result']['executed_query']='SELECT 1000 AS stays_per_1000_member_months'
+        with self.assertRaises(B.ComputedProseError):self.compile('Rate per 1,000.',calls=calls)
+
+    def test_inline_requirement_ordinals_and_relative_years_are_not_counts(self):
+        text=('Required: (1) one attribution clock for both numerator and exposure; '
+              '(2) 2029-time-matched data with age at 2029; (3) prior-year (2028) inputs.')
+        self.assertEqual(self.compile(text)['headline'],text)
+        for text in ['Required: (1) inputs; (3) review.',
+                     'Required: (1) inputs for 5 patients; (2) review.',
+                     'Use prior-year (2027) inputs.','Use 2028 coverage.',
+                     'There were 2029 coverage records.','There were 2029 data points.',
+                     'There were one attribution clock and 2029 patients.']:
+            with self.subTest(text=text),self.assertRaises(B.ComputedProseError):self.compile(text)
+
+    def test_zero_in_a_counted_domain_needs_its_bound_predicate_result(self):
+        calls=self.rate_calls();sql='SELECT SUM(CASE WHEN stays = 0 THEN 1 ELSE 0 END) AS n FROM practice'
+        calls.append({'name':'query_sql','input':{'sql':sql},'result':{'native_sql_contract':B.NATIVE_SQL_CONTRACT,
+            'result_view':'zero_counts','executed_query':sql,'columns':['n'],'rows':[[4]]}})
+        answer={'table_binding':{'result_view':'result'},'headline':{'template':'{n} recorded zero stays.',
+                'bindings':{'n':{'result_view':'zero_counts','row':0,'column':'n'}}}}
+        B.bind_computed_prose(answer,calls,question=self.question)
+        self.assertEqual(answer['headline'],'4 recorded zero stays.')
+        bad={'table_binding':{'result_view':'result'},'headline':{'template':'{n} recorded zero patients.',
+             'bindings':{'n':{'result_view':'zero_counts','row':0,'column':'n'}}}}
+        with self.assertRaises(B.ComputedProseError):B.bind_computed_prose(bad,calls,question=self.question)
+
     def test_native_parameters_need_complete_executed_evidence(self):
         for mutation in ('no_contract', 'error', 'truncated', 'missing_query', 'wrong_query'):
             calls = copy.deepcopy(self.calls)
