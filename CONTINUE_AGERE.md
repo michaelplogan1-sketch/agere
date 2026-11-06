@@ -1,12 +1,14 @@
-# Current Agere checkpoint — ACTIVE 2026-11-06T02:17:07.010178+00:00
+# Current Agere checkpoint — ACTIVE 2026-11-06T02:44:53.005043+00:00
 
-G3: Q18firstactualproviderpairreturnedpartial; initial0calladmissionfailurekeptseparate. ExecuteunstartedQ19-Q21onceperarmsequentiallyon1cb7837f/protocol-local-cohort-candidate.json via run_remaining_after_Q18.py. Inspectownedremaining-after-Q18-receipt.jsonbeforejobs;source/product/scoringfrozenwhileactive;noduplicate. Stopbetween cases onactualcontext/subscription/materialfailure/explicitstopreceipt. ScoreQ18independentlywhileothercasesrun:declaredfirst-within2028cohortisnotautomaticallyfailedagainstfirst-everreference. Preserve1003.551s/128338output-tokenCLIoutlierandallusage;nosignalwasactuallysent. Thenconsolidatefixedworkflowfailures/connectedcheckswithoutmoreunchangedpaidrepeats. All25/tenareas/Q14/Q23/Q24/G5/clinical/customerdependenciesretained. AutomaticcontinuationPAUSED.
+G3: finish the current source-assertion workflow next. Prevent complete entity/account requests from entering ranked-example retrieval by using the existing generic output-shape/admission rules; preserve explicit passage/example and single-entity retrieval. Prove the unchanged Q21 request declines ranked examples without I/O plus finance/other-domain transfers and regressions. Preserve the interrupted8attempts/1pending and failed frontier protocol; no unchanged paid repeat. Then complete the source-bound assertion/review and Q24 deliverable checks through existing shared context. Q20 native measure handoff is verified locally on80e56d3c (4measures, saved/reopened/exported,0providers); full ACO agenda remains partial. All25/ten areas, earlier failures,Q14,Q23definitions,G5,clinical/customer dependencies remain. Build ACTIVE; automatic continuation PAUSED.
 
-Q18confirmationreturned:stack1264.494s/29requests/$0.866130478;frontier67.485s/5/$0.4391909.0newpending/unpriced. OneCLIcall1003.551s/2turns/128338outputtokensbeforeonetoolrequest;allaggregateusagepreserved,internalAPIattemptcountunknown. Nosignalwassent(requestcompletedbeforePIDcheck). Bothpartialnoteswithdifferentdeclaredindex/censoring;independentscorepending,nosavingsclaim.
+Product80e56d3c: full-population measure accounting now crosses engine -> analyst tool -> native SQL -> saved/reopened ACO context -> HTML/CSV/JSON. Actual proof4.679s/0providers; source and all56466ledger rows unchanged.186distinct focused checks pass; finalpartial-valueguard6rechecks pass. KED101unresolved remain unknown; known-subset202/568not promoted. No fullQ20/Q24 pass, visual qualification, activation or new seal.
 
-Nativeadmissionproof0.640s/0providers,179checkspass;original12.239s/0callfailurekeptseparate. Currentruntimepredictionregistryhasnoattachedpointer;Q19target/leakage/calibrationunknown,nomodelfittedorprotectedlabelsread. All56384attempts/42pendingretained. Lastsealedreceiptunchanged. Evidence: artifacts/agere-ordinary-comparison-2026-11-05/Q18-admission-confirmation/pair-receipt.json; artifacts/agere-ordinary-comparison-2026-11-05/Q18-admission-confirmation/provider-latency-observation.json; artifacts/agere-ordinary-comparison-2026-11-05/Q18/native-admission-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q19/independent-registry-observation.json
+Q18-Q20 scores retained;Q21 interrupted actual8attempts/$0.011954146known/1pending-unpriced plusdirect1/$0.0318006toolprotocolfailure. Pending43total. No owned process remains. Last sealed receipt unchanged. Evidence: artifacts/agere-ordinary-comparison-2026-11-05/Q20/metric-population-repair/workflow-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q20/metric-population-repair/checks.log; artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json
 
 ## Superseded checkpoint
+
+
 
 # Current Agere checkpoint — ACTIVE 2026-11-06T01:46:50.791410+00:00
 
@@ -29,7 +31,6 @@ Q17bothpartialfailed:all-event2966numeratorincludes82withoutreceivedmonthlyexpos
 
 
 
-Owned fixed sequence receipt: artifacts/agere-ordinary-comparison-2026-11-05/remaining-after-Q17-receipt.json; status=stopped_on_material_failure_or_dependency; current=Q18; source_frozen=False. Automatic continuation PAUSED.
 
 ## Superseded checkpoint
 
