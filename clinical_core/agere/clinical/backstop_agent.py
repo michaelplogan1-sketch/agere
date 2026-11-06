@@ -2079,8 +2079,9 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                     'bind that interpretation to its actual source review instead of treating an integer as arithmetic proof. '
                     'Do not re-read every patient or ask for repeated model votes on copies of the same SQL result. The repaired program still requires source/question verification.'}
         copied=all(p.get('representation')=='native_table_copy_and_meaning_review'for p in packets)
-        assessment['evidence_coverage'].update(model_view='native-table-copy-and-meaning/1'if copied else'patient-dependency-packets/1',
-            full_results_supplied=not copied,native_full_results_retained=True,
+        calculated=any(p.get('native_calculation_input_fidelity')for p in packets)
+        assessment['evidence_coverage'].update(model_view='native-table-copy-and-meaning/1'if copied else'native-calculation-inputs-and-meaning/1'if calculated else'patient-dependency-packets/1',
+            full_results_supplied=not(copied or calculated),native_full_results_retained=True,
             **({'native_table_copy':packets[0]['native_table_copy']}if copied else{}),
             complete_dependency_packets=len(packets),max_dependency_bytes=max((p['bytes']for p in packets),default=0),
             total_dependency_bytes=sum(p['bytes']for p in packets),
@@ -2626,6 +2627,10 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     from .evidence_projection import native_column_projections
     column_projections=native_column_projections(calls,claim_roots,claim_dependencies)if closed_global else {}
     if column_projections:
+        if not final_patients and not document_reviews and not any(p.get('entity_key')for p in answer.get('computed_prose',[])):
+            from .evidence_projection import native_calculation_input_view
+            producers={c['result']['result_view']:c for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')}
+            column_projections={name:native_calculation_input_view(p,producers[name],calls)for name,p in column_projections.items()}
         packets[0]['native_column_projections']=list(column_projections.values())
     for pid,rows in by.items():
         if pid in final_patients:continue
@@ -2717,6 +2722,9 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             'source_context_complete':not bool(packet.get('source_context_gaps')),
             'claim_manifest':claims,'result_view':final_view,
             'representation':'readable_native_json' if readable else 'lossless_compact_fallback'})
+        calculated=[{'result_view':p['result_view'],'complete_receipt_digest':p['complete_receipt_digest'],
+            'input_fidelity':p['input_fidelity']}for p in packet.get('native_column_projections',[])if p.get('schema')=='native-calculation-input/1']
+        if calculated:result[-1]['native_calculation_input_fidelity']=calculated
         if packet['id']=='summary'and timing_bindings:
             legacy={**packet,'native_bindings':legacy_native};legacy_text,_=encode(legacy)
             result[-1]['native_timing_compatibility']={'schema':timing['schema'],

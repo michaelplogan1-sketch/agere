@@ -238,7 +238,8 @@ def check(question, graph, result, *, stack, ledger=None, as_of_date=None):
     if uncompact_json(encoded)!=original:raise ValueError('Coverage evidence did not round-trip')
     summary=json.dumps(encoded,default=str,separators=(',',':'))
     when = as_of_date or as_of(stack)
-    out = mod.decide(f'Question as asked: {question}\nDoes the computed result below answer this question as asked? '
+    out = mod.decide('Does the computed result answer the original question in the computed evidence state? '
+                     'The complete original question, definitions, executed plan and result are in that state. '
                      'Resolve all lossless table layouts and shared references before judging. Every original plan/result value is present.',
                      CHECK_OPTIONS, [{'id': 'computed', 'text': summary, 'date': when, 'note_id': 'executed_plan'}],
                      as_of=when, task_key='s1_answer_check', ledger=ledger, allow_live=True,select_source=False,

@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 from pathlib import Path
 from clinical_core.agere.clinical import backstop_agent as B,semantic_analyst as S
-from clinical_core.agere.clinical.evidence_projection import native_column_projections,replayed_column_dependencies
+from clinical_core.agere.clinical.evidence_projection import native_column_projections,replayed_column_dependencies,native_calculation_input_view
 from clinical_core.agere.clinical.sql_query import native_result_source
 from clinical_core.contracts import digest
 from clinical_core.agere.deliverables.receipts import uncompact_json
@@ -149,7 +149,10 @@ class NativeColumnProjection(unittest.TestCase):
         state=uncompact_json(json.loads(B.support_packets('Count machine receipts and unresolved statuses.',
             self.answer,self.calls,[],'2030-05-27')[0]['text']))
         self.assertEqual(state['native_dependency_scope']['required_result_views'],['agere_result_1','agere_result_2'])
-        self.assertEqual(state['native_column_projections'][0]['rows'],[['A','unresolved'],['A','unresolved'],['B',None]])
+        native=state['native_column_projections'][0]
+        self.assertEqual(native['input_fidelity']['row_count'],3)
+        self.assertEqual(native['input_fidelity']['distinct_patient_ids'],2)
+        self.assertTrue(native['input_fidelity']['all_original_rows_and_entity_mappings_retained_natively'])
         self.assertIn('external_events',json.dumps(state))
         self.assertEqual(self.calls,before)
 
@@ -163,11 +166,13 @@ class NativeColumnProjection(unittest.TestCase):
         calls.append({'input':{},'result':{'result_view':'population'}})
         self.assertEqual(B.native_result_dependencies(calls,B.computed_prose_views(proofs)),{'basis','events','population'})
 
-    def json_fixture(self,expression="json_extract(r.value,'$.id') AS rule_id",path="'$.contract.requirements'",malformed=False):
+    def json_fixture(self,expression="json_extract(r.value,'$.id') AS rule_id",path="'$.contract.requirements'",malformed=False,uniform=False):
         rows=[['A','unresolved',{'contract':{'requirements':[{'id':'rule','binding':None}]},'unread_notes':'Full original context stays native.'}],
               ['A','unresolved',{'contract':{'requirements':[{'id':'rule','binding':None}]},'unread_notes':'Another complete record.'}],
               ['B',None,{'contract':{'requirements':None}}],['C','unknown',{}]]
         if malformed:rows[-1][-1]='not valid JSON'
+        if uniform:
+            for row in rows:row[-1]=copy.deepcopy(rows[0][-1])
         producer={'name':'execute_analysis','input':{'operation':'authored_contract_review'},'result':{
             'columns':['patient_id','status','documentary_receipt'],'rows':rows}}
         B.define_result(self.wh,'agere_result_4',producer['result']['columns'],rows,receipt=producer['result'])
@@ -329,7 +334,8 @@ class NativeColumnProjection(unittest.TestCase):
         packets=B.support_packets('Count literal machine states.',self.answer,self.calls,[],'2030-05-27')
         state=uncompact_json(json.loads(packets[0]['text']))
         self.assertEqual(state['answer']['facts']['note'],note)
-        self.assertEqual(state['native_column_projections'][0]['rows'],[['A','unresolved'],['A','unresolved'],['B',None]])
+        self.assertEqual(state['native_column_projections'][0]['input_fidelity']['complete_joint_value_frequencies'],
+            [{'values':['unresolved'],'rows':2,'distinct_patient_ids':1},{'values':[None],'rows':1,'distinct_patient_ids':1}])
         proof=next(p for p in self.answer['computed_prose']if p['field']=='facts.note')
         self.assertEqual(proof['global_basis_contract'],'executed-global-basis/1')
         self.assertEqual(self.calls,before)
@@ -371,6 +377,62 @@ class NativeColumnProjection(unittest.TestCase):
         state=uncompact_json(json.loads(B.support_packets('Read the original receipts.',self.answer,self.calls,[],'2030-05-27')[0]['text']))
         self.assertNotIn('native_column_projections',state)
         self.assertIn('A complete source interpretation is still required.',json.dumps(state))
+
+    def test_arithmetic_view_counts_every_input_row_and_keeps_complete_method_and_population(self):
+        projection=self.project()['agere_result_1'];before=copy.deepcopy(self.calls)
+        view=native_calculation_input_view(projection,self.producer,self.calls)
+        self.assertEqual(view['schema'],'native-calculation-input/1');self.assertNotIn('rows',view)
+        self.assertEqual(view['input_fidelity']['rows_digest'],digest(projection['rows']))
+        self.assertEqual(view['input_fidelity']['complete_joint_value_frequencies'],[
+            {'values':['unresolved'],'rows':2,'distinct_patient_ids':1},{'values':[None],'rows':1,'distinct_patient_ids':1}])
+        self.assertIn('not a reversible encoding or source/clinical acceptance',view['scope'])
+        self.assertEqual(self.calls,before);self.assertIn('rows',projection)
+
+    def test_arithmetic_view_rejects_stale_source_scope_query_output_and_identity(self):
+        for kind in ('source','scope','query','output','identity','projection'):
+            calls=copy.deepcopy(self.calls);projection=self.project()['agere_result_1']
+            if kind=='source':calls[0]['result']['rows'][0][1]='different'
+            elif kind=='scope':calls[0]['input']['parameters']['available_by']='2031-01-01'
+            elif kind=='query':calls[1]['result']['executed_query']='SELECT 999 AS n'
+            elif kind=='output':calls[1]['result']['rows'][0]['n']=999
+            elif kind=='identity':projection['rows'][0][0]='another-patient'
+            else:projection['projected_rows_digest']='stale'
+            with self.subTest(kind=kind):self.assertIs(native_calculation_input_view(projection,calls[0],calls),projection)
+
+    def test_arithmetic_profiles_preserve_boolean_integer_float_and_null_types(self):
+        producer={'name':'execute_analysis','input':{'operation':'authored'},'result':{
+            'result_view':'agere_result_4','columns':['patient_id','status','unread'],
+            'rows':[['A',False,'source'],['A',0,'source'],['B',0.0,'source'],['C',None,'source']]}}
+        B.define_result(self.wh,'agere_result_4',producer['result']['columns'],producer['result']['rows'],receipt={k:v for k,v in producer['result'].items()if k!='result_view'})
+        consumer=self.execute('SELECT status,COUNT(*) AS n FROM agere_result_4 GROUP BY status')
+        calls=[producer,consumer];p=native_column_projections(calls,['agere_result_2'],{'agere_result_2','agere_result_4'})['agere_result_4']
+        view=native_calculation_input_view(p,producer,calls)
+        values=[g['values'][0]for g in view['input_fidelity']['complete_joint_value_frequencies']]
+        self.assertEqual([type(v)for v in values],[bool,int,float,type(None)])
+
+    def test_varying_json_and_missing_versus_null_keep_original_patient_mapping(self):
+        calls=self.json_fixture();p=native_column_projections(calls,['agere_result_2','agere_result_3'],
+            {'agere_result_2','agere_result_3','agere_result_4'})['agere_result_4']
+        self.assertIs(native_calculation_input_view(p,calls[0],calls),p)
+        self.assertEqual(p['json_path_observations'][0]['row_values'][-2:],[[True,'null'],[False,None]])
+
+    def test_equal_json_branch_is_kept_whole_with_all_row_equality_and_actual_consumer_checks(self):
+        calls=self.json_fixture(uniform=True);p=native_column_projections(calls,['agere_result_2','agere_result_3'],
+            {'agere_result_2','agere_result_3','agere_result_4'})['agere_result_4']
+        view=native_calculation_input_view(p,calls[0],calls)
+        self.assertEqual(view['schema'],'native-calculation-input/1')
+        observed=view['json_path_observations'][0]['native_all_row_equality']
+        self.assertEqual(observed['row_count'],4);self.assertTrue(observed['present'])
+        self.assertEqual(json.loads(observed['complete_value']),[{'id':'rule','binding':None}])
+        changed=copy.deepcopy(p);changed['json_path_observations'][0]['row_values']=[[True,'null']]*4
+        self.assertIs(native_calculation_input_view(changed,calls[0],calls),changed)
+
+    def test_patient_claims_retain_original_rows_instead_of_an_aggregate_inspection_view(self):
+        answer=copy.deepcopy(self.answer);answer['table']=[{'patient_id':'A','observation':'A source statement remains unresolved.'}]
+        state=uncompact_json(json.loads(B.support_packets('Inspect the individual source.',answer,self.calls,[],'2030-05-27')[0]['text']))
+        projection=state['native_column_projections'][0]
+        self.assertEqual(projection['schema'],'native-column-projection/1')
+        self.assertEqual(projection['rows'],[['A','unresolved'],['A','unresolved'],['B',None]])
 
 
 if __name__=='__main__':unittest.main()

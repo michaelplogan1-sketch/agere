@@ -91,9 +91,22 @@ class Checker(unittest.TestCase):
         self.assertTrue(out['reject']); self.assertEqual(out['label'], 'answers_a_different_question')
         self.assertEqual((out['calls'], out['cost_usd'], out['provider']), (1, 0.0002, 'jev'))
         self.assertEqual(out['decided_by'],'jev')
-        self.assertIn('How many patients have CKD?', fake.calls[0]['question'])
+        from clinical_core.agere.deliverables.receipts import uncompact_json
+        import json
+        self.assertEqual(uncompact_json(json.loads(fake.calls[0]['evidence'][0]['text']))['question'],'How many patients have CKD?')
         self.assertIn('42 patients', fake.calls[0]['evidence'][0]['text'])
         self.assertEqual(fake.calls[0]['task_key'], 's1_answer_check')
+
+    def test_large_original_question_and_definitions_stay_in_state_not_choice_instructions(self):
+        import json
+        from clinical_core.agere.deliverables.receipts import uncompact_json
+        question='Inspect the full source at 2030-05-27.\n'+('Complete registered definition, with its scope and dates. '*2000)
+        fake=FakeS1('unknown',.9)
+        with clean_env(),use(fake):G.check(question,GRAPH,RESULT,stack=LIVE)
+        request=fake.calls[0];state=uncompact_json(json.loads(request['evidence'][0]['text']))
+        self.assertEqual(state['question'],question);self.assertEqual(state['executed_plan'],GRAPH);self.assertEqual(state['result'],RESULT)
+        self.assertLess(len(request['question']),512)
+        self.assertNotIn('Complete registered definition',request['question'])
 
     def test_threshold_from_env(self):
         with clean_env(), use(FakeS1('answers_a_different_question', 0.8)):

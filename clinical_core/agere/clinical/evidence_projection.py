@@ -682,6 +682,89 @@ def native_column_projections(calls, roots, dependencies):
     return projections
 
 
+def native_calculation_input_view(projection, producer, calls):
+    """Show code-checked aggregate inputs without asking a model to recount IDs.
+
+    This is an arithmetic inspection view, NOT a reversible row encoding or a
+    documentary/clinical finding. Original complete rows and entity mappings
+    remain in immutable native receipts. The caller must retain individual
+    evidence for patient claims and all mandatory source/meaning reviews.
+    """
+    from .backstop_agent import output_table
+    from .result_assembly import incomplete_reason
+    result=producer.get('result')or{}
+    if (producer.get('name')not in ('execute_analysis','query_sql','read_patient_profiles')
+        or projection.get('schema')!='native-column-projection/1' or result.get('error')or incomplete_reason(result)
+        or projection.get('result_view')!=result.get('result_view')
+        or projection.get('producer')!={'tool':producer.get('name'),'input':producer.get('input')}
+        or projection.get('complete_receipt_digest')!=digest({k:v for k,v in result.items()if k!='result_view'})):
+        return projection
+    columns,original=output_table(result);selected=projection.get('columns');rows=projection.get('rows')
+    if (not columns or len(set(columns))!=len(columns)or any(len(r)!=len(columns)for r in original)
+        or not isinstance(selected,list)or len(set(selected))!=len(selected)or 'patient_id'not in selected
+        or not set(selected)<=set(columns)or not isinstance(rows,list)
+        or projection.get('complete_columns')!=columns or projection.get('row_count')!=len(original)
+        or digest(rows)!=digest([[r[columns.index(c)]for c in selected]for r in original])
+        or projection.get('projected_rows_digest')!=digest(rows)):return projection
+    identities=[r[selected.index('patient_id')]for r in rows]
+    if any(not isinstance(pid,str)or not pid for pid in identities):return projection
+    by={c['result']['result_view']:c for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')}
+    if len(by)!=sum(isinstance(c.get('result'),dict)and bool(c['result'].get('result_view'))for c in calls):return projection
+    consumers=projection.get('consumers')
+    if not consumers:return projection
+    for consumer in consumers:
+        source=by.get(consumer['result_view'])
+        if not source or consumer.get('result_digest')!=digest(source['result']):return projection
+    # Do not replace varying JSON source observations by a marginal profile.
+    # A row-invariant branch is kept in full, with exact all-row equality.
+    invariant=[]
+    for branch in projection.get('json_path_observations',[]):
+        values=branch.get('row_values');column=branch.get('column');path=branch.get('path')
+        if (projection.get('json_path_contract')!='native-static-json-paths/1'
+            or branch.get('value_encoding')!='canonical-json'or column not in columns
+            or not isinstance(path,str)or not re.fullmatch(r'\$\.[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*',path)
+            or not isinstance(values,list)or len(values)!=len(rows)or not values
+            or len({digest(v)for v in values})!=1):return projection
+        try:
+            for row,observation in zip(original,values):
+                if not isinstance(observation,list)or len(observation)!=2 or type(observation[0])is not bool:return projection
+                current=row[columns.index(column)]
+                if isinstance(current,str):current=json.loads(current)
+                present=True
+                for key in path[2:].split('.'):
+                    if not isinstance(current,dict)or key not in current:present=False;break
+                    current=current[key]
+                if present!=observation[0]or (present and digest(json.loads(observation[1]))!=digest(current))or (not present and observation[1]is not None):return projection
+        except (ValueError,TypeError):return projection
+        invariant.append({**{k:v for k,v in branch.items()if k!='row_values'},
+            'native_all_row_equality':{'row_count':len(values),'row_values_digest':digest(values),
+                'present':values[0][0],'complete_value':values[0][1]},
+            'scope':'This complete static branch is exactly equal at every original native row index, including presence versus JSON null. The native receipt retains every entity mapping; no clinical or documentary assertion is certified.'})
+    fields=[c for c in selected if c!='patient_id'];groups={}
+    for row,pid in zip(rows,identities):
+        values=[row[selected.index(c)]for c in fields]
+        if any(isinstance(v,(dict,list))or type(v)is float and not math.isfinite(v)for v in values):return projection
+        key=digest(values);group=groups.setdefault(key,{'values':values,'rows':0,'patients':set()})
+        group['rows']+=1;group['patients'].add(pid)
+    profiles=[{'values':g['values'],'rows':g['rows'],'distinct_patient_ids':len(g['patients'])}for g in groups.values()]
+    if sum(g['rows']for g in profiles)!=len(rows):return projection
+    population=result.get('input_patient_ids')
+    scope=({'rows':len(population),'distinct_patient_ids':len(set(population)),
+            'ordered_patient_ids_digest':digest(population),'native_field':'input_patient_ids'}
+           if isinstance(population,list)and all(isinstance(p,str)and p for p in population)else None)
+    return {**{k:v for k,v in projection.items()if k not in ('rows','json_path_observations')},
+        'schema':'native-calculation-input/1',
+        'input_fidelity':{'native_projection_digest':digest(projection),'rows_digest':digest(rows),
+            'row_count':len(rows),'distinct_patient_ids':len(set(identities)),
+            'ordered_patient_ids_digest':digest(identities),'input_population':scope,
+            'profile_columns':fields,'complete_joint_value_frequencies':profiles,
+            'all_original_rows_and_entity_mappings_retained_natively':True,
+            'row_copy_checked_against_complete_producer':True},
+        **({'json_path_observations':invariant}if invariant else{}),
+        'native_method':result.get('method'),
+        'scope':'Code checked every selected native input cell against its complete producer and computed these joint value frequencies from ALL rows. Original rows, duplicate IDs, identity mappings, scope inputs and full receipts remain native and available by result_view/receipt digest. This is calculation/input fidelity only, not a reversible encoding or source/clinical acceptance. Profiles do not establish patient overlap: use the actual native SQL outputs and their complete queries for arithmetic, never sum profile patient counts across groups. Source selection, definitions, period, denominator, missingness, documentary meaning, clinical interpretation and all final claims still require mandatory review. No patient-level claim may be verified from this aggregate view.'}
+
+
 def partition_support_packet(packet, *, max_bytes=230000):
     """Partition claimed outputs, retaining every source input in every part.
 
