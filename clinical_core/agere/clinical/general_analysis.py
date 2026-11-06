@@ -567,6 +567,100 @@ def scope_sql(db, query, population, *, views_only=False):
         raise ValueError('Cannot establish selected population scope: ' + str(exc)) from exc
 
 
+def grouped_self_counts(query):
+    """Decorrelate a conservative literal self COUNT(DISTINCT column).
+
+    Equality keys must be identical expressions over the same relation. A
+    grouped left join preserves one outer row and COUNT's zero-on-no-match
+    behavior, including null keys/record IDs. Other correlation stays intact.
+    This changes execution, never source interpretation or clinical meaning.
+    """
+    import sqlglot
+    from sqlglot import exp
+    tree = sqlglot.parse_one(query, read='sqlite')
+    used = {i.name.casefold() for i in tree.find_all(exp.Identifier)}
+    rewrites = []
+    def fresh(stem):
+        name = stem
+        while name.casefold() in used: name += '_'
+        used.add(name.casefold())
+        return name
+    def key(expression, alias):
+        allowed = (exp.Column, exp.Identifier, exp.Lower, exp.Trim, exp.Paren, exp.Literal, exp.Var)
+        if not all(isinstance(n, allowed) for n in expression.walk()): return None
+        columns = list(expression.find_all(exp.Column))
+        if not columns or any(c.table.casefold() != alias.casefold() for c in columns): return None
+        value = expression.copy()
+        for c in value.find_all(exp.Column):
+            c.set('table', None); c.set('this', exp.to_identifier(c.name.casefold()))
+        return value.sql(dialect='sqlite')
+    # Inspect the original scopes before adding our own one-row-per-key joins.
+    scopes = list(tree.find_all(exp.Select))
+    for outer in scopes:
+        source = (outer.args.get('from_') or exp.From()).this
+        if (not isinstance(source, exp.Table) or source.db or source.catalog
+                or any(outer.args.get(k) for k in ('joins','group','having','distinct','qualify'))
+                or any(isinstance(p, exp.Star) for p in outer.expressions)
+                or any(a.find_ancestor(exp.Select) is outer for a in outer.find_all(exp.AggFunc,exp.Window))):
+            continue
+        outer_alias = source.alias_or_name
+        candidates = [s for s in outer.find_all(exp.Subquery) if s.find_ancestor(exp.Select) is outer]
+        for sub in candidates:
+            inner = sub.this
+            if not isinstance(inner, exp.Select) or len(inner.expressions) != 1: continue
+            if any(inner.args.get(k) for k in ('joins','group','having','distinct','limit','offset','order','qualify','with_')): continue
+            relation = (inner.args.get('from_') or exp.From()).this
+            if (not isinstance(relation, exp.Table) or relation.db or relation.catalog
+                    or relation.name.casefold() != source.name.casefold()): continue
+            inner_alias = relation.alias_or_name
+            if inner_alias.casefold() == outer_alias.casefold(): continue
+            count = inner.expressions[0]
+            if isinstance(count, exp.Alias): count = count.this
+            if not isinstance(count, exp.Count) or not isinstance(count.this, exp.Distinct): continue
+            values = count.this.expressions
+            if len(values) != 1 or not isinstance(values[0], exp.Column) or values[0].table.casefold() != inner_alias.casefold(): continue
+            where = inner.args.get('where')
+            if where is None: continue
+            pairs, local, valid = [], [], True
+            for predicate in where.this.flatten() if isinstance(where.this, exp.And) else [where.this]:
+                matched = False
+                if isinstance(predicate, exp.EQ):
+                    for inside, outside, reversed_keys in ((predicate.this,predicate.expression,False),(predicate.expression,predicate.this,True)):
+                        k = key(inside, inner_alias)
+                        if k is not None and k == key(outside, outer_alias):
+                            pairs.append((inside,outside,reversed_keys)); matched = True; break
+                if not matched:
+                    if any(c.table.casefold() != inner_alias.casefold() for c in predicate.find_all(exp.Column)):
+                        valid = False; break
+                    if any(not isinstance(f,(exp.Lower,exp.Trim,exp.And,exp.Or,exp.Not)) for f in predicate.find_all(exp.Func)):
+                        valid = False; break  # unknown/volatile functions cannot move across outer rows
+                    local.append(predicate)
+            if not valid or not pairs: continue
+            alias = fresh('__agere_self_count_' + str(len(rewrites)))
+            count_name = fresh(alias + '_value')
+            group_names = [fresh(alias + '_key_' + str(i)) for i in range(len(pairs))]
+            grouped = inner.copy()
+            grouped.set('expressions', [exp.alias_(count.copy(),count_name),
+                *[exp.alias_(inside.copy(),name) for (inside,_,_),name in zip(pairs,group_names)]])
+            grouped.set('where', exp.Where(this=exp.and_(*[p.copy() for p in local])) if local else None)
+            grouped.set('group', exp.Group(expressions=[inside.copy() for inside,_,_ in pairs]))
+            conditions = []
+            for (_,outside,reversed_keys), name in zip(pairs,group_names):
+                inside = exp.column(name, table=alias)
+                conditions.append(exp.EQ(this=outside.copy() if reversed_keys else inside,
+                                         expression=inside if reversed_keys else outside.copy()))
+            outer.append('joins', exp.Join(this=grouped.subquery(alias=alias),side='LEFT',on=exp.and_(*conditions)))
+            sub.replace(exp.Coalesce(this=exp.column(count_name,table=alias),expressions=[exp.Literal.number(0)]))
+            rewrites.append({'source':source.name,'kind':'grouped_self_count_distinct',
+                             'equality_keys':[key(inside,inner_alias) for inside,_,_ in pairs]})
+    if not rewrites: return query, None
+    from ...contracts import digest
+    result = tree.sql(dialect='sqlite')
+    return result, {'schema':'native-self-count-rewrite/1','rewrites':rewrites,
+                    'stage':'before_scope_inspection',
+                    'original_query_digest':digest(query),'rewritten_query_digest':digest(result)}
+
+
 def prepare(catalog, question, spec, *, population=None, relaxed=False):
     """Validate and seal a model-proposed analysis. Raises PlanError with repairable feedback."""
     if not isinstance(spec, dict) or set(spec) - {'steps', 'final', 'returns', 'requirements', 'definitions', 'unresolved', 'workflow', 'patient_selection', 'parameters'}:
@@ -644,6 +738,10 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
         query = 'WITH ' + ', '.join(f'{n} AS ({s})' for n, s in parts) + f' SELECT * FROM {final}'
     try:sql_query.validate({'query': query, 'returns': returns})
     except ValueError as exc:raise PlanError(str(exc)) from exc
+    query, native_optimization = grouped_self_counts(query)
+    if native_optimization:
+        try:sql_query.validate({'query':query,'returns':returns})
+        except ValueError as exc:raise PlanError(str(exc)) from exc
     from .source_scope import problem as source_scope_problem
     scope_gap=source_scope_problem(question,query)
     if scope_gap:raise PlanError(scope_gap)
@@ -726,6 +824,7 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
                          'workflow': workflow, 'patient_selection': selection, 'parameters': spec.get('parameters', [])},
             'governed_macros': sorted(macros), 'query': query, 'returns': returns, 'sources': sources,
             'evidence_completeness': evidence,
+            **({'native_optimization':native_optimization} if native_optimization else {}),
             'source_identity': catalog.identity, 'output_columns': columns,
             'population': None if population is None else sorted(set(population)),
             'population_digest': None if population is None else fingerprint(sorted(set(population)))}

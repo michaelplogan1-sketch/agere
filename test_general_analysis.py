@@ -29,6 +29,27 @@ class GeneralAnalysis(unittest.TestCase):
     def setUp(self):
         fixtures.SharedPlanner.setUp(self)
 
+    def test_native_self_count_rewrite_runs_before_inspection_and_preserves_selected_scope(self):
+        import sqlite3
+        question = 'List patients with source event counts in 2029.'
+        query = ("SELECT n.patient_id,n.event_date,(SELECT COUNT(DISTINCT m.event_date) "
+                 "FROM utilization_event m WHERE m.kind=n.kind) AS source_dates "
+                 "FROM utilization_event n WHERE n.event_date BETWEEN {{parameter:year}} || '-01-01' "
+                 "AND {{parameter:year}} || '-12-31' ORDER BY n.patient_id,n.event_date")
+        proposal = {'steps':[{'name':'observed','purpose':'Received source dates','sql':query}],
+                    'final':'observed','returns':'table','parameters':[{'name':'year','value':2029,'quote':'2029'}],
+                    'requirements':[{'quote':question,'applied_in':['observed'],'how':'Retain source dates and distinct counts'}],
+                    'definitions':[],'unresolved':[]}
+        contract = G.prepare(self.catalog,question,proposal,population=['A'])
+        self.assertEqual(contract['population'],['A'])
+        self.assertEqual(contract['native_optimization']['rewrites'][0]['source'],'utilization_event')
+        self.assertIs(G.sealed(contract),contract)
+        _,shown = G.preview(self.catalog,contract,population=['A'])
+        with sqlite3.connect(self.catalog.target) as db:
+            expected = db.execute("WITH utilization_event AS (SELECT * FROM main.utilization_event WHERE patient_id='A') "
+                                  + query.replace('{{parameter:year}}','2029')).fetchall()
+        self.assertEqual([tuple(row[c] for c in contract['output_columns']) for row in shown['rows']],expected)
+
     def test_prepare_expands_governed_definitions_and_records_exact_sources(self):
         c = G.prepare(self.catalog, Q, spec())
         self.assertIn("concept IN ('diabetes')", c['query'])
