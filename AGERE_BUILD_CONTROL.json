@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T12:34:45.885991+00:00",
+  "updated_at": "2026-11-06T15:23:45.897391+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -629,8 +629,8 @@
     "kind": "unsealed_connected_engineering_increment",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Connected existing requirements, protocol_review and program_document operations to both shared-planner discovery and ordinary investigator execution. Complete hash-bound patient receipts reach native SQL, with installed source/version/effective/receipt dates, semantic-review state, unresolved inputs and explicit unselected buyer context. Program/buyer registry changes invalidate request continuation. Refreshed stale existing native calculations after preserving every replaced derived row; no original source writes or provider calls.",
-    "measured_failure_reduction": "143affectedchecks pass, plus42overlapping final dated-declaration/clarification checks. Actual1471-person care-gap population returned in11.357s total(8.808s native phase):32supported/165contradicted/1274unresolved received affordability reports, all2199prior gaprows and every population manifest retained. No claim that these reports caused gaps. Native refresh183.844s/4115patients,16460oldderivedrows archived, original source tables write-protected.0provider attempts;57086ledger rows/43historicalpending unchanged. Localapp8885restored with686cda72, PID20139/session14947, HTTP200.",
+    "user_behavior_delta": "Existing1471-person documentary protocol now supplies32dated assistance-review nominations with full population receipts and explicit unknown clinical eligibility/current need/2029 gap causation. Completion review distinguishes admitted executable work from uncertain verification and unavailable facts; first repair stays on the current actor. Lossless claim scheduling avoids growing-prefix repeated encoding. Live startup rejects mismatched enrichment policy instead of implicitly rebuilding the index.",
+    "measured_failure_reduction": "Native nomination99.493s/0providers. Local pending-work check1.795s/2attempts; observed4pending/1unavailable labels, with over-inclusion still unqualified.48focused checks:47pass/1optional skip;24local-release checks pass, overlapping. Fixture encoding5.667s->0.078s with identical26165bytes; actual42.26MB packet returned unresolved in103.666s/0providers. Full automatic confirmation still failed472.651s/16attempts/$6.677717258 API-equivalent. All47new attempts across this increment retained; no live savings or complete Q20 acceptance claim.",
     "evidence": [
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-native-checks-2.log",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-join-proof.json",
@@ -641,16 +641,31 @@
       "artifacts/agere-conversation-interface-2026-11-06/engineering-proof.json",
       "artifacts/agere-criteria-handoff-2026-11-06/engineering-proof.json",
       "artifacts/agere-criteria-handoff-2026-11-06/workflow-proof.json",
-      "artifacts/agere-criteria-handoff-2026-11-06/native-refresh.json"
+      "artifacts/agere-criteria-handoff-2026-11-06/native-refresh.json",
+      "artifacts/agere-documentary-nomination-2026-11-06/workflow-proof.json",
+      "artifacts/agere-documentary-nomination-2026-11-06/ordinary-confirmation/receipt.json",
+      "artifacts/agere-documentary-nomination-2026-11-06/pending-work-live-check.json",
+      "artifacts/agere-documentary-nomination-2026-11-06/work-completion-regressions.log",
+      "artifacts/agere-documentary-nomination-2026-11-06/preexisting-date-test.log",
+      "artifacts/agere-documentary-nomination-2026-11-06/engineering-proof.json",
+      "artifacts/agere-documentary-nomination-2026-11-06/pending-work-confirmation/receipt.json",
+      "artifacts/agere-documentary-nomination-2026-11-06/capture-proof.json",
+      "artifacts/agere-documentary-nomination-2026-11-06/actual-partition-proof.json",
+      "artifacts/agere-documentary-nomination-2026-11-06/partition-benchmark.json",
+      "artifacts/agere-documentary-nomination-2026-11-06/final-transport-startup-checks.log",
+      "artifacts/agere-documentary-nomination-2026-11-06/local-release-checks.log",
+      "artifacts/agere-documentary-nomination-2026-11-06/offline-reconstruction-attempt-1.json",
+      "artifacts/agere-documentary-nomination-2026-11-06/restored-app-proof.json",
+      "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json"
     ],
-    "remaining_gap": "Full original Q20 and ordinary automatic handoff remain unqualified. Source-bound candidate explanation/nomination work remains; the installed examples and expired legacy rules cannot establish clinical/payer eligibility or buyer service fit. Existing25case failures, Q21/Q23/Q24/G5 and independent clinical/model/customer qualification remain separate. No new program rule, model activation, paid campaign or finish-line expansion.",
-    "next_action": "G3: Complete Q20 source interpretation/documentary review nominations and then qualify the ordinary automatic original-question handoff using the retained full ACO agenda and new1471-person documentary-input receipts. Program/buyer source/version/date binding is now explicit:2expired legacy rules,4authored unreviewed quoted review/measure examples and no supplied buyer portfolio; preserve eligibility and service fit as supported unknowns rather than invent applicable programs. Use existing entity/relation/assertion/state review for remaining candidate explanations and documentary nominations, retaining exact source/date/subject and patient-specific uncertainty. Reuse all full population manifests and native work; do not rerun passing measures, financial patients or fullpaidQ14/Q21. Earlier fixed25case failures, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies and alltenareas remain. BuildACTIVE/automationPAUSED.",
+    "remaining_gap": "Native documentary review and completion-policy repair are implemented. Actual global source packet remains42261384 bytes; even a single claim cannot fit existing transport and patient-bound source splitting does not apply. Full Q20 original-question handoff and original finite case failures remain unaccepted. Clinical/model qualification, G5 independent review and customer deployment remain separate.",
+    "next_action": "G3: Repair the retained Q20 global verification dependency closure using existing native calculation/source contracts and evidence projection. Actual42,261,384-byte summary cannot fit even one claim; balanced claim splitting is insufficient. Reuse reconstructed18native calls, all populations and the retained unaccepted draft; distinguish code-verifiable scalar/copy work from actual documentary interpretation, preserve every required dependency and test wrong-domain/date/population and unreviewed-source rejection offline. Do not spend on another full Q20/Q14/Q21 run or add a research capability before localized transport proof. Then qualify one ordinary original-question handoff on the changed path, retaining both failed confirmations. All25cases/tenareas, Q21/Q23/Q24/G5 and clinical/customer dependencies remain. BuildACTIVE/automationPAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
-      "Earlier ordinary failures and uncompleted connected workflows remain; all25cases/tenareas retained. Model/clinical qualification and deployment prerequisites remain separate."
+      "Native documentary review and completion-policy repair are implemented. Actual global source packet remains42261384 bytes; even a single claim cannot fit existing transport and patient-bound source splitting does not apply. Full Q20 original-question handoff and original finite case failures remain unaccepted. Clinical/model qualification, G5 independent review and customer deployment remain separate."
     ],
-    "latest_progress": "Existing program/criteria tools connected; actual full care-gap population proof and current native source refresh passed. Return to Q20 source interpretation, then ordinary automatic handoff. Light app serving; research candidates unactivated; automationPAUSED.",
+    "latest_progress": "Native nomination99.493s/0providers. Local pending-work check1.795s/2attempts; observed4pending/1unavailable labels, with over-inclusion still unqualified.48focused checks:47pass/1optional skip;24local-release checks pass, overlapping. Fixture encoding5.667s->0.078s with identical26165bytes; actual42.26MB packet returned unresolved in103.666s/0providers. Full automatic confirmation still failed472.651s/16attempts/$6.677717258 API-equivalent. All47new attempts across this increment retained; no live savings or complete Q20 acceptance claim.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -700,8 +715,8 @@
     },
     "latest_human_steering": "2026-11-06: Mike asked what is next in the stack, requested a distinctive light conversation-first UI informed by GitHub and award-winning sites, and reaffirmed that research is fit assessment while core stack and product work continue.",
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T14:13:42.950137+00:00",
-    "workflow_change": "Connected existing requirements, protocol_review and program_document operations to both shared-planner discovery and ordinary investigator execution. Complete hash-bound patient receipts reach native SQL, with installed source/version/effective/receipt dates, semantic-review state, unresolved inputs and explicit unselected buyer context. Program/buyer registry changes invalidate request continuation. Refreshed stale existing native calculations after preserving every replaced derived row; no original source writes or provider calls.",
+    "at": "2026-11-06T14:47:17.830401+00:00",
+    "workflow_change": "Existing1471-person documentary protocol now supplies32dated assistance-review nominations with full population receipts and explicit unknown clinical eligibility/current need/2029 gap causation. Completion review distinguishes admitted executable work from uncertain verification and unavailable facts; first repair stays on the current actor. Lossless claim scheduling avoids growing-prefix repeated encoding. Live startup rejects mismatched enrichment policy instead of implicitly rebuilding the index.",
     "unsealed_work": {
       "status": "Q20_native_payer_prerequisite_and_partial_agenda_composition_verified",
       "product_commit": "31c837e6",
@@ -1269,7 +1284,7 @@
       ],
       "verified": "185affectedtests run,184passed/1optional skip;33clarification/calculator tests pass. Existing actual journal has zero eligible decision-outcome pairs.",
       "remaining_gap": "No observed fitted live threshold or live VoI judgment qualification. Candidate not active; program criteria, source interpretation and automatic handoff remain open.",
-      "next_action": "Owner reviews isolated research candidate at a safe increment after retained G3 priority. No backend activation yet. Collect observed source-family-separated decision-continuation pairs before fitting a live threshold.",
+      "next_action": "Retain reviewed candidate dispositions. Complete G3 automatic source interpretation/handoff before a new supporting capability; no paid research experiment or fitted live threshold.",
       "design_status": "written_design_only",
       "registered_at": "2026-11-06T12:39:31.336569+00:00",
       "product_commits": [
@@ -1281,9 +1296,97 @@
         "aa328dda",
         "d8bdf4c5"
       ],
-      "activation": "not_integrated_not_active_owner_review_pending",
+      "activation": "not_integrated_not_active_owner_reviewed",
       "live_thresholds": {},
-      "observed_eligible_pairs": 0
+      "observed_eligible_pairs": 0,
+      "inclusion_review": {
+        "owner": "current G3 build owner",
+        "status": "reviewed_no_default_activation",
+        "registered_at": "2026-11-06T14:34:24.550972+00:00",
+        "trigger": "After current Q20 source-interpretation/ordinary-handoff increment, before selecting another supporting capability. This is an inclusion decision, not automatic activation or an additional G3 release condition.",
+        "scope_policy": "Keep all fourteen triage dispositions. No autonomous paid research experiment, runtime activation, new service or competing roadmap.",
+        "candidates": [
+          {
+            "id": "#1",
+            "candidate": "Value-of-information clarification",
+            "owner_review_status": "reviewed",
+            "triggering_workflow_failure": "Unnecessary interruptions or missed intent choices in ordinary question completion.",
+            "required_acceptance_evidence": "End-to-end useful-ask and unnecessary-interruption checks at unchanged answer correctness/scope, with complete cost and user-response accounting. No fitted live threshold from the current zero eligible observed pairs.",
+            "decision": {
+              "status": "defer",
+              "reason": "Defer default activation. Candidate utility uses an assumed fixed interruption cost and perfect-reply resolution, with model-proposed probabilities. No observed calibration or ordinary useful-ask/unnecessary-interruption benefit at fixed supported-answer quality. Existing clarification path remains available.",
+              "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json",
+              "reviewed_at": "2026-11-06T15:19:10.401807+00:00"
+            }
+          },
+          {
+            "id": "#2",
+            "candidate": "In-loop decision evaluation",
+            "owner_review_status": "reviewed",
+            "triggering_workflow_failure": "No eligible matched decision-to-continuation outcome pairs for fitted routing thresholds.",
+            "required_acceptance_evidence": "Source-family-separated, outcome-labelled matched continuations and regressions; preserve paid selection and all attempts. Authored fits demonstrate mechanics only; no observed gain or live threshold.",
+            "decision": {
+              "status": "defer",
+              "reason": "Defer integration/threshold fitting and paid experiments. Zero eligible observed outcome-labelled matched continuation pairs. Authored callbacks prove calculator mechanics; callback-level isolation does not itself enforce source/state isolation. Passive hooks require a separate non-regression check before integration.",
+              "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json",
+              "reviewed_at": "2026-11-06T15:19:10.401807+00:00"
+            }
+          },
+          {
+            "id": "#3",
+            "candidate": "Guarded reusable decisions",
+            "owner_review_status": "reviewed",
+            "triggering_workflow_failure": "Repeated decisions or calculations on unchanged source/meaning across accepted work.",
+            "required_acceptance_evidence": "Fewer repeated decisions with identical supported answers, populations, dates and authority, stale-input rejection, rollback and total answer cost evidence through existing caches/bottling.",
+            "decision": {
+              "status": "defer",
+              "reason": "Defer extension until ordinary handoff is stable and the named repeated decision is measured. Existing guarded literal continuation remains active; eight such steps in the first Q20 confirmation did not establish a complete accepted answer or total-cost improvement.",
+              "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json",
+              "reviewed_at": "2026-11-06T15:19:10.401807+00:00"
+            }
+          },
+          {
+            "id": "#4",
+            "candidate": "Versioned and gated semantic definitions",
+            "owner_review_status": "reviewed",
+            "triggering_workflow_failure": "Program/measure/contract meaning or applicability differs by version, source or effective date. Current real observation: expired legacy rules, authored examples and no buyer portfolio.",
+            "required_acceptance_evidence": "Applicable dated source definitions, explicit unknowns when unavailable, semantic/source validation and paired non-regression. Existing program/criteria implementation is coverage, not automatic qualification of the research extension.",
+            "decision": {
+              "status": "defer",
+              "reason": "Defer autonomous semantic-definition editing. Existing dated criteria/discovery covers the observed expired-rule and absent-buyer problems. Applicable actual source definitions plus semantic/source validation and non-regression are required before a research extension can be activated.",
+              "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json",
+              "reviewed_at": "2026-11-06T15:19:10.401807+00:00"
+            }
+          },
+          {
+            "id": "B",
+            "candidate": "Checked schema mapping across industries",
+            "owner_review_status": "reviewed",
+            "triggering_workflow_failure": "Current engineering evidence is healthcare-specific; cross-industry semantics have not been demonstrated.",
+            "required_acceptance_evidence": "After retained G3 work, prove the same operators on the declared public non-healthcare dataset with checked mappings, semantic unknowns and appropriate native baselines. A/C remain later research attachments.",
+            "decision": {
+              "status": "defer",
+              "reason": "Defer implementation until retained G3 work. Portable-core design is retained; proposed public retail data has not been ingested, mapped or profiled. Any-industry charter remains; no cross-industry capability claimed. A/C remain later attachments.",
+              "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json",
+              "reviewed_at": "2026-11-06T15:19:10.401807+00:00"
+            }
+          }
+        ],
+        "reviewed_at": "2026-11-06T15:19:10.401807+00:00",
+        "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json"
+      }
+    },
+    "documentary_handoff": {
+      "status": "partial_engineering_progress_full_question_unaccepted",
+      "proof": "artifacts/agere-documentary-nomination-2026-11-06/engineering-proof.json",
+      "product_commits": [
+        "ab6c2764",
+        "e027e9dc",
+        "7ea72bff"
+      ],
+      "source_frozen": false,
+      "provider_work": false,
+      "full_Q20_acceptance": false
     }
   },
   "decisions": [
@@ -2078,6 +2181,16 @@
       ],
       "scope_impact": "All25cases/alltenareas retained. Quoted authored examples and missing buyer portfolio remain unqualified. Earlier failures/partial results preserved. No new program/service/model, research activation, clinical/superiority/MVP claim or automation resume.",
       "next_action": "G3: Complete Q20 source interpretation/documentary review nominations and then qualify the ordinary automatic original-question handoff using the retained full ACO agenda and new1471-person documentary-input receipts. Program/buyer source/version/date binding is now explicit:2expired legacy rules,4authored unreviewed quoted review/measure examples and no supplied buyer portfolio; preserve eligibility and service fit as supported unknowns rather than invent applicable programs. Use existing entity/relation/assertion/state review for remaining candidate explanations and documentary nominations, retaining exact source/date/subject and patient-specific uncertainty. Reuse all full population manifests and native work; do not rerun passing measures, financial patients or fullpaidQ14/Q21. Earlier fixed25case failures, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies and alltenareas remain. BuildACTIVE/automationPAUSED."
+    },
+    {
+      "at": "2026-11-06T14:34:24.550972+00:00",
+      "decision": "Record explicit owner inclusion-review obligations for research candidates #1/#2/#3/#4/B.",
+      "reason": "Mike asks in the authorized research chat that main build consideration lead to explicit decisions rather than a generic candidate pointer.",
+      "scope_impact": "Current G3 sequence and all ten areas unchanged. Review after current connected increment; no paid research run or activation. Other nine dispositions retained.",
+      "evidence": [
+        "artifacts/agere-research-2026-11-06/RESEARCH_TRIAGE_2026-11-06.md",
+        "artifacts/agere-research-2026-11-06/engineering-proof.json"
+      ]
     }
   ],
   "decision_log": [
@@ -5043,6 +5156,13 @@
         "artifacts/agere-research-2026-11-06/PORTABLE_CORE_DESIGN_2026-11-06.md"
       ],
       "scope_impact": "Shared capability charter broadened to any industry. Alltenhealthcareacceptanceareas, proving-ground scope, primarynext_action, G3status, sealedreceipt, liveapp and heartbeatPAUSED preserved.0eligibleobservedpairedoutcomes;0fittedlivethresholds."
+    },
+    {
+      "at": "2026-11-06T15:23:45.897391+00:00",
+      "gate": "G3",
+      "decision": "Reassess repeated full workflow repair after two failed ordinary confirmations. Do not infer overall acceptance from component checks or run another paid campaign. Global source/calculation dependency closure, not more claim splitting, is the located blocker. Research inclusion reviewed explicitly; defer default integration without matched outcome evidence. Preserve charter and all attempts.",
+      "evidence": "artifacts/agere-documentary-nomination-2026-11-06/engineering-proof.json",
+      "scope_impact": "No acceptance area removed or added; no new service, research activation or clinical rule."
     }
   ],
   "unsealed_work": {
@@ -5079,12 +5199,12 @@
     "new_provider_attempts": 25,
     "known_api_equivalent_usd": 1.20563389,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 57086,
+    "all_attempt_rows_retained": 57133,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 0,
+    "latest_increment_provider_attempts": 47,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -5195,7 +5315,7 @@
     "fixed_sequence_status": "stopped_on_material_failure_or_dependency",
     "native_copy_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/native-proof.json",
     "native_copy_source_check": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/run-receipt.json",
-    "latest_increment_known_api_equivalent_usd": 0,
+    "latest_increment_known_api_equivalent_usd": 7.079396236,
     "latest_increment_unpriced_attempts": 0,
     "all_attempt_rows_before_Q15": 56228,
     "pending_rows_before_Q15": 42,
@@ -5303,6 +5423,18 @@
       "source_frozen": false,
       "input_people": 1471,
       "full_Q20_acceptance": false
+    },
+    "documentary_handoff": {
+      "status": "partial_engineering_progress_full_question_unaccepted",
+      "proof": "artifacts/agere-documentary-nomination-2026-11-06/engineering-proof.json",
+      "product_commits": [
+        "ab6c2764",
+        "e027e9dc",
+        "7ea72bff"
+      ],
+      "source_frozen": false,
+      "provider_work": false,
+      "full_Q20_acceptance": false
     }
   },
   "current_visual_request": {
@@ -5337,7 +5469,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Complete Q20 source interpretation/documentary review nominations and then qualify the ordinary automatic original-question handoff using the retained full ACO agenda and new1471-person documentary-input receipts. Program/buyer source/version/date binding is now explicit:2expired legacy rules,4authored unreviewed quoted review/measure examples and no supplied buyer portfolio; preserve eligibility and service fit as supported unknowns rather than invent applicable programs. Use existing entity/relation/assertion/state review for remaining candidate explanations and documentary nominations, retaining exact source/date/subject and patient-specific uncertainty. Reuse all full population manifests and native work; do not rerun passing measures, financial patients or fullpaidQ14/Q21. Earlier fixed25case failures, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies and alltenareas remain. BuildACTIVE/automationPAUSED.",
+  "next_action": "G3: Repair the retained Q20 global verification dependency closure using existing native calculation/source contracts and evidence projection. Actual42,261,384-byte summary cannot fit even one claim; balanced claim splitting is insufficient. Reuse reconstructed18native calls, all populations and the retained unaccepted draft; distinguish code-verifiable scalar/copy work from actual documentary interpretation, preserve every required dependency and test wrong-domain/date/population and unreviewed-source rejection offline. Do not spend on another full Q20/Q14/Q21 run or add a research capability before localized transport proof. Then qualify one ordinary original-question handoff on the changed path, retaining both failed confirmations. All25cases/tenareas, Q21/Q23/Q24/G5 and clinical/customer dependencies remain. BuildACTIVE/automationPAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -5426,20 +5558,14 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 16965,
-  "owned_server_session": 22208,
+  "owned_server_pid": 23435,
+  "owned_server_session": 62631,
   "last_run_observation": {
-    "at": "2026-11-05T21:59:01.649200+00:00",
-    "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q07/pair-receipt.json",
-    "status": "terminal_both_partial_failed",
-    "product_commit": "50227f46",
-    "stack_analysis_seconds": 484.48894979199395,
-    "stack_api_equivalent_usd": 1.421052772,
-    "frontier_analysis_seconds": 110.89504699991085,
-    "frontier_api_equivalent_usd": 0.990694,
-    "provider_attempts": 358,
-    "clinical_qualification": false,
-    "formal_curriculum_acceptance": false
+    "status": "all_owned_provider_and_offline_jobs_terminal_local_app_serving",
+    "receipt": "artifacts/agere-documentary-nomination-2026-11-06/engineering-proof.json",
+    "provider_job": null,
+    "app_pid": 23435,
+    "app_session": 62631
   },
   "ordinary_curriculum_progress": {
     "total_fixed_cases": 25,
@@ -5502,7 +5628,7 @@
     ],
     "verified": "185affectedtests run,184passed/1optional skip;33clarification/calculator tests pass. Existing actual journal has zero eligible decision-outcome pairs.",
     "remaining_gap": "No observed fitted live threshold or live VoI judgment qualification. Candidate not active; program criteria, source interpretation and automatic handoff remain open.",
-    "next_action": "Owner reviews isolated research candidate at a safe increment after retained G3 priority. No backend activation yet. Collect observed source-family-separated decision-continuation pairs before fitting a live threshold.",
+    "next_action": "Retain reviewed candidate dispositions. Complete G3 automatic source interpretation/handoff before a new supporting capability; no paid research experiment or fitted live threshold.",
     "design_status": "written_design_only",
     "registered_at": "2026-11-06T12:39:31.336569+00:00",
     "product_commits": [
@@ -5514,8 +5640,84 @@
       "aa328dda",
       "d8bdf4c5"
     ],
-    "activation": "not_integrated_not_active_owner_review_pending",
+    "activation": "not_integrated_not_active_owner_reviewed",
     "live_thresholds": {},
-    "observed_eligible_pairs": 0
+    "observed_eligible_pairs": 0,
+    "inclusion_review": {
+      "owner": "current G3 build owner",
+      "status": "reviewed_no_default_activation",
+      "registered_at": "2026-11-06T14:34:24.550972+00:00",
+      "trigger": "After current Q20 source-interpretation/ordinary-handoff increment, before selecting another supporting capability. This is an inclusion decision, not automatic activation or an additional G3 release condition.",
+      "scope_policy": "Keep all fourteen triage dispositions. No autonomous paid research experiment, runtime activation, new service or competing roadmap.",
+      "candidates": [
+        {
+          "id": "#1",
+          "candidate": "Value-of-information clarification",
+          "owner_review_status": "reviewed",
+          "triggering_workflow_failure": "Unnecessary interruptions or missed intent choices in ordinary question completion.",
+          "required_acceptance_evidence": "End-to-end useful-ask and unnecessary-interruption checks at unchanged answer correctness/scope, with complete cost and user-response accounting. No fitted live threshold from the current zero eligible observed pairs.",
+          "decision": {
+            "status": "defer",
+            "reason": "Defer default activation. Candidate utility uses an assumed fixed interruption cost and perfect-reply resolution, with model-proposed probabilities. No observed calibration or ordinary useful-ask/unnecessary-interruption benefit at fixed supported-answer quality. Existing clarification path remains available.",
+            "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json",
+            "reviewed_at": "2026-11-06T15:19:10.401807+00:00"
+          }
+        },
+        {
+          "id": "#2",
+          "candidate": "In-loop decision evaluation",
+          "owner_review_status": "reviewed",
+          "triggering_workflow_failure": "No eligible matched decision-to-continuation outcome pairs for fitted routing thresholds.",
+          "required_acceptance_evidence": "Source-family-separated, outcome-labelled matched continuations and regressions; preserve paid selection and all attempts. Authored fits demonstrate mechanics only; no observed gain or live threshold.",
+          "decision": {
+            "status": "defer",
+            "reason": "Defer integration/threshold fitting and paid experiments. Zero eligible observed outcome-labelled matched continuation pairs. Authored callbacks prove calculator mechanics; callback-level isolation does not itself enforce source/state isolation. Passive hooks require a separate non-regression check before integration.",
+            "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json",
+            "reviewed_at": "2026-11-06T15:19:10.401807+00:00"
+          }
+        },
+        {
+          "id": "#3",
+          "candidate": "Guarded reusable decisions",
+          "owner_review_status": "reviewed",
+          "triggering_workflow_failure": "Repeated decisions or calculations on unchanged source/meaning across accepted work.",
+          "required_acceptance_evidence": "Fewer repeated decisions with identical supported answers, populations, dates and authority, stale-input rejection, rollback and total answer cost evidence through existing caches/bottling.",
+          "decision": {
+            "status": "defer",
+            "reason": "Defer extension until ordinary handoff is stable and the named repeated decision is measured. Existing guarded literal continuation remains active; eight such steps in the first Q20 confirmation did not establish a complete accepted answer or total-cost improvement.",
+            "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json",
+            "reviewed_at": "2026-11-06T15:19:10.401807+00:00"
+          }
+        },
+        {
+          "id": "#4",
+          "candidate": "Versioned and gated semantic definitions",
+          "owner_review_status": "reviewed",
+          "triggering_workflow_failure": "Program/measure/contract meaning or applicability differs by version, source or effective date. Current real observation: expired legacy rules, authored examples and no buyer portfolio.",
+          "required_acceptance_evidence": "Applicable dated source definitions, explicit unknowns when unavailable, semantic/source validation and paired non-regression. Existing program/criteria implementation is coverage, not automatic qualification of the research extension.",
+          "decision": {
+            "status": "defer",
+            "reason": "Defer autonomous semantic-definition editing. Existing dated criteria/discovery covers the observed expired-rule and absent-buyer problems. Applicable actual source definitions plus semantic/source validation and non-regression are required before a research extension can be activated.",
+            "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json",
+            "reviewed_at": "2026-11-06T15:19:10.401807+00:00"
+          }
+        },
+        {
+          "id": "B",
+          "candidate": "Checked schema mapping across industries",
+          "owner_review_status": "reviewed",
+          "triggering_workflow_failure": "Current engineering evidence is healthcare-specific; cross-industry semantics have not been demonstrated.",
+          "required_acceptance_evidence": "After retained G3 work, prove the same operators on the declared public non-healthcare dataset with checked mappings, semantic unknowns and appropriate native baselines. A/C remain later research attachments.",
+          "decision": {
+            "status": "defer",
+            "reason": "Defer implementation until retained G3 work. Portable-core design is retained; proposed public retail data has not been ingested, mapped or profiled. Any-industry charter remains; no cross-industry capability claimed. A/C remain later attachments.",
+            "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json",
+            "reviewed_at": "2026-11-06T15:19:10.401807+00:00"
+          }
+        }
+      ],
+      "reviewed_at": "2026-11-06T15:19:10.401807+00:00",
+      "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json"
+    }
   }
 }
