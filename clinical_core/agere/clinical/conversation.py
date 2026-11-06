@@ -412,6 +412,14 @@ def requires_saved_cohort(question, catalog=None):
         return False
     if reference.group() == 'their' and re.search(r'\b(?:have|has|are|were|with|without|attributed|assigned|completed|received|got|had|filled|went|visited|underwent|screened|documented|recorded|listed|carry|carries)\b', link):
         return False
+    # A reduced relative clause can define the population before a temporal
+    # possessive: "invoices submitted after their ...", "patients discharged
+    # after their ...". This is a local antecedent, not a prior result. Explicit
+    # saved/previous references above still take precedence; "claims for their
+    # patients" supplies no such local clause and remains protected.
+    if reference.group()=='their' and re.fullmatch(
+            r'\s*(?:\w+ly\s+)*\w+(?:ed|ing)\b.*\b(?:before|after|during|following|since)\s*',link):
+        return False
     # A noun alone is insufficient: "count claims for those patients" still
     # refers outside this question. Only recognize an explicit clause link.
     return not bool(re.search(r'\b(?:and|then|who|whose|that|where|whether|which)\b|[,;:]', link))

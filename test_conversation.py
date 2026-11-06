@@ -222,6 +222,25 @@ class Api(unittest.TestCase):
         self.assertTrue(C.requires_saved_cohort('Which patients do they see most?'))
         self.assertTrue(C.requires_saved_cohort('Count claims for those patients'))
 
+    def test_reduced_relative_temporal_possessives_reach_the_original_question(self):
+        questions=(
+            'For patients discharged after their first recorded inpatient stay in 2028, describe time to the next recorded inpatient admission.',
+            'For claims submitted after their coverage dates, summarize recorded balances.',
+            'For members recently enrolled before their start date, report the recorded dates.',
+        )
+        for shared in (False,True):
+            self.stack.shared_request_planning=shared
+            for question in questions:
+                with self.subTest(shared=shared,question=question):
+                    self.assertFalse(C.requires_saved_cohort(question))
+                    result=C.handle_compose(self.stack,{'question':question,'scope':'warehouse','conversation_id':None})
+                    self.assertEqual(self.stack.calls[-1],(question,'auto'))
+                    self.assertFalse(result['conversation']['follow_up'])
+        for question in ('For claims submitted for their patients, report balances.',
+                         'For patients from the previous result discharged after their visit, report admission dates.',
+                         'For those patients discharged after their stay, report admission dates.'):
+            with self.subTest(question=question):self.assertTrue(C.requires_saved_cohort(question))
+
     def test_missing_external_references_cannot_query_whole_warehouse(self):
         from clinical_core.agere.clinical.question_input import QuestionNotUnderstood
         for question in ('List them', 'Count those patients', 'Group these patients by PCP',
