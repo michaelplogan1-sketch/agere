@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T21:48:08.002599+00:00",
+  "updated_at": "2026-11-06T22:42:45.646512+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -547,15 +547,19 @@
         {
           "path": "artifacts/agere-retained-workflow-2026-11-06/source-review-2/engineering-proof.json",
           "sha256": "b125170eec65d82e7ffb95a6a2e86bcd2adec0336477a23ba0bd134b88eb73a5"
+        },
+        {
+          "path": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/engineering-proof.json",
+          "sha256": "08fbd0e6fb00bd3254e77e050bb6ba3f802e4f95b28d9817bff7512e16fa81e1"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "The aggregate agenda has multiple complete native populations but no single result cohort. The active context correctly reports result_scope_available=false; named population selection, roster access and scoped follow-up still need connected workflow evidence. Current success is source/coverage checking plus durable handoff of the retained draft; original failed ordinary cases, fresh-entry latency/cost and independent clinical/model/customer qualification remain separate. All ten acceptance areas, 25 fixed cases and Q21/Q23/Q24/G5 dependencies remain. No PDF/deliverable, model upgrade or training campaign was added.",
-      "engineering_current_status": "Retained Q20 ordinary source/coverage review confirmed; source-current saved context opens. Full named-population roster/follow-up remains. Original ordinary-case results and independent model/clinical/customer qualification are not restamped.",
-      "next_action": "G3: The retained original agenda now passes ordinary coverage and source review on b3359671. All 197 claims, 32 final rows and 38 native calls are unchanged. Six Jev/Perplexity attempts cost $0.021587618 API-equivalent, with no unpriced, Claude, actor or original-engine calls. The 51.90 seconds includes review and scratch save/reopen. Actual source context fell from 771983 to 276580 bytes; all requests returned and all dependencies were checked. Original-question context ANS-283eed5c68efb36daaa503a1 opens with its source current in the local app. Do not rerun the actor, engines, passing review or codecs. Next finish the existing population/follow-up connection: this aggregate context correctly selects no universal cohort, while the complete populations behind its totals remain in native results. Inspect the existing named scopes, typed measure populations and saved follow-up behavior against this exact context. Bind population choices to actual compiled quantity/source predicates and complete native memberships. Preserve domain, COUNT(*) versus distinct patients, duplicates, scope/date and source identity. A generic show-patients request must select or clarify among actual populations, rather than invent an empty or whole-warehouse cohort. Reuse shared decision context, membership and answer_context paths; no case-specific handler or provider replay. Demonstrate roster and follow-up counts against retained sources and the current context, keeping clinical eligibility and missing payer inputs explicit. Then address the existing Q21 semantics, Q23 definitions, Q24 deliverable capability and current ten-area/25-case assessment. Original failed/partial pairs are not restamped. Independent clinical/model/customer qualification and G5 remain separate. Owned app PID 34762 / session 24403 is HTTP 200 on 8885; no active jobs and source unfrozen. Quiet continuation ACTIVE; all healthcare and the portable core remain in scope.",
+      "remaining_acceptance": "This increment qualifies COUNT(DISTINCT patient_id) scopes, not every population behind the original agenda. Conditional patient counts and scalar/windowed ranked populations in native views 29/30/32 still need exact row/cell/identity lineage before follow-up. Patient-grain COUNT(*) must be proven separately from event COUNT(*). Original fresh-entry results and latency remain unaccepted; 13.3/15.4-second follow-ups still include large immutable-context I/O. Q21 semantics, Q23 actual applicable definitions, Q24 requested deliverable capability, ten-area/25-case assessment and independent G5/clinical/model/customer dependencies remain.",
+      "engineering_current_status": "Actual browser population selection, 32 named roster rows and exact saved-set count verified. Conditional/scalar/ranked population proofs and original full-question acceptance remain.",
+      "next_action": "G3: Native counted-population selection, full roster and saved follow-up are connected on 9bb11764. The actual app offers 32 source-defined scopes; choosing the documentary affordability-review group returns all 32 received profile names, and Count those patients returns the same 32. Zero provider calls or actor/original-engine replays; 80 affected tests pass. Keep the confirmed 197-claim/32-row/38-native-call agenda and all attempts unchanged. Next close the remaining original-agenda population behavior through existing membership/quantity lineage: conditional patient counts and scalar/windowed ranked populations (retained native views 29/30/32). Prove actual patient grain, full contributing IDs, source/date/filter predicates and rank boundary/tie behavior against exact original output cells. Do not equate event COUNT(*) with patients or claim the current 32 choices cover every total. Reuse the 52 completed scope SQL checks and confirmed source review; no passing actor, engine or review campaign replay. Then address the existing Q21 semantics, Q23 applicable definitions, Q24 requested-deliverable capability and current whole ten-area/25-case assessment. Preserve original failed/partial pairs and source-supported unknowns. Independent clinical/model/customer qualification and G5 remain separate. App PID 35686 / session 86800 serves HTTP 200 on 8885; no active jobs, source unfrozen. Quiet continuation ACTIVE; all healthcare and portable core remain in scope.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -637,25 +641,26 @@
     "kind": "unsealed_connected_engineering_increment",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Code checks every complete selected native input cell and supplies exact joint value frequencies for global aggregate inspection; full rows, entity mapping, populations, scope and immutable receipts stay native. Constant static JSON branches require exact equality at every row. Individual patient claims, varying JSON, stale source/query/output and unsupported inputs retain complete source rows. Source/question meaning and every final claim still require ordinary model review. Coverage content is kept once in shared state instead of repeated in the question.",
-    "measured_failure_reduction": "Actual token-context refusals removed: all six requests returned, coverage answers_fully at 0.8889 and all source dependencies supported. Same 197 claims, 32 rows and 38 native calls retained. Source-current saved context opens; named-population follow-up remains an explicit connected gap.",
+    "user_behavior_delta": "The saved aggregate analysis offers 32 source-defined patient populations; an explicit choice opens all members with received profile names, and conversational follow-up keeps the exact selected set. Generic patient follow-ups require a choice instead of silently using zero patients or the whole warehouse.",
+    "measured_failure_reduction": "Previously the aggregate context exposed no usable result cohort. The actual browser now returned the selected 32-member roster and a scoped count of 32.",
     "evidence": [
       "artifacts/agere-retained-workflow-2026-11-06/source-review-2/engineering-proof.json",
       "artifacts/agere-retained-workflow-2026-11-06/attempt-2/automatic-arithmetic-proof.json",
       "artifacts/agere-retained-workflow-2026-11-06/attempt-2/arithmetic-review-final-checks.log",
       "artifacts/agere-retained-workflow-2026-11-06/source-review-2/receipt.json",
       "artifacts/agere-retained-workflow-2026-11-06/source-review-2/active-context-handoff.json",
-      "artifacts/agere-retained-workflow-2026-11-06/source-review-2/app-handoff-proof.json"
+      "artifacts/agere-retained-workflow-2026-11-06/source-review-2/app-handoff-proof.json",
+      "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/engineering-proof.json"
     ],
-    "remaining_gap": "The aggregate agenda has multiple complete native populations but no single result cohort. The active context correctly reports result_scope_available=false; named population selection, roster access and scoped follow-up still need connected workflow evidence. Current success is source/coverage checking plus durable handoff of the retained draft; original failed ordinary cases, fresh-entry latency/cost and independent clinical/model/customer qualification remain separate. All ten acceptance areas, 25 fixed cases and Q21/Q23/Q24/G5 dependencies remain. No PDF/deliverable, model upgrade or training campaign was added.",
-    "next_action": "G3: The retained original agenda now passes ordinary coverage and source review on b3359671. All 197 claims, 32 final rows and 38 native calls are unchanged. Six Jev/Perplexity attempts cost $0.021587618 API-equivalent, with no unpriced, Claude, actor or original-engine calls. The 51.90 seconds includes review and scratch save/reopen. Actual source context fell from 771983 to 276580 bytes; all requests returned and all dependencies were checked. Original-question context ANS-283eed5c68efb36daaa503a1 opens with its source current in the local app. Do not rerun the actor, engines, passing review or codecs. Next finish the existing population/follow-up connection: this aggregate context correctly selects no universal cohort, while the complete populations behind its totals remain in native results. Inspect the existing named scopes, typed measure populations and saved follow-up behavior against this exact context. Bind population choices to actual compiled quantity/source predicates and complete native memberships. Preserve domain, COUNT(*) versus distinct patients, duplicates, scope/date and source identity. A generic show-patients request must select or clarify among actual populations, rather than invent an empty or whole-warehouse cohort. Reuse shared decision context, membership and answer_context paths; no case-specific handler or provider replay. Demonstrate roster and follow-up counts against retained sources and the current context, keeping clinical eligibility and missing payer inputs explicit. Then address the existing Q21 semantics, Q23 definitions, Q24 deliverable capability and current ten-area/25-case assessment. Original failed/partial pairs are not restamped. Independent clinical/model/customer qualification and G5 remain separate. Owned app PID 34762 / session 24403 is HTTP 200 on 8885; no active jobs and source unfrozen. Quiet continuation ACTIVE; all healthcare and the portable core remain in scope.",
+    "remaining_gap": "This increment qualifies COUNT(DISTINCT patient_id) scopes, not every population behind the original agenda. Conditional patient counts and scalar/windowed ranked populations in native views 29/30/32 still need exact row/cell/identity lineage before follow-up. Patient-grain COUNT(*) must be proven separately from event COUNT(*). Original fresh-entry results and latency remain unaccepted; 13.3/15.4-second follow-ups still include large immutable-context I/O. Q21 semantics, Q23 actual applicable definitions, Q24 requested deliverable capability, ten-area/25-case assessment and independent G5/clinical/model/customer dependencies remain.",
+    "next_action": "G3: Native counted-population selection, full roster and saved follow-up are connected on 9bb11764. The actual app offers 32 source-defined scopes; choosing the documentary affordability-review group returns all 32 received profile names, and Count those patients returns the same 32. Zero provider calls or actor/original-engine replays; 80 affected tests pass. Keep the confirmed 197-claim/32-row/38-native-call agenda and all attempts unchanged. Next close the remaining original-agenda population behavior through existing membership/quantity lineage: conditional patient counts and scalar/windowed ranked populations (retained native views 29/30/32). Prove actual patient grain, full contributing IDs, source/date/filter predicates and rank boundary/tie behavior against exact original output cells. Do not equate event COUNT(*) with patients or claim the current 32 choices cover every total. Reuse the 52 completed scope SQL checks and confirmed source review; no passing actor, engine or review campaign replay. Then address the existing Q21 semantics, Q23 applicable definitions, Q24 requested-deliverable capability and current whole ten-area/25-case assessment. Preserve original failed/partial pairs and source-supported unknowns. Independent clinical/model/customer qualification and G5 remain separate. App PID 35686 / session 86800 serves HTTP 200 on 8885; no active jobs, source unfrozen. Quiet continuation ACTIVE; all healthcare and portable core remain in scope.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
-      "Native column closure and localized source support are verified. Full ordinary automatic Q20 answer remains unaccepted and end-to-end latency regressed; source/criteria interpretation and complete original populations/deliverables still require workflow acceptance. Current evidence supports testing earlier capable models, not a proven Sonnet/Opus winner. Existing clinical/model qualification and G5/customer prerequisites remain separate."
+      "This increment qualifies COUNT(DISTINCT patient_id) scopes, not every population behind the original agenda. Conditional patient counts and scalar/windowed ranked populations in native views 29/30/32 still need exact row/cell/identity lineage before follow-up. Patient-grain COUNT(*) must be proven separately from event COUNT(*). Original fresh-entry results and latency remain unaccepted; 13.3/15.4-second follow-ups still include large immutable-context I/O. Q21 semantics, Q23 actual applicable definitions, Q24 requested deliverable capability, ten-area/25-case assessment and independent G5/clinical/model/customer dependencies remain."
     ],
-    "latest_progress": "Project complete statically read JSON branches from registered native calculation results, only after isolated guarded replay exactly matches every consuming result. Preserve every original receipt, every row index/identity/status and all selected branch values. Unknown/dynamic/filtered/full-document/parse-position uses retain the conservative full input. The complete lossless packet is still2,641,696bytes. Body-size fit is not model-token fit. Remaining native global observations are3,444,923rawJSONbytes, primarily older quality/roster/profile intermediates. Qualify use of the existing native-column mechanism on intermediate SQL results and complete consumer maps; preserve original data, meaningful source context and unknowns. No new paid review until the representation fits its actual provider context. All25cases/tenareas and original Q20/handoff, Q21semantics/Q23definitions/Q24deliverables/G5/clinical/customer dependencies remain.",
-    "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
+    "latest_progress": "The saved aggregate analysis offers 32 source-defined patient populations; an explicit choice opens all members with received profile names, and conversational follow-up keeps the exact selected set. Generic patient follow-ups require a choice instead of silently using zero patients or the whole warehouse.",
+    "results_report": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/engineering-proof.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -708,20 +713,20 @@
       "scope": "Preserve the healthcare-wide product across clinical/chronic disease/medication, population and individual, utilization/outcomes, finance/provider/contracts, discovery/explanation, deliverables, learning/reuse and shared industry-portable core. Keep all ten canonical acceptance areas and25fixedcases; no new finish-line expansion."
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T20:18:29.353840+00:00",
-    "workflow_change": "Project complete statically read JSON branches from registered native calculation results, only after isolated guarded replay exactly matches every consuming result. Preserve every original receipt, every row index/identity/status and all selected branch values. Unknown/dynamic/filtered/full-document/parse-position uses retain the conservative full input.",
+    "at": "2026-11-06T22:42:45.646512+00:00",
+    "workflow_change": "The saved aggregate analysis offers 32 source-defined patient populations; an explicit choice opens all members with received profile names, and conversational follow-up keeps the exact selected set. Generic patient follow-ups require a choice instead of silently using zero patients or the whole warehouse.",
     "unsealed_work": {
-      "status": "Q20_native_payer_prerequisite_and_partial_agenda_composition_verified",
-      "product_commit": "31c837e6",
-      "product_fix_commit": "b3f0a8d7",
-      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json",
+      "status": "verified_connected_increment_gate_still_active",
+      "product_commit": "9bb11764fe9a073cc1dae2712dac3269854a7d85",
+      "product_fix_commit": "9bb11764fe9a073cc1dae2712dac3269854a7d85",
+      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/engineering-proof.json",
       "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
       "source_frozen": false,
       "runtime_activation": false,
       "product_code_in_candidate_app": false,
       "answer_selected": false,
-      "affected_tests_passed": 186,
-      "provider_calls_this_increment": 25,
+      "affected_tests_passed": 80,
+      "provider_calls_this_increment": 0,
       "ordinary_check_owner_reconciled": true,
       "previous_ordinary_run": {
         "status": "ordinary_check_returned_unsealed_paused_for_claude_review",
@@ -947,7 +952,26 @@
         "source_frozen": false,
         "input_people": 1471,
         "full_Q20_acceptance": false
-      }
+      },
+      "native_population_scopes": {
+        "status": "verified_connected_increment_gate_still_active",
+        "product_commit": "9bb11764fe9a073cc1dae2712dac3269854a7d85",
+        "proof": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/engineering-proof.json",
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/completion-receipt.json",
+        "app_proof": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/app-handoff-proof.json",
+        "browser_proof": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/browser-workflow-proof.json",
+        "source_frozen": false,
+        "provider_attempts": 0,
+        "qualified_population_choices": 32,
+        "full_roster_rows": 32,
+        "received_profile_names": 32,
+        "scoped_followup_count": 32,
+        "checks_passed": 80,
+        "full_question_acceptance": false,
+        "clinical_model_qualification": false,
+        "context_id": "ANS-2a62a924a97ef1aafbfcefa5"
+      },
+      "app_proof": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/app-handoff-proof.json"
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 47,
@@ -1025,7 +1049,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Confusing dark entry and opaque working state; home saved-answer listing scanning42.2GB of full historical results.",
+    "measured_failure_removed": "Previously the aggregate context exposed no usable result cohort. The actual browser now returned the selected 32-member roster and a scoped count of 32.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -1173,7 +1197,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-06T20:18:29.353840+00:00",
+    "updated_at": "2026-11-06T22:42:45.646512+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -2557,6 +2581,16 @@
       "evidence": [
         "artifacts/agere-research-2026-11-06/RESEARCH_TRIAGE_2026-11-06.md",
         "artifacts/agere-research-2026-11-06/engineering-proof.json"
+      ]
+    },
+    {
+      "at": "2026-11-06T22:42:45.646512+00:00",
+      "decision": "Deliver exact counted populations through existing saved-context and conversation paths; keep conditional and ranked aggregates as explicit remaining scope-proof work.",
+      "reason": "COUNT(DISTINCT patient_id) can be reversed only after exact full output/source/patient identity checks. Actual roster/follow-up now works without another model call. SUM predicates, scalar counts and window ranks require their own grain/boundary proof, so 32 qualified choices cannot be called full original-question completion.",
+      "scope_impact": "No charter expansion or narrowed acceptance; all ten areas and 25 fixed cases retained. No paid passing campaign replay.",
+      "evidence": [
+        "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/engineering-proof.json",
+        "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/browser-workflow-proof.json"
       ]
     }
   ],
@@ -5983,6 +6017,12 @@
       "context_id": "ANS-283eed5c68efb36daaa503a1",
       "full_question_acceptance": false,
       "clinical_model_qualification": false
+    },
+    "native_population_scopes": {
+      "status": "passed",
+      "receipt": "artifacts/agere-native-populations-2026-11-06/completion-running.json",
+      "source_frozen": false,
+      "provider_work": false
     }
   },
   "current_visual_request": {
@@ -6017,7 +6057,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: The retained original agenda now passes ordinary coverage and source review on b3359671. All 197 claims, 32 final rows and 38 native calls are unchanged. Six Jev/Perplexity attempts cost $0.021587618 API-equivalent, with no unpriced, Claude, actor or original-engine calls. The 51.90 seconds includes review and scratch save/reopen. Actual source context fell from 771983 to 276580 bytes; all requests returned and all dependencies were checked. Original-question context ANS-283eed5c68efb36daaa503a1 opens with its source current in the local app. Do not rerun the actor, engines, passing review or codecs. Next finish the existing population/follow-up connection: this aggregate context correctly selects no universal cohort, while the complete populations behind its totals remain in native results. Inspect the existing named scopes, typed measure populations and saved follow-up behavior against this exact context. Bind population choices to actual compiled quantity/source predicates and complete native memberships. Preserve domain, COUNT(*) versus distinct patients, duplicates, scope/date and source identity. A generic show-patients request must select or clarify among actual populations, rather than invent an empty or whole-warehouse cohort. Reuse shared decision context, membership and answer_context paths; no case-specific handler or provider replay. Demonstrate roster and follow-up counts against retained sources and the current context, keeping clinical eligibility and missing payer inputs explicit. Then address the existing Q21 semantics, Q23 definitions, Q24 deliverable capability and current ten-area/25-case assessment. Original failed/partial pairs are not restamped. Independent clinical/model/customer qualification and G5 remain separate. Owned app PID 34762 / session 24403 is HTTP 200 on 8885; no active jobs and source unfrozen. Quiet continuation ACTIVE; all healthcare and the portable core remain in scope.",
+  "next_action": "G3: Native counted-population selection, full roster and saved follow-up are connected on 9bb11764. The actual app offers 32 source-defined scopes; choosing the documentary affordability-review group returns all 32 received profile names, and Count those patients returns the same 32. Zero provider calls or actor/original-engine replays; 80 affected tests pass. Keep the confirmed 197-claim/32-row/38-native-call agenda and all attempts unchanged. Next close the remaining original-agenda population behavior through existing membership/quantity lineage: conditional patient counts and scalar/windowed ranked populations (retained native views 29/30/32). Prove actual patient grain, full contributing IDs, source/date/filter predicates and rank boundary/tie behavior against exact original output cells. Do not equate event COUNT(*) with patients or claim the current 32 choices cover every total. Reuse the 52 completed scope SQL checks and confirmed source review; no passing actor, engine or review campaign replay. Then address the existing Q21 semantics, Q23 applicable definitions, Q24 requested-deliverable capability and current whole ten-area/25-case assessment. Preserve original failed/partial pairs and source-supported unknowns. Independent clinical/model/customer qualification and G5 remain separate. App PID 35686 / session 86800 serves HTTP 200 on 8885; no active jobs, source unfrozen. Quiet continuation ACTIVE; all healthcare and portable core remain in scope.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6106,16 +6146,16 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 34762,
-  "owned_server_session": 24403,
+  "owned_server_pid": 35686,
+  "owned_server_session": 86800,
   "last_run_observation": {
-    "status": "owned_confirmation_terminal_latency_failed_app_restored",
-    "receipt": "artifacts/agere-global-column-closure-2026-11-06/ordinary-confirmation/receipt.json",
+    "at": "2026-11-06T22:42:45.646512+00:00",
+    "status": "native_population_browser_workflow_verified",
+    "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/engineering-proof.json",
     "provider_job": null,
-    "app_pid": 25970,
-    "app_session": 52065,
-    "cost_known_api_equivalent_usd": 21.089347818,
-    "unpriced_attempts": 1
+    "app_pid": 35686,
+    "app_session": 86800,
+    "new_provider_attempts": 0
   },
   "ordinary_curriculum_progress": {
     "total_fixed_cases": 25,
