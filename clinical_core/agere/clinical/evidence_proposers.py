@@ -64,6 +64,19 @@ def _not_examples(question):
     from .patient_ids import names_a_patient
     if requested_shape(question)is not None:return True
     if patient_list_question(question)and not names_a_patient(question):return True
+    # A filtered collection can name any entity: accounts, contracts, notes,
+    # invoices, etc. Ranked passages cannot establish that collection's scope.
+    # Keep explicitly requested examples/passages as retrieval, and leave the
+    # complete original request to the ordinary planner for collection work.
+    from .answer_shape import shape_wording
+    selection = re.match(r'^\s*(?:please\s+)?(?:identify|find|list|show(?:\s+me)?)\s+([^.!?]+)',
+                         shape_wording(question), re.I)
+    if selection:
+        obj = selection[1]
+        examples = re.match(r'(?:(?:an?|some|a\s+few|\d+)\s+)?(?:(?:ranked|illustrative|matching)\s+)?'
+                            r'(?:examples?|passages?|excerpts?)\b', obj, re.I)
+        if not examples and re.search(r'\b(?:whose|that|which|where)\b', obj, re.I):
+            return True
     # A cohort-prefixed request needs its membership resolved before retrieval.
     # This tier cannot compile those predicates or produce a complete patient
     # comparison. Keep single-patient and unfiltered passage questions available.

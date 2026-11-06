@@ -74,6 +74,26 @@ def fake_stack(hits=None, allow_live=False, reading='patient_affirmed', passes=T
 
 
 class Kind(unittest.TestCase):
+    def test_filtered_collections_across_domains_skip_ranked_examples_without_io(self):
+        for q in [
+            'Identify received 2029 clinical accounts whose interpretation changes when a negated, historical, copied or other-subject statement is respected. Show the source-bound assertion and its date/polarity/subject, the affected analytical conclusion and any unresolved contradiction. Do not infer truth from repeated copied text.',
+            'Identify received invoices whose interpretation changes when conditional payment text is respected.',
+            'Find contracts where a cancellation clause changes the outstanding obligation.',
+            'Please show customer complaints that contradict the recorded resolution.',
+        ]:
+            with self.subTest(question=q):
+                self.assertIsNone(E.retrieval_tier(Untouchable(),q))
+                self.assertIsNone(E.review_tier(Untouchable(),q))
+
+    def test_explicit_filtered_examples_keep_the_ranked_retrieval_route(self):
+        for q in [
+            'Find examples of received text that mention medication affordability.',
+            'Show me some passages that discuss conditional payment.',
+            'Identify an excerpt that describes the family history.',
+        ]:
+            with self.subTest(question=q):
+                self.assertFalse(E._not_examples(q))
+
     def test_patient_field_and_cohort_comparisons_skip_examples_without_io(self):
         for q in [
             'For patients with a recorded condition and a discharge, compare fills with dated non-use statements. Show patient names.',
