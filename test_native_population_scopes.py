@@ -70,7 +70,70 @@ class NativePopulations(unittest.TestCase):
         self.db.execute("INSERT INTO agere_result_1 VALUES('unreceived','z',0)")
         self.assertEqual(self.derive('SELECT COUNT(DISTINCT patient_id) patients FROM agere_result_1')['scopes'],[])
         out=self.derive('WITH r AS (SELECT patient_id,ROW_NUMBER() OVER (ORDER BY flag) n FROM agere_result_1) SELECT COUNT(DISTINCT patient_id) patients FROM r WHERE n<=2')
-        self.assertEqual(out['scopes'],[]);self.assertIn('ranking',out['unavailable'][0]['reason'])
+        self.assertEqual(out['scopes'],[]);self.assertIn('Rank input',out['unavailable'][0]['reason'])
+
+    def test_boolean_sums_count_patients_only_after_patient_grain_is_established(self):
+        query="WITH u AS (SELECT patient_id,COUNT(*) n,MAX(flag) flag FROM agere_result_1 GROUP BY patient_id) SELECT SUM(n>=2) repeated,SUM(CASE WHEN flag=1 THEN 1 ELSE 0 END) flagged,SUM(n) events FROM u"
+        scopes=self.derive(query)['scopes']
+        self.assertEqual([(s['proof']['binding']['column'],s['patient_ids'])for s in scopes],
+                         [('repeated',['A']),('flagged',['C'])])
+        self.assertEqual(self.derive('SELECT SUM(flag=1) people FROM agere_result_1')['scopes'],[])
+        # Even an accidentally one-row-per-person event sample is not a
+        # patient-grain contract; matching values cannot change its unit.
+        self.db.execute("DELETE FROM agere_result_1 WHERE rowid=2")
+        self.assertEqual(self.derive('SELECT COUNT(*) people,SUM(flag=1) flagged FROM agere_result_1')['scopes'],[])
+
+    def test_scalar_subqueries_and_patient_key_joins_preserve_patient_grain(self):
+        q="WITH u AS (SELECT patient_id,COUNT(*) n FROM agere_result_1 GROUP BY patient_id),t AS (SELECT patient_id FROM u WHERE n>=2) SELECT (SELECT COUNT(*) FROM t) repeated,(SELECT COUNT(*) FROM u JOIN t ON u.patient_id=t.patient_id) joined,(SELECT SUM(n) FROM u) events"
+        scopes=self.derive(q)['scopes'];self.assertEqual(len(scopes),2)
+        self.assertTrue(all(s['patient_ids']==['A']for s in scopes))
+
+    def test_weighted_cases_cartesian_joins_and_wrong_identity_grain_are_not_patient_counts(self):
+        for q in (
+            'SELECT SUM(CASE WHEN flag=0 THEN 2 ELSE 0 END) weighted FROM patient JOIN agere_result_1 USING(patient_id)',
+            'SELECT COUNT(*) events FROM patient p JOIN patient q ON p.patient_id=q.patient_id OR 1=1',
+            'WITH u AS (SELECT p.patient_id,COUNT(*) n FROM patient p JOIN patient q ON 1=1 GROUP BY q.patient_id) SELECT COUNT(*) n FROM u',
+            'WITH u AS (SELECT patient_id,kind,COUNT(*) n FROM agere_result_1 GROUP BY patient_id,kind) SELECT COUNT(*) n FROM u'):
+            with self.subTest(q=q):self.assertEqual(self.derive(q)['scopes'],[])
+
+    def test_ranked_conditional_counts_scalar_narrowing_and_denominator(self):
+        prefix="WITH p AS (SELECT patient_id,COUNT(*) paid FROM agere_result_1 GROUP BY patient_id),r AS (SELECT patient_id,paid,ROW_NUMBER() OVER(ORDER BY paid DESC,patient_id) rn,COUNT(*) OVER() n FROM p) "
+        scopes=self.derive(prefix+'SELECT MAX(n) paying,SUM(CASE WHEN rn<=2 THEN 1 ELSE 0 END) top_patients FROM r')['scopes']
+        self.assertEqual([(s['proof']['binding']['column'],s['patient_ids'])for s in scopes],[('paying',['A','B','C']),('top_patients',['A','B'])])
+        self.assertTrue(all(s['proof']['rank_checks'][0]['split_peer_groups']==0 for s in scopes))
+        scopes=self.derive(prefix.rstrip()+",top AS (SELECT patient_id FROM r WHERE rn<=2),u AS (SELECT patient_id,MAX(flag) flag FROM agere_result_1 GROUP BY patient_id) SELECT (SELECT COUNT(*) FROM top) selected,(SELECT COUNT(*) FROM top t JOIN u ON u.patient_id=t.patient_id WHERE u.flag=0) narrowed,(SELECT COUNT(DISTINCT a.patient_id) FROM top t JOIN agere_result_1 a ON a.patient_id=t.patient_id WHERE a.flag=0) distinct_narrowed")['scopes']
+        self.assertEqual(len(scopes),3);self.assertTrue(all(s['patient_ids']==['A','B']for s in scopes))
+
+    def test_rank_cutoff_rejects_split_peers_but_allows_whole_tied_group(self):
+        prefix="WITH p AS (SELECT patient_id,MAX(flag) paid FROM agere_result_1 GROUP BY patient_id),r AS (SELECT patient_id,paid,ROW_NUMBER() OVER(ORDER BY paid) rn FROM p) "
+        out=self.derive(prefix+'SELECT COUNT(DISTINCT patient_id) patients FROM r WHERE rn<=1')
+        self.assertEqual(out['scopes'],[]);self.assertIn('splits tied',out['unavailable'][0]['reason'])
+        scopes=self.derive(prefix+'SELECT COUNT(DISTINCT patient_id) patients FROM r WHERE rn<=2')['scopes']
+        self.assertEqual(scopes[0]['patient_ids'],['A','B'])
+
+    def test_rank_peer_check_uses_native_collation(self):
+        prefix="WITH p AS (SELECT patient_id,CASE WHEN patient_id='A' THEN 'aa' WHEN patient_id='B' THEN 'AA' ELSE 'bb' END sort_value FROM patient),r AS (SELECT patient_id,sort_value,ROW_NUMBER() OVER(ORDER BY sort_value COLLATE NOCASE) rn FROM p) "
+        out=self.derive(prefix+'SELECT COUNT(*) patients FROM r WHERE rn<=1')
+        self.assertEqual(out['scopes'],[]);self.assertIn('splits tied',out['unavailable'][0]['reason'])
+
+    def test_partition_rank_checks_every_partition_boundary(self):
+        prefix="WITH p AS (SELECT patient_id,MAX(flag) bucket FROM agere_result_1 GROUP BY patient_id),r AS (SELECT patient_id,bucket,ROW_NUMBER() OVER(PARTITION BY bucket ORDER BY patient_id) rn FROM p) "
+        scopes=self.derive(prefix+'SELECT COUNT(*) patients FROM r WHERE rn=1')['scopes']
+        self.assertEqual(scopes[0]['patient_ids'],['A','C'])
+
+    def test_true_empty_patient_grain_count_is_retained_without_whole_warehouse_fallback(self):
+        scopes=self.derive("SELECT COUNT(*) patients FROM patient WHERE patient_id='absent'")['scopes']
+        self.assertEqual(len(scopes),1);self.assertEqual(scopes[0]['patient_ids'],[])
+
+    def test_random_or_clock_based_ranking_cannot_create_a_reusable_population(self):
+        for ordering in ('random()','randomblob(16)',"datetime('now')",'CURRENT_TIMESTAMP'):
+            q='WITH r AS (SELECT patient_id,ROW_NUMBER() OVER(ORDER BY '+ordering+') rn FROM patient) SELECT COUNT(*) patients FROM r WHERE rn<=1'
+            with self.subTest(ordering=ordering):
+                out=self.derive(q);self.assertEqual(out['scopes'],[]);self.assertIn('Nondeterministic',out['unavailable'][0]['reason'])
+
+    def test_later_filter_may_split_peers_when_rank_boundary_did_not(self):
+        q="WITH p AS (SELECT patient_id,MAX(flag) paid FROM agere_result_1 GROUP BY patient_id),r AS (SELECT patient_id,paid,ROW_NUMBER() OVER(ORDER BY paid) rn FROM p),top AS (SELECT patient_id FROM r WHERE rn<=2) SELECT COUNT(*) patients FROM top WHERE patient_id='A'"
+        scopes=self.derive(q)['scopes'];self.assertEqual(scopes[0]['patient_ids'],['A'])
 
     def test_received_looking_values_do_not_turn_other_identifiers_into_patients(self):
         for query in ("WITH f AS (SELECT kind AS patient_id FROM agere_result_1) SELECT COUNT(DISTINCT patient_id) patients FROM f",

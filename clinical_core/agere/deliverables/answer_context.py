@@ -491,7 +491,7 @@ def prepare_population_scopes(path, request):
             if view in by:raise ValueError('Ambiguous native result identity')
             by[view]=result
         query=result.get('declared_executed_query')or result.get('executed_query')
-        if call.get('name')!='query_sql'or not isinstance(query,str)or not re.search(r'\bcount\s*\(\s*distinct\b',query,re.I):continue
+        if call.get('name')!='query_sql'or not isinstance(query,str)or not re.search(r'\b(?:count|sum|min|max)\s*\(',query,re.I):continue
         try:tree=sqlglot.parse_one(query,read='sqlite')
         except sqlglot.errors.SqlglotError:continue
         names.update(c.name for c in tree.find_all(exp.Column))

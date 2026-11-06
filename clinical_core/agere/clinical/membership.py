@@ -195,7 +195,7 @@ def from_graph(path, graph, answer, population=None):
     return None
 
 
-NATIVE_POPULATIONS = 'native-count-populations/1'
+NATIVE_POPULATIONS = 'native-count-populations/2'
 
 
 def native_population_identity():
@@ -204,12 +204,164 @@ def native_population_identity():
     return digest({'version':NATIVE_POPULATIONS,'implementation':Path(__file__).read_text()})
 
 
+def _native_patient_grain(select, ctes, seen=frozenset()):
+    """Prove one row per patient structurally, before treating row sums as people."""
+    from sqlglot import exp
+    relation=(select.args.get('from_')or exp.From()).this
+    if not isinstance(relation,exp.Table):return None
+    name=relation.name.casefold();alias=relation.alias_or_name
+    if name in seen:return None
+    if name!='patient':
+        definition=ctes.get(name)
+        if not isinstance(definition,exp.Select):return None
+        groups=(definition.args.get('group')or exp.Group()).expressions
+        projected=next((e.unalias()for e in definition.selects if e.alias_or_name.casefold()=='patient_id'),None)
+        if not isinstance(projected,exp.Column)or projected.name.casefold()!='patient_id':return None
+        grouped=(len(groups)==1 and groups[0]==projected)
+        if not grouped:
+            if groups or any(isinstance(e.unalias(),exp.AggFunc)for e in definition.selects):return None
+            if _native_patient_grain(definition,ctes,seen|{name})is None:return None
+    for join in select.args.get('joins')or[]:
+        table=join.this
+        if (not isinstance(table,exp.Table)or join.args.get('side')not in (None,'','LEFT')
+            or join.args.get('kind')not in (None,'','INNER')):return None
+        one=exp.select('patient_id').from_(table.copy())
+        if _native_patient_grain(one,ctes,seen)is None:return None
+        # Joining arbitrary one-per-patient tables can still form a cartesian
+        # product. Require the actual patient equality to the anchor relation.
+        on=join.args.get('on')
+        def conjunctions(e):
+            if isinstance(e,exp.Paren):return conjunctions(e.this)
+            if isinstance(e,exp.And):return conjunctions(e.this)+conjunctions(e.expression)
+            return [e]
+        if on is None or not any(isinstance(e,exp.EQ)and isinstance(e.this,exp.Column)and isinstance(e.expression,exp.Column)
+                and e.this.name.casefold()==e.expression.name.casefold()=='patient_id'
+                and {e.this.table,e.expression.table}=={alias,table.alias_or_name}
+                for e in conjunctions(on)):return None
+    return exp.column('patient_id',table=alias)
+
+
+def _native_count_selection(expression, branch, ctes):
+    """Return the exact patient expression, selection and predicate for a count cell."""
+    from sqlglot import exp
+    counted=expression.unalias();selection=branch
+    if isinstance(counted,exp.Subquery):
+        selection=counted.this
+        if (not isinstance(selection,exp.Select)or len(selection.selects)!=1
+            or branch.args.get('from_')or branch.args.get('group')):return None
+        counted=selection.selects[0].unalias()
+    predicate=None;kind='distinct_patient_count';patient=None
+    if isinstance(counted,exp.Count)and isinstance(counted.this,exp.Distinct):
+        args=counted.this.expressions
+        if len(args)==1 and isinstance(args[0],exp.Column)and args[0].name.casefold()=='patient_id':patient=args[0]
+    else:
+        patient=_native_patient_grain(selection,ctes)
+        if patient is None:return None
+        kind='patient_grain_row_count'
+        if isinstance(counted,exp.Count)and isinstance(counted.this,exp.Star):pass
+        elif isinstance(counted,exp.Sum):
+            term=counted.this
+            if isinstance(term,exp.Case):
+                cases=term.args.get('ifs')or[];default=term.args.get('default')
+                if (not cases or any(not isinstance(c.args.get('true'),exp.Literal)or c.args['true'].is_string
+                        or c.args['true'].this!='1'for c in cases)
+                    or not(isinstance(default,exp.Null)or default is None or
+                        isinstance(default,exp.Literal)and not default.is_string and default.this=='0')):return None
+                predicate=exp.or_(*[c.this.copy()for c in cases])
+            elif isinstance(term,(exp.EQ,exp.NEQ,exp.GT,exp.GTE,exp.LT,exp.LTE,exp.And,exp.Or,exp.Not,exp.Between,exp.In,exp.Is)):
+                predicate=term.copy()
+            else:return None
+            if predicate.find(exp.AggFunc)or predicate.find(exp.Window)or predicate.find(exp.Subquery):return None
+            kind='patient_grain_conditional_count'
+        elif isinstance(counted,(exp.Max,exp.Min))and isinstance(counted.this,exp.Column):
+            # A repeated COUNT(*) OVER () is a patient denominator only when
+            # its input is already proven one row per patient.
+            table=(selection.args.get('from_')or exp.From()).this
+            if counted.this.table and counted.this.table!=table.alias_or_name:return None
+            definition=ctes.get(table.name.casefold())if isinstance(table,exp.Table)else None
+            value=next((e.unalias()for e in definition.selects if e.alias_or_name==counted.this.name),None)if definition is not None else None
+            if (not isinstance(value,exp.Window)or not isinstance(value.this,exp.Count)
+                or not isinstance(value.this.this,exp.Star)or value.args.get('partition_by')or value.args.get('order')or value.args.get('spec')):return None
+            kind='patient_grain_window_denominator'
+        else:return None
+    return (patient,selection,predicate,kind)if patient is not None else None
+
+
+def _native_rank_checks(selection, execute, parameters, known_ids):
+    """Check rank peers at the selection boundary, using SQL's peer equality.
+
+    ROW_NUMBER ties are harmless when the complete tied group is included or
+    excluded. A cutoff splitting peers cannot establish stable patient IDs.
+    The rank-stage check precedes later joins/filters, so a valid ranked group
+    can subsequently be narrowed by an independent condition.
+    """
+    from sqlglot import exp
+    from ...contracts import digest
+    with_=selection.args.get('with_');ctes={c.alias_or_name.casefold():c.this for c in with_.expressions}if with_ else{}
+    reachable=set()
+    def visit(node):
+        for table in node.find_all(exp.Table):
+            name=table.name.casefold()
+            if name in ctes and name not in reachable:reachable.add(name);visit(ctes[name])
+    plain=selection.copy();plain.set('with_',None);visit(plain)
+    checks=[]
+    for name in sorted(reachable):
+        definition=ctes[name]
+        windows=[e.unalias()for e in definition.selects if isinstance(e.unalias(),exp.Window)]if isinstance(definition,exp.Select)else[]
+        ranks=[w for w in windows if isinstance(w.this,exp.RowNumber)]
+        if not ranks:continue
+        if len(ranks)!=1 or definition.args.get('group')or definition.args.get('distinct'):
+            raise ValueError('Rank membership needs one row-preserving rank stage.')
+        rank=ranks[0];order=rank.args.get('order')
+        if not order or not order.expressions:raise ValueError('Unordered rank cannot establish stable membership.')
+        if _native_patient_grain(definition,ctes)is None:raise ValueError('Rank input is not proven one row per patient.')
+        # Find the first row selection consuming this rank. Only reachable
+        # CTEs participate; unused branches cannot alter the scope proof.
+        consumers=[]
+        for consumer in [plain,*[ctes[n]for n in reachable if n!=name]]:
+            relation=(consumer.args.get('from_')or exp.From()).this if isinstance(consumer,exp.Select)else None
+            if isinstance(relation,exp.Table)and relation.name.casefold()==name:
+                if consumer.args.get('group')or any(isinstance(e.unalias(),exp.AggFunc)for e in consumer.selects):continue
+                stage=consumer.copy();stage.set('with_',None)
+                stage.set('expressions',[exp.alias_(exp.column('patient_id',table=relation.alias_or_name),'patient_id')])
+                consumers.append(stage)
+        if not consumers:raise ValueError('Rank boundary has no provable row selection.')
+        augmented=with_.copy();rank_cte=next(c for c in augmented.expressions if c.alias_or_name.casefold()==name)
+        keys=[]
+        for i,key in enumerate([*(rank.args.get('partition_by')or[]),*[o.this for o in order.expressions]]):
+            alias='__native_peer_'+digest([name,i,selection.sql()])[:12]
+            rank_cte.this.append('expressions',exp.alias_(key.copy(),alias,quoted=True));keys.append(alias)
+        universe=exp.select(exp.column('patient_id',table=name)).from_(name);universe.set('with_',augmented.copy())
+        columns,rows=execute(universe.sql(dialect='sqlite'),parameters)
+        ids=[r[0]for r in rows]
+        if columns!=['patient_id']or len(ids)!=len(set(ids))or any(not isinstance(p,str)for p in ids)or not set(ids)<=known_ids:
+            raise ValueError('Rank stage must contain unique received patient identities.')
+        for stage in consumers:
+            selected='__native_selected_'+digest(stage.sql())[:12]
+            if selected.casefold()in ctes:raise ValueError('Rank proof relation collides with an original CTE.')
+            w=augmented.copy();w.append('expressions',exp.CTE(this=stage.copy(),alias=exp.TableAlias(this=exp.to_identifier(selected))))
+            # GROUP BY uses native collation/NULL/numeric equality for peers.
+            quoted=lambda s:'"'+s.replace('"','""')+'"'
+            key_sql=', '.join('r.'+quoted(k)for k in keys)
+            body=('SELECT COUNT(*) AS peer_rows, SUM(CASE WHEN EXISTS (SELECT 1 FROM '+quoted(selected)+
+                ' AS s WHERE s.patient_id=r.patient_id) THEN 1 ELSE 0 END) AS selected_rows FROM '+quoted(name)+
+                ' AS r GROUP BY '+key_sql)
+            query=w.sql(dialect='sqlite')+' '+body
+            cols,peers=execute(query,parameters)
+            if cols!=['peer_rows','selected_rows']or any(0<picked<total for total,picked in peers):
+                raise ValueError('Rank cutoff splits tied ordering values; the counted patients are ambiguous.')
+            checks.append({'rank_stage':name,'stage_query_digest':digest(stage.sql(dialect='sqlite')),
+                'peer_groups':len(peers),'peer_rows':len(ids),'split_peer_groups':0,'query_digest':digest(query)})
+    return checks
+
+
 def native_populations(calls, roots, execute, known_ids, source):
-    """Derive named patient sets from published native COUNT(DISTINCT patient_id).
+    """Derive named patient sets from exact published native patient counts.
 
     Each set binds to an actual result cell and full executed selection. UNION
-    ALL and grouped outputs retain their row identity; ambiguous rows, windows,
-    source drift and event COUNT(*) never become patient scopes. No model or
+    ALL and grouped outputs retain their row identity. Conditional row counts
+    require patient grain; ranked selections require an unsplit peer boundary.
+    Source drift and event COUNT(*) never become patient scopes. No model or
     original analytical engine is run. ``execute`` is a guarded read-only SQL
     callback over the unchanged source and retained native inputs.
     """
@@ -225,7 +377,7 @@ def native_populations(calls, roots, execute, known_ids, source):
     for call in calls:
         result=call.get('result')or{};view=result.get('result_view');query=result.get('declared_executed_query')or result.get('executed_query')
         if view not in required or call.get('name')!='query_sql'or not isinstance(query,str):continue
-        if not re.search(r'\bcount\s*\(\s*distinct\b',query,re.I):continue
+        if not re.search(r'\b(?:count|sum|min|max)\s*\(',query,re.I):continue
         try:
             tree=sqlglot.parse_one(query,read='sqlite')
             # An event/provider identifier cannot become patient identity by
@@ -246,7 +398,17 @@ def native_populations(calls, roots, execute, known_ids, source):
             if (result.get('native_sql_contract')!=NATIVE_SQL_CONTRACT or result.get('error')or incomplete_reason(result)
                 or contracts.get('source_digest')!=source['source_digest']or contracts.get('as_of')!=source['as_of']):
                 raise ValueError('Complete native SQL and matching source/date contracts required.')
-            if tree.find(exp.Window)or tree.find(exp.Rand):raise ValueError('Window/ranking or nondeterministic selection needs its own membership proof.')
+            for function in tree.find_all(exp.Func):
+                name=(function.name if isinstance(function,exp.Anonymous)else function.sql_name()).casefold()
+                clock=name in ('date','datetime','time','julianday','strftime','unixepoch')
+                if (name in ('rand','random','randomblob','uuid','current_date','current_time','current_timestamp')
+                    or clock and (not list(function.iter_expressions())or any(
+                        isinstance(v,exp.Literal)and v.is_string and v.this.casefold()in ('now','localtime','utc','subsec','subsecond')
+                        for v in function.find_all(exp.Literal)))):
+                    raise ValueError('Nondeterministic selection cannot establish patient membership.')
+            for window in tree.find_all(exp.Window):
+                if not isinstance(window.this,(exp.RowNumber,exp.Count,exp.Sum,exp.Min,exp.Max))or not window.find_ancestor(exp.CTE):
+                    raise ValueError('Window/ranking shape needs its own membership proof.')
             if any(n.args.get('distinct')is not False for n in tree.find_all(exp.Union)):
                 raise ValueError('Deduplicating set operations do not identify an original branch.')
             if tree.find(exp.Intersect)or tree.find(exp.Except):raise ValueError('Unsupported set selection.')
@@ -255,6 +417,7 @@ def native_populations(calls, roots, execute, known_ids, source):
             actual_columns,actual=execute(query,{})
             if actual_columns!=columns or digest(actual)!=digest(expected):raise ValueError('Current native SQL output differs from the complete published result.')
             branches=[]
+            ctes={c.alias_or_name.casefold():c.this for c in (tree.args.get('with_')or exp.With()).expressions}
             def leaves(node):
                 if isinstance(node,exp.Union):leaves(node.this);leaves(node.expression)
                 elif isinstance(node,exp.Select):branches.append(node)
@@ -264,11 +427,8 @@ def native_populations(calls, roots, execute, known_ids, source):
                 if len(original.selects)!=len(columns)or original.args.get('distinct'):continue
                 counts=[]
                 for index,expression in enumerate(original.selects):
-                    counted=expression.unalias()
-                    if (isinstance(counted,exp.Count)and isinstance(counted.this,exp.Distinct)
-                        and len(counted.this.expressions)==1 and isinstance(counted.this.expressions[0],exp.Column)
-                        and counted.this.expressions[0].name.casefold()=='patient_id'):
-                        counts.append((index,counted.this.expressions[0]))
+                    found=_native_count_selection(expression,original,ctes)
+                    if found:counts.append((index,*found))
                 branch=original.copy()
                 branch.set('expressions',[exp.alias_(e.unalias().copy(),c,quoted=True)for e,c in zip(branch.selects,columns)])
                 if tree.args.get('with_')and not branch.args.get('with_'):branch.set('with_',tree.args['with_'].copy())
@@ -296,12 +456,14 @@ def native_populations(calls, roots, execute, known_ids, source):
                 if len(candidates)!=1:continue
                 branch_index,group_values=candidates[0]
                 _,branch,counts,groups=next(p for p in plans if p[0]==branch_index)
-                for column_index,patient in counts:
+                for column_index,patient,selector,predicate,count_kind in counts:
                     value=row[column_index]
                     if type(value)is not int or value<0:continue
-                    selection=branch.copy();selection.set('expressions',[exp.alias_(patient.copy(),'patient_id',quoted=True)])
+                    selection=selector.copy();selection.set('expressions',[exp.alias_(patient.copy(),'patient_id',quoted=True)])
+                    if tree.args.get('with_')and not selection.args.get('with_'):selection.set('with_',tree.args['with_'].copy())
                     parameters={};condition=selection.args.get('where')
                     condition=condition.this.copy()if condition else None
+                    if predicate is not None:condition=exp.and_(condition,predicate.copy())if condition is not None else predicate.copy()
                     for index,(group,group_value)in enumerate(zip(groups,group_values)):
                         name='__native_group_'+str(index);parameters[name]=group_value
                         predicate=exp.NullSafeEQ(this=group.copy(),expression=exp.Placeholder(this=name))
@@ -316,15 +478,19 @@ def native_populations(calls, roots, execute, known_ids, source):
                     ids=[r[0]for r in member_rows if r[0]is not None]
                     if any(not isinstance(pid,str)or not pid for pid in ids):raise ValueError('Non-patient counted identities cannot select a patient scope.')
                     members=sorted(set(ids))
+                    if count_kind!='distinct_patient_count'and (len(ids)!=len(member_rows)or len(ids)!=len(members)):
+                        raise ValueError('A patient-grain count cannot count missing or duplicate patient rows.')
                     if len(members)!=value or not set(members)<=known_ids:raise ValueError('Derived patient membership differs from its counted cell or received source.')
+                    rank_checks=_native_rank_checks(selection,execute,parameters,known_ids)
                     labels=[str(v)for v in row if isinstance(v,str)and v]
                     binding={'result_view':view,'row':row_index,'column':columns[column_index]}
                     proof={'source':source,'binding':binding,'result_digest':digest(result),'source_row_digest':digest(row),
                         'executed_query_digest':digest(query),'selection_query':member_query,'parameters':parameters,
                         'patient_ids_digest':digest(members),'patient_count':value,'counted_source_rows':len(member_rows),
                         'missing_patient_rows':sum(r[0]is None for r in member_rows),'group_values':group_values,
-                        'current_full_output_exact':True,'version':NATIVE_POPULATIONS,'membership_policy':native_population_identity()}
-                    scopes.append({'id':'POP-'+digest(proof)[:24],'label':' · '.join(labels)or view+' / '+columns[column_index],
+                        'current_full_output_exact':True,'count_kind':count_kind,'rank_checks':rank_checks,
+                        'version':NATIVE_POPULATIONS,'membership_policy':native_population_identity()}
+                    scopes.append({'id':'POP-'+digest(proof)[:24],'label':' · '.join(labels)or columns[column_index].replace('_',' '),
                         'patient_count':value,'counted_source_rows':len(member_rows),'patient_ids':members,'proof':proof,
                         'clinical_eligibility_established':False,'actionable_cohort':False})
         except (sqlite3.Error,sqlglot.errors.SqlglotError,ValueError,TypeError,KeyError,AttributeError,IndexError)as exc:
