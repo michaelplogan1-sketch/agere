@@ -128,6 +128,68 @@ class NativeColumnProjection(unittest.TestCase):
         calls.append({'input':{},'result':{'result_view':'population'}})
         self.assertEqual(B.native_result_dependencies(calls,B.computed_prose_views(proofs)),{'basis','events','population'})
 
+    def json_fixture(self,expression="json_extract(r.value,'$.id') AS rule_id",path="'$.contract.requirements'",malformed=False):
+        rows=[['A','unresolved',{'contract':{'requirements':[{'id':'rule','binding':None}]},'unread_notes':'Full original context stays native.'}],
+              ['A','unresolved',{'contract':{'requirements':[{'id':'rule','binding':None}]},'unread_notes':'Another complete record.'}],
+              ['B',None,{'contract':{'requirements':None}}],['C','unknown',{}]]
+        if malformed:rows[-1][-1]='not valid JSON'
+        producer={'name':'execute_analysis','input':{'operation':'authored_contract_review'},'result':{
+            'columns':['patient_id','status','documentary_receipt'],'rows':rows}}
+        B.define_result(self.wh,'agere_result_4',producer['result']['columns'],rows,receipt=producer['result'])
+        producer['result']['result_view']='agere_result_4'
+        count=self.execute('SELECT status,COUNT(*) AS n FROM agere_result_4 GROUP BY status ORDER BY status')
+        query='SELECT '+expression+' FROM (SELECT documentary_receipt AS d FROM agere_result_4 LIMIT 1) x, json_each(x.d,'+path+') r'
+        document=self.execute(query);document['result']['result_view']='agere_result_3'
+        return [producer,count,document]
+
+    def test_static_json_branches_preserve_every_row_and_reexecute_the_complete_consumer(self):
+        calls=self.json_fixture();before=copy.deepcopy(calls)
+        result=native_column_projections(calls,['agere_result_2','agere_result_3'],{'agere_result_2','agere_result_3','agere_result_4'})['agere_result_4']
+        self.assertEqual(result['columns'],['patient_id','status'])
+        self.assertEqual(result['rows'],[['A','unresolved'],['A','unresolved'],['B',None],['C','unknown']])
+        branch=result['json_path_observations'][0]
+        self.assertEqual(branch['path'],'$.contract.requirements')
+        self.assertEqual(branch['row_values'],[[True,[{'id':'rule','binding':None}]],[True,[{'id':'rule','binding':None}]],[True,None],[False,None]])
+        self.assertTrue(result['json_path_output_checks'][0]['full_output_cells_types_order_duplicates_nulls_exact'])
+        self.assertEqual(calls,before)
+
+    def test_dynamic_paths_hidden_document_and_parse_position_fields_keep_full_inputs(self):
+        for expression,path in [('r.json',"'$.contract.requirements'"),('r.id',"'$.contract.requirements'"),
+                                ('r.parent',"'$.contract.requirements'"),('r.value',"'$.' || 'contract.requirements'"),
+                                ('r.value',"'$.contract.requirements[0]'"),('x.d',"'$.contract.requirements'")]:
+            # Each iteration owns an independent immutable native source.
+            self.wh.db.set_authorizer(None);self.wh.db.execute('PRAGMA query_only=OFF')
+            self.wh.db.execute('DROP TABLE IF EXISTS temp.agere_result_4')
+            self.wh.db.execute('PRAGMA query_only=ON');self.wh.db.set_authorizer(self.wh._authorize)
+            calls=self.json_fixture(expression,path)
+            with self.subTest(expression=expression,path=path):
+                self.assertNotIn('agere_result_4',native_column_projections(calls,['agere_result_2','agere_result_3'],{'agere_result_2','agere_result_3','agere_result_4'}))
+
+    def test_json_projection_rejects_changed_outputs_and_malformed_unread_rows(self):
+        calls=self.json_fixture();calls[-1]['result']['rows'][0]['rule_id']='changed'
+        self.assertNotIn('agere_result_4',native_column_projections(calls,['agere_result_2','agere_result_3'],{'agere_result_2','agere_result_3','agere_result_4'}))
+        self.wh.db.set_authorizer(None);self.wh.db.execute('PRAGMA query_only=OFF')
+        self.wh.db.execute('DROP TABLE temp.agere_result_4')
+        self.wh.db.execute('PRAGMA query_only=ON');self.wh.db.set_authorizer(self.wh._authorize)
+        calls=self.json_fixture(malformed=True)
+        self.assertNotIn('agere_result_4',native_column_projections(calls,['agere_result_2','agere_result_3'],{'agere_result_2','agere_result_3','agere_result_4'}))
+
+    def test_a_raw_json_consumer_prevents_subfield_projection(self):
+        calls=self.json_fixture();raw=self.execute('SELECT documentary_receipt FROM agere_result_4')
+        raw['result']['result_view']='agere_result_5';calls.append(raw)
+        self.assertNotIn('agere_result_4',native_column_projections(calls,['agere_result_2','agere_result_3','agere_result_5'],{'agere_result_2','agere_result_3','agere_result_4','agere_result_5'}))
+
+    def test_json_cell_lookup_with_an_entity_filter_keeps_complete_source(self):
+        calls=self.json_fixture()
+        query=calls[-1]['input']['sql'].replace('FROM agere_result_4 LIMIT 1',"FROM agere_result_4 WHERE patient_id='B' LIMIT 1")
+        filtered=self.execute(query);filtered['result']['result_view']='agere_result_3';calls[-1]=filtered
+        self.assertNotIn('agere_result_4',native_column_projections(calls,['agere_result_2','agere_result_3'],{'agere_result_2','agere_result_3','agere_result_4'}))
+
+    def test_complete_json_object_output_keeps_its_exact_native_string(self):
+        calls=self.json_fixture('r.value AS complete_object')
+        projected=native_column_projections(calls,['agere_result_2','agere_result_3'],{'agere_result_2','agere_result_3','agere_result_4'})['agere_result_4']
+        self.assertTrue(projected['json_path_output_checks'][0]['full_output_cells_types_order_duplicates_nulls_exact'])
+
     def global_note(self):
         self.answer['facts']['note']='These are machine-state receipts; clinical eligibility remains unestablished.'
         self.answer['global_prose_basis']=[{'path':['facts','note'],'basis':[{'result_view':'agere_result_2','row':0}]}]

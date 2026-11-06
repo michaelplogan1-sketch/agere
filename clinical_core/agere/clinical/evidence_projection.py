@@ -298,6 +298,129 @@ def restore_native_observations(view):
     return groups
 
 
+def native_json_paths(query, view, column):
+    """Recognize complete static JSON branches read through a scalar subquery.
+
+    Only an unmodified forwarded cell consumed by json_each qualifies. Hidden
+    whole-document/parse-position columns, dynamic paths and other uses retain
+    the original column. These paths establish input use, not source meaning.
+    """
+    import sqlglot
+    from sqlglot import exp
+    try:tree=sqlglot.parse_one(query,read='sqlite')
+    except (sqlglot.errors.SqlglotError,ValueError,TypeError):return None
+    if not isinstance(tree,exp.Select)or tree.args.get('with_')or tree.find(exp.Star):return None
+    tables=[t for t in tree.find_all(exp.Table)if isinstance(t.this,exp.Identifier)and t.name==view]
+    if len(tables)!=1:return None
+    table=tables[0];inner=table.find_ancestor(exp.Select)
+    source=inner.args.get('from_')if inner is not None else None
+    if (inner is None or inner is tree or len(inner.selects)!=1 or source is None or source.this is not table
+        or any(v for k,v in inner.args.items()if k not in ('expressions','from_','limit','offset'))):return None
+    selected=inner.selects[0];cell=selected.this if isinstance(selected,exp.Alias)else selected
+    if not isinstance(cell,exp.Column)or cell.name!=column:return None
+    if [c for c in tree.find_all(exp.Column)if c.name==column]!=[cell]:return None
+    sub=inner.parent
+    if not isinstance(sub,exp.Subquery)or not sub.alias:return None
+    outer=sub.find_ancestor(exp.Select);forwarded=[c for c in tree.find_all(exp.Column)
+        if c.table==sub.alias and c.name==selected.alias_or_name]
+    if not forwarded:return None
+    paths=[]
+    for ref in forwarded:
+        fn=ref.parent
+        if (ref.find_ancestor(exp.Select)is not outer or not isinstance(fn,exp.Anonymous)
+            or fn.name.lower()!='json_each' or len(fn.expressions)!=2 or fn.expressions[0]is not ref):return None
+        path=fn.expressions[1]
+        if not isinstance(path,exp.Literal)or not path.is_string or not re.fullmatch(r'\$\.[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*',path.this):return None
+        owner=fn.parent
+        if not isinstance(owner,exp.Table)or not owner.alias:return None
+        for col in outer.find_all(exp.Column):
+            if col.find_ancestor(exp.Select)is not outer:continue
+            if not col.table:return None
+            if col.table==owner.alias and col.name not in ('key','value','type','atom','fullkey','path'):return None
+        paths.append(path.this)
+    return list(dict.fromkeys(paths))
+
+
+def native_json_projection(view, columns, rows, consumers, by):
+    """Keep exact used JSON branches and reexecute every consuming program.
+
+    Every original row/identity remains. The isolated read-only comparison uses
+    native inputs only and requires exact full output cells, types and order.
+    Complete original receipts remain the source; projected branches cannot
+    establish clinical facts from fields that were not read.
+    """
+    import sqlite3
+    from .backstop_agent import output_table
+    from .semantic_analyst import SemanticWarehouse
+    from .sql_query import native_result_source,native_query_bindings
+    candidates={};checks=[]
+    for column in columns:
+        uses=[c for c in consumers if column in c['columns_read']]
+        if not uses:continue
+        paths=[]
+        for consumer in uses:
+            read=native_json_paths(consumer['query'],view,column)
+            if not read:break
+            paths.extend(read)
+        else:
+            values=[]
+            for row in rows:
+                value=row[columns.index(column)]
+                if isinstance(value,str):
+                    try:value=json.loads(value)
+                    except ValueError:break
+                if value is not None and not isinstance(value,(dict,list)):break
+                values.append(value)
+            else:candidates[column]=(list(dict.fromkeys(paths)),values)
+    if not candidates:return None
+    projected=copy.deepcopy(rows);observations=[]
+    for column,(paths,values)in candidates.items():
+        partial=[{}for _ in rows]
+        for path in paths:
+            keys=path[2:].split('.');seen=[]
+            for index,value in enumerate(values):
+                current=value;present=True
+                for key in keys:
+                    if not isinstance(current,dict)or key not in current:present=False;break
+                    current=current[key]
+                seen.append([present,current if present else None])
+                if present:
+                    target=partial[index]
+                    for key in keys[:-1]:target=target.setdefault(key,{})
+                    target[keys[-1]]=copy.deepcopy(current)
+            observations.append({'column':column,'path':path,'row_values':seen,
+                'scope':'Each [present,value] addresses the same original row index; missing and JSON null are distinct.'})
+        for index,row in enumerate(projected):row[columns.index(column)]=partial[index]
+    relevant=[c for c in consumers if set(c['columns_read'])&set(candidates)]
+    try:
+        with sqlite3.connect(':memory:')as db:
+            registered=set()
+            for consumer in relevant:
+                tree,tables=native_query_bindings(consumer['query'],by)
+                if tree is None or tables is None:return None
+                import sqlglot
+                physical=[t for t in tree.find_all(sqlglot.exp.Table)if isinstance(t.this,sqlglot.exp.Identifier)]
+                if any(t.name not in by or t.db not in ('','temp')for t in physical):return None
+                for table in tables:
+                    name=table.name
+                    if name in registered:continue
+                    result=by[name]['result'];cols,source=output_table(result)
+                    if name==view:cols,source=columns,projected
+                    db.execute('CREATE TEMP TABLE "'+name.replace('"','""')+'" AS '+native_result_source(cols,source))
+                    registered.add(name)
+            db.execute("SELECT * FROM json_each('[]')").fetchall()
+            db.enable_load_extension(False);db.execute('PRAGMA query_only=ON');db.set_authorizer(SemanticWarehouse._authorize)
+            for consumer in relevant:
+                cursor=db.execute(consumer['query']);cols=[c[0]for c in cursor.description];actual=[list(r)for r in cursor]
+                expected_cols,expected=output_table(by[consumer['result_view']]['result'])
+                if cols!=expected_cols or digest(actual)!=digest(expected):return None
+                checks.append({'result_view':consumer['result_view'],'query_digest':consumer['query_digest'],
+                    'columns':cols,'row_count':len(actual),'output_digest':digest(actual),
+                    'full_output_cells_types_order_duplicates_nulls_exact':True})
+    except (sqlite3.Error,ValueError,TypeError,KeyError):return None
+    return {'columns':set(candidates),'observations':observations,'checks':checks}
+
+
 def native_column_projections(calls, roots, dependencies):
     """Project intermediate machine outputs to SQLite's actual column reads.
 
@@ -355,7 +478,9 @@ def native_column_projections(calls, roots, dependencies):
                 'columns_read':source['columns'],'result_digest':digest(observed)})
         if not valid or not consumers:continue
         # Keep explicit entity identity even when only row cardinality was read.
-        selected=[c for c in columns if c in needed or c=='patient_id']
+        json_paths=native_json_projection(view,columns,rows,consumers,by)
+        json_columns=json_paths['columns']if json_paths else set()
+        selected=[c for c in columns if (c in needed or c=='patient_id')and c not in json_columns]
         if set(selected)==set(columns):continue
         projected=[[row[columns.index(c)]for c in selected]for row in rows]
         if any(isinstance(value,(dict,list))for row in projected for value in row):continue
@@ -364,7 +489,9 @@ def native_column_projections(calls, roots, dependencies):
             'complete_receipt_digest':receipt_digest,'complete_columns':columns,
             'columns':selected,'rows':projected,'row_count':len(rows),
             'projected_rows_digest':digest(projected),'consumers':consumers,
-            'scope':'Every native row, duplicate and NULL in the columns actually read by the executed SQL is retained in original order. Complete producer receipts remain native evidence. This proves dependency-copy fidelity only; omitted documentary fields provide no support for clinical interpretation. Counted machine statuses do not establish eligibility, current need, treatment or causal effects.'}
+            **({'json_path_observations':json_paths['observations'],'json_path_output_checks':json_paths['checks'],
+                'json_path_contract':'native-static-json-paths/1'}if json_paths else{}),
+            'scope':'Every native row, duplicate and NULL in the columns actually read by the executed SQL is retained in original order. JSON path observations, when present, retain every original row index and complete selected branch, with missing distinct from JSON null; complete downstream outputs were reexecuted exactly. Complete producer receipts remain native evidence. This proves dependency-copy fidelity only; omitted documentary fields provide no support for clinical interpretation. Counted machine statuses do not establish eligibility, current need, treatment or causal effects.'}
     return projections
 
 
