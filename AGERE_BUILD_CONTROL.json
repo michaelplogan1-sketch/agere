@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T17:43:01.008857+00:00",
+  "updated_at": "2026-11-06T18:30:18.766668+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -551,7 +551,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "G3 active: native profile field-level verification still needs runtime wiring and adverse proof; five saved clinical field checks and overall coverage remain uncertain. Current ordinary latency after the latest guard/planning corrections is unmeasured. Fixed25case acceptance needs independent numeric/source scoring, narrative adjudication where required and connected workflow evidence. Model/clinical qualification and customer deployment remain separate.",
       "engineering_current_status": "G3 active. Original Q07stack returned partial after484.489s/$1.421052772/350attempts; frontier partial110.895s/$0.990694/8attempts. They perform different narrative work and neither is complete, so no savings/superiority claim. Stack wrongfully excluded4historical referral records/subjects; shared decision-context/4 now preserves the event-selected cohort and rejects known living-only exclusions. Separate native repair restores75records/65patients in0.681s/0providers, preserving all61prior reviews,54machine findings and120dated correspondence objects; four added subjects remain pending. This does not restamp the original failed run.72focused current scope/patient/backstop checks pass. Earlier fixed failures and clinical/model/customer dependencies remain explicit. Continue fixed questions/connected checks; package once after demonstrated behaviors.",
-      "next_action": "G3: Repair global claim/source-dependency selection on the retained native draft before any further model comparison or broad workflow. The native subscription channel and Sonnet-entry/Opus-escalation policy are implemented;3actualSonnet callbacks returned in3.677/4.414/5.168s, but this reduced-context task is not a matched speedup against the historical589.62sfullQ20turn. One unbound facts.note kept41.4MBofpatientcontext; offline complete-row replay took45.893sconstruction+52.892spartition and could not fit a complete global claim. Use existing typed assertion/state/composition to locate each global claim in its actual native source/definition/question context, preserving every required entity, row, date and source. First prove localized offline dependency closure on the retained draft and adverse scope/meaning changes; do not merely omit facts, accept copied numbers as meaning, weaken mandatory verifiers or tune serialization again. Then resume the same retained task with Sonnet and Opus using identical inputs/tools/reviews, reporting completed-answer quality, all repairs/calls/tokens/time/cost. No model winner or fullQ20acceptance yet. Reuse native executions and original populations; no broad paidQ20/Q14/Q21 rerun or passing financial/measure campaign. All25cases/tenareas, fulloriginalQ20handoff, Q21/Q23/Q24/G5/clinical/customer dependencies remain. BuildACTIVE/automationPAUSED.",
+      "next_action": "G3: Within the healthcare-wide ten-area/25case product, continue current Q20ACOagenda/source-interpretation/handoff acceptance using retained native executions, full population manifests and source-bound assertions. Shared global-basis fix6ce25b16 is now verified: same actual retained draft completed automatic repair plus mandatory source/coverage reviews with Sonnet20.789s/oneactor/fiveproviderattempts/$0.115863998API-equivalent and Opus45.179s/twoactor/sevenproviderattempts/$0.392998534, including its extra NULL/duplicate SQL check. Both exact full-row counts and all old ledger rows match; no source/engine rerun. Keep Sonnet entry/Opus escalation; no general winner inferred. First inspect the owned latest native/draft/run receipts and actual remaining Q20requirements; recover source-guarded native results through existing state/composition without fabricating callback provenance or rerunning passing financial/measure engines. Distinguish actual missing payer/program/buyer definitions from unfinished work; retain all original source populations and current/date/eligibility unknowns. Do not replay the broadpaidQ20/Q14/Q21campaign or add catalog/research/serialization work. Complete the connected agenda and ordinary handoff through existing typed assertions, quantitative domains, dated roles, localized repair and faithful presentation. All25fixedcases/tenareas, Q21/Q23/Q24/G5/clinical/customer dependencies remain. Restore local app after source edits; last sealed receipt unchanged. BuildACTIVE/automationACTIVE with routine notifications muted by Mike explicit approval.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -633,8 +633,8 @@
     "kind": "unsealed_connected_engineering_increment",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Sonnet entry/Opus escalation for frontier roles, old Haiku names resolve to Sonnet, availability fallback remains within pair; ordinary investigator uses existing native subscription JSON decision schema, retaining open answer/repair contracts and narrower focused repair schemas. Same mandatory source/completion/native reviews. Baseline remains pinned to Sonnet.",
-    "measured_failure_reduction": "Actual native CLI SQL decision returned178outputtokens in3.677s; subsequent native draft callbacks369/474tokens in4.414/5.168s. No matched historical gain or full answer success; shared source-context failure remains.",
+    "user_behavior_delta": "Global qualitative statements can name complete executed basis rows. Unlocated global claims receive a targeted source-dependency repair before broad context construction. Basis validity never supplies meaning/support; coverage, scalar/source/entity/date and typed/joint source reviews remain mandatory.",
+    "measured_failure_reduction": "Actual shared source-context failure removed on the retained task: automatic basis location, complete reviews and exact counts now succeed for both models; no historical matched speedup claimed.",
     "evidence": [
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-native-checks-2.log",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-join-proof.json",
@@ -671,10 +671,11 @@
       "artifacts/agere-global-column-closure-2026-11-06/model-routing-final.json",
       "artifacts/agere-global-column-closure-2026-11-06/long-call-observation.json",
       "artifacts/agere-global-column-closure-2026-11-06/app-proof.json",
-      "artifacts/agere-frontier-decisions-2026-11-06/engineering-proof.json"
+      "artifacts/agere-frontier-decisions-2026-11-06/engineering-proof.json",
+      "artifacts/agere-global-basis-2026-11-06/engineering-proof.json"
     ],
-    "remaining_gap": "Unbound global facts disable exact column projections and retain full patient evidence. Actual41.4MBpacket required45.893sconstruction/52.892spartition, then correctly failed closed at existing provider envelope. Locate global claim dependencies through existing typed assertion/state bindings; do not weaken source reviews or substitute another compression experiment. Full original Q20 and remaining25case/tenarea acceptance, model/clinical qualification and customer prerequisites remain.",
-    "next_action": "G3: Repair global claim/source-dependency selection on the retained native draft before any further model comparison or broad workflow. The native subscription channel and Sonnet-entry/Opus-escalation policy are implemented;3actualSonnet callbacks returned in3.677/4.414/5.168s, but this reduced-context task is not a matched speedup against the historical589.62sfullQ20turn. One unbound facts.note kept41.4MBofpatientcontext; offline complete-row replay took45.893sconstruction+52.892spartition and could not fit a complete global claim. Use existing typed assertion/state/composition to locate each global claim in its actual native source/definition/question context, preserving every required entity, row, date and source. First prove localized offline dependency closure on the retained draft and adverse scope/meaning changes; do not merely omit facts, accept copied numbers as meaning, weaken mandatory verifiers or tune serialization again. Then resume the same retained task with Sonnet and Opus using identical inputs/tools/reviews, reporting completed-answer quality, all repairs/calls/tokens/time/cost. No model winner or fullQ20acceptance yet. Reuse native executions and original populations; no broad paidQ20/Q14/Q21 rerun or passing financial/measure campaign. All25cases/tenareas, fulloriginalQ20handoff, Q21/Q23/Q24/G5/clinical/customer dependencies remain. BuildACTIVE/automationPAUSED.",
+    "remaining_gap": "Full original Q20agenda/source interpretation/handoff and remaining25case/tenarea acceptance still required; model/clinical/customer qualification remains separate.",
+    "next_action": "G3: Within the healthcare-wide ten-area/25case product, continue current Q20ACOagenda/source-interpretation/handoff acceptance using retained native executions, full population manifests and source-bound assertions. Shared global-basis fix6ce25b16 is now verified: same actual retained draft completed automatic repair plus mandatory source/coverage reviews with Sonnet20.789s/oneactor/fiveproviderattempts/$0.115863998API-equivalent and Opus45.179s/twoactor/sevenproviderattempts/$0.392998534, including its extra NULL/duplicate SQL check. Both exact full-row counts and all old ledger rows match; no source/engine rerun. Keep Sonnet entry/Opus escalation; no general winner inferred. First inspect the owned latest native/draft/run receipts and actual remaining Q20requirements; recover source-guarded native results through existing state/composition without fabricating callback provenance or rerunning passing financial/measure engines. Distinguish actual missing payer/program/buyer definitions from unfinished work; retain all original source populations and current/date/eligibility unknowns. Do not replay the broadpaidQ20/Q14/Q21campaign or add catalog/research/serialization work. Complete the connected agenda and ordinary handoff through existing typed assertions, quantitative domains, dated roles, localized repair and faithful presentation. All25fixedcases/tenareas, Q21/Q23/Q24/G5/clinical/customer dependencies remain. Restore local app after source edits; last sealed receipt unchanged. BuildACTIVE/automationACTIVE with routine notifications muted by Mike explicit approval.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
@@ -728,10 +729,14 @@
       "full_mvp_acceptance": false,
       "applicability": "Current same-platform archive/install and saved-context inspection, plus explicitly scoped compatibility of existing full-ten-area capabilities. This adds current portable-operation evidence; it does not establish new first-question, clinical, model or customer-deployment performance."
     },
-    "latest_human_steering": "2026-11-06: Mike asked what is next in the stack, requested a distinctive light conversation-first UI informed by GitHub and award-winning sites, and reaffirmed that research is fit assessment while core stack and product work continue.",
+    "latest_human_steering": {
+      "at": "2026-11-06T18:30:18.766668+00:00",
+      "instruction": "It is all of healthcare; ACO agenda is one acceptance case, never the whole product.",
+      "scope": "Preserve the healthcare-wide product across clinical/chronic disease/medication, population and individual, utilization/outcomes, finance/provider/contracts, discovery/explanation, deliverables, learning/reuse and shared industry-portable core. Keep all ten canonical acceptance areas and25fixedcases; no new finish-line expansion."
+    },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T17:40:37.724078+00:00",
-    "workflow_change": "Sonnet entry/Opus escalation for frontier roles, old Haiku names resolve to Sonnet, availability fallback remains within pair; ordinary investigator uses existing native subscription JSON decision schema, retaining open answer/repair contracts and narrower focused repair schemas. Same mandatory source/completion/native reviews. Baseline remains pinned to Sonnet.",
+    "at": "2026-11-06T18:29:13.969747+00:00",
+    "workflow_change": "Global qualitative statements can name complete executed basis rows. Unlocated global claims receive a targeted source-dependency repair before broad context construction. Basis validity never supplies meaning/support; coverage, scalar/source/entity/date and typed/joint source reviews remain mandatory.",
     "unsealed_work": {
       "status": "Q20_native_payer_prerequisite_and_partial_agenda_composition_verified",
       "product_commit": "31c837e6",
@@ -1012,12 +1017,11 @@
       "81996ed"
     ],
     "continuation_scheduler": {
-      "status": "PAUSED",
-      "id": "finish-agere-overnight-mvp-candidate",
-      "observed_at": "2026-11-05T14:48:08.592513+00:00",
-      "interval_minutes": 30,
+      "status": "ACTIVE",
+      "automation_id": "finish-agere-overnight-mvp-candidate",
       "notification_policy": "failed_runs_only",
-      "reason": "Active-chat build resumed; automatic updates remain off."
+      "user_approval": "Restart quiet continuation",
+      "at": "2026-11-06T18:27:23.565393+00:00"
     },
     "owned_recovery_run": {
       "status": "terminal",
@@ -1196,7 +1200,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-06T17:43:01.008857+00:00",
+    "updated_at": "2026-11-06T18:29:13.969747+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -1525,6 +1529,213 @@
         "http_proof": "artifacts/agere-frontier-decisions-2026-11-06/app-proof.json",
         "product_commit": "c7985b311151e2a040d9dfc43c97f3301780d337"
       }
+    },
+    "global_source_basis": {
+      "schema": "global-source-basis-engineering/1",
+      "at": "2026-11-06T18:29:13.969747+00:00",
+      "gate": "G3",
+      "status": "shared_dependency_fix_verified_on_actual_automatic_workflow",
+      "product_commit": "6ce25b16",
+      "workflow_change": "Global qualitative statements can name complete executed basis rows. Unlocated global claims receive a targeted source-dependency repair before broad context construction. Basis validity never supplies meaning/support; coverage, scalar/source/entity/date and typed/joint source reviews remain mandatory.",
+      "offline_proof": {
+        "status": "actual_retained_draft_dependency_location_passed",
+        "actual_repair_request_seconds": 0.49247420812025666,
+        "packet_seconds_with_authored_basis": 2.0946245421655476,
+        "previous_actual_packet_bytes": 41413679,
+        "current_authored_basis_packet_bytes": [
+          147980
+        ],
+        "all_native_rows_and_ids_retained": 4115,
+        "all_statuses_duplicates_and_nulls_exact": true,
+        "global_statement_unchanged": true,
+        "native_source_receipts_unchanged": true,
+        "source": {
+          "source_digest": "de1e487344c2c5662c55cbe8302497f559bd7cff85d06572f78b1fb2fabedacd",
+          "as_of": "2030-05-27",
+          "semantic_version": "semantic-layer/20",
+          "size": 8780111872,
+          "mtime_ns": 1793188207994029872
+        },
+        "provider_calls": 0,
+        "new_engine_runs": 0,
+        "adverse_checks": {
+          "stale_source": "full_context_required_no_projection",
+          "stale_query": "full_context_required_no_projection",
+          "direct_basis": "full_context_required_no_projection"
+        },
+        "full_Q20_acceptance": false,
+        "clinical_qualification": false,
+        "scope": "Actual returned draft now produces a located repair before broad-context encoding. Explicit source-basis packet construction uses an authored declaration only; live automatic repair and source judgments are pending."
+      },
+      "actual_comparison": {
+        "status": "both_localized_arms_passed",
+        "results": [
+          {
+            "model": "claude-sonnet-5-5",
+            "seconds": 20.78902787505649,
+            "wire": [
+              {
+                "model": "claude-sonnet-5-5",
+                "native_schema": true
+              }
+            ],
+            "actor_calls": 1,
+            "actor_cache_hits": 0,
+            "review_calls": 2,
+            "model_escalations": [],
+            "native_actions": [],
+            "status": "answered",
+            "accepted_by_product_review": true,
+            "independent_full_row_counts_match": true,
+            "all_prior_attempt_rows_exact": true,
+            "error": null,
+            "new_provider_attempts": 5,
+            "known_api_equivalent_usd": 0.115863998,
+            "unpriced_attempts": 0,
+            "models": {
+              "claude-sonnet-5-5": {
+                "attempts": 1,
+                "known_api_equivalent_usd": 0.1079403,
+                "output_tokens": 775,
+                "input_tokens_including_cache": 32598,
+                "unpriced": 0,
+                "ledger_seconds": 7.832593250088394
+              },
+              "jev-1.13.0": {
+                "attempts": 3,
+                "known_api_equivalent_usd": 0.007783398,
+                "output_tokens": 270,
+                "input_tokens_including_cache": 185319,
+                "unpriced": 0,
+                "ledger_seconds": 1.74646241706796
+              },
+              "pplx-decider-v1.1-27b": {
+                "attempts": 1,
+                "known_api_equivalent_usd": 0.00014030000000000002,
+                "output_tokens": 1,
+                "input_tokens_including_cache": 7015,
+                "unpriced": 0,
+                "ledger_seconds": 0.7996733749751002
+              }
+            }
+          },
+          {
+            "model": "claude-opus-5-5",
+            "seconds": 45.17913316586055,
+            "wire": [
+              {
+                "model": "claude-opus-5-5",
+                "native_schema": true
+              },
+              {
+                "model": "claude-opus-5-5",
+                "native_schema": true
+              }
+            ],
+            "actor_calls": 2,
+            "actor_cache_hits": 0,
+            "review_calls": 2,
+            "model_escalations": [],
+            "native_actions": [
+              "query_sql"
+            ],
+            "status": "answered",
+            "accepted_by_product_review": true,
+            "independent_full_row_counts_match": true,
+            "all_prior_attempt_rows_exact": true,
+            "error": null,
+            "new_provider_attempts": 7,
+            "known_api_equivalent_usd": 0.3929985339999999,
+            "unpriced_attempts": 0,
+            "models": {
+              "claude-opus-5-5": {
+                "attempts": 2,
+                "known_api_equivalent_usd": 0.38303699999999996,
+                "output_tokens": 2089,
+                "input_tokens_including_cache": 66493,
+                "unpriced": 0,
+                "ledger_seconds": 22.311576833948493
+              },
+              "jev-1.13.0": {
+                "attempts": 3,
+                "known_api_equivalent_usd": 0.008059674000000001,
+                "output_tokens": 590,
+                "input_tokens_including_cache": 191897,
+                "unpriced": 0,
+                "ledger_seconds": 1.9266297090798616
+              },
+              "pplx-decider-v1.1-27b": {
+                "attempts": 2,
+                "known_api_equivalent_usd": 0.00190186,
+                "output_tokens": 2,
+                "input_tokens_including_cache": 95093,
+                "unpriced": 0,
+                "ledger_seconds": 3.841646542074159
+              }
+            }
+          }
+        ],
+        "expected_from_all_retained_rows": {
+          "receipt_rows": 4115,
+          "patients": 4115,
+          "unresolved_rows": 4115
+        },
+        "source_and_code_unchanged": true,
+        "all_prior_attempt_rows_exact": true,
+        "full_Q20_acceptance": false,
+        "clinical_qualification": false,
+        "new_provider_attempts": 12,
+        "known_api_equivalent_usd": 0.508862532,
+        "unpriced_attempts": 0,
+        "models": {
+          "claude-sonnet-5-5": {
+            "attempts": 1,
+            "known_api_equivalent_usd": 0.1079403,
+            "output_tokens": 775,
+            "input_tokens_including_cache": 32598,
+            "unpriced": 0,
+            "ledger_seconds": 7.832593250088394
+          },
+          "jev-1.13.0": {
+            "attempts": 6,
+            "known_api_equivalent_usd": 0.015843072,
+            "output_tokens": 860,
+            "input_tokens_including_cache": 377216,
+            "unpriced": 0,
+            "ledger_seconds": 3.6730921261478215
+          },
+          "pplx-decider-v1.1-27b": {
+            "attempts": 3,
+            "known_api_equivalent_usd": 0.00204216,
+            "output_tokens": 3,
+            "input_tokens_including_cache": 102108,
+            "unpriced": 0,
+            "ledger_seconds": 4.641319917049259
+          },
+          "claude-opus-5-5": {
+            "attempts": 2,
+            "known_api_equivalent_usd": 0.38303699999999996,
+            "output_tokens": 2089,
+            "input_tokens_including_cache": 66493,
+            "unpriced": 0,
+            "ledger_seconds": 22.311576833948493
+          }
+        }
+      },
+      "affected_tests": {
+        "total": 260,
+        "passed": 259,
+        "optional_skipped": 1
+      },
+      "all_attempt_rows": 57204,
+      "pending_rows": 44,
+      "new_pending_attempts": 0,
+      "all_prior_attempt_rows_exact": true,
+      "source_unchanged": true,
+      "learning_or_clinical_defaults_promoted": false,
+      "full_Q20_acceptance": false,
+      "full_queue_acceptance": false,
+      "scope": "One actual retained native task, same original unaccepted draft and same full source results for both arms. No manual basis supplied; one sequential observation per model, not a general model superiority/clinical qualification claim. All costs are API-equivalent usage, not inferred subscription cash expense."
     }
   },
   "decisions": [
@@ -5315,10 +5526,24 @@
       "decision": "Stop model comparison at the shared local verification failure. Revert representation-only candidate from product; correct actual claim dependency selection before more paid workflow work.",
       "evidence": "artifacts/agere-frontier-decisions-2026-11-06/engineering-proof.json",
       "scope_impact": "No acceptance area removed; Sonnet/Opus user direction implemented; no default learned model or clinical bottle promoted."
+    },
+    {
+      "at": "2026-11-06T18:29:13.969747+00:00",
+      "gate": "G3",
+      "decision": "Accept the source-basis engineering increment for this measured failure; retain Sonnet entry/Opus escalation and advance to original Q20 requirements without another broad campaign.",
+      "evidence": "artifacts/agere-global-basis-2026-11-06/engineering-proof.json",
+      "scope_impact": "All25/tenareas retained. No research expansion, clinical eligibility rule, trained model, catalog or serializer candidate activated."
+    },
+    {
+      "at": "2026-11-06T18:30:18.766668+00:00",
+      "gate": "G3",
+      "decision": "Reaffirm healthcare-wide scope: Q20ACOagenda is a current acceptance case, not the product charter. Restore autonomous continuation mode following explicit scheduler approval.",
+      "evidence": "Latest human messages and Restart quiet continuation response,2026-11-06",
+      "scope_impact": "Retain ten acceptance areas and25fixedcases; no narrowing to ACO/HF or addition of unbounded research scope."
     }
   ],
   "unsealed_work": {
-    "status": "routing_and_native_decision_checks_passed_localized_workflow_unaccepted",
+    "status": "shared_dependency_fix_verified_on_actual_automatic_workflow",
     "product_commit": "c7985b311151e2a040d9dfc43c97f3301780d337",
     "product_fix_commit": "b3f0a8d7",
     "receipt": "artifacts/agere-frontier-decisions-2026-11-06/engineering-proof.json",
@@ -5327,7 +5552,7 @@
     "runtime_activation": false,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
-    "affected_tests_passed": 179,
+    "affected_tests_passed": 259,
     "provider_calls_this_increment": 6,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
@@ -5351,12 +5576,12 @@
     "new_provider_attempts": 6,
     "known_api_equivalent_usd": 0.190087398,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 57192,
+    "all_attempt_rows_retained": 57204,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 6,
+    "latest_increment_provider_attempts": 12,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -5467,7 +5692,7 @@
     "fixed_sequence_status": "stopped_on_material_failure_or_dependency",
     "native_copy_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/native-proof.json",
     "native_copy_source_check": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/run-receipt.json",
-    "latest_increment_known_api_equivalent_usd": 0.190087398,
+    "latest_increment_known_api_equivalent_usd": 0.508862532,
     "latest_increment_unpriced_attempts": 0,
     "all_attempt_rows_before_Q15": 56228,
     "pending_rows_before_Q15": 42,
@@ -5610,9 +5835,21 @@
     "frontier_interrupted_receipt": "artifacts/agere-frontier-decisions-2026-11-06/interrupted-receipt.json",
     "frontier_engineering_proof": "artifacts/agere-frontier-decisions-2026-11-06/engineering-proof.json",
     "codec_candidate_activation": false,
-    "model_comparison_complete": false,
+    "model_comparison_complete": true,
     "frontier_decision_policy_active": true,
-    "app_proof": "artifacts/agere-frontier-decisions-2026-11-06/app-proof.json"
+    "app_proof": "artifacts/agere-frontier-decisions-2026-11-06/app-proof.json",
+    "global_basis_commit": "6ce25b16",
+    "global_basis_offline_proof": "artifacts/agere-global-basis-2026-11-06/offline-proof.json",
+    "global_basis_comparison": {
+      "kind": "global-basis-retained-comparison",
+      "pid": 29920,
+      "session": 55985,
+      "status": "running",
+      "source_frozen": true,
+      "receipt": "artifacts/agere-global-basis-2026-11-06/running.json"
+    },
+    "global_basis_engineering_proof": "artifacts/agere-global-basis-2026-11-06/engineering-proof.json",
+    "global_basis_comparison_status": "both_localized_arms_passed"
   },
   "current_visual_request": {
     "status": "completed",
@@ -5646,7 +5883,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Repair global claim/source-dependency selection on the retained native draft before any further model comparison or broad workflow. The native subscription channel and Sonnet-entry/Opus-escalation policy are implemented;3actualSonnet callbacks returned in3.677/4.414/5.168s, but this reduced-context task is not a matched speedup against the historical589.62sfullQ20turn. One unbound facts.note kept41.4MBofpatientcontext; offline complete-row replay took45.893sconstruction+52.892spartition and could not fit a complete global claim. Use existing typed assertion/state/composition to locate each global claim in its actual native source/definition/question context, preserving every required entity, row, date and source. First prove localized offline dependency closure on the retained draft and adverse scope/meaning changes; do not merely omit facts, accept copied numbers as meaning, weaken mandatory verifiers or tune serialization again. Then resume the same retained task with Sonnet and Opus using identical inputs/tools/reviews, reporting completed-answer quality, all repairs/calls/tokens/time/cost. No model winner or fullQ20acceptance yet. Reuse native executions and original populations; no broad paidQ20/Q14/Q21 rerun or passing financial/measure campaign. All25cases/tenareas, fulloriginalQ20handoff, Q21/Q23/Q24/G5/clinical/customer dependencies remain. BuildACTIVE/automationPAUSED.",
+  "next_action": "G3: Within the healthcare-wide ten-area/25case product, continue current Q20ACOagenda/source-interpretation/handoff acceptance using retained native executions, full population manifests and source-bound assertions. Shared global-basis fix6ce25b16 is now verified: same actual retained draft completed automatic repair plus mandatory source/coverage reviews with Sonnet20.789s/oneactor/fiveproviderattempts/$0.115863998API-equivalent and Opus45.179s/twoactor/sevenproviderattempts/$0.392998534, including its extra NULL/duplicate SQL check. Both exact full-row counts and all old ledger rows match; no source/engine rerun. Keep Sonnet entry/Opus escalation; no general winner inferred. First inspect the owned latest native/draft/run receipts and actual remaining Q20requirements; recover source-guarded native results through existing state/composition without fabricating callback provenance or rerunning passing financial/measure engines. Distinguish actual missing payer/program/buyer definitions from unfinished work; retain all original source populations and current/date/eligibility unknowns. Do not replay the broadpaidQ20/Q14/Q21campaign or add catalog/research/serialization work. Complete the connected agenda and ordinary handoff through existing typed assertions, quantitative domains, dated roles, localized repair and faithful presentation. All25fixedcases/tenareas, Q21/Q23/Q24/G5/clinical/customer dependencies remain. Restore local app after source edits; last sealed receipt unchanged. BuildACTIVE/automationACTIVE with routine notifications muted by Mike explicit approval.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -5735,8 +5972,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 28973,
-  "owned_server_session": 83398,
+  "owned_server_pid": null,
+  "owned_server_session": null,
   "last_run_observation": {
     "status": "owned_confirmation_terminal_latency_failed_app_restored",
     "receipt": "artifacts/agere-global-column-closure-2026-11-06/ordinary-confirmation/receipt.json",
