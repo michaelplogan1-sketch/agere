@@ -2172,6 +2172,10 @@ def native_table_copy_review(answer,calls,document_reviews,as_of):
         if key.endswith('_id')or key=='id':return bool(value)and not re.search(r'\s',value)
         if key=='status'or key.endswith('_status'):
             return bool(re.fullmatch(r'[A-Za-z0-9_.:/-]+',value))
+        if re.fullmatch(r'\d{4}-\d{2}',value):
+            from datetime import datetime
+            try:datetime.strptime(value,'%Y-%m');return True
+            except ValueError:return False
         # Complete ISO clocks only, including first/last-event aliases. An
         # arbitrary explanation in a date-labelled column cannot qualify.
         if not re.fullmatch(r'\d{4}-\d{2}-\d{2}(?:[T ][0-9:.+-]+Z?)?',value):return False

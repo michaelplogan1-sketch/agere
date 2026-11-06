@@ -60,6 +60,11 @@ class NativeTableCopy(unittest.TestCase):
         self.answer['table_from_tool']='missing';self.assertIsNone(self.review())
     def test_complete_contract_without_optional_row_count_is_accepted(self):
         self.call['result'].pop('table_rows');self.assertEqual(self.review()['rows'],3)
+    def test_calendar_month_partitions_are_primitive_clocks_not_documentary_prose(self):
+        self.rows[0][3]='2029-12';self.answer['table'][0]['latest_date']='2029-12'
+        self.assertIsNotNone(self.review())
+        self.rows[0][3]='2029-13';self.answer['table'][0]['latest_date']='2029-13'
+        self.assertIsNone(self.review())
     def test_numeric_classifiers_keep_the_existing_lineage_qualification_path(self):
         self.answer['table']=[{'patient_id':'P1','clinical_flag':1}]
         self.assertIsNone(self.review())
