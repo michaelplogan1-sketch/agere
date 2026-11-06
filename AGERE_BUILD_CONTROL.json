@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T22:59:49.685103+00:00",
+  "updated_at": "2026-11-06T23:41:06.479385+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -555,15 +555,19 @@
         {
           "path": "artifacts/agere-native-populations-2026-11-06/conditional-ranked/engineering-proof.json",
           "sha256": "a92d056cdc448da4626e595224d6800592a7edfb5f9dc4b4990c349f6c8de1a4"
+        },
+        {
+          "path": "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json",
+          "sha256": "e6265cd8e337d8ac00038be1d70dc9b0acd931aa4c186482c38c9ac87cd7eedb"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Current evidence closes this retained agenda population/follow-up increment. It does not replace the original failed ordinary-question results or qualify fresh-entry latency/cost. Q21 still needs the full original 2029 source-bound assertion/date/polarity/subject and analytical-conclusion workflow; the earlier three-account handoff is insufficient. Q23 applicable definitions, Q24 requested-deliverable capability, current ten-area/25-case assessment and independent G5/clinical/model/customer dependencies remain. Saved follow-up still includes about 15 seconds of immutable-context I/O.",
-      "engineering_current_status": "Retained original-agenda source review and conditional/ranked population selection/roster/follow-up verified. Original Q21/Q23/Q24 acceptance and whole-case assessment remain; no fresh full-question latency or clinical qualification claim.",
-      "next_action": "G3: The retained original agenda population/follow-up increment is now verified on d99f87e4. All 32 previous bindings remain and 40 exact patient populations are selectable. Independent received-source checks match frequent ED users (44), repeat-stay patients (109), top spenders (180), ranked patients with stays (154) and with open gaps (107), plus the 3605-person denominator. Full 44-person named roster/follow-up passed; actual browser top-spend follow-up returns 180 with zero model calls. Next complete the original Q21 source-interpretation workflow: received 2029 clinical accounts whose conclusion changes when negated, historical, copied or other-subject statements are respected. Reuse existing source-bound assertion/state, documentary handoff and localized review paths. Preserve full 2029 scope, date/polarity/subject and value/unit semantics, affected conclusion, contradictions and source receipts. The earlier three-account handoff and unsafe retained raw plan are not full Q21 acceptance. Inspect the retained failure before any provider continuation; do not replay the passing Q20 actor, engines, source review, population checks or codecs. Then address Q23 applicable definitions, Q24 requested-deliverable capability and the current ten-area/25-case assessment. Preserve original failed/partial pairs and supported unknowns; no disease-specific handler, broad training campaign or architecture rewrite. Independent G5/clinical/model/customer dependencies remain separate. App PID 36215 / session 39374 serves HTTP 200 on 8885; no active jobs, source unfrozen. Quiet continuation ACTIVE; all healthcare and portable core remain in scope.",
+      "remaining_acceptance": "Complete one ordinary original Q21 answer through the connected stack, including semantic source checks and explicit unresolved meanings/bindings. Native annotation counts are not clinical accuracy. Do not rerun the passing native source audit or Q20 workflow. Q23 applicable definitions, Q24 requested-deliverable capability, the current ten-area/25-case assessment and independent G5/clinical/model/customer dependencies remain.",
+      "engineering_current_status": "Full native Q21 source/window accounting verified. Original ordinary Q21 semantic composition is next; no source/model/clinical accuracy or full-question acceptance claim.",
+      "next_action": "G3: Q21 full native source/window accounting is verified on 15f9b8d7. The shared assertion-review operator processed all 4115 patients / 41 source streams; all 51233 received 2029 note-fact row IDs are accounted for, with 71735 source-bound assertions and exact value/unit/entity qualifiers. Pre-window repetitions cannot refresh later evidence; unknown clocks and failed bindings remain explicit. 102 affected tests pass; zero new provider calls. Native calculation semantics remain unchanged from the full source check on 765326bb; the subsequent change only exposes output paths for composition. Next start the authorized local app and complete ONE ordinary original Q21 answer through the connected question path, using these existing native receipts and documented output paths. Preserve the exact 2029 source-event scope, assertions, dates/polarity/subjects, affected conclusions and unresolved contradictions; source-check semantics rather than endorsing extraction labels. Inspect owned receipts first, preserve every attempt/partial result, and freeze product source during the check. Do not rerun the passing full native source audit, Q20 actor/engines/source review/population checks or codecs. No sampled account may replace the full request. Then address Q23 applicable definitions, Q24 requested-deliverable capability and the current whole ten-area/25-case assessment. Independent G5/clinical/model/customer qualification remains separate. App is currently stopped; no active job and source unfrozen. Quiet continuation ACTIVE; all healthcare and portable core remain in scope.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -645,8 +649,8 @@
     "kind": "unsealed_connected_engineering_increment",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Source-defined populations now include conditional patient counts, scalar patient-count subqueries and ranked groups with proven boundary stability. The original agenda has 40 exact selectable populations, retaining all previous 32 bindings; frequent ED users open as a full 44-person named roster with scoped count, and an actual browser top-spend follow-up counts exactly 180.",
-    "measured_failure_reduction": "Previously the 44 frequent ED users, 109 repeat-stay patients, 180 top spenders and 154/107 ranked subgroups had no qualified selectable memberships. Seven distinct calculation cells now match independently computed received-source sets; the repeated top-with-stay binding also qualifies.",
+    "user_behavior_delta": "The existing assertion-review tool now applies an assertion date window, audits all existing annotations across explicit source streams, preserves every derived value/unit/entity qualifier and invalid binding, and keeps pre-window repetitions from refreshing evidence. Its discovered output paths allow native composition without guessing receipt fields.",
+    "measured_failure_reduction": "The earlier three-account mapped-concept handoff had no assertion-level 2029 window or complete derived annotation accounting. The actual shared operator now processed all 4115 received patients / 41 source streams and accounted for all 51233 source-window note_fact row IDs.",
     "evidence": [
       "artifacts/agere-retained-workflow-2026-11-06/source-review-2/engineering-proof.json",
       "artifacts/agere-retained-workflow-2026-11-06/attempt-2/automatic-arithmetic-proof.json",
@@ -655,17 +659,18 @@
       "artifacts/agere-retained-workflow-2026-11-06/source-review-2/active-context-handoff.json",
       "artifacts/agere-retained-workflow-2026-11-06/source-review-2/app-handoff-proof.json",
       "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/engineering-proof.json",
-      "artifacts/agere-native-populations-2026-11-06/conditional-ranked/engineering-proof.json"
+      "artifacts/agere-native-populations-2026-11-06/conditional-ranked/engineering-proof.json",
+      "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json"
     ],
-    "remaining_gap": "Current evidence closes this retained agenda population/follow-up increment. It does not replace the original failed ordinary-question results or qualify fresh-entry latency/cost. Q21 still needs the full original 2029 source-bound assertion/date/polarity/subject and analytical-conclusion workflow; the earlier three-account handoff is insufficient. Q23 applicable definitions, Q24 requested-deliverable capability, current ten-area/25-case assessment and independent G5/clinical/model/customer dependencies remain. Saved follow-up still includes about 15 seconds of immutable-context I/O.",
-    "next_action": "G3: The retained original agenda population/follow-up increment is now verified on d99f87e4. All 32 previous bindings remain and 40 exact patient populations are selectable. Independent received-source checks match frequent ED users (44), repeat-stay patients (109), top spenders (180), ranked patients with stays (154) and with open gaps (107), plus the 3605-person denominator. Full 44-person named roster/follow-up passed; actual browser top-spend follow-up returns 180 with zero model calls. Next complete the original Q21 source-interpretation workflow: received 2029 clinical accounts whose conclusion changes when negated, historical, copied or other-subject statements are respected. Reuse existing source-bound assertion/state, documentary handoff and localized review paths. Preserve full 2029 scope, date/polarity/subject and value/unit semantics, affected conclusion, contradictions and source receipts. The earlier three-account handoff and unsafe retained raw plan are not full Q21 acceptance. Inspect the retained failure before any provider continuation; do not replay the passing Q20 actor, engines, source review, population checks or codecs. Then address Q23 applicable definitions, Q24 requested-deliverable capability and the current ten-area/25-case assessment. Preserve original failed/partial pairs and supported unknowns; no disease-specific handler, broad training campaign or architecture rewrite. Independent G5/clinical/model/customer dependencies remain separate. App PID 36215 / session 39374 serves HTTP 200 on 8885; no active jobs, source unfrozen. Quiet continuation ACTIVE; all healthcare and portable core remain in scope.",
+    "remaining_gap": "Complete one ordinary original Q21 answer through the connected stack, including semantic source checks and explicit unresolved meanings/bindings. Native annotation counts are not clinical accuracy. Do not rerun the passing native source audit or Q20 workflow. Q23 applicable definitions, Q24 requested-deliverable capability, the current ten-area/25-case assessment and independent G5/clinical/model/customer dependencies remain.",
+    "next_action": "G3: Q21 full native source/window accounting is verified on 15f9b8d7. The shared assertion-review operator processed all 4115 patients / 41 source streams; all 51233 received 2029 note-fact row IDs are accounted for, with 71735 source-bound assertions and exact value/unit/entity qualifiers. Pre-window repetitions cannot refresh later evidence; unknown clocks and failed bindings remain explicit. 102 affected tests pass; zero new provider calls. Native calculation semantics remain unchanged from the full source check on 765326bb; the subsequent change only exposes output paths for composition. Next start the authorized local app and complete ONE ordinary original Q21 answer through the connected question path, using these existing native receipts and documented output paths. Preserve the exact 2029 source-event scope, assertions, dates/polarity/subjects, affected conclusions and unresolved contradictions; source-check semantics rather than endorsing extraction labels. Inspect owned receipts first, preserve every attempt/partial result, and freeze product source during the check. Do not rerun the passing full native source audit, Q20 actor/engines/source review/population checks or codecs. No sampled account may replace the full request. Then address Q23 applicable definitions, Q24 requested-deliverable capability and the current whole ten-area/25-case assessment. Independent G5/clinical/model/customer qualification remains separate. App is currently stopped; no active job and source unfrozen. Quiet continuation ACTIVE; all healthcare and portable core remain in scope.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
-      "Current evidence closes this retained agenda population/follow-up increment. It does not replace the original failed ordinary-question results or qualify fresh-entry latency/cost. Q21 still needs the full original 2029 source-bound assertion/date/polarity/subject and analytical-conclusion workflow; the earlier three-account handoff is insufficient. Q23 applicable definitions, Q24 requested-deliverable capability, current ten-area/25-case assessment and independent G5/clinical/model/customer dependencies remain. Saved follow-up still includes about 15 seconds of immutable-context I/O."
+      "Complete one ordinary original Q21 answer through the connected stack, including semantic source checks and explicit unresolved meanings/bindings. Native annotation counts are not clinical accuracy. Do not rerun the passing native source audit or Q20 workflow. Q23 applicable definitions, Q24 requested-deliverable capability, the current ten-area/25-case assessment and independent G5/clinical/model/customer dependencies remain."
     ],
-    "latest_progress": "Source-defined populations now include conditional patient counts, scalar patient-count subqueries and ranked groups with proven boundary stability. The original agenda has 40 exact selectable populations, retaining all previous 32 bindings; frequent ED users open as a full 44-person named roster with scoped count, and an actual browser top-spend follow-up counts exactly 180.",
-    "results_report": "artifacts/agere-native-populations-2026-11-06/conditional-ranked/engineering-proof.json",
+    "latest_progress": "The existing assertion-review tool now applies an assertion date window, audits all existing annotations across explicit source streams, preserves every derived value/unit/entity qualifier and invalid binding, and keeps pre-window repetitions from refreshing evidence. Its discovered output paths allow native composition without guessing receipt fields.",
+    "results_report": "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -718,19 +723,19 @@
       "scope": "Preserve the healthcare-wide product across clinical/chronic disease/medication, population and individual, utilization/outcomes, finance/provider/contracts, discovery/explanation, deliverables, learning/reuse and shared industry-portable core. Keep all ten canonical acceptance areas and25fixedcases; no new finish-line expansion."
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T22:59:49.685103+00:00",
-    "workflow_change": "Source-defined populations now include conditional patient counts, scalar patient-count subqueries and ranked groups with proven boundary stability. The original agenda has 40 exact selectable populations, retaining all previous 32 bindings; frequent ED users open as a full 44-person named roster with scoped count, and an actual browser top-spend follow-up counts exactly 180.",
+    "at": "2026-11-06T23:41:06.479385+00:00",
+    "workflow_change": "The existing assertion-review tool now applies an assertion date window, audits all existing annotations across explicit source streams, preserves every derived value/unit/entity qualifier and invalid binding, and keeps pre-window repetitions from refreshing evidence. Its discovered output paths allow native composition without guessing receipt fields.",
     "unsealed_work": {
-      "status": "verified_connected_increment_gate_still_active",
-      "product_commit": "d99f87e49eff0b1d4ec47ac55dde6b1c294d2454",
-      "product_fix_commit": "d99f87e49eff0b1d4ec47ac55dde6b1c294d2454",
-      "receipt": "artifacts/agere-native-populations-2026-11-06/conditional-ranked/engineering-proof.json",
+      "status": "verified_full_native_scope_pending_ordinary_composition",
+      "product_commit": "15f9b8d7e9a6d0ab896a687499b8ea261710feca",
+      "product_fix_commit": "15f9b8d7e9a6d0ab896a687499b8ea261710feca",
+      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json",
       "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
       "source_frozen": false,
       "runtime_activation": false,
-      "product_code_in_candidate_app": true,
+      "product_code_in_candidate_app": false,
       "answer_selected": false,
-      "affected_tests_passed": 90,
+      "affected_tests_passed": 102,
       "provider_calls_this_increment": 0,
       "ordinary_check_owner_reconciled": true,
       "previous_ordinary_run": {
@@ -1130,6 +1135,33 @@
         "full_question_acceptance": false,
         "clinical_model_qualification": false,
         "context_id": "ANS-0ba5e105d5149bf06ae4b9ba"
+      },
+      "q21_assertion_window_native": {
+        "kind": "Q21-full-assertion-window-native",
+        "pid": 36871,
+        "session": null,
+        "status": "passed_full_native_scope_accounting_not_final_Q21",
+        "source_frozen": false,
+        "provider_work": false,
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/running.json"
+      },
+      "q21_assertion_window_candidate": {
+        "status": "verified_full_native_scope_pending_ordinary_composition",
+        "product_commit": "15f9b8d7e9a6d0ab896a687499b8ea261710feca",
+        "native_calculation_commit": "765326bb",
+        "proof": "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json",
+        "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt.json",
+        "source_frozen": false,
+        "runtime_activation": false,
+        "affected_tests_passed": 102,
+        "patients": 4115,
+        "source_streams": 41,
+        "received_2029_fact_rows_accounted": 51233,
+        "source_bound_assertions": 71735,
+        "source_records_checked": 19996,
+        "provider_attempts": 0,
+        "full_question_acceptance": false,
+        "clinical_model_qualification": false
       }
     },
     "bottling_assessment": {
@@ -1208,7 +1240,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Previously the 44 frequent ED users, 109 repeat-stay patients, 180 top spenders and 154/107 ranked subgroups had no qualified selectable memberships. Seven distinct calculation cells now match independently computed received-source sets; the repeated top-with-stay binding also qualifies.",
+    "measured_failure_removed": "The earlier three-account mapped-concept handoff had no assertion-level 2029 window or complete derived annotation accounting. The actual shared operator now processed all 4115 received patients / 41 source streams and accounted for all 51233 source-window note_fact row IDs.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -1356,7 +1388,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-06T22:59:49.685103+00:00",
+    "updated_at": "2026-11-06T23:41:06.479385+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -2761,6 +2793,16 @@
         "artifacts/agere-native-populations-2026-11-06/conditional-ranked/engineering-proof.json",
         "artifacts/agere-native-populations-2026-11-06/conditional-ranked/receipt.json",
         "artifacts/agere-native-populations-2026-11-06/conditional-ranked/browser-workflow-proof.json"
+      ]
+    },
+    {
+      "at": "2026-11-06T23:41:06.479385+00:00",
+      "decision": "Advance from sampled mapped-concept handoff to complete source-windowed existing-annotation accounting, then ordinary Q21 composition.",
+      "reason": "Q21 requires the assertion window and full value/unit/entity scope. The native operator now accounts for every received 2029 note-fact row in the full population and retains unbound rows. Source partitions cover all 41 streams; the 30-stream context packet size is not a workflow cap. Source checks verified every bound quote/hash without providers; exact source binding does not validate clinical meaning.",
+      "scope_impact": "Existing assertion/state/composition path extended; no new disease handler or charter area. Full native source check is passing and must be reused; one ordinary Q21 confirmation remains. All ten areas and 25 cases retained.",
+      "evidence": [
+        "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/receipt.json"
       ]
     }
   ],
@@ -6227,7 +6269,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: The retained original agenda population/follow-up increment is now verified on d99f87e4. All 32 previous bindings remain and 40 exact patient populations are selectable. Independent received-source checks match frequent ED users (44), repeat-stay patients (109), top spenders (180), ranked patients with stays (154) and with open gaps (107), plus the 3605-person denominator. Full 44-person named roster/follow-up passed; actual browser top-spend follow-up returns 180 with zero model calls. Next complete the original Q21 source-interpretation workflow: received 2029 clinical accounts whose conclusion changes when negated, historical, copied or other-subject statements are respected. Reuse existing source-bound assertion/state, documentary handoff and localized review paths. Preserve full 2029 scope, date/polarity/subject and value/unit semantics, affected conclusion, contradictions and source receipts. The earlier three-account handoff and unsafe retained raw plan are not full Q21 acceptance. Inspect the retained failure before any provider continuation; do not replay the passing Q20 actor, engines, source review, population checks or codecs. Then address Q23 applicable definitions, Q24 requested-deliverable capability and the current ten-area/25-case assessment. Preserve original failed/partial pairs and supported unknowns; no disease-specific handler, broad training campaign or architecture rewrite. Independent G5/clinical/model/customer dependencies remain separate. App PID 36215 / session 39374 serves HTTP 200 on 8885; no active jobs, source unfrozen. Quiet continuation ACTIVE; all healthcare and portable core remain in scope.",
+  "next_action": "G3: Q21 full native source/window accounting is verified on 15f9b8d7. The shared assertion-review operator processed all 4115 patients / 41 source streams; all 51233 received 2029 note-fact row IDs are accounted for, with 71735 source-bound assertions and exact value/unit/entity qualifiers. Pre-window repetitions cannot refresh later evidence; unknown clocks and failed bindings remain explicit. 102 affected tests pass; zero new provider calls. Native calculation semantics remain unchanged from the full source check on 765326bb; the subsequent change only exposes output paths for composition. Next start the authorized local app and complete ONE ordinary original Q21 answer through the connected question path, using these existing native receipts and documented output paths. Preserve the exact 2029 source-event scope, assertions, dates/polarity/subjects, affected conclusions and unresolved contradictions; source-check semantics rather than endorsing extraction labels. Inspect owned receipts first, preserve every attempt/partial result, and freeze product source during the check. Do not rerun the passing full native source audit, Q20 actor/engines/source review/population checks or codecs. No sampled account may replace the full request. Then address Q23 applicable definitions, Q24 requested-deliverable capability and the current whole ten-area/25-case assessment. Independent G5/clinical/model/customer qualification remains separate. App is currently stopped; no active job and source unfrozen. Quiet continuation ACTIVE; all healthcare and portable core remain in scope.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6316,15 +6358,13 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 36215,
-  "owned_server_session": 39374,
+  "owned_server_pid": null,
+  "owned_server_session": null,
   "last_run_observation": {
-    "at": "2026-11-06T22:59:49.685103+00:00",
-    "status": "conditional_ranked_population_browser_verified",
-    "receipt": "artifacts/agere-native-populations-2026-11-06/conditional-ranked/engineering-proof.json",
+    "at": "2026-11-06T23:41:06.479385+00:00",
+    "status": "verified_full_native_scope_pending_ordinary_composition",
+    "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt.json",
     "provider_job": null,
-    "app_pid": 36215,
-    "app_session": 39374,
     "new_provider_attempts": 0
   },
   "ordinary_curriculum_progress": {
