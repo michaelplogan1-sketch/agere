@@ -214,6 +214,37 @@ class Translation(unittest.TestCase):
         self.assertEqual(raised.exception.provider_response['subscription_cli_result'],raw)
         self.assertEqual(raised.exception.provider_response['usage'],raw['usage'])
 
+    def test_aborted_stream_preserves_raw_zero_counters_without_claiming_zero_cost(self):
+        from clinical_core.agere.gateway import ProviderUnavailable
+        from clinical_core.agere.economics import usage_cost
+        raw={'is_error':True,'terminal_reason':'aborted_streaming','result':'Retained partial text',
+             'errors':['stream diagnostic'],'usage':{'input_tokens':0,'output_tokens':0},'modelUsage':{},'num_turns':2}
+        done=subprocess.CompletedProcess([],1,json.dumps(raw),'')
+        with patch.object(T,'cli_path',return_value='scripted-cli'),patch.object(T,'cli_env',return_value={}),patch.object(T.subprocess,'run',return_value=done) as call:
+            with self.assertRaises(ProviderUnavailable) as raised:T.respond({'model':'claude-haiku-5-5'})
+        self.assertEqual(raised.exception.kind,'cancelled');self.assertEqual(call.call_count,1)
+        receipt=raised.exception.provider_response
+        self.assertEqual(receipt['subscription_cli_result'],raw)
+        self.assertIsNone(receipt['usage']);self.assertIsNone(usage_cost(receipt['model'],receipt['usage']))
+
+    def test_signal_exit_retains_partial_stdout_and_stops_without_a_complete_json_result(self):
+        from clinical_core.agere.gateway import ProviderUnavailable
+        done=subprocess.CompletedProcess([],-2,'partial visible stdout','')
+        with patch.object(T,'cli_path',return_value='scripted-cli'),patch.object(T,'cli_env',return_value={}),patch.object(T.subprocess,'run',return_value=done):
+            with self.assertRaises(ProviderUnavailable) as raised:T.respond({'model':'claude-haiku-5-5'})
+        self.assertEqual(raised.exception.kind,'cancelled')
+        self.assertEqual(raised.exception.provider_response['subscription_cli_result']['result'],'partial visible stdout')
+        self.assertIsNone(raised.exception.provider_response['usage'])
+
+    def test_subscription_limit_in_error_array_is_not_lost_when_result_is_empty(self):
+        from clinical_core.agere.gateway import ProviderUnavailable
+        raw={'is_error':True,'terminal_reason':'api_error','result':'','errors':["You've hit your limit · resets 5pm"]}
+        done=subprocess.CompletedProcess([],1,json.dumps(raw),'')
+        with patch.object(T,'cli_path',return_value='scripted-cli'),patch.object(T,'cli_env',return_value={}),patch.object(T.subprocess,'run',return_value=done):
+            with self.assertRaises(ProviderUnavailable) as raised:T.respond({})
+        self.assertEqual(raised.exception.kind,'rate_limit')
+        self.assertEqual(raised.exception.provider_response['subscription_cli_result'],raw)
+
     def test_invalid_cli_result_and_timeout_preserve_partial_stdout_without_invented_usage(self):
         outcomes=[subprocess.CompletedProcess([],1,'{"result":"unfinished',''),
                   subprocess.TimeoutExpired('scripted',900,output=b'partial stdout')]

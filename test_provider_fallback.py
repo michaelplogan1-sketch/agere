@@ -49,6 +49,12 @@ class Fallback(unittest.TestCase):
     def setUp(self):
         e = patch.dict(os.environ, {'AGERE_FALLBACK_MODEL': '', 'AGERE_INTERPRETER_FALLBACK': ''}); e.start(); self.addCleanup(e.stop)
 
+    def test_cancelled_request_never_retries_or_calls_a_fallback_model(self):
+        error=G.ProviderUnavailable('request_cancelled: retained prefix',kind='cancelled')
+        with self.assertRaises(G.ProviderUnavailable) as raised:self.run_calls([error])
+        self.assertIs(raised.exception,error)
+        self.assertEqual(error.calls,['claude-opus-5-5']);self.assertEqual(error.sleeps,[])
+
     def run_calls(self, outcomes, model='claude-opus-5-5'):
         calls, sleeps = [], []
         def call(m):

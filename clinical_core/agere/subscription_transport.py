@@ -231,15 +231,23 @@ def run_cli(model, system, user, timeout=None, *, max_tokens=None, effort=None, 
         out=json.loads(lines[-1]) if lines else None
         if not isinstance(out,dict):raise ValueError('No JSON result object')
     except ValueError:
-        error=RuntimeError(f'claude CLI returned no complete JSON result (exit {done.returncode})')
+        from .gateway import ProviderUnavailable
+        error=(ProviderUnavailable('request_cancelled: Claude CLI interrupted without a complete response',kind='cancelled')
+               if done.returncode in (-2,-15,130,143) else
+               RuntimeError(f'claude CLI returned no complete JSON result (exit {done.returncode})'))
         error.subscription_cli_result={'result':done.stdout,'usage':None,'subtype':'invalid_cli_result',
             'exit_code':done.returncode,'partial_format':'cli_stdout'}
         raise error from None
-    if done.returncode or out.get('is_error') or out.get('terminal_reason') == 'api_error':
-        message = str(out.get('result') or '')
+    if done.returncode or out.get('is_error') or out.get('terminal_reason') in ('api_error','aborted_streaming'):
+        errors=out.get('errors')or[]
+        if not isinstance(errors,list):errors=[errors]
+        message='\n'.join(str(v) for v in [out.get('result'),*errors] if v)
         from .gateway import ProviderUnavailable, subscription_limit
         error=(ProviderUnavailable('Claude subscription limit reached: ' + message[:300], kind='rate_limit')
-               if subscription_limit(message) else RuntimeError('claude CLI error: ' + message[:300]))
+               if subscription_limit(message) else
+               ProviderUnavailable('request_cancelled: Claude subscription stream aborted; native work retained',kind='cancelled')
+               if out.get('terminal_reason')=='aborted_streaming' or done.returncode in (-2,-15,130,143) else
+               RuntimeError('claude CLI error: ' + message[:300]))
         error.subscription_cli_result=out
         raise error
     return out
@@ -406,7 +414,11 @@ def respond(body, *, timeout=None):
         raw=getattr(exc,'subscription_cli_result',None)
         if isinstance(raw,dict):
             exc.provider_response={'model':model,'transport':'claude-code-subscription',
-                'usage':raw.get('usage'),'subscription_cli_result':raw,'status':'failed'}
+                # Aborted CLI streams can report all-zero aggregate counters
+                # after a long in-flight call. Preserve them raw, not as a
+                # known zero-cost completion. Partial stdout remains intact.
+                'usage':None if getattr(exc,'kind',None)=='cancelled' or raw.get('terminal_reason')=='aborted_streaming' else raw.get('usage'),
+                'subscription_cli_result':raw,'status':'failed'}
         raise
     text = out.get('result') or ''
     if schema_kw and out.get('stop_reason')!='max_tokens'and 'structured_output'in out:

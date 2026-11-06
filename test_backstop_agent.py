@@ -8,7 +8,7 @@ from clinical_core.agere.clinical import backstop_agent as B, proposers as P
 
 
 class EntryModelReuse(unittest.TestCase):
-    def entry_result(self, reviews=None, hint=None):
+    def entry_result(self, reviews=None, hint=None, run_override=None):
         from contextlib import ExitStack
         from clinical_core.agere import model_policy as M
         from clinical_core.agere.clinical import harness_improvement as H
@@ -18,6 +18,7 @@ class EntryModelReuse(unittest.TestCase):
         run={'answer':{'status':'answered','headline':'Native result retained.'},'model':M.SONNET,
              'tool_calls':[],'answer_reviews':reviews or [{'status':'confirmed','calls':0}],
              'estimated_cost_usd':0.01,'new_paid_api_calls':1}
+        if run_override:run.update(run_override)
         with ExitStack() as stack:
             for name,value in {
                 'clinical_core.agere.clinical.legacy_proposers._semantic_path':'unused',

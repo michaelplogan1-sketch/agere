@@ -611,10 +611,12 @@ class Cascade:
         except QuestionNotUnderstood as exc:
             self.note(name, 'declined', str(exc), started)
             cause = exc.__cause__ or exc.__context__  # a decline wrapping a provider outage still means Claude is down
+            if cause is not None and outage(cause)=='cancelled':raise cause
             if name in CLAUDE_TIERS and cause is not None and outage(cause) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription': raise cause
             if name in CLAUDE_TIERS and cause is not None and outage(cause): self.claude_down = self.claude_down or outage(cause)
             return None
         except Exception as exc:  # noqa: BLE001 - one component failing never stops the others (heal, don't block)
+            if outage(exc)=='cancelled':raise
             if name in CLAUDE_TIERS and outage(exc) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription':
                 raise  # Mike: a subscription limit ends the request; never try another Claude tier or the external API
             self.note(name, 'error', f'{type(exc).__name__}: {exc}', started)
@@ -871,6 +873,11 @@ class Cascade:
             run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger, population=self.population,
                                         hint=getattr(self, 'second_look_hint', None), validate_final=validate_final)
         self.spend(run.get('new_paid_api_calls', 0), run.get('known_cost_usd') or run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
+        if run.get('error') and outage(RuntimeError(run['error']))=='cancelled':
+            from ..gateway import ProviderUnavailable
+            interrupted=ProviderUnavailable(run['error'],kind='cancelled')
+            interrupted.partial_result=run  # keep the completed native prefix available to the request owner
+            raise interrupted
         limit_error=None
         if run.get('error') and outage(RuntimeError(run['error'])) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription':
             from ..gateway import ProviderUnavailable

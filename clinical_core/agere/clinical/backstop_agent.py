@@ -3620,7 +3620,12 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                        'input_tokens':run.get('input_tokens'),'output_tokens':run.get('output_tokens')}
         partial_prefix=harness.partial_prefix_evidence(run)is not None
         reviewable_proposal=harness.draft_proposal_evidence(run)is not None
-        if reviewable_proposal or partial_prefix or isinstance(run.get('answer'),dict) and run['answer'].get('status')=='answered' and (run.get('answer_reviews') or [{}])[-1].get('status')=='confirmed':
+        from ..gateway import classify_provider_error
+        request_cancelled=bool(run.get('error')) and classify_provider_error(RuntimeError(run['error']))=='cancelled'
+        # Fresh-executor validation can replay expensive native actions. An
+        # interrupted request saves its recovery checkpoint below, without
+        # automatically validating or selecting a reuse candidate.
+        if not request_cancelled and (reviewable_proposal or partial_prefix or isinstance(run.get('answer'),dict) and run['answer'].get('status')=='answered' and (run.get('answer_reviews') or [{}])[-1].get('status')=='confirmed'):
             def fresh_executor():
                 fresh=semantic_analyst.SemanticWarehouse(path);fresh.define(as_of)
                 if discover_context: install_context(fresh, full_docs)

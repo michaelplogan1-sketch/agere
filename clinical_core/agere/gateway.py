@@ -455,7 +455,8 @@ class ProviderUnavailable(RuntimeError):
         super().__init__(message);self.kind=kind;self.attempts=list(attempts)
 
 
-_PROVIDER_PATTERNS=(('billing',('credit balance','billing','insufficient credit','insufficient_quota','payment required','http 402')),
+_PROVIDER_PATTERNS=(('cancelled',('request_cancelled:',)),
+                    ('billing',('credit balance','billing','insufficient credit','insufficient_quota','payment required','http 402')),
                     ('rate_limit',('http 429','rate limit','rate_limit','too many requests','claude subscription limit reached')),
                     ('overloaded',('http 529','overloaded')),
                     ('server',('http 500','http 502','http 503','http 504','internal server error','service unavailable','bad gateway','api_error')),
@@ -473,7 +474,7 @@ def subscription_limit(message):
 
 
 def classify_provider_error(exc):
-    """'billing' | 'rate_limit' | 'overloaded' | 'server' | 'timeout' when the provider (not the request) failed, else None.
+    """Provider failure class, explicit 'cancelled' request stop, or None.
     Request errors (400 schema, parse failures, size bounds) return None and are never retried on another model."""
     if isinstance(exc,ProviderUnavailable):return exc.kind
     if getattr(exc,'billing_quota',False):return 'billing'
@@ -521,6 +522,7 @@ def call_with_fallback(call,model,*,sleep=time.sleep,backoff=None,fallback=None)
                 kind=classify_provider_error(exc)
                 if kind is None:raise
                 attempts.append({'model':target,'kind':kind,'error':str(exc)[:300]})
+                if kind=='cancelled':raise  # an interrupted request is not an invitation to retry another model
                 if kind=='rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT')=='subscription' and str(target).startswith('claude'):
                     raise ProviderUnavailable('Claude subscription limit reached; stopped without retry or API fallback: '+str(exc)[:200],
                                               kind='rate_limit',attempts=attempts) from None
