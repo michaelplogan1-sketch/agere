@@ -1,3 +1,23 @@
+# Current Agere checkpoint — ACTIVE 2026-11-06T00:59:09.580303+00:00
+
+G3: monitor only ownedQ15ordinary pair PID97793/session59715 onac66393a/protocol-native-copy-candidate.json; source/product/scoring frozen, no duplicate. Score returned appointment quantities independently, preserve partials/errors and stopproviderworkonactualsubscriptionlimit. New native primitive table copy projection removesQ13row-vote fanout but does not qualify its financial meaning. Continue distinctQ16-Q21onecaseatatime after actualQ15evidence, nounchanged paid repeats. Q14interruptedpartial/frontierunstarted,Q23missingbaseprogramdefinitions,Q24fromQ20,earlierfailedcases and all25/tenareas/G5/clinical/customer prerequisites remain. AutomaticcontinuationPAUSED.
+
+NativeSQLtablecopy is checked bycode; completecalculation/sourcecontracts and everyglobalclaim stillrequiretypedmeaningreview. RetainedQ13all13243rows/291346cells exact.1259packets/68.85MBbecome1/162673bytes (-99.7637%). Actualsourcecheck5.124s/2requests/$0.00347992returnsunknownfor2fields, includingknownwrongbalanceequation. Originalanswer remainsfailed.98focusedchecks pass.
+
+Q12/Q13ordinaryfailures, Q14interrupted11attempts/$1.60279662known/1pendingunpriced,2failedDNSattemptsandexplicitretryhistoryallretained. No originalanswerrestamp, defaultactivationorclinicalqualification. Lastsealedreceiptunchanged. Evidence: artifacts/agere-ordinary-comparison-2026-11-05/Q12/comparison.json; artifacts/agere-ordinary-comparison-2026-11-05/Q13/comparison.json; artifacts/agere-ordinary-comparison-2026-11-05/Q13/independent-account-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q13/verification-fanout-diagnosis.json; artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification/native-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/native-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/run-receipt.json; artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-final-checks-2.log; artifacts/agere-ordinary-comparison-2026-11-05/Q14/stack/receipt.json; artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-network-retry-authorization.json
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — ACTIVE 2026-11-06T00:44:36.806818+00:00
+
+G3: fix measured native-table verification fanout using exact SQL copy provenance plus independent source/domain/time/meaning review, prove on retainedQ13without newprovidercalls and adversarial regressions. Alljobs terminal/sourceunfrozen. Preserve Q12/Q13failed originals and Q14interruptedpartial11attempts/1unpricedpending; current ledger56224/42pending. Then freeze new candidate and execute remaining distinctQ15-Q21once perarm. Q14completion,Q23base-definitiondependency,Q24fromQ20,all25/tenareas/G5remainexplicit. Automatic continuation PAUSED.
+
+Q12monthly values reproduce the declared current-version query but omit received signed history; full-history reference2656446686cents vs current2626432990. Both arms fail required development semantics; original stack explanation compiler also fails. Q13native account table reconciles all13243accounts/1258patients, but98simplified balance gaps vanish under the registered refund/credit identity and one visible balance equation has wrong sign.2684stackattempts/729.511s/$2.900069744known plus9unpriced. Frontier also incomplete. Originalanswers remain failed; no superiority/readiness claim.
+
+Last sealed receipt unchanged. Allownedjobsconfirmedterminal. Q14partial recovered11attempts/$1.60279662known/1pendingunpriced; frontiernotstarted. Sourceunfrozen. Evidence: artifacts/agere-ordinary-comparison-2026-11-05/Q12/comparison.json; artifacts/agere-ordinary-comparison-2026-11-05/Q12/independent-financial-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q13/comparison.json; artifacts/agere-ordinary-comparison-2026-11-05/Q13/independent-account-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/sequence-material-failure-stop.json
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — ACTIVE 2026-11-06T00:15:41.511385+00:00
 
 G3: execute the remaining fixed standalone Q12-Q21 questions once per arm, sequentially, on7d5eeadf/protocol-native-parameters-candidate.json using run_remaining_fixed_questions.py. Monitor its owned receipt; source/product/scoring stay frozen while an arm runs. No same-question paid retry, new training or packaging. Stop all provider work on an actual Claude subscription limit; retain partials and continue offline. Independently score each returned case before acceptance; do not convert execution completion into passing. Q23exact-parent definition dependency and Q24/Q20deliverable follow-up remain; retain all25cases/tenareas and G5/clinical/model/customer prerequisites. Automatic continuation PAUSED.
@@ -11,6 +31,16 @@ Remaining: Q11 original explanation failure is retained; recovered text still ne
 Evidence: artifacts/agere-ordinary-comparison-2026-11-05/Q11/comparison.json; artifacts/agere-ordinary-comparison-2026-11-05/Q11/all-attempt-reconciliation.json; artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q11/frontier-native-quantity-fault.json; artifacts/agere-ordinary-comparison-2026-11-05/Q11/parameter-role-final-checks.log; artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-proof-attempt-history.json
 
 Last sealed receipt unchanged. Activity: inspect the owned sequence receipt before any new job; never duplicate it or edit frozen source. Automatic continuation PAUSED. Canonical authority: AGERE_BUILD_CONTROL.json.
+
+
+
+
+
+
+
+
+
+Owned fixed sequence receipt: artifacts/agere-ordinary-comparison-2026-11-05/remaining-sequence-receipt.json; status=interrupted; current=Q14; source_frozen=True. Automatic continuation PAUSED.
 
 ## Superseded checkpoint
 
