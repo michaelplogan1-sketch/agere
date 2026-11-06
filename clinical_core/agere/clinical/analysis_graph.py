@@ -1163,6 +1163,11 @@ def validate(plan, as_of):
             p=validate_interpretation(p)
         elif op == 'assertion_review':
             if len(inputs)!=1:raise ValueError('Assertion review needs one complete selected population')
+            from .assertion_reconciliation import validate as validate_assertions
+            p=validate_assertions(p)
+            if 'assertion_window'in p:
+                from .clinical_events import validate_window
+                p['assertion_window']=validate_window(p['assertion_window'],as_of)
         elif op in ('context','context_passes'):
             if len(inputs)!=1:raise ValueError('Context needs one complete selected population')
         elif op == 'medication_identity':

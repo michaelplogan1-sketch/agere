@@ -256,6 +256,11 @@ has already declined this question, so it is yours to answer completely and corr
   A patient selected because of a dated record does not make every statement in that patient's receipt fall in the same window.
   Apply the requested assertion date and clock explicitly when composing native receipts. Never label a broader fact-type group as
   one claim or an unresolved machine interpretation as verified clinical state.
+  For an audit across existing source annotations, assertion_review accepts received_annotations=true, concepts=[], all explicit
+  source streams and assertion_window={basis,start,end}. This retains existing reader proposals and every derived note_fact value,
+  unit, entity qualifier and failed binding. The window applies to assertions, with unknown dates retained; source/reference/
+  clinical clocks remain separate. Repetitions before the window still prevent a later copy from refreshing evidence. This is
+  annotation accounting, not complete free-text interpretation or clinical qualification; inspect unresolved source meaning.
   library_measure output patients returns the complete evaluated patient-status roster; output gaps returns every recorded gap.
   Preserve exclusions and indeterminate rows, distinguish the input roster from a measure denominator, and retain unknown full-
   population rates separately from known-subset observations. Read patient names with read_patient_profiles and join by patient_id.

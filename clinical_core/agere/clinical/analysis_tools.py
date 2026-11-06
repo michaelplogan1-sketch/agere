@@ -62,7 +62,7 @@ def describe(operation, *, path=None):
             'population_contract':G.input_contract(operation),
             'meaning':'The existing native validator remains authoritative. Parameters and assumptions are not inferred clinical facts.',
             **context,
-            **({'documentary_scope':'Only explicitly mapped concepts and streams at the current snapshot. Selecting patients with a dated record does not restrict every assertion to that date window. Unknown qualifiers and machine interpretations remain unresolved; repeated text is not independent corroboration.'}
+            **({'documentary_scope':'Explicit streams and mapped concepts at the current snapshot. assertion_review optionally accepts assertion_window with an explicit date basis and received_annotations=true to include existing annotations with all values/units and failed bindings; concepts=[] then means all existing annotations in those streams, not all clinical knowledge. Selecting patients with a dated record alone does not restrict assertion dates. Unknown qualifiers and machine interpretations remain unresolved; repeated text is not independent corroboration.'}
                if operation in DOCUMENTARY else {})}
 
 

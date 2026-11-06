@@ -77,7 +77,8 @@ class DocumentaryHandoff(unittest.TestCase):
             schema=t({'name':'describe_analysis','input':{'operation':op}})['parameters']
             self.assertEqual(schema,view['selected_operator_contracts'][op]['parameter_schema'])
             if op=='assertion_review':
-                self.assertEqual(schema['properties']['concepts']['minItems'],1)
+                self.assertEqual(schema['properties']['concepts']['minItems'],0)
+                self.assertIn('received_annotations',schema['properties'])
                 self.assertIn('financial hardship',schema['properties']['concepts']['items']['enum'])
             else:self.assertIn('reported_barrier',schema['properties']['relation']['enum'])
         with self.assertRaises(ValueError):G.validate_parameters('assertion_review',{'streams':['notes'],'concepts':[]})

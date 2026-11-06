@@ -607,12 +607,22 @@ def parameter_schema(op, catalog):
     if op in ('intersect', 'union', 'difference', 'compare', 'medication_identity'):
         return obj({})
     if op == 'assertion_review':
-        concepts=array(string(evidence['assertion_concepts']), '1..20 distinct mapped concepts required. Empty does not mean all concepts.')
-        concepts['minItems']=1
-        return obj({'streams': stream_list, 'concepts': concepts})
+        stream_list['description']='Nonempty distinct explicitly loaded source streams; all declared streams are processed without widening or truncation.'
+        concepts=array(string(evidence['assertion_concepts']), 'Mapped concepts; [] requires explicit received_annotations=true to inspect all existing annotations without inventing concept mappings.')
+        concepts['minItems']=0
+        result=obj({'streams':stream_list,'concepts':concepts,'received_annotations':{'type':'boolean',
+            'description':'Include all existing narrative and derived note_fact annotations in the explicit streams. Preserve values/units, failed bindings and unvalidated meaning.'},
+            'assertion_window':copy.deepcopy(WINDOW_SCHEMA)})
+        result['required']=['streams','concepts']
+        result['anyOf']=[{'properties':{'concepts':{'minItems':1}}},
+            {'properties':{'received_annotations':{'const':True}},'required':['received_annotations']}]
+        return result
     if op == 'interpretation':
         from .interpretation_state import FILTERS
         schema=parameter_schema('assertion_review',catalog)
+        for key in ('received_annotations','assertion_window'):schema['properties'].pop(key)
+        schema.pop('anyOf',None)
+        schema['properties']['concepts']['minItems']=1
         schema['properties']['filter']=string(FILTERS)
         schema['required'].append('filter')
         return schema
