@@ -9,7 +9,7 @@ from ..request_lineage import component
 # Analytical reports only. Stateful identity decisions, monitors and care work
 # retain their own explicit workflows and are never certified read-only replay.
 DOCUMENTARY={'assertion_review','source_state'}
-PERSISTED_REPORTS=DOCUMENTARY | {'financial_accounts'}
+PERSISTED_REPORTS=DOCUMENTARY | {'financial_accounts','accountability_review'}
 ANALYTICAL=PERSISTED_REPORTS | {
     'aggregate','trajectory','survival','queueing','profile','calibration','demand','program_effect','uplift',
     'monitor','market','pathway','scheduling','early_signal','claims_review','network','contract_strategy',
@@ -66,9 +66,10 @@ def population(tools,patient_ids=None,patient_query_sql=None):
 def documentary_rows(path,operation,report):
     """Complete, hash-bound patient receipts, not the engine's small preview."""
     import json,zlib
-    from . import assertion_reconciliation,source_state,financial_accounts
+    from . import assertion_reconciliation,source_state,financial_accounts,program_accountability
     modules={'assertion_review':(assertion_reconciliation,'receipts'),
-             'source_state':(source_state,'source_states'),'financial_accounts':(financial_accounts,'receipts')}
+             'source_state':(source_state,'source_states'),'financial_accounts':(financial_accounts,'receipts'),
+             'accountability_review':(program_accountability,'receipts')}
     if operation not in modules:raise ValueError('Unknown persisted native report')
     module,table=modules[operation]
     members=report['review_members']
@@ -82,6 +83,8 @@ def documentary_rows(path,operation,report):
             row=json.loads(zlib.decompress(raw[0]))
             if row['patient_id']!=member['patient_id'] or row['id']!=member['receipt_id'] or digest(row)!=member['receipt_digest']:
                 raise ValueError('Documentary patient receipt mismatch')
+            if operation=='accountability_review'and row['payment_readiness']!=member['status']:
+                raise ValueError('Accountability readiness differs from its source receipt')
             rows.append({'patient_id':row['patient_id'],'receipt_id':row['id'],'status':member['status'],
                          'documentary_receipt':row})
     finally:db.close()

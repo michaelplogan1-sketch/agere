@@ -156,7 +156,7 @@ def execute(path,patient_ids,p,*,prepared=None,selection=None):
     ids=sorted(set(patient_ids));fp=prep['financial'];spec=prep['base']['contract']
     financial=F.execute(path,ids,{'available_by':p['available_by']},prepared=fp,preview_limit=0)
     db=storage(path);fdb=F.storage(path);src=sqlite3.connect((Path(path)/'stack.sqlite3').resolve().as_uri()+'?mode=ro',uri=True)
-    refs=[];counts=Counter();processing=Counter();preview=[]
+    refs=[];members=[];counts=Counter();processing=Counter();preview=[]
     streams=sorted({x['stream'] for x in source_map()['context']}|{r['binding']['stream'] for r in spec['requirements'] if r['binding']})
     try:
         with db:
@@ -169,6 +169,7 @@ def execute(path,patient_ids,p,*,prepared=None,selection=None):
                     row=project(pid,records,finance,spec,p['available_by']);row.update(id=key,base=prep['base'])
                     write(db,'receipts',row);processing['patients_computed']+=1
                 refs.append({'patient_id':pid,'receipt_id':key,'receipt_hash':digest(row)})
+                members.append({'patient_id':pid,'receipt_id':key,'receipt_digest':digest(row),'status':row['payment_readiness']})
                 counts.update(r['kind'] for r in row['requests'])
                 if len(preview)<6:preview.append({'patient_id':pid,'id':key,'requests':len(row['requests']),'financial_status_counts':row['financial_status_counts']})
             # Do not reopen the receipt database while its large write transaction
@@ -184,7 +185,7 @@ def execute(path,patient_ids,p,*,prepared=None,selection=None):
                 'patients_evaluated':len(ids),'population_digest':digest(ids),'selection':selection,'request_counts':dict(counts),
                 'requests':sum(counts.values()),'patients':preview,'requests_sent':0,'new_paid_api_calls':0,'limits':LIMITS}
             proposal['id']=digest(proposal);write(db,'proposals',proposal)
-        return {**summary(proposal),'processing_counts':dict(processing),'financial_processing_counts':financial['processing_counts']}
+        return {**summary(proposal),'review_members':members,'processing_counts':dict(processing),'financial_processing_counts':financial['processing_counts']}
     finally:src.close();fdb.close();db.close()
 
 
