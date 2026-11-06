@@ -2,9 +2,22 @@
 import argparse
 import json
 import os
+import sqlite3
 from pathlib import Path
 from clinical_core.agere.local_release import ROOT, build_lock, validate_config
 from clinical_core.agere.service import serve
+
+def validate_semantic_policy(stack):
+    """Refuse an implicit enrichment rebuild in a connected live application."""
+    path = Path(stack) / 'semantic.sqlite3'
+    if not path.is_file():
+        raise ValueError('Live application requires its materialized semantic layer')
+    from clinical_core.agere.clinical import semantic_layer
+    with sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True) as db:
+        row = db.execute("SELECT value FROM meta WHERE key='postprocessing_identity'").fetchone()
+    if row is None or row[0] != semantic_layer.policy_identity():
+        raise ValueError('Semantic enrichment policy differs from the connected materialization. '
+                         'Restore its pinned configuration or explicitly rebuild and verify the materialization before serving questions.')
 
 def main(argv=None):
     p = argparse.ArgumentParser()
@@ -19,6 +32,8 @@ def main(argv=None):
     recovery = config.get('recovery')
     if recovery and a.allow_live_stack:
         p.error('Restored checkpoints permit inspection only; live stack is unavailable')
+    if a.allow_live_stack:
+        validate_semantic_policy(output / 'stack')
     # A configuration check must not alter request ownership, caches or usage.
     if a.check:
         print(json.dumps({'status': 'validated', 'build': str(output), 'recovery': recovery,

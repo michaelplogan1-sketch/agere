@@ -10,6 +10,29 @@ import unittest
 from unittest.mock import patch
 from clinical_core.agere import local_release as L
 
+class LiveSemanticPolicy(unittest.TestCase):
+    def test_policy_mismatch_stops_before_credentials_or_server_and_never_rebuilds(self):
+        import serve_current_warehouse as launcher
+        from clinical_core.agere.clinical import semantic_layer
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);stack=root/'stack';stack.mkdir()
+            path=stack/'semantic.sqlite3'
+            with sqlite3.connect(path)as db:
+                db.execute('CREATE TABLE meta(key TEXT PRIMARY KEY,value TEXT)')
+                db.execute('INSERT INTO meta VALUES(?,?)',('postprocessing_identity','previous'))
+            before=path.read_bytes()
+            with patch.object(launcher,'validate_config',return_value={'build':str(root)}), \
+                 patch.object(launcher,'serve')as serve, \
+                 patch.object(semantic_layer,'ensure',side_effect=AssertionError('No implicit rebuild')):
+                with self.assertRaisesRegex(ValueError,'pinned configuration'):
+                    launcher.main(['--allow-live-stack'])
+                serve.assert_not_called()
+            self.assertEqual(path.read_bytes(),before)
+            self.assertFalse((stack/'semantic.sqlite3.tmp').exists())
+            with sqlite3.connect(path)as db:
+                db.execute('UPDATE meta SET value=?',(semantic_layer.policy_identity(),))
+            launcher.validate_semantic_policy(stack)
+
 
 class LedgerDependencies(unittest.TestCase):
     def test_checkpoint_tracks_configured_accounting_instead_of_unused_default(self):
