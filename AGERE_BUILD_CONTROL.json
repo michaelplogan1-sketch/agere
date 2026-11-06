@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T04:01:22.383014+00:00",
+  "updated_at": "2026-11-06T04:12:34.544598+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -546,7 +546,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "G3 active: native profile field-level verification still needs runtime wiring and adverse proof; five saved clinical field checks and overall coverage remain uncertain. Current ordinary latency after the latest guard/planning corrections is unmeasured. Fixed25case acceptance needs independent numeric/source scoring, narrative adjudication where required and connected workflow evidence. Model/clinical qualification and customer deployment remain separate.",
       "engineering_current_status": "G3 active. Original Q07stack returned partial after484.489s/$1.421052772/350attempts; frontier partial110.895s/$0.990694/8attempts. They perform different narrative work and neither is complete, so no savings/superiority claim. Stack wrongfully excluded4historical referral records/subjects; shared decision-context/4 now preserves the event-selected cohort and rejects known living-only exclusions. Separate native repair restores75records/65patients in0.681s/0providers, preserving all61prior reviews,54machine findings and120dated correspondence objects; four added subjects remain pending. This does not restamp the original failed run.72focused current scope/patient/backstop checks pass. Earlier fixed failures and clinical/model/customer dependencies remain explicit. Continue fixed questions/connected checks; package once after demonstrated behaviors.",
-      "next_action": "G3: Native self-count stall repaired in31c3b016; all51233rows/563563cells independently exact, full retained plan executes0.407s but remains semantically unaccepted. Cancellation repaired inabe45e24,80mocked boundary checks plus exact retained CLI envelope replay;0provider work. Next inspect/repair existing typed documentary operator wiring: retained shared planner requested assertion_review/source_state but received no mapped-concept parameter schema and emitted invalid empty concepts. Reuse existing typed assertion/state/composition, qualify unknown qualifiers and exact concept/relation targets on source-bound workflows; do not bottle unsafe raw SQL or repeat paid Q21. Preserve all25/tenareas, original failures, Q14/Q23/Q24/G5/clinical/customer dependencies. Build ACTIVE, automatic continuation PAUSED.",
+      "next_action": "G3: Documentary handoff32246c99 is scoped verified: shared planner and investigator receive the same mapped parameter schema; complete assertion/state receipts reach native SQL,189checks,98source-hash-bound assertions/3actual accounts,0providers. Original Q21 raw-plan target/value/unknown/copy semantics and requested2029window remain unaccepted; no paid Q21 repeat or unsafe bottling. Next close original Q20 patient-agenda wiring through existing library_measure patients output: inspect complete numerator/denominator/excluded/unknown roster projection and connect it to the investigator, qualify complete patient membership/native joins against actual engine counts before clinical-role/source-context composition. Retain all25/tenareas, earlier ordinary failures,Q14/Q23/Q24/G5/clinical/customer dependencies. Build ACTIVE,automatic continuation PAUSED.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -625,27 +625,26 @@
     }
   ],
   "checkpoint": {
-    "kind": "native_count_and_cancellation_repaired",
+    "kind": "documentary_operator_handoff_repaired",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Equivalent self-count plans run through grouped native joins before scope inspection; interrupted subscription streams stop retries/cascade/bottling validation while retaining partial work and unknown cost.",
-    "measured_failure_reduction": "Retained native count:0.193s SQL,51233rows/563563cells exact; full retained plan0.407s execution.80mocked boundary checks and original failed CLI-envelope replay pass with0fallbacks. No end-to-end answer/savings claim.",
+    "user_behavior_delta": "Existing documentary operators now have identical explicit mapped schemas in shared planning and investigator discovery; complete per-patient assertion/state receipts are available for native SQL and composition, including accounts omitted from small previews.",
+    "measured_failure_reduction": "Invalid empty-concept route is rejected against a supplied nonempty schema. Authored12account workflow retains complete membership and unknown/opposing/repeated evidence; actual3account workflow carries98source-hash-bound assertions with0providers (review0.459s/state7.853s/total14.824s).189affected checks pass.",
     "evidence": [
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/documentary-handoff-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/documentary-handoff-native.json.gz",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/documentary-final-checks-2.log",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/native-count-proof.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/native-plan-compile-proof.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/native-count-final-checks-2.log",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/cancellation-proof.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/cancellation-final-checks.log",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/retained-structured-replies.json"
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/cancellation-proof.json"
     ],
-    "remaining_gap": "Q21 raw plan conflates differing assertion targets and treats missing qualifier flags as affirmative. Shared typed planner exposes documentary operation names but silently omits their exact concept schemas; observed empty-concepts proposal invalid. Full ordinary acceptance unresolved.",
-    "next_action": "G3: Native self-count stall repaired in31c3b016; all51233rows/563563cells independently exact, full retained plan executes0.407s but remains semantically unaccepted. Cancellation repaired inabe45e24,80mocked boundary checks plus exact retained CLI envelope replay;0provider work. Next inspect/repair existing typed documentary operator wiring: retained shared planner requested assertion_review/source_state but received no mapped-concept parameter schema and emitted invalid empty concepts. Reuse existing typed assertion/state/composition, qualify unknown qualifiers and exact concept/relation targets on source-bound workflows; do not bottle unsafe raw SQL or repeat paid Q21. Preserve all25/tenareas, original failures, Q14/Q23/Q24/G5/clinical/customer dependencies. Build ACTIVE, automatic continuation PAUSED.",
+    "remaining_gap": "Full originalQ21 scope, numeric value/unit targets,2029-only conclusion effects and independent interpretation qualification remain unresolved; unsafe raw plan unaccepted. Q20 lacks a connected full patient agenda even though existing quality engine can produce patient rows.",
+    "next_action": "G3: Documentary handoff32246c99 is scoped verified: shared planner and investigator receive the same mapped parameter schema; complete assertion/state receipts reach native SQL,189checks,98source-hash-bound assertions/3actual accounts,0providers. Original Q21 raw-plan target/value/unknown/copy semantics and requested2029window remain unaccepted; no paid Q21 repeat or unsafe bottling. Next close original Q20 patient-agenda wiring through existing library_measure patients output: inspect complete numerator/denominator/excluded/unknown roster projection and connect it to the investigator, qualify complete patient membership/native joins against actual engine counts before clinical-role/source-context composition. Retain all25/tenareas, earlier ordinary failures,Q14/Q23/Q24/G5/clinical/customer dependencies. Build ACTIVE,automatic continuation PAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
-    "coordination": "No owned provider/build/app process;source unfrozen.43historical pending rows are retained,not running jobs. Automatic continuation PAUSED.",
+    "coordination": "No owned provider/build/app job. Source unfrozen,all56501attemptrows/43historicalpending retained. Automatic continuation PAUSED.",
     "remaining_blockers": [
       "Earlier ordinary failures and uncompleted connected workflows remain; all25cases/tenareas retained. Model/clinical qualification and deployment prerequisites remain separate."
     ],
-    "latest_progress": "31c3b016 andabe45e24 verified offline; no additional paid attempts.",
+    "latest_progress": "32246c99 qualifies scoped documentary handoff, not a passing original Q21 answer or full MVP acceptance.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -700,8 +699,8 @@
       "automatic_continuation": "PAUSED; no requested scheduler resume"
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T04:01:22.383014+00:00",
-    "workflow_change": "Native execution and interruption defects repaired; final source interpretation remains unaccepted.",
+    "at": "2026-11-06T04:12:34.544598+00:00",
+    "workflow_change": "Typed documentary components can be used through the existing investigator and native result views instead of reimplementing their semantics in raw SQL.",
     "unsealed_work": {
       "status": "Q21_terminal_offline_native_plan_repair",
       "product_commit": "52857dae",
@@ -4814,11 +4813,24 @@
         "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/retained-structured-replies.json"
       ],
       "scope_impact": "No acceptance area removed or new product feature added. Existing assertion/state semantics and original scope retained; unsafe raw plan not activated."
+    },
+    {
+      "at": "2026-11-06T04:12:34.544598+00:00",
+      "gate": "G3",
+      "decision": "Repair existing typed documentary contracts and complete native receipt handoff; stop further paid/raw-plan Q21 repair loops. Continue the original Q20 population-health agenda with its existing complete-patient measure engine.",
+      "evidence": [
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/documentary-handoff-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/documentary-handoff-native.json.gz",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/documentary-final-checks-2.log",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/native-count-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/cancellation-proof.json"
+      ],
+      "scope_impact": "All25cases/tenareas remain. This sequences an existing user-facing acceptance gap; it neither narrows the charter nor activates unqualified interpretations."
     }
   ],
   "unsealed_work": {
-    "status": "offline_documentary_contract_handoff_repair",
-    "product_commit": "abe45e24",
+    "status": "documentary_handoff_verified_next_population_agenda",
+    "product_commit": "32246c99",
     "product_fix_commit": "b3f0a8d7",
     "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
@@ -5006,7 +5018,9 @@
     "native_self_count_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/native-count-proof.json",
     "native_plan_compile_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/native-plan-compile-proof.json",
     "request_cancellation_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/cancellation-proof.json",
-    "request_cancellation_checks_passed": 80
+    "request_cancellation_checks_passed": 80,
+    "documentary_handoff_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q21-admission-confirmation/documentary-handoff-proof.json",
+    "documentary_checks_passed": 189
   },
   "current_visual_request": {
     "status": "completed",
@@ -5040,7 +5054,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Native self-count stall repaired in31c3b016; all51233rows/563563cells independently exact, full retained plan executes0.407s but remains semantically unaccepted. Cancellation repaired inabe45e24,80mocked boundary checks plus exact retained CLI envelope replay;0provider work. Next inspect/repair existing typed documentary operator wiring: retained shared planner requested assertion_review/source_state but received no mapped-concept parameter schema and emitted invalid empty concepts. Reuse existing typed assertion/state/composition, qualify unknown qualifiers and exact concept/relation targets on source-bound workflows; do not bottle unsafe raw SQL or repeat paid Q21. Preserve all25/tenareas, original failures, Q14/Q23/Q24/G5/clinical/customer dependencies. Build ACTIVE, automatic continuation PAUSED.",
+  "next_action": "G3: Documentary handoff32246c99 is scoped verified: shared planner and investigator receive the same mapped parameter schema; complete assertion/state receipts reach native SQL,189checks,98source-hash-bound assertions/3actual accounts,0providers. Original Q21 raw-plan target/value/unknown/copy semantics and requested2029window remain unaccepted; no paid Q21 repeat or unsafe bottling. Next close original Q20 patient-agenda wiring through existing library_measure patients output: inspect complete numerator/denominator/excluded/unknown roster projection and connect it to the investigator, qualify complete patient membership/native joins against actual engine counts before clinical-role/source-context composition. Retain all25/tenareas, earlier ordinary failures,Q14/Q23/Q24/G5/clinical/customer dependencies. Build ACTIVE,automatic continuation PAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
