@@ -9,7 +9,8 @@ from ..request_lineage import component
 # Analytical reports only. Stateful identity decisions, monitors and care work
 # retain their own explicit workflows and are never certified read-only replay.
 DOCUMENTARY={'assertion_review','source_state'}
-PERSISTED_REPORTS=DOCUMENTARY | {'financial_accounts','accountability_review'}
+CRITERIA={'requirements','protocol_review','program_document'}
+PERSISTED_REPORTS=DOCUMENTARY | CRITERIA | {'financial_accounts','accountability_review'}
 ANALYTICAL=PERSISTED_REPORTS | {
     'aggregate','trajectory','survival','queueing','profile','calibration','demand','program_effect','uplift',
     'monitor','market','pathway','scheduling','early_signal','claims_review','network','contract_strategy',
@@ -40,9 +41,27 @@ def describe(operation, *, path=None):
     if operation in DOCUMENTARY:
         if path is None:raise ValueError('Documentary discovery requires the current source path')
         catalog=G.documentary_parameter_catalog(path)
+    context={}
+    if operation in CRITERIA or operation=='accountability_review':
+        if path is None:raise ValueError('Criteria discovery requires the current source path')
+        import json
+        from pathlib import Path
+        from . import care_protocols as C,evidence_requirements as R,program_documents as D,care_capabilities
+        as_of=json.loads((Path(path)/'run.json').read_text())['snapshot']['as_of']
+        programs=D.discovery(path,as_of)
+        protocols={**C.read_catalog(C.HISTORY),**C.read_catalog(C.CATALOG)}
+        catalog['evidence_catalog'].update(documentary_contracts=list(R.definitions().values()),
+            program_documents=programs['quoted_packages'],protocol_versions=sorted(protocols))
+        context={'criteria_context':programs,'buyer_context':care_capabilities.declared_context(path,as_of)}
+        if operation=='protocol_review':
+            context['protocol_definitions']=[{'id':key,**s,'effective_period_established':False,
+                'scope':'Guideline-informed documentary review definition. Source checked_on is not an effective or expiry date; no dated payer/program applicability is inferred.'}
+                for key,s in sorted(protocols.items())]
+        elif operation=='requirements':context['requirement_definitions']=list(R.definitions().values())
     return {'operation':operation,'parameters':G.parameter_schema(operation,catalog),
             'population_contract':G.input_contract(operation),
             'meaning':'The existing native validator remains authoritative. Parameters and assumptions are not inferred clinical facts.',
+            **context,
             **({'documentary_scope':'Only explicitly mapped concepts and streams at the current snapshot. Selecting patients with a dated record does not restrict every assertion to that date window. Unknown qualifiers and machine interpretations remain unresolved; repeated text is not independent corroboration.'}
                if operation in DOCUMENTARY else {})}
 
@@ -66,10 +85,11 @@ def population(tools,patient_ids=None,patient_query_sql=None):
 def documentary_rows(path,operation,report):
     """Complete, hash-bound patient receipts, not the engine's small preview."""
     import json,zlib
-    from . import assertion_reconciliation,source_state,financial_accounts,program_accountability
+    from . import assertion_reconciliation,source_state,financial_accounts,program_accountability,graph_criteria
     modules={'assertion_review':(assertion_reconciliation,'receipts'),
              'source_state':(source_state,'source_states'),'financial_accounts':(financial_accounts,'receipts'),
              'accountability_review':(program_accountability,'receipts')}
+    modules.update({op:(module,'receipts') for op,module in graph_criteria.MODULES.items()})
     if operation not in modules:raise ValueError('Unknown persisted native report')
     module,table=modules[operation]
     members=report['review_members']
@@ -85,6 +105,8 @@ def documentary_rows(path,operation,report):
                 raise ValueError('Documentary patient receipt mismatch')
             if operation=='accountability_review'and row['payment_readiness']!=member['status']:
                 raise ValueError('Accountability readiness differs from its source receipt')
+            if operation in CRITERIA and row['status']!=member['status']:
+                raise ValueError('Criterion status differs from its source receipt')
             rows.append({'patient_id':row['patient_id'],'receipt_id':row['id'],'status':member['status'],
                          'documentary_receipt':row})
     finally:db.close()

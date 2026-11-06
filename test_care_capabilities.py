@@ -66,6 +66,17 @@ class CareCapabilities(unittest.TestCase):
         self.assertEqual(p['options'][0]['routes'][0]['pathway_id'], None)
         self.assertFalse(p['options'][0]['clinical_execution_authorized'])
 
+    def test_read_only_declarations_preserve_latest_buyer_dates_without_selecting_service(self):
+        before=c.portfolio(self.path,self.req['buyer_id'])
+        context=c.declared_context(self.path,'2028-01-01')
+        self.assertFalse(context['buyer_selected']);self.assertFalse(context['service_match_established'])
+        self.assertEqual(len(context['portfolios']),1)
+        item=context['portfolios'][0]
+        self.assertEqual(item['declaration']['id'],before['id'])
+        self.assertEqual(item['service_context'][0]['effective_period_status'],'outside_declared_period')
+        self.assertEqual(item['service_context'][0]['capacity_status'],'stale_or_not_yet_observed')
+        self.assertEqual(c.portfolio(self.path,self.req['buyer_id']),before)
+
     def test_unknown_is_not_denial_or_coverage(self):
         self.req['coverage'].update(payer_type='unknown', plan_id='', region='')
         route = self.prepare()['options'][0]['routes'][0]

@@ -94,6 +94,34 @@ def portfolio(path, buyer):
         db.close()
 
 
+def declared_context(path, as_of):
+    """Read the latest buyer declarations without choosing a buyer or a service."""
+    import sqlite3
+    day(as_of);file=Path(path)/'program-work.sqlite3';portfolios=[]
+    if file.exists():
+        db=sqlite3.connect(file.resolve().as_uri()+'?mode=ro',uri=True)
+        try:
+            if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='capability_portfolios'").fetchone():
+                rows=db.execute('SELECT p.payload FROM capability_portfolios p WHERE p.revision=(SELECT MAX(q.revision) FROM capability_portfolios q WHERE q.buyer=p.buyer) ORDER BY p.buyer')
+                for raw, in rows:
+                    p=json.loads(raw)
+                    if digest({k:v for k,v in p.items() if k!='id'})!=p['id']:
+                        raise work.WorkConflict('Buyer portfolio integrity changed')
+                    services=[]
+                    for c in p['capabilities']:
+                        services.append({'capability_id':c['id'],
+                            'effective_period_status':'within_declared_period' if c['effective_start']<=as_of<=c['effective_end'] else 'outside_declared_period',
+                            'capacity_status':'stale_or_not_yet_observed' if not c['capacity_as_of']<=as_of<=c['capacity_until'] else
+                                'unknown' if c['capacity_slots'] is None else 'no_reported_capacity' if c['capacity_slots']==0 else 'reported_capacity',
+                            'clinical_eligibility_established':False})
+                    portfolios.append({'declaration':p,'service_context':services})
+        finally:db.close()
+    return {'as_of':as_of,'portfolios':portfolios,'buyer_selected':False,
+        'status':'buyer_selection_required' if portfolios else 'no_buyer_portfolio_supplied',
+        'scope':'Buyer-reported services only. Inspect effective/capacity dates and verify source/plan prerequisites after selecting the intended buyer. No portfolio does not establish that services are unavailable elsewhere.',
+        'service_match_established':False,'coverage_established':False}
+
+
 def normalize_capability(c):
     exact(c, 'id name description need_tags modality regions payer_types plan_ids pathway_ids owner available capacity_slots capacity_as_of capacity_until effective_start effective_end prerequisites provenance')
     out = {k: text(c[k], k, 2000 if k in ('description', 'provenance') else 200) for k in ('id', 'name', 'description', 'provenance')}

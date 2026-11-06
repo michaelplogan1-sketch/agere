@@ -63,9 +63,9 @@ TOOLS = [
     {'name':'read_patient_profiles','description':'Read received patient display names and profile fields by exact ID, using the same source profiles attached to saved answers. These fields are separate from the semantic patient SQL table. Supply patient_query_sql for an executed cohort, explicit patient_ids, or omit both for the inherited population. Returns every selected patient, source date/fingerprint and an SQL result_view for composition. Missing or future profiles remain unknown. Names do not establish a clinician assignment or clinical eligibility.',
      'input_schema':{'type':'object','properties':{'patient_ids':{'type':'array','items':{'type':'string'}},
         'patient_query_sql':{'type':'string'}},'additionalProperties':False}},
-    {'name':'list_analyses','description':'Discover existing native analytical and documentary engines: mapped assertion review, dated source state, complete named-measure patient/gap rosters, trajectories, change detection, survival, forecasts, queueing, allocation, provider comparisons, causal designs and finance. These are native tools, not calculations to reproduce in prose.',
+    {'name':'list_analyses','description':'Discover existing native analytical and documentary engines: mapped assertion review, dated source state, pinned requirements, documentary review protocols, quoted program rules, complete named-measure patient/gap rosters, trajectories, change detection, survival, forecasts, queueing, allocation, provider comparisons, causal designs and finance. These are native tools, not calculations to reproduce in prose.',
      'input_schema':{'type':'object','properties':{},'additionalProperties':False}},
-    {'name':'describe_analysis','description':'Get an existing analytical engine\'s typed parameters, assumptions and population contract before calling it.',
+    {'name':'describe_analysis','description':'Get an existing analytical engine\'s typed parameters, assumptions and population contract before calling it. Program/requirement/protocol/accountability descriptions include installed source/version/date and buyer context. A date-effective example or quoted rule is not approved clinical criteria; do not silently choose overlapping versions or map a care gap to an unrelated program.',
      'input_schema':{'type':'object','properties':{'operation':{'type':'string'}},'required':['operation'],'additionalProperties':False}},
     {'name':'execute_analysis','description':'Execute an existing analytical engine through the shared graph with typed parameters and the exact inherited patient population. Optionally narrow with received patient_ids or complete patient_query_sql; [] remains empty. Returns native results and a composable result_view. Methods, assumptions, uncertainty and any engine output limits remain visible. Never substitute a mathematical estimate for observed facts.',
      'input_schema':{'type':'object','properties':{'operation':{'type':'string'},'parameters':{'type':'object'},
@@ -456,8 +456,9 @@ class Tools:
         return out
 
     def continuation_identity(self):
+        from ...contracts import digest
         from ..deliverables.answer_context import source_identity
-        from . import decision_context, clinical_definitions, analyst_definitions,analysis_graph,component_learning
+        from . import decision_context, clinical_definitions, analyst_definitions,analysis_graph,component_learning,program_documents,care_capabilities
         state=decision_context.current()
         definitions=decision_context.receipt(state=state)
         # Query observations change during execution; only meaning is a guard.
@@ -466,6 +467,8 @@ class Tools:
                 'cohort':self.cohort,'scope':sorted(self.scope) if self.scope is not None else None,
                 'definitions':definitions,'clinical_definitions':clinical_definitions.describe(),
                 'definition_views_version':analyst_definitions.VERSION,
+                'program_and_buyer_context':digest([program_documents.discovery(self.stack.path,self.as_of),
+                    care_capabilities.declared_context(self.stack.path,self.as_of)]),
                 'subscription_tool_protocol':hashlib.sha256((Path(__file__).resolve().parents[1]/'subscription_transport.py').read_bytes()).hexdigest(),
                 'documentation_identity':getattr(getattr(self.semantic,'_local',None),'documentation_identity',None),
                 'documentation_mode':os.environ.get('AGERE_ANALYST_CONTEXT','discover'),
