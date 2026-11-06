@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T04:35:46.802318+00:00",
+  "updated_at": "2026-11-06T05:05:24.025815+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -546,7 +546,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "G3 active: native profile field-level verification still needs runtime wiring and adverse proof; five saved clinical field checks and overall coverage remain uncertain. Current ordinary latency after the latest guard/planning corrections is unmeasured. Fixed25case acceptance needs independent numeric/source scoring, narrative adjudication where required and connected workflow evidence. Model/clinical qualification and customer deployment remain separate.",
       "engineering_current_status": "G3 active. Original Q07stack returned partial after484.489s/$1.421052772/350attempts; frontier partial110.895s/$0.990694/8attempts. They perform different narrative work and neither is complete, so no savings/superiority claim. Stack wrongfully excluded4historical referral records/subjects; shared decision-context/4 now preserves the event-selected cohort and rejects known living-only exclusions. Separate native repair restores75records/65patients in0.681s/0providers, preserving all61prior reviews,54machine findings and120dated correspondence objects; four added subjects remain pending. This does not restamp the original failed run.72focused current scope/patient/backstop checks pass. Earlier fixed failures and clinical/model/customer dependencies remain explicit. Continue fixed questions/connected checks; package once after demonstrated behaviors.",
-      "next_action": "G3: Native Q20 facts/populations/roles/finance composition is qualified and saved partial ANS-67af2e5580405bf29c26efac; clinical explanations/nominations remain unfinished. Installed program_packages has only2versions ending2027-12-31, both not_effective at2029year-end/snapshot; do not extend validity, substitute legacyCT handlers or infer no programs exist elsewhere. Continue independent fixed Q14 financial-documentary workflow: inspect terminal old Q14 receipts, qualify existing financial_accounts and typed affordability assertions through the investigator/native composition; keep outstanding recorded balances separate from source-supported affordability/preferences and unknown hardship. No paidQ14/Q21repeat or clinical data inference from money. Retain all25/tenareas,Q20/Q21/Q23/Q24/G5/clinical/customer gaps; current/explicit program and payer specifications remain dependencies. Build ACTIVE,automatic continuation PAUSED.",
+      "next_action": "G3: Shared native storage712ffc57 and financial/documentary toolbafa6397 are verified: immutable TEMPtables/indexes retain portable exact-row SQL, types/duplicates/read guards/reset;65checks. Retained actual4115financial receipts materialize3.828s,positive-cohort SQL0.929s,previously-timed-out join0.972s;0provider/0financial reevaluations.513positive-balancepeople/2173accounts:54affirmed/118negated/341unknown literal difficulty reports;30236source snapshots checked,288absent fields remainnull. Allnativejobs terminal. Next finishQ14free-text affordability/preferences coverage through existing source inventory/structure and typed document review: inspect actual field contracts first, qualify localized judgments against literal-field/adversarial baselines, retain unknowns and exact entity/relation/time/source binding. Do not repeat fullpaidQ14/Q21orfinancialengines; reuse retained guarded data. FulloriginalQ14/Q20/Q21/Q23/Q24/G5/clinical/customer gaps and all25/tenareas retained. Portable large-receipt serialization/fullordinarylatency not qualified by the SQL-phase timing. BuildACTIVE/automationPAUSED.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -625,27 +625,26 @@
     }
   ],
   "checkpoint": {
-    "kind": "native_ACO_population_role_finance_composed",
+    "kind": "native_materialization_and_financial_documentary_handoff_verified",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Existing native tools compose complete recorded patient populations, measure accounts, exact received names, dated multiple/unknown clinician roles and source financial observations in one saved partial analysis without multiplying rows.",
-    "measured_failure_reduction": "3601measure accounts/1709people retain2090role reports with every source-role record checked (6.174s). Full4115account composition reconciles2136utilizationevents/635hospitalstays/48959claims/33022pharmacytransactions/4022enrollmentspans and all observed cents to independent received references (15.451s),0providers/0measure re-evaluations.",
+    "user_behavior_delta": "Native tool results materialize once with key indexes instead of rescanning JSON-backed views. Complete financial receipts compose with separately dated literal affordability reports while unknown hardship remains unknown.",
+    "measured_failure_reduction": "Former actual nativejoin timed out; retained-data SQL now0.972s.4115nativefinancial rows materialize3.828s;full scoped proof16.654s/0providers/0financial reevaluations.513people with recordedpositivebalances retain54affirmed/118negated/341unknown dated difficulty reports.30236snapshot source records and288missing-null fields verified.65affected checks pass.",
     "evidence": [
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/workflow-proof.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/role-join-proof.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/role-join-native.json.gz",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-proof.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-native.json.gz",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/program-registry-observation.json"
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q14/native-view-join-observation.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q14/materialized-native-final-checks.log",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q14/materialized-financial-join-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q14/materialized-financial-join-native.json.gz",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q14/retained-financial-stage.json.gz"
     ],
-    "remaining_gap": "Q20 clinical program nominations/explanations need actual source interpretation and applicable explicit specifications; this registry has only2expired versions. This is not evidence that no relevant program or source exists elsewhere. Q14 original interrupted financial-documentary workflow remains open; full ordinary/MVP/clinical acceptance unchanged.",
-    "next_action": "G3: Native Q20 facts/populations/roles/finance composition is qualified and saved partial ANS-67af2e5580405bf29c26efac; clinical explanations/nominations remain unfinished. Installed program_packages has only2versions ending2027-12-31, both not_effective at2029year-end/snapshot; do not extend validity, substitute legacyCT handlers or infer no programs exist elsewhere. Continue independent fixed Q14 financial-documentary workflow: inspect terminal old Q14 receipts, qualify existing financial_accounts and typed affordability assertions through the investigator/native composition; keep outstanding recorded balances separate from source-supported affordability/preferences and unknown hardship. No paidQ14/Q21repeat or clinical data inference from money. Retain all25/tenareas,Q20/Q21/Q23/Q24/G5/clinical/customer gaps; current/explicit program and payer specifications remain dependencies. Build ACTIVE,automatic continuation PAUSED.",
+    "remaining_gap": "Q14 free-text financial preferences and affordability statements remain unassessed; literal financial screens are a separate limited source. Full original question, ordinary performance, large portable receipt serialization, clinical/model and customer readiness remain open. Q20current program/payer dependencies and other cases retained.",
+    "next_action": "G3: Shared native storage712ffc57 and financial/documentary toolbafa6397 are verified: immutable TEMPtables/indexes retain portable exact-row SQL, types/duplicates/read guards/reset;65checks. Retained actual4115financial receipts materialize3.828s,positive-cohort SQL0.929s,previously-timed-out join0.972s;0provider/0financial reevaluations.513positive-balancepeople/2173accounts:54affirmed/118negated/341unknown literal difficulty reports;30236source snapshots checked,288absent fields remainnull. Allnativejobs terminal. Next finishQ14free-text affordability/preferences coverage through existing source inventory/structure and typed document review: inspect actual field contracts first, qualify localized judgments against literal-field/adversarial baselines, retain unknowns and exact entity/relation/time/source binding. Do not repeat fullpaidQ14/Q21orfinancialengines; reuse retained guarded data. FulloriginalQ14/Q20/Q21/Q23/Q24/G5/clinical/customer gaps and all25/tenareas retained. Portable large-receipt serialization/fullordinarylatency not qualified by the SQL-phase timing. BuildACTIVE/automationPAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
-    "coordination": "No owned provider/build/app job. Source unfrozen;all56501attemptrows/43historicalpending retained. Automatic continuation PAUSED.",
+    "coordination": "Allnativefinancial workers terminal;no ownedprovider/build/app job;source/productunfrozen. All56501attemptrows/43historicalpending retained. AutomaticcontinuationPAUSED.",
     "remaining_blockers": [
       "Earlier ordinary failures and uncompleted connected workflows remain; all25cases/tenareas retained. Model/clinical qualification and deployment prerequisites remain separate."
     ],
-    "latest_progress": "ANS-67af2e5580405bf29c26efac saved/reloaded exactly; original Q20 remains partial and unchanged. No clinical/readiness claim.",
+    "latest_progress": "712ffc57/bafa6397 qualified scoped SQL/data handoff; no original Q14 restamp or complete MVP/clinical claim.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -700,8 +699,8 @@
       "automatic_continuation": "PAUSED; no requested scheduler resume"
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T04:35:46.802318+00:00",
-    "workflow_change": "A saved source-linked partial ACO analysis now retains full native populations, names, dated roles and amounts together, rather than disconnected scalar summaries.",
+    "at": "2026-11-06T05:05:24.025815+00:00",
+    "workflow_change": "Generic native composition now joins large complete receipt populations efficiently with exact immutable evidence and request/source scope guards.",
     "unsealed_work": {
       "status": "Q21_terminal_offline_native_plan_repair",
       "product_commit": "52857dae",
@@ -4866,11 +4865,34 @@
         "artifacts/agere-ordinary-comparison-2026-11-05/Q14/stack/receipt.json"
       ],
       "scope_impact": "Sequencing only. All25cases/tenareas, Q20 interpretation work and current program/payer input dependencies stay open. No new clinical definition, handler, model campaign or paid repeat."
+    },
+    {
+      "at": "2026-11-06T04:53:20.922626+00:00",
+      "gate": "G3",
+      "decision": "Reassess native execution rather than repeat the full financial proof. Financial engine completed quickly; actual join timeout came from JSON-backed request-local views. Fix shared native result materialization and replay retained evidence.",
+      "evidence": [
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q14/native-view-join-observation.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q14/retained-financial-stage.json.gz"
+      ],
+      "scope_impact": "No acceptance area removed, no financial formula or clinical model changed. Main sources remain read-only; immutable full-row provenance and source guards required."
+    },
+    {
+      "at": "2026-11-06T05:05:24.025815+00:00",
+      "gate": "G3",
+      "decision": "Replace repeated JSON-view execution with immutable indexed TEMPtables, preserve portable full-row provenance and all read/completeness guards, then replay retained actual financial data. Do not rerun financial engines or attribute SQL-phase timing to full question savings.",
+      "evidence": [
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q14/native-view-join-observation.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q14/materialized-native-final-checks.log",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q14/materialized-financial-join-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q14/materialized-financial-join-native.json.gz",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q14/retained-financial-stage.json.gz"
+      ],
+      "scope_impact": "Shared execution repair and existing financial operator wiring only; no new disease handler, clinical rule, cap, model campaign or acceptance-area removal. Free-text financial interpretation remains a separate explicit gap."
     }
   ],
   "unsealed_work": {
-    "status": "native_ACO_composition_verified_continue_Q14",
-    "product_commit": "b8e3d993",
+    "status": "Q14_native_data_handoff_verified_text_interpretation_remaining",
+    "product_commit": "bafa6397",
     "product_fix_commit": "b3f0a8d7",
     "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
@@ -5067,7 +5089,16 @@
     "dated_role_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/role-join-proof.json",
     "full_recorded_population_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-proof.json",
     "saved_native_ACO_context": "ANS-67af2e5580405bf29c26efac",
-    "program_registry_observation": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/program-registry-observation.json"
+    "program_registry_observation": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/program-registry-observation.json",
+    "owned_native_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/native-financial-running.json",
+    "owned_native_pid": null,
+    "owned_native_session": null,
+    "native_view_join_observation": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/native-view-join-observation.json",
+    "retained_financial_stage": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/retained-financial-stage.json.gz",
+    "native_storage_commit": "712ffc57",
+    "financial_documentary_checks_passed": 65,
+    "materialized_financial_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/materialized-financial-join-proof.json",
+    "full_Q14_acceptance": false
   },
   "current_visual_request": {
     "status": "completed",
@@ -5101,7 +5132,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Native Q20 facts/populations/roles/finance composition is qualified and saved partial ANS-67af2e5580405bf29c26efac; clinical explanations/nominations remain unfinished. Installed program_packages has only2versions ending2027-12-31, both not_effective at2029year-end/snapshot; do not extend validity, substitute legacyCT handlers or infer no programs exist elsewhere. Continue independent fixed Q14 financial-documentary workflow: inspect terminal old Q14 receipts, qualify existing financial_accounts and typed affordability assertions through the investigator/native composition; keep outstanding recorded balances separate from source-supported affordability/preferences and unknown hardship. No paidQ14/Q21repeat or clinical data inference from money. Retain all25/tenareas,Q20/Q21/Q23/Q24/G5/clinical/customer gaps; current/explicit program and payer specifications remain dependencies. Build ACTIVE,automatic continuation PAUSED.",
+  "next_action": "G3: Shared native storage712ffc57 and financial/documentary toolbafa6397 are verified: immutable TEMPtables/indexes retain portable exact-row SQL, types/duplicates/read guards/reset;65checks. Retained actual4115financial receipts materialize3.828s,positive-cohort SQL0.929s,previously-timed-out join0.972s;0provider/0financial reevaluations.513positive-balancepeople/2173accounts:54affirmed/118negated/341unknown literal difficulty reports;30236source snapshots checked,288absent fields remainnull. Allnativejobs terminal. Next finishQ14free-text affordability/preferences coverage through existing source inventory/structure and typed document review: inspect actual field contracts first, qualify localized judgments against literal-field/adversarial baselines, retain unknowns and exact entity/relation/time/source binding. Do not repeat fullpaidQ14/Q21orfinancialengines; reuse retained guarded data. FulloriginalQ14/Q20/Q21/Q23/Q24/G5/clinical/customer gaps and all25/tenareas retained. Portable large-receipt serialization/fullordinarylatency not qualified by the SQL-phase timing. BuildACTIVE/automationPAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
