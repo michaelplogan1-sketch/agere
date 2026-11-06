@@ -322,8 +322,13 @@ def partition_support_packet(packet, *, max_bytes=230000):
     originals={c['id']:at(state,c['path']) for c in claims}
     protected={k:v for k,v in state.items() if k not in allowed|{'claim_manifest','scope'}}
     source_digest=digest(protected)
+    parent_digest=digest(state)
     def project(selected):
-        part=copy.deepcopy(state);selected_ids={c['id'] for c in selected}
+        # Only claimed answer roots are pruned. The source context is immutable
+        # and can be shared while constructing a reversible wire view; copying
+        # it for every trial partition creates no new evidence.
+        part={k:copy.deepcopy(v)if k in allowed else v for k,v in state.items()}
+        selected_ids={c['id']for c in selected}
         for claim in claims:
             if claim['id'] not in selected_ids:
                 parent=at(part,claim['path'][:-1]);key=claim['path'][-1]
@@ -331,7 +336,7 @@ def partition_support_packet(packet, *, max_bytes=230000):
                 del parent[key]
         part['claim_manifest']=selected
         part['scope']='Check ONLY the listed claim_manifest fields in this partition. All original source inputs and native calculations remain complete context, not additional answer claims.'
-        part['claim_partition']={'parent_packet_id':packet['id'],'parent_fingerprint':digest(state),
+        part['claim_partition']={'parent_packet_id':packet['id'],'parent_fingerprint':parent_digest,
             'source_inputs_digest':source_digest,'parent_claim_count':len(claims),
             'claim_ids':[c['id'] for c in selected],
             'closure':'All parent claims are scheduled exactly once across the partitions; source inputs are identical in every partition.'}
@@ -345,18 +350,19 @@ def partition_support_packet(packet, *, max_bytes=230000):
         if uncompact_json(json.loads(text))!=part:raise ValueError('Claim partition did not round-trip')
         return {**packet,'text':text,'bytes':len(text.encode()),'claim_manifest':selected,
             'parent_packet_id':packet['id'],'representation':'complete_source_claim_partition'}
-    groups=[];current=[]
-    for claim in claims:
-        candidate=project(current+[claim])
-        if candidate['bytes']>max_bytes:
-            if current:groups.append(project(current));current=[]
-            candidate=project([claim])
-            if candidate['bytes']>max_bytes:
-                try:return source_dependency_packets(packet,max_bytes=max_bytes)
-                except ValueError as exc:
-                    raise ValueError('A complete single-claim dependency still exceeds the provider envelope; '+str(exc))from exc
-        current.append(claim)
-    if current:groups.append(project(current))
+    # Check the complete set once, then bisect only oversized groups. Growing
+    # every prefix repeatedly serialized the same complete source context.
+    # Group boundaries may differ; order and exactly-once claim closure do not.
+    groups=[];pending=[claims]
+    while pending:
+        selected=pending.pop();candidate=project(selected)
+        if candidate['bytes']<=max_bytes:groups.append(candidate);continue
+        if len(selected)==1:
+            try:return source_dependency_packets(packet,max_bytes=max_bytes)
+            except ValueError as exc:
+                raise ValueError('A complete single-claim dependency still exceeds the provider envelope; '+str(exc))from exc
+        middle=len(selected)//2
+        pending.extend((selected[middle:],selected[:middle]))
     if [c['id'] for part in groups for c in part['claim_manifest']]!=ids:
         raise ValueError('Claim partition does not close the original manifest')
     return [{**part,'id':packet['id']+'__claims_'+str(i)} for i,part in enumerate(groups)]
