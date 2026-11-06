@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T04:31:25.363821+00:00",
+  "updated_at": "2026-11-06T04:35:46.802318+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -546,7 +546,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "G3 active: native profile field-level verification still needs runtime wiring and adverse proof; five saved clinical field checks and overall coverage remain uncertain. Current ordinary latency after the latest guard/planning corrections is unmeasured. Fixed25case acceptance needs independent numeric/source scoring, narrative adjudication where required and connected workflow evidence. Model/clinical qualification and customer deployment remain separate.",
       "engineering_current_status": "G3 active. Original Q07stack returned partial after484.489s/$1.421052772/350attempts; frontier partial110.895s/$0.990694/8attempts. They perform different narrative work and neither is complete, so no savings/superiority claim. Stack wrongfully excluded4historical referral records/subjects; shared decision-context/4 now preserves the event-selected cohort and rejects known living-only exclusions. Separate native repair restores75records/65patients in0.681s/0providers, preserving all61prior reviews,54machine findings and120dated correspondence objects; four added subjects remain pending. This does not restamp the original failed run.72focused current scope/patient/backstop checks pass. Earlier fixed failures and clinical/model/customer dependencies remain explicit. Continue fixed questions/connected checks; package once after demonstrated behaviors.",
-      "next_action": "G3: Q20 native data composition now qualified on all4115received accounts:3601measure accounts,2090dated role reports,all2029utilization/medical/pharmacy/enrollment populations and recorded totals reconciled without join fan-out;source/ledger unchanged,0providers,nomodel/measure repeats. Saved partial ANS-67af2e5580405bf29c26efac. Next use existing source-bound program/clinical task operators to complete conditional program-review nominations and candidate explanations from actual evidence; inspect exact current contracts first. Do not turn measure gaps into clinical suitability or invent reasons. Keep ACO attribution/member-months and payer benchmark/risk/quality/share/capacity/cost dependencies explicit before savings. Preserve all25/tenareas and ordinary failures,Q14/Q21/Q23/Q24/G5/clinical/customer gaps. No paidQ21repeat,unsafe bottling,new model campaign,default activation or routinePDF. Build ACTIVE,automatic continuation PAUSED.",
+      "next_action": "G3: Native Q20 facts/populations/roles/finance composition is qualified and saved partial ANS-67af2e5580405bf29c26efac; clinical explanations/nominations remain unfinished. Installed program_packages has only2versions ending2027-12-31, both not_effective at2029year-end/snapshot; do not extend validity, substitute legacyCT handlers or infer no programs exist elsewhere. Continue independent fixed Q14 financial-documentary workflow: inspect terminal old Q14 receipts, qualify existing financial_accounts and typed affordability assertions through the investigator/native composition; keep outstanding recorded balances separate from source-supported affordability/preferences and unknown hardship. No paidQ14/Q21repeat or clinical data inference from money. Retain all25/tenareas,Q20/Q21/Q23/Q24/G5/clinical/customer gaps; current/explicit program and payer specifications remain dependencies. Build ACTIVE,automatic continuation PAUSED.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -635,10 +635,11 @@
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/role-join-proof.json",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/role-join-native.json.gz",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-proof.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-native.json.gz"
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-native.json.gz",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/program-registry-observation.json"
     ],
-    "remaining_gap": "Program nominations and explanations still require actual clinical source interpretation; financial attribution/member-months, payer benchmark/risk/quality/share and implementable program capacity/cost remain prerequisites for realizable savings. FullQ20/Q24 and originalordinary acceptance are not established.",
-    "next_action": "G3: Q20 native data composition now qualified on all4115received accounts:3601measure accounts,2090dated role reports,all2029utilization/medical/pharmacy/enrollment populations and recorded totals reconciled without join fan-out;source/ledger unchanged,0providers,nomodel/measure repeats. Saved partial ANS-67af2e5580405bf29c26efac. Next use existing source-bound program/clinical task operators to complete conditional program-review nominations and candidate explanations from actual evidence; inspect exact current contracts first. Do not turn measure gaps into clinical suitability or invent reasons. Keep ACO attribution/member-months and payer benchmark/risk/quality/share/capacity/cost dependencies explicit before savings. Preserve all25/tenareas and ordinary failures,Q14/Q21/Q23/Q24/G5/clinical/customer gaps. No paidQ21repeat,unsafe bottling,new model campaign,default activation or routinePDF. Build ACTIVE,automatic continuation PAUSED.",
+    "remaining_gap": "Q20 clinical program nominations/explanations need actual source interpretation and applicable explicit specifications; this registry has only2expired versions. This is not evidence that no relevant program or source exists elsewhere. Q14 original interrupted financial-documentary workflow remains open; full ordinary/MVP/clinical acceptance unchanged.",
+    "next_action": "G3: Native Q20 facts/populations/roles/finance composition is qualified and saved partial ANS-67af2e5580405bf29c26efac; clinical explanations/nominations remain unfinished. Installed program_packages has only2versions ending2027-12-31, both not_effective at2029year-end/snapshot; do not extend validity, substitute legacyCT handlers or infer no programs exist elsewhere. Continue independent fixed Q14 financial-documentary workflow: inspect terminal old Q14 receipts, qualify existing financial_accounts and typed affordability assertions through the investigator/native composition; keep outstanding recorded balances separate from source-supported affordability/preferences and unknown hardship. No paidQ14/Q21repeat or clinical data inference from money. Retain all25/tenareas,Q20/Q21/Q23/Q24/G5/clinical/customer gaps; current/explicit program and payer specifications remain dependencies. Build ACTIVE,automatic continuation PAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "No owned provider/build/app job. Source unfrozen;all56501attemptrows/43historicalpending retained. Automatic continuation PAUSED.",
     "remaining_blockers": [
@@ -699,7 +700,7 @@
       "automatic_continuation": "PAUSED; no requested scheduler resume"
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T04:31:25.363821+00:00",
+    "at": "2026-11-06T04:35:46.802318+00:00",
     "workflow_change": "A saved source-linked partial ACO analysis now retains full native populations, names, dated roles and amounts together, rather than disconnected scalar summaries.",
     "unsealed_work": {
       "status": "Q21_terminal_offline_native_plan_repair",
@@ -4854,10 +4855,21 @@
         "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-native.json.gz"
       ],
       "scope_impact": "All4115received accounts retained; current quality denominator scope remains separate from full recorded2029financial/utilization scope. No clinical nomination, causal savings or original answer pass inferred."
+    },
+    {
+      "at": "2026-11-06T04:35:46.802318+00:00",
+      "gate": "G3",
+      "decision": "Preserve completed native Q20 composition. Its program registry versions are not effective at the requested dates; do not invent current eligibility or activate legacy disease-specific task heuristics. Continue the independent original Q14 source-supported financial/affordability workflow.",
+      "evidence": [
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/program-registry-observation.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q14/stack/receipt.json"
+      ],
+      "scope_impact": "Sequencing only. All25cases/tenareas, Q20 interpretation work and current program/payer input dependencies stay open. No new clinical definition, handler, model campaign or paid repeat."
     }
   ],
   "unsealed_work": {
-    "status": "native_ACO_composition_verified_clinical_interpretation_remaining",
+    "status": "native_ACO_composition_verified_continue_Q14",
     "product_commit": "b8e3d993",
     "product_fix_commit": "b3f0a8d7",
     "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json",
@@ -5054,7 +5066,8 @@
     "quality_roster_checks_passed": 56,
     "dated_role_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/role-join-proof.json",
     "full_recorded_population_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-proof.json",
-    "saved_native_ACO_context": "ANS-67af2e5580405bf29c26efac"
+    "saved_native_ACO_context": "ANS-67af2e5580405bf29c26efac",
+    "program_registry_observation": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/program-registry-observation.json"
   },
   "current_visual_request": {
     "status": "completed",
@@ -5088,7 +5101,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Q20 native data composition now qualified on all4115received accounts:3601measure accounts,2090dated role reports,all2029utilization/medical/pharmacy/enrollment populations and recorded totals reconciled without join fan-out;source/ledger unchanged,0providers,nomodel/measure repeats. Saved partial ANS-67af2e5580405bf29c26efac. Next use existing source-bound program/clinical task operators to complete conditional program-review nominations and candidate explanations from actual evidence; inspect exact current contracts first. Do not turn measure gaps into clinical suitability or invent reasons. Keep ACO attribution/member-months and payer benchmark/risk/quality/share/capacity/cost dependencies explicit before savings. Preserve all25/tenareas and ordinary failures,Q14/Q21/Q23/Q24/G5/clinical/customer gaps. No paidQ21repeat,unsafe bottling,new model campaign,default activation or routinePDF. Build ACTIVE,automatic continuation PAUSED.",
+  "next_action": "G3: Native Q20 facts/populations/roles/finance composition is qualified and saved partial ANS-67af2e5580405bf29c26efac; clinical explanations/nominations remain unfinished. Installed program_packages has only2versions ending2027-12-31, both not_effective at2029year-end/snapshot; do not extend validity, substitute legacyCT handlers or infer no programs exist elsewhere. Continue independent fixed Q14 financial-documentary workflow: inspect terminal old Q14 receipts, qualify existing financial_accounts and typed affordability assertions through the investigator/native composition; keep outstanding recorded balances separate from source-supported affordability/preferences and unknown hardship. No paidQ14/Q21repeat or clinical data inference from money. Retain all25/tenareas,Q20/Q21/Q23/Q24/G5/clinical/customer gaps; current/explicit program and payer specifications remain dependencies. Build ACTIVE,automatic continuation PAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
