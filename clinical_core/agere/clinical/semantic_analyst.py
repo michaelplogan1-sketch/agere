@@ -536,7 +536,7 @@ def actor_result(value):
 
 def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None,
               format_retries=0, review=None, continuation_guard=None, initial_calls=None, initial_answer=None,
-              escalation_model=None, compact_execution_state=False, binding_system=None, restored_messages=None):
+              escalation_model=None, compact_execution_state=False, binding_system=None, restored_messages=None,initial_readings=True):
     """Bounded tool-use loop: every executed call (failed ones included) counts toward max_tools; all returned usage is
     recorded, including cache writes/reads; there are no automatic paid retries.
 
@@ -549,7 +549,12 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     retaining every tool result. None for max_tools means no call quota. Repeated rejected answers with unchanged evidence
     stop as explicitly partial; a provider or deadline failure retains the last rejected answer as unverified.
     An optional stronger model continues this SAME conversation after a failed answer/format/progress check;
-    it never restarts tools, bypasses validation, or retries a failed provider request."""
+    it never restarts tools, bypasses validation, or retries a failed provider request.
+    initial_readings=False is only for explicit source-only native restoration:
+    old receipts remain complete/queryable but are not readings by this actor.
+    New explicit readings, certified replay defaults and restored same-actor
+    messages retain their complete source content across subsequent turns."""
+    if type(initial_readings)is not bool:raise ValueError('initial_readings must be a boolean')
     result = new_result(model)
     def escalate(reason):
         nonlocal model
@@ -663,7 +668,8 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 from .execution_state import messages as state_messages,review_reference
                 actor_messages=state_messages(user,result['tool_calls'],recent_results=latest_calls,feedback=state_feedback,candidate=state_candidate,
                                               documentation_identity=documentation_identity,documentation_in_system=bool(loaded_docs),
-                                              feedback_native=review_reference(state_feedback,execute))
+                                              feedback_native=review_reference(state_feedback,execute),
+                                              readings_start=0 if initial_readings or restored_messages is not None else len(initial_calls or []))
             else:actor_messages=messages
             focused_repair=None;binding_role=False
             if compact_execution_state:

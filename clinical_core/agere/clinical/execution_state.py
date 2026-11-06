@@ -1138,8 +1138,8 @@ def loaded_documentation(calls, identity):
                 'They are documentation, never patient evidence.'} if sections else None
 
 
-def catalog(calls):
-    entries=[]
+def catalog(calls,*,readings_start=0):
+    entries=[];native={};duplicate_views=set()
     for index,call in enumerate(calls):
         out=call.get('result')
         entry={'call':index,'tool':call.get('name'),'input_digest':digest(call.get('input')),
@@ -1151,6 +1151,13 @@ def catalog(calls):
         else:
             rows=out.get('rows')
             if not isinstance(rows,list):rows=next((out[k]for k in ('table','documents','passages')if isinstance(out.get(k),list)),None)
+            if rows is None and out.get('result_view'):
+                # The executor also registers scalar/metric population frames.
+                # Use its exact shared shape rather than resending opaque engine
+                # payloads that already have a native queryable handle.
+                from .backstop_agent import output_table
+                columns,matrix=output_table(out)
+                if columns:rows=[dict(zip(columns,row))for row in matrix]
             if isinstance(rows,list)and out.get('result_view'):
                 entry.update(result_view=out['result_view'],columns=out.get('columns')or
                     list(dict.fromkeys(k for r in rows if isinstance(r,dict)for k in r)),
@@ -1170,12 +1177,19 @@ def catalog(calls):
                             'characters':len(out['executed_query']),
                             'scope':'Complete portable SQL with embedded native rows remains in the execution receipt. '
                                 'executed_query is the exact scoped statement that ran against read_views; no source acceptance is inferred.'}
+                    elif not isinstance(declared,str):
+                        from .sql_query import native_query_model_projection
+                        projection=native_query_model_projection(out['executed_query'],{k:v for k,v in native.items()if k not in duplicate_views})
+                        if projection is not None:
+                            entry.pop('executed_query',None);entry['executed_program_view']=projection
                 from .semantic_analyst import collection_manifest,complete_actor_reading,actor_result
                 if complete_actor_reading(out):
                     # These are explicitly requested readings, not previews or
                     # model summaries. Retain them after later tools/feedback so
                     # interpretation does not require rereading the same rows.
-                    entry['complete_reading']=actor_result(out)
+                    if index>=readings_start:entry['complete_reading']=actor_result(out)
+                    else:entry['prior_reading_not_inherited']={'rows':len(rows),'reading_digest':digest(out['actor_reading']),
+                        'instruction':'This is retained source-only state, not a reading requested by this actor. Every row remains native; query the evidence needed for interpretation with read_all_rows=true.'}
                 collections=collection_manifest(rows)
                 if collections:entry['structured_collection_manifest']=collections
                 # Small scalar/aggregate results are useful exact observations;
@@ -1185,7 +1199,8 @@ def catalog(calls):
                 elif not any(isinstance(r,dict)and'patient_id'in r for r in rows) and len(json.dumps(rows,default=str))<2500:
                     entry['computed_rows']=rows
                 for key in ('coverage','method','record_ids_filter','accounting','assembly','source_scope','field_patient_queries','exhaustive_reason','scope_warnings',
-                            'native_sql_contract','read_views','incomplete_dependencies','registered_domain_functions'):
+                            'native_sql_contract','read_views','incomplete_dependencies','registered_domain_functions',
+                            'metric_id','name','unit','period','computed_as','status','parameters','analysis_population_count','missing','limitations'):
                     if key in out:
                         if key=='coverage'and isinstance(out[key],list):
                             entry['coverage']={'patients':len(out[key]),'received_documents':sum(r.get('received_documents',0)for r in out[key]),
@@ -1203,6 +1218,9 @@ def catalog(calls):
                                 v=fields.setdefault(key,{'patients_with_findings':0,'findings':0,'json_path':'$.'+key})
                                 v['patients_with_findings']+=bool(values);v['findings']+=len(values)
                     entry['narrative_field_manifest']=fields
+                view=out['result_view']
+                if view in native:duplicate_views.add(view)
+                native[view]=out
             else:
                 # Non-table contracts/instructions must remain visible. They
                 # are not silently summarized by a language model or dropped.
@@ -1248,7 +1266,7 @@ def _column_order_reading(reading):
     return projected if len(json.dumps(projected,default=str))<len(json.dumps(reading,default=str)) else reading
 
 
-def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,documentation_identity=None,documentation_in_system=False,feedback_native=None):
+def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,documentation_identity=None,documentation_in_system=False,feedback_native=None,readings_start=0):
     from .semantic_analyst import actor_result,complete_actor_reading
     focus=focused_prose_state(candidate,feedback,calls)
     selected_keys={digest(t['key'])for t in focus['targets']}if focus else set()
@@ -1262,11 +1280,12 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
             out = {k: v for k, v in out.items() if k not in ('rows', 'loaded_documentation')}
             out['documentation_sections'] = documentation_references(call['result'])
         return {'name': call.get('name'), 'input': call.get('input'), 'result': actor_result(out)}
-    state={'schema':VERSION,'original_request':request,'executed_results':catalog(calls),
+    state={'schema':VERSION,'original_request':request,'executed_results':catalog(calls,readings_start=readings_start),
         'latest_results':[recent(c) for c in recent_results],
         'instruction':'This is the current deterministic execution state, not a new question or a clinical summary. '
             'All native receipts are retained. SQL result_views retain every computed row; a reading preview does not limit native membership. '
             'Each executed_query in executed_results is the exact successful SQL receipt for that view; inspect it for source, filter, period and aggregation scope without rerunning it. '
+            'An executed_program_view is explicitly a snapshot-equivalent display: its literal row sources match complete native views; all other SQL logic remains. The full original SQL stays native. '
             'A truncated producer or incomplete_dependencies cannot support an accepted calculation or population scope. '
             'Read any earlier result by query_sql; read_all_rows=true supplies the complete selected rows for interpretation. '
             'Explicit complete_reading entries remain here across turns; do not query them again merely to see their values. '

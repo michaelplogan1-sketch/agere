@@ -120,6 +120,65 @@ def native_result_source(columns, rows):
     return f"SELECT {fields} FROM json_each('{data}')"
 
 
+def native_query_model_projection(query, native):
+    """Snapshot-equivalent display of literal native rows by their SQL handles.
+
+    Only the exact generated JSON row-source expression may be replaced. All
+    joins, predicates, dates, cohort filters and calculations remain untouched.
+    This proves literal-copy equivalence, never provenance or clinical meaning.
+    The complete original SQL and rows remain native execution evidence.
+    """
+    import sqlglot
+    from sqlglot import exp
+    from ...contracts import digest
+    from .result_assembly import incomplete_reason
+    from .backstop_agent import output_table
+    try:tree=sqlglot.parse_one(query,read='sqlite')
+    except (sqlglot.errors.SqlglotError,ValueError,TypeError):return None
+    candidates=[]
+    for view,result in native.items():
+        if not isinstance(view,str)or not isinstance(result,dict)or not re.fullmatch(r'agere_result_\d+',view)or incomplete_reason(result):continue
+        columns,rows=output_table(result)
+        if(not isinstance(columns,list)or not columns or len(set(columns))!=len(columns)
+           or not all(isinstance(c,str)for c in columns)or not isinstance(rows,list)):continue
+        matrix=rows
+        if any(r is None or len(r)!=len(columns)for r in matrix):continue
+        shape=sqlglot.parse_one(native_result_source(columns,[]),read='sqlite').sql(dialect='sqlite')
+        candidates.append((view,result,columns,digest(matrix),shape,len(rows)))
+    bindings=[]
+    # Parsing treats each complete JSON payload as one literal, not SQL. Never
+    # search/replace arbitrary text or choose a source by a matching scalar.
+    for select in list(tree.find_all(exp.Select)):
+        source=(select.args.get('from_')or exp.From()).this
+        if not isinstance(source,exp.Table)or not isinstance(source.this,exp.Anonymous)or source.this.name.lower()!='json_each':continue
+        arguments=source.this.expressions
+        if len(arguments)!=1 or not isinstance(arguments[0],exp.Literal)or not arguments[0].is_string:continue
+        try:rows=json.loads(arguments[0].this)
+        except (ValueError,TypeError):continue
+        if not isinstance(rows,list):continue
+        small=select.copy();small_source=small.args['from_'].this.this
+        small_source.set('expressions',[exp.Literal.string('[]')]);shape=small.sql(dialect='sqlite')
+        matches=[c for c in candidates if c[4]==shape and c[3]==digest(rows)]
+        if len(matches)!=1:continue  # equal-looking sources do not establish a unique handle
+        view,result,columns,rows_digest,_,count=matches[0]
+        ordinal=next((name for name in ('_rowid_','rowid','oid')if name not in {c.casefold()for c in columns}),None)
+        if ordinal is None:continue
+        # Native tables are inserted in the exact literal-array order. Their
+        # lookup indexes must not reorder duplicate/keyed rows in a display
+        # program; the original receipts and row-address bindings stay intact.
+        replacement=sqlglot.parse_one('SELECT * FROM temp."'+view+'" ORDER BY '+ordinal,read='sqlite')
+        select.replace(replacement)
+        if select is tree:tree=replacement
+        bindings.append({'result_view':view,'native_receipt_digest':digest(result),'columns':columns,
+            'rows':count,'rows_digest':rows_digest,'native_order_column':ordinal,'literal_source_digest':digest(select.sql(dialect='sqlite'))})
+    if not bindings:return None
+    return {'schema':'native-literal-program-view/1','query':tree.sql(dialect='sqlite'),
+        'original_query_digest':digest(query),'original_query_characters':len(query),'source_bindings':bindings,
+        'scope':'Snapshot-equivalent model view of exact literal native row sources only. All non-source query logic is retained. '
+            'Complete original SQL and every row remain in native receipts and result_views. This is not the original executed SQL '
+            'and does not establish clinical meaning or independent source provenance.'}
+
+
 def portable_native_query(query, sources, read_views):
     """Bind actual native reads in a portable receipt; never execute this rewrite."""
     available = {name.casefold(): name for name in read_views}
