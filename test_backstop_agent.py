@@ -8,6 +8,16 @@ from clinical_core.agere.clinical import backstop_agent as B, proposers as P
 
 
 class EntryModelReuse(unittest.TestCase):
+    def test_assertion_window_contract_renders_and_native_analyst_starts(self):
+        # Exercise the actual answer entry, not only an isolated prompt string.
+        # A literal schema example must not become a str.format replacement key.
+        rendered = B.RULES.format(tool_quota='No fixed tool-call quota.')
+        self.assertIn('assertion_window={basis,start,end}', rendered)
+        self.assertIn('No fixed tool-call quota.', rendered)
+        result, replay, _ = self.entry_result()
+        self.assertEqual(result['answer']['headline'], 'Native result retained.')
+        replay.assert_called_once()
+
     def entry_result(self, reviews=None, hint=None, run_override=None):
         from contextlib import ExitStack
         from clinical_core.agere import model_policy as M

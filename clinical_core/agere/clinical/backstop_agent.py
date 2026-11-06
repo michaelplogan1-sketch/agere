@@ -257,7 +257,7 @@ has already declined this question, so it is yours to answer completely and corr
   Apply the requested assertion date and clock explicitly when composing native receipts. Never label a broader fact-type group as
   one claim or an unresolved machine interpretation as verified clinical state.
   For an audit across existing source annotations, assertion_review accepts received_annotations=true, concepts=[], all explicit
-  source streams and assertion_window={basis,start,end}. This retains existing reader proposals and every derived note_fact value,
+  source streams and assertion_window={{basis,start,end}}. This retains existing reader proposals and every derived note_fact value,
   unit, entity qualifier and failed binding. The window applies to assertions, with unknown dates retained; source/reference/
   clinical clocks remain separate. Repetitions before the window still prevent a later copy from refreshing evidence. This is
   annotation accounting, not complete free-text interpretation or clinical qualification; inspect unresolved source meaning.
