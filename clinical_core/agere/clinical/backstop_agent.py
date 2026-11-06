@@ -61,7 +61,7 @@ TOOLS = [
     {'name':'read_patient_profiles','description':'Read received patient display names and profile fields by exact ID, using the same source profiles attached to saved answers. These fields are separate from the semantic patient SQL table. Supply patient_query_sql for an executed cohort, explicit patient_ids, or omit both for the inherited population. Returns every selected patient, source date/fingerprint and an SQL result_view for composition. Missing or future profiles remain unknown. Names do not establish a clinician assignment or clinical eligibility.',
      'input_schema':{'type':'object','properties':{'patient_ids':{'type':'array','items':{'type':'string'}},
         'patient_query_sql':{'type':'string'}},'additionalProperties':False}},
-    {'name':'list_analyses','description':'Discover the existing analytical engines: trajectories, change detection, survival, forecasts, queueing, allocation, provider comparisons, causal designs and finance. These are native tools, not calculations to reproduce in prose.',
+    {'name':'list_analyses','description':'Discover existing native analytical and documentary engines: mapped assertion review, dated source state, complete named-measure patient/gap rosters, trajectories, change detection, survival, forecasts, queueing, allocation, provider comparisons, causal designs and finance. These are native tools, not calculations to reproduce in prose.',
      'input_schema':{'type':'object','properties':{},'additionalProperties':False}},
     {'name':'describe_analysis','description':'Get an existing analytical engine\'s typed parameters, assumptions and population contract before calling it.',
      'input_schema':{'type':'object','properties':{'operation':{'type':'string'}},'required':['operation'],'additionalProperties':False}},
@@ -234,10 +234,19 @@ has already declined this question, so it is yours to answer completely and corr
   An at_target label means the published target RANGE, not its upper dose. For a maximum-dose question compare documented_daily_mg
   with target_max_daily_mg and preserve reference_max_status/documented_reference_max_status. A reference upper dose does not establish
   an individual maximum tolerated dose or a need to increase treatment; weight-conditional targets and unresolved use stay explicit.
-- For mathematical analysis, discover list_analyses, inspect describe_analysis, then execute_analysis with native typed parameters.
+- For analytical or documentary work, discover list_analyses, inspect describe_analysis, then execute_analysis with native typed parameters.
   Use existing trajectory/change-point, survival, forecast, queueing, allocation, financial and causal engines when the question needs
   them. Bind the exact population, keep uncertainty/assumptions and unavailable prerequisites, and compose their result_views in SQL.
   Do not run models merely to populate a catalog or turn an association into a causal conclusion.
+  assertion_review preserves complete patient receipts for explicitly mapped concepts, their source spans and qualifier proposals;
+  source_state requires an explicit concept, relation, clock and filter. Missing qualifiers are unknown, and repeated text does not
+  establish independent corroboration. A concept is not a complete numerical value/unit claim. Unmapped meanings stay unresolved.
+  A patient selected because of a dated record does not make every statement in that patient's receipt fall in the same window.
+  Apply the requested assertion date and clock explicitly when composing native receipts. Never label a broader fact-type group as
+  one claim or an unresolved machine interpretation as verified clinical state.
+  library_measure output patients returns the complete evaluated patient-status roster; output gaps returns every recorded gap.
+  Preserve exclusions and indeterminate rows, distinguish the input roster from a measure denominator, and retain unknown full-
+  population rates separately from known-subset observations. Read patient names with read_patient_profiles and join by patient_id.
 - Separate analysis from requested downstream deliverables. Return workflow steps for the existing deliverable builder; it generates
   the artifact AFTER the checked analysis. Never replace a requested artifact with a prose outline. A proposed service design does
   not require inventing clinical eligibility or claiming actual enrollment, outreach, medication orders or device shipments.
