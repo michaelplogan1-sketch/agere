@@ -1,3 +1,25 @@
+# Current Agere checkpoint — ACTIVE 2026-11-06T01:37:40.208501+00:00
+
+G3: execute finaldistinctstandaloneQ18-Q21onceperarm sequentially on008636b7/protocol-native-spans-candidate.json via run_remaining_after_Q17.py. Inspectownedremaining-after-Q17-receipt.jsonbeforeanyjob; source/product/scoringfrozenwhileactive, noduplicate. Stopbetween cases on actualcontext/subscription/materialrunnerfailure or explicitstopreceipt; no paidretry. Independentlyscoreeachreturnedcase. Sharednumericspanrepairnowproven0providers/SQLreruns,169checks; nofurtherphrasewhitelists. Q14interruptedpartial/frontierunstarted,Q23missingbaseprogramdefinitions,Q24fromQ20,earlierfailedcases andall25/tenareas/G5/clinical/customerprerequisitesremain. AutomaticcontinuationPAUSED.
+
+Nativeformatrepair008636b7: explicit+10keepsactualscalar10.0andpluspunctuation; validISOmonth/day/timestampsandcalendarintervalsworkacrossboundyearplaceholders. RetainedQ16/Q17proof0.55s/0providers/0SQLreruns,169checkspass. Allcalendarfalsepositivesremoved; actualunboundmethod/quantityobligationsremain. Originalanswersnotrestamped.
+
+Q17bothpartialfailed:all-event2966numeratorincludes82withoutreceivedmonthlyexposure;eligible2884. Missingmethod-universereconciliationandfinalmonthlytableareunfinishedwork. Q15policyconflictcorrected:declaredlateststatusfitscurrentdocs;frozenhistory-outcomerubricgradeunassessed;actualstackannual92vs348faultpersists. Q16baseline/appointmentcapacityunfinished;proxyunqualified. All56350attempts/42pendingretained. Noownedjobs/sourceunfrozen; lastsealedreceiptunchanged. Evidence: artifacts/agere-ordinary-comparison-2026-11-05/Q16/numeric-span-repair-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q16/numeric-span-final-checks.log; artifacts/agere-ordinary-comparison-2026-11-05/Q16/numeric-span-check-history.json; artifacts/agere-ordinary-comparison-2026-11-05/Q17/comparison.json; artifacts/agere-ordinary-comparison-2026-11-05/Q17/independent-exposure-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q15/source-policy-conflict.json
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — ACTIVE 2026-11-06T01:25:43.589129+00:00
+
+G3: allownedjobs terminal after gracefulbetween-case stop. Fix shared numeric-span representation in existing typedprose binding: explicitplus on unchangedpositive scalar(Q16native10.0 vs+10) and validISOcalendar-monthaddresses(Q17datesreadasnegativequantities). Prove from retainednativework with0providers/SQLreruns and adverse regressiontests; no questionphrasewhitelist orunchangedfullpaidrepeat. IndependentlyscoreQ17and correctQ15evaluatorpolicyconflict without altering frozenreference/protocol. Then resume unstartedQ18-Q21onceperarm on verifiedcandidate. Q14interruptedpartial/frontierunstarted,Q23base-definitiondependency,Q24fromQ20,all25/tenareas/G5/clinical/customerprerequisitesremain. AutomaticcontinuationPAUSED.
+
+Q16stack418.974s/63attempts/$3.79032966; frontier35.351s/4/$0.2343247. Trueappointmentservicetimesabsent, baselineobservationsnotfinished; proxyunqualified. Nativefailure+10vsactual10.0reproduced0providers. Q17stack271.715s/21/$3.921750538; frontier82.637s/5/$0.7225409returnedpartial; finalscorepending. Source/productunfrozen; noownedjobs.
+
+Correction: Q15installedsource docs explicitlydefaultunqualifiedstatusquestionstofinal_status. Frozenhistory-outcomerubricconflictswiththatdeclaredalternative; oldgradesretainedandstatus-versioncriterionnowunassessed. Originalstack92annualunknownprovidersremainsfalse(actual348). Frozenreference/protocolunchanged.
+
+All56350attempts/42pendingretained. NoMVP/clinical/superiorityclaim. Lastsealedreceiptunchanged. Evidence: artifacts/agere-ordinary-comparison-2026-11-05/Q16/comparison.json; artifacts/agere-ordinary-comparison-2026-11-05/Q16/signed-binding-failure-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q16/independent-capacity-disposition.json; artifacts/agere-ordinary-comparison-2026-11-05/Q15/source-policy-conflict.json; artifacts/agere-ordinary-comparison-2026-11-05/Q15/comparison.json; artifacts/agere-ordinary-comparison-2026-11-05/Q17/pair-receipt.json; artifacts/agere-ordinary-comparison-2026-11-05/Q17/independent-exposure-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/remaining-after-Q15-stop-request.json
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — ACTIVE 2026-11-06T01:08:26.771746+00:00
 
 G3: execute distinctremainingQ16-Q21onceperarm, sequentially on1b0b6ea6/protocol-native-copy-clocks-candidate.json via run_remaining_after_Q15.py. Inspect ownedremaining-after-Q15-receipt.json before any job; no duplicate or source edits while frozen. Stop between cases on actualcontextfailure, subscriptionlimit, materialrunnerfailure or explicitstopreceipt; no paidretry. Independently score each returnedcase beforeacceptance. No furthercase-by-case compilerphrasepatches. Q14interruptedpartial/frontierunstarted,Q23baseprogramdefinitiondependency,Q24fromQ20,earlierfailedordinarycases andall25/tenareas/G5/clinical/customerprerequisitesremain. AutomaticcontinuationPAUSED.
@@ -5,6 +27,14 @@ G3: execute distinctremainingQ16-Q21onceperarm, sequentially on1b0b6ea6/protocol
 RetainedQ15primitivecopy: all1646rows/13168cells exact;1774726bytes ->67331(-96.2061%). Actualsource-onlycheck2.404s/2successfulrequests/$0.001427082,0errors/pending;3fieldsunknownincludingfalseannual92unknown-providerclaim(actual348). All100focusedchecks pass. Noanalyst/SQLrerun ororiginalanswerrestamp.
 
 OriginalQ15stack159.013s/22attempts/$0.05834714known+3unpriced; frontier49.869s/5attempts/$0.2500962. Bothfailinstalledoutcomepolicyfor143versions; stackalsoJanuary-to-yearquantitydomain. Q12/Q13failures,Q14interruptionandallattemptshistoryretained. Lastsealedreceiptunchanged. Evidence: artifacts/agere-ordinary-comparison-2026-11-05/Q15/comparison.json; artifacts/agere-ordinary-comparison-2026-11-05/Q15/independent-appointment-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/native-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/run-receipt.json; artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-calendar-final-checks.log; artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/run-receipt.json; artifacts/agere-ordinary-comparison-2026-11-05/Q14/engineering-score.json
+
+
+
+
+
+
+
+Owned fixed sequence receipt: artifacts/agere-ordinary-comparison-2026-11-05/remaining-after-Q15-receipt.json; status=stopped_before_next_case_by_explicit_stop_receipt; current=Q17; source_frozen=False. Automatic continuation PAUSED.
 
 ## Superseded checkpoint
 
@@ -50,7 +80,6 @@ Last sealed receipt unchanged. Activity: inspect the owned sequence receipt befo
 
 
 
-Owned fixed sequence receipt: artifacts/agere-ordinary-comparison-2026-11-05/remaining-sequence-receipt.json; status=interrupted; current=Q14; source_frozen=True. Automatic continuation PAUSED.
 
 ## Superseded checkpoint
 
