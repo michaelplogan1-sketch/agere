@@ -629,8 +629,8 @@
     "kind": "unsealed_connected_engineering_increment",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Replaced the dark multi-panel opening with a light conversation-first interface, readable prior turns, contextual scope/preferences and actual per-request activity. Native query row counts, model-attempt reservations and checked steps come from the existing immutable execution journal; no fake completion percentages or additional model role. Fixed saved-answer catalog reading all full histories on home load.",
-    "measured_failure_reduction": "Browser verified light home, live native2-row update, clarification reload/reply/resume with1source query across both phases, compact navigation/no overflow atCSS727, and the real4115-patient/2396490-record/237-category source connection. Native catalog100entries in0.027s; actualHTTP0.050s, avoiding full decode of174histories/42.2GB. Original history stats unchanged,0newproviderattempts;57086ledger rows/43historicalpending retained.",
+    "user_behavior_delta": "Connected existing requirements, protocol_review and program_document operations to both shared-planner discovery and ordinary investigator execution. Complete hash-bound patient receipts reach native SQL, with installed source/version/effective/receipt dates, semantic-review state, unresolved inputs and explicit unselected buyer context. Program/buyer registry changes invalidate request continuation. Refreshed stale existing native calculations after preserving every replaced derived row; no original source writes or provider calls.",
+    "measured_failure_reduction": "143affectedchecks pass, plus42overlapping final dated-declaration/clarification checks. Actual1471-person care-gap population returned in11.357s total(8.808s native phase):32supported/165contradicted/1274unresolved received affordability reports, all2199prior gaprows and every population manifest retained. No claim that these reports caused gaps. Native refresh183.844s/4115patients,16460oldderivedrows archived, original source tables write-protected.0provider attempts;57086ledger rows/43historicalpending unchanged. Localapp8885restored with686cda72, PID20139/session14947, HTTP200.",
     "evidence": [
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-native-checks-2.log",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-join-proof.json",
@@ -638,16 +638,19 @@
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/retained-agenda-native.json.gz",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q14/source-attribution-repair/workflow-proof.json",
       "artifacts/agere-intent-clarification-2026-11-06/engineering-proof.json",
-      "artifacts/agere-conversation-interface-2026-11-06/engineering-proof.json"
+      "artifacts/agere-conversation-interface-2026-11-06/engineering-proof.json",
+      "artifacts/agere-criteria-handoff-2026-11-06/engineering-proof.json",
+      "artifacts/agere-criteria-handoff-2026-11-06/workflow-proof.json",
+      "artifacts/agere-criteria-handoff-2026-11-06/native-refresh.json"
     ],
-    "remaining_gap": "The agenda explicitly leaves causes, clinical program nominations and realizable savings unresolved; source/buyer/clinical qualification and automatic original-question completion remain unqualified. This is connected partial capability evidence, not original Q20/Q24 acceptance or full MVP readiness. Clarification control flow is engineering-verified with authored model/review responses; live clarification judgment remains unqualified. No asynchronous background branch scheduler added. Intent-dependent answers do not become generic training/bottling defaults. UI/catalog engineering is verified and the local app is serving; full large-history opening and narrower-device QA remain limited. This does not complete Q20 or qualify clinical/model behavior.",
-    "next_action": "G3: Complete the remaining Q20source-interpretation/clinical-nomination requirement from the retained source-linked care-gap accounts through existing entity/relation/assertion and buyer-capability composition. Reuse the full native ACO/payer-prerequisite agenda and all population manifests; do not rerun passing measures, financial patients or the fullpaidQ14/Q21. First bind applicable actual program/buyer criteria and their source/effective dates; distinguish a documentary review nomination from clinical eligibility. Missing applicable definitions or qualified source interpretation must remain supported unknowns, not invented program mappings. Then qualify the ordinary automatic handoff on the changed shared tools, preserving original failed pairs. All25cases/tenareas, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies retained. BuildACTIVE/automationPAUSED.",
+    "remaining_gap": "Full original Q20 and ordinary automatic handoff remain unqualified. Source-bound candidate explanation/nomination work remains; the installed examples and expired legacy rules cannot establish clinical/payer eligibility or buyer service fit. Existing25case failures, Q21/Q23/Q24/G5 and independent clinical/model/customer qualification remain separate. No new program rule, model activation, paid campaign or finish-line expansion.",
+    "next_action": "G3: Complete Q20 source interpretation/documentary review nominations and then qualify the ordinary automatic original-question handoff using the retained full ACO agenda and new1471-person documentary-input receipts. Program/buyer source/version/date binding is now explicit:2expired legacy rules,4authored unreviewed quoted review/measure examples and no supplied buyer portfolio; preserve eligibility and service fit as supported unknowns rather than invent applicable programs. Use existing entity/relation/assertion/state review for remaining candidate explanations and documentary nominations, retaining exact source/date/subject and patient-specific uncertainty. Reuse all full population manifests and native work; do not rerun passing measures, financial patients or fullpaidQ14/Q21. Earlier fixed25case failures, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies and alltenareas remain. BuildACTIVE/automationPAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
       "Earlier ordinary failures and uncompleted connected workflows remain; all25cases/tenareas retained. Model/clinical qualification and deployment prerequisites remain separate."
     ],
-    "latest_progress": "Light conversation interface and recorded progress verified; local app8885serving03258c19 with existing live connections/subscription transport. Return to original G3 dated program/buyer criteria/source interpretation, then automatic handoff. Research candidates remain isolated/offline; automationPAUSED.",
+    "latest_progress": "Existing program/criteria tools connected; actual full care-gap population proof and current native source refresh passed. Return to Q20 source interpretation, then ordinary automatic handoff. Light app serving; research candidates unactivated; automationPAUSED.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -697,8 +700,8 @@
     },
     "latest_human_steering": "2026-11-06: Mike asked what is next in the stack, requested a distinctive light conversation-first UI informed by GitHub and award-winning sites, and reaffirmed that research is fit assessment while core stack and product work continue.",
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T12:34:45.885991+00:00",
-    "workflow_change": "Replaced the dark multi-panel opening with a light conversation-first interface, readable prior turns, contextual scope/preferences and actual per-request activity. Native query row counts, model-attempt reservations and checked steps come from the existing immutable execution journal; no fake completion percentages or additional model role. Fixed saved-answer catalog reading all full histories on home load.",
+    "at": "2026-11-06T14:13:42.950137+00:00",
+    "workflow_change": "Connected existing requirements, protocol_review and program_document operations to both shared-planner discovery and ordinary investigator execution. Complete hash-bound patient receipts reach native SQL, with installed source/version/effective/receipt dates, semantic-review state, unresolved inputs and explicit unselected buyer context. Program/buyer registry changes invalidate request continuation. Refreshed stale existing native calculations after preserving every replaced derived row; no original source writes or provider calls.",
     "unsealed_work": {
       "status": "Q20_native_payer_prerequisite_and_partial_agenda_composition_verified",
       "product_commit": "31c837e6",
@@ -923,7 +926,20 @@
       "accountability_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-join-proof.json",
       "accountability_saved_context": "ANS-cb57ed3d886edac1c5040795",
       "native_ACO_agenda_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/retained-agenda-proof.json",
-      "native_ACO_agenda_context": "ANS-219c79c0b76ec350d9988813"
+      "native_ACO_agenda_context": "ANS-219c79c0b76ec350d9988813",
+      "criteria_handoff": {
+        "status": "engineering_verified_no_clinical_nomination_or_full_question_acceptance",
+        "product_commits": [
+          "29a2c2a6",
+          "686cda72"
+        ],
+        "proof": "artifacts/agere-criteria-handoff-2026-11-06/engineering-proof.json",
+        "workflow": "artifacts/agere-criteria-handoff-2026-11-06/workflow-proof.json",
+        "provider_attempts": 0,
+        "source_frozen": false,
+        "input_people": 1471,
+        "full_Q20_acceptance": false
+      }
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 47,
@@ -2050,6 +2066,18 @@
         "artifacts/agere-packet-representation-2026-11-03/delivery-receipt.json"
       ],
       "scope_impact": "Alltenareas retained; no clinical/model qualification or fullMVP acceptance. G3 remainsactive; G5independent requirements separate."
+    },
+    {
+      "at": "2026-11-06T14:13:42.950137+00:00",
+      "decision": "Expose existing criteria operations through both ordinary planning tools and retain dated program/buyer authority boundaries. Refresh stale native inputs once before actual connected proof.",
+      "reason": "Program definitions and documentary review were reachable in the graph but absent from investigator tools. Actual first proof rejected an older native build before providers. Existing native refresh repaired that input dependency without repeating paid ACO/financial runs.",
+      "evidence": [
+        "artifacts/agere-criteria-handoff-2026-11-06/engineering-proof.json",
+        "artifacts/agere-criteria-handoff-2026-11-06/workflow-proof.json",
+        "artifacts/agere-criteria-handoff-2026-11-06/native-refresh.json"
+      ],
+      "scope_impact": "All25cases/alltenareas retained. Quoted authored examples and missing buyer portfolio remain unqualified. Earlier failures/partial results preserved. No new program/service/model, research activation, clinical/superiority/MVP claim or automation resume.",
+      "next_action": "G3: Complete Q20 source interpretation/documentary review nominations and then qualify the ordinary automatic original-question handoff using the retained full ACO agenda and new1471-person documentary-input receipts. Program/buyer source/version/date binding is now explicit:2expired legacy rules,4authored unreviewed quoted review/measure examples and no supplied buyer portfolio; preserve eligibility and service fit as supported unknowns rather than invent applicable programs. Use existing entity/relation/assertion/state review for remaining candidate explanations and documentary nominations, retaining exact source/date/subject and patient-specific uncertainty. Reuse all full population manifests and native work; do not rerun passing measures, financial patients or fullpaidQ14/Q21. Earlier fixed25case failures, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies and alltenareas remain. BuildACTIVE/automationPAUSED."
     }
   ],
   "decision_log": [
@@ -5262,6 +5290,19 @@
       "owned_app_receipt": "artifacts/agere-conversation-interface-2026-11-06/app-server.json",
       "provider_attempts": 0,
       "source_frozen": false
+    },
+    "criteria_handoff": {
+      "status": "engineering_verified_no_clinical_nomination_or_full_question_acceptance",
+      "product_commits": [
+        "29a2c2a6",
+        "686cda72"
+      ],
+      "proof": "artifacts/agere-criteria-handoff-2026-11-06/engineering-proof.json",
+      "workflow": "artifacts/agere-criteria-handoff-2026-11-06/workflow-proof.json",
+      "provider_attempts": 0,
+      "source_frozen": false,
+      "input_people": 1471,
+      "full_Q20_acceptance": false
     }
   },
   "current_visual_request": {
@@ -5296,7 +5337,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Complete the remaining Q20source-interpretation/clinical-nomination requirement from the retained source-linked care-gap accounts through existing entity/relation/assertion and buyer-capability composition. Reuse the full native ACO/payer-prerequisite agenda and all population manifests; do not rerun passing measures, financial patients or the fullpaidQ14/Q21. First bind applicable actual program/buyer criteria and their source/effective dates; distinguish a documentary review nomination from clinical eligibility. Missing applicable definitions or qualified source interpretation must remain supported unknowns, not invented program mappings. Then qualify the ordinary automatic handoff on the changed shared tools, preserving original failed pairs. All25cases/tenareas, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies retained. BuildACTIVE/automationPAUSED.",
+  "next_action": "G3: Complete Q20 source interpretation/documentary review nominations and then qualify the ordinary automatic original-question handoff using the retained full ACO agenda and new1471-person documentary-input receipts. Program/buyer source/version/date binding is now explicit:2expired legacy rules,4authored unreviewed quoted review/measure examples and no supplied buyer portfolio; preserve eligibility and service fit as supported unknowns rather than invent applicable programs. Use existing entity/relation/assertion/state review for remaining candidate explanations and documentary nominations, retaining exact source/date/subject and patient-specific uncertainty. Reuse all full population manifests and native work; do not rerun passing measures, financial patients or fullpaidQ14/Q21. Earlier fixed25case failures, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies and alltenareas remain. BuildACTIVE/automationPAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",

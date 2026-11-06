@@ -5,17 +5,17 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: Complete the remaining Q20source-interpretation/clinical-nomination requirement from the retained source-linked care-gap accounts through existing entity/relation/assertion and buyer-capability composition. Reuse the full native ACO/payer-prerequisite agenda and all population manifests; do not rerun passing measures, financial patients or the fullpaidQ14/Q21. First bind applicable actual program/buyer criteria and their source/effective dates; distinguish a documentary review nomination from clinical eligibility. Missing applicable definitions or qualified source interpretation must remain supported unknowns, not invented program mappings. Then qualify the ordinary automatic handoff on the changed shared tools, preserving original failed pairs. All25cases/tenareas, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies retained. BuildACTIVE/automationPAUSED.",
+  "active_work": "G3: Complete Q20 source interpretation/documentary review nominations and then qualify the ordinary automatic original-question handoff using the retained full ACO agenda and new1471-person documentary-input receipts. Program/buyer source/version/date binding is now explicit:2expired legacy rules,4authored unreviewed quoted review/measure examples and no supplied buyer portfolio; preserve eligibility and service fit as supported unknowns rather than invent applicable programs. Use existing entity/relation/assertion/state review for remaining candidate explanations and documentary nominations, retaining exact source/date/subject and patient-specific uncertainty. Reuse all full population manifests and native work; do not rerun passing measures, financial patients or fullpaidQ14/Q21. Earlier fixed25case failures, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies and alltenareas remain. BuildACTIVE/automationPAUSED.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
-  "owned_server_pid": 16965,
-  "owned_server_session": 22208,
+  "owned_server_pid": 20139,
+  "owned_server_session": 14947,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: Complete the remaining Q20source-interpretation/clinical-nomination requirement from the retained source-linked care-gap accounts through existing entity/relation/assertion and buyer-capability composition. Reuse the full native ACO/payer-prerequisite agenda and all population manifests; do not rerun passing measures, financial patients or the fullpaidQ14/Q21. First bind applicable actual program/buyer criteria and their source/effective dates; distinguish a documentary review nomination from clinical eligibility. Missing applicable definitions or qualified source interpretation must remain supported unknowns, not invented program mappings. Then qualify the ordinary automatic handoff on the changed shared tools, preserving original failed pairs. All25cases/tenareas, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies retained. BuildACTIVE/automationPAUSED.",
+  "resume_priority": "G3: Complete Q20 source interpretation/documentary review nominations and then qualify the ordinary automatic original-question handoff using the retained full ACO agenda and new1471-person documentary-input receipts. Program/buyer source/version/date binding is now explicit:2expired legacy rules,4authored unreviewed quoted review/measure examples and no supplied buyer portfolio; preserve eligibility and service fit as supported unknowns rather than invent applicable programs. Use existing entity/relation/assertion/state review for remaining candidate explanations and documentary nominations, retaining exact source/date/subject and patient-specific uncertainty. Reuse all full population manifests and native work; do not rerun passing measures, financial patients or fullpaidQ14/Q21. Earlier fixed25case failures, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies and alltenareas remain. BuildACTIVE/automationPAUSED.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-05T13:04:20.746654+00:00",
   "heartbeat_status": "PAUSED",
@@ -27,8 +27,8 @@
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
-  "last_observed_server_session": 22208,
-  "server_status": "Owned local app http://127.0.0.1:8885/ask is serving product03258c19, PID16965/session22208. Existing live provider connections and Claude subscription transport enabled; no provider/training/build run active. Catalog/source inventory GETs verified.57086attemptrows/43historicalpending retained. Sourceunfrozen; inspect actual request journal before future source edits/restarts. AutomationPAUSED.",
+  "last_observed_server_session": 14947,
+  "server_status": "Owned local app8885serving686cda72, PID20139/session14947, HTTP200. Native refresh and1471-person criteria handoff jobs terminal, no active provider/training/build job.0newproviderattempts; all57086rows/43historicalpending preserved. Sourceunfrozen; inspect request journal before future edits. AutomationPAUSED.",
   "unsealed_work": {
     "status": "Q20_native_payer_prerequisite_and_partial_agenda_composition_verified",
     "product_commit": "31c837e6",
@@ -274,6 +274,19 @@
       "owned_app_receipt": "artifacts/agere-conversation-interface-2026-11-06/app-server.json",
       "provider_attempts": 0,
       "source_frozen": false
+    },
+    "criteria_handoff": {
+      "status": "engineering_verified_no_clinical_nomination_or_full_question_acceptance",
+      "product_commits": [
+        "29a2c2a6",
+        "686cda72"
+      ],
+      "proof": "artifacts/agere-criteria-handoff-2026-11-06/engineering-proof.json",
+      "workflow": "artifacts/agere-criteria-handoff-2026-11-06/workflow-proof.json",
+      "provider_attempts": 0,
+      "source_frozen": false,
+      "input_people": 1471,
+      "full_Q20_acceptance": false
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
