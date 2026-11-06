@@ -161,14 +161,18 @@ def capture(path, question, result, *, original_question=None):
         with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=d,
                                          prefix='.answer-', suffix='.partial', delete=False) as f:
             partial = Path(f.name)
-            json.dump({**data, 'id': key, 'created_at': now()}, f, default=str)
+            created = now()
+            json.dump({**data, 'id': key, 'created_at': created}, f, default=str)
             f.flush()
             os.fsync(f.fileno())
+        published=False
         try:
             os.link(partial, target)
+            published=True
         except FileExistsError:
             pass
         partial.unlink()
+        if published:publish_listing(target, {**data, 'id': key, 'created_at': created})
     return {'id': key, 'patients': len(rows), 'url': '/action-center?context=' + key, **scope_options(data)}
 
 
@@ -265,12 +269,95 @@ def load(path, key, *, current=False, follow_up=False, source_review=False, loca
             'supports_patient_work': supports_patient_work(data)}
 
 
+def listing_row(data):
+    return {'id':data['id'],'question':data['question'],'patients':len(data['patient_ids']),
+            'created_at':data['created_at'],**scope_options(data)}
+
+
+def listing_stamp(target):
+    s=target.stat()
+    return [s.st_size,s.st_mtime_ns,s.st_ctime_ns,s.st_ino]
+
+
+def publish_listing(target,data):
+    """Small derived catalog; never confers scope or answer acceptance."""
+    value={'schema':'answer-listing/1','file':listing_stamp(target),'row':listing_row(data)}
+    try:
+        with tempfile.NamedTemporaryFile(mode='w',encoding='utf-8',dir=target.parent,prefix='.listing-',suffix='.partial',delete=False)as f:
+            partial=Path(f.name);json.dump(value,f);f.flush();os.fsync(f.fileno())
+        try:os.link(partial,target.with_name('listing.json'))
+        except FileExistsError:pass
+        partial.unlink()
+    except OSError:
+        pass  # A missing optional index cannot lose a saved answer; legacy headers remain inspectable.
+
+
+def legacy_listing(target):
+    """Read the small header/tail of large historical files, without rewriting them.
+
+    Old unindexed population counts remain unknown. Opening the answer still
+    loads its complete immutable context and runs the existing scope checks.
+    """
+    stamp=listing_stamp(target)
+    if stamp[0]<=65536:
+        data=json.loads(target.read_text())
+        return listing_row(data)
+    decoder=json.JSONDecoder();question=None
+    with target.open()as stream:
+        text=stream.read(4096);pos=1
+        while True:
+            begin=pos
+            try:
+                while text[pos].isspace()or text[pos]==',':pos+=1
+                if text[pos]!='"':break
+                key,end=decoder.raw_decode(text,pos);pos=end
+                while text[pos].isspace():pos+=1
+                if text[pos]!=':':break
+                pos+=1
+                while text[pos].isspace():pos+=1
+                # The native writer places the question before evidence. Do
+                # not scan an arbitrary legacy evidence tree to find a title.
+                if key not in ('schema','context_policy_identity','question','original_question'):break
+                if text[pos]!='"':break
+                value,end=decoder.raw_decode(text,pos);pos=end
+                if key=='question':
+                    if isinstance(value,str):question=value
+                    break
+            except (json.JSONDecodeError,IndexError):
+                pos=begin
+                more=stream.read(4096)
+                if not more:break
+                text+=more
+    created=None
+    with target.open('rb')as stream:
+        stream.seek(max(0,stamp[0]-4096));tail=stream.read().decode('utf-8',errors='replace')
+    marker=tail.rfind(', "id":')
+    if marker>=0:
+        try:
+            suffix=json.loads('{'+tail[marker+2:])
+            if suffix.get('id')==target.parent.name:created=suffix.get('created_at')
+        except (ValueError,TypeError):pass
+    if listing_stamp(target)!=stamp:raise ValueError('Saved answer changed while reading its catalog header')
+    return {'id':target.parent.name,'question':question or 'Historical investigation · open to inspect',
+            'patients':None,'created_at':created,'result_scope_available':None,'input_patients':None,
+            'catalog_scope':'Historical header only; open the complete answer to inspect its population.'}
+
+
 def listing(path):
-    out = []
-    for f in sorted(root(path).glob('ANS-*/answer.json'), key=lambda p: p.stat().st_mtime, reverse=True):
-        d = json.loads(f.read_text())
-        out.append({'id': d['id'], 'question': d['question'], 'patients': len(d['patient_ids']), 'created_at': d['created_at'], **scope_options(d)})
-    return out[:100]
+    out=[]
+    # The API already returns the 100 newest entries. Select them BEFORE any
+    # payload read; the former code decoded every historical investigation.
+    files=sorted(root(path).glob('ANS-*/answer.json'),key=lambda p:p.stat().st_mtime,reverse=True)[:100]
+    for target in files:
+        index=target.with_name('listing.json');row=None
+        if index.is_file():
+            try:
+                value=json.loads(index.read_text())
+                if value.get('schema')=='answer-listing/1'and value.get('file')==listing_stamp(target)and value['row']['id']==target.parent.name:
+                    row=value['row']
+            except (OSError,ValueError,KeyError,TypeError):pass
+        out.append(row if row is not None else legacy_listing(target))
+    return out
 
 
 def workspace(path, context):
