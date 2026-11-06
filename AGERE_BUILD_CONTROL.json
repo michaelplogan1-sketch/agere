@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T05:38:59.404323+00:00",
+  "updated_at": "2026-11-06T05:52:31.328828+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -625,22 +625,22 @@
     }
   ],
   "checkpoint": {
-    "kind": "financial_source_composition_with_native_subject_repair_verified",
+    "kind": "ACO_payer_prerequisite_and_partial_agenda_composition_verified",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Financial account stocks now compose with full513-person focused narrative coverage and separately dated literal hardship reports; explicit alternative actors remain unknown instead of patient preferences. The saved cohort supports follow-up.",
-    "measured_failure_reduction": "Actual focused review211.952s/584attempts/$0.58834453.25patient/guardian alternatives had been model-promoted to patient preferences; offline native revalidation14.608s/0providers withholds all25 and quarantines25source observations. All2173financial rows/513people unchanged;54affirmed/118negated/341unknown dated difficulty reports retained.89affected checks pass. Saved count follow-up513/0providers.",
+    "user_behavior_delta": "The ordinary investigator can discover/describe/execute existing payer prerequisites and join every persisted patient receipt. A partial ACO agenda separates source-domain observations, recorded measure-account explanations, unresolved clinical nominations and contract-dependent opportunities.",
+    "measured_failure_reduction": "23affected payer/financial/documentary checks pass. Actual native composition19.956s/0providers/0financial patient reevaluations;4115financial cache hits, allpriorcells unchanged. Native agenda2.990s/0providers/0passing engine reevaluations, five sections,2199gaprows/1471distinct gap people,101unknown measure accounts. Every source-specific population retained. Earlier Q14actor repair89checks/25false attributions withheld remains separate.",
     "evidence": [
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q14/focused-narrative-review/receipt.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q14/source-attribution-repair/workflow-proof.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q14/source-attribution-repair/followup-proof.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q14/subject-attribution-checks.log",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q14/financial-field-qualification-summary.json"
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-native-checks-2.log",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-join-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/retained-agenda-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/retained-agenda-native.json.gz",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q14/source-attribution-repair/workflow-proof.json"
     ],
-    "remaining_gap": "Focused source scope and52348unresolved source/field blocks plus25actor gaps remain explicit; no chart-wide absence, clinical qualification or original ordinary-answer restamp. Automatic original full-question acceptance and wider product dependencies remain open.",
-    "next_action": "G3: Q14focused source stage and native subject repair are terminal; source/productunfrozen, noownedjob. Next complete the remaining Q20ACO/VBC original-question composition using retained4115-person quality/dated-role/claims/finance rows. Read its original question and current source/rule availability first; compose supported operational priorities and explicit payer/program dependencies through existing typed/native decision context, without rerunning passing engines or the fullpaidQ14/Q21. Keep Q14savedpartialANS-79065ad6d4e54abf3e9b3780 and remaining source/automatic-routing limits explicit. Retain all25cases/tenareas, Q21semantic/Q23definitions/Q24deliverables/G5/clinical/customer gaps. BuildACTIVE/automationPAUSED.",
+    "remaining_gap": "The agenda explicitly leaves causes, clinical program nominations and realizable savings unresolved; source/buyer/clinical qualification and automatic original-question completion remain unqualified. This is connected partial capability evidence, not original Q20/Q24 acceptance or full MVP readiness.",
+    "next_action": "G3: Complete the remaining Q20source-interpretation/clinical-nomination requirement from the retained source-linked care-gap accounts through existing entity/relation/assertion and buyer-capability composition. Reuse the full native ACO/payer-prerequisite agenda and all population manifests; do not rerun passing measures, financial patients or the fullpaidQ14/Q21. First bind applicable actual program/buyer criteria and their source/effective dates; distinguish a documentary review nomination from clinical eligibility. Missing applicable definitions or qualified source interpretation must remain supported unknowns, not invented program mappings. Then qualify the ordinary automatic handoff on the changed shared tools, preserving original failed pairs. All25cases/tenareas, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies retained. BuildACTIVE/automationPAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
-    "coordination": "Allownedjobs terminal; source/productunfrozen.57086attemptrows/43historicalpending retained; no newpending. AutomationPAUSED.",
+    "coordination": "Allownedjobs terminal/sourceunfrozen;57086attemptrows/43historicalpending retained. Latest ACO stages0newproviderattempts. AutomationPAUSED.",
     "remaining_blockers": [
       "Earlier ordinary failures and uncompleted connected workflows remain; all25cases/tenareas retained. Model/clinical qualification and deployment prerequisites remain separate."
     ],
@@ -699,11 +699,11 @@
       "automatic_continuation": "PAUSED; no requested scheduler resume"
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T05:38:59.404323+00:00",
-    "workflow_change": "Population source review preserves completed siblings on failure; exact-span subject attribution is enforced before typed/frontier reading and saved assertion revalidation.",
+    "at": "2026-11-06T05:52:31.328828+00:00",
+    "workflow_change": "Shared native tools retain all4115members, source-specific denominators and three shared contract requests without multiplying global dependencies or inferring entitlement.",
     "unsealed_work": {
-      "status": "Q14_focused_source_composition_and_native_actor_repair_verified",
-      "product_commit": "962530a8",
+      "status": "Q20_native_payer_prerequisite_and_partial_agenda_composition_verified",
+      "product_commit": "31c837e6",
       "product_fix_commit": "b3f0a8d7",
       "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json",
       "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
@@ -740,7 +740,7 @@
       "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
       "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
       "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-      "latest_increment_provider_attempts": 585,
+      "latest_increment_provider_attempts": 0,
       "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
       "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
       "independent_arithmetic_reference_cases": [
@@ -851,7 +851,7 @@
       "fixed_sequence_status": "stopped_on_material_failure_or_dependency",
       "native_copy_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/native-proof.json",
       "native_copy_source_check": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/run-receipt.json",
-      "latest_increment_known_api_equivalent_usd": 0.589253662,
+      "latest_increment_known_api_equivalent_usd": 0,
       "latest_increment_unpriced_attempts": 0,
       "all_attempt_rows_before_Q15": 56228,
       "pending_rows_before_Q15": 42,
@@ -901,7 +901,7 @@
       "full_recorded_population_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-proof.json",
       "saved_native_ACO_context": "ANS-67af2e5580405bf29c26efac",
       "program_registry_observation": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/program-registry-observation.json",
-      "owned_native_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/focused-narrative-review/receipt.json",
+      "owned_native_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-running.json",
       "owned_native_pid": null,
       "owned_native_session": null,
       "native_view_join_observation": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/native-view-join-observation.json",
@@ -917,7 +917,15 @@
       "financial_saved_context": "ANS-79065ad6d4e54abf3e9b3780",
       "subject_attribution_checks": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/subject-attribution-checks.log",
       "subject_attribution_checks_passed": 89,
-      "financial_followup_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/source-attribution-repair/followup-proof.json"
+      "financial_followup_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/source-attribution-repair/followup-proof.json",
+      "accountability_tool_commit": "9d9ed544",
+      "accountability_guidance_commit": "31c837e6",
+      "accountability_native_checks": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-native-checks-2.log",
+      "accountability_native_checks_passed": 23,
+      "accountability_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-join-proof.json",
+      "accountability_saved_context": "ANS-cb57ed3d886edac1c5040795",
+      "native_ACO_agenda_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/retained-agenda-proof.json",
+      "native_ACO_agenda_context": "ANS-219c79c0b76ec350d9988813"
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 47,
@@ -4926,11 +4934,18 @@
       "evidence": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/source-attribution-repair/workflow-proof.json",
       "reason": "Recorded amounts, dated literal reports, native actor uncertainty and saved follow-up now compose across the complete retained positive-balance cohort. Remaining narrative coverage is explicitly unknown; original automatic/clinical acceptance is not claimed.",
       "scope_impact": "All25cases and tenacceptance areas retained; no narrowing of charter or clinical prerequisites."
+    },
+    {
+      "at": "2026-11-06T05:52:31.328828+00:00",
+      "decision": "Expose the already implemented accountability_review operator through the existing native tool boundary, with full hash-verified patient members and shared global request accounting.",
+      "evidence": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-join-proof.json",
+      "reason": "The graph engine existed but the ordinary investigator could not discover/execute it; its preview exposed only6patients. Native handoff now retains4115members with no financial recomputation or provider work.",
+      "scope_impact": "Existing G3ACO/VBC acceptance wiring; no new architecture, payer contract, clinical policy or product-scope reduction."
     }
   ],
   "unsealed_work": {
-    "status": "Q14_focused_source_composition_and_native_actor_repair_verified",
-    "product_commit": "962530a8",
+    "status": "Q20_native_payer_prerequisite_and_partial_agenda_composition_verified",
+    "product_commit": "31c837e6",
     "product_fix_commit": "b3f0a8d7",
     "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
@@ -4967,7 +4982,7 @@
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 585,
+    "latest_increment_provider_attempts": 0,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -5078,7 +5093,7 @@
     "fixed_sequence_status": "stopped_on_material_failure_or_dependency",
     "native_copy_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/native-proof.json",
     "native_copy_source_check": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/run-receipt.json",
-    "latest_increment_known_api_equivalent_usd": 0.589253662,
+    "latest_increment_known_api_equivalent_usd": 0,
     "latest_increment_unpriced_attempts": 0,
     "all_attempt_rows_before_Q15": 56228,
     "pending_rows_before_Q15": 42,
@@ -5128,7 +5143,7 @@
     "full_recorded_population_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-proof.json",
     "saved_native_ACO_context": "ANS-67af2e5580405bf29c26efac",
     "program_registry_observation": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/program-registry-observation.json",
-    "owned_native_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/focused-narrative-review/receipt.json",
+    "owned_native_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-running.json",
     "owned_native_pid": null,
     "owned_native_session": null,
     "native_view_join_observation": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/native-view-join-observation.json",
@@ -5144,7 +5159,15 @@
     "financial_saved_context": "ANS-79065ad6d4e54abf3e9b3780",
     "subject_attribution_checks": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/subject-attribution-checks.log",
     "subject_attribution_checks_passed": 89,
-    "financial_followup_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/source-attribution-repair/followup-proof.json"
+    "financial_followup_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q14/source-attribution-repair/followup-proof.json",
+    "accountability_tool_commit": "9d9ed544",
+    "accountability_guidance_commit": "31c837e6",
+    "accountability_native_checks": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-native-checks-2.log",
+    "accountability_native_checks_passed": 23,
+    "accountability_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-join-proof.json",
+    "accountability_saved_context": "ANS-cb57ed3d886edac1c5040795",
+    "native_ACO_agenda_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/retained-agenda-proof.json",
+    "native_ACO_agenda_context": "ANS-219c79c0b76ec350d9988813"
   },
   "current_visual_request": {
     "status": "completed",
@@ -5178,7 +5201,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Q14focused source stage and native subject repair are terminal; source/productunfrozen, noownedjob. Next complete the remaining Q20ACO/VBC original-question composition using retained4115-person quality/dated-role/claims/finance rows. Read its original question and current source/rule availability first; compose supported operational priorities and explicit payer/program dependencies through existing typed/native decision context, without rerunning passing engines or the fullpaidQ14/Q21. Keep Q14savedpartialANS-79065ad6d4e54abf3e9b3780 and remaining source/automatic-routing limits explicit. Retain all25cases/tenareas, Q21semantic/Q23definitions/Q24deliverables/G5/clinical/customer gaps. BuildACTIVE/automationPAUSED.",
+  "next_action": "G3: Complete the remaining Q20source-interpretation/clinical-nomination requirement from the retained source-linked care-gap accounts through existing entity/relation/assertion and buyer-capability composition. Reuse the full native ACO/payer-prerequisite agenda and all population manifests; do not rerun passing measures, financial patients or the fullpaidQ14/Q21. First bind applicable actual program/buyer criteria and their source/effective dates; distinguish a documentary review nomination from clinical eligibility. Missing applicable definitions or qualified source interpretation must remain supported unknowns, not invented program mappings. Then qualify the ordinary automatic handoff on the changed shared tools, preserving original failed pairs. All25cases/tenareas, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies retained. BuildACTIVE/automationPAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
