@@ -128,6 +128,35 @@ class Checker(unittest.TestCase):
 
 
 class Composition(unittest.TestCase):
+    def test_explicit_pending_work_is_distinct_from_missing_facts_and_undecided_votes(self):
+        import json
+        missing=['Contract review was not executed.','No applicable contract document supplied.',
+            'A second unperformed task.','A low-confidence possible omission.','Malformed probability.']
+        class Decider:
+            def judge_fields(self,subject,questions,evidence,**kwargs):
+                self.questions=questions;self.state=json.loads(evidence[0]['text'])
+                return {'judgments':{
+                    'missing_0':{'label':'pending_work','probability':.95,'decided_by':'jev'},
+                    'missing_1':{'label':'unavailable_fact','probability':.99,'decided_by':'jev'},
+                    'missing_2':{'label':'pending_work','probability':.99,'decided_by':None},
+                    'missing_3':{'label':'pending_work','probability':.1,'decided_by':'jev'},
+                    'missing_4':{'label':'pending_work','probability':float('nan'),'decided_by':'jev'}},
+                    'steps':[{'provider':'jev','cost_usd':.001}]}
+        decider=Decider()
+        with patch.object(G,'s1',return_value=decider):
+            result=G.check_pending_work('Review the contract requirements.',{'missing':missing},[],as_of_date='2030-01-01')
+        self.assertEqual(result['targets'],[{'path':['answer','missing',0],'text':missing[0]}])
+        self.assertEqual(decider.state['declared_missing'],missing)
+        self.assertIn('accountability_review',[r['operation']for r in decider.state['available_native_analyses']])
+        self.assertEqual((result['calls'],result['cost_usd']),(1,.001))
+
+    def test_pending_work_check_skips_absent_items_and_unavailable_judgment(self):
+        with patch.object(G,'s1',side_effect=AssertionError('No missing item needs a judge')):
+            self.assertEqual(G.check_pending_work('q',{},[],as_of_date='2030-01-01')['calls'],0)
+        with patch.object(G,'s1',return_value=object()):
+            out=G.check_pending_work('q',{'missing':['Unavailable source.']},[],as_of_date='2030-01-01')
+        self.assertEqual(out['targets'],[]);self.assertEqual(out['status'],'unavailable')
+
     def test_row_judgments_share_state_and_only_confident_deferrals_trigger_repair(self):
         import json
         rows=[{'patient_id':'A','next':'Read the findings.','source':{'clinical_evidence_dependency':0}},

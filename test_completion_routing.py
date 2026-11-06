@@ -195,6 +195,35 @@ class CompletionRouting(unittest.TestCase):
                 self.assertNotIn('retry_disposition',self.review(decided=None,support=changed)[0])
         self.assertNotIn('retry_disposition',self.review(decided='fixture',support=supported)[0])
 
+    def test_admitted_pending_work_prevents_uncertain_coverage_stop_and_keeps_current_actor(self):
+        supported={'label':'supported','decided_by':'fixture','steps':[], 'all_dependencies_checked':True,
+            'packets':[{'id':'patient_A','label':'supported','decided_by':'fixture'}]}
+        target={'path':['answer','missing',0],'text':'Contract review not executed.'}
+        with patch.object(G,'check_pending_work',return_value={'targets':[target],'calls':1,'cost_usd':.001}):
+            assessment=self.review(decided=None,support=supported)[0]
+        self.assertEqual(assessment['repair_kind'],'incomplete_work')
+        self.assertNotIn('retry_disposition',assessment)
+        self.assertIn('list_analyses/describe_analysis',assessment['feedback'])
+        for initial in (True,False):
+            invoked=[];sent=[]
+            def execute(use):invoked.append(use);return {'analyses':[{'operation':'accountability_review'}]}
+            def send(body):
+                sent.append(body)
+                if not initial and len(sent)==1:
+                    return {'content':[{'type':'text','text':json.dumps(self.answer)}]},0,False
+                if len(sent)==(1 if initial else 2):
+                    return {'content':[{'type':'tool_use','id':'discover','name':'list_analyses','input':{}}]},0,False
+                return {'content':[{'type':'text','text':json.dumps({**self.answer,'missing':['No contract document supplied.']})}]},0,False
+            def review(answer,calls):
+                return copy.deepcopy(assessment)if len(calls)==len(self.calls)else {'status':'confirmed','feedback':None}
+            out=S.tool_loop('Review the contract.',[],B.TOOLS,execute,send=send,model=M.HAIKU,
+                escalation_model=M.SONNET,max_tools=None,initial_calls=self.calls,
+                initial_answer=self.answer if initial else None,review=review)
+            with self.subTest(initial=initial):
+                self.assertEqual([u['name']for u in invoked],['list_analyses'],str(out)[:1800])
+                self.assertEqual(out['answer']['missing'],['No contract document supplied.'])
+                self.assertFalse(out.get('model_escalations'))
+
     def test_uncertain_coverage_and_source_outage_do_not_request_a_rewrite(self):
         unavailable={'label':'unknown','decided_by':None,'steps':[{'provider':'fixture','status':'error'}],
                      'packets':[{'id':'patient_A','label':None,'decided_by':None}]}

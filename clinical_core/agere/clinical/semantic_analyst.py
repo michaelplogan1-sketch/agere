@@ -986,7 +986,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                             if indeterminate or not escalate('Answer review repeated with unchanged evidence'):
                                 result['review_stopped'] = 'no_progress'
                                 return result
-                        elif assessment.get('status') == 'repair' and assessment.get('repair_kind')not in ('deterministic_compiler','unresolved_verification'):
+                        elif assessment.get('status') == 'repair' and assessment.get('repair_kind')not in ('deterministic_compiler','unresolved_verification','incomplete_work'):
                             escalate('Answer failed its existing evidence/coverage checks: '+str(feedback))
                         if not compiler and key not in reviewed:
                             # Passing the compiler and reaching a new source

@@ -2039,16 +2039,28 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         indeterminate=verification_repair_state(coverage,support)
         if assessment['status']=='repair'and indeterminate is not None and not numeric_unknown:
             assessment.update(repair_kind='unresolved_verification',progress_state=indeterminate)
-            if (indeterminate=={'coverage':'unknown','unresolved_verification':[]}
-                    and support.get('all_dependencies_checked')is True and support.get('packets')):
+            source_checked_coverage_unknown=(indeterminate=={'coverage':'unknown','unresolved_verification':[]}
+                and support.get('all_dependencies_checked')is True and bool(support.get('packets')))
+            joint_wait=(support.get('joint_verification_wait')and support.get('all_dependencies_checked')is True
+                and sorted(support['joint_verification_wait'])==sorted(p['id']for p in indeterminate['unresolved_verification'])
+                and not support.get('claim_feedback'))
+            can_stop=source_checked_coverage_unknown or joint_wait or unlocated_verification_wait(coverage,support)
+            if can_stop and answer.get('missing'):
+                work=gate.check_pending_work(question,answer,calls,ledger=ledger,as_of_date=as_of)
+                assessment.update(declared_work=work,calls=assessment['calls']+work['calls'],
+                    cost_usd=assessment['cost_usd']+work['cost_usd'])
+                if work.get('targets'):
+                    return {**assessment,'status':'repair','repair_kind':'incomplete_work',
+                        'progress_state':{'pending_work':work['targets']},
+                        'feedback':'Complete these explicitly unfinished requested tasks using the registered tools and retained native work: '+json.dumps(work['targets'])+'. '
+                            'Discover list_analyses/describe_analysis for available native operations. Perform the missing calculation, source inspection or composition; do not merely reword the answer. '
+                            'Keep genuinely unavailable facts, eligibility and uncertain verification explicit. No new source fact or clinical authority is established by this work check.'}
+            if source_checked_coverage_unknown:
                 # Complete source support plus an undecided coverage vote is
                 # no evidence of an omission. Rewriting verified claims only
                 # invalidates their checks; retain a partial answer instead.
                 assessment['retry_disposition']='retain_partial_until_new_evidence'
-            elif (support.get('joint_verification_wait')
-                    and support.get('all_dependencies_checked')is True
-                    and sorted(support['joint_verification_wait'])==sorted(p['id']for p in indeterminate['unresolved_verification'])
-                    and not support.get('claim_feedback')):
+            elif joint_wait:
                 assessment.update(retry_disposition='retain_partial_until_new_evidence',
                     review_stop_reason='unresolved_source_support',
                     reason='Every bound parent field and required source child has a deciding support check, '
