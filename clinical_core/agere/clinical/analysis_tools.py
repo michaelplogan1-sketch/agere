@@ -61,6 +61,31 @@ def describe(operation, *, path=None):
     return {'operation':operation,'parameters':G.parameter_schema(operation,catalog),
             'population_contract':G.input_contract(operation),
             'meaning':'The existing native validator remains authoritative. Parameters and assumptions are not inferred clinical facts.',
+            **({'output_contract':{
+                'columns':['patient_id','receipt_id','status','documentary_receipt'],
+                'collections':{
+                    'assertions':{'json_path':'$.assertions','fields':{
+                        'id':'Stable source assertion identity','annotation_origin':'derived_note_fact only for derived note-fact proposals',
+                        'concept':'Mapped concept or received fact-type label','relation':'Documentary relation',
+                        'value':'Exact represented value; do not infer missing numerical values from concept labels',
+                        'unit':'Exact derived fact unit when supplied','value_domain':'Derived fact type, entity qualifier, value and unit; keep domains separate',
+                        'polarity':'Received/proposed polarity','subject':'Received/proposed subject','temporality':'Received/proposed time',
+                        'clocks':'Separate source_date, arrival_date, clinical_date and reference_date',
+                        'source':'Original record_id, patient_id, record_hash and source dates',
+                        'evidence':'Exact field/start/end/quote for narrative assertions',
+                        'assertion_window_state':'selected or unknown when an assertion window is supplied',
+                        'semantic_validation':'Machine meanings remain pending; exact source binding does not qualify them',
+                        'source_repetition':'Original anchors can precede the output window; repetition cannot establish independent corroboration',
+                        'qualifier_effects':'Derived-annotation accounting effects, not clinical conclusions'}},
+                    'groups':{'json_path':'$.groups','meaning':'Relation/domain-specific dated accounts, opposing reports, exclusions and unresolved clocks; no voting or clinical truth'},
+                    'unbound_annotations':{'json_path':'$.coverage.unbound_annotation_rows',
+                        'meaning':'Retained derived rows with failed source bindings, original annotation values/units and selected/unknown/outside window state'}},
+                'summary_paths':{'assertions':'$.counts.assertions','selected_assertions':'$.coverage.assertion_window.assertions_selected',
+                    'unknown_window_assertions':'$.coverage.assertion_window.assertions_with_unknown_date',
+                    'outside_window_assertions':'$.coverage.assertion_window.assertions_outside_window',
+                    'clinical_truth':'$.current_clinical_state_established'},
+                'instruction':'Query the complete result_view with JSON_EXTRACT and JSON_EACH(documentary_receipt, path). A patient preview never substitutes for the full population or assertion window. Preserve failed bindings and unvalidated meaning.'}}
+               if operation=='assertion_review'else{}),
             **context,
             **({'documentary_scope':'Explicit streams and mapped concepts at the current snapshot. assertion_review optionally accepts assertion_window with an explicit date basis and received_annotations=true to include existing annotations with all values/units and failed bindings; concepts=[] then means all existing annotations in those streams, not all clinical knowledge. Selecting patients with a dated record alone does not restrict assertion dates. Unknown qualifiers and machine interpretations remain unresolved; repeated text is not independent corroboration.'}
                if operation in DOCUMENTARY else {})}

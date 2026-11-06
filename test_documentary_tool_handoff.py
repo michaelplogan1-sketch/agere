@@ -80,6 +80,10 @@ class DocumentaryHandoff(unittest.TestCase):
                 self.assertEqual(schema['properties']['concepts']['minItems'],0)
                 self.assertIn('received_annotations',schema['properties'])
                 self.assertIn('financial hardship',schema['properties']['concepts']['items']['enum'])
+                contract=t({'name':'describe_analysis','input':{'operation':op}})['output_contract']
+                self.assertEqual(contract['collections']['assertions']['json_path'],'$.assertions')
+                self.assertIn('value_domain',contract['collections']['assertions']['fields'])
+                self.assertEqual(contract['collections']['unbound_annotations']['json_path'],'$.coverage.unbound_annotation_rows')
             else:self.assertIn('reported_barrier',schema['properties']['relation']['enum'])
         with self.assertRaises(ValueError):G.validate_parameters('assertion_review',{'streams':['notes'],'concepts':[]})
 
