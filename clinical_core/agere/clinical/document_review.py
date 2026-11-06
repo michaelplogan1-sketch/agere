@@ -122,6 +122,23 @@ def entity_source_link_issue(question,doc):
     return 'Requested entity is not named by its ID or registered aliases in the complete source. Entity/relation attribution remains unresolved; provide a source-bound entity link or correct the requested aliases.'
 
 
+def subject_source_link_issue(question,span):
+    """An explicitly alternative actor cannot become one particular person.
+
+    This is a conservative literal guard over the selected quotation. It does
+    not resolve pronouns, infer agency or reject an independent patient account
+    elsewhere in the same document. Conjunctions retain their distinct meaning.
+    """
+    if not isinstance(question,dict)or question['subject']not in ('patient','family_member','other'):return None
+    actor=r'(?:guardian|caregiver|carer|proxy|representative|family member|parent|spouse|partner|mother|father|brother|sister|daughter|son)'
+    patient=r'(?:the\s+)?patient'
+    other=r'(?:(?:the|their|his|her|a)\s+)?'+actor
+    alternative=r'\s*(?:,\s*)?(?:or|and/or|/)\s*'
+    if re.search(r'\b(?:'+patient+alternative+other+'|'+other+alternative+patient+r')\b',span['text'],re.I):
+        return 'Source names alternative actors; the exact quotation does not establish which person supplied this account. Preserve unknown attribution instead of selecting the requested subject.'
+    return None
+
+
 def relation_finding(pid,field,question,doc,span,axes,provider):
     """Adapt source-bound reader decisions to the existing assertion shape.
 
@@ -131,7 +148,7 @@ def relation_finding(pid,field,question,doc,span,axes,provider):
     """
     if not isinstance(question,dict):raise ValueError('An explicit relation question is required')
     validate_questions({field:question})
-    issue=entity_source_link_issue(question,doc)
+    issue=entity_source_link_issue(question,doc)or subject_source_link_issue(question,span)
     if issue:raise ValueError(issue)
     if not isinstance(axes,dict) or set(axes)!=set(AXES) or any(not isinstance(axes[k],str) or axes[k] not in AXES[k] for k in AXES):
         raise ValueError('Every relation requires valid assertion axes')
@@ -563,7 +580,7 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                     if os.environ.get('AGERE_DOCUMENT_FRONTIER')=='select_spans' or any(isinstance(q,dict) for q in questions.values()):
                         from .span_repair import repair as repair_spans
                         unresolved=typed['unresolved']
-                        nonrepairable={'source_entity_unlinked','source_relation_context_only'}
+                        nonrepairable={'source_entity_unlinked','source_relation_context_only','source_subject_ambiguous'}
                         unlinked=[u for u in unresolved if u.get('native_binding_issue')in nonrepairable]
                         if unlinked:
                             # No model can repair a missing source/entity link by

@@ -198,7 +198,7 @@ def batches(unresolved,documents,questions):
 
 
 def repair(tools,pid,unresolved,documents,questions,send,stop,receipts,*,models=None):
-    from .document_review import parsed,AXES,relation_finding,RELATION_RULES,entity_definition
+    from .document_review import parsed,AXES,relation_finding,RELATION_RULES,entity_definition,subject_source_link_issue
     models=(model_policy.HAIKU,model_policy.SONNET) if models is None else tuple(models)
     if not models or any(model not in (model_policy.HAIKU,model_policy.SONNET)for model in models):
         raise ValueError('Source reader models must use the existing question model families')
@@ -206,7 +206,16 @@ def repair(tools,pid,unresolved,documents,questions,send,stop,receipts,*,models=
     path=getattr(getattr(tools,'stack',None),'path',None)
     for batch in batches(unresolved,documents,questions):
         indexed={'s'+str(i):(key,doc,item)for i,(key,doc,item)in enumerate(batch)}
-        pending=dict(indexed);feedback=None
+        pending={};feedback=None
+        for ident,(key,doc,item)in indexed.items():
+            issue=subject_source_link_issue(questions[item['field']],{'text':item['quote']})
+            if issue:
+                failures.append('Unresolved subject '+doc['record_id']+' field '+item['field']+': '+issue)
+                decisions.append({'field':item['field'],'record_id':doc['record_id'],'date':doc['date'],
+                    'document_text_digest':digest(doc['text']),'source_block_digest':digest(item['quote']),
+                    'label':'unknown','native_binding_issue':'source_subject_ambiguous',
+                    'native_reading':issue,'relation_binding':questions[item['field']]})
+            else:pending[ident]=(key,doc,item)
         for model in models:
             if not pending:break
             if stop.is_set():raise RuntimeError('Source review stopped after subscription limit')
@@ -311,5 +320,5 @@ def repair(tools,pid,unresolved,documents,questions,send,stop,receipts,*,models=
         for key,doc,item in pending.values():failures.append('Unresolved source block '+doc['record_id']+' field '+item['field']+': '+str(feedback))
     return {'findings':found,'failures':failures,'receipt':{'schema':VERSION,'decisions':decisions,
         'source_observation_cache_hits':cache_hits,'source_observation_cache_errors':cache_errors,
-        'requested_blocks':len(unresolved),'resolved_blocks':len(decisions),'unresolved_blocks':len(failures),
+        'requested_blocks':len(unresolved),'resolved_blocks':sum(d.get('label')in('finding','irrelevant')for d in decisions),'unresolved_blocks':len(failures),
         'method':'Whole-context closed span selection; code copies original source bytes. No model-generated quote or clinical fact.'}}

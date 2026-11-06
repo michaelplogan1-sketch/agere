@@ -271,13 +271,14 @@ def source_batches(documents,questions,priority,*,cross_document=False,candidate
             decisions.extend((field,instruction,span,doc)for span in spans for field,instruction in questions.items()
                              if field_documents is None or identity in field_documents.get(field,set()))
     if native_gaps is not None:
-        from .document_review import entity_source_link_issue
+        from .document_review import entity_source_link_issue,subject_source_link_issue
         linked=[];issues={}
         for item in decisions:
             field,instruction,span,doc=item
             key=(field,id(doc))
             if key not in issues:issues[key]=entity_source_link_issue(instruction,doc)
-            if issues[key]:native_gaps.append((item,issues[key]))
+            issue=issues[key]or subject_source_link_issue(instruction,span)
+            if issue:native_gaps.append((item,issue))
             else:linked.append(item)
         decisions=linked
     return _pack_source_decisions(decisions,cross_document=cross_document)
@@ -631,7 +632,7 @@ def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidat
         key=document_keys[id(doc)];blocked_counts[key]=blocked_counts.get(key,0)+1
         unresolved.append({'field':field,'record_id':doc['record_id'],'quote':span['text'],'reason':issue,
             'reading':{'label':'unknown','decided_by':None,'routing':'native_entity_precheck'},
-            'relation_binding':instruction,'native_binding_issue':'source_entity_unlinked',
+            'relation_binding':instruction,'native_binding_issue':'source_subject_ambiguous'if issue.startswith('Source names alternative actors')else'source_entity_unlinked',
             'document_text_digest':digest(doc['text']),'span_start':span['start'],'span_end':span['end']})
     for entry in coverage:
         blocked=blocked_counts.get((entry['record_id'],entry['text_digest']),0)
@@ -679,8 +680,8 @@ def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidat
             'native_readings':'Full probabilities retained in provider ledger under step request hashes'})
         for i,(field,instruction,span,doc)in enumerate(batch):
             reading=result['judgments'].get('f'+str(i),{})
-            from .document_review import entity_source_link_issue
-            link_issue=entity_source_link_issue(instruction,doc)if reading.get('label')!='irrelevant'else None
+            from .document_review import entity_source_link_issue,subject_source_link_issue
+            link_issue=(entity_source_link_issue(instruction,doc)or subject_source_link_issue(instruction,span))if reading.get('label')!='irrelevant'else None
             support=(axis_receipt or{}).get('relation_support',{}).get(str(i),{})
             context_only=support.get('decided_by')and support.get('label')=='context_only'
             if not reading.get('decided_by') or reading.get('label') not in ('finding','irrelevant') or (
@@ -720,12 +721,12 @@ def read_relation_axes(tools,batch,named,evidence,result,ledger,judge):
     No anchor pruning: all source blocks still undergo the applicability check.
     Unknown axes and mismatched experiencers go to the same targeted repair.
     """
-    from .document_review import AXES,entity_source_link_issue
+    from .document_review import AXES,entity_source_link_issue,subject_source_link_issue
     tasks={};selected={}
     for i,(field,q,span,doc) in enumerate(batch):
         reading=result['judgments'].get('f'+str(i),{})
         if not isinstance(q,dict) or reading.get('label')!='finding' or not reading.get('decided_by'):continue
-        if entity_source_link_issue(q,doc):continue
+        if entity_source_link_issue(q,doc)or subject_source_link_issue(q,span):continue
         selected[i]=q
         tasks['f'+str(i)+'_relation_support']={'type':'choice','instructions':{
             **named['f'+str(i)]['instructions'],'axis':'relation_support',
