@@ -7,7 +7,7 @@ import json
 import os
 import re
 import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED, CancelledError
 from pathlib import Path
 
 from ...contracts import digest
@@ -527,6 +527,7 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
     ledger_path = together._ledger_path(tools.stack)
 
     def one(pid):
+        if stop.is_set():raise CancelledError('Document review stopped before another patient dispatch')
         aggregate={k:[] for k in all_questions};receipts=[];checks=[];failures=[]
         if reused:
             aggregate.update(reused['rows'][pid]);failures.extend(reused['limitations'][pid])
@@ -663,14 +664,47 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
             for key,values in aggregate.items():
                 aggregate[key]=list({digest(v):v for v in values}.values())
             return pid,aggregate,receipts,checks,failures
+        except BaseException:
+            # A failed patient prevents this review from returning a complete
+            # result. Stop queued siblings too, especially after a subscription
+            # limit or cancellation in the typed source reader.
+            stop.set()
+            raise
         finally:ledger.close()
 
     results={};all_receipts=[];all_checks=[]
     with ThreadPoolExecutor(max_workers=3,thread_name_prefix='agere-document-review') as pool:
-        futures=[pool.submit(one,pid) for pid in ids]
-        for f in as_completed(futures):
+        waiting=iter(ids);pending={}
+        def retain(f):
             pid,findings,receipts,checks,failures=f.result()
-            results[pid]=(findings,failures);all_receipts+=receipts;all_checks+=checks
+            results[pid]=(findings,failures);all_receipts.extend(receipts);all_checks.extend(checks)
+        try:
+            for _ in range(min(3,len(ids))):
+                pid=next(waiting);pending[pool.submit(one,pid)]=pid
+            while pending:
+                done,_=wait(pending,return_when=FIRST_COMPLETED)
+                # Process the entire returned group before scheduling more.
+                # Already running work drains and retains its own receipts.
+                for f in done:
+                    pending.pop(f);retain(f)
+                if stop.is_set():raise CancelledError('Document review stopped after a patient failure')
+                for _ in done:
+                    pid=next(waiting,None)
+                    if pid is not None:pending[pool.submit(one,pid)]=pid
+        except BaseException as error:
+            stop.set()
+            for f in pending:f.cancel()
+            for f,pid in pending.items():
+                try:retain(f)
+                except CancelledError:pass
+                except BaseException as additional:
+                    if additional is not error:error.add_note('Concurrent document review '+pid+': '+type(additional).__name__+': '+str(additional))
+            error.partial_document_review={'requested_patient_ids':ids,
+                'completed':{pid:{'findings':found,'limitations':failures}for pid,(found,failures)in results.items()},
+                'uncompleted_patient_ids':[pid for pid in ids if pid not in results],
+                'manifest':manifest,'provider_receipts':all_receipts,'typed_checks':all_checks,
+                'source_coverage':source_coverage,'source_scope':source_scope,'complete':False}
+            raise
     if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed during whole-document review; replan')
     from .system_one_gate import cost
     new_calls=sum(not r.get('cache_hit') for r in all_receipts)+sum(cost(c)[0] for c in all_checks)
