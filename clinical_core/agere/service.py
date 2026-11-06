@@ -196,7 +196,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if path == '/api/stack/compose':
                     held.enter_context(evaluation.request_scope(self.headers, connected_stack.path))
                 from . import request_lineage
-                execution=None if recovery and path in READ_POSTS else request_lineage.begin(connected_stack.path,path,body)
+                execution=None if recovery and path in READ_POSTS else request_lineage.begin(connected_stack.path,path,body,
+                    tracking=self.headers.get('X-Agere-Progress-Key')if path=='/api/stack/compose'else None)
                 if execution:held.enter_context(execution)  # activates the lineage scope; closed with the request, even on error
                 if path=='/api/stack/appointment-graph/work':
                     from .clinical import appointment_graph
@@ -871,6 +872,13 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.answer_log import summary as economics_summary
                 raw=json.dumps(economics_summary(connected_stack.path)).encode();mime='application/json'
+            elif parsed.path=='/api/stack/analysis-progress':
+                if connected_stack is None:self.send_error(404);return
+                from . import request_lineage
+                params=parse_qs(parsed.query)
+                try:result=request_lineage.progress(connected_stack.path,params.get('key',[''])[0],after=int(params.get('after',['-1'])[0]))
+                except ValueError as exc:self.send_error(400,str(exc));return
+                raw=json.dumps(result).encode();mime='application/json'
             elif parsed.path=='/api/stack/intelligence-activity':
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.intelligence_activity import snapshot as intelligence_snapshot

@@ -1,58 +1,67 @@
-/* The sculpture visualizes recorded activity; ambient motion is illustrative. */
+/* Visible activity is a projection of the existing request journal, not a timer-driven story. */
+const workStages=[['understand','⌁','Understand'],['compute','∑','Calculate'],['verify','✓','Check'],['reason','✳','Reason'],['respond','↗','Answer']];
+let syncConversationNavigation=()=>{};
+function progressKey(){return crypto.randomUUID().replaceAll('-','')}
+function workingHTML(t){
+ return '<div class="working-state" aria-live="off" data-work-key="'+esc(t.progressKey||'')+'"><div class="working-eyebrow"><span class="live-dot"></span>FOLLOWING THE EVIDENCE<span class="working-clock" data-work-clock aria-hidden="true">0:00</span></div><div class="working-title" role="status" aria-live="polite" data-work-title>Preparing your question</div><p class="working-note">The stack chooses an approach, works with the source data, and checks the result. Recorded steps appear below.</p><div class="evidence-path" aria-label="Recorded analysis activity">'+workStages.map(([id,symbol,label])=>'<div class="path-node" data-work-stage="'+id+'" data-reached="false"><div class="node-symbol" aria-hidden="true">'+symbol+'</div>'+label+'</div>').join('')+'</div><div class="work-counts"><span><b data-work-reads>0</b> <span data-work-read-label>queries finished</span></span><span><b data-work-checks>0</b> source checks finished</span><span><b data-work-models>0</b> model attempts recorded</span></div><ol class="work-events" data-work-events aria-label="Recent recorded steps"></ol><p class="work-unavailable" data-work-note>Waiting for the first recorded activity…</p></div>';
+}
+function paintWork(t){
+ const root=document.querySelector('[data-work-key="'+t.progressKey+'"]');if(!root)return;
+ const p=t.progress||{updates:[],sequence:-1},updates=p.updates||[],active=new Map(),reached=new Set();
+ for(const e of updates){reached.add(e.group);if(e.key){if(e.state==='running')active.set(e.key,e);else active.delete(e.key)}}
+ const running=[...active.values()],current=running.at(-1)||updates.at(-1);
+ const title=root.querySelector('[data-work-title]'),label=current?.label||'Preparing your question';if(title.textContent!==label)title.textContent=label;
+ const elapsed=Math.max(0,Math.floor((performance.now()-(t.startedAt||performance.now()))/1000));root.querySelector('[data-work-clock]').textContent=Math.floor(elapsed/60)+':'+String(elapsed%60).padStart(2,'0');
+ root.querySelectorAll('[data-work-stage]').forEach(node=>{const id=node.dataset.workStage;node.dataset.reached=String(reached.has(id));node.dataset.active=String(running.some(e=>e.group===id));const last=updates.filter(e=>e.group===id).at(-1);node.dataset.state=last?.state||'waiting'});
+ root.querySelector('[data-work-reads]').textContent=updates.filter(e=>e.kind==='component_finished'&&['investigator_sql','governed_sql'].includes(e.component)&&e.state==='completed').length;
+ root.querySelector('[data-work-read-label]').textContent=root.querySelector('[data-work-reads]').textContent==='1'?'query finished':'queries finished';
+ root.querySelector('[data-work-checks]').textContent=updates.filter(e=>e.component==='claim_local_source_review'&&e.kind==='component_finished'&&e.state==='completed').length;
+ root.querySelector('[data-work-models]').textContent=updates.filter(e=>e.kind==='reserved').length;
+ if(root.dataset.workSequence!==String(p.sequence)){
+  root.querySelector('[data-work-events]').innerHTML=updates.filter(e=>e.state!=='running').slice(-4).map(e=>'<li><span class="event-mark" aria-hidden="true">'+(e.state==='failed'?'!':'✓')+'</span>'+esc(e.label)+'<time>'+esc(new Date(e.at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}))+'</time></li>').join('');root.dataset.workSequence=String(p.sequence);
+ }
+ const note=root.querySelector('[data-work-note]');note.hidden=false;
+ note.textContent=p.unavailable?'Activity updates are unavailable. The analysis request is still open; it has not been resent.':p.status==='waiting'?'Waiting for the first recorded activity…':p.status==='complete'?'The analysis returned. Preparing the answer view…':p.status==='failed'?'The request stopped. Waiting for its saved response…':'Only observed steps are shown. A model reservation does not yet establish a returned response.';
+}
+function beginWork(t){
+ t.progress={sequence:-1,updates:[],status:'waiting'};t.startedAt=performance.now();let stopped=false,timer;
+ async function poll(){
+  if(stopped||!t.pending)return;
+  try{const r=await fetch('/api/stack/analysis-progress?key='+encodeURIComponent(t.progressKey)+'&after='+t.progress.sequence,{cache:'no-store'});if(!r.ok)throw Error('unavailable');const d=await r.json();if(stopped)return;
+   const old=t.progress.updates;t.progress={...d,updates:[...old,...(d.updates||[]).filter(e=>e.sequence>t.progress.sequence)]};
+  }catch(_){t.progress.unavailable=true}
+  paintWork(t);if(!stopped&&t.pending)timer=setTimeout(poll,1200);
+ }
+ poll();const clock=setInterval(()=>{if(!stopped&&t.pending)paintWork(t)},1000);
+ return()=>{stopped=true;clearTimeout(timer);clearInterval(clock)};
+}
+function recordedWork(t){
+ const updates=t.progress?.updates||[];if(!updates.length)return '';
+ const queries=updates.filter(e=>e.kind==='component_finished'&&['investigator_sql','governed_sql'].includes(e.component)&&e.state==='completed').length;
+ const checks=updates.filter(e=>e.kind==='component_finished'&&e.component==='claim_local_source_review'&&e.state==='completed').length;
+ const models=updates.filter(e=>e.kind==='reserved').length;
+ return '<details class="recorded-work"><summary>See the work behind this answer</summary><p>'+queries+' source '+(queries===1?'query':'queries')+' finished · '+checks+' source checks finished · '+models+' model attempts recorded</p><ul>'+updates.filter(e=>e.state!=='running').slice(-4).map(e=>'<li>'+esc(e.label)+'</li>').join('')+'</ul><p>Steps shown here belong to this request. The method view keeps the answer’s evidence and definitions.</p></details>';
+}
+function completeWork(t){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),3000);
+ fetch('/api/stack/analysis-progress?key='+encodeURIComponent(t.progressKey)+'&after='+(t.progress?.sequence??-1),{cache:'no-store',signal:controller.signal}).then(r=>r.ok?r.json():null).then(d=>{if(!d)return;const old=t.progress||{updates:[],sequence:-1};t.progress={...d,updates:[...old.updates,...(d.updates||[]).filter(e=>e.sequence>old.sequence)]};if(state.turns[state.active]===t){const box=document.querySelector('[data-recorded-work]');if(box)box.innerHTML=recordedWork(t)}}).catch(()=>{}).finally(()=>clearTimeout(timer));
+}
+function transcriptHTML(t,i){const a=t.data?.answer||{},headline=a.headline||t.summary||t.error||'This answer is saved in the conversation.';
+ return '<article class="transcript-turn"><div class="user-message">'+esc(t.question)+'</div><div class="assistant-summary"><p>'+esc(typeof headline==='string'?headline:'The answer is available.')+'</p><button class="text-button" type="button" data-turn="'+i+'">Open this answer <span aria-hidden="true">↗</span></button></div></article>';
+}
+function paintTranscript(i){
+ $('#transcript-before').innerHTML=state.turns.slice(0,i).map((t,n)=>transcriptHTML(t,n)).join('');
+ $('#transcript-after').innerHTML=state.turns.slice(i+1).map((t,n)=>transcriptHTML(t,n+i+1)).join('');
+ document.body.classList.remove('nav-open');$('#history-button').setAttribute('aria-expanded','false');syncConversationNavigation();
+}
 function setupExperience(){
- const descriptions=[
-  ['Clinical, financial, and operational records. Start by seeing what’s actually there.','Explore your sources'],
-  ['A population. A measure. A timeframe. Give your data a question worth answering.','Frame your question'],
-  ['Inspect computed results, compare patterns, and see what the evidence still cannot tell you.','Explore saved analyses'],
-  ['Turn a supported finding into a useful view or synthetic follow-up work.','Open action workspace']
- ];
- const names=['Data','Information','Intelligence','Wisdom'];let stage=0,reached=0,manual=false;
- const canvas=$('#intelligence-field'),scene=$('#intelligence-scene'),motion=$('#motion-toggle');
- const preference=matchMedia('(prefers-reduced-motion: reduce)');
- let paused=preference.matches,visible=true,frame=null,last=0,age=0,previous=null,refreshing=false;
- const field=AgereNeural.createNeuralField(canvas);
- if(!field){scene.dataset.renderer='unavailable';canvas.hidden=true;$('#scene-event').textContent='3D preview unavailable on this device';motion.hidden=true}
- function selectStage(n,user=true,redraw=true){stage=n;reached=Math.max(reached,n);manual=manual||user;field?.stage(n,paused);
-  document.querySelectorAll('[data-stage]').forEach((b,i)=>{b.setAttribute('aria-selected',String(i===n));b.dataset.reached=String(i<=reached);b.tabIndex=i===n?0:-1});
-  $('#stage-detail').setAttribute('aria-labelledby','stage-'+names[n].toLowerCase());$('#scene-word').textContent=names[n].toUpperCase();
-  $('#stage-description').textContent=descriptions[n][0];$('#stage-action').innerHTML=descriptions[n][1]+' <span aria-hidden="true">↗</span>';canvas.dataset.reachedStage=String(reached);if(paused)field?.still();if(redraw)start();
- }
- function draw(time){frame=null;if(!field)return;if(!paused&&last&&time-last<30){frame=requestAnimationFrame(draw);return}
-  const dt=paused||!last?0:Math.min(.05,(time-last)/1000);last=time;age+=dt;
-  if(!manual&&stage<3&&age>3.5*(stage+1))selectStage(stage+1,false,false);
-  field.render(dt);if(!paused&&visible&&document.visibilityState==='visible')frame=requestAnimationFrame(draw);
- }
- function start(){if(field&&frame===null&&visible&&document.visibilityState==='visible'){last=0;frame=requestAnimationFrame(draw)}}
- function stop(){if(frame!==null)cancelAnimationFrame(frame);frame=null;last=0}
- function motionLabel(){motion.textContent=paused?'▷':'Ⅱ';motion.setAttribute('aria-label',paused?'Play visual animation':'Pause visual animation');motion.setAttribute('aria-pressed',String(paused))}
- motion.onclick=()=>{paused=!paused;motionLabel();if(paused)stop();else start()};motionLabel();
- preference.addEventListener('change',e=>{paused=e.matches;if(paused){selectStage(3,false);field?.still()}motionLabel();start()});
- scene.addEventListener('pointermove',e=>{const r=scene.getBoundingClientRect();field?.pointer((e.clientX-r.left)/r.width-.5,(e.clientY-r.top)/r.height-.5)});scene.addEventListener('pointerleave',()=>field?.pointer(0,0));
- if(field){new ResizeObserver(()=>{const r=scene.getBoundingClientRect();if(r.width&&r.height){field.resize(r.width,r.height);start()}}).observe(scene);new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;if(visible){start();refreshActivity()}else stop()}).observe(scene)}
- document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){start();refreshActivity()}else stop()});
- document.querySelectorAll('[data-stage]').forEach((b,i)=>{b.onclick=()=>selectStage(i);b.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const n=e.key==='Home'?0:e.key==='End'?3:(i+(e.key==='ArrowLeft'?3:1))%4;selectStage(n);document.querySelector('[data-stage="'+n+'"]').focus()}});
- $('#stage-action').onclick=()=>{if(stage===0){showPage('data',true);history.replaceState(null,'','/ask#data')}if(stage===1){$('#q').focus();$('#q').scrollIntoView({block:'center',behavior:paused?'instant':'smooth'})}if(stage===2){showPage('saved',true);history.replaceState(null,'','/ask#saved')}if(stage===3)location.href='/action-center'};
- async function refreshActivity(){
-  if(refreshing)return;refreshing=true;
-  try{
-   const response=await fetch('/api/stack/intelligence-activity');if(!response.ok)throw Error('unavailable');const sample=await response.json();
-   if(!previous){try{previous=JSON.parse(localStorage.getItem('agere-field-activity')||'null')}catch(_){}}
-   const changes=field?.ingest(sample,previous)||AgereNeural.activityChanges(previous,sample);
-   const compact=n=>n==null?'—':new Intl.NumberFormat(undefined,{notation:'compact',maximumFractionDigits:1}).format(n);
-   $('#field-answers').textContent=compact(sample.answered);$('#field-memory').textContent=compact(sample.reusable_examples);$('#field-records').textContent=compact(sample.records);
-   const message=changes.sourceChanged?'A new warehouse snapshot has arrived':changes.examples?'New checked examples joined the learning memory':changes.answers?'A new answer. Another connection.':changes.corrections?'Feedback recorded · flagged answers excluded from reuse':changes.records?'New data is joining the network':'Every answer adds to the picture';
-   $('#scene-event').textContent=message+(field?'':' · 3D preview unavailable');$('#field-activity').dataset.status='current';
-   if(changes.sourceChanged){sourceAtlas=null;sourceError=null;loadSources()}
-   previous=sample;try{localStorage.setItem('agere-field-activity',JSON.stringify(sample))}catch(_){}
-   if(paused)field?.still();start();
-  }catch(_){$('#scene-event').textContent=previous?'Activity update unavailable · showing last observation':'Activity unavailable · illustrative motion';$('#field-activity').dataset.status='unavailable'}
-  finally{refreshing=false}
- }
- document.addEventListener('agere-activity-changed',refreshActivity);
- setInterval(()=>{if(document.visibilityState==='visible')refreshActivity()},20000);
- selectStage(paused?3:0,false);refreshActivity();
- const drawer=$('#conversation-drawer'),historyButton=$('#history-button');function close(){drawer.hidden=true;historyButton.setAttribute('aria-expanded','false')}
- historyButton.onclick=()=>{drawer.hidden=!drawer.hidden;historyButton.setAttribute('aria-expanded',String(!drawer.hidden));if(!drawer.hidden)$('#close-history').focus()};$('#close-history').onclick=()=>{close();historyButton.focus()};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!drawer.hidden){close();historyButton.focus()}});document.addEventListener('click',e=>{if(!drawer.hidden&&!drawer.contains(e.target)&&!historyButton.contains(e.target))close()});
- new MutationObserver(()=>$('#turn-count').textContent=String(state.turns.length)).observe($('#thread'),{childList:true});$('#turn-count').textContent=String(state.turns.length);
- loadSources().then(()=>{if(!sourceAtlas)return;$('#live-sources').textContent=fmt(sourceAtlas.source_categories,0);$('#live-records').textContent=new Intl.NumberFormat(undefined,{notation:'compact',maximumFractionDigits:1}).format(sourceAtlas.records);$('#live-records').title=fmt(sourceAtlas.records,0)+' received records';$('#live-patients').textContent=fmt(sourceAtlas.patients,0)});
+ const compact=matchMedia('(max-width:800px)'),navigation=document.querySelector('.app-sidebar');
+ const sync=()=>{navigation.inert=compact.matches&&!document.body.classList.contains('nav-open');navigation.setAttribute('aria-hidden',String(navigation.inert))};
+ syncConversationNavigation=sync;
+ const toggle=on=>{document.body.classList.toggle('nav-open',on);$('#history-button').setAttribute('aria-expanded',String(on));sync();if(on)$('#close-history').focus();else $('#history-button').focus()};
+ compact.addEventListener('change',sync);sync();
+ $('#history-button').onclick=()=>toggle(!document.body.classList.contains('nav-open'));$('#close-history').onclick=()=>toggle(false);
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('nav-open'))toggle(false)});
+ $('#right').addEventListener('toggle',()=>{if($('#right').open&&!$('#right').dataset.loaded){$('#right').dataset.loaded='true';loadBriefing()}});
+ fetchJSON('/api/stack/source-atlas').then(d=>{sourceAtlas=d;$('#live-records').textContent=fmt(d.records,0);$('#live-patients').textContent=fmt(d.patients,0);$('#live-sources').textContent=fmt(d.source_categories,0);$('#connection-status').dataset.state='ready';$('#connection-status').innerHTML='<i></i>Warehouse connected'}).catch(()=>{$('#connection-status').textContent='Connection not confirmed'});
 }

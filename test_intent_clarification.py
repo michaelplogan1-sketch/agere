@@ -193,6 +193,20 @@ class IntentClarification(unittest.TestCase):
         self.assertIn('already clarified',self.bodies[-1]['messages'][-1]['content'][0]['content'])
         self.assertEqual(len(self.queries),1)
 
+    def test_reply_can_switch_to_independent_mode_for_later_ambiguities(self):
+        original=self.sender;spec=copy.deepcopy(SPEC);spec['slot']='additional_presentation_choice'
+        def send(body):
+            if self.response_index==2:
+                self.response_index+=1;self.bodies.append(copy.deepcopy(body))
+                return tool('extra','request_clarification',spec),.01,False
+            return original(body)
+        with patch.object(self,'sender',side_effect=send):
+            first=self.pause()
+            result=C.handle_compose(self.stack,{'conversation_id':'intent-thread','interaction_mode':'autonomous',
+                'clarification_response':{'id':first['clarification']['id'],'option_id':'roster'}})
+        self.assertEqual(result['answer']['status'],'partial');self.assertNotIn('clarification',result)
+        self.assertEqual(len(self.queries),1);self.assertEqual(len(self.bodies),4)
+
     def test_failed_continuation_preserves_partial_and_never_resends(self):
         paused=self.pause();failure=RuntimeError('Authored subscription-limit failure')
         failure.partial_result={'retained_native_prefix':True,'partial_text':'Unfinished reasoning is preserved.'}

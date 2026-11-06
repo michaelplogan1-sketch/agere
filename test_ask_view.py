@@ -37,9 +37,9 @@ class Page(unittest.TestCase):
 
     def test_single_self_contained_page(self):
         self.assertTrue(self.html.startswith('<!doctype html>'))
-        self.assertIn('<title>Agere Workspace</title>', self.html)
+        self.assertIn('<title>Wollstonecraft · Ask your data</title>', self.html)
         self.assertNotRegex(self.html, r'<script[^>]+\bsrc=|<link[^>]+stylesheet|@import')  # no external assets
-        self.assertIn('prefers-color-scheme:dark', self.html)
+        self.assertIn('color-scheme:light', self.html)
         self.assertIn('max-width:800px', self.html)  # single-column layout for phones
         for route in ('/api/stack/compose', '/api/stack/conversation', '/api/stack/briefing', '/api/stack/economics', '/api/stack/correct'):
             self.assertIn(route, self.html)
