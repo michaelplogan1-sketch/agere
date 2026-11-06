@@ -80,7 +80,9 @@ TOOLS = [
      'input_schema': {'type': 'object', 'properties': {}, 'additionalProperties': False}},
     {'name': 'execute_metric', 'description': "Run ONE governed metric by id for a period (YYYY-MM-DD, inclusive), optionally grouped by up to "
      "three of payer, coverage_type, pcp, practice, sex, age_band. Its versioned definition is applied exactly (population, exclusions, "
-     "numerator, denominator); the saved cohort, if any, is its population. Returns the value or table with its method.",
+     "numerator, denominator); the saved cohort, if any, is its population. Quality measures return native population_evidence rows "
+     "with actual numerator, denominator, exclusions and unknowns. input_population_count is the input roster, never the denominator. "
+     "Indeterminate full populations stay null; known_subset fields are separately labeled. Complete engine evidence is retained natively.",
      'input_schema': {'type': 'object', 'properties': {'metric_id': {'type': 'string'}, 'period_start': {'type': 'string'},
                                                        'period_end': {'type': 'string'},
                                                        'group_by': {'type': 'array', 'items': {'type': 'string'}}},
@@ -598,8 +600,14 @@ class Tools:
             ids = [r[0] for r in self.db.execute(f'SELECT patient_id FROM patient WHERE patient_id {COUNTED_PREDICATE}')]
         out = RV.execute(self.stack.path, ids, p, self.as_of)
         a = out.get('answer') or {}
-        return {'metric_id': metric_id, 'name': m.get('name'), 'unit': m.get('unit'), 'period': p['period'],
-                **{k: a.get(k) for k in ('status', 'value', 'count', 'table', 'method', 'missing', 'limitations', 'analysis_population_count') if a.get(k) not in (None, [], '')}}
+        result = {'metric_id': metric_id, 'name': m.get('name'), 'unit': m.get('unit'), 'period': p['period'],
+                  'computed_as': a.get('computed_as'),
+                  **{k: a.get(k) for k in ('status', 'value', 'count', 'table', 'method', 'missing', 'limitations', 'analysis_population_count', 'population_evidence') if a.get(k) not in (None, [], '')}}
+        if a.get('population_evidence'):
+            # The existing actor projection omits engine_result, while native
+            # calls retain the complete report behind each compact scalar row.
+            result['engine_result'] = out
+        return result
 
     def ask_agere(self, question):
         """One sub-question through the free governed stages only (proposers.FREE_ONLY: certified reuse, System One choosers, the
@@ -788,7 +796,7 @@ def output_table(out):
     if isinstance(columns, list) and all(isinstance(c, str) for c in columns) and isinstance(rows, list):
         if len(columns) != len(set(columns)): raise ValueError('Use distinct SQL column aliases so every requested value is preserved')
         return columns, [[r.get(c) for c in columns] if isinstance(r, dict) else list(r) for r in rows]
-    table = next((out.get(k) for k in ('table', 'documents', 'passages') if isinstance(out.get(k), list) and out[k]), None)
+    table = next((out.get(k) for k in ('population_evidence', 'table', 'documents', 'passages') if isinstance(out.get(k), list) and out[k]), None)
     if isinstance(table, list) and table and all(isinstance(r, dict) for r in table):
         columns = list(dict.fromkeys(c for r in table for c in r))
         return columns, [[r.get(c) for c in columns] for r in table]
