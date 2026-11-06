@@ -182,8 +182,23 @@ def restore_table(rows,edges,patient_rows):
     return restored
 
 
-def coverage_answer(answer):
+def coverage_answer(answer, *, native_table=None):
     """Coverage-only projection; support receives every complete native value."""
+    if native_table is not None:
+        # The producer has checked every primitive cell against a complete
+        # native SQL result. Coverage reviews the requested fields and method,
+        # not thousands of copies of those cells. No narrative/source judgment
+        # is discharged by the copy receipt.
+        out=copy.deepcopy({k:v for k,v in answer.items()if k!='table'})
+        out['table']=[]
+        out['native_table']=copy.deepcopy(native_table)
+        binding=out.get('table_binding')
+        if isinstance(binding,dict):binding.pop('query',None)
+        prior=out.pop('investigation_review',None)
+        if prior is not None:out['prior_review_native_digest']=digest(prior)
+        out['coverage_contract']={'schema':'native-table-coverage/1',
+            'scope':'Every declared native row is retained in the answer. Check requested outputs, source selection, calculation, dates, units and unknowns against the complete calculation contracts and field manifest. Exact copying is checked by code; it does not establish correct meaning or complete requested interpretation.'}
+        return out
     out=copy.deepcopy(answer);rows=answer.get('table')or[]
     view,edges=table_view(rows,defer_native_cells=True);out['table']=view
     # Coverage must read the actual native explanations and proposed actions.

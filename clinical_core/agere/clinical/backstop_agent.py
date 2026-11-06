@@ -1871,7 +1871,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         from .execution_state import review_reference,review_limitation_view
         prior_review=answer.get('investigation_review')
         prior_reference=review_reference(prior_review,tools) if isinstance(prior_review,dict) else None
-        coverage_view=coverage_answer(answer)
+        native_table=native_table_copy_review(answer,calls,getattr(tools,'document_reviews',[]),as_of)
+        coverage_view=coverage_answer(answer,native_table=native_table)
         if isinstance(coverage_view.get('limitations'),list) and prior_reference is not None:
             coverage_view['limitations']=[review_limitation_view(text,prior_review,prior_reference)
                 for text in coverage_view['limitations']]
@@ -1921,8 +1922,11 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             interpretation['table'] = {k: v for k, v in answer['table_binding'].items() if k != 'query'}
             interpretation['table_binding'] = interpretation['table']  # the final rows are supplied once, in their actual tool result
         from ..deliverables.receipts import compact_json,uncompact_json,fingerprint
-        original={'question':request,'answer':interpretation,'evidence':evidence,
-                  'computed_table_value_counts':table_value_counts(answer.get('table') or [])}
+        original=({'question':request,'answer':coverage_view,
+                   'native_receipt_digests':native_table['native_receipt_digests']}
+                  if native_table is not None else
+                  {'question':request,'answer':interpretation,'evidence':evidence,
+                   'computed_table_value_counts':table_value_counts(answer.get('table') or [])})
         assessment['evidence_coverage'].update(original_fingerprint=fingerprint(original))
         packets=support_packets(request,answer,calls,getattr(tools,'document_reviews',[]),as_of,
                                 source_documents=getattr(tools,'read',{}),prior_review_reference=prior_reference)
@@ -1937,7 +1941,10 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                     'Express calculations with explicit aggregate stages and arithmetic projections. If a numeric value encodes a clinical interpretation, '
                     'bind that interpretation to its actual source review instead of treating an integer as arithmetic proof. '
                     'Do not re-read every patient or ask for repeated model votes on copies of the same SQL result. The repaired program still requires source/question verification.'}
-        assessment['evidence_coverage'].update(model_view='patient-dependency-packets/1',
+        copied=all(p.get('representation')=='native_table_copy_and_meaning_review'for p in packets)
+        assessment['evidence_coverage'].update(model_view='native-table-copy-and-meaning/1'if copied else'patient-dependency-packets/1',
+            full_results_supplied=not copied,native_full_results_retained=True,
+            **({'native_table_copy':packets[0]['native_table_copy']}if copied else{}),
             complete_dependency_packets=len(packets),max_dependency_bytes=max((p['bytes']for p in packets),default=0),
             total_dependency_bytes=sum(p['bytes']for p in packets),
             operational_receipts='Retained by native digest; excluded from clinical model context')
@@ -2143,6 +2150,100 @@ def documentary_sources(value):
     return list(found.values())
 
 
+def native_table_copy_review(answer,calls,document_reviews,as_of):
+    """Prove primitive SQL table copying, never financial/clinical semantics.
+
+    Identifiers, source codes and clocks do not become documentary prose just
+    because they are strings. Narrative, interpreted and structured cells keep
+    the full source-review path. The complete dependency query contracts and
+    every bound global claim still require independent meaning review.
+    """
+    from ...contracts import digest
+    from .result_assembly import incomplete_reason
+    table=answer.get('table');root=answer.get('table_from_tool')
+    if (document_reviews or answer.get('sources')or answer.get('row_prose')is not None
+        or not root or not isinstance(table,list)or not table
+        or (answer.get('table_binding')or{}).get('interpreted_columns')
+        or any(p.get('entity_key')or p.get('basis')for p in answer.get('computed_prose',[]))):return None
+    def primitive(key,value):
+        if value is None or type(value)in(int,bool):return True
+        if type(value)is float:return math.isfinite(value)
+        if not isinstance(value,str):return False
+        if key.endswith('_id')or key=='id':return bool(value)and not re.search(r'\s',value)
+        if key=='status'or key.endswith('_status'):
+            return bool(re.fullmatch(r'[A-Za-z0-9_.:/-]+',value))
+        # Complete ISO clocks only, including first/last-event aliases. An
+        # arbitrary explanation in a date-labelled column cannot qualify.
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2}(?:[T ][0-9:.+-]+Z?)?',value):return False
+        from datetime import datetime
+        try:datetime.fromisoformat(value.replace('Z','+00:00'));return True
+        except ValueError:return False
+    if any(not isinstance(row,dict)or not row or any(not isinstance(k,str)or not primitive(k,v)for k,v in row.items())for row in table):return None
+    # Retain the existing arithmetic-lineage qualification/repair contract for
+    # purely numeric patient tables, including integer clinical classifiers.
+    if all(all(k=='patient_id'or v is None or type(v)in(int,float,bool)for k,v in row.items())for row in table):return None
+    by={}
+    for call in calls:
+        result=call.get('result')
+        if not isinstance(result,dict)or not result.get('result_view'):continue
+        if result['result_view']in by:return None
+        by[result['result_view']]=call
+    roots=[root]
+    for proof in answer.get('computed_prose',[]):
+        field=proof.get('field')
+        value=answer.get('headline')if field=='headline'else (answer.get('facts')or{}).get(field[6:])if isinstance(field,str)and field.startswith('facts.')else None
+        if proof.get('rendered')!=value:return None
+        for source in (proof.get('sources')or{}).values():
+            binding=source.get('binding')or{}
+            view=binding.get('result_view');call=by.get(view)
+            if not call or set(binding)!={'result_view','row','column'}:return None
+            cols,values=output_table(call['result']);index=binding['row']
+            if type(index)is not int or not 0<=index<len(values)or binding['column']not in cols:return None
+            row=values[index];cell=row[cols.index(binding['column'])]
+            if digest(source.get('value'))!=digest(cell)or source.get('source_row')!=dict(zip(cols,row)):return None
+            roots.append(view)
+    dependencies=native_result_dependencies(calls,list(dict.fromkeys(roots)))
+    if not dependencies:return None
+    contracts=[];receipts={};source_digest=None;definitions={}
+    for call in calls:
+        result=call.get('result')or{};view=result.get('result_view')
+        if view not in dependencies:continue
+        source=result.get('source_contracts')
+        if (call.get('name')!='query_sql'or result.get('error')or incomplete_reason(result)
+            or result.get('native_sql_contract')!=NATIVE_SQL_CONTRACT
+            or not isinstance(source,dict)or not source.get('source_digest')or source.get('as_of')!=as_of
+            or not source.get('relations')or not isinstance(result.get('executed_query'),str)
+            or not result['executed_query'].strip()):return None
+        if source_digest is not None and source_digest!=source['source_digest']:return None
+        source_digest=source['source_digest'];receipts[view]=digest(result)
+        declared=(call.get('input')or{}).get('sql')
+        if not isinstance(declared,str)or not declared.strip():return None
+        # Text searches are source interpretation, not primitive copying.
+        # Their complete contexts must remain in the documentary review path.
+        import sqlglot
+        try:tree=sqlglot.parse_one(declared,read='sqlite')
+        except sqlglot.errors.SqlglotError:return None
+        if any(isinstance(node,(sqlglot.exp.Like,sqlglot.exp.ILike,sqlglot.exp.RegexpLike))for node in tree.walk()):return None
+        contracts.append({'result_view':view,'declared_query':declared,
+            'executed_query_digest':digest(result['executed_query']),
+            'native_result_dependencies':sorted(native_result_dependencies(calls,[view])or[]),
+            'source_contracts':source,
+            'authority':'Executed source selection/calculation, requiring meaning review; not an independent qualification of the SQL.'})
+        definitions.update(source_contract_definitions(result))
+    if len(receipts)!=len(dependencies):return None
+    result=by[root]['result'];columns,rows=output_table(result)
+    if (len(columns)!=len(set(columns))or
+        result.get('table_rows')is not None and result['table_rows']!=len(rows)
+        or any(not isinstance(r,list)or len(r)!=len(columns)for r in rows)
+        or table!=[dict(zip(columns,row))for row in rows]
+        or digest(table)!=digest([dict(zip(columns,row))for row in rows])):return None
+    return {'schema':'native-table-copy/1','result_view':root,'rows':len(table),
+        'columns':columns,'table_digest':digest(table),'native_receipt_digests':receipts,
+        'source_digest':source_digest,'as_of':as_of,'calculation_contracts':contracts,
+        'executed_source_definitions':definitions,
+        'scope':'All primitive output cells exactly copy the complete executed SQL table. No row is sampled or omitted. This proves transport fidelity only. Source selection, event/availability clocks, units, financial identities, clinical meaning, completeness and every global claim still require review. Source codes are not adjudicated clinical facts.'}
+
+
 def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None):
     """Final clinical claims, deduplicated and grouped by patient dependency.
 
@@ -2154,6 +2255,29 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     dependency closure; unknown lineage retains all shared results.
     Diagnostic observations remain native audit history, not extra final claims.
     """
+    copy_review=native_table_copy_review(answer,calls,document_reviews,as_of)
+    if copy_review is not None:
+        from .evidence_projection import coverage_answer
+        from ...contracts import digest
+        state={'id':'summary','question':question,'as_of':as_of,
+            'scope':'Review every global claim and the full native selection/calculation contracts against the original request. Code checked every output cell for exact copy fidelity only. A correct copy of wrong SQL is still wrong. Check all arithmetic relationships in prose, refund/credit terms, source grain, clocks, units, missingness and interpretation; do not infer correctness from a digest or copied cell.',
+            'answer':coverage_answer(answer,native_table=copy_review),
+            'native_table':copy_review,'computed_claims':answer.get('computed_prose',[])}
+        claims=[]
+        if 'headline'in answer:claims.append({'id':'headline','field':'headline','path':['answer','headline']})
+        for i,key in enumerate(answer.get('facts')or{}):
+            claims.append({'id':'fact_'+str(i),'field':'facts.'+str(key),'path':['answer','facts',key]})
+        state['claim_manifest']=claims
+        text=json.dumps(state,ensure_ascii=False,separators=(',',':'),default=str)
+        # Oversized contracts retain the conservative complete-evidence path;
+        # no row/contract is trimmed to make the projection fit.
+        if len(text.encode())<=230000:
+            return [{'id':'summary','date':as_of,'text':text,'bytes':len(text.encode()),
+                'dependency_complete':True,'source_context_complete':True,'claim_manifest':claims,
+                'result_view':copy_review['result_view'],'representation':'native_table_copy_and_meaning_review',
+                'native_table_copy':{'schema':copy_review['schema'],'rows':copy_review['rows'],
+                    'table_digest':copy_review['table_digest'],'packet_sha256':hashlib.sha256(text.encode()).hexdigest(),
+                    'meaning_review_required':True}}]
     from ...contracts import digest
     from ..deliverables.receipts import compact_json,readable_json
     from .evidence_projection import native_timing_projection
