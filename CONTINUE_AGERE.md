@@ -1,3 +1,13 @@
+# Current Agere checkpoint — ACTIVE 2026-11-06T02:17:07.010178+00:00
+
+G3: Q18firstactualproviderpairreturnedpartial; initial0calladmissionfailurekeptseparate. ExecuteunstartedQ19-Q21onceperarmsequentiallyon1cb7837f/protocol-local-cohort-candidate.json via run_remaining_after_Q18.py. Inspectownedremaining-after-Q18-receipt.jsonbeforejobs;source/product/scoringfrozenwhileactive;noduplicate. Stopbetween cases onactualcontext/subscription/materialfailure/explicitstopreceipt. ScoreQ18independentlywhileothercasesrun:declaredfirst-within2028cohortisnotautomaticallyfailedagainstfirst-everreference. Preserve1003.551s/128338output-tokenCLIoutlierandallusage;nosignalwasactuallysent. Thenconsolidatefixedworkflowfailures/connectedcheckswithoutmoreunchangedpaidrepeats. All25/tenareas/Q14/Q23/Q24/G5/clinical/customerdependenciesretained. AutomaticcontinuationPAUSED.
+
+Q18confirmationreturned:stack1264.494s/29requests/$0.866130478;frontier67.485s/5/$0.4391909.0newpending/unpriced. OneCLIcall1003.551s/2turns/128338outputtokensbeforeonetoolrequest;allaggregateusagepreserved,internalAPIattemptcountunknown. Nosignalwassent(requestcompletedbeforePIDcheck). Bothpartialnoteswithdifferentdeclaredindex/censoring;independentscorepending,nosavingsclaim.
+
+Nativeadmissionproof0.640s/0providers,179checkspass;original12.239s/0callfailurekeptseparate. Currentruntimepredictionregistryhasnoattachedpointer;Q19target/leakage/calibrationunknown,nomodelfittedorprotectedlabelsread. All56384attempts/42pendingretained. Lastsealedreceiptunchanged. Evidence: artifacts/agere-ordinary-comparison-2026-11-05/Q18-admission-confirmation/pair-receipt.json; artifacts/agere-ordinary-comparison-2026-11-05/Q18-admission-confirmation/provider-latency-observation.json; artifacts/agere-ordinary-comparison-2026-11-05/Q18/native-admission-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q19/independent-registry-observation.json
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — ACTIVE 2026-11-06T01:46:50.791410+00:00
 
 G3: monitoronlyownedQ18-admission-confirmationpair PID99872/session97472on1cb7837f/protocol-local-cohort-candidate.json. Source/product/scoringfrozen;noduplicate. OriginalQ18stoppedbeforeproviders0attempts; currentconfirmationisthefirstactualQ18providerpair, keepinitialfailureseparate. Independentlyscoreindex/followup/censoringandallattemptswhenreturned; respectexplicitcohortdefinitionratherthanforcinganotherreferenceconvention. ThenunstartedQ19-Q21onceperarm. All25/tenareas,Q14interruption,Q23definitions,Q24fromQ20,earlierfailures/G5/clinical/customerdependenciesretained. AutomaticcontinuationPAUSED.
