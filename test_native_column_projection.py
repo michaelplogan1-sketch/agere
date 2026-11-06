@@ -106,6 +106,28 @@ class NativeColumnProjection(unittest.TestCase):
         self.assertNotIn('native_column_projections',state)
         self.assertIn('A complete source interpretation is still required.',json.dumps(state))
 
+    def test_source_column_named_result_view_is_data_not_a_proof_address(self):
+        self.consumer=self.execute(self.query.replace(' FROM', ", 'external_events' AS result_view FROM",1))
+        self.calls=[self.producer,self.consumer]
+        B.bind_computed_prose(self.answer,self.calls,question='Count machine receipts and unresolved statuses.')
+        before=copy.deepcopy(self.calls)
+        state=uncompact_json(json.loads(B.support_packets('Count machine receipts and unresolved statuses.',
+            self.answer,self.calls,[],'2030-05-27')[0]['text']))
+        self.assertEqual(state['native_dependency_scope']['required_result_views'],['agere_result_1','agere_result_2'])
+        self.assertEqual(state['native_column_projections'][0]['rows'],[['A','unresolved'],['A','unresolved'],['B',None]])
+        self.assertIn('external_events',json.dumps(state))
+        self.assertEqual(self.calls,before)
+
+    def test_measure_population_and_basis_addresses_survive_source_marker_collisions(self):
+        proofs=[{'basis':[{'result_view':'basis','row':0}], 'sources':{
+            'n':{'binding':{'measure':{'result_view':'events','population':{'result_view':'population'}}},
+                 'source_row':{'result_view':'literal_business_data'},'value':{'result_view':'also_literal'}}}}]
+        self.assertEqual(B.computed_prose_views(proofs),['basis','events','population'])
+        calls=[{'input':{},'result':{'result_view':v}}for v in ['basis','events']]
+        self.assertIsNone(B.native_result_dependencies(calls,B.computed_prose_views(proofs)))
+        calls.append({'input':{},'result':{'result_view':'population'}})
+        self.assertEqual(B.native_result_dependencies(calls,B.computed_prose_views(proofs)),{'basis','events','population'})
+
     def global_note(self):
         self.answer['facts']['note']='These are machine-state receipts; clinical eligibility remains unestablished.'
         self.answer['global_prose_basis']=[{'path':['facts','note'],'basis':[{'result_view':'agere_result_2','row':0}]}]

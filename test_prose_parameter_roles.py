@@ -95,6 +95,16 @@ class ProseParameterRoles(unittest.TestCase):
                      'There were one attribution clock and 2029 patients.']:
             with self.subTest(text=text),self.assertRaises(B.ComputedProseError):self.compile(text)
 
+    def test_sentence_separated_ordered_items_are_layout_and_keep_item_quantities(self):
+        text='(1) The dated agreement. (2) The performance period. (3) The attribution definition.'
+        self.assertEqual(self.compile(text)['headline'],text)
+        for text in ['(1) The agreement. (3) The period.',
+                     '(1) The agreement for 5 patients. (2) The period.',
+                     'There were (1) payments. (2) invoices.',
+                     '(1) Dose 5 mg daily. (2) Follow-up.',
+                     '(1) The period. (2) The rate was 3.5 percent.']:
+            with self.subTest(text=text),self.assertRaises(B.ComputedProseError):self.compile(text)
+
     def test_zero_in_a_counted_domain_needs_its_bound_predicate_result(self):
         calls=self.rate_calls();sql='SELECT SUM(CASE WHEN stays = 0 THEN 1 ELSE 0 END) AS n FROM practice'
         calls.append({'name':'query_sql','input':{'sql':sql},'result':{'native_sql_contract':B.NATIVE_SQL_CONTRACT,

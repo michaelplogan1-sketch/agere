@@ -1316,7 +1316,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
                 parameter_proofs.append({'kind':'relative_calendar_year','literal':m.group(),'requested_year':prior+1,'year_offset':-1})
                 return m.group()[:m.start('year')-m.start()]+m.group()[m.end('year')-m.start():]
             text=re.sub(r'\b(?:prior|previous)-year\s*\((?P<year>'+year+r')\)',previous_year,text,flags=re.I)
-        inline=list(re.finditer(r'(?m)(?:^|[:;])\s*\(([1-9]\d*)\)(?=\s+\S)',text))
+        inline=list(re.finditer(r'(?m)(?:^|[.:;])\s*\(([1-9]\d*)\)(?=\s+\S)',text))
         if len(inline)>1 and [int(m[1])for m in inline]==list(range(1,len(inline)+1)):
             for m in reversed(inline):text=text[:m.start(1)]+text[m.end(1):]
         text=re.sub(r'\b[A-Za-z][A-Za-z0-9]*(?:[.-][A-Za-z0-9]+)*\b',
@@ -2264,6 +2264,27 @@ def native_result_dependencies(calls,roots):
     return selected
 
 
+def computed_prose_views(proofs):
+    """Read compiled address slots, never marker-like values in source rows.
+
+    A source can have a literal result_view column. Only the compiler's binding,
+    measure population and basis addresses name native dependencies. Meaning and
+    full source review remain required; an unknown actual address stays unknown.
+    """
+    roots=[]
+    def address(value):
+        if isinstance(value,dict)and isinstance(value.get('result_view'),str):
+            roots.append(value['result_view'])
+    for proof in proofs:
+        for basis in proof.get('basis',[]):address(basis)
+        for source in proof.get('sources',{}).values():
+            binding=source.get('binding')or{}
+            address(binding)
+            measure=binding.get('measure')or{}
+            address(measure);address(measure.get('population'))
+    return list(dict.fromkeys(roots))
+
+
 def documentary_sources(value):
     """Exact full-source dependencies of represented documentary assertions."""
     found={}
@@ -2405,8 +2426,7 @@ def global_dependency_request(answer,calls):
     missing=[{'path':path,'value_digest':digest(value)}for field,(path,value)in fields.items()if field not in bound]
     if not missing:return []
     roots=[(answer.get('table_binding')or{}).get('result_view')or answer.get('table_from_tool')]
-    roots.extend(source['binding']['result_view']for p in answer.get('computed_prose',[])for source in p.get('sources',{}).values()
-                 if isinstance(source.get('binding'),dict)and isinstance(source['binding'].get('result_view'),str))
+    roots.extend(computed_prose_views(answer.get('computed_prose',[])))
     roots=list(dict.fromkeys(r for r in roots if r));dependencies=native_result_dependencies(calls,roots)
     from .evidence_projection import native_column_projections
     return missing if native_column_projections(calls,roots,dependencies)else []
@@ -2460,15 +2480,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             isinstance(item,dict) and item.get('authority') in OPERATIONAL_FEEDBACK_AUTHORITIES
             for item in (c['result'].get('incomplete_dependencies')or[]))}
     claim_roots=[(answer.get('table_binding')or{}).get('result_view') or answer.get('table_from_tool')]
-    def prose_roots(value):
-        roots=[]
-        if isinstance(value,dict):
-            if isinstance(value.get('result_view'),str):roots.append(value['result_view'])
-            for item in value.values():roots.extend(prose_roots(item))
-        elif isinstance(value,list):
-            for item in value:roots.extend(prose_roots(item))
-        return roots
-    claim_roots.extend(prose_roots(answer.get('computed_prose',[])))
+    claim_roots.extend(computed_prose_views(answer.get('computed_prose',[])))
     claim_roots=[root for root in claim_roots if root is not None]
     claim_dependencies=native_result_dependencies(calls,list(dict.fromkeys(claim_roots)))
     local_dependencies=claim_dependencies
@@ -2634,7 +2646,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         patient_roots=[final_view]
         for proof in answer.get('computed_prose',[]):
             if (proof.get('entity_key')or{}).get('patient_id')==pid:
-                patient_roots.extend(prose_roots(proof))
+                patient_roots.extend(computed_prose_views([proof]))
         patient_dependencies=native_result_dependencies(calls,list(dict.fromkeys(patient_roots)))
         local_shared=[row for ident,row in shared.items() if patient_dependencies is None or
                       None in shared_views[ident] or bool(shared_views[ident]&patient_dependencies)]
