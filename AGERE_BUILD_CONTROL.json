@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T17:40:37.724078+00:00",
+  "updated_at": "2026-11-06T17:43:01.008857+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -1196,7 +1196,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-06T17:40:37.724078+00:00",
+    "updated_at": "2026-11-06T17:43:01.008857+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -1518,7 +1518,13 @@
       "full_queue_acceptance": false,
       "model_superiority_claim": false,
       "Opus_comparison": "not dispatched after Sonnet encountered a shared local verification failure; no completed-answer model winner selected",
-      "remaining_gap": "Unbound global facts disable exact column projections and retain full patient evidence. Actual41.4MBpacket required45.893sconstruction/52.892spartition, then correctly failed closed at existing provider envelope. Locate global claim dependencies through existing typed assertion/state bindings; do not weaken source reviews or substitute another compression experiment."
+      "remaining_gap": "Unbound global facts disable exact column projections and retain full patient evidence. Actual41.4MBpacket required45.893sconstruction/52.892spartition, then correctly failed closed at existing provider envelope. Locate global claim dependencies through existing typed assertion/state bindings; do not weaken source reviews or substitute another compression experiment.",
+      "app": {
+        "pid": 28973,
+        "session": 83398,
+        "http_proof": "artifacts/agere-frontier-decisions-2026-11-06/app-proof.json",
+        "product_commit": "c7985b311151e2a040d9dfc43c97f3301780d337"
+      }
     }
   },
   "decisions": [
@@ -5313,16 +5319,16 @@
   ],
   "unsealed_work": {
     "status": "routing_and_native_decision_checks_passed_localized_workflow_unaccepted",
-    "product_commit": "9ca3a18e",
+    "product_commit": "c7985b311151e2a040d9dfc43c97f3301780d337",
     "product_fix_commit": "b3f0a8d7",
-    "receipt": "artifacts/agere-global-column-closure-2026-11-06/engineering-proof.json",
+    "receipt": "artifacts/agere-frontier-decisions-2026-11-06/engineering-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
     "source_frozen": false,
     "runtime_activation": false,
-    "product_code_in_candidate_app": false,
+    "product_code_in_candidate_app": true,
     "answer_selected": false,
-    "affected_tests_passed": 186,
-    "provider_calls_this_increment": 25,
+    "affected_tests_passed": 179,
+    "provider_calls_this_increment": 6,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
       "status": "ordinary_check_returned_unsealed_paused_for_claude_review",
@@ -5342,8 +5348,8 @@
       "new_provider_attempts": 21,
       "offline_proof_provider_calls": 0
     },
-    "new_provider_attempts": 25,
-    "known_api_equivalent_usd": 1.20563389,
+    "new_provider_attempts": 6,
+    "known_api_equivalent_usd": 0.190087398,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
     "all_attempt_rows_retained": 57192,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
@@ -5604,7 +5610,9 @@
     "frontier_interrupted_receipt": "artifacts/agere-frontier-decisions-2026-11-06/interrupted-receipt.json",
     "frontier_engineering_proof": "artifacts/agere-frontier-decisions-2026-11-06/engineering-proof.json",
     "codec_candidate_activation": false,
-    "model_comparison_complete": false
+    "model_comparison_complete": false,
+    "frontier_decision_policy_active": true,
+    "app_proof": "artifacts/agere-frontier-decisions-2026-11-06/app-proof.json"
   },
   "current_visual_request": {
     "status": "completed",
@@ -5727,8 +5735,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": null,
-  "owned_server_session": null,
+  "owned_server_pid": 28973,
+  "owned_server_session": 83398,
   "last_run_observation": {
     "status": "owned_confirmation_terminal_latency_failed_app_restored",
     "receipt": "artifacts/agere-global-column-closure-2026-11-06/ordinary-confirmation/receipt.json",
