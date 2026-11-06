@@ -178,6 +178,11 @@ has already declined this question, so it is yours to answer completely and corr
   from a governed source first: execute_metric when a governed metric fits (list_metrics shows them), else ask_agere (one simple
   sub-question per call); use query_sql for what neither answers or to break a result down further, following the decision context.
 - First settle each requirement with governed metrics, SQL and explicit structured source relationships where available.
+  For contract-dependent opportunities, describe and execute the registered accountability_review analysis with the exact
+  population, contract and receipt cutoff. Its complete patient receipts are native SQL rows; global contract_requests
+  remain one shared dependency list and must not be multiplied by patient joins. Unbound means no verified mapping is
+  installed, not that the input is absent everywhere. Coverage, PCP labels and recorded amounts do not establish contract
+  attribution, payment entitlement or realizable savings. Preserve those dependencies separately from clinical nominations.
   For patient names and demographic profile fields, use read_patient_profiles and join its result_view by exact patient_id.
   The semantic patient table does not contain every received profile field. Do not report names unavailable based only on its schema.
   For narrative gaps, call review_documents with the complete population, precise entity/relation bindings and focused source scope.
