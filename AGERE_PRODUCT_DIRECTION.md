@@ -1,3 +1,24 @@
+# Standing direction — any industry, November 6, 2026
+
+Mike explicitly directs Wollstonecraft to work on **any industry's data**.
+Healthcare remains the synthetic proving ground; the complete ten-area healthcare
+acceptance backlog, population health, VBC and outcome-aligned payments remain
+required. This broadens the product charter; it does not claim demonstrated
+cross-industry portability or displace G3 program criteria and automatic handoff.
+
+Build shared interpretation, entity/event/relationship/measure/contract/period
+contracts, provenance, uncertainty, operators, clarification, learning and guarded
+reuse without healthcare assumptions. Keep clinical, payer and industry semantics
+in versioned adapters and domain knowledge. An unmapped concept remains unknown;
+structural conformance does not establish semantic correctness.
+
+Seek distinctive, useful combinations, including methods borrowed from other
+fields. Novelty is a research objective requiring prior-art review and measured
+comparison with simple baselines; no uniqueness or superiority is asserted here.
+Preserve evidence and provenance and keep simulated, assumed and observed outcomes
+separate. The November 6 research triage records verification and dispositions;
+AGERE_BUILD_CONTROL.json retains sequencing authority.
+
 # Product experience and language — October 20, 2026
 
 Mike explicitly rejects dashboards as Agere's product experience and says never

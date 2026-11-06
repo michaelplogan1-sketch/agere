@@ -17,7 +17,8 @@
     "backlog_sha256": "998cf43fdf3d29a278742b13d6854680eba3c55ce757a6a3c7acc229c56c2454",
     "change_policy": "Keep the full charter. Record reason, evidence and scope impact for sequence changes; narrowing or changing user restrictions requires explicit user direction.",
     "query_breadth": "General healthcare and healthcare-adjacent questions across patients, episodes, populations, clinicians, hospitals, ACOs, payers and contracts; includes admissions/readmissions, care gaps/interventions, social context, population/contract priorities and provider/facility performance. Examples are regressions, not an allowlist or a medication-first product boundary.",
-    "acceptance_interpretation": "Existing accepted gates and sealed receipts establish only their declared finite local behavior; broad query generalization and independent analytical/model/clinical qualification remain required."
+    "acceptance_interpretation": "Existing accepted gates and sealed receipts establish only their declared finite local behavior; broad query generalization and independent analytical/model/clinical qualification remain required.",
+    "industry_scope": "Wollstonecraft serves any industry; healthcare remains synthetic proving ground and all ten healthcare areas remain required."
   },
   "current_gate": "G3",
   "gates": [
@@ -1225,6 +1226,48 @@
       },
       "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
       "native_profile_lineage_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-lineage-proof.json"
+    },
+    "research_lane": {
+      "thread_id": "01a1b0c3-39c3-7993-95f5-8404d6fec61e",
+      "workspace": "/private/tmp/agere-research-20261106",
+      "branch": "codex/research-voi-20261106",
+      "base_commit": "d18bf791",
+      "status": "candidate_engineering_verified_no_activation",
+      "standing_direction": "Wollstonecraft serves any industry; healthcare remains synthetic proving ground and all ten healthcare areas remain required.",
+      "order": [
+        "Verify sweep claims and record all fourteen dispositions.",
+        "Implement and verify VoI clarification candidate.",
+        "Evaluate decisions in-loop and fit offline thresholds only from eligible outcome-labelled journal pairs.",
+        "Main G3 owner continues dated program/buyer criteria and source interpretation, then ordinary automatic handoff.",
+        "Write B schema/mapping design only; implementation of B/A/C/guarded reuse follows retained G3 requirements."
+      ],
+      "main_g3_displaced": false,
+      "workflow_change": "Scored clarification candidate plus passive routing observations and offline paired-continuation threshold fitter.",
+      "evidence": [
+        "artifacts/agere-research-2026-11-06/RESEARCH_TRIAGE_2026-11-06.md",
+        "artifacts/agere-research-2026-11-06/clarification-regressions.log",
+        "artifacts/agere-research-2026-11-06/affected-checks.log",
+        "artifacts/agere-research-2026-11-06/observed-threshold-fit.json",
+        "artifacts/agere-research-2026-11-06/engineering-proof.json",
+        "artifacts/agere-research-2026-11-06/PORTABLE_CORE_DESIGN_2026-11-06.md"
+      ],
+      "verified": "185affectedtests run,184passed/1optional skip;33clarification/calculator tests pass. Existing actual journal has zero eligible decision-outcome pairs.",
+      "remaining_gap": "No observed fitted live threshold or live VoI judgment qualification. Candidate not active; program criteria, source interpretation and automatic handoff remain open.",
+      "next_action": "Owner reviews isolated research candidate at a safe increment after retained G3 priority. No backend activation yet. Collect observed source-family-separated decision-continuation pairs before fitting a live threshold.",
+      "design_status": "written_design_only",
+      "registered_at": "2026-11-06T12:39:31.336569+00:00",
+      "product_commits": [
+        "77d0bfca",
+        "660d5aed",
+        "dc1242d8"
+      ],
+      "documentation_commits": [
+        "aa328dda",
+        "d8bdf4c5"
+      ],
+      "activation": "not_integrated_not_active_owner_review_pending",
+      "live_thresholds": {},
+      "observed_eligible_pairs": 0
     }
   },
   "decisions": [
@@ -4958,6 +5001,20 @@
       ],
       "scope_impact": "Existing fixed25cases/alltenareas retained. No architecture rewrite, new hosted service, paid campaign, narrowed population or clinical/superiority claim. Research work stays isolated and candidate; program/buyer criteria and ordinary automatic handoff remain the main sequence.",
       "next_action": "G3: Complete the remaining Q20source-interpretation/clinical-nomination requirement from the retained source-linked care-gap accounts through existing entity/relation/assertion and buyer-capability composition. Reuse the full native ACO/payer-prerequisite agenda and all population manifests; do not rerun passing measures, financial patients or the fullpaidQ14/Q21. First bind applicable actual program/buyer criteria and their source/effective dates; distinguish a documentary review nomination from clinical eligibility. Missing applicable definitions or qualified source interpretation must remain supported unknowns, not invented program mappings. Then qualify the ordinary automatic handoff on the changed shared tools, preserving original failed pairs. All25cases/tenareas, Q21semantics/Q23definitions/Q24deliverable capability/G5/clinical/customer dependencies retained. BuildACTIVE/automationPAUSED."
+    },
+    {
+      "at": "2026-11-06T12:39:31.336569+00:00",
+      "decision": "Register isolated November6 research candidate and explicit any-industry charter alongside existing G3 work.",
+      "reason": "Mike explicitly requests the research lane without displacement of program criteria/source interpretation and ordinary automatic handoff. Integration owner releases additive metadata only; backend activation remains pending review.",
+      "evidence": [
+        "artifacts/agere-research-2026-11-06/RESEARCH_TRIAGE_2026-11-06.md",
+        "artifacts/agere-research-2026-11-06/clarification-regressions.log",
+        "artifacts/agere-research-2026-11-06/affected-checks.log",
+        "artifacts/agere-research-2026-11-06/observed-threshold-fit.json",
+        "artifacts/agere-research-2026-11-06/engineering-proof.json",
+        "artifacts/agere-research-2026-11-06/PORTABLE_CORE_DESIGN_2026-11-06.md"
+      ],
+      "scope_impact": "Shared capability charter broadened to any industry. Alltenhealthcareacceptanceareas, proving-ground scope, primarynext_action, G3status, sealedreceipt, liveapp and heartbeatPAUSED preserved.0eligibleobservedpairedoutcomes;0fittedlivethresholds."
     }
   ],
   "unsealed_work": {
@@ -5377,5 +5434,47 @@
     "latest_targeted_qualification": "Q16/Q17nativeformatrepair0providers/0.55s;positivepunctuationandcalendaraddressesfixed,169checks; substantiveanswersremainfailed/unqualified.",
     "interrupted_case": "Q14stack11attemptspartial/1pendingunpriced;frontierunstarted",
     "Q18_status": "original0calladmissionfailure+firstproviderconfirmationreturnedpartial_unscored"
+  },
+  "research_lane": {
+    "thread_id": "01a1b0c3-39c3-7993-95f5-8404d6fec61e",
+    "workspace": "/private/tmp/agere-research-20261106",
+    "branch": "codex/research-voi-20261106",
+    "base_commit": "d18bf791",
+    "status": "candidate_engineering_verified_no_activation",
+    "standing_direction": "Wollstonecraft serves any industry; healthcare remains synthetic proving ground and all ten healthcare areas remain required.",
+    "order": [
+      "Verify sweep claims and record all fourteen dispositions.",
+      "Implement and verify VoI clarification candidate.",
+      "Evaluate decisions in-loop and fit offline thresholds only from eligible outcome-labelled journal pairs.",
+      "Main G3 owner continues dated program/buyer criteria and source interpretation, then ordinary automatic handoff.",
+      "Write B schema/mapping design only; implementation of B/A/C/guarded reuse follows retained G3 requirements."
+    ],
+    "main_g3_displaced": false,
+    "workflow_change": "Scored clarification candidate plus passive routing observations and offline paired-continuation threshold fitter.",
+    "evidence": [
+      "artifacts/agere-research-2026-11-06/RESEARCH_TRIAGE_2026-11-06.md",
+      "artifacts/agere-research-2026-11-06/clarification-regressions.log",
+      "artifacts/agere-research-2026-11-06/affected-checks.log",
+      "artifacts/agere-research-2026-11-06/observed-threshold-fit.json",
+      "artifacts/agere-research-2026-11-06/engineering-proof.json",
+      "artifacts/agere-research-2026-11-06/PORTABLE_CORE_DESIGN_2026-11-06.md"
+    ],
+    "verified": "185affectedtests run,184passed/1optional skip;33clarification/calculator tests pass. Existing actual journal has zero eligible decision-outcome pairs.",
+    "remaining_gap": "No observed fitted live threshold or live VoI judgment qualification. Candidate not active; program criteria, source interpretation and automatic handoff remain open.",
+    "next_action": "Owner reviews isolated research candidate at a safe increment after retained G3 priority. No backend activation yet. Collect observed source-family-separated decision-continuation pairs before fitting a live threshold.",
+    "design_status": "written_design_only",
+    "registered_at": "2026-11-06T12:39:31.336569+00:00",
+    "product_commits": [
+      "77d0bfca",
+      "660d5aed",
+      "dc1242d8"
+    ],
+    "documentation_commits": [
+      "aa328dda",
+      "d8bdf4c5"
+    ],
+    "activation": "not_integrated_not_active_owner_review_pending",
+    "live_thresholds": {},
+    "observed_eligible_pairs": 0
   }
 }
