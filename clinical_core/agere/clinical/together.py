@@ -34,8 +34,8 @@ VERSION = 'agere-together/1'
 ENGINE_OPERATIONS = frozenset({'survival', 'risk_adjustment', 'target_trial', 'forecast', 'program_effect', 'trajectory',
                                'demand', 'monitor'})
 DEFAULT_HYBRID_BUDGET_S = 900
-DEFAULT_SEMANTIC_MODEL = 'claude-haiku-5-5'   # semantic-analyst bake-off winner
-DEFAULT_RECONCILE_MODEL = 'claude-haiku-5-5'   # Haiku-first ladder (model_policy): a reconcile that errors or gives no verdict is retried once on Sonnet
+DEFAULT_SEMANTIC_MODEL = 'claude-sonnet-5-5'
+DEFAULT_RECONCILE_MODEL = 'claude-sonnet-5-5'
 DEFAULT_BUDGET_S = 90.0
 DEFAULT_RECONCILE_BUDGET_S = 60.0
 # No invented sender deadline or request-size ceiling. Explicit caller settings

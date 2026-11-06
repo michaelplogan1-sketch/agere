@@ -3,10 +3,68 @@ import copy
 import json
 import sqlite3
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 from clinical_core.agere import subscription_transport as T
 from clinical_core.agere.clinical import backstop_agent as B,semantic_analyst as S
 from tools.ordinary_stack_comparison import FRONTIER_OUTPUT_CONFIG
+from clinical_core.agere.clinical import system_one_gate as G
+
+
+class OrdinaryTransport(unittest.TestCase):
+    def test_native_decision_does_not_accept_transcribed_table_before_product_review(self):
+        db=sqlite3.connect(':memory:');self.addCleanup(db.close)
+        db.execute('CREATE TABLE received(patient_id,status)')
+        db.executemany('INSERT INTO received VALUES (?,?)',[('A','unresolved'),('B',None),('A','supported')])
+        tools=SimpleNamespace(read={},executed_results={},document_reviews=[])
+        sql="SELECT COUNT(*) AS receipt_rows,COUNT(DISTINCT patient_id) AS patients FROM received"
+        final={'status':'answered','answer_type':'table','headline':'Received row and patient counts',
+               'table_from_tool':'agere_result_1','sources':[]}
+        responses=[{'structured_output':{'decision':{'tool_use':{'name':'query_sql','input':{'sql':sql}}}}},
+            {'structured_output':{'decision':{**final,'table_from_tool':None,'table':[{'receipt_rows':2,'patients':2}]}}},
+            {'structured_output':{'decision':final}}]
+        bodies=[];reviews=[]
+        def execute(call):
+            cur=db.execute(call['input']['sql'])
+            out={'result_view':'agere_result_1','columns':[c[0]for c in cur.description],
+                 'rows':cur.fetchall(),'truncated':False,'executed_query':call['input']['sql']}
+            tools.executed_results[out['result_view']]=out
+            return out
+        def send(body):bodies.append(copy.deepcopy(body));return T.respond(body),0,False
+        def review(answer,calls):
+            out=B.review_final(SimpleNamespace(), 'Count received rows and distinct patients.',answer,calls,tools,
+                               ledger=None,as_of='2030-05-27')
+            reviews.append(copy.deepcopy(out));return out
+        coverage={'label':'answers_fully','decided_by':'authored_fixture','p':.99,'calls':0,'cost_usd':0}
+        support={'label':'supported','decided_by':'authored_fixture','calls':0,'cost_usd':0,
+                 'packets':[],'all_dependencies_checked':True}
+        with patch.object(T,'run_cli',side_effect=responses)as cli,patch.object(G,'ready',return_value=True), \
+                patch.object(G,'s1',return_value=SimpleNamespace(decide=lambda *a,**k:None,judge_fields=lambda *a,**k:None)),patch.object(G,'check',return_value=coverage), \
+                patch.object(B,'check_support_packets',return_value=support):
+            result=S.tool_loop('Count received rows and distinct patients.','Use the received evidence.',
+                [{'name':'query_sql','input_schema':{'type':'object','properties':{'sql':{'type':'string'}},'required':['sql']}}],
+                execute,send=B.as_tool_calls(send),model='claude-sonnet-5-5',max_tools=None,
+                extra={'output_config':S.INVESTIGATOR_OUTPUT_CONFIG},review=review)
+        self.assertEqual(len(reviews),2)
+        self.assertEqual(reviews[0]['status'],'repair')
+        self.assertIn('Do not transcribe',reviews[0]['feedback'])
+        self.assertEqual(reviews[1]['status'],'confirmed',reviews[1])
+        self.assertEqual(result['answer']['table'],[{'receipt_rows':3,'patients':2}])
+        self.assertEqual(len(result['tool_calls']),1)
+        self.assertEqual(cli.call_count,3)
+        self.assertTrue(all(c.kwargs['json_schema']==T.decision_output_schema(b)for c,b in zip(cli.call_args_list,bodies)))
+
+    def test_final_schema_keeps_repair_contract_without_output_caps(self):
+        schema=S.INVESTIGATOR_OUTPUT_CONFIG['format']['schema']
+        body={'output_config':S.INVESTIGATOR_OUTPUT_CONFIG,'tool_choice':{'type':'none'}}
+        patch_value={'repair_draft':{'draft_digest':'retained','fields':[]}}
+        with patch.object(T,'run_cli',return_value={'structured_output':patch_value})as cli:
+            response=T.respond(body)
+        self.assertEqual(json.loads(response['content'][0]['text']),patch_value)
+        self.assertEqual(cli.call_args.kwargs['json_schema'],schema)
+        self.assertTrue(schema['additionalProperties'])
+        for key in ('maxLength','maxItems','maxProperties','max_tokens'):
+            self.assertNotIn(key,json.dumps(schema))
 
 
 class BaselineTransport(unittest.TestCase):

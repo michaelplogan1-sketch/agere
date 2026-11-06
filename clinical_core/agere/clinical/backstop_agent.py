@@ -3657,6 +3657,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     try:
         receipts = []
         model = model or model_policy.first('analyst')
+        if model == model_policy.HAIKU: model = model_policy.first('analyst')  # legacy saved continuations
         from . import harness_improvement as harness
         restored_messages=None
         if continuation is not None:
@@ -3678,17 +3679,18 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
             return assessment
         raw_send=as_tool_calls(send or _send(stack, ledger, receipts))
         def actor_send(body):
-            # The investigator owns its ladder. An outer escalated planner must
-            # not silently turn this role's first Haiku request into Sonnet.
-            rung=model_policy.escalation() if body['model']==model_policy.SONNET else model_policy.first_rung()
+            # The investigator owns its ladder; an outer planner's escalation
+            # does not establish that this role's entry attempt failed.
+            rung=model_policy.escalation() if body['model']==model_policy.ladder('analyst')[1] else model_policy.first_rung()
             with model_policy.question_path(), rung:
                 return raw_send(body)
         run = semantic_analyst.tool_loop(user, system, TOOLS, tools, send=actor_send, model=model,
-                                         max_tools=MAX_TOOLS, extra={'cache_control': {'type': 'ephemeral'}}, format_retries=1, max_tokens=8192,
+                                         max_tools=MAX_TOOLS, extra={'cache_control': {'type': 'ephemeral'},
+                                             'output_config': semantic_analyst.INVESTIGATOR_OUTPUT_CONFIG}, format_retries=1, max_tokens=8192,
                                          review=review, continuation_guard=tools.continuation_identity,initial_calls=replay['calls'],
                                          initial_answer=replay.get('resume_draft') if replay.get('resume_draft')is not None else replay.get('final_answer'),
                                          restored_messages=restored_messages,
-                                         escalation_model=model_policy.SONNET if model==model_policy.HAIKU and model_policy.escalation_enabled() else None,
+                                         escalation_model=model_policy.ladder('analyst')[1] if model==model_policy.first('analyst') and model_policy.escalation_enabled() else None,
                                          compact_execution_state=os.environ.get('AGERE_ANALYST_STATE')=='compiled',
                                          binding_system=[{'type':'text','text':BINDING_RULES+'\n'+decision_context.prompt_block()},
                                                          system[1]])

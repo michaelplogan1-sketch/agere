@@ -52,7 +52,7 @@ class EntryModelReuse(unittest.TestCase):
     def test_escalated_actor_keeps_native_learning_on_the_entry_model_key(self):
         from clinical_core.agere import model_policy as M
         result,replay,propose=self.entry_result()
-        self.assertEqual(replay.call_args.args[3],M.HAIKU)
+        self.assertEqual(replay.call_args.args[3],M.SONNET)
         self.assertEqual(propose.call_args.args[3],replay.call_args.args[3])
         self.assertEqual(result['model'],M.SONNET)
         self.assertEqual(result['recursive_improvement']['candidate']['id'],'native-prefix')

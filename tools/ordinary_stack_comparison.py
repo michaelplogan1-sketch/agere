@@ -128,7 +128,7 @@ def frontier(stack, question, *, execute):
             from clinical_core.agere.clinical import cost_telemetry
             probe = cost_telemetry.start(question)
             try:
-                with M.escalation():
+                with M.first_rung():
                     run = S.tool_loop(json.dumps({'question': question, 'as_of': as_of,
                                                   'patient_scope': sorted(tools.scope) if tools.scope is not None else None}),
                                       system, B.TOOLS, tools, send=B.as_tool_calls(_send(stack, ledger, receipts)),

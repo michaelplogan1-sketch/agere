@@ -42,7 +42,8 @@ def scorecard(telemetries, *, question_set=None):
         for d in t.get('system_one_decided') or []: s1_kinds[d.split(':')[0]] += 1
     known = [t for t in rows if t.get('usd_known', True)]
     known_answered = [t for t in answered if t.get('usd_known', True)]
-    opus = [(t['question_id'], t['opus_without_failed_sonnet']) for t in rows if t.get('opus_without_failed_sonnet')]
+    opus = [(t['question_id'], t['opus_without_failed_sonnet']) for t in rows
+            if t.get('opus_without_failed_sonnet') and t.get('opus_review_order_is_policy_failure', True)]
     stages = defaultdict(list)
     tier_seconds = defaultdict(list)
     for t in rows:

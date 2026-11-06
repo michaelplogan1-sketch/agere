@@ -997,22 +997,21 @@ class Cascade:
         return self.accept(order, name, found) if found is not None else None
 
     def escalatable(self, name):
-        """Did this tier spend a Haiku attempt that failed (declined, rejected, errored) and is Claude still reachable?"""
+        """Did this tier spend a frontier attempt that failed, and is Claude still reachable?"""
         if name not in ESCALATABLE or not (self.claude_models or {}).get(name) or self.claude_down: return False
         last = next((e for e in reversed(self.log) if e['proposer'] == name and e.get('rung') != 'escalation'), None)
         return last is not None and last['outcome'] in ('no proposal', 'declined', 'rejected', 'error') and self.runnable(name)
 
     def escalate(self, order, budget):
-        """The ladder's second rung. Runs only after the whole cascade (every Haiku attempt of every tier) found nothing: each tier that spent a
-        Haiku attempt is run again on Sonnet (model_policy.escalation), in cascade order, inside the answer budget. -> accept() result or None."""
+        """Retry eligible failed tiers on the escalation rung, in cascade order, inside the answer budget."""
         if not model_policy.escalation_enabled() or self.claude_down: return None
         for name in order:
             if not self.escalatable(name): continue
             if budget.expired():
-                self.note(name, 'skipped', 'escalation to Sonnet skipped: answer budget used up', time.perf_counter()); break
+                self.note(name, 'skipped', 'frontier escalation skipped: answer budget used up', time.perf_counter()); break
             est = self.expected(name)
             if not budget.allows(est):
-                self.note(name, 'skipped', f'escalation to Sonnet skipped: {budget.remaining():.0f}s left (expected ~{est:g}s)', time.perf_counter()); continue
+                self.note(name, 'skipped', f'frontier escalation skipped: {budget.remaining():.0f}s left (expected ~{est:g}s)', time.perf_counter()); continue
             with model_policy.escalation():
                 found = self.attempt(name, self.tier_seconds(name, budget))
             if self.escalated is None: self.escalated = []
@@ -1022,7 +1021,7 @@ class Cascade:
         return None
 
     def ladder_receipt(self):
-        """Which models each tier's Haiku-rung requests used, and which tiers were re-run on Sonnet (model_policy ladder)."""
+        """Resolved entry models and failed tiers retried on the current escalation rung."""
         return {'ladder': model_policy.ladder('planner'), 'first_rung_models': {k: sorted(set(v)) for k, v in (self.claude_models or {}).items()},
                 'escalated': list(self.escalated or [])}
 

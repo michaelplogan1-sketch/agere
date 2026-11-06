@@ -27,6 +27,19 @@ from pathlib import Path
 
 from . import semantic_docs
 
+# Native subscription decisions use the same tool permissions as each loop turn.
+# This open final contract preserves product-specific answer fields. Compiled
+# composition and focused repair schemas narrow it later; runtime reviews still
+# validate every native binding, scope and repair digest. No output-size ceiling.
+INVESTIGATOR_OUTPUT_CONFIG = {'format': {'type': 'json_schema', 'schema': {
+    'type': 'object',
+    'properties': {
+        'status': {'enum': ['answered', 'partial', 'unsupported', 'grounding_failed', 'not_available']},
+        'answer_type': {'type': 'string'},
+        'repair_draft': {'type': 'object', 'additionalProperties': True}},
+    'anyOf': [{'required': ['status', 'answer_type']}, {'required': ['repair_draft']}],
+    'additionalProperties': True}}}
+
 # --- read-only access ---------------------------------------------------------------------------------------------------
 
 

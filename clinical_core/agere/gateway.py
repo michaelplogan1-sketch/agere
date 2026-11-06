@@ -413,18 +413,15 @@ def supported_task(subject,cutoff,records,options):
 
 
 # -- token economics: model tiers, stable cache prefixes, provider fallback ----------------------------------------------
-# Claude 5 family, most capable first. The question path is one ladder, [Haiku, Sonnet] (model_policy.ladder): every role starts on
-# Haiku and Sonnet is the escalation after a Haiku failure (Mike 2026-10-24). Opus is deliverable-only.
+# Sonnet / Opus frontier policy. Legacy Haiku request names are resolved by model_policy.
 from .model_policy import HAIKU,SONNET,OPUS
 CLAUDE_FAMILY=(OPUS,SONNET,HAIKU)
-PLANNER_MODEL=HAIKU
-ESCALATION_MODEL=SONNET
+PLANNER_MODEL=SONNET
+ESCALATION_MODEL=OPUS
 
 
 def model_tiers():
-    """{'planner','judge','escalation'} model ids. AGERE_PLANNER_MODEL drafts (default Haiku 5.5), AGERE_SHARED_JUDGE_MODEL
-    reviews (default: the planner model, so a Haiku review), AGERE_ESCALATION_MODEL re-plans and re-reviews after a failed review
-    (default Sonnet 5.5; inside a question it runs only on the cascade's escalation rung, model_policy.escalation())."""
+    """Named frontier defaults; actual question requests use model_policy's current rung."""
     planner=os.environ.get('AGERE_PLANNER_MODEL') or PLANNER_MODEL
     return {'planner':planner,'judge':os.environ.get('AGERE_SHARED_JUDGE_MODEL') or planner,
             'escalation':os.environ.get('AGERE_ESCALATION_MODEL') or ESCALATION_MODEL}
@@ -493,15 +490,14 @@ def classify_provider_error(exc):
 
 
 def fallback_model(model):
-    """AGERE_FALLBACK_MODEL (alias AGERE_INTERPRETER_FALLBACK) when set and different, else the next CHEAPER model in the Claude 5
-    family (Opus -> Sonnet -> Haiku), never a more expensive one: Haiku has no Claude fallback, so a failed Haiku call is never moved
-    to Sonnet here. That move is the ladder's escalation (model_policy), which the cascade makes only after every Haiku attempt has
-    failed; System One takes over in the cascade otherwise. None for models outside the family."""
+    """Availability fallback within the authorized frontier pair; reasoning escalation is separate."""
     chosen=os.environ.get('AGERE_FALLBACK_MODEL') or os.environ.get('AGERE_INTERPRETER_FALLBACK')
-    if chosen:return chosen if chosen!=model else None
-    if model not in CLAUDE_FAMILY:return None
-    i=CLAUDE_FAMILY.index(model)
-    return CLAUDE_FAMILY[i+1] if i+1<len(CLAUDE_FAMILY) else None
+    from .model_policy import claude_model
+    resolved=claude_model(model)
+    if chosen:
+        alternate=claude_model(chosen)
+        return alternate if alternate!=resolved else None
+    return SONNET if resolved==OPUS else None
 
 
 def call_with_fallback(call,model,*,sleep=time.sleep,backoff=None,fallback=None):

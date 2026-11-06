@@ -8,7 +8,8 @@ Untagged rows in an overlapping window remain candidate attempts with ambiguous 
   attempts      every provider attempt (Claude, Jev, Perplexity): attempt id (the ledger request hash), provider, model,
                 status, cache hit, input/output/cache tokens, priced USD (None when unpriced: unknown, never $0), seconds,
                 and for a Claude judge reply whether its review failed. Per-question receipt fields: calls_by_model (every provider) and
-                claude_calls_by_model (Claude only); sonnet_before_haiku lists Sonnet calls made before any Haiku call (the ladder forbids them).
+                claude_calls_by_model (Claude only), the frontier policy, and legacy Haiku attempts. Historical ordering observations
+                are retained separately from current policy failures; ledger order alone cannot identify a role's failed validation.
   stages        seconds per stage (compose, capture, log, learning) plus every cascade tier's seconds.
   pricing       config/agere/pricing.json checked_at + content digest: the price table every USD figure used.
 The result carries 'cost_telemetry'; answers.sqlite3 keeps one answer_costs row per question (joined to the answers
@@ -223,8 +224,9 @@ def opus_without_failed_sonnet(attempts):
 
 
 def sonnet_before_haiku(attempts):
-    """Sonnet calls made before any Haiku call of this question: the ladder (model_policy) says Sonnet is only ever the escalation after a Haiku
-    attempt, so each of these is a policy violation. Cache hits are free and do not count."""
+    """Historical Haiku-first ordering check; inactive under the Sonnet/Opus policy."""
+    from .. import model_policy
+    if model_policy.first() != model_policy.HAIKU: return []
     bad, haiku_seen = [], False
     for a in attempts:
         if a['cache_hit'] or a['provider'] != 'claude': continue
@@ -263,6 +265,8 @@ def summarize(attempts, result=None, error=None):
             'tokens': tokens, 'no_paid_call': None if ambiguous else not new, 'local_llm': answered_by in LOCAL_LLM_TIERS,
             'llm_free': None if ambiguous else not new and answered_by not in LOCAL_LLM_TIERS,
             'system_one_decided': s1_decided, 'opus_without_failed_sonnet': opus_without_failed_sonnet(owned), 'sonnet_before_haiku': sonnet_before_haiku(owned),
+            'frontier_policy': 'sonnet-opus/1', 'opus_review_order_is_policy_failure': False,
+            'legacy_haiku_attempts': [a['attempt_id'] for a in new if a['provider']=='claude' and 'haiku' in (a['model'] or '')],
             'cascade_usage': interp.get('cascade_usage')}
 
 
@@ -287,7 +291,7 @@ class Probe:
         self._token = CURRENT.set(self.question_id)
         self.owner = _Owner(self.question_id)
         self._owner_token = OWNER.set(self.owner)
-        self._scope = model_policy.mark_question()  # Claude requests of this question resolve to the Haiku-first ladder (model_policy)
+        self._scope = model_policy.mark_question()  # Claude requests resolve to the current role ladder
         return self
 
     def mark(self, stage):

@@ -1,5 +1,4 @@
-"""The Haiku-first model ladder (model_policy, Mike 2026-10-24): every question-path Claude role starts on Haiku; Sonnet is only the escalation
-after a Haiku attempt failed or errored; Opus stays deliverable-only. Fake transports and fake models only: no Anthropic request is ever made."""
+"""The Sonnet/Opus model ladder (Mike 2026-11-06), retaining historical fixture keys. Fake transports and fake models only: no Anthropic request is ever made."""
 import json
 import os
 import tempfile
@@ -15,7 +14,7 @@ from clinical_core.agere.clinical import cost_telemetry as T, nl2sql, proposers 
 from clinical_core.agere.clinical.question_input import QuestionNotUnderstood
 from spec_test_support import Warehouse, FakeS1, FakeModel, spec_count_hf, FQ
 
-HAIKU, SONNET, OPUS = 'claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5'
+ENTRY, STRONGER, OPUS = M.SONNET, M.OPUS, M.OPUS
 Q = 'How many patients have heart failure?'
 
 
@@ -45,60 +44,60 @@ class FakeAnthropic:
 
 
 class Ladder(unittest.TestCase):
-    def test_every_question_path_role_is_haiku_then_sonnet_and_never_opus(self):
+    def test_every_question_path_role_is_entry_then_stronger_and_allows_opus_escalation(self):
         for role in M.ROLES:
-            self.assertEqual(M.ladder(role), [HAIKU, SONNET], role)
+            self.assertEqual(M.ladder(role), [ENTRY, STRONGER], role)
         self.assertEqual(set(M.ROLES), {'planner', 'writer', 'reviewer', 'judge', 'reconcile', 'analyst', 'interpreter'})
         with self.assertRaises(ValueError): M.ladder('deliverable')
 
-    def test_first_model_of_a_role_is_haiku_and_sonnet_needs_the_escalation_scope(self):
-        self.assertEqual(M.model_for('planner'), HAIKU)
+    def test_first_model_of_a_role_is_entry_and_stronger_needs_the_escalation_scope(self):
+        self.assertEqual(M.model_for('planner'), ENTRY)
         with M.escalation():
-            self.assertEqual(M.model_for('judge'), SONNET)
+            self.assertEqual(M.model_for('judge'), STRONGER)
             self.assertTrue(M.escalating())
-        self.assertEqual(M.model_for('judge'), HAIKU)
+        self.assertEqual(M.model_for('judge'), ENTRY)
         with patch.dict(os.environ, {'AGERE_ESCALATION': 'off'}), M.escalation():
-            self.assertEqual(M.model_for('judge'), HAIKU)  # the Sonnet rung can be switched off
+            self.assertEqual(M.model_for('judge'), ENTRY)  # the Opus rung can be switched off
 
     def test_inside_a_question_any_family_model_resolves_to_the_current_rung(self):
         with M.question_path():
-            for named in (OPUS, SONNET, HAIKU):
-                self.assertEqual(M.claude_model(named), HAIKU, named)
+            for named in (OPUS, STRONGER, ENTRY):
+                self.assertEqual(M.claude_model(named), ENTRY, named)
             with M.escalation():
-                for named in (OPUS, SONNET, HAIKU):
-                    self.assertEqual(M.claude_model(named), SONNET, named)
+                for named in (OPUS, STRONGER, ENTRY):
+                    self.assertEqual(M.claude_model(named), STRONGER, named)
             with M.deliverable():
                 self.assertEqual(M.claude_model(OPUS), OPUS)  # Opus stays deliverable-only
         with patch.dict(os.environ, {'AGERE_QUESTION_OPUS': 'on'}), M.question_path():
             self.assertEqual(M.claude_model(OPUS), OPUS)
 
-    def test_outside_a_question_the_older_policy_stands(self):
-        self.assertEqual(M.claude_model(OPUS), SONNET)
-        self.assertEqual(M.claude_model(SONNET), SONNET)
-        self.assertEqual(M.claude_model(HAIKU), HAIKU)
+    def test_outside_a_question_the_authorized_pair_is_preserved(self):
+        self.assertEqual(M.claude_model(OPUS), OPUS)
+        self.assertEqual(M.claude_model(STRONGER), STRONGER)
+        self.assertEqual(M.claude_model(ENTRY), ENTRY)
         with patch.dict(os.environ, {'AGERE_HAIKU_FIRST': 'off'}), M.question_path():
-            self.assertEqual(M.claude_model(SONNET), SONNET)
+            self.assertEqual(M.claude_model(STRONGER), ENTRY)
 
     def test_the_cost_probe_opens_the_question_scope(self):
         with tempfile.TemporaryDirectory() as tmp:
             probe = T.start('q', ledger_path=Path(tmp) / 'l.sqlite3')
-            self.assertEqual(M.claude_model(SONNET), HAIKU)
+            self.assertEqual(M.claude_model(STRONGER), ENTRY)
             probe.finish({})
-        self.assertEqual(M.claude_model(SONNET), SONNET)
+        self.assertEqual(M.claude_model(STRONGER), STRONGER)
 
     def test_a_worker_thread_with_a_copied_context_keeps_the_rung(self):
         import contextvars
         seen = []
         with M.question_path(), M.escalation():
-            t = threading.Thread(target=contextvars.copy_context().run, args=(lambda: seen.append(M.claude_model(HAIKU)),))
+            t = threading.Thread(target=contextvars.copy_context().run, args=(lambda: seen.append(M.claude_model(ENTRY)),))
             t.start(); t.join()
-        self.assertEqual(seen, [SONNET])
+        self.assertEqual(seen, [STRONGER])
 
     def test_tracking_collects_the_models_requested_inside(self):
         with M.tracking() as seen, M.question_path():
-            M.claude_model(SONNET, track=True)
-            with M.escalation(): M.claude_model(HAIKU, track=True)
-        self.assertEqual(seen, [HAIKU, SONNET])
+            M.claude_model(STRONGER, track=True)
+            with M.escalation(): M.claude_model(ENTRY, track=True)
+        self.assertEqual(seen, [ENTRY, STRONGER])
 
 
 class TierDefaults(unittest.TestCase):
@@ -106,15 +105,15 @@ class TierDefaults(unittest.TestCase):
 
     def test_gateway_tiers(self):
         with patch.dict(os.environ, {k: '' for k in ('AGERE_PLANNER_MODEL', 'AGERE_SHARED_JUDGE_MODEL', 'AGERE_ESCALATION_MODEL')}):
-            self.assertEqual(G.model_tiers(), {'planner': HAIKU, 'judge': HAIKU, 'escalation': SONNET})
-        self.assertEqual(G.PLANNER_MODEL, HAIKU)
-        self.assertEqual(G.ESCALATION_MODEL, SONNET)
+            self.assertEqual(G.model_tiers(), {'planner': ENTRY, 'judge': ENTRY, 'escalation': STRONGER})
+        self.assertEqual(G.PLANNER_MODEL, ENTRY)
+        self.assertEqual(G.ESCALATION_MODEL, STRONGER)
 
-    def test_fallback_never_moves_haiku_to_sonnet_and_never_goes_up(self):
+    def test_fallback_never_moves_entry_to_stronger_and_never_goes_up(self):
         with patch.dict(os.environ, {'AGERE_FALLBACK_MODEL': '', 'AGERE_INTERPRETER_FALLBACK': ''}):
-            self.assertIsNone(G.fallback_model(HAIKU))  # the move to Sonnet is the cascade's escalation, decided after every Haiku attempt
-            self.assertEqual(G.fallback_model(SONNET), HAIKU)
-            self.assertEqual(G.fallback_model(OPUS), SONNET)
+            self.assertIsNone(G.fallback_model(ENTRY))  # the move to Opus is the cascade's escalation, decided after every Sonnet attempt
+            self.assertEqual(G.fallback_model(STRONGER), ENTRY)
+            self.assertEqual(G.fallback_model(OPUS), ENTRY)
 
     def test_a_fallback_that_resolves_to_the_same_rung_is_not_a_repeat_call(self):
         calls = []
@@ -124,8 +123,8 @@ class TierDefaults(unittest.TestCase):
             raise RuntimeError('HTTP 529: Overloaded')
         with M.question_path(), M.escalation(), patch.dict(os.environ, {'AGERE_FALLBACK_MODEL': '', 'AGERE_INTERPRETER_FALLBACK': ''}):
             with self.assertRaises(G.ProviderUnavailable):
-                G.call_with_fallback(call, SONNET, sleep=lambda s: None, backoff=0)
-        self.assertEqual(calls, [SONNET, SONNET])  # one retry on the same model, no second "fallback" to the identical request
+                G.call_with_fallback(call, STRONGER, sleep=lambda s: None, backoff=0)
+        self.assertEqual(calls, [STRONGER, STRONGER])  # one retry on the same model, no second "fallback" to the identical request
 
     def test_two_model_check_defaults(self):
         from clinical_core.agere.clinical import answer_guard
@@ -135,21 +134,21 @@ class TierDefaults(unittest.TestCase):
                 ledger = G.BudgetLedger(Path(tmp) / 'l.sqlite3')
                 primary, second, judge, _ = answer_guard._models(SimpleNamespace(receipts=Path(tmp)), ledger)
                 ledger.close()
-        self.assertEqual((primary.model, second.model, judge.model), (HAIKU, HAIKU, HAIKU))
+        self.assertEqual((primary.model, second.model, judge.model), (ENTRY, ENTRY, ENTRY))
 
     def test_together_and_hybrid_defaults(self):
         from clinical_core.agere.clinical import together
         from clinical_core.agere.hybrid import live
         env = {k: v for k, v in os.environ.items() if not k.startswith('AGERE_HYBRID') and k not in ('AGERE_RECONCILE_MODEL', 'AGERE_SEMANTIC_MODEL')}
         with patch.dict(os.environ, env, clear=True):
-            self.assertEqual(together.semantic_model(), HAIKU)
-            self.assertEqual(together.reconcile_model(), HAIKU)
-            self.assertEqual(live.model_name(), HAIKU)
-            self.assertEqual(live.escalation_model_name(), SONNET)  # outside a question the tie-break is the named escalation model
+            self.assertEqual(together.semantic_model(), ENTRY)
+            self.assertEqual(together.reconcile_model(), ENTRY)
+            self.assertEqual(live.model_name(), ENTRY)
+            self.assertEqual(live.escalation_model_name(), STRONGER)  # outside a question the tie-break is the named escalation model
             with M.question_path():
-                self.assertEqual(live.escalation_model_name(), HAIKU)  # inside a question it is Haiku until the cascade's escalation rung
+                self.assertEqual(live.escalation_model_name(), ENTRY)  # inside a question it is Sonnet until the cascade's escalation rung
                 with M.escalation():
-                    self.assertEqual(live.model_name(), SONNET)
+                    self.assertEqual(live.model_name(), STRONGER)
 
     def test_planner_requests_name_the_ladder_model_not_opus(self):
         from clinical_core.agere.clinical import stack_planner
@@ -161,7 +160,7 @@ class TierDefaults(unittest.TestCase):
             sent.update(body); raise Stop
         with patch.object(stack_planner, 'send', capture), self.assertRaises(Stop):
             stack_planner.propose(Q, Path('.'), None, snapshot={'as_of': '2030-05-27'})
-        self.assertEqual(sent['model'], HAIKU)
+        self.assertEqual(sent['model'], ENTRY)
 
     def test_cascade_tiers_cost_strings_name_no_opus(self):
         for name, (cost, _, _) in P.TIERS.items():
@@ -186,21 +185,21 @@ class SendLevel(unittest.TestCase):
         text, stats = nl2sql.HostedModel(self.ledger, out, model=model)('system prompt', user)
         return stats
 
-    def test_a_tier_that_names_sonnet_or_opus_still_calls_haiku_first(self):
+    def test_a_tier_that_names_stronger_or_opus_still_calls_entry_first(self):
         with M.question_path():
-            for i, named in enumerate((SONNET, OPUS, HAIKU)):
+            for i, named in enumerate((STRONGER, OPUS, ENTRY)):
                 stats = self.call(named, user=f'q{i}')
-                self.assertEqual(stats['model'], HAIKU, named)  # the receipt names what was called
-        self.assertEqual(self.fake.models, [HAIKU, HAIKU, HAIKU])
+                self.assertEqual(stats['model'], ENTRY, named)  # the receipt names what was called
+        self.assertEqual(self.fake.models, [ENTRY, ENTRY, ENTRY])
 
-    def test_the_escalation_rung_is_the_only_way_to_a_sonnet_call(self):
+    def test_the_escalation_rung_is_the_only_way_to_a_stronger_call(self):
         with M.question_path():
-            self.call(HAIKU, 'first')
+            self.call(ENTRY, 'first')
             with M.escalation():
-                self.call(HAIKU, 'second')
-        self.assertEqual(self.fake.models, [HAIKU, SONNET])
+                self.call(ENTRY, 'second')
+        self.assertEqual(self.fake.models, [ENTRY, STRONGER])
 
-    def test_tiered_plans_and_reviews_on_haiku_and_a_failed_review_replans_on_haiku_until_the_escalation_rung(self):
+    def test_tiered_plans_and_reviews_on_entry_and_a_failed_review_replans_on_entry_until_the_escalation_rung(self):
         env = {k: v for k, v in os.environ.items() if k not in ('AGERE_PLANNER_MODEL', 'AGERE_SHARED_JUDGE_MODEL', 'AGERE_ESCALATION_MODEL')}
         failing = FakeAnthropic('{"equivalent": false, "issues": ["window dropped"]}')
         with patch.dict(os.environ, env, clear=True), patch.object(urllib.request, 'urlopen', failing), patch.dict(os.environ, {'ANTHROPIC_API_KEY': 'sk-test-not-real'}):
@@ -211,12 +210,12 @@ class SendLevel(unittest.TestCase):
                 model('plan system', 'plan user')         # planner
                 model(audit, 'review user')               # judge: fails -> escalated
                 model('plan system', 'replan user')       # re-plan on the escalation model
-            self.assertEqual(failing.models, [HAIKU, HAIKU, HAIKU])  # inside a question the escalation model is only reached on the Sonnet rung
+            self.assertEqual(failing.models, [ENTRY, ENTRY, ENTRY])  # inside a question the escalation model is only reached on the Opus rung
             with M.question_path(), M.escalation():
                 model('plan system', 'replan again')
-            self.assertEqual(failing.models[-1], SONNET)
+            self.assertEqual(failing.models[-1], STRONGER)
 
-    def test_outside_a_question_tiered_still_escalates_to_sonnet_after_a_failed_review(self):
+    def test_outside_a_question_tiered_still_escalates_to_stronger_after_a_failed_review(self):
         env = {k: v for k, v in os.environ.items() if k not in ('AGERE_PLANNER_MODEL', 'AGERE_SHARED_JUDGE_MODEL', 'AGERE_ESCALATION_MODEL')}
         failing = FakeAnthropic('{"equivalent": false, "issues": ["x"]}')
         with patch.dict(os.environ, env, clear=True), patch.object(urllib.request, 'urlopen', failing), patch.dict(os.environ, {'ANTHROPIC_API_KEY': 'sk-test-not-real'}):
@@ -225,7 +224,7 @@ class SendLevel(unittest.TestCase):
             model('plan system', 'plan user')
             model(shared_planner.AUDIT_SYSTEM, 'review user')
             model('plan system', 'replan user')
-        self.assertEqual(failing.models, [HAIKU, HAIKU, SONNET])
+        self.assertEqual(failing.models, [ENTRY, ENTRY, STRONGER])
 
 
 class SecondAnalyst(unittest.TestCase):
@@ -241,30 +240,30 @@ class SpecLadder(unittest.TestCase):
         self.addCleanup(self.w.close)
 
     def fill(self, haiku, sonnet=None, **kw):
-        models = {'haiku': haiku, 'sonnet': sonnet or FakeModel([], name=SONNET, usd=0.03)}
+        models = {'haiku': haiku, 'sonnet': sonnet or FakeModel([], name=STRONGER, usd=0.03)}
         kw.setdefault('grace', 0.05)
         return F.fill(self.w.stack, self.w.catalog, Q, models=models, decide=FakeS1(), fillers=('haiku',), **kw), models
 
-    def test_a_typical_question_makes_one_haiku_call_and_no_sonnet_call(self):
-        haiku = FakeModel([json.dumps(spec_count_hf(Q))])
+    def test_a_typical_question_makes_one_entry_call_and_no_stronger_call(self):
+        haiku = FakeModel([json.dumps(spec_count_hf(Q))], name=ENTRY)
         out, models = self.fill(haiku)
         self.assertEqual((len(haiku.calls), len(models['sonnet'].calls)), (1, 0))
-        self.assertEqual([c['model'] for c in out['candidate']['notes']['calls']], [HAIKU])
+        self.assertEqual([c['model'] for c in out['candidate']['notes']['calls']], [ENTRY])
 
-    def test_two_failed_haiku_validations_do_not_call_sonnet_on_the_first_rung(self):
+    def test_two_failed_entry_validations_do_not_call_stronger_on_the_first_rung(self):
         bad = json.dumps({'source': {'table': 'patient', 'quote': 'nothing'}})
         haiku = FakeModel([bad, bad])
         with self.assertRaises(F.SpecNotFilled):
-            self.fill(haiku, sonnet=FakeModel([json.dumps(spec_count_hf(Q))], name=SONNET))
+            self.fill(haiku, sonnet=FakeModel([json.dumps(spec_count_hf(Q))], name=STRONGER))
         self.assertEqual(len(haiku.calls), 2)
 
-    def test_the_escalation_rung_writes_the_spec_with_sonnet_once(self):
-        sonnet = FakeModel([json.dumps(spec_count_hf(Q))], name=SONNET, usd=0.03)
+    def test_the_escalation_rung_writes_the_spec_with_stronger_once(self):
+        sonnet = FakeModel([json.dumps(spec_count_hf(Q))], name=STRONGER, usd=0.03)
         haiku = FakeModel([])
         with M.escalation():
             out, _ = self.fill(haiku, sonnet=sonnet)
         self.assertEqual((len(haiku.calls), len(sonnet.calls)), (0, 1))
-        self.assertEqual([c['model'] for c in out['candidate']['notes']['calls']], [SONNET])
+        self.assertEqual([c['model'] for c in out['candidate']['notes']['calls']], [STRONGER])
 
 
 def cascade(live=True):
@@ -288,7 +287,7 @@ class CascadeLadder(unittest.TestCase):
             def tier(self_):
                 act = behaviour.get(name)
                 if act is None: return None  # no Claude request
-                model = M.claude_model(SONNET, track=True)  # whatever the tier names, the ladder decides
+                model = M.claude_model(STRONGER, track=True)  # whatever the tier names, the ladder decides
                 calls.append((name, model))
                 out = act(model)
                 if isinstance(out, Exception): raise out
@@ -306,71 +305,71 @@ class CascadeLadder(unittest.TestCase):
                 result = exc
         return calls, result, c
 
-    def test_every_haiku_attempt_runs_before_any_sonnet_attempt_and_sonnet_runs_only_for_failed_tiers(self):
+    def test_every_entry_attempt_runs_before_any_stronger_attempt_and_stronger_runs_only_for_failed_tiers(self):
         fail = lambda model: None
         calls, result, c = self.run_cascade({'spec_path': fail, 'metric_router': fail, 'operator_router': fail, 'hosted_verified_sql': fail,
                                              'hosted_typed_interpreter': fail})
         self.assertIsInstance(result, QuestionNotUnderstood)
         models = [m for _, m in calls]
-        self.assertEqual(models, [HAIKU] * 5 + [SONNET] * 5)  # all Haiku first, then the Sonnet rung
+        self.assertEqual(models, [ENTRY] * 5 + [STRONGER] * 5)  # all Sonnet first, then the Opus rung
         tiers = [t for t, _ in calls]
         self.assertEqual(tiers[:5], tiers[5:])  # the same tiers, in cascade order, on the second rung
         self.assertEqual([e['tier'] for e in c.escalated], tiers[:5])
-        self.assertEqual([e['proposer'] for e in c.log if e.get('rung') == 'escalation'], tiers[5:])  # the log marks the Sonnet rung
+        self.assertEqual([e['proposer'] for e in c.log if e.get('rung') == 'escalation'], tiers[5:])  # the log marks the Opus rung
 
     def test_cascade_order_cheapest_first(self):
         order = list(P.ORDER)
         for router in ('metric_router', 'operator_router'):
             self.assertLess(order.index('spec_path'), order.index(router))
-            self.assertLess(order.index(router), order.index('hosted_verified_sql'))  # Haiku routers before any SQL writer
+            self.assertLess(order.index(router), order.index('hosted_verified_sql'))  # Sonnet routers before any SQL writer
         self.assertLess(order.index('spec_path'), order.index('hosted_verified_sql'))
         for heavy in ('semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder'):
             self.assertLess(order.index('hosted_verified_sql'), order.index(heavy), heavy)
         self.assertEqual([t for t in P.ESCALATABLE if t not in P.TIERS], [])
 
-    def test_a_haiku_answer_makes_no_sonnet_call(self):
+    def test_a_entry_answer_makes_no_stronger_call(self):
         calls, result, _ = self.run_cascade({'spec_path': lambda model: 'answer', 'hosted_verified_sql': lambda model: 'answer'})
         self.assertEqual(result, ('accepted', 'spec_path'))
-        self.assertEqual(calls, [('spec_path', HAIKU)])
+        self.assertEqual(calls, [('spec_path', ENTRY)])
 
-    def test_a_later_tier_answering_on_haiku_means_no_escalation_at_all(self):
+    def test_a_later_tier_answering_on_entry_means_no_escalation_at_all(self):
         calls, result, c = self.run_cascade({'spec_path': lambda model: None, 'hosted_verified_sql': lambda model: 'answer'})
         self.assertEqual(result, ('accepted', 'hosted_verified_sql'))
-        self.assertEqual({m for _, m in calls}, {HAIKU})
+        self.assertEqual({m for _, m in calls}, {ENTRY})
         self.assertEqual(c.escalated, [])
 
     def test_a_tier_that_asked_claude_nothing_is_not_re_run(self):
         calls, result, c = self.run_cascade({'spec_path': lambda model: None})  # every other tier declines without a Claude request
-        self.assertEqual(calls, [('spec_path', HAIKU), ('spec_path', SONNET)])
+        self.assertEqual(calls, [('spec_path', ENTRY), ('spec_path', STRONGER)])
 
-    def test_a_haiku_error_escalates_to_sonnet_after_the_other_tiers_have_run(self):
-        calls, result, c = self.run_cascade({'spec_path': lambda model: ValueError('malformed reply') if model == HAIKU else 'answer',
+    def test_a_entry_error_escalates_to_stronger_after_the_other_tiers_have_run(self):
+        calls, result, c = self.run_cascade({'spec_path': lambda model: ValueError('malformed reply') if model == ENTRY else 'answer',
                                              'hosted_verified_sql': lambda model: None})
         self.assertEqual(result, ('accepted', 'spec_path'))
-        self.assertEqual(calls, [('spec_path', HAIKU), ('hosted_verified_sql', HAIKU), ('spec_path', SONNET)])
+        self.assertEqual(calls, [('spec_path', ENTRY), ('hosted_verified_sql', ENTRY), ('spec_path', STRONGER)])
 
-    def test_sonnet_answer_is_accepted_and_the_receipt_names_the_rung(self):
-        calls, result, c = self.run_cascade({'hosted_typed_interpreter': lambda model: 'answer' if model == SONNET else None})
+    def test_stronger_answer_is_accepted_and_the_receipt_names_the_rung(self):
+        calls, result, c = self.run_cascade({'hosted_typed_interpreter': lambda model: 'answer' if model == STRONGER else None})
         self.assertEqual(result, ('accepted', 'hosted_typed_interpreter'))
-        self.assertEqual(calls, [('hosted_typed_interpreter', HAIKU), ('hosted_typed_interpreter', SONNET)])
+        self.assertEqual(calls, [('hosted_typed_interpreter', ENTRY), ('hosted_typed_interpreter', STRONGER)])
         ladder = c.ladder_receipt()
-        self.assertEqual(ladder['first_rung_models'], {'hosted_typed_interpreter': [HAIKU]})
+        self.assertEqual(ladder['first_rung_models'], {'hosted_typed_interpreter': [ENTRY]})
         self.assertEqual(ladder['escalated'][0]['outcome'], 'accepted')
 
     def test_no_escalation_when_claude_is_down_or_escalation_is_off(self):
         with patch.dict(os.environ, {'AGERE_ESCALATION': 'off'}):
             calls, _, _ = self.run_cascade({'spec_path': lambda model: None})
-        self.assertEqual(calls, [('spec_path', HAIKU)])
+        self.assertEqual(calls, [('spec_path', ENTRY)])
         calls, _, c = self.run_cascade({'hosted_verified_sql': lambda model: RuntimeError('HTTP 402: credit balance is too low'), 'metric_router': lambda model: None})
-        self.assertEqual(calls, [('metric_router', HAIKU), ('hosted_verified_sql', HAIKU)])  # a billing outage is Claude being down: Sonnet would fail the same way
+        self.assertEqual(calls, [('metric_router', ENTRY), ('hosted_verified_sql', ENTRY)])  # a billing outage is Claude being down: Opus would fail the same way
 
     def test_a_held_decline_is_not_a_failure_to_escalate(self):
         calls, result, c = self.run_cascade({'spec_path': lambda model: 'held'})
-        self.assertEqual(calls, [('spec_path', HAIKU)])
+        self.assertEqual(calls, [('spec_path', ENTRY)])
 
 
 class RealSpecPathEscalation(unittest.TestCase):
-    """spec_path with fake Claude models inside the real cascade: Haiku fails twice, every other tier declines, then Sonnet writes the spec."""
+    """spec_path with explicit frontier fixtures: entry fails twice, other tiers decline, then escalation writes the spec."""
 
     def setUp(self):
         from clinical_core.agere.clinical import request_plan as R, spec_verify as V
@@ -385,12 +384,12 @@ class RealSpecPathEscalation(unittest.TestCase):
             self.addCleanup(R.register_executor, name, None)
 
     def run_it(self, haiku_replies, sonnet_replies):
-        self.haiku = FakeModel(list(haiku_replies))
-        self.sonnet = FakeModel(list(sonnet_replies), name=SONNET, usd=0.03)
+        self.haiku = FakeModel(list(haiku_replies), name=ENTRY)
+        self.sonnet = FakeModel(list(sonnet_replies), name=STRONGER, usd=0.03)
         F.PROVIDERS['models'] = {'haiku': self.haiku, 'sonnet': self.sonnet}
         stubs = {'tier_' + n: (lambda self_: None) for n in P.ORDER if n != 'spec_path'}
         c = P.Cascade(self.w.stack, self.w.catalog, FQ, ledger=SimpleNamespace(close=lambda: None, path=None))
-        env = {'AGERE_S1_ROUTER': 'off', 'AGERE_BACKGROUND_CONTINUE': 'off', 'AGERE_ANSWER_BUDGET_SECONDS': '600'}
+        env = {'AGERE_S1_ROUTER': 'off', 'AGERE_BACKGROUND_CONTINUE': 'off', 'AGERE_ANSWER_BUDGET_SECONDS': '600', 'AGERE_SPEC_FILLERS': 'haiku'}
         from clinical_core.agere.clinical import decision_context as DC
         from spec_test_support import AS_OF
         with patch.dict(os.environ, env), patch.object(P.Cascade, 'expected', lambda self_, name: 0.0), patch.multiple(P.Cascade, **stubs), DC.scope(FQ, AS_OF):
@@ -399,13 +398,13 @@ class RealSpecPathEscalation(unittest.TestCase):
             except QuestionNotUnderstood as exc:
                 return c, exc
 
-    def test_one_haiku_call_and_no_sonnet_call_when_the_haiku_spec_validates(self):
+    def test_one_entry_call_and_no_stronger_call_when_the_entry_spec_validates(self):
         c, result = self.run_it([json.dumps(spec_count_hf(FQ, source='Patients', measure='how many'))], [])
         self.assertFalse(isinstance(result, Exception), result)
         self.assertEqual((len(self.haiku.calls), len(self.sonnet.calls)), (1, 0))
         self.assertEqual(c.escalated, [])
 
-    def test_sonnet_writes_the_spec_only_after_haiku_failed_twice(self):
+    def test_stronger_writes_the_spec_only_after_entry_failed_twice(self):
         bad = json.dumps({'source': {'table': 'patient', 'quote': 'nothing'}})
         good = json.dumps(spec_count_hf(FQ, source='Patients', measure='how many'))
         c, result = self.run_it([bad, bad], [good])
@@ -433,24 +432,25 @@ class CostReceipt(unittest.TestCase):
             self.paid(f'k{i}', model)
         return probe.finish({'answer': {'status': 'answered'}, 'planner_receipt': {'interpretation': {'interpreter': 'spec_path'}}})
 
-    def test_a_typical_question_is_one_haiku_call_and_zero_sonnet(self):
-        tel = self.question(HAIKU)
+    def test_a_typical_question_is_one_entry_call_and_zero_stronger(self):
+        tel = self.question(ENTRY)
         receipt = T.receipt(tel, {'answer': {'status': 'answered'}})
-        self.assertEqual(receipt['claude_calls_by_model'], {HAIKU: 1})
-        self.assertEqual(tel['claude_calls_by_model'].get(SONNET, 0), 0)
+        self.assertEqual(receipt['claude_calls_by_model'], {ENTRY: 1})
+        self.assertEqual(tel['claude_calls_by_model'].get(STRONGER, 0), 0)
         self.assertEqual(tel['sonnet_before_haiku'], [])
-        self.assertLessEqual(tel['claude_calls_by_model'][HAIKU], 1)
+        self.assertLessEqual(tel['claude_calls_by_model'][ENTRY], 1)
 
-    def test_claude_calls_by_model_counts_only_claude_and_sonnet_after_haiku_is_in_policy(self):
+    def test_claude_calls_by_model_counts_only_claude_and_stronger_after_entry_is_in_policy(self):
         self.ledger.reserve('jev1', 'jev', 'jev-1.13.0')
         self.ledger.finish('jev1', response={'model': 'jev-1.13.0', 'content': [], 'usage': {}}, seconds=0.1)
-        tel = self.question(HAIKU, HAIKU, SONNET)
-        self.assertEqual(tel['claude_calls_by_model'], {HAIKU: 2, SONNET: 1})
+        tel = self.question(ENTRY, ENTRY, STRONGER)
+        self.assertEqual(tel['claude_calls_by_model'], {ENTRY: 2, STRONGER: 1})
         self.assertEqual(tel['sonnet_before_haiku'], [])
 
-    def test_a_sonnet_first_call_is_flagged(self):
-        tel = self.question(SONNET, HAIKU)
-        self.assertEqual(tel['sonnet_before_haiku'], ['k0'])
+    def test_a_stronger_first_call_is_flagged(self):
+        tel = self.question(STRONGER, ENTRY)
+        self.assertEqual(tel['sonnet_before_haiku'], [])
+        self.assertEqual(tel['frontier_policy'], 'sonnet-opus/1')
 
 
 if __name__ == '__main__':

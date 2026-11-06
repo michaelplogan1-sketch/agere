@@ -41,10 +41,10 @@ class Meaning(unittest.TestCase):
    self.assertEqual(recovery.request_key(body),digest({'contract':'context-student/1','provider':'claude','body':{**body,'model':policy.claude_model(body['model'])}}))
    self.assertTrue(M.parse(self.answer(body),body,units,self.row)['unit_reviews'])
   with patch.dict(os.environ,{'AGERE_QUESTION_LADDER':'','AGERE_HAIKU_FIRST':'on','AGERE_QUESTION_OPUS':'off'}):
-   check(policy.SONNET)
+   check(policy.OPUS)
    with policy.question_path():
-    check(policy.HAIKU)
-    with policy.escalation():check(policy.SONNET)
+    check(policy.SONNET)
+    with policy.escalation():check(policy.OPUS)
    with policy.deliverable():check(policy.OPUS)
  def test_raw_identity_namespace_and_unsubmitted_content_not_promoted(self):
   # Canonical binding remains unchanged even if a raw source-system ID differs.
