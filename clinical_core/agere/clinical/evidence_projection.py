@@ -383,13 +383,19 @@ def native_json_projection(view, columns, rows, consumers, by):
                 for key in keys:
                     if not isinstance(current,dict)or key not in current:present=False;break
                     current=current[key]
-                seen.append([present,current if present else None])
+                # A branch is one exact JSON value, not another relational
+                # table. Keep it as JSON text so the existing wire dictionary
+                # shares equal branches without thousands of nested layouts.
+                try:encoded=json.dumps(current,ensure_ascii=False,separators=(',',':'),allow_nan=False)if present else None
+                except (ValueError,TypeError):return None
+                if present and digest(json.loads(encoded))!=digest(current):return None
+                seen.append([present,encoded])
                 if present:
                     target=partial[index]
                     for key in keys[:-1]:target=target.setdefault(key,{})
                     target[keys[-1]]=copy.deepcopy(current)
-            observations.append({'column':column,'path':path,'row_values':seen,
-                'scope':'Each [present,value] addresses the same original row index; missing and JSON null are distinct.'})
+            observations.append({'column':column,'path':path,'value_encoding':'canonical-json','row_values':seen,
+                'scope':'Each [present,canonical_json] addresses the same original row index. Parse present JSON values to restore exact types and complete contents; missing and JSON null are distinct.'})
         for index,row in enumerate(projected):row[columns.index(column)]=partial[index]
     relevant=[c for c in consumers if set(c['columns_read'])&set(candidates)]
     try:
@@ -421,6 +427,203 @@ def native_json_projection(view, columns, rows, consumers, by):
     return {'columns':set(candidates),'observations':observations,'checks':checks}
 
 
+def _native_column_consumers(view, columns, receipt_digest, by, dependencies, replays):
+    """Use original SQLite read maps or separately replay-proved dependencies."""
+    needed=set();consumers=[]
+    for name in dependencies:
+        if name==view:continue
+        call=by.get(name)
+        if not call:return None
+        observed=call['result'];replay=replays.get(name)
+        if replay and view in replay['sources']:
+            source=replay['sources'][view];query=replay['query']
+            if source['receipt_digest']!=receipt_digest:return None
+            read=source['columns'];proof={'derived_read_proof':replay}
+        else:
+            if view not in (observed.get('read_views')or[]):
+                assembly=observed.get('assembly')or{}
+                linked=[assembly.get('base_result_view')]+[j.get('result_view')for j in assembly.get('joins',[])]
+                if view in linked or re.search(r'(?<![A-Za-z0-9_])'+re.escape(view)+r'(?![A-Za-z0-9_])',
+                        json.dumps(call.get('input')or{},default=str)):return None
+                continue
+            reads=observed.get('native_read_columns')or{}
+            source=(reads.get('sources')or{}).get(view)or{}
+            query=observed.get('declared_executed_query')or observed.get('executed_query')
+            if (call.get('name')!='query_sql'or reads.get('schema')!='sqlite-native-column-reads/1'
+                or not isinstance(query,str)or reads.get('query_digest')!=digest(query)
+                or source.get('complete')is not True or source.get('receipt_digest')!=receipt_digest):return None
+            read=source.get('columns');proof={}
+        if not isinstance(read,list)or any(not isinstance(c,str)for c in read)or not set(read)<=set(columns):return None
+        needed.update(read)
+        consumers.append({'result_view':name,'query':query,'query_digest':digest(query),
+            'columns_read':read,'result_digest':digest(observed),**proof})
+    return (needed,consumers)if consumers else None
+
+
+def replayed_column_dependencies(calls, roots, dependencies, by):
+    """Recover legacy literal-query reads by replaying an output projection.
+
+    This is a derived proof, never a replacement execution receipt. The existing
+    SQL compiler removes unused SELECT outputs; every predicate, join, constant,
+    date and scope survives. Full original inputs and every selected output cell
+    must match. Modern/malformed read maps do not fall back to this legacy path.
+    """
+    import sqlite3
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.optimizer.qualify import qualify
+    from sqlglot.optimizer.pushdown_projections import pushdown_projections
+    from .backstop_agent import output_table,NATIVE_SQL_CONTRACT
+    from .result_assembly import incomplete_reason
+    from .semantic_analyst import SemanticWarehouse
+    from .sql_query import native_query_model_projection,native_result_source
+    replays={}
+    for call in reversed(calls):
+        original=call.get('result')or{};view=original.get('result_view')
+        if view in dependencies and call.get('name')=='read_patient_profiles':
+            proof=_profile_population_dependency(call,by,dependencies)
+            if proof:replays[view]=proof
+            continue
+        if (view not in dependencies or view in roots or call.get('name')!='query_sql'
+            or original.get('native_sql_contract')!=NATIVE_SQL_CONTRACT or original.get('error')
+            or incomplete_reason(original)or original.get('read_views')!=[]
+            or 'native_read_columns'in original or original.get('declared_executed_query')):continue
+        columns,expected=output_table(original)
+        if not columns or len(set(columns))!=len(columns)or any(len(r)!=len(columns)for r in expected):continue
+        consumers=_native_column_consumers(view,columns,digest({k:v for k,v in original.items()if k!='result_view'}),by,dependencies,replays)
+        if not consumers:continue
+        wanted=[c for c in columns if c in consumers[0]or c=='patient_id']
+        if not wanted or len(wanted)==len(columns):continue
+        try:
+            model=native_query_model_projection(original.get('executed_query'),{k:v['result']for k,v in by.items()})
+            if not model:continue
+            inputs={b['result_view']for b in model['source_bindings']}
+            if not inputs<=dependencies or any(incomplete_reason(by[n]['result'])or by[n]['result'].get('error')for n in inputs):continue
+            schema={'temp':{n:{c:'UNKNOWN'for c in output_table(by[n]['result'])[0]}for n in inputs}}
+            tree=sqlglot.parse_one(model['query'],read='sqlite')
+            if (tree.find(exp.Placeholder)or any(isinstance(n,(exp.Like,exp.ILike,exp.RegexpLike))for n in tree.walk())
+                or any(n.args.get('distinct')for n in tree.find_all(exp.Select))
+                or any(n.args.get('distinct')is not False for n in tree.find_all(exp.Union))):continue
+            physical=[t for t in tree.find_all(exp.Table)if isinstance(t.this,exp.Identifier)]
+            if any(t.name not in inputs or t.db not in ('','temp')for t in physical):continue
+            # The only synthetic column in the literal-to-table binding is an
+            # unshadowed row ordinal used directly by ORDER BY, never a filter,
+            # output value, join or arithmetic expression.
+            ordinals={b['result_view']:b['native_order_column']for b in model['source_bindings']}
+            for col in tree.find_all(exp.Column):
+                if col.name.casefold()not in ('_rowid_','rowid','oid'):continue
+                owner=col.find_ancestor(exp.Select);source=(owner.args.get('from_')or exp.From()).this
+                if (not isinstance(source,exp.Table)or source.name not in inputs
+                    or col.name!=ordinals[source.name]or not isinstance(col.parent,exp.Ordered)
+                    or col.parent.parent is not owner.args.get('order')):raise ValueError('Non-ordering intrinsic column')
+            tree=qualify(tree,dialect='sqlite',schema=schema,validate_qualify_columns=False,
+                         allow_partial_qualification=True,quote_identifiers=False,identify=False)
+            literals=lambda t:Counter(n.this for n in t.find_all(exp.Literal)if n.is_string)
+            def clauses(t):
+                result=[]
+                for n in t.walk():
+                    if isinstance(n,exp.Join):
+                        # Compare the join identity/type/ON/USING separately
+                        # from the SELECT output list inside its input.
+                        node=n.copy();node.set('this',exp.table_('_input_'+n.this.alias_or_name))
+                        result.append(node.sql(dialect='sqlite'))
+                    elif isinstance(n,(exp.Where,exp.Group,exp.Having,exp.Order,exp.Limit,exp.Offset)):
+                        result.append(n.sql(dialect='sqlite'))
+                result.extend('TABLE:'+n.sql(dialect='sqlite')for n in t.find_all(exp.Table)if isinstance(n.this,exp.Identifier))
+                return Counter(result)
+            prior_literals=literals(tree);prior_clauses=clauses(tree)
+            def select_outputs(node):
+                if isinstance(node,exp.Union):select_outputs(node.this);select_outputs(node.expression)
+                elif isinstance(node,exp.Select)and [s.alias_or_name for s in node.selects]==columns:
+                    node.set('expressions',[s for s in node.selects if s.alias_or_name in wanted])
+                else:raise ValueError('Unqualified output shape')
+            select_outputs(tree);tree=pushdown_projections(tree)
+            if literals(tree)!=prior_literals or clauses(tree)!=prior_clauses:continue
+            # Repeated scope arrays remain COMPLETE ordinary SQL parameters.
+            # They are never substituted by a broader source population.
+            parameters={};names={}
+            for literal in list(tree.find_all(exp.Literal)):
+                if not literal.is_string:continue
+                try:value=json.loads(literal.this)
+                except ValueError:continue
+                if not isinstance(value,list):continue
+                name=names.setdefault(literal.this,'native_json_'+str(len(names)))
+                parameters[name]=literal.this;literal.replace(exp.Placeholder(this=name))
+            query=tree.sql(dialect='sqlite');reads={};intrinsic={}
+            with sqlite3.connect(':memory:')as db:
+                for name in inputs:
+                    cols,rows=output_table(by[name]['result'])
+                    db.execute('CREATE TEMP TABLE "'+name+'" AS '+native_result_source(cols,rows))
+                db.execute("SELECT * FROM json_each('[]')").fetchall()
+                def authorize(action,arg1,arg2,database,source):
+                    verdict=SemanticWarehouse._authorize(action,arg1,arg2,database,source)
+                    if verdict==sqlite3.SQLITE_OK and action==sqlite3.SQLITE_READ and database=='temp'and arg1 in inputs:
+                        if arg2 in schema['temp'][arg1]:reads.setdefault(arg1,set()).add(arg2)
+                        elif arg2.casefold()=='rowid'and ordinals[arg1].casefold()not in {c.casefold()for c in schema['temp'][arg1]}:
+                            intrinsic.setdefault(arg1,set()).add(ordinals[arg1])
+                        elif arg2:raise ValueError('Unknown source column')
+                    return verdict
+                db.enable_load_extension(False);db.execute('PRAGMA query_only=ON');db.set_authorizer(authorize)
+                cursor=db.execute(query,parameters);actual_columns=[c[0]for c in cursor.description];actual=[list(r)for r in cursor]
+            selected=[[r[columns.index(c)]for c in wanted]for r in expected]
+            if actual_columns!=wanted or digest(actual)!=digest(selected):continue
+            replays[view]={'schema':'replayed-native-output-columns/1','original_result_digest':digest(original),
+                'original_query_digest':digest(original['executed_query']),'query':query,'parameters':parameters,
+                'source_bindings':model['source_bindings'],'selected_columns':wanted,'row_count':len(actual),
+                'selected_output_digest':digest(actual),'selected_cells_types_order_duplicates_nulls_exact':True,
+                'predicates_joins_order_limits_and_original_literals_unchanged_before_binding':True,
+                'intrinsic_order_columns':{n:sorted(v)for n,v in intrinsic.items()},
+                'sources':{n:{'columns':sorted(reads.get(n,set())),
+                    'receipt_digest':digest({k:v for k,v in by[n]['result'].items()if k!='result_view'})}for n in inputs},
+                'scope':'Derived native read proof only. Original receipts are unchanged. Full scope parameters, joins, dates, predicates and row multiplicity remain; intrinsic ordinals establish order only. No source meaning or clinical eligibility is certified.'}
+        except (sqlite3.Error,sqlglot.errors.SqlglotError,ValueError,TypeError,KeyError,AttributeError):continue
+    return replays
+
+
+def _profile_population_dependency(call, by, dependencies):
+    """Prove a legacy profile lookup's complete DISTINCT patient-ID selection.
+
+    Profile values remain source data. Only this exact received-ID lookup may
+    expose a read dependency; arbitrary reader/analysis inputs stay conservative.
+    """
+    import sqlite3
+    import sqlglot
+    from sqlglot import exp
+    from .backstop_agent import output_table
+    from .result_assembly import incomplete_reason
+    from .semantic_analyst import SemanticWarehouse
+    from .sql_query import native_result_source
+    original=call['result'];query=(call.get('input')or{}).get('patient_query_sql')
+    if (original.get('kind')!='received_patient_profiles'or incomplete_reason(original)or original.get('error')
+        or not (original.get('source')or{}).get('source_digest')or not original['source'].get('as_of')
+        or not isinstance(query,str)or (call.get('input')or{}).get('patient_ids')is not None):return None
+    try:
+        tree=sqlglot.parse_one(query,read='sqlite')
+        source=(tree.args.get('from_')or exp.From()).this
+        if (not isinstance(tree,exp.Select)or len(tree.selects)!=1 or not isinstance(tree.selects[0],exp.Column)
+            or tree.selects[0].name!='patient_id'or tree.selects[0].table or not tree.args.get('distinct')
+            or not isinstance(source,exp.Table)or not isinstance(source.this,exp.Identifier)
+            or source.name not in dependencies or source.db not in ('','temp')or source.alias
+            or any(v for k,v in tree.args.items()if k not in ('expressions','from_','distinct'))):return None
+        result=by[source.name]['result'];columns,rows=output_table(result)
+        if incomplete_reason(result)or result.get('error')or columns.count('patient_id')!=1:return None
+        ids=original.get('input_patient_ids')
+        if not isinstance(ids,list)or any(not isinstance(p,str)or not p for p in ids)or len(set(ids))!=len(ids):return None
+        with sqlite3.connect(':memory:')as db:
+            db.execute('CREATE TEMP TABLE "'+source.name+'" AS '+native_result_source(columns,rows))
+            db.enable_load_extension(False);db.execute('PRAGMA query_only=ON');db.set_authorizer(SemanticWarehouse._authorize)
+            cursor=db.execute(query);actual=[list(r)for r in cursor]
+            if [c[0]for c in cursor.description]!=['patient_id']or actual!=[[p]for p in ids]:return None
+        return {'schema':'replayed-profile-population/1','original_result_digest':digest(original),
+            'original_query_digest':digest(query),'query':query,'parameters':{},'selected_columns':['patient_id'],
+            'row_count':len(actual),'selected_output_digest':digest(actual),
+            'selected_cells_types_order_duplicates_nulls_exact':True,'intrinsic_order_columns':{},
+            'sources':{source.name:{'columns':['patient_id'],
+                'receipt_digest':digest({k:v for k,v in result.items()if k!='result_view'})}},
+            'scope':'Complete native patient-ID lookup exactly reproduces the received profile input IDs and order. No profile, clinical or documentary value is inferred from identity.'}
+    except (sqlite3.Error,sqlglot.errors.SqlglotError,ValueError,TypeError,KeyError,AttributeError):return None
+
+
 def native_column_projections(calls, roots, dependencies):
     """Project intermediate machine outputs to SQLite's actual column reads.
 
@@ -429,7 +632,7 @@ def native_column_projections(calls, roots, dependencies):
     Unknown consumers, incomplete results, direct answer bindings and document
     readers retain their complete context. Row order and multiplicity survive.
     """
-    from .backstop_agent import output_table
+    from .backstop_agent import output_table,NATIVE_SQL_CONTRACT
     from .result_assembly import incomplete_reason
     by={};duplicates=set()
     for call in calls:
@@ -438,45 +641,29 @@ def native_column_projections(calls, roots, dependencies):
         if view in by:duplicates.add(view)
         if view:by[view]=call
     if dependencies is None or duplicates:return {}
+    replays=replayed_column_dependencies(calls,roots,dependencies,by)
     projections={}
     for view in dependencies-set(roots):
         producer=by.get(view)
-        if not producer or producer.get('name')!='execute_analysis':continue
+        if not producer or producer.get('name')not in ('execute_analysis','query_sql','read_patient_profiles'):continue
         result=producer['result']
         if result.get('error')or incomplete_reason(result):continue
+        if producer['name']=='read_patient_profiles'and(result.get('kind')!='received_patient_profiles'
+                or not (result.get('source')or{}).get('source_digest')or not result['source'].get('as_of')):continue
+        if producer['name']=='query_sql'and(result.get('native_sql_contract')!=NATIVE_SQL_CONTRACT
+                or not isinstance(result.get('executed_query'),str)or not result['executed_query'].strip()):continue
+        if producer['name']=='query_sql':
+            import sqlglot
+            try:program=sqlglot.parse_one(result['executed_query'],read='sqlite')
+            except (sqlglot.errors.SqlglotError,ValueError,TypeError):continue
+            if any(isinstance(node,(sqlglot.exp.Like,sqlglot.exp.ILike,sqlglot.exp.RegexpLike))for node in program.walk()):continue
         columns,rows=output_table(result)
         if (not columns or len(set(columns))!=len(columns)
             or any(len(row)!=len(columns)for row in rows)):continue
         receipt_digest=digest({k:v for k,v in result.items()if k!='result_view'})
-        needed=set();consumers=[];valid=True
-        for name in dependencies:
-            if name==view:continue
-            call=by.get(name)
-            if not call:valid=False;break
-            observed=call['result']
-            if view not in (observed.get('read_views')or[]):
-                # Non-SQL assembly dependencies lack an authoritative read map.
-                assembly=observed.get('assembly')or{}
-                linked=[assembly.get('base_result_view')]+[j.get('result_view')for j in assembly.get('joins',[])]
-                if view in linked or re.search(
-                    r'(?<![A-Za-z0-9_])'+re.escape(view)+r'(?![A-Za-z0-9_])',
-                    json.dumps(call.get('input')or{},default=str)):
-                    valid=False;break
-                continue
-            reads=observed.get('native_read_columns')or{}
-            source=(reads.get('sources')or{}).get(view)or{}
-            query=observed.get('declared_executed_query')or observed.get('executed_query')
-            if (call.get('name')!='query_sql'or reads.get('schema')!='sqlite-native-column-reads/1'
-                or not isinstance(query,str)or reads.get('query_digest')!=digest(query)
-                or source.get('complete')is not True or source.get('receipt_digest')!=receipt_digest
-                or not isinstance(source.get('columns'),list)
-                or any(not isinstance(c,str)for c in source['columns'])
-                or not set(source['columns'])<=set(columns)):
-                valid=False;break
-            needed.update(source['columns'])
-            consumers.append({'result_view':name,'query':query,'query_digest':reads['query_digest'],
-                'columns_read':source['columns'],'result_digest':digest(observed)})
-        if not valid or not consumers:continue
+        used=_native_column_consumers(view,columns,receipt_digest,by,dependencies,replays)
+        if not used:continue
+        needed,consumers=used
         # Keep explicit entity identity even when only row cardinality was read.
         json_paths=native_json_projection(view,columns,rows,consumers,by)
         json_columns=json_paths['columns']if json_paths else set()

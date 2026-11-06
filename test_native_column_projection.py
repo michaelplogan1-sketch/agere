@@ -4,7 +4,9 @@ from types import SimpleNamespace
 from unittest.mock import patch
 from pathlib import Path
 from clinical_core.agere.clinical import backstop_agent as B,semantic_analyst as S
-from clinical_core.agere.clinical.evidence_projection import native_column_projections
+from clinical_core.agere.clinical.evidence_projection import native_column_projections,replayed_column_dependencies
+from clinical_core.agere.clinical.sql_query import native_result_source
+from clinical_core.contracts import digest
 from clinical_core.agere.deliverables.receipts import uncompact_json
 
 
@@ -59,6 +61,39 @@ class NativeColumnProjection(unittest.TestCase):
         self.consumer=self.execute('SELECT COUNT(*) AS n FROM agere_result_1');self.calls=[self.producer,self.consumer]
         projection=self.project()['agere_result_1']
         self.assertEqual(projection['columns'],['patient_id']);self.assertEqual(projection['rows'],[['A'],['A'],['B']])
+
+    def sql_intermediate(self):
+        producer=self.execute('SELECT * FROM agere_result_1')
+        producer['result']['result_view']='agere_result_4'
+        columns,rows=B.output_table(producer['result'])
+        B.define_result(self.wh,'agere_result_4',columns,rows,receipt=producer['result'])
+        consumer=self.execute("SELECT COUNT(*) AS n FROM agere_result_4 WHERE status='unresolved'")
+        return [self.producer,producer,consumer]
+
+    def test_native_sql_intermediate_preserves_every_selected_cell_and_original_receipt(self):
+        calls=self.sql_intermediate();before=copy.deepcopy(calls)
+        projected=native_column_projections(calls,['agere_result_2'],{'agere_result_1','agere_result_2','agere_result_4'})['agere_result_4']
+        self.assertEqual(projected['columns'],['patient_id','status'])
+        self.assertEqual(projected['rows'],[['A','unresolved'],['A','unresolved'],['B',None]])
+        self.assertEqual(calls,before)
+
+    def test_unqualified_sql_intermediate_keeps_complete_context(self):
+        for mutation in ('contract','query','incomplete'):
+            if mutation=='contract':calls=self.sql_intermediate()
+            else:calls=copy.deepcopy(original)
+            if mutation=='contract':original=copy.deepcopy(calls);calls[1]['result'].pop('native_sql_contract')
+            elif mutation=='query':calls[1]['result']['executed_query']=''
+            else:calls[1]['result']['truncated']=True
+            with self.subTest(mutation=mutation):
+                self.assertNotIn('agere_result_4',native_column_projections(calls,['agere_result_2'],{'agere_result_1','agere_result_2','agere_result_4'}))
+
+    def test_text_matching_intermediate_keeps_its_full_source_context(self):
+        producer=self.execute("SELECT * FROM agere_result_1 WHERE documentary_receipt LIKE '%source%'")
+        producer['result']['result_view']='agere_result_4';columns,rows=B.output_table(producer['result'])
+        B.define_result(self.wh,'agere_result_4',columns,rows,receipt=producer['result'])
+        consumer=self.execute('SELECT COUNT(*) AS n FROM agere_result_4')
+        self.assertNotIn('agere_result_4',native_column_projections([self.producer,producer,consumer],
+            ['agere_result_2'],{'agere_result_1','agere_result_2','agere_result_4'}))
 
     def test_stale_source_query_missing_metadata_and_incomplete_inputs_keep_full_context(self):
         for kind in ('source','query','missing','incomplete','read_map','consumer'):
@@ -149,7 +184,8 @@ class NativeColumnProjection(unittest.TestCase):
         self.assertEqual(result['rows'],[['A','unresolved'],['A','unresolved'],['B',None],['C','unknown']])
         branch=result['json_path_observations'][0]
         self.assertEqual(branch['path'],'$.contract.requirements')
-        self.assertEqual(branch['row_values'],[[True,[{'id':'rule','binding':None}]],[True,[{'id':'rule','binding':None}]],[True,None],[False,None]])
+        self.assertEqual(branch['value_encoding'],'canonical-json')
+        self.assertEqual(branch['row_values'],[[True,'[{"id":"rule","binding":null}]'],[True,'[{"id":"rule","binding":null}]'],[True,'null'],[False,None]])
         self.assertTrue(result['json_path_output_checks'][0]['full_output_cells_types_order_duplicates_nulls_exact'])
         self.assertEqual(calls,before)
 
@@ -189,6 +225,88 @@ class NativeColumnProjection(unittest.TestCase):
         calls=self.json_fixture('r.value AS complete_object')
         projected=native_column_projections(calls,['agere_result_2','agere_result_3'],{'agere_result_2','agere_result_3','agere_result_4'})['agere_result_4']
         self.assertTrue(projected['json_path_output_checks'][0]['full_output_cells_types_order_duplicates_nulls_exact'])
+
+    def legacy_fixture(self):
+        columns,rows=B.output_table(self.producer['result'])
+        query='SELECT * FROM ('+native_result_source(columns,rows)+') x WHERE patient_id IN (SELECT value FROM json_each(\'["A","B"]\')) ORDER BY patient_id'
+        legacy=self.execute(query);legacy['result']['result_view']='agere_result_3'
+        legacy['result']['read_views']=[];legacy['result'].pop('native_read_columns',None)
+        legacy['input']['sql']='SELECT * FROM agere_result_1 ORDER BY patient_id'
+        cols,data=B.output_table(legacy['result']);B.define_result(self.wh,'agere_result_3',cols,data,receipt=legacy['result'])
+        consumer=self.execute("SELECT COUNT(*) AS n FROM agere_result_3 WHERE status='unresolved'")
+        return [self.producer,legacy,consumer]
+
+    def legacy_projection(self,calls):
+        return native_column_projections(calls,['agere_result_2'],{'agere_result_1','agere_result_2','agere_result_3'})
+
+    def test_legacy_replay_derives_reads_without_replacing_original_receipts_or_scope(self):
+        calls=self.legacy_fixture();before=copy.deepcopy(calls);projected=self.legacy_projection(calls)
+        self.assertEqual(projected['agere_result_1']['rows'],[['A','unresolved'],['A','unresolved'],['B',None]])
+        self.assertEqual(projected['agere_result_3']['rows'],[['A','unresolved'],['A','unresolved'],['B',None]])
+        proof=projected['agere_result_1']['consumers'][0]['derived_read_proof']
+        self.assertEqual(json.loads(next(iter(proof['parameters'].values()))),['A','B'])
+        self.assertEqual(proof['selected_columns'],['patient_id','status'])
+        self.assertTrue(proof['selected_cells_types_order_duplicates_nulls_exact'])
+        self.assertEqual(proof['sources']['agere_result_1']['columns'],['patient_id','status'])
+        self.assertEqual(proof['intrinsic_order_columns'],{'agere_result_1':['_rowid_']})
+        self.assertEqual(calls,before)
+
+    def test_legacy_replay_fails_closed_for_changed_source_output_scope_and_partial_receipts(self):
+        original=self.legacy_fixture()
+        for kind in ('source','output','scope','partial','contract','text_filter'):
+            calls=copy.deepcopy(original)
+            if kind=='source':calls[0]['result']['rows'][0][1]='changed'
+            elif kind=='output':calls[1]['result']['rows'][0]['status']='changed'
+            elif kind=='scope':calls[1]['result']['executed_query']=calls[1]['result']['executed_query'].replace('["A","B"]','["A"]')
+            elif kind=='partial':calls[0]['result']['truncated']=True
+            elif kind=='contract':calls[1]['result']['native_sql_contract']='unknown'
+            else:calls[1]['result']['executed_query']=calls[1]['result']['executed_query'].replace('ORDER BY',"AND documentary_receipt LIKE '%complete%' ORDER BY")
+            with self.subTest(kind=kind):self.assertNotIn('agere_result_1',self.legacy_projection(calls))
+
+    def test_profile_projection_requires_the_received_snapshot_contract(self):
+        calls=self.legacy_fixture();calls[0]['name']='read_patient_profiles'
+        self.assertNotIn('agere_result_1',self.legacy_projection(calls))
+        calls[0]['result'].update(kind='received_patient_profiles',source={'source_digest':'authored','as_of':'2030-05-27'})
+        # New provenance requires a matching literal receipt and matching
+        # downstream source map, rather than reusing the older execution.
+        columns,rows=B.output_table(calls[0]['result'])
+        sql='SELECT * FROM ('+native_result_source(columns,rows)+') x ORDER BY patient_id'
+        calls[1]['result']['executed_query']=sql
+        calls[2]['result']['native_read_columns']['sources']['agere_result_3']['receipt_digest']=digest({k:v for k,v in calls[1]['result'].items()if k!='result_view'})
+        self.assertIn('agere_result_1',self.legacy_projection(calls))
+
+    def test_legacy_join_keeps_join_keys_duplicate_multiplicity_filters_and_order(self):
+        columns,rows=B.output_table(self.producer['result'])
+        other={'name':'execute_analysis','input':{},'result':{'result_view':'agere_result_4',
+            'columns':['patient_id','flag'],'rows':[['A',1],['A',2],['B',None]]}}
+        query=('SELECT a.patient_id,a.status,a.documentary_receipt,b.flag FROM ('+native_result_source(columns,rows)+') a LEFT JOIN ('+native_result_source(other['result']['columns'],other['result']['rows'])+
+            ') b ON b.patient_id=a.patient_id WHERE a.patient_id IN (SELECT value FROM json_each(\'["A","B"]\')) ORDER BY a.patient_id,b.flag')
+        legacy=self.execute(query);legacy['result']['result_view']='agere_result_3';legacy['result']['read_views']=[]
+        legacy['result'].pop('native_read_columns',None);legacy['input']['sql']='SELECT * FROM agere_result_1 a LEFT JOIN agere_result_4 b ON b.patient_id=a.patient_id'
+        cols,data=B.output_table(legacy['result']);B.define_result(self.wh,'agere_result_3',cols,data,receipt=legacy['result'])
+        consumer=self.execute("SELECT COUNT(*) AS n FROM agere_result_3 WHERE status='unresolved'")
+        calls=[self.producer,other,legacy,consumer];before=copy.deepcopy(calls)
+        result=native_column_projections(calls,['agere_result_2'],{'agere_result_1','agere_result_2','agere_result_3','agere_result_4'})
+        self.assertEqual(result['agere_result_3']['rows'],[['A','unresolved']]*4+[['B',None]])
+        proof=result['agere_result_1']['consumers'][0]['derived_read_proof']
+        self.assertEqual(proof['sources']['agere_result_4']['columns'],['flag','patient_id'])
+        self.assertEqual(calls,before)
+
+    def test_profile_population_consumer_keeps_the_full_received_ids_and_other_read_columns(self):
+        calls=self.legacy_fixture()
+        profile={'name':'read_patient_profiles','input':{'patient_query_sql':'SELECT DISTINCT patient_id FROM agere_result_1'},
+            'result':{'result_view':'agere_result_4','kind':'received_patient_profiles',
+                'source':{'source_digest':'authored','as_of':'2030-05-27'},'input_patient_ids':['A','B'],
+                'columns':['patient_id','patient_name'],'rows':[['A','Alpha'],['B','Beta']]}}
+        calls.insert(1,profile)
+        result=native_column_projections(calls,['agere_result_2'],{'agere_result_1','agere_result_2','agere_result_3','agere_result_4'})
+        self.assertEqual(result['agere_result_1']['columns'],['patient_id','status'])
+        proof=next(c['derived_read_proof']for c in result['agere_result_1']['consumers']if c['result_view']=='agere_result_4')
+        self.assertEqual(proof['row_count'],2)
+        for ids in (['A'],['B','A'],['A','A','B']):
+            changed=copy.deepcopy(calls);changed[1]['result']['input_patient_ids']=ids
+            self.assertNotIn('agere_result_1',native_column_projections(changed,['agere_result_2'],
+                {'agere_result_1','agere_result_2','agere_result_3','agere_result_4'}))
 
     def global_note(self):
         self.answer['facts']['note']='These are machine-state receipts; clinical eligibility remains unestablished.'
