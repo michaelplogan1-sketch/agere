@@ -1,3 +1,13 @@
+# Current Agere checkpoint — ACTIVE 2026-11-06T01:08:26.771746+00:00
+
+G3: execute distinctremainingQ16-Q21onceperarm, sequentially on1b0b6ea6/protocol-native-copy-clocks-candidate.json via run_remaining_after_Q15.py. Inspect ownedremaining-after-Q15-receipt.json before any job; no duplicate or source edits while frozen. Stop between cases on actualcontextfailure, subscriptionlimit, materialrunnerfailure or explicitstopreceipt; no paidretry. Independently score each returnedcase beforeacceptance. No furthercase-by-case compilerphrasepatches. Q14interruptedpartial/frontierunstarted,Q23baseprogramdefinitiondependency,Q24fromQ20,earlierfailedordinarycases andall25/tenareas/G5/clinical/customerprerequisitesremain. AutomaticcontinuationPAUSED.
+
+RetainedQ15primitivecopy: all1646rows/13168cells exact;1774726bytes ->67331(-96.2061%). Actualsource-onlycheck2.404s/2successfulrequests/$0.001427082,0errors/pending;3fieldsunknownincludingfalseannual92unknown-providerclaim(actual348). All100focusedchecks pass. Noanalyst/SQLrerun ororiginalanswerrestamp.
+
+OriginalQ15stack159.013s/22attempts/$0.05834714known+3unpriced; frontier49.869s/5attempts/$0.2500962. Bothfailinstalledoutcomepolicyfor143versions; stackalsoJanuary-to-yearquantitydomain. Q12/Q13failures,Q14interruptionandallattemptshistoryretained. Lastsealedreceiptunchanged. Evidence: artifacts/agere-ordinary-comparison-2026-11-05/Q15/comparison.json; artifacts/agere-ordinary-comparison-2026-11-05/Q15/independent-appointment-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/native-proof.json; artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/run-receipt.json; artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-calendar-final-checks.log; artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/run-receipt.json; artifacts/agere-ordinary-comparison-2026-11-05/Q14/engineering-score.json
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — ACTIVE 2026-11-06T00:59:09.580303+00:00
 
 G3: monitor only ownedQ15ordinary pair PID97793/session59715 onac66393a/protocol-native-copy-candidate.json; source/product/scoring frozen, no duplicate. Score returned appointment quantities independently, preserve partials/errors and stopproviderworkonactualsubscriptionlimit. New native primitive table copy projection removesQ13row-vote fanout but does not qualify its financial meaning. Continue distinctQ16-Q21onecaseatatime after actualQ15evidence, nounchanged paid repeats. Q14interruptedpartial/frontierunstarted,Q23missingbaseprogramdefinitions,Q24fromQ20,earlierfailedcases and all25/tenareas/G5/clinical/customer prerequisites remain. AutomaticcontinuationPAUSED.

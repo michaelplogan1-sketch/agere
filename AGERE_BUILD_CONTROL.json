@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T00:59:09.580303+00:00",
+  "updated_at": "2026-11-06T01:08:26.771746+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -629,21 +629,18 @@
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Native prose compilation recognizes source-bound rate scales/units, executed threshold/count-domain categories, contextual requested calendar years, explicit prior-year requirements and structural inline list ordinals. Observed quantities, patient/entity prose, wrong scales/units and unsupported constants still require source bindings. The same retained Q11draft now renders all8explanation fields and its unchanged128rows without another model or source query.",
-    "measured_failure_reduction": "RetainedQ13:1259packets/68848576bytes ->1packet/162673bytes (-99.7637%); all13243rows/291346cells exact, noanalyst/SQLrerun. Actualtargetedmeaningcheck5.124s/2successfulrequests/$0.00347992,0providererrors/pending.2fieldsremainunknownincludingknownbadbalanceequation; originalfailedanswernotrestamped.",
+    "measured_failure_reduction": "RetainedQ15:1774726bytes ->67331(-96.2061%); all1646rows/13168cells exact. Source-onlycheck2.404s/2successfulrequests/$0.001427082,0errors/pending;3fieldsunknownincludingknownwrongannualunknown-providerclaim.100focusedregressionspass. EarlierQ13copyprojection99.7637%smaller/2successfulrequestsseparatelyscoped.",
     "evidence": [
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q12/comparison.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q13/comparison.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q13/independent-account-proof.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q13/verification-fanout-diagnosis.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification/native-proof.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/native-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q15/comparison.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q15/independent-appointment-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/native-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/run-receipt.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-calendar-final-checks.log",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/run-receipt.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-final-checks-2.log",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q14/stack/receipt.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-network-retry-authorization.json"
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q14/engineering-score.json"
     ],
-    "remaining_gap": "No freshordinarysuccessclaim. OriginalQ12/Q13financialmethod/conservationfailures remain, Q14interruptedpartialnotaccepted. The fastcheckdidnotconfirmbadmathanddoesnotreplacefinancial/nativeequationqualification. BroadcurriculumandseparateG5/clinical/customerqualificationsremain.",
-    "next_action": "G3: monitor only ownedQ15ordinary pair PID97793/session59715 onac66393a/protocol-native-copy-candidate.json; source/product/scoring frozen, no duplicate. Score returned appointment quantities independently, preserve partials/errors and stopproviderworkonactualsubscriptionlimit. New native primitive table copy projection removesQ13row-vote fanout but does not qualify its financial meaning. Continue distinctQ16-Q21onecaseatatime after actualQ15evidence, nounchanged paid repeats. Q14interruptedpartial/frontierunstarted,Q23missingbaseprogramdefinitions,Q24fromQ20,earlierfailedcases and all25/tenareas/G5/clinical/customer prerequisites remain. AutomaticcontinuationPAUSED.",
+    "remaining_gap": "OriginalQ15botharmsusewrongrawstatuspolicyfor143sourceversions; stackalso falselycallsJanuary92annualunknownproviders(actual348). No originalpostfixordinarysuccessclaim. Q16-Q21notyetexecuted. Q14interruption/Q23definitions/Q24deliverables, earlierfailures andG5/clinical/customerdependenciesremain.",
+    "next_action": "G3: execute distinctremainingQ16-Q21onceperarm, sequentially on1b0b6ea6/protocol-native-copy-clocks-candidate.json via run_remaining_after_Q15.py. Inspect ownedremaining-after-Q15-receipt.json before any job; no duplicate or source edits while frozen. Stop between cases on actualcontextfailure, subscriptionlimit, materialrunnerfailure or explicitstopreceipt; no paidretry. Independently score each returnedcase beforeacceptance. No furthercase-by-case compilerphrasepatches. Q14interruptedpartial/frontierunstarted,Q23baseprogramdefinitiondependency,Q24fromQ20,earlierfailedordinarycases andall25/tenareas/G5/clinical/customerprerequisitesremain. AutomaticcontinuationPAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Q05 owned job terminal after cancellation; no orphan provider job assumed from pending ledger rows. One Q06pair launching, source/product/scoring frozen. Automatic continuation PAUSED.",
     "remaining_blockers": [
@@ -704,19 +701,19 @@
       "automatic_continuation": "PAUSED; no requested scheduler resume"
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T00:59:09.580303+00:00",
-    "workflow_change": "Primitive received IDs/codes/clocks/numeric cells in completeSQLtables use native exact copy validation. Global review retains full calculation contracts and allnamedclaims; narratives, interpreted cells, text searches, document reviews and numeric classifier qualification keep existing paths.",
+    "at": "2026-11-06T01:08:26.771746+00:00",
+    "workflow_change": "Nativecopyprojectionnowretainscalendar-monthpartitionsandreceivedidentifierswithspaces, includingliteralclinicianspecialties. Allpatient/row/stringvaluesretainedexactly; completequerymeaningstillreviewed. OriginalQ15sourceversionandannualdomainfaults independentlyidentified, notrestamped.",
     "unsealed_work": {
-      "status": "native_copy_transport_proved_semantics_unresolved_Q15_inflight",
-      "product_commit": "ac66393a",
+      "status": "native_copy_transport_qualified_Q15_original_failed_remaining6prepared",
+      "product_commit": "1b0b6ea6",
       "product_fix_commit": "b3f0a8d7",
       "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json",
       "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-      "source_frozen": true,
+      "source_frozen": false,
       "runtime_activation": false,
       "product_code_in_candidate_app": false,
       "answer_selected": false,
-      "affected_tests_passed": 98,
+      "affected_tests_passed": 100,
       "provider_calls_this_increment": 25,
       "ordinary_check_owner_reconciled": true,
       "previous_ordinary_run": {
@@ -739,7 +736,7 @@
       },
       "new_provider_attempts": 25,
       "known_api_equivalent_usd": 1.20563389,
-      "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/comparison.json",
+      "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/comparison.json",
       "all_attempt_rows_retained": 53494,
       "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
       "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
@@ -763,7 +760,7 @@
       ],
       "study_checks_passed": 16,
       "native_profile_lineage_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-lineage-proof.json",
-      "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-native-copy-candidate.json",
+      "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-native-copy-clocks-candidate.json",
       "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/pair-receipt.json",
       "ordinary_pair_session": null,
       "ordinary_pair_status": "terminal_both_failed_original_native_compiler_recovery_separate",
@@ -859,7 +856,9 @@
       "latest_increment_known_api_equivalent_usd": 0.00347992,
       "latest_increment_unpriced_attempts": 2,
       "all_attempt_rows_before_Q15": 56228,
-      "pending_rows_before_Q15": 42
+      "pending_rows_before_Q15": 42,
+      "native_copy_calendar_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/native-proof.json",
+      "native_copy_calendar_source_check": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/run-receipt.json"
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 47,
@@ -914,17 +913,7 @@
       "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/final-current-proof/receipt.json"
     },
     "provider_dependency": null,
-    "active_jobs": [
-      {
-        "kind": "ordinary_fixed_pair",
-        "case": "Q15",
-        "pid": 97793,
-        "session": 59715,
-        "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/pair-receipt.json",
-        "source_frozen": true,
-        "status": "running"
-      }
-    ],
+    "active_jobs": [],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -1064,13 +1053,8 @@
       "estimate_scope": "Local synthetic engineering only; provisional, no guaranteed deadline; independent clinical/model/customer dependencies explicit."
     },
     "running_observation": {
-      "kind": "ordinary_fixed_pair",
-      "case": "Q15",
-      "pid": 97793,
-      "session": 59715,
-      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/pair-receipt.json",
-      "source_frozen": true,
-      "status": "running"
+      "status": "all_owned_jobs_terminal",
+      "next_sequence_prepared": "artifacts/agere-ordinary-comparison-2026-11-05/run_remaining_after_Q15.py"
     },
     "prefix_preflight": {
       "native_actions": 28,
@@ -4677,19 +4661,33 @@
         "artifacts/agere-ordinary-comparison-2026-11-05/Q14/stack/receipt.json",
         "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-network-retry-authorization.json"
       ]
+    },
+    {
+      "at": "2026-11-06T01:08:26.771746+00:00",
+      "gate": "G3",
+      "decision": "Q15freshquestiondoesnotyetproveordinarysuccess: botharmschooserawstatusovertheinstalledversion-resolvedoutcome; stackannualclaimbindsJanuarycell. Retainfailedoriginals. Extendprimitivecopyclock/identifierfidelityusingactualreceivedformats, ratherthananotherfree-prosewhitelist.100checksandretainedsource-onlyreadfitwith0errors,unknownsretained. Nowfinishthefixedremaining6distinctquestionpasswithmaterial-failurestop; avoidanunchangedpaidrepeat or expandingfinishline.",
+      "evidence": [
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q15/comparison.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q15/independent-appointment-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/native-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/run-receipt.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-calendar-final-checks.log",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/run-receipt.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q14/engineering-score.json"
+      ]
     }
   ],
   "unsealed_work": {
-    "status": "native_copy_transport_proved_semantics_unresolved_Q15_inflight",
-    "product_commit": "ac66393a",
+    "status": "native_copy_transport_qualified_Q15_original_failed_remaining6prepared",
+    "product_commit": "1b0b6ea6",
     "product_fix_commit": "b3f0a8d7",
     "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-    "source_frozen": true,
+    "source_frozen": false,
     "runtime_activation": false,
     "product_code_in_candidate_app": false,
     "answer_selected": false,
-    "affected_tests_passed": 98,
+    "affected_tests_passed": 100,
     "provider_calls_this_increment": 25,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
@@ -4712,7 +4710,7 @@
     },
     "new_provider_attempts": 25,
     "known_api_equivalent_usd": 1.20563389,
-    "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/comparison.json",
+    "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/comparison.json",
     "all_attempt_rows_retained": 53494,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
@@ -4736,7 +4734,7 @@
     ],
     "study_checks_passed": 16,
     "native_profile_lineage_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-lineage-proof.json",
-    "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-native-copy-candidate.json",
+    "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-native-copy-clocks-candidate.json",
     "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/pair-receipt.json",
     "ordinary_pair_session": null,
     "ordinary_pair_status": "terminal_both_failed_original_native_compiler_recovery_separate",
@@ -4832,7 +4830,9 @@
     "latest_increment_known_api_equivalent_usd": 0.00347992,
     "latest_increment_unpriced_attempts": 2,
     "all_attempt_rows_before_Q15": 56228,
-    "pending_rows_before_Q15": 42
+    "pending_rows_before_Q15": 42,
+    "native_copy_calendar_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/native-proof.json",
+    "native_copy_calendar_source_check": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/run-receipt.json"
   },
   "current_visual_request": {
     "status": "completed",
@@ -4865,18 +4865,8 @@
       }
     }
   },
-  "active_jobs": [
-    {
-      "kind": "ordinary_fixed_pair",
-      "case": "Q15",
-      "pid": 97793,
-      "session": 59715,
-      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/pair-receipt.json",
-      "source_frozen": true,
-      "status": "running"
-    }
-  ],
-  "next_action": "G3: monitor only ownedQ15ordinary pair PID97793/session59715 onac66393a/protocol-native-copy-candidate.json; source/product/scoring frozen, no duplicate. Score returned appointment quantities independently, preserve partials/errors and stopproviderworkonactualsubscriptionlimit. New native primitive table copy projection removesQ13row-vote fanout but does not qualify its financial meaning. Continue distinctQ16-Q21onecaseatatime after actualQ15evidence, nounchanged paid repeats. Q14interruptedpartial/frontierunstarted,Q23missingbaseprogramdefinitions,Q24fromQ20,earlierfailedcases and all25/tenareas/G5/clinical/customer prerequisites remain. AutomaticcontinuationPAUSED.",
+  "active_jobs": [],
+  "next_action": "G3: execute distinctremainingQ16-Q21onceperarm, sequentially on1b0b6ea6/protocol-native-copy-clocks-candidate.json via run_remaining_after_Q15.py. Inspect ownedremaining-after-Q15-receipt.json before any job; no duplicate or source edits while frozen. Stop between cases on actualcontextfailure, subscriptionlimit, materialrunnerfailure or explicitstopreceipt; no paidretry. Independently score each returnedcase beforeacceptance. No furthercase-by-case compilerphrasepatches. Q14interruptedpartial/frontierunstarted,Q23baseprogramdefinitiondependency,Q24fromQ20,earlierfailedordinarycases andall25/tenareas/G5/clinical/customerprerequisitesremain. AutomaticcontinuationPAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -4996,11 +4986,12 @@
       "Q10": "stack_literal_quantities_pass_source_semantics_unassessed_frontier_failed_false_zero",
       "Q11": "both_failed_original_stack_native_cells_reconciled_compiler_recovery_separate",
       "Q12": "both_failed_signed_history_development_and_stack_prose_compiler",
-      "Q13": "both_failed_account_conservation_stack_native_table_reconciles_verifier_fanout"
+      "Q13": "both_failed_account_conservation_stack_native_table_reconciles_verifier_fanout",
+      "Q15": "both_failed_source_version_policy_stack_also_annual_quantity_domain"
     },
     "separate_pilot": "Q03, not pooled/repeated",
     "authored_generic_core": "Q25, scoped8engineering checks passed",
-    "next_case": "Q15_inflight",
+    "next_case": "Q16",
     "clinical_qualification": false,
     "completion_percent": null,
     "connected_workflows": {
@@ -5008,7 +4999,7 @@
       "Q25": "8scoped generic core engineering checks previously passed"
     },
     "Q23_dependency": "No installed requested diabetes/BP base programs; exact-parent spec replay unassessed. Generic rollback checks do not substitute.",
-    "latest_targeted_qualification": "Q13nativecopytransport291346cells/99.7637%byte reduction; actualmeaningcheck2requests/5.124s/$0.00347992,2fieldsunknown, nooriginalrestamp.",
+    "latest_targeted_qualification": "Q15sourceprojection13168nativecells/96.2061%smaller;2successfulS1calls/2.404s/$0.001427082,3fieldsunknown; originalfailedanswernotrestamped.",
     "interrupted_case": "Q14stack11attemptspartial/1pendingunpriced;frontierunstarted"
   }
 }
