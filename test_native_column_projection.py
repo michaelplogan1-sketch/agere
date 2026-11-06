@@ -1,5 +1,7 @@
 """Executed column reads narrow arithmetic context without accepting meaning."""
 import copy,json,sqlite3,tempfile,unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 from pathlib import Path
 from clinical_core.agere.clinical import backstop_agent as B,semantic_analyst as S
 from clinical_core.agere.clinical.evidence_projection import native_column_projections
@@ -101,6 +103,70 @@ class NativeColumnProjection(unittest.TestCase):
         self.answer['headline']='Clinical eligibility has not been established.'
         packets=B.support_packets('Review clinical eligibility.',self.answer,self.calls,[],'2030-05-27')
         state=uncompact_json(json.loads(packets[0]['text']))
+        self.assertNotIn('native_column_projections',state)
+        self.assertIn('A complete source interpretation is still required.',json.dumps(state))
+
+    def global_note(self):
+        self.answer['facts']['note']='These are machine-state receipts; clinical eligibility remains unestablished.'
+        self.answer['global_prose_basis']=[{'path':['facts','note'],'basis':[{'result_view':'agere_result_2','row':0}]}]
+
+    def test_ordinary_review_locates_missing_global_basis_before_building_source_packets(self):
+        self.global_note();self.answer.pop('global_prose_basis');before=copy.deepcopy(self.calls)
+        with patch.object(B,'support_packets',side_effect=AssertionError('Do not build broad context before locating the dependency')):
+            review=B.review_final(SimpleNamespace(),'Count literal machine states.',self.answer,self.calls,
+                SimpleNamespace(read={},document_reviews=[]),ledger=None,as_of='2030-05-27')
+        self.assertEqual(review['status'],'repair');self.assertEqual(review['calls'],0)
+        self.assertEqual(review['repair_kind'],'global_source_dependencies')
+        self.assertEqual(review['progress_state']['unbound_global_fields'][0]['path'],['facts','note'])
+        self.assertEqual(self.calls,before);self.assertIn('global_prose_basis',review['feedback'])
+
+    def test_explicit_global_basis_preserves_all_rows_and_the_unmodified_statement(self):
+        self.global_note();before=copy.deepcopy(self.calls);note=self.answer['facts']['note']
+        B.bind_computed_prose(self.answer,self.calls,question='Count literal machine states.')
+        self.assertEqual(B.global_dependency_request(self.answer,self.calls),[])
+        packets=B.support_packets('Count literal machine states.',self.answer,self.calls,[],'2030-05-27')
+        state=uncompact_json(json.loads(packets[0]['text']))
+        self.assertEqual(state['answer']['facts']['note'],note)
+        self.assertEqual(state['native_column_projections'][0]['rows'],[['A','unresolved'],['A','unresolved'],['B',None]])
+        proof=next(p for p in self.answer['computed_prose']if p['field']=='facts.note')
+        self.assertEqual(proof['global_basis_contract'],'executed-global-basis/1')
+        self.assertEqual(self.calls,before)
+
+    def test_located_basis_cannot_override_an_unsupported_clinical_meaning(self):
+        self.global_note();self.answer['facts']['note']='Every patient qualifies for the clinical program.'
+        B.bind_computed_prose(self.answer,self.calls,question='Review clinical eligibility.')
+        packets=B.support_packets('Review clinical eligibility.',self.answer,self.calls,[],'2030-05-27')
+        fault=next(c['id']for c in packets[0]['claim_manifest']if c['field']=='facts.note')
+        def fields(subject,questions,*a,**kw):
+            return {'judgments':{key:{'label':'not_established'if key==fault else'supported',
+                'decided_by':'authored-source-review','probability':1.,'threshold':.8}for key in questions},'steps':[]}
+        reviewed=B.check_support_packets(packets,lambda *a,**kw:{'label':'supported','decided_by':'authored-joint','steps':[]},
+            field_decider=fields,as_of='2030-05-27',ledger=None)
+        self.assertNotEqual(reviewed['label'],'supported')
+        self.assertIn(['answer','facts','note'],[f['path']for f in reviewed['claim_feedback']])
+
+    def test_bad_or_stale_global_basis_cannot_reuse_old_proofs(self):
+        for kind in ('row','bool','unknown','duplicate','incomplete','source_free'):
+            answer=copy.deepcopy(self.answer);calls=copy.deepcopy(self.calls)
+            answer['facts']['note']='A retained machine observation.'
+            address={'result_view':'agere_result_2','row':0}
+            answer['global_prose_basis']=[{'path':['facts','note'],'basis':[address]}]
+            if kind=='row':address['row']=1
+            elif kind=='bool':address['row']=False
+            elif kind=='unknown':address['result_view']='invented'
+            elif kind=='duplicate':answer['global_prose_basis'].append(copy.deepcopy(answer['global_prose_basis'][0]))
+            elif kind=='incomplete':calls[1]['result']['truncated']=True
+            else:calls[1]['result']['executed_query']="SELECT 'invented support' AS n";calls[1]['input']['sql']=calls[1]['result']['executed_query']
+            with self.subTest(kind=kind),self.assertRaises(ValueError):B.bind_computed_prose(answer,calls)
+
+    def test_basis_never_waives_numeric_binding_or_hides_broader_source_rows(self):
+        self.global_note();self.answer['facts']['note']='There are 999 eligible patients.'
+        self.answer['table_from_tool']='agere_result_2';B.materialize_table(self.answer,self.calls)
+        with self.assertRaisesRegex(ValueError,'unbound'):B.bind_computed_prose(self.answer,self.calls)
+        self.answer['facts']['note']='The original documentary receipt remains relevant.'
+        self.answer['global_prose_basis'][0]['basis']=[{'result_view':'agere_result_1','row':0}]
+        B.bind_computed_prose(self.answer,self.calls)
+        state=uncompact_json(json.loads(B.support_packets('Read the original receipts.',self.answer,self.calls,[],'2030-05-27')[0]['text']))
         self.assertNotIn('native_column_projections',state)
         self.assertIn('A complete source interpretation is still required.',json.dumps(state))
 

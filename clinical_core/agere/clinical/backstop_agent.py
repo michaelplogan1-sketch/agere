@@ -314,6 +314,13 @@ has already declined this question, so it is yours to answer completely and corr
   below; each bound row must also be in that entity's basis. Within row_prose use {{"basis":0,"column":"column_name"}}
   to reference that entry's zero-based basis index; code expands it to the exact result_view/row/column address.
   Full scalar addresses remain valid. Headline/facts have no row-local basis and require full addresses.
+  For a qualitative global statement, global_prose_basis can declare its actual executed evidence rows:
+  [{{"path":["facts","note"],"basis":[{{"result_view":"agere_result_9","row":0}}]}}].
+  path must name headline or an existing facts field. Read the relevant evidence first; use every row needed for the
+  statement, with no sampling. This declares a dependency, not support or acceptance. Clinical interpretations require
+  actual clinical source evidence; a count of machine statuses cannot establish eligibility or treatment. Numeric
+  prose still needs scalar template bindings. If requested, add the exact source basis or acquire the missing evidence;
+  do not omit a requested statement, invent a source-free scalar, or narrow its meaning just to pass review.
   Bind received values rather than copying them into text.
   Build these bindings in the FIRST draft, including ages, strengths, measurements, counts and number words inside
   explanations or proposed actions. A source citation alone does not bind a numerical value. If a required scalar is
@@ -1527,6 +1534,58 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
                 'row_prose':{'schema':'source-bound-row-prose/1','keys':keys,'proposal_digest':digest(spec)}}
         except (ValueError,KeyError,IndexError,TypeError) as exc:
             errors.append(str(exc));failures.append({'code':'invalid_row_prose','field_group':'row_prose'})
+    if answer.get('global_prose_basis') is not None:
+        try:
+            spec=answer['global_prose_basis'];seen_fields=set()
+            if not isinstance(spec,list):raise ValueError('global_prose_basis must be a list')
+            for entry in spec:
+                if not isinstance(entry,dict)or set(entry)!={'path','basis'}:
+                    raise ValueError('Global basis entries require exact path and basis')
+                path=entry['path'];basis=entry['basis']
+                if path==['headline'] and 'headline'in updates:
+                    field='headline';value=updates['headline']
+                elif(isinstance(path,list)and len(path)==2 and path[0]=='facts'and isinstance(path[1],str)
+                     and path[1]in (updates.get('facts')or{})):
+                    field='facts.'+path[1];value=updates['facts'][path[1]]
+                else:raise ValueError('Global basis path must name the actual headline or an existing facts field')
+                if field in seen_fields:raise ValueError('Duplicate global basis field')
+                seen_fields.add(field)
+                if not isinstance(basis,list)or not basis:raise ValueError('Global basis must name executed evidence rows')
+                from .result_assembly import incomplete_reason
+                from ...contracts import digest
+                addresses=set();sources={}
+                for address in basis:
+                    if(not isinstance(address,dict)or set(address)!={'result_view','row'}
+                       or not isinstance(address['result_view'],str)or type(address['row'])is not int or address['row']<0):
+                        raise ValueError('Global basis must address an executed native row')
+                    view=address['result_view'];index=address['row'];pair=(view,index)
+                    matches=[c for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')==view]
+                    if len(matches)!=1 or matches[0]['result'].get('error'):raise ValueError('Global basis result is missing or ambiguous')
+                    call=matches[0];result=call['result'];columns,rows=output_table(result)
+                    if incomplete_reason(result)or index>=len(rows)or len(rows[index])!=len(columns):
+                        raise ValueError('Global basis needs a complete actual native row')
+                    if pair in addresses:raise ValueError('Duplicate global basis row')
+                    addresses.add(pair)
+                    if call.get('name')=='query_sql':
+                        import sqlglot
+                        sql=result.get('declared_executed_query')or result.get('executed_query')or(call.get('input')or{}).get('sql')
+                        try:source_free=not sql or sqlglot.parse_one(sql,read='sqlite').find(sqlglot.exp.From)is None
+                        except (sqlglot.errors.SqlglotError,ValueError,TypeError):source_free=True
+                        if source_free:raise ValueError('Global basis cannot use source-free SQL constants; read the actual evidence')
+                    sources['global_basis_'+str(len(sources))]={'binding':dict(address),'source_row':dict(zip(columns,rows[index])),
+                        'tool':call.get('name'),'input':call.get('input'),'native_receipt_digest':digest(result)}
+                existing=next((p for p in proofs if p['field']==field),None)
+                if existing is None:
+                    existing={'field':field,'template':value,'bindings':{},'rendered':value,'sources':{}};proofs.append(existing)
+                # A separate namespace prevents an untrusted placeholder name
+                # from overwriting a compiled quantitative binding.
+                for key,source in sources.items():
+                    key='__'+key
+                    while key in existing['sources']:key='_'+key
+                    existing['sources'][key]=source
+                existing.update(basis=[dict(a)for a in basis],global_basis_contract='executed-global-basis/1')
+        except (ValueError,KeyError,IndexError,TypeError)as exc:
+            errors.append(str(exc));failures.append({'code':'invalid_global_basis','field_group':'global_prose_basis'})
     if errors:
         quotation_rule=(' In patient/entity row prose, exact quotations can bind directly to typed documentary assertions '
             'in this entity\'s executed basis rows when their record_id and source date are explicitly attributed in the same field. '
@@ -1887,6 +1946,16 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         return {**assessment,'status':'repair','repair_kind':'deterministic_compiler',
                 'feedback':' '.join(static_feedback+feedback),'progress_state':progress_state,
                 **({'prose_repair':targeted}if targeted else{})}
+    dependency_request=global_dependency_request(answer,calls)
+    if dependency_request:
+        return {**assessment,'status':'repair','repair_kind':'global_source_dependencies',
+            'progress_state':{'unbound_global_fields':dependency_request},
+            'feedback':'Locate the actual evidence for these global statements before source review: '+json.dumps(dependency_request)+'. '
+                'Use global_prose_basis entries with exact path and basis:[{result_view,row}] addresses of complete executed rows. '
+                'Read/acquire the actual source evidence needed for each statement; include every relevant row. '
+                'Numeric prose must keep its template/scalar bindings. A machine count cannot establish a clinical interpretation. '
+                'Do not omit requested content or guess a narrower basis merely to make the packet smaller. '
+                'This locates dependencies only; all coverage and source-support checks still run on the completed proposal.'}
     for source in documentary_sources(answer.get('table')or[]):
         # Local warehouse reads only, through the same scope/as-of guards as
         # explicit document tools. A missing source remains a packet gap.
@@ -2320,6 +2389,29 @@ def native_table_copy_review(answer,calls,document_reviews,as_of):
         'scope':'All primitive output cells exactly copy the complete executed SQL table. No row is sampled or omitted. This proves transport fidelity only. Source selection, event/availability clocks, units, financial identities, clinical meaning, completeness and every global claim still require review. Source codes are not adjudicated clinical facts.'}
 
 
+def global_dependency_request(answer,calls):
+    """Request explicit global evidence when known calculations can narrow context.
+
+    No meaning is inferred from field names or matching values. Without an
+    explicit basis the actor must locate/acquire it. Unknown native lineage
+    retains the conservative existing review instead of guessing a projection.
+    """
+    from ...contracts import digest
+    fields={'headline':(['headline'],answer['headline'])}if 'headline'in answer else{}
+    fields.update({'facts.'+str(k):(['facts',k],v)for k,v in (answer.get('facts')or{}).items()})
+    bound={p.get('field')for p in answer.get('computed_prose',[])if p.get('field')in fields
+        and p.get('rendered')==fields[p['field']][1]
+        and (p.get('bindings')or p.get('global_basis_contract')=='executed-global-basis/1'and p.get('basis'))}
+    missing=[{'path':path,'value_digest':digest(value)}for field,(path,value)in fields.items()if field not in bound]
+    if not missing:return []
+    roots=[(answer.get('table_binding')or{}).get('result_view')or answer.get('table_from_tool')]
+    roots.extend(source['binding']['result_view']for p in answer.get('computed_prose',[])for source in p.get('sources',{}).values()
+                 if isinstance(source.get('binding'),dict)and isinstance(source['binding'].get('result_view'),str))
+    roots=list(dict.fromkeys(r for r in roots if r));dependencies=native_result_dependencies(calls,roots)
+    from .evidence_projection import native_column_projections
+    return missing if native_column_projections(calls,roots,dependencies)else []
+
+
 def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None):
     """Final clinical claims, deduplicated and grouped by patient dependency.
 
@@ -2490,7 +2582,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     global_fields.update({'facts.'+str(k):v for k,v in (answer.get('facts')or{}).items()})
     bound_fields={p.get('field')for p in answer.get('computed_prose',[])
                   if p.get('field')in global_fields and p.get('rendered')==global_fields[p['field']]
-                  and p.get('bindings')}
+                  and (p.get('bindings')or p.get('global_basis_contract')=='executed-global-basis/1'and p.get('basis'))}
     closed_global=bool(global_fields)and set(global_fields)<=bound_fields and claim_dependencies is not None
     global_shared={ident:row for ident,row in shared.items()if not closed_global or
                    None in shared_views[ident]or bool(shared_views[ident]&claim_dependencies)}
