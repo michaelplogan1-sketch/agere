@@ -12,7 +12,7 @@ import re
 import sqlite3
 from pathlib import Path
 
-VERSION = 'agere-library-measure/1'
+VERSION = 'agere-library-measure/2'
 OUTPUTS = ('rate', 'gaps', 'patients')
 GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'payer', 'age_band', 'sex', 'race', 'ethnicity', 'language')
 
@@ -57,6 +57,10 @@ def validate(p):
     if not isinstance(period, dict) or set(period) - {'start', 'end'} or any(
             v and not re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(v)) for v in period.values()):
         raise ValueError('period: {start, end} as YYYY-MM-DD')
+    for value in period.values():
+        if value:dt.date.fromisoformat(value)
+    if period.get('start') and period.get('end') and period['start']>period['end']:
+        raise ValueError('Measure period is reversed')
     if p.get('group_by', 'none') not in GROUP_BY: raise ValueError(f'group_by: {GROUP_BY}')
     if p.get('output', 'rate') not in OUTPUTS: raise ValueError(f'output: {OUTPUTS}')
     return {'measure': p['measure'], 'period': {'start': period.get('start', ''), 'end': period.get('end', '')},
@@ -67,18 +71,20 @@ def validate(p):
 def execute(path, patient_ids, params, as_of):
     from . import measures, semantic_layer
     p = validate(params)
+    start, end = p['period']['start'], p['period']['end']
+    if not start or not end:
+        s0, e0 = measures.default_period(str(as_of)[:10])
+        start, end = start or s0, end or e0
+    if start>end:raise ValueError('Measure period is reversed')
+    if end>str(as_of)[:10]:raise ValueError('Measure period exceeds the snapshot cutoff')
     target = semantic_layer.ensure(path) if (Path(path)/'run.json').exists() else Path(path)/'semantic.sqlite3'
     db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
     try:
         from .age import register
         register(db)
-        start, end = p['period']['start'], p['period']['end']
-        if not start or not end:
-            s0, e0 = measures.default_period(str(as_of)[:10])
-            start, end = start or s0, end or e0
         m = measures.library()[p['measure']]
         rep = measures.evaluate_db(db, m, start[:10], end[:10], str(as_of)[:10], p['group_by'],
-                                   set(patient_ids) if patient_ids is not None else None, output=p['output'])
+                                   set(patient_ids) if patient_ids is not None else None, output=p['output'],top=None)
     finally:
         db.close()
     return {**rep, 'parameters': p, 'period': {'start': start[:10], 'end': end[:10]}, 'measure_id': p['measure'],

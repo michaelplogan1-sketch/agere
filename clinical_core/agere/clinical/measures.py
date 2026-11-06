@@ -774,8 +774,9 @@ def _evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=No
         return _finish(base, m, rows, overall, gaps, output, top, start, end)
     rows = []
     if output == 'patients':
-        groups_out = _finish(base, m, [], {k: sum(v[k] for v in groups.values()) for k in ('eligible', 'excluded', 'denominator', 'numerator')}
-                             | {'rate': None}, gaps, 'rates', top, start, end)
+        totals={k:sum(v[k] for v in groups.values()) for k in ('eligible','excluded','denominator','numerator')}
+        totals['rate']=round(totals['numerator']/totals['denominator'],4) if totals['denominator'] else None
+        groups_out = _finish(base, m, [], totals, gaps, 'rates', top, start, end)
         return {**groups_out, 'patient_rows': patient_rows}
     for gk, v in sorted(groups.items(), key=lambda kv: str(kv[0])):
         rows.append({'measure': m['id'], 'definition': m['name'], 'group': gk, **v,

@@ -19,7 +19,8 @@ ANALYTICAL=DOCUMENTARY | {
     'upcoding_detection','benchmark_rebasing','survey_adjustment','scorecard_risk','visit_groups',
     'capacity_simulation','discharge_forecast','flow_decomposition','or_block_optimization','hai_surveillance',
     'antimicrobial_use','bundle_compliance','spatiotemporal_cluster','overbooking_fairness','network_adequacy',
-    'care_gap_closure','transitions_of_care','policy_evaluation','guideline_conformance','outreach_bandit','policy_search'}
+    'care_gap_closure','transitions_of_care','policy_evaluation','guideline_conformance','outreach_bandit','policy_search',
+    'library_measure'}
 
 
 def list_analyses():
