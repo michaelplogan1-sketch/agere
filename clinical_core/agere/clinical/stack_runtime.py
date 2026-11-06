@@ -136,7 +136,7 @@ class Stack:
                 'proposers_on':env('AGERE_PROPOSERS')!='off',
                 'skipped_by_env':sorted(s.strip() for s in env('AGERE_PROPOSER_SKIP','').split(',') if s.strip()),
                 'frontier_model':os.environ.get('AGERE_SHARED_INTERPRETER_MODEL') or 'tiered',
-                'model_ladder':{'ladder':model_policy.ladder('planner'),'rule':'Haiku first; Sonnet only as the escalation after every Haiku attempt failed; Opus deliverables only'},
+                'model_ladder':{'ladder':model_policy.ladder('planner'),'rule':'Sonnet entry; Opus escalation after this role failed. Native computation, qualified local models and System One retain their roles.'},
                 'question_interpretation_llm_enabled':live,'deterministic_first':True,'hosted_enabled':live,
                 'qwen3_4b_available':qwen_on,'qwen3_4b_active':any(v for k,v in qwen.items() if k not in ('model_installed','role')),
                 'qwen_status':qwen,'component_ledger':ledger,

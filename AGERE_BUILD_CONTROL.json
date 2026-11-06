@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T16:57:33.881941+00:00",
+  "updated_at": "2026-11-06T17:40:37.724078+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -551,7 +551,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "G3 active: native profile field-level verification still needs runtime wiring and adverse proof; five saved clinical field checks and overall coverage remain uncertain. Current ordinary latency after the latest guard/planning corrections is unmeasured. Fixed25case acceptance needs independent numeric/source scoring, narrative adjudication where required and connected workflow evidence. Model/clinical qualification and customer deployment remain separate.",
       "engineering_current_status": "G3 active. Original Q07stack returned partial after484.489s/$1.421052772/350attempts; frontier partial110.895s/$0.990694/8attempts. They perform different narrative work and neither is complete, so no savings/superiority claim. Stack wrongfully excluded4historical referral records/subjects; shared decision-context/4 now preserves the event-selected cohort and rejects known living-only exclusions. Separate native repair restores75records/65patients in0.681s/0providers, preserving all61prior reviews,54machine findings and120dated correspondence objects; four added subjects remain pending. This does not restamp the original failed run.72focused current scope/patient/backstop checks pass. Earlier fixed failures and clinical/model/customer dependencies remain explicit. Continue fixed questions/connected checks; package once after demonstrated behaviors.",
-      "next_action": "G3: Shared native storage712ffc57 and financial/documentary toolbafa6397 are verified: immutable TEMPtables/indexes retain portable exact-row SQL, types/duplicates/read guards/reset;65checks. Retained actual4115financial receipts materialize3.828s,positive-cohort SQL0.929s,previously-timed-out join0.972s;0provider/0financial reevaluations.513positive-balancepeople/2173accounts:54affirmed/118negated/341unknown literal difficulty reports;30236source snapshots checked,288absent fields remainnull. Allnativejobs terminal. Next finishQ14free-text affordability/preferences coverage through existing source inventory/structure and typed document review: inspect actual field contracts first, qualify localized judgments against literal-field/adversarial baselines, retain unknowns and exact entity/relation/time/source binding. Do not repeat fullpaidQ14/Q21orfinancialengines; reuse retained guarded data. FulloriginalQ14/Q20/Q21/Q23/Q24/G5/clinical/customer gaps and all25/tenareas retained. Portable large-receipt serialization/fullordinarylatency not qualified by the SQL-phase timing. BuildACTIVE/automationPAUSED.",
+      "next_action": "G3: Repair global claim/source-dependency selection on the retained native draft before any further model comparison or broad workflow. The native subscription channel and Sonnet-entry/Opus-escalation policy are implemented;3actualSonnet callbacks returned in3.677/4.414/5.168s, but this reduced-context task is not a matched speedup against the historical589.62sfullQ20turn. One unbound facts.note kept41.4MBofpatientcontext; offline complete-row replay took45.893sconstruction+52.892spartition and could not fit a complete global claim. Use existing typed assertion/state/composition to locate each global claim in its actual native source/definition/question context, preserving every required entity, row, date and source. First prove localized offline dependency closure on the retained draft and adverse scope/meaning changes; do not merely omit facts, accept copied numbers as meaning, weaken mandatory verifiers or tune serialization again. Then resume the same retained task with Sonnet and Opus using identical inputs/tools/reviews, reporting completed-answer quality, all repairs/calls/tokens/time/cost. No model winner or fullQ20acceptance yet. Reuse native executions and original populations; no broad paidQ20/Q14/Q21 rerun or passing financial/measure campaign. All25cases/tenareas, fulloriginalQ20handoff, Q21/Q23/Q24/G5/clinical/customer dependencies remain. BuildACTIVE/automationPAUSED.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -633,8 +633,8 @@
     "kind": "unsealed_connected_engineering_increment",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "SQLite now records exact native columns read, including pure COUNT(*) cardinality reads, with complete producer receipt guards. Global bound aggregate claims receive every consumed row/duplicate/NULL/identity in those columns; unused documentary fields remain in full native receipts and cannot establish clinical meaning. Unknown/stale/direct-source dependencies retain full context. Tableless numeric bindings now close their actual dependencies instead of including a null root. Declared unfinished work is checked before full source-review construction.",
-    "measured_failure_reduction": "Actual retained Q20 packet42,261,384->393,542bytes(99.07% smaller), construction2.646s; all4115IDs/statuses and full source receipts retained. Aggregate reexecution exact; no metric/financial engine rerun. Jev/Perplexity supported15fields+joint/4requests/$0.02882577API-equivalent.60focused tests pass;104supporting tests103pass/1optional skip. Full ordinary run failed latency and was interrupted at1325.091s;49new attempts/$21.089347818known API-equivalent/1unpriced, including23Haiku requests556.684s/$8.9280311. Sonnet dispatched native accountability_review in3.082s but had a589.62s CLI call. No end-to-end savings, model superiority or Q20 acceptance claim.",
+    "user_behavior_delta": "Sonnet entry/Opus escalation for frontier roles, old Haiku names resolve to Sonnet, availability fallback remains within pair; ordinary investigator uses existing native subscription JSON decision schema, retaining open answer/repair contracts and narrower focused repair schemas. Same mandatory source/completion/native reviews. Baseline remains pinned to Sonnet.",
+    "measured_failure_reduction": "Actual native CLI SQL decision returned178outputtokens in3.677s; subsequent native draft callbacks369/474tokens in4.414/5.168s. No matched historical gain or full answer success; shared source-context failure remains.",
     "evidence": [
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-native-checks-2.log",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-join-proof.json",
@@ -670,10 +670,11 @@
       "artifacts/agere-global-column-closure-2026-11-06/ordinary-confirmation/receipt.json",
       "artifacts/agere-global-column-closure-2026-11-06/model-routing-final.json",
       "artifacts/agere-global-column-closure-2026-11-06/long-call-observation.json",
-      "artifacts/agere-global-column-closure-2026-11-06/app-proof.json"
+      "artifacts/agere-global-column-closure-2026-11-06/app-proof.json",
+      "artifacts/agere-frontier-decisions-2026-11-06/engineering-proof.json"
     ],
-    "remaining_gap": "Native column closure and localized source support are verified. Full ordinary automatic Q20 answer remains unaccepted and end-to-end latency regressed; source/criteria interpretation and complete original populations/deliverables still require workflow acceptance. Current evidence supports testing earlier capable models, not a proven Sonnet/Opus winner. Existing clinical/model qualification and G5/customer prerequisites remain separate.",
-    "next_action": "G3: Qualify the named complex-planning/repair path using retained current Q20 state before another full workflow. Investigate ordinary investigator subscription structured-output parity: one final165-character SQL action reported128142output tokens/two internal CLI turns/589.62s. Preserve all intermediate output actually available and unknown internal attempts. Compare Sonnet-first and existing Opus5.5 candidates on the same retained task, sources, tools and mandatory verifiers; include completed-answer quality, total repairs/calls/tokens/time and all-attempt cost. Mike now confirms Sonnet/Opus only for frontier work, superseding the old Haiku-first preference; the installed ladder still needs that measured change; no blanket model promotion, external Anthropic API or new services. Reuse all native results and full populations; no duplicate paid Q20/Q14/Q21 campaign or passing financial/measure reruns. Full original Q20/source interpretation/handoff, Q21/Q23/Q24/G5/clinical/customer dependencies and all25cases/tenareas remain. BuildACTIVE/automationPAUSED.",
+    "remaining_gap": "Unbound global facts disable exact column projections and retain full patient evidence. Actual41.4MBpacket required45.893sconstruction/52.892spartition, then correctly failed closed at existing provider envelope. Locate global claim dependencies through existing typed assertion/state bindings; do not weaken source reviews or substitute another compression experiment. Full original Q20 and remaining25case/tenarea acceptance, model/clinical qualification and customer prerequisites remain.",
+    "next_action": "G3: Repair global claim/source-dependency selection on the retained native draft before any further model comparison or broad workflow. The native subscription channel and Sonnet-entry/Opus-escalation policy are implemented;3actualSonnet callbacks returned in3.677/4.414/5.168s, but this reduced-context task is not a matched speedup against the historical589.62sfullQ20turn. One unbound facts.note kept41.4MBofpatientcontext; offline complete-row replay took45.893sconstruction+52.892spartition and could not fit a complete global claim. Use existing typed assertion/state/composition to locate each global claim in its actual native source/definition/question context, preserving every required entity, row, date and source. First prove localized offline dependency closure on the retained draft and adverse scope/meaning changes; do not merely omit facts, accept copied numbers as meaning, weaken mandatory verifiers or tune serialization again. Then resume the same retained task with Sonnet and Opus using identical inputs/tools/reviews, reporting completed-answer quality, all repairs/calls/tokens/time/cost. No model winner or fullQ20acceptance yet. Reuse native executions and original populations; no broad paidQ20/Q14/Q21 rerun or passing financial/measure campaign. All25cases/tenareas, fulloriginalQ20handoff, Q21/Q23/Q24/G5/clinical/customer dependencies remain. BuildACTIVE/automationPAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
@@ -729,8 +730,8 @@
     },
     "latest_human_steering": "2026-11-06: Mike asked what is next in the stack, requested a distinctive light conversation-first UI informed by GitHub and award-winning sites, and reaffirmed that research is fit assessment while core stack and product work continue.",
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T14:47:17.830401+00:00",
-    "workflow_change": "SQLite now records exact native columns read, including pure COUNT(*) cardinality reads, with complete producer receipt guards. Global bound aggregate claims receive every consumed row/duplicate/NULL/identity in those columns; unused documentary fields remain in full native receipts and cannot establish clinical meaning. Unknown/stale/direct-source dependencies retain full context. Tableless numeric bindings now close their actual dependencies instead of including a null root. Declared unfinished work is checked before full source-review construction.",
+    "at": "2026-11-06T17:40:37.724078+00:00",
+    "workflow_change": "Sonnet entry/Opus escalation for frontier roles, old Haiku names resolve to Sonnet, availability fallback remains within pair; ordinary investigator uses existing native subscription JSON decision schema, retaining open answer/repair contracts and narrower focused repair schemas. Same mandatory source/completion/native reviews. Baseline remains pinned to Sonnet.",
     "unsealed_work": {
       "status": "Q20_native_payer_prerequisite_and_partial_agenda_composition_verified",
       "product_commit": "31c837e6",
@@ -1195,7 +1196,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-06T12:34:45.885991+00:00",
+    "updated_at": "2026-11-06T17:40:37.724078+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -1417,6 +1418,107 @@
       "provider_work": false,
       "full_Q20_acceptance": false,
       "model_or_clinical_promotion": false
+    },
+    "frontier_decision_candidate": {
+      "schema": "frontier-decision-path-engineering/1",
+      "at": "2026-11-06T17:40:37.724078+00:00",
+      "gate": "G3",
+      "status": "routing_and_native_decision_checks_passed_localized_workflow_unaccepted",
+      "product_commit": "089c298c",
+      "workflow_change": "Sonnet entry/Opus escalation for frontier roles, old Haiku names resolve to Sonnet, availability fallback remains within pair; ordinary investigator uses existing native subscription JSON decision schema, retaining open answer/repair contracts and narrower focused repair schemas. Same mandatory source/completion/native reviews. Baseline remains pinned to Sonnet.",
+      "checks": {
+        "final_product_tests": 180,
+        "passed": 179,
+        "optional_skips": 1,
+        "supporting_distinct_tests": 66,
+        "supporting_passed": 65,
+        "unchanged_baseline_failures": 1,
+        "baseline_failure": "test_execution_state.Assembly.test_alias_collision_and_bad_key_are_repairable, reproduced on unchanged fb4df9d3"
+      },
+      "native_subscription_observation": {
+        "status": "stopped_local_serialization_failure",
+        "provider_attempts": 6,
+        "known_api_equivalent_usd": 0.19008739800000002,
+        "unpriced_attempts": 0,
+        "all_returned_usage_retained": true,
+        "full_Q20_acceptance": false,
+        "native_actor_calls": [
+          {
+            "model": "claude-sonnet-5-5",
+            "seconds": 3.6773036250378937,
+            "output_tokens": 178
+          },
+          {
+            "model": "claude-sonnet-5-5",
+            "seconds": 4.413670083042234,
+            "output_tokens": 369
+          },
+          {
+            "model": "claude-sonnet-5-5",
+            "seconds": 5.167757208226249,
+            "output_tokens": 474
+          }
+        ],
+        "failure": "partition_support_packet -> compact_json -> dictionary_json(count); 100%CPU, sample footprint3.8GB/peak5.6GB; no provider call pending when stopped;134.26s run wall time",
+        "source_frozen": false
+      },
+      "actual_native_review_replay": {
+        "status": "offline_actual_review_replay",
+        "packet_bytes": [
+          41413679
+        ],
+        "construction_seconds": 45.892812208039686,
+        "partition_seconds": 52.89198433398269,
+        "partition_errors": [
+          "A complete single-claim dependency still exceeds the provider envelope; Source partition requires complete patient-bound contexts"
+        ],
+        "scheduled_parts": 0,
+        "part_bytes": [],
+        "provider_calls": 0,
+        "native_rows": 4115,
+        "actual_computed_counts": [
+          {
+            "receipt_rows": 4115,
+            "patients": 4115,
+            "unresolved_rows": 4115
+          }
+        ],
+        "bound_fields": [
+          "headline"
+        ],
+        "unbound_facts": [
+          "note"
+        ],
+        "native_projections": [
+          0
+        ],
+        "source_unchanged": true,
+        "seconds": 107.70666262484156,
+        "full_Q20_acceptance": false,
+        "source_or_clinical_support_accepted": false
+      },
+      "codec_disposition": {
+        "status": "inactive_candidate_reverted_from_product",
+        "reason": "Exact codec fixtures and69source-context checks passed, but actual retained task still made41.4MBcontext and could not schedule a single complete global claim. No measured workflow improvement; do not promote representation tuning instead of fixing source-dependency selection.",
+        "candidate_sha256": "ee4b9c8d8b70638d1a3ca350c90256cff77613c5a4e85068eeaeff63394a193c",
+        "actual_replay": "offline-review-proof.json",
+        "clinical_or_model_qualification": false
+      },
+      "source_digest": "de1e487344c2c5662c55cbe8302497f559bd7cff85d06572f78b1fb2fabedacd",
+      "source_unchanged": true,
+      "all_attempt_rows": 57192,
+      "pending_rows": 44,
+      "new_attempts": 6,
+      "new_pending_attempts": 0,
+      "known_api_equivalent_usd": 0.190087398,
+      "new_unpriced_attempts": 0,
+      "cash_subscription_cost": "not inferred from API-equivalent usage",
+      "internal_cli_api_attempts": "unknown beyond available aggregate transport receipts",
+      "full_Q20_acceptance": false,
+      "full_queue_acceptance": false,
+      "model_superiority_claim": false,
+      "Opus_comparison": "not dispatched after Sonnet encountered a shared local verification failure; no completed-answer model winner selected",
+      "remaining_gap": "Unbound global facts disable exact column projections and retain full patient evidence. Actual41.4MBpacket required45.893sconstruction/52.892spartition, then correctly failed closed at existing provider envelope. Locate global claim dependencies through existing typed assertion/state bindings; do not weaken source reviews or substitute another compression experiment."
     }
   },
   "decisions": [
@@ -5200,10 +5302,17 @@
       "decision": "Measured native source packet improvement did not produce whole-workflow acceptance. Stop the single 22-minute confirmation as an observed latency failure; do not repeat it. Mike asks to select capable models by total task cost and correctness. Reassess subscription output/repair overhead and qualify Sonnet-first/Opus candidates on retained state before another ordinary confirmation. Old direct Sonnet baseline is confounded by absent product review and compiler, so it is not model-only superiority evidence.",
       "evidence": "artifacts/agere-global-column-closure-2026-11-06/engineering-proof.json",
       "scope_impact": "No new acceptance area, model catalog, service, clinical policy or default activation. All original acceptance areas retained."
+    },
+    {
+      "at": "2026-11-06T17:40:37.724078+00:00",
+      "gate": "G3",
+      "decision": "Stop model comparison at the shared local verification failure. Revert representation-only candidate from product; correct actual claim dependency selection before more paid workflow work.",
+      "evidence": "artifacts/agere-frontier-decisions-2026-11-06/engineering-proof.json",
+      "scope_impact": "No acceptance area removed; Sonnet/Opus user direction implemented; no default learned model or clinical bottle promoted."
     }
   ],
   "unsealed_work": {
-    "status": "native_and_localized_source_verification_passed_ordinary_latency_failed",
+    "status": "routing_and_native_decision_checks_passed_localized_workflow_unaccepted",
     "product_commit": "9ca3a18e",
     "product_fix_commit": "b3f0a8d7",
     "receipt": "artifacts/agere-global-column-closure-2026-11-06/engineering-proof.json",
@@ -5236,12 +5345,12 @@
     "new_provider_attempts": 25,
     "known_api_equivalent_usd": 1.20563389,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 57186,
+    "all_attempt_rows_retained": 57192,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 53,
+    "latest_increment_provider_attempts": 6,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -5316,7 +5425,7 @@
     "full_Q04_acceptance": false,
     "known_partial_api_equivalent_usd": 1.44628118,
     "unpriced_attempts": 9,
-    "pending_rows_total": 43,
+    "pending_rows_total": 44,
     "population_routing_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/routing-replay-proof.json",
     "native_clinical_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/native-composition-proof.json",
     "last_stopped_job": {
@@ -5352,8 +5461,8 @@
     "fixed_sequence_status": "stopped_on_material_failure_or_dependency",
     "native_copy_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/native-proof.json",
     "native_copy_source_check": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/run-receipt.json",
-    "latest_increment_known_api_equivalent_usd": 21.118173588,
-    "latest_increment_unpriced_attempts": 1,
+    "latest_increment_known_api_equivalent_usd": 0.190087398,
+    "latest_increment_unpriced_attempts": 0,
     "all_attempt_rows_before_Q15": 56228,
     "pending_rows_before_Q15": 42,
     "native_copy_calendar_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/native-proof.json",
@@ -5481,7 +5590,21 @@
       "provider_work": false,
       "full_Q20_acceptance": false,
       "model_or_clinical_promotion": false
-    }
+    },
+    "frontier_decision_commit": "089c298c",
+    "frontier_comparison": {
+      "kind": "retained-native-frontier-comparison",
+      "pid": 28465,
+      "session": 18739,
+      "source_frozen": true,
+      "receipt": "artifacts/agere-frontier-decisions-2026-11-06/running.json",
+      "status": "running"
+    },
+    "frontier_comparison_status": "terminal_local_serialization_failure",
+    "frontier_interrupted_receipt": "artifacts/agere-frontier-decisions-2026-11-06/interrupted-receipt.json",
+    "frontier_engineering_proof": "artifacts/agere-frontier-decisions-2026-11-06/engineering-proof.json",
+    "codec_candidate_activation": false,
+    "model_comparison_complete": false
   },
   "current_visual_request": {
     "status": "completed",
@@ -5515,7 +5638,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Qualify the named complex-planning/repair path using retained current Q20 state before another full workflow. Investigate ordinary investigator subscription structured-output parity: one final165-character SQL action reported128142output tokens/two internal CLI turns/589.62s. Preserve all intermediate output actually available and unknown internal attempts. Compare Sonnet-first and existing Opus5.5 candidates on the same retained task, sources, tools and mandatory verifiers; include completed-answer quality, total repairs/calls/tokens/time and all-attempt cost. Mike now confirms Sonnet/Opus only for frontier work, superseding the old Haiku-first preference; the installed ladder still needs that measured change; no blanket model promotion, external Anthropic API or new services. Reuse all native results and full populations; no duplicate paid Q20/Q14/Q21 campaign or passing financial/measure reruns. Full original Q20/source interpretation/handoff, Q21/Q23/Q24/G5/clinical/customer dependencies and all25cases/tenareas remain. BuildACTIVE/automationPAUSED.",
+  "next_action": "G3: Repair global claim/source-dependency selection on the retained native draft before any further model comparison or broad workflow. The native subscription channel and Sonnet-entry/Opus-escalation policy are implemented;3actualSonnet callbacks returned in3.677/4.414/5.168s, but this reduced-context task is not a matched speedup against the historical589.62sfullQ20turn. One unbound facts.note kept41.4MBofpatientcontext; offline complete-row replay took45.893sconstruction+52.892spartition and could not fit a complete global claim. Use existing typed assertion/state/composition to locate each global claim in its actual native source/definition/question context, preserving every required entity, row, date and source. First prove localized offline dependency closure on the retained draft and adverse scope/meaning changes; do not merely omit facts, accept copied numbers as meaning, weaken mandatory verifiers or tune serialization again. Then resume the same retained task with Sonnet and Opus using identical inputs/tools/reviews, reporting completed-answer quality, all repairs/calls/tokens/time/cost. No model winner or fullQ20acceptance yet. Reuse native executions and original populations; no broad paidQ20/Q14/Q21 rerun or passing financial/measure campaign. All25cases/tenareas, fulloriginalQ20handoff, Q21/Q23/Q24/G5/clinical/customer dependencies remain. BuildACTIVE/automationPAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -5604,8 +5727,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 25970,
-  "owned_server_session": 52065,
+  "owned_server_pid": null,
+  "owned_server_session": null,
   "last_run_observation": {
     "status": "owned_confirmation_terminal_latency_failed_app_restored",
     "receipt": "artifacts/agere-global-column-closure-2026-11-06/ordinary-confirmation/receipt.json",
