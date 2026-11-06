@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T16:11:02.748828+00:00",
+  "updated_at": "2026-11-06T16:57:33.881941+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -673,7 +673,7 @@
       "artifacts/agere-global-column-closure-2026-11-06/app-proof.json"
     ],
     "remaining_gap": "Native column closure and localized source support are verified. Full ordinary automatic Q20 answer remains unaccepted and end-to-end latency regressed; source/criteria interpretation and complete original populations/deliverables still require workflow acceptance. Current evidence supports testing earlier capable models, not a proven Sonnet/Opus winner. Existing clinical/model qualification and G5/customer prerequisites remain separate.",
-    "next_action": "G3: Qualify the named complex-planning/repair path using retained current Q20 state before another full workflow. Investigate ordinary investigator subscription structured-output parity: one final165-character SQL action reported128142output tokens/two internal CLI turns/589.62s. Preserve all intermediate output actually available and unknown internal attempts. Compare Sonnet-first and existing Opus5.5 candidates on the same retained task, sources, tools and mandatory verifiers; include completed-answer quality, total repairs/calls/tokens/time and all-attempt cost. Current Haiku-first remains historical policy pending measured task-dependent candidate; no blanket model promotion, external Anthropic API or new services. Reuse all native results and full populations; no duplicate paid Q20/Q14/Q21 campaign or passing financial/measure reruns. Full original Q20/source interpretation/handoff, Q21/Q23/Q24/G5/clinical/customer dependencies and all25cases/tenareas remain. BuildACTIVE/automationPAUSED.",
+    "next_action": "G3: Qualify the named complex-planning/repair path using retained current Q20 state before another full workflow. Investigate ordinary investigator subscription structured-output parity: one final165-character SQL action reported128142output tokens/two internal CLI turns/589.62s. Preserve all intermediate output actually available and unknown internal attempts. Compare Sonnet-first and existing Opus5.5 candidates on the same retained task, sources, tools and mandatory verifiers; include completed-answer quality, total repairs/calls/tokens/time and all-attempt cost. Mike now confirms Sonnet/Opus only for frontier work, superseding the old Haiku-first preference; the installed ladder still needs that measured change; no blanket model promotion, external Anthropic API or new services. Reuse all native results and full populations; no duplicate paid Q20/Q14/Q21 campaign or passing financial/measure reruns. Full original Q20/source interpretation/handoff, Q21/Q23/Q24/G5/clinical/customer dependencies and all25cases/tenareas remain. BuildACTIVE/automationPAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
@@ -1403,9 +1403,11 @@
       "full_Q20_acceptance": false
     },
     "user_model_routing_direction": {
-      "request": "Mike asks whether a higher model can finish complex work with fewer calls and lower total time/cost. Evaluate Sonnet-first and existing Opus5.5 candidate for the named planning/repair failure; compare complete answer quality, calls, repairs, tokens and cost with the same source/tools/verifiers. Existing Haiku-first policy is a candidate for measured task-dependent routing, not a reason to force more failures.",
-      "status": "registered_next_connected_increment_after_terminal_confirmation",
-      "constraints": "Do not change the frozen run or expand the MVP finish line into a model catalog. Claude subscription only; no new services or external Anthropic key. Qualification before default activation."
+      "at": "2026-11-06T16:57:33.881941+00:00",
+      "user_direction": "Mike confirms stay with Sonnet and Opus for now after considering other providers.",
+      "scope": "Frontier reasoning/planning/synthesis and model comparisons. Existing native computation, retrieval and qualified System One/local roles remain in scope. No cross-provider LLM integration or model catalog.",
+      "runtime_status": "Current installed code still has historical Haiku-first question ladder. Latest direction supersedes that prior preference; implement/qualify Sonnet entry and Opus escalation for the failing complex path with the same sources/tools/verifiers. Do not report this routing change as already installed.",
+      "finish_line": "Retained G3 automatic workflow and all ten acceptance areas; research candidates do not expand MVP finish conditions."
     },
     "global_column_closure": {
       "status": "native_and_localized_source_verification_passed_ordinary_latency_failed",
@@ -5513,7 +5515,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Qualify the named complex-planning/repair path using retained current Q20 state before another full workflow. Investigate ordinary investigator subscription structured-output parity: one final165-character SQL action reported128142output tokens/two internal CLI turns/589.62s. Preserve all intermediate output actually available and unknown internal attempts. Compare Sonnet-first and existing Opus5.5 candidates on the same retained task, sources, tools and mandatory verifiers; include completed-answer quality, total repairs/calls/tokens/time and all-attempt cost. Current Haiku-first remains historical policy pending measured task-dependent candidate; no blanket model promotion, external Anthropic API or new services. Reuse all native results and full populations; no duplicate paid Q20/Q14/Q21 campaign or passing financial/measure reruns. Full original Q20/source interpretation/handoff, Q21/Q23/Q24/G5/clinical/customer dependencies and all25cases/tenareas remain. BuildACTIVE/automationPAUSED.",
+  "next_action": "G3: Qualify the named complex-planning/repair path using retained current Q20 state before another full workflow. Investigate ordinary investigator subscription structured-output parity: one final165-character SQL action reported128142output tokens/two internal CLI turns/589.62s. Preserve all intermediate output actually available and unknown internal attempts. Compare Sonnet-first and existing Opus5.5 candidates on the same retained task, sources, tools and mandatory verifiers; include completed-answer quality, total repairs/calls/tokens/time and all-attempt cost. Mike now confirms Sonnet/Opus only for frontier work, superseding the old Haiku-first preference; the installed ladder still needs that measured change; no blanket model promotion, external Anthropic API or new services. Reuse all native results and full populations; no duplicate paid Q20/Q14/Q21 campaign or passing financial/measure reruns. Full original Q20/source interpretation/handoff, Q21/Q23/Q24/G5/clinical/customer dependencies and all25cases/tenareas remain. BuildACTIVE/automationPAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
