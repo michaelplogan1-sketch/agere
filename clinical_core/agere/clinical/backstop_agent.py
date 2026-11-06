@@ -2268,7 +2268,8 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         for i,key in enumerate(answer.get('facts')or{}):
             claims.append({'id':'fact_'+str(i),'field':'facts.'+str(key),'path':['answer','facts',key]})
         state['claim_manifest']=claims
-        text=json.dumps(state,ensure_ascii=False,separators=(',',':'),default=str)
+        from ..deliverables.receipts import readable_json
+        text=json.dumps(readable_json(state),ensure_ascii=False,separators=(',',':'),default=str)
         # Oversized contracts retain the conservative complete-evidence path;
         # no row/contract is trimmed to make the projection fit.
         if len(text.encode())<=230000:

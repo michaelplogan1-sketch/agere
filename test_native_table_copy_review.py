@@ -89,5 +89,17 @@ class NativeTableCopy(unittest.TestCase):
         packets=B.support_packets('Reconcile account balances',self.answer,[self.call],[],'2030-05-27')
         result=B.check_support_packets(packets,lambda *a,**k:{'label':'unknown','decided_by':None,'steps':[]},as_of='2030-05-27',ledger=None)
         self.assertEqual(result['label'],'unknown');self.assertIsNone(result['decided_by'])
+    def test_multiple_global_claims_use_existing_fingerprint_bound_field_reviewer(self):
+        self.answer['facts']={'balance':'The claimed equation is wrong.'}
+        packets=B.support_packets('Reconcile account balances',self.answer,[self.call],[],'2030-05-27')
+        from clinical_core.agere.deliverables.receipts import uncompact_json
+        state=uncompact_json(json.loads(packets[0]['text']))
+        self.assertEqual(state['answer']['facts'],self.answer['facts'])
+        def fields(question,named,evidence,**kwargs):
+            return {'judgments':{k:{'label':'contradicted'if k=='fact_0'else'supported',
+                'decided_by':'synthetic-review','probability':1.}for k in named},'steps':[]}
+        result=B.check_support_packets(packets,lambda *a,**k:self.fail('Located fault must prevent joint approval'),
+            as_of='2030-05-27',ledger=None,field_decider=fields)
+        self.assertEqual(result['label'],'contradicted');self.assertEqual(result['claim_feedback'][0]['field'],'facts.balance')
 
 if __name__=='__main__':unittest.main()
