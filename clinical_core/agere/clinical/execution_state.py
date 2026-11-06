@@ -365,7 +365,7 @@ def bind_prose_literals(value,operation,native,*,key=None,resolved_bases=None,ba
         pattern=(r'(?<!\w)'+re.escape(literal)+r'(?!\w)')if literal.isalpha()else re.escape(literal)
         for index,(text,_)in enumerate(parts):
             if numeric_literal:
-                protected=[m.span()for m in re.finditer(r'\b\d{4}-\d{2}-\d{2}\b',text)]
+                protected=prose_temporal_spans(text)
                 protected.extend(m.span()for m in re.finditer(r'\b[A-Za-z][A-Za-z0-9]*(?:[.-][A-Za-z0-9]+)*\b',text)
                                  if any(c.isdigit()for c in m.group()))
                 matches.extend((index,m.start(),m.end())for m in re.finditer(r'(?<![\w.])'+number+r'(?![\w.])',text)
@@ -386,6 +386,13 @@ def bind_prose_literals(value,operation,native,*,key=None,resolved_bases=None,ba
             raise ValueError('Literal binding edits cannot overlap')
         address=resolve_prose_binding(edit['binding'],native,key)
         rendered=repair_rendered_value({'template':'{value}','bindings':{'value':address}},native)
+        if (numeric_literal and literal.startswith('+')and not rendered.startswith('+')
+            and canonical_repair_prose(literal[1:])==canonical_repair_prose(rendered)):
+            # Keep the explicitly written positive sign in the sentence. The
+            # native scalar supplies the identical magnitude; do not require
+            # another SQL value merely to reproduce display punctuation.
+            start+=1
+            literal=literal[1:]
         if canonical_repair_prose(literal)!=canonical_repair_prose(rendered):
             raise ValueError('Literal binding must preserve the exact value; query its actual source instead of changing the sentence')
         serial=len(used);name='bound_literal_'+str(serial)
@@ -518,6 +525,58 @@ def binding_repair_schema(focus):
     key=obj({k:{'enum':list({digest(t['key'][k]):t['key'][k]for t in focus['targets']}.values())}for k in focus['keys']})
     row=obj({'key':key,'fields':obj(fields,[])})
     return obj({'repair_draft':obj({'draft_digest':{'enum':[focus['draft_digest']]},'rows':{'type':'array','items':row}})})
+
+
+def prose_temporal_spans(text):
+    """Exact valid ISO month/day/timestamp addresses, not measured quantities.
+
+    Retain their literal precision and text. Source meaning and clock roles
+    still require review; recognizing a date never verifies the date's truth.
+    Invalid calendars, decimal values and ordinary signed counts stay numeric.
+    """
+    import re
+    from datetime import date,datetime
+    pattern=r'(?<!\w)\d{4}-\d{2}(?:-\d{2}(?:[Tt ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?)?(?![\w-])'
+    spans=[]
+    for match in re.finditer(pattern,text):
+        value=match.group()
+        try:
+            if len(value)==7:date.fromisoformat(value+'-01')
+            else:datetime.fromisoformat(value.replace('Z','+00:00'))
+        except ValueError:continue
+        spans.append(match.span())
+    # Calendar-year intervals need a temporal frame and a clause boundary;
+    # "2028-2029 patients" remains a quantity rather than a date exemption.
+    interval=r'\b(?:in|during|across|between|from|for|years?)\s+(?P<interval>\d{4}\s*(?:[-–]|to|through|and)\s*\d{4})(?=$|\s*[,.;:()]|\s+(?:and|with|while|but)\b)'
+    for match in re.finditer(interval,text,re.I):
+        years=re.findall(r'\d{4}',match['interval'])
+        if 1<=int(years[0])<=int(years[1])<=9999:spans.append(match.span('interval'))
+    return sorted(set(spans))
+
+
+def temporal_template_literals(template,bindings,native):
+    """Locate clock spans across actual scalar placeholders and literal text.
+
+    Only literal portions of a valid rendered clock are masked. Placeholder
+    values retain their ordinary native binding validation; no quantity value
+    is matched by coincidence or certified by this rendering projection.
+    """
+    import string
+    parts=list(string.Formatter().parse(template));original=[p[0]for p in parts]
+    rendered='';segments=[]
+    for literal,name,spec,conversion in parts:
+        start=len(rendered);rendered+=literal;segments.append((start,len(rendered)))
+        if name is not None:
+            if spec or conversion or name not in bindings:return original
+            try:rendered+=repair_rendered_value({'template':'{value}','bindings':{'value':bindings[name]}},native)
+            except (ValueError,KeyError,TypeError,IndexError):return original
+    spans=prose_temporal_spans(rendered);masked=[]
+    for literal,(start,end)in zip(original,segments):
+        for left,right in reversed(spans):
+            a,b=max(start,left),min(end,right)
+            if a<b:literal=literal[:a-start]+literal[b-start:]
+        masked.append(literal)
+    return masked
 
 
 def expand_date_pairs(text):

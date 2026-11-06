@@ -1224,15 +1224,17 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
             if isinstance(source.get('record_id'),str) and source['record_id'] in text and len(re.findall(r'\w+',quote))>=3:
                 for left,right in (("'","'"),('"','"'),('“','”')):
                     text=text.replace(left+quote+right,'')
-        from .execution_state import expand_date_pairs
-        text=re.sub(r'\b\d{4}-\d{2}-\d{2}\b','',expand_date_pairs(text))
+        from .execution_state import expand_date_pairs,prose_temporal_spans
+        text=expand_date_pairs(text)
+        for start,end in reversed(prose_temporal_spans(text)):
+            text=text[:start]+text[end:]
         # A requested calendar year is a temporal anchor, not an inferred
         # patient count. Preserve the text for semantic review; only the
         # quantitative-literal scanner masks syntactically temporal uses.
         # Bare values and year-sized counts/amounts still require bindings.
         year=r'(?:19|20|21)\d{2}'
         years=rf'{year}(?:\s+(?:and|or|to|through|versus|vs\.?)\s+{year})*'
-        temporal_end=r'(?=$|\s*[,.;:()\[\]]|\s+(?:and|or|than|because|when|where|while|with|without|compared|that|for|in|is|are|was|were|has|had|have)\b)'
+        temporal_end=r'(?=$|\s*[,.;:()\[\]]|\s+(?:and|or|to|through|than|because|when|where|while|with|without|compared|that|for|in|is|are|was|were|has|had|have)\b)'
         dated=(rf'\b(?:in|during|since|before|after|between|from|for|dated|calendar\s+years?|fiscal\s+years?|years?)\s+'
                +years+temporal_end)
         def temporal(match):
@@ -1284,11 +1286,13 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
             raise ProseIssue('invalid_template',field,'Invalid computed prose template at '+field)
         template=value['template'];bindings=value['bindings'];names=[];literals=[]
         parameters.update(current_template=template,current_bindings=bindings)
-        for literal,name,spec,conversion in formatter.parse(template):
+        from .execution_state import temporal_template_literals
+        temporal_literals=temporal_template_literals(template,bindings,native)
+        for index,(literal,name,spec,conversion) in enumerate(formatter.parse(template)):
             if name is not None:
                 if not re.fullmatch(r'[A-Za-z_]\w*',name) or spec or conversion:raise ProseIssue('invalid_placeholder',field,'Use plain named scalar placeholders at '+field)
                 names.append(name)
-            literals.extend(numeric(literal))
+            literals.extend(numeric(temporal_literals[index]))
         if literals:raise ProseIssue('unbound_literal',field,'Numeric prose must use scalar placeholders at '+field+'; unbound literals: '+json.dumps(list(dict.fromkeys(literals))))
         if not names or set(names)!=set(bindings):raise ProseIssue('placeholder_binding_mismatch',field,'Computed prose bindings must exactly match placeholders at '+field)
         resolved={};sources={}
