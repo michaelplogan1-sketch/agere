@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T19:45:13.863331+00:00",
+  "updated_at": "2026-11-06T20:18:29.353840+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -633,22 +633,22 @@
     "kind": "unsealed_connected_engineering_increment",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Source values named result_view no longer masquerade as internal dependency addresses; true scalar/measure/population/basis references remain bound. Sentence-separated ordered-list markers no longer trigger quantitative repairs, while quantities inside items still require source bindings. The local app is restored with these shared changes.",
-    "measured_failure_reduction": "Actual invalid dependency closure removed (known native closure now retained), source packet98,142,550->83,714,146raw readable bytes; exact original ordered list compiles without5spurious quantities. Both reproduced guard failures removed. Packet remains too large; no full-question progress claimed.",
+    "user_behavior_delta": "Project complete statically read JSON branches from registered native calculation results, only after isolated guarded replay exactly matches every consuming result. Preserve every original receipt, every row index/identity/status and all selected branch values. Unknown/dynamic/filtered/full-document/parse-position uses retain the conservative full input.",
+    "measured_failure_reduction": "Actual complete JSON branch dependencies now project automatically with exact full consumer reexecution; the83MBopaque payer source column no longer enters the full model view. Complete lossless packet2,641,696bytes/14.62sconstruction; no token-fit, end-to-end or question-completion claim.",
     "evidence": [
-      "artifacts/agere-retained-workflow-2026-11-06/attempt-2/guard-repair-proof.json",
-      "artifacts/agere-retained-workflow-2026-11-06/attempt-2/receipt.json",
-      "artifacts/agere-native-context-2026-11-06/native-proof.json",
-      "artifacts/agere-retained-workflow-2026-11-06/attempt-2/app-proof.json"
+      "artifacts/agere-retained-workflow-2026-11-06/attempt-2/json-path-engineering-proof.json",
+      "artifacts/agere-retained-workflow-2026-11-06/attempt-2/automatic-path-proof.json",
+      "artifacts/agere-retained-workflow-2026-11-06/attempt-2/actual-json-consumers.json",
+      "artifacts/agere-retained-workflow-2026-11-06/attempt-2/json-path-app-proof.json"
     ],
-    "remaining_gap": "Full original automatic Q20 composition remains unaccepted: the actual complete raw support packet is still83,714,146bytes. Its payer prerequisite view has4115documentary receipts totaling83,381,426rawJSONbytes; contract-requirement reads and an unused diagnostic expression retain the opaque column. All25fixedcases/tenhealthcareareas and clinical/model/customer prerequisites remain; no disease/ACO narrowing, trained model or codec promotion.",
-    "next_action": "G3: Continue offline from the retained38nativecalls and actual latest draft. Repair the demonstrated used-expression/path dependency handling that retains83MB of payer documentary receipts when final claims use status counts and contract requirement definitions. Inspect the exact intermediate SQL and native read-column maps; preserve real source/meaning dependencies, full populations, predicates, row order, duplicates, NULLs and original receipts. Qualify any shared projection with exact native output equivalence and adverse source/entity/time/domain cases before using it. Do not run another planner/model campaign, original analysis engine, codec experiment or paid review on the still-oversized packet. After the actual complete dependency packet fits with source meaning intact, resume only its outstanding normal source/coverage review and original question-to-saved-context handoff. Then advance the existing remaining25case/tenarea sequence; Q20 is one integration case within all healthcare and the industry-portable core. Local appPID32670/session11753 is HTTP200 on8885. BuildACTIVE/quiet automationACTIVE; no current provider/build job or subscription quota.",
+    "remaining_gap": "The complete lossless packet is still2,641,696bytes. Body-size fit is not model-token fit. Remaining native global observations are3,444,923rawJSONbytes, primarily older quality/roster/profile intermediates. Qualify use of the existing native-column mechanism on intermediate SQL results and complete consumer maps; preserve original data, meaningful source context and unknowns. No new paid review until the representation fits its actual provider context. All25cases/tenareas and original Q20/handoff, Q21semantics/Q23definitions/Q24deliverables/G5/clinical/customer dependencies remain.",
+    "next_action": "G3: Continue from the retained38nativecalls/current actual draft; no new planner campaign or engine replay. Static JSON-path source handling is verified atf40e560a: all4115patient/status rows and complete used branches retained; both actual JSON consumers reexecute10rows with every cell/type/order/duplicate/NULL exact.88checks pass;0providerattempts. The automatic full support packet builds in14.62s but remains2,641,696bytes; it is not yet token-fit qualified. The earlier diagnostic sample query is NOT in the final dependency closure, so do not build an unused-expression optimizer for it. Next qualify the existing native-column mechanism for intermediate SQL results: final consumers of the older joined quality roster read patient_id/measure/met/excluded while unused narrative/profile columns remain in the global context. Use full native output equivalence, complete original source identities/consumer read maps and fail-closed documentary/clinical boundaries; recover legacy read maps only through exact source-guarded native replay if required. Inspect the actual resulting complete packet before any provider call; HTTP32MiB is distinct from Jev262k/Perplexity256K token limits. Then resume ONLY the outstanding normal source/coverage review and original saved-context handoff, retaining all original failures. No codec/model/training/catalog expansion. All healthcare, ten areas/25cases and portable core retained; clinical/model/customer qualification separate. Local appPID33256/session18440 isHTTP200 on8885; no provider/build job active. BuildACTIVE/quiet automationACTIVE.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
       "Native column closure and localized source support are verified. Full ordinary automatic Q20 answer remains unaccepted and end-to-end latency regressed; source/criteria interpretation and complete original populations/deliverables still require workflow acceptance. Current evidence supports testing earlier capable models, not a proven Sonnet/Opus winner. Existing clinical/model qualification and G5/customer prerequisites remain separate."
     ],
-    "latest_progress": "Source values named result_view no longer masquerade as internal dependency addresses; true scalar/measure/population/basis references remain bound. Sentence-separated ordered-list markers no longer trigger quantitative repairs, while quantities inside items still require source bindings. The local app is restored with these shared changes. Full original automatic Q20 composition remains unaccepted: the actual complete raw support packet is still83,714,146bytes. Its payer prerequisite view has4115documentary receipts totaling83,381,426rawJSONbytes; contract-requirement reads and an unused diagnostic expression retain the opaque column. All25fixedcases/tenhealthcareareas and clinical/model/customer prerequisites remain; no disease/ACO narrowing, trained model or codec promotion.",
+    "latest_progress": "Project complete statically read JSON branches from registered native calculation results, only after isolated guarded replay exactly matches every consuming result. Preserve every original receipt, every row index/identity/status and all selected branch values. Unknown/dynamic/filtered/full-document/parse-position uses retain the conservative full input. The complete lossless packet is still2,641,696bytes. Body-size fit is not model-token fit. Remaining native global observations are3,444,923rawJSONbytes, primarily older quality/roster/profile intermediates. Qualify use of the existing native-column mechanism on intermediate SQL results and complete consumer maps; preserve original data, meaningful source context and unknowns. No new paid review until the representation fits its actual provider context. All25cases/tenareas and original Q20/handoff, Q21semantics/Q23definitions/Q24deliverables/G5/clinical/customer dependencies remain.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -702,8 +702,8 @@
       "scope": "Preserve the healthcare-wide product across clinical/chronic disease/medication, population and individual, utilization/outcomes, finance/provider/contracts, discovery/explanation, deliverables, learning/reuse and shared industry-portable core. Keep all ten canonical acceptance areas and25fixedcases; no new finish-line expansion."
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T19:45:13.863331+00:00",
-    "workflow_change": "Source values named result_view no longer masquerade as internal dependency addresses; true scalar/measure/population/basis references remain bound. Sentence-separated ordered-list markers no longer trigger quantitative repairs, while quantities inside items still require source bindings. The local app is restored with these shared changes.",
+    "at": "2026-11-06T20:18:29.353840+00:00",
+    "workflow_change": "Project complete statically read JSON branches from registered native calculation results, only after isolated guarded replay exactly matches every consuming result. Preserve every original receipt, every row index/identity/status and all selected branch values. Unknown/dynamic/filtered/full-document/parse-position uses retain the conservative full input.",
     "unsealed_work": {
       "status": "Q20_native_payer_prerequisite_and_partial_agenda_composition_verified",
       "product_commit": "31c837e6",
@@ -1167,7 +1167,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-06T19:45:13.863331+00:00",
+    "updated_at": "2026-11-06T20:18:29.353840+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -1741,6 +1741,13 @@
       "baseline_reproduced_failure": 1,
       "source_frozen": false,
       "app_proof": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/app-proof.json"
+    },
+    "native_json_path_projection": {
+      "status": "engineering_verified_full_question_unaccepted",
+      "product_commit": "f40e560abb04c98f7241545d6d264a6d3722537c",
+      "proof": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/json-path-engineering-proof.json",
+      "provider_attempts": 0,
+      "source_frozen": false
     }
   },
   "decisions": [
@@ -5559,19 +5566,26 @@
       "decision": "Repair typed address/data collision and layout guard;188of189affected checks pass, with the lone failure reproduced at unchanged44e7c0b8. Do not treat the98->83MBdependency reduction as sufficient or launch a repeated paid workflow. Address opaque expression dependencies offline next.",
       "evidence": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/guard-repair-proof.json",
       "scope_impact": "All healthcare/tenareas/25cases and portable core retained. No packet truncation, provider/output cap, clinical eligibility shortcut, new model or codec activation."
+    },
+    {
+      "at": "2026-11-06T20:18:29.353840+00:00",
+      "gate": "G3",
+      "decision": "Integrate static JSON branch projection after exact complete consumer replay. Correct the prior unused-expression hypothesis: diagnostic sample is already outside the actual closure. The packet remains too large to assume model token fit; continue existing intermediate SQL-column proof work rather than another provider/codec/model campaign.",
+      "evidence": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/json-path-engineering-proof.json",
+      "scope_impact": "No healthcare area or fixed case removed, no data/provider/output cap, no source-value rewrite or clinical/SLM promotion. All original native rows remain."
     }
   ],
   "unsealed_work": {
-    "status": "shared_guard_defects_removed_original_composition_unaccepted",
-    "product_commit": "a2b4d5c29bacb9d8ab7302faeda8cabaf483e4b3",
-    "product_fix_commit": "a2b4d5c29bacb9d8ab7302faeda8cabaf483e4b3",
-    "receipt": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/guard-repair-proof.json",
+    "status": "static_json_dependency_projection_verified_original_question_unaccepted",
+    "product_commit": "f40e560abb04c98f7241545d6d264a6d3722537c",
+    "product_fix_commit": "f40e560abb04c98f7241545d6d264a6d3722537c",
+    "receipt": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/json-path-engineering-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
     "source_frozen": false,
     "runtime_activation": false,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
-    "affected_tests_passed": 188,
+    "affected_tests_passed": 88,
     "provider_calls_this_increment": 0,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
@@ -5856,7 +5870,7 @@
     "codec_candidate_activation": false,
     "model_comparison_complete": true,
     "frontier_decision_policy_active": true,
-    "app_proof": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/app-proof.json",
+    "app_proof": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/json-path-app-proof.json",
     "global_basis_commit": "6ce25b16",
     "global_basis_offline_proof": "artifacts/agere-global-basis-2026-11-06/offline-proof.json",
     "global_basis_comparison": {
@@ -5901,6 +5915,13 @@
       "baseline_reproduced_failure": 1,
       "source_frozen": false,
       "app_proof": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/app-proof.json"
+    },
+    "native_json_path_projection": {
+      "status": "engineering_verified_full_question_unaccepted",
+      "product_commit": "f40e560abb04c98f7241545d6d264a6d3722537c",
+      "proof": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/json-path-engineering-proof.json",
+      "provider_attempts": 0,
+      "source_frozen": false
     }
   },
   "current_visual_request": {
@@ -5935,7 +5956,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Continue offline from the retained38nativecalls and actual latest draft. Repair the demonstrated used-expression/path dependency handling that retains83MB of payer documentary receipts when final claims use status counts and contract requirement definitions. Inspect the exact intermediate SQL and native read-column maps; preserve real source/meaning dependencies, full populations, predicates, row order, duplicates, NULLs and original receipts. Qualify any shared projection with exact native output equivalence and adverse source/entity/time/domain cases before using it. Do not run another planner/model campaign, original analysis engine, codec experiment or paid review on the still-oversized packet. After the actual complete dependency packet fits with source meaning intact, resume only its outstanding normal source/coverage review and original question-to-saved-context handoff. Then advance the existing remaining25case/tenarea sequence; Q20 is one integration case within all healthcare and the industry-portable core. Local appPID32670/session11753 is HTTP200 on8885. BuildACTIVE/quiet automationACTIVE; no current provider/build job or subscription quota.",
+  "next_action": "G3: Continue from the retained38nativecalls/current actual draft; no new planner campaign or engine replay. Static JSON-path source handling is verified atf40e560a: all4115patient/status rows and complete used branches retained; both actual JSON consumers reexecute10rows with every cell/type/order/duplicate/NULL exact.88checks pass;0providerattempts. The automatic full support packet builds in14.62s but remains2,641,696bytes; it is not yet token-fit qualified. The earlier diagnostic sample query is NOT in the final dependency closure, so do not build an unused-expression optimizer for it. Next qualify the existing native-column mechanism for intermediate SQL results: final consumers of the older joined quality roster read patient_id/measure/met/excluded while unused narrative/profile columns remain in the global context. Use full native output equivalence, complete original source identities/consumer read maps and fail-closed documentary/clinical boundaries; recover legacy read maps only through exact source-guarded native replay if required. Inspect the actual resulting complete packet before any provider call; HTTP32MiB is distinct from Jev262k/Perplexity256K token limits. Then resume ONLY the outstanding normal source/coverage review and original saved-context handoff, retaining all original failures. No codec/model/training/catalog expansion. All healthcare, ten areas/25cases and portable core retained; clinical/model/customer qualification separate. Local appPID33256/session18440 isHTTP200 on8885; no provider/build job active. BuildACTIVE/quiet automationACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6024,8 +6045,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 32670,
-  "owned_server_session": 11753,
+  "owned_server_pid": 33256,
+  "owned_server_session": 18440,
   "last_run_observation": {
     "status": "owned_confirmation_terminal_latency_failed_app_restored",
     "receipt": "artifacts/agere-global-column-closure-2026-11-06/ordinary-confirmation/receipt.json",
