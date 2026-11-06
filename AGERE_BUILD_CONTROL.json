@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T04:25:23.500823+00:00",
+  "updated_at": "2026-11-06T04:31:25.363821+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -546,7 +546,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "G3 active: native profile field-level verification still needs runtime wiring and adverse proof; five saved clinical field checks and overall coverage remain uncertain. Current ordinary latency after the latest guard/planning corrections is unmeasured. Fixed25case acceptance needs independent numeric/source scoring, narrative adjudication where required and connected workflow evidence. Model/clinical qualification and customer deployment remain separate.",
       "engineering_current_status": "G3 active. Original Q07stack returned partial after484.489s/$1.421052772/350attempts; frontier partial110.895s/$0.990694/8attempts. They perform different narrative work and neither is complete, so no savings/superiority claim. Stack wrongfully excluded4historical referral records/subjects; shared decision-context/4 now preserves the event-selected cohort and rejects known living-only exclusions. Separate native repair restores75records/65patients in0.681s/0providers, preserving all61prior reviews,54machine findings and120dated correspondence objects; four added subjects remain pending. This does not restamp the original failed run.72focused current scope/patient/backstop checks pass. Earlier fixed failures and clinical/model/customer dependencies remain explicit. Continue fixed questions/connected checks; package once after demonstrated behaviors.",
-      "next_action": "G3: Complete original Q20 ACO agenda through existing native composition. Complete quality rosters6c4ac74b/b8e3d993 are verified:3601patient-measure rows/1709people,all514CBP/1099COLgaps,101KEDunknowns preserved,exact received names,10.260s/0providers. Next join existing care_team dated relationship arrays to these populations without multiplying patient/measure or financial rows; retain multiple/unknown roles, source IDs and role dates. Then bind full2029utilization/financial populations and explicit payer attribution/benchmark/risk/quality/share dependencies; clinical nominations/explanations need actual source support, not inferred suitability. Retain originalfailed/partial cases,all25/tenareas,Q14/Q23/Q24/G5/clinical/customer dependencies. No paidQ21repeat,unsafe raw-plan bottling,default activation or routinePDF. Build ACTIVE,automatic continuation PAUSED.",
+      "next_action": "G3: Q20 native data composition now qualified on all4115received accounts:3601measure accounts,2090dated role reports,all2029utilization/medical/pharmacy/enrollment populations and recorded totals reconciled without join fan-out;source/ledger unchanged,0providers,nomodel/measure repeats. Saved partial ANS-67af2e5580405bf29c26efac. Next use existing source-bound program/clinical task operators to complete conditional program-review nominations and candidate explanations from actual evidence; inspect exact current contracts first. Do not turn measure gaps into clinical suitability or invent reasons. Keep ACO attribution/member-months and payer benchmark/risk/quality/share/capacity/cost dependencies explicit before savings. Preserve all25/tenareas and ordinary failures,Q14/Q21/Q23/Q24/G5/clinical/customer gaps. No paidQ21repeat,unsafe bottling,new model campaign,default activation or routinePDF. Build ACTIVE,automatic continuation PAUSED.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -625,28 +625,26 @@
     }
   ],
   "checkpoint": {
-    "kind": "complete_quality_roster_handoff_repaired",
+    "kind": "native_ACO_population_role_finance_composed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Investigator can execute the existing named measure engine and compose complete patient/gap rosters with received names. Patient output no longer falsely says nobody met a positive denominator; full gap lists are retained.",
-    "measured_failure_reduction": "Current CBP:980evaluated/5excluded/975denominator/461numerator,all514gaps vs prior500. COLall1099gaps retained.4measure native workflow3601rows/1709people in10.260s/0providers;101KEDunknowns have no gap membership and full rate remains unknown.56distinct affected quality/boundary checks plus changed period path and6entry/cancellation rechecks pass.",
+    "user_behavior_delta": "Existing native tools compose complete recorded patient populations, measure accounts, exact received names, dated multiple/unknown clinician roles and source financial observations in one saved partial analysis without multiplying rows.",
+    "measured_failure_reduction": "3601measure accounts/1709people retain2090role reports with every source-role record checked (6.174s). Full4115account composition reconciles2136utilizationevents/635hospitalstays/48959claims/33022pharmacytransactions/4022enrollmentspans and all observed cents to independent received references (15.451s),0providers/0measure re-evaluations.",
     "evidence": [
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/before-proof.json",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/workflow-proof.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/native-workflow.json.gz",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/checks.log",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/additional-boundary-checks.log",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/period-guard-checks.log",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/investigator-entry-checks.log"
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/role-join-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/role-join-native.json.gz",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-native.json.gz"
     ],
-    "remaining_gap": "Q20 full ACO agenda still needs dated clinical-role composition, full cross-domain population accounting, supported candidate explanations/clinical program nominations and explicit contract inputs. OriginalQ21 raw-plan semantics/year scope remain unaccepted. No original answer restamp or clinical qualification.",
-    "next_action": "G3: Complete original Q20 ACO agenda through existing native composition. Complete quality rosters6c4ac74b/b8e3d993 are verified:3601patient-measure rows/1709people,all514CBP/1099COLgaps,101KEDunknowns preserved,exact received names,10.260s/0providers. Next join existing care_team dated relationship arrays to these populations without multiplying patient/measure or financial rows; retain multiple/unknown roles, source IDs and role dates. Then bind full2029utilization/financial populations and explicit payer attribution/benchmark/risk/quality/share dependencies; clinical nominations/explanations need actual source support, not inferred suitability. Retain originalfailed/partial cases,all25/tenareas,Q14/Q23/Q24/G5/clinical/customer dependencies. No paidQ21repeat,unsafe raw-plan bottling,default activation or routinePDF. Build ACTIVE,automatic continuation PAUSED.",
+    "remaining_gap": "Program nominations and explanations still require actual clinical source interpretation; financial attribution/member-months, payer benchmark/risk/quality/share and implementable program capacity/cost remain prerequisites for realizable savings. FullQ20/Q24 and originalordinary acceptance are not established.",
+    "next_action": "G3: Q20 native data composition now qualified on all4115received accounts:3601measure accounts,2090dated role reports,all2029utilization/medical/pharmacy/enrollment populations and recorded totals reconciled without join fan-out;source/ledger unchanged,0providers,nomodel/measure repeats. Saved partial ANS-67af2e5580405bf29c26efac. Next use existing source-bound program/clinical task operators to complete conditional program-review nominations and candidate explanations from actual evidence; inspect exact current contracts first. Do not turn measure gaps into clinical suitability or invent reasons. Keep ACO attribution/member-months and payer benchmark/risk/quality/share/capacity/cost dependencies explicit before savings. Preserve all25/tenareas and ordinary failures,Q14/Q21/Q23/Q24/G5/clinical/customer gaps. No paidQ21repeat,unsafe bottling,new model campaign,default activation or routinePDF. Build ACTIVE,automatic continuation PAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "No owned provider/build/app job. Source unfrozen;all56501attemptrows/43historicalpending retained. Automatic continuation PAUSED.",
     "remaining_blockers": [
       "Earlier ordinary failures and uncompleted connected workflows remain; all25cases/tenareas retained. Model/clinical qualification and deployment prerequisites remain separate."
     ],
-    "latest_progress": "6c4ac74b/b8e3d993 qualifies quality roster handoff and correct summaries; fullQ20/Q24 acceptance remainsfalse.",
+    "latest_progress": "ANS-67af2e5580405bf29c26efac saved/reloaded exactly; original Q20 remains partial and unchanged. No clinical/readiness claim.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -701,8 +699,8 @@
       "automatic_continuation": "PAUSED; no requested scheduler resume"
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T04:25:23.500823+00:00",
-    "workflow_change": "Complete patient-level quality populations and received names now traverse the existing typed analytical tool into native SQL; no new model or disease handler.",
+    "at": "2026-11-06T04:31:25.363821+00:00",
+    "workflow_change": "A saved source-linked partial ACO analysis now retains full native populations, names, dated roles and amounts together, rather than disconnected scalar summaries.",
     "unsealed_work": {
       "status": "Q21_terminal_offline_native_plan_repair",
       "product_commit": "52857dae",
@@ -4843,10 +4841,23 @@
         "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/investigator-entry-checks.log"
       ],
       "scope_impact": "No clinical rule changed. Patient-output rate now uses the same existing numerator/denominator ratio; unknowns/exclusions stay distinct. Existing source/date constraints fail before warehouse work. All25cases/tenareas retained."
+    },
+    {
+      "at": "2026-11-06T04:31:25.363821+00:00",
+      "gate": "G3",
+      "decision": "Qualify connected whole-population ACO composition through the existing tools using retained qualified quality receipts plus fresh native role/financial queries, not another paid investigation.",
+      "evidence": [
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/workflow-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/role-join-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/role-join-native.json.gz",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-native.json.gz"
+      ],
+      "scope_impact": "All4115received accounts retained; current quality denominator scope remains separate from full recorded2029financial/utilization scope. No clinical nomination, causal savings or original answer pass inferred."
     }
   ],
   "unsealed_work": {
-    "status": "quality_rosters_verified_next_ACO_role_and_domain_composition",
+    "status": "native_ACO_composition_verified_clinical_interpretation_remaining",
     "product_commit": "b8e3d993",
     "product_fix_commit": "b3f0a8d7",
     "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q11/native-prose-and-exposure-proof.json",
@@ -5040,7 +5051,10 @@
     "documentary_checks_passed": 189,
     "quality_roster_commit": "6c4ac74b",
     "quality_roster_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/workflow-proof.json",
-    "quality_roster_checks_passed": 56
+    "quality_roster_checks_passed": 56,
+    "dated_role_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/role-join-proof.json",
+    "full_recorded_population_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/financial-join-proof.json",
+    "saved_native_ACO_context": "ANS-67af2e5580405bf29c26efac"
   },
   "current_visual_request": {
     "status": "completed",
@@ -5074,7 +5088,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Complete original Q20 ACO agenda through existing native composition. Complete quality rosters6c4ac74b/b8e3d993 are verified:3601patient-measure rows/1709people,all514CBP/1099COLgaps,101KEDunknowns preserved,exact received names,10.260s/0providers. Next join existing care_team dated relationship arrays to these populations without multiplying patient/measure or financial rows; retain multiple/unknown roles, source IDs and role dates. Then bind full2029utilization/financial populations and explicit payer attribution/benchmark/risk/quality/share dependencies; clinical nominations/explanations need actual source support, not inferred suitability. Retain originalfailed/partial cases,all25/tenareas,Q14/Q23/Q24/G5/clinical/customer dependencies. No paidQ21repeat,unsafe raw-plan bottling,default activation or routinePDF. Build ACTIVE,automatic continuation PAUSED.",
+  "next_action": "G3: Q20 native data composition now qualified on all4115received accounts:3601measure accounts,2090dated role reports,all2029utilization/medical/pharmacy/enrollment populations and recorded totals reconciled without join fan-out;source/ledger unchanged,0providers,nomodel/measure repeats. Saved partial ANS-67af2e5580405bf29c26efac. Next use existing source-bound program/clinical task operators to complete conditional program-review nominations and candidate explanations from actual evidence; inspect exact current contracts first. Do not turn measure gaps into clinical suitability or invent reasons. Keep ACO attribution/member-months and payer benchmark/risk/quality/share/capacity/cost dependencies explicit before savings. Preserve all25/tenareas and ordinary failures,Q14/Q21/Q23/Q24/G5/clinical/customer gaps. No paidQ21repeat,unsafe bottling,new model campaign,default activation or routinePDF. Build ACTIVE,automatic continuation PAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
