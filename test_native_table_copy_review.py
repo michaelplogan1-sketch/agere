@@ -65,6 +65,10 @@ class NativeTableCopy(unittest.TestCase):
         self.assertIsNotNone(self.review())
         self.rows[0][3]='2029-13';self.answer['table'][0]['latest_date']='2029-13'
         self.assertIsNone(self.review())
+    def test_source_identifier_whitespace_is_preserved_not_reinterpreted_or_dropped(self):
+        self.rows[0][1]='WH-CLIN-3-pediatric orthopedics-0'
+        self.answer['table'][0]['account_id']=self.rows[0][1]
+        self.assertIsNotNone(self.review());self.assertEqual(self.answer['table'][0]['account_id'],self.rows[0][1])
     def test_numeric_classifiers_keep_the_existing_lineage_qualification_path(self):
         self.answer['table']=[{'patient_id':'P1','clinical_flag':1}]
         self.assertIsNone(self.review())

@@ -2169,7 +2169,10 @@ def native_table_copy_review(answer,calls,document_reviews,as_of):
         if value is None or type(value)in(int,bool):return True
         if type(value)is float:return math.isfinite(value)
         if not isinstance(value,str):return False
-        if key.endswith('_id')or key=='id':return bool(value)and not re.search(r'\s',value)
+        # Received identifiers may contain spaces (for example a specialty in
+        # a clinician key). Their exact strings are copied, never normalized
+        # or interpreted as narrative. The query/source meaning is reviewed.
+        if key.endswith('_id')or key=='id':return bool(value)
         if key=='status'or key.endswith('_status'):
             return bool(re.fullmatch(r'[A-Za-z0-9_.:/-]+',value))
         if re.fullmatch(r'\d{4}-\d{2}',value):
