@@ -723,7 +723,7 @@
       "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
       "source_frozen": false,
       "runtime_activation": false,
-      "product_code_in_candidate_app": false,
+      "product_code_in_candidate_app": true,
       "answer_selected": false,
       "affected_tests_passed": 80,
       "provider_calls_this_increment": 0,
@@ -746,10 +746,10 @@
         "new_provider_attempts": 21,
         "offline_proof_provider_calls": 0
       },
-      "new_provider_attempts": 25,
-      "known_api_equivalent_usd": 1.20563389,
+      "new_provider_attempts": 0,
+      "known_api_equivalent_usd": 0.508862532,
       "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-      "all_attempt_rows_retained": 57086,
+      "all_attempt_rows_retained": 57243,
       "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
       "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
       "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
@@ -829,7 +829,7 @@
       "full_Q04_acceptance": false,
       "known_partial_api_equivalent_usd": 1.44628118,
       "unpriced_attempts": 9,
-      "pending_rows_total": 43,
+      "pending_rows_total": 44,
       "population_routing_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/routing-replay-proof.json",
       "native_clinical_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/native-composition-proof.json",
       "last_stopped_job": {
@@ -971,7 +971,140 @@
         "clinical_model_qualification": false,
         "context_id": "ANS-2a62a924a97ef1aafbfcefa5"
       },
-      "app_proof": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/app-handoff-proof.json"
+      "app_proof": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-native-populations-2026-11-06/app-handoff-proof.json",
+      "intent_clarification": {
+        "status": "engineering_verified_authored_transport_live_judgment_unqualified",
+        "proof": "artifacts/agere-intent-clarification-2026-11-06/engineering-proof.json",
+        "new_provider_attempts": 0,
+        "source_frozen": false,
+        "runtime_activation": false,
+        "all_attempt_rows_retained": 57086,
+        "historical_pending": 43
+      },
+      "user_interface": {
+        "status": "UI_and_native_catalog_engineering_verified",
+        "product_commits": [
+          "d18bf791",
+          "03258c19"
+        ],
+        "proof": "artifacts/agere-conversation-interface-2026-11-06/engineering-proof.json",
+        "runtime_activation": "Local presentation/progress/catalog only; no clinical/model qualification or research-threshold activation",
+        "owned_app_receipt": "artifacts/agere-conversation-interface-2026-11-06/app-server.json",
+        "provider_attempts": 0,
+        "source_frozen": false
+      },
+      "documentary_handoff": {
+        "status": "partial_engineering_progress_full_question_unaccepted",
+        "proof": "artifacts/agere-documentary-nomination-2026-11-06/engineering-proof.json",
+        "product_commits": [
+          "ab6c2764",
+          "e027e9dc",
+          "7ea72bff"
+        ],
+        "source_frozen": false,
+        "provider_work": false,
+        "full_Q20_acceptance": false
+      },
+      "global_column_closure": {
+        "status": "native_and_localized_source_verification_passed_ordinary_latency_failed",
+        "product_commit": "9ca3a18e",
+        "proof": "artifacts/agere-global-column-closure-2026-11-06/engineering-proof.json",
+        "source_frozen": false,
+        "provider_work": false,
+        "full_Q20_acceptance": false,
+        "model_or_clinical_promotion": false
+      },
+      "frontier_decision_commit": "089c298c",
+      "frontier_comparison": {
+        "kind": "retained-native-frontier-comparison",
+        "pid": 28465,
+        "session": 18739,
+        "source_frozen": false,
+        "receipt": "artifacts/agere-frontier-decisions-2026-11-06/running.json",
+        "status": "terminal_local_serialization_failure"
+      },
+      "frontier_comparison_status": "terminal_local_serialization_failure",
+      "frontier_interrupted_receipt": "artifacts/agere-frontier-decisions-2026-11-06/interrupted-receipt.json",
+      "frontier_engineering_proof": "artifacts/agere-frontier-decisions-2026-11-06/engineering-proof.json",
+      "codec_candidate_activation": false,
+      "model_comparison_complete": true,
+      "frontier_decision_policy_active": true,
+      "global_basis_commit": "6ce25b16",
+      "global_basis_offline_proof": "artifacts/agere-global-basis-2026-11-06/offline-proof.json",
+      "global_basis_comparison": {
+        "kind": "global-basis-retained-comparison",
+        "pid": 29920,
+        "session": 55985,
+        "status": "both_localized_arms_passed",
+        "source_frozen": false,
+        "receipt": "artifacts/agere-global-basis-2026-11-06/running.json"
+      },
+      "global_basis_engineering_proof": "artifacts/agere-global-basis-2026-11-06/engineering-proof.json",
+      "global_basis_comparison_status": "both_localized_arms_passed",
+      "global_source_basis_code_active": true,
+      "owned_question_continuation": {
+        "status": "terminal_interrupted_local_verification_serialization",
+        "receipt": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/receipt.json",
+        "native_calls": 38,
+        "seconds": 863.8275783329736,
+        "provider_attempts": 28,
+        "known_api_equivalent_usd": 52.131039422,
+        "unpriced_attempts": 0,
+        "source_unchanged": true,
+        "all_prior_attempt_rows_exact": true,
+        "full_question_acceptance": false,
+        "normal_entry_proof": false,
+        "source_frozen": false,
+        "failure": "JSON subtree encoding inside support packet partition; SIGINT preserved all work and terminal accounting. No provider pending at stop."
+      },
+      "retained_native_restoration": "artifacts/agere-retained-workflow-2026-11-06/restoration-proof.json",
+      "owned_question_continuation_status": "terminal_interrupted_local_verification_serialization",
+      "owned_question_continuation_receipt": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/receipt.json",
+      "compiled_context_diagnosis": "artifacts/agere-retained-workflow-2026-11-06/prompt-size-diagnosis.json",
+      "compiled_context_commit": "44e7c0b8",
+      "compiled_context_proof": "artifacts/agere-native-context-2026-11-06/native-proof.json",
+      "baseline_reproduced_test_failures": 1,
+      "shared_address_and_layout_repair": {
+        "status": "offline_verified_original_question_unaccepted",
+        "product_commit": "a2b4d5c29bacb9d8ab7302faeda8cabaf483e4b3",
+        "proof": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/guard-repair-proof.json",
+        "new_provider_attempts": 0,
+        "checks_passed": 188,
+        "baseline_reproduced_failure": 1,
+        "source_frozen": false,
+        "app_proof": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/app-proof.json"
+      },
+      "native_json_path_projection": {
+        "status": "engineering_verified_full_question_unaccepted",
+        "product_commit": "f40e560abb04c98f7241545d6d264a6d3722537c",
+        "proof": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/json-path-engineering-proof.json",
+        "provider_attempts": 0,
+        "source_frozen": false
+      },
+      "native_intermediate_dependencies": {
+        "status": "native_dependency_increment_verified_normal_review_unresolved_token_capacity",
+        "product_commit": "1b65d064433d3188bc81a256ff12c02323da1e96",
+        "proof": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/sql-dependency-engineering-proof.json",
+        "receipt": "artifacts/agere-retained-workflow-2026-11-06/source-review-1/receipt.json",
+        "source_frozen": false,
+        "provider_attempts": 4,
+        "known_api_equivalent_usd": 0.0019080600000000003,
+        "unpriced_attempts": 3,
+        "full_question_acceptance": false
+      },
+      "native_arithmetic_inputs": {
+        "status": "ordinary_retained_draft_review_confirmed_active_context_opened",
+        "product_commit": "b33596719fa1efa694f0aab6355a715b21426797",
+        "proof": "artifacts/agere-retained-workflow-2026-11-06/source-review-2/engineering-proof.json",
+        "receipt": "artifacts/agere-retained-workflow-2026-11-06/source-review-2/receipt.json",
+        "source_frozen": false,
+        "provider_attempts": 6,
+        "known_api_equivalent_usd": 0.021587618000000003,
+        "unpriced_attempts": 0,
+        "context_id": "ANS-283eed5c68efb36daaa503a1",
+        "full_question_acceptance": false,
+        "clinical_model_qualification": false
+      }
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 47,
