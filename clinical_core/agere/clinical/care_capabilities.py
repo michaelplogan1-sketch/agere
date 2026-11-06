@@ -114,7 +114,8 @@ def declared_context(path, as_of):
                             'capacity_status':'stale_or_not_yet_observed' if not c['capacity_as_of']<=as_of<=c['capacity_until'] else
                                 'unknown' if c['capacity_slots'] is None else 'no_reported_capacity' if c['capacity_slots']==0 else 'reported_capacity',
                             'clinical_eligibility_established':False})
-                    portfolios.append({'declaration':p,'service_context':services})
+                    portfolios.append({'declaration':p,'service_context':services,
+                        'receipt_status':'received_by_cutoff' if p['recorded_at'][:10]<=as_of else 'not_received_by_cutoff'})
         finally:db.close()
     return {'as_of':as_of,'portfolios':portfolios,'buyer_selected':False,
         'status':'buyer_selection_required' if portfolios else 'no_buyer_portfolio_supplied',

@@ -75,6 +75,7 @@ class CareCapabilities(unittest.TestCase):
         self.assertEqual(item['declaration']['id'],before['id'])
         self.assertEqual(item['service_context'][0]['effective_period_status'],'outside_declared_period')
         self.assertEqual(item['service_context'][0]['capacity_status'],'stale_or_not_yet_observed')
+        self.assertEqual(c.declared_context(self.path,'2000-01-01')['portfolios'][0]['receipt_status'],'not_received_by_cutoff')
         self.assertEqual(c.portfolio(self.path,self.req['buyer_id']),before)
 
     def test_unknown_is_not_denial_or_coverage(self):
