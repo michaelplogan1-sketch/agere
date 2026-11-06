@@ -1,0 +1,108 @@
+"""Executed column reads narrow arithmetic context without accepting meaning."""
+import copy,json,sqlite3,tempfile,unittest
+from pathlib import Path
+from clinical_core.agere.clinical import backstop_agent as B,semantic_analyst as S
+from clinical_core.agere.clinical.evidence_projection import native_column_projections
+from clinical_core.agere.deliverables.receipts import uncompact_json
+
+
+class NativeColumnProjection(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        path=Path(self.temp.name)/'semantic.sqlite3'
+        with sqlite3.connect(path)as db:
+            db.executescript("CREATE TABLE meta(key,value);INSERT INTO meta VALUES('as_of','2030-05-27'),('source_digest','authored');CREATE TABLE patient(patient_id);")
+        self.wh=S.SemanticWarehouse(path);self.wh.define('2030-05-27');self.addCleanup(self.wh.close)
+        self.producer={'name':'execute_analysis','input':{'operation':'authored_review','parameters':{'available_by':'2030-05-27'}},'result':{
+            'columns':['patient_id','status','documentary_receipt'],
+            'rows':[['A','unresolved',{'quote':'A complete source interpretation is still required.'}],
+                    ['A','unresolved',{'quote':'A complete source interpretation is still required.'}],
+                    ['B',None,{'quote':'No current eligibility is established.'}]]}}
+        B.define_result(self.wh,'agere_result_1',self.producer['result']['columns'],self.producer['result']['rows'],receipt=self.producer['result'])
+        self.producer['result']['result_view']='agere_result_1'
+        self.query="SELECT COUNT(*) AS n, SUM(CASE WHEN status='unresolved' THEN 1 ELSE 0 END) AS unresolved FROM agere_result_1"
+        self.consumer=self.execute(self.query)
+        self.calls=[self.producer,self.consumer]
+        self.answer={'status':'partial','sources':[],'headline':{'template':'{n} machine receipts were produced.',
+            'bindings':{'n':{'result_view':'agere_result_2','row':0,'column':'n'}}},'facts':{'status':{
+            'template':'{n} machine receipts remain unresolved.',
+            'bindings':{'n':{'result_view':'agere_result_2','row':0,'column':'unresolved'}}}}}
+        B.bind_computed_prose(self.answer,self.calls,question='Count machine receipts and unresolved statuses.')
+
+    def execute(self,sql):
+        result=self.wh.query(sql,max_rows=None,max_chars=None)
+        result.update(result_view='agere_result_2',executed_query=sql,native_sql_contract=B.NATIVE_SQL_CONTRACT)
+        return {'name':'query_sql','input':{'sql':sql},'result':result}
+
+    def project(self,calls=None,roots=None):
+        return native_column_projections(calls or self.calls,roots or ['agere_result_2'],{'agere_result_1','agere_result_2'})
+
+    def test_sqlite_reads_capture_filter_group_order_and_join_columns(self):
+        query="SELECT status,COUNT(*) AS n FROM agere_result_1 WHERE patient_id<>'C' GROUP BY status ORDER BY status"
+        result=self.execute(query)['result'];read=result['native_read_columns']['sources']['agere_result_1']
+        self.assertTrue(read['complete']);self.assertEqual(read['columns'],['patient_id','status'])
+        B.define_result(self.wh,'agere_result_3',['patient_id'],[['A'],['B']])
+        result=self.execute('SELECT COUNT(*) AS n FROM agere_result_1 a JOIN agere_result_3 b ON a.patient_id=b.patient_id')['result']
+        self.assertEqual(set(result['native_read_columns']['sources']),{'agere_result_1','agere_result_3'})
+        self.assertEqual(result['native_read_columns']['sources']['agere_result_1']['columns'],['patient_id'])
+
+    def test_all_rows_duplicates_nulls_and_native_receipts_survive(self):
+        before=copy.deepcopy(self.calls);projection=self.project()['agere_result_1']
+        self.assertEqual(projection['columns'],['patient_id','status'])
+        self.assertEqual(projection['rows'],[['A','unresolved'],['A','unresolved'],['B',None]])
+        self.assertEqual(projection['row_count'],3);self.assertEqual(self.calls,before)
+        self.assertIn('no support for clinical interpretation',projection['scope'])
+
+    def test_count_star_retains_row_multiplicity_even_without_column_reads(self):
+        self.consumer=self.execute('SELECT COUNT(*) AS n FROM agere_result_1');self.calls=[self.producer,self.consumer]
+        projection=self.project()['agere_result_1']
+        self.assertEqual(projection['columns'],['patient_id']);self.assertEqual(projection['rows'],[['A'],['A'],['B']])
+
+    def test_stale_source_query_missing_metadata_and_incomplete_inputs_keep_full_context(self):
+        for kind in ('source','query','missing','incomplete','read_map','consumer'):
+            calls=copy.deepcopy(self.calls)
+            if kind=='source':calls[0]['result']['rows'][0][1]='supported'
+            if kind=='query':calls[1]['result']['executed_query']+=" WHERE status='eligible'"
+            if kind=='missing':calls[1]['result'].pop('native_read_columns')
+            if kind=='incomplete':calls[0]['result']['truncated']=True
+            if kind=='read_map':calls[1]['result']['native_read_columns']['sources']['agere_result_1']['complete']=False
+            if kind=='consumer':calls[1]['name']='execute_analysis'
+            with self.subTest(kind=kind):self.assertEqual(self.project(calls),{})
+
+    def test_unknown_consumers_direct_bindings_and_document_readers_never_project(self):
+        self.assertEqual(self.project(roots=['agere_result_1','agere_result_2']),{})
+        calls=copy.deepcopy(self.calls);calls[0]['name']='review_documents'
+        self.assertEqual(self.project(calls),{})
+        calls=copy.deepcopy(self.calls);calls[1]['result'].pop('read_views')
+        self.assertEqual(self.project(calls),{})
+
+    def test_source_note_read_is_not_hidden_by_column_projection(self):
+        calls=[self.producer,self.execute('SELECT documentary_receipt FROM agere_result_1')]
+        self.assertEqual(self.project(calls),{})
+
+    def test_shadowed_cte_is_not_an_actual_native_read(self):
+        result=self.execute("WITH agere_result_1 AS (SELECT 'unresolved' AS status) SELECT COUNT(*) AS n FROM agere_result_1")['result']
+        self.assertEqual(result['read_views'],[]);self.assertNotIn('native_read_columns',result)
+
+    def test_tableless_bound_summary_uses_exact_projection_and_still_requires_meaning_review(self):
+        before=copy.deepcopy(self.calls)
+        packets=B.support_packets('Count machine receipts and unresolved statuses.',self.answer,self.calls,[],'2030-05-27')
+        state=uncompact_json(json.loads(packets[0]['text']))
+        self.assertEqual(state['native_dependency_scope']['required_result_views'],['agere_result_1','agere_result_2'])
+        self.assertEqual(state['native_column_projections'][0]['row_count'],3)
+        self.assertNotIn('global_patient_evidence',state)
+        self.assertEqual(self.calls,before)
+        rejected=B.check_support_packets(packets,lambda *a,**k:{'label':'contradicted','decided_by':'authored-meaning-check','steps':[]},
+            field_decider=lambda subject,questions,*a,**k:{'judgments':{key:{'label':'wrong_population','decided_by':'authored-meaning-check','probability':1.}for key in questions},'steps':[]},
+            as_of='2030-05-27',ledger=None)
+        self.assertNotEqual(rejected['label'],'supported')
+
+    def test_unbound_global_claim_keeps_complete_source_observations(self):
+        self.answer['headline']='Clinical eligibility has not been established.'
+        packets=B.support_packets('Review clinical eligibility.',self.answer,self.calls,[],'2030-05-27')
+        state=uncompact_json(json.loads(packets[0]['text']))
+        self.assertNotIn('native_column_projections',state)
+        self.assertIn('A complete source interpretation is still required.',json.dumps(state))
+
+
+if __name__=='__main__':unittest.main()

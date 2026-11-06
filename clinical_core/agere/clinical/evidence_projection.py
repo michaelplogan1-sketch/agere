@@ -8,6 +8,7 @@ sampled, accepted, or summarized by this representation.
 import copy
 import json
 import math
+import re
 from collections import Counter
 from ...contracts import digest
 
@@ -295,6 +296,76 @@ def restore_native_observations(view):
     if digest(groups)!=view.get('original_fingerprint'):
         raise ValueError('Native observation values or order changed')
     return groups
+
+
+def native_column_projections(calls, roots, dependencies):
+    """Project intermediate machine outputs to SQLite's actual column reads.
+
+    Complete producer receipts remain native evidence. This only discharges
+    copying of unused columns for aggregate dependencies, never source meaning.
+    Unknown consumers, incomplete results, direct answer bindings and document
+    readers retain their complete context. Row order and multiplicity survive.
+    """
+    from .backstop_agent import output_table
+    from .result_assembly import incomplete_reason
+    by={};duplicates=set()
+    for call in calls:
+        result=call.get('result')or{}
+        view=result.get('result_view')if isinstance(result,dict)else None
+        if view in by:duplicates.add(view)
+        if view:by[view]=call
+    if dependencies is None or duplicates:return {}
+    projections={}
+    for view in dependencies-set(roots):
+        producer=by.get(view)
+        if not producer or producer.get('name')!='execute_analysis':continue
+        result=producer['result']
+        if result.get('error')or incomplete_reason(result):continue
+        columns,rows=output_table(result)
+        if (not columns or len(set(columns))!=len(columns)
+            or any(len(row)!=len(columns)for row in rows)):continue
+        receipt_digest=digest({k:v for k,v in result.items()if k!='result_view'})
+        needed=set();consumers=[];valid=True
+        for name in dependencies:
+            if name==view:continue
+            call=by.get(name)
+            if not call:valid=False;break
+            observed=call['result']
+            if view not in (observed.get('read_views')or[]):
+                # Non-SQL assembly dependencies lack an authoritative read map.
+                assembly=observed.get('assembly')or{}
+                linked=[assembly.get('base_result_view')]+[j.get('result_view')for j in assembly.get('joins',[])]
+                if view in linked or re.search(
+                    r'(?<![A-Za-z0-9_])'+re.escape(view)+r'(?![A-Za-z0-9_])',
+                    json.dumps(call.get('input')or{},default=str)):
+                    valid=False;break
+                continue
+            reads=observed.get('native_read_columns')or{}
+            source=(reads.get('sources')or{}).get(view)or{}
+            query=observed.get('declared_executed_query')or observed.get('executed_query')
+            if (call.get('name')!='query_sql'or reads.get('schema')!='sqlite-native-column-reads/1'
+                or not isinstance(query,str)or reads.get('query_digest')!=digest(query)
+                or source.get('complete')is not True or source.get('receipt_digest')!=receipt_digest
+                or not isinstance(source.get('columns'),list)
+                or any(not isinstance(c,str)for c in source['columns'])
+                or not set(source['columns'])<=set(columns)):
+                valid=False;break
+            needed.update(source['columns'])
+            consumers.append({'result_view':name,'query':query,'query_digest':reads['query_digest'],
+                'columns_read':source['columns'],'result_digest':digest(observed)})
+        if not valid or not consumers:continue
+        # Keep explicit entity identity even when only row cardinality was read.
+        selected=[c for c in columns if c in needed or c=='patient_id']
+        if set(selected)==set(columns):continue
+        projected=[[row[columns.index(c)]for c in selected]for row in rows]
+        if any(isinstance(value,(dict,list))for row in projected for value in row):continue
+        projections[view]={'schema':'native-column-projection/1','result_view':view,
+            'producer':{'tool':producer['name'],'input':producer.get('input')},
+            'complete_receipt_digest':receipt_digest,'complete_columns':columns,
+            'columns':selected,'rows':projected,'row_count':len(rows),
+            'projected_rows_digest':digest(projected),'consumers':consumers,
+            'scope':'Every native row, duplicate and NULL in the columns actually read by the executed SQL is retained in original order. Complete producer receipts remain native evidence. This proves dependency-copy fidelity only; omitted documentary fields provide no support for clinical interpretation. Counted machine statuses do not establish eligibility, current need, treatment or causal effects.'}
+    return projections
 
 
 def partition_support_packet(packet, *, max_bytes=230000):

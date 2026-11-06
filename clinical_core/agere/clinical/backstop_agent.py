@@ -1938,6 +1938,19 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             'Source support is checked separately after composition; coverage alone does not certify any interpretation.')
         coverage = gate.check(coverage_request, graph, {'answer': coverage_view}, stack=stack, ledger=ledger, as_of_date=as_of)
         assessment.update(coverage=coverage, calls=assessment['calls']+coverage['calls'], cost_usd=assessment['cost_usd']+coverage['cost_usd'])
+        # Locate admitted work before constructing or reviewing its full source dependencies.
+        if answer.get('missing'):
+            work=gate.check_pending_work(question,answer,calls,ledger=ledger,as_of_date=as_of)
+            assessment.update(declared_work=work,calls=assessment['calls']+work['calls'],
+                cost_usd=assessment['cost_usd']+work['cost_usd'])
+            if work.get('targets'):
+                return {**assessment,'status':'repair','repair_kind':'incomplete_work',
+                    'progress_state':{'pending_work':work['targets']},
+                    'support':{'label':'not_run','decided_by':None,'packets':[],
+                        'all_dependencies_checked':False,'reason':'Complete located requested work before source review.'},
+                    'feedback':'Complete these explicitly unfinished requested tasks using the registered tools and retained native work: '+json.dumps(work['targets'])+'. '
+                        'Discover list_analyses/describe_analysis for available native operations. Perform the missing calculation, source inspection or composition; do not merely reword the answer. '
+                        'Keep genuinely unavailable facts, eligibility and uncertain verification explicit. No new source fact or clinical authority is established by this work check.'}
         if (coverage.get('decided_by') and coverage.get('label') in ('answers_partially','answers_a_different_question')
                 and coverage.get('p',0) >= gate.reject_threshold()):
             # An unfinished draft must be composed before paying to review all
@@ -2044,17 +2057,6 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             joint_wait=(support.get('joint_verification_wait')and support.get('all_dependencies_checked')is True
                 and sorted(support['joint_verification_wait'])==sorted(p['id']for p in indeterminate['unresolved_verification'])
                 and not support.get('claim_feedback'))
-            can_stop=source_checked_coverage_unknown or joint_wait or unlocated_verification_wait(coverage,support)
-            if can_stop and answer.get('missing'):
-                work=gate.check_pending_work(question,answer,calls,ledger=ledger,as_of_date=as_of)
-                assessment.update(declared_work=work,calls=assessment['calls']+work['calls'],
-                    cost_usd=assessment['cost_usd']+work['cost_usd'])
-                if work.get('targets'):
-                    return {**assessment,'status':'repair','repair_kind':'incomplete_work',
-                        'progress_state':{'pending_work':work['targets']},
-                        'feedback':'Complete these explicitly unfinished requested tasks using the registered tools and retained native work: '+json.dumps(work['targets'])+'. '
-                            'Discover list_analyses/describe_analysis for available native operations. Perform the missing calculation, source inspection or composition; do not merely reword the answer. '
-                            'Keep genuinely unavailable facts, eligibility and uncertain verification explicit. No new source fact or clinical authority is established by this work check.'}
             if source_checked_coverage_unknown:
                 # Complete source support plus an undecided coverage vote is
                 # no evidence of an omission. Rewriting verified claims only
@@ -2375,6 +2377,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             for item in value:roots.extend(prose_roots(item))
         return roots
     claim_roots.extend(prose_roots(answer.get('computed_prose',[])))
+    claim_roots=[root for root in claim_roots if root is not None]
     claim_dependencies=native_result_dependencies(calls,list(dict.fromkeys(claim_roots)))
     local_dependencies=claim_dependencies
     known_dependencies=set(claim_roots)
@@ -2516,10 +2519,17 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     # Global bindings/citations are checked in summary; explicit patient sets
     # retain their relevant native observations there, without empty local claims.
     global_patient_evidence=[]
+    from .evidence_projection import native_column_projections
+    column_projections=native_column_projections(calls,claim_roots,claim_dependencies)if closed_global else {}
+    if column_projections:
+        packets[0]['native_column_projections']=list(column_projections.values())
     for pid,rows in by.items():
         if pid in final_patients:continue
         relevant=[row for ident,row in rows.items()if local_dependencies is None or any(
             o.get('result_view')in local_dependencies for o in origins.get(pid,{}).get(ident,{}).values())]
+        if column_projections:
+            relevant=[row for row in relevant if not (origins.get(pid,{}).get(digest(row))and all(
+                o.get('result_view')in column_projections for o in origins[pid][digest(row)].values()))]
         if relevant:global_patient_evidence.append({'patient_id':pid,'native_observations':relevant})
     if global_patient_evidence:
         from .evidence_projection import native_observation_view

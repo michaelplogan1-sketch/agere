@@ -68,6 +68,7 @@ class MaterializedNativeResults(unittest.TestCase):
     def test_incomplete_producer_guards_and_shadowed_cte_binding_survive_materialization(self):
         B.define_result(self.semantic,'agere_result_1',['patient_id'],[['A']],receipt={'rows':[['A']],'columns':['patient_id'],'truncated':True})
         with self.assertRaisesRegex(ValueError,'Incomplete native dependency'):self.semantic.query('SELECT * FROM agere_result_1')
+        with self.assertRaisesRegex(ValueError,'Incomplete native dependency'):self.semantic.query('SELECT COUNT(*) AS n FROM agere_result_1')
         inspected=self.semantic.query('SELECT * FROM agere_result_1',inspect_incomplete=True)
         self.assertTrue(inspected['incomplete_dependencies'])
         local=self.semantic.query("WITH agere_result_1 AS (SELECT 'B' AS patient_id) SELECT * FROM agere_result_1")

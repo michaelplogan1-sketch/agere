@@ -202,6 +202,8 @@ class CompletionRouting(unittest.TestCase):
         with patch.object(G,'check_pending_work',return_value={'targets':[target],'calls':1,'cost_usd':.001}):
             assessment=self.review(decided=None,support=supported)[0]
         self.assertEqual(assessment['repair_kind'],'incomplete_work')
+        self.assertEqual(assessment['support']['label'],'not_run')
+        self.assertEqual(assessment['support']['reason'],'Complete located requested work before source review.')
         self.assertNotIn('retry_disposition',assessment)
         self.assertIn('list_analyses/describe_analysis',assessment['feedback'])
         for initial in (True,False):

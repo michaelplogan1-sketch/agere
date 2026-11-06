@@ -178,7 +178,9 @@ class SemanticWarehouse:
         native = getattr(self._local, 'native_results', None)
         if native is None:
             native = self._local.native_results = {}
+        from ...contracts import digest
         native[name.casefold()] = {'name': name, 'kind': receipt.get('kind'),
+            'receipt_digest': digest({k:v for k,v in receipt.items()if k!='result_view'}),
             'incomplete_dependencies': incomplete_dependencies(receipt, result_view=name)}
 
     def query(self, sql, *, as_of=None, max_rows=2000, max_chars=60000, inspect_incomplete=False):
@@ -197,6 +199,7 @@ class SemanticWarehouse:
             _, tables = native_query_bindings(sql, native)
             bindings = None if tables is None else {table.name.casefold() for table in tables}
         native_reads, blocked, functions = set(), set(), set()
+        native_columns, unknown_native_columns = {}, set()
         def authorize(action, arg1, arg2, database, source):
             verdict = self._authorize(action, arg1, arg2, database, source)
             if verdict == sqlite3.SQLITE_OK:
@@ -208,10 +211,17 @@ class SemanticWarehouse:
                 if source in views: definitions.add(source)
                 if action == sqlite3.SQLITE_READ:
                     candidates = {str(source).casefold()}
-                    if database == 'temp': candidates.add(str(arg1).casefold())
+                    cardinality_read=(database is None and arg2=='' and bindings is not None
+                        and str(arg1).casefold()in bindings)
+                    if database == 'temp' or cardinality_read:candidates.add(str(arg1).casefold())
                     for name in candidates & native.keys():
                         if bindings is None or name in bindings:
                             native_reads.add(name)
+                            if (database == 'temp' or cardinality_read) and str(arg1).casefold() == name:
+                                native_columns.setdefault(name,set())
+                                if arg2:native_columns[name].add(arg2)
+                            elif str(source).casefold() == name:
+                                unknown_native_columns.add(name)
                             # Direct producer consumers (population selection,
                             # field scopes) must not dispatch from clipped input.
                             # The registered SQL inspection tool opts in below;
@@ -236,6 +246,14 @@ class SemanticWarehouse:
         if native_reads and bindings is None:
             raise ValueError('Native SQL dependency binding is unavailable; no complete result was registered')
         result['read_views'] = [native[name]['name'] for name in sorted(native_reads)]
+        if native_reads:
+            from ...contracts import digest
+            result['native_read_columns'] = {'schema':'sqlite-native-column-reads/1',
+                'query_digest':digest(sql),
+                'sources':{native[name]['name']:{'columns':sorted(native_columns.get(name,())),
+                    'complete':name not in unknown_native_columns and name in native_columns,
+                    'receipt_digest':native[name]['receipt_digest']}
+                    for name in sorted(native_reads)}}
         reasons = [reason for name in sorted(native_reads) for reason in native[name]['incomplete_dependencies']]
         if reasons:
             result['incomplete_dependencies'] = list({json.dumps(item, sort_keys=True): item for item in reasons}.values())
