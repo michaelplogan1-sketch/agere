@@ -638,6 +638,8 @@ class Cascade:
         """A proposal passed every check: an independent proposer verifies it unless certified / confirmed by System One. A backstop
         answer whose quotes were verified against their own records is not re-verified by the weaker generalist tiers (matched
         diagnostic 2026-10-26: ~50 s of verifiers on one-patient note answers, none comparable)."""
+        if isinstance(found,tuple)and (found[0].get('executed')or{}).get('clarification_checkpoint'):
+            return found[0],self.finish({**found[1],'execution_accepted':False,'awaiting_user_intent':True},name)
         a = ((found[0] or {}).get('executed') or {}).get('answer') or {} if isinstance(found, tuple) else {}
         if name == 'backstop_agent':  # its continuing investigation owns repair; another analyst cannot repair a failed review service
             contract, interpretation = found
@@ -843,7 +845,7 @@ class Cascade:
         found = self.attempt(name, seconds)
         return self.accept(order, name, found) if found is not None else None
 
-    def tier_backstop_agent(self):
+    def tier_backstop_agent(self,*,continuation=None,clarification_reply=None):
         """The final backstop analyst (backstop_agent.py) starts on Haiku and owns its checked escalation. Its answer is
         accepted with the checks as annotations (heal, don't block): it is the last layer, and its document quotes are verified verbatim."""
         if os.environ.get('AGERE_BACKSTOP', 'on') == 'off' or not getattr(self.stack, 'allow_live', False) or not claude_available(): return None
@@ -871,8 +873,17 @@ class Cascade:
             return 'Final answer checks: ' + str(reasons) + '. Repair this in the current investigation using the existing tool results.'
         with model_policy.question_path(), model_policy.first_rung():
             run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger, population=self.population,
-                                        hint=getattr(self, 'second_look_hint', None), validate_final=validate_final)
+                                        hint=getattr(self, 'second_look_hint', None), validate_final=validate_final,
+                                        **({'continuation':continuation,'clarification_reply':clarification_reply}if continuation is not None else {}))
         self.spend(run.get('new_paid_api_calls', 0), run.get('known_cost_usd') or run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
+        self.last_backstop_run=run
+        if run.get('clarification_checkpoint'):
+            graph={'interpretation':self.question,'coverage':'unresolved_user_intent','unmet_requirements':run['answer']['missing'],'nodes':[]}
+            result={'answer':run['answer'],'results':[],'workflow':[],'clarification_checkpoint':run['clarification_checkpoint'],
+                    'investigation':{k:run.get(k)for k in ('model','tool_calls','document_reviews','answer_reviews')},
+                    'clinical_execution_authorized':False}
+            contract,interpretation=self.contract_of('backstop_agent',graph,{'route':'backstop_agent','awaiting_user_intent':True},result)
+            return contract,{**interpretation,'execution_accepted':False,'awaiting_user_intent':True}
         if run.get('error') and outage(RuntimeError(run['error']))=='cancelled':
             from ..gateway import ProviderUnavailable
             interrupted=ProviderUnavailable(run['error'],kind='cancelled')
@@ -1467,6 +1478,8 @@ def execute(stack, question, graph, receipt, *, started,population=None,parent=N
         *(['Free-form answer: no verified question spec stands behind it; it was shipped because System One confirmed it answers the question.']
           if receipt['interpretation'].get('free_form') else [])]))
     if receipt['interpretation'].get('free_form'): answer['free_form'] = True
+    if result.get('clarification_checkpoint'):
+        answer['limitations']=list(result['answer'].get('limitations')or[])
     if answer.get('headline') is None:
         value = answer.get('count', answer.get('value'))
         answer['headline'] = str(value) if value is not None else f"{len(answer.get('table') or [])} rows"

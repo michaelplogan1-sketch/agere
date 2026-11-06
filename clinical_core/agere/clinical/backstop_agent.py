@@ -31,6 +31,7 @@ import sqlite3
 import time
 from pathlib import Path
 from .document_review import QUESTION_SCHEMA
+from .clarification import TOOL as CLARIFICATION_TOOL
 
 VERSION = 'backstop-agent/3'  # continuing evidence-bound investigation with System One final-answer review
 NATIVE_SQL_CONTRACT = 'complete-native-sql/2'
@@ -58,6 +59,7 @@ READ_CHARS = 9000
 JUDGE_CHUNK = 1800       # characters per evidence chunk handed to System One (a whole document is several chunks, not one ranked snippet)
 
 TOOLS = [
+    CLARIFICATION_TOOL,
     {'name':'read_patient_profiles','description':'Read received patient display names and profile fields by exact ID, using the same source profiles attached to saved answers. These fields are separate from the semantic patient SQL table. Supply patient_query_sql for an executed cohort, explicit patient_ids, or omit both for the inherited population. Returns every selected patient, source date/fingerprint and an SQL result_view for composition. Missing or future profiles remain unknown. Names do not establish a clinician assignment or clinical eligibility.',
      'input_schema':{'type':'object','properties':{'patient_ids':{'type':'array','items':{'type':'string'}},
         'patient_query_sql':{'type':'string'}},'additionalProperties':False}},
@@ -178,6 +180,11 @@ has already declined this question, so it is yours to answer completely and corr
   from a governed source first: execute_metric when a governed metric fits (list_metrics shows them), else ask_agere (one simple
   sub-question per call); use query_sql for what neither answers or to break a result down further, following the decision context.
 - First settle each requirement with governed metrics, SQL and explicit structured source relationships where available.
+  When USER INTENT is materially ambiguous, finish independent work and call request_clarification alone with concise
+  alternative meanings and why the distinction affects the answer. Retrieve available facts yourself. Do not ask users
+  to repair software, approve routine work, validate your confidence or supply an unverified clinical fact. Existing
+  declared definitions/defaults and already supplied preferences need no question. In autonomous mode continue every
+  independent requirement and keep the unresolved intent explicit. A clarification reply is user intent, never source truth.
   For contract-dependent opportunities, describe and execute the registered accountability_review analysis with the exact
   population, contract and receipt cutoff. Its complete patient receipts are native SQL rows; global contract_requests
   remain one shared dependency list and must not be multiplied by patient joins. Unbound means no verified mapping is
@@ -466,10 +473,16 @@ class Tools:
                 'patient_profile_reader':hashlib.sha256((Path(__file__).resolve().parents[1]/'deliverables'/'patient_evidence.py').read_bytes()).hexdigest(),
                 'explicit_tool_quota':MAX_TOOLS, 'native_sql_contract':NATIVE_SQL_CONTRACT,
                 'executor_code':{name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-                                 for name in ('backstop_agent.py','analyst_context.py','semantic_docs.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','drug_classes.py','note_evidence.py')},
+                                 for name in ('backstop_agent.py','clarification.py','analyst_context.py','semantic_docs.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','drug_classes.py','note_evidence.py')},
                 'analytical_code':analysis_graph.code_identity(),'component_releases':component_learning.active_identity()}
 
     def _call(self, use):
+        if use.get('name')=='request_clarification':
+            from .clarification import request
+            result=request(use.get('input'))
+            if result['clarification_required']['slot']in getattr(self,'resolved_intent_slots',set()):
+                raise ValueError('The user already clarified this intent slot. Use the retained response; do not ask the same question again.')
+            return result
         name, args = use.get('name'), use.get('input') or {}
         if name == 'read_patient_profiles':return self.read_patient_profiles(**args)
         if name in ('list_analyses','describe_analysis','execute_analysis'):
@@ -3557,12 +3570,14 @@ def returned_answer_review(run):
     return reviews[-1]
 
 
-def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, population=None, hint=None, validate_final=None):
+def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, population=None, hint=None, validate_final=None,
+           continuation=None,clarification_reply=None):
     """-> {'answer': answer contract or None, 'tool_calls', 'model', 'estimated_cost_usd', 'new_paid_api_calls', 'error', 'seconds'}."""
     if ledger is None and send is None:  # a direct caller: charge the product ledger of a live stack
         from . import spec_exec
         with spec_exec.ledger_for(stack) as own:
-            if own is not None: return answer(stack, question, ledger=own, model=model, as_of=as_of, population=population, hint=hint, validate_final=validate_final)
+            if own is not None: return answer(stack, question, ledger=own, model=model, as_of=as_of, population=population, hint=hint, validate_final=validate_final,
+                                               continuation=continuation,clarification_reply=clarification_reply)
     from . import semantic_analyst, together, analyst_definitions, decision_context, requirement_ledger
     from .legacy_proposers import _semantic_path, _send
     from .. import model_policy
@@ -3597,6 +3612,10 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     prior = patient_ids.current_prior() or {}
     from .evidence_proposers import population_ids
     cohort = (population_ids(population) or []) if population is not None else None
+    if continuation is not None:
+        if continuation.get('question')!=question or continuation.get('as_of')!=str(as_of)[:10]:
+            raise ValueError('Clarification does not match the original question and snapshot')
+        cohort=continuation['cohort'];model=continuation['model']
     payload = {'question': question, 'as_of': str(as_of)[:10], 'conversation_so_far': conversation_turns(stack), 'prior_patient': prior.get('patient_id')}
     from .component_learning import shape_hint
     learned_shape=shape_hint(stack,question)
@@ -3605,7 +3624,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     if hint: payload['second_look'] = {**hint, 'instruction': 'Prior proposals, answers and machine feedback are unverified context. A rejected plan has not executed and does not establish any fact or satisfy a requirement. Reuse useful reasoning only after checking it against the original question and current source definitions. Execute through the registered tools and complete every unresolved requirement; do not repeat an earlier validation failure or treat it as accepted evidence.'}
     user = json.dumps(payload, default=str)
     from .requirement_ledger import PATIENT_ID
-    patients = [m.group() for m in PATIENT_ID.finditer(question or '')] or ([prior['patient_id']] if prior.get('patient_id') else [])
+    patients = ([m.group() for m in PATIENT_ID.finditer(question or '')] or ([prior['patient_id']] if prior.get('patient_id') else []))if continuation is None else (continuation['guard']['scope'] or [])
     tools = Tools(stack, wh, as_of, cohort=cohort, ledger=ledger, patients=patients, question=question)
     if tools.cohort is not None: payload['cohort_size'] = len(tools.cohort)
     payload['patient_scope'] = sorted(tools.scope) if tools.scope is not None else None
@@ -3614,7 +3633,13 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
         receipts = []
         model = model or model_policy.first('analyst')
         from . import harness_improvement as harness
-        replay=harness.attempt_replay(tools,question,payload,model)
+        restored_messages=None
+        if continuation is not None:
+            from .clarification import restore
+            payload,restored_messages=restore(tools,continuation,clarification_reply)
+            user=json.dumps(payload,default=str)
+            replay={'used':None,'calls':continuation['calls'],'clarification_native_restoration':True}
+        else:replay=harness.attempt_replay(tools,question,payload,model)
         if replay.get('used') or replay.get('recovered_read_only_actions') or replay.get('downstream_review_feedback'):
             from .execution_state import recovery_context
             user=json.dumps({**payload,'execution_reuse':recovery_context(replay,tools),
@@ -3637,6 +3662,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                                          max_tools=MAX_TOOLS, extra={'cache_control': {'type': 'ephemeral'}}, format_retries=1, max_tokens=8192,
                                          review=review, continuation_guard=tools.continuation_identity,initial_calls=replay['calls'],
                                          initial_answer=replay.get('resume_draft') if replay.get('resume_draft')is not None else replay.get('final_answer'),
+                                         restored_messages=restored_messages,
                                          escalation_model=model_policy.SONNET if model==model_policy.HAIKU and model_policy.escalation_enabled() else None,
                                          compact_execution_state=os.environ.get('AGERE_ANALYST_STATE')=='compiled',
                                          binding_system=[{'type':'text','text':BINDING_RULES+'\n'+decision_context.prompt_block()},
@@ -3647,12 +3673,16 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                        'input_tokens':run.get('input_tokens'),'output_tokens':run.get('output_tokens')}
         partial_prefix=harness.partial_prefix_evidence(run)is not None
         reviewable_proposal=harness.draft_proposal_evidence(run)is not None
+        unresolved_intent=any(c.get('name')=='request_clarification'and (c.get('result')or{}).get('interaction_mode')=='autonomous'
+                              for c in run.get('tool_calls')or[])
         from ..gateway import classify_provider_error
         request_cancelled=bool(run.get('error')) and classify_provider_error(RuntimeError(run['error']))=='cancelled'
         # Fresh-executor validation can replay expensive native actions. An
         # interrupted request saves its recovery checkpoint below, without
         # automatically validating or selecting a reuse candidate.
-        if not request_cancelled and (reviewable_proposal or partial_prefix or isinstance(run.get('answer'),dict) and run['answer'].get('status')=='answered' and (run.get('answer_reviews') or [{}])[-1].get('status')=='confirmed'):
+        # A reply's intent is scoped to this investigation. It has not been
+        # qualified as a parameter of a reusable workflow or training label.
+        if continuation is None and not request_cancelled and not run.get('clarification_pause') and not unresolved_intent and (reviewable_proposal or partial_prefix or isinstance(run.get('answer'),dict) and run['answer'].get('status')=='answered' and (run.get('answer_reviews') or [{}])[-1].get('status')=='confirmed'):
             def fresh_executor():
                 fresh=semantic_analyst.SemanticWarehouse(path);fresh.define(as_of)
                 if discover_context: install_context(fresh, full_docs)
@@ -3687,6 +3717,20 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
         if not tools.subtool_accounting.get('api_cost_known',True):out['estimated_cost_usd']=None
         if any(r.get('cost_known') is False for r in reviews):out['estimated_cost_usd']=None
         out['document_reviews'] = tools.document_reviews
+        if run.get('clarification_pause'):
+            from .clarification import checkpoint
+            out['clarification_checkpoint']=checkpoint(tools,question,payload,run)
+            out['answer']={'status':'clarify','answer_type':'clarification','headline':run['clarification_pause']['request']['question'],
+                'missing':[run['clarification_pause']['request']['reason']],'patient_ids':[],'actionable_cohort':False,
+                'data_absence_established':False,'limitations':['User intent remains unresolved. Completed source observations are retained.']}
+        deferred=[call['result']['clarification_required']for call in out['tool_calls']
+                  if call.get('name')=='request_clarification'and isinstance(call.get('result'),dict)
+                  and call['result'].get('interaction_mode')=='autonomous'and call['result'].get('clarification_required')]
+        if deferred and isinstance(out.get('answer'),dict):
+            out['answer']={**out['answer'],'status':'partial','actionable_cohort':False,
+                'missing':list(dict.fromkeys([*(out['answer'].get('missing')or[]),
+                    *['Unresolved user intent: '+d['question']+' '+d['reason']for d in deferred]]))}
+            out['deferred_intent']=deferred
         try:out['recovery_checkpoint']=harness.recovery_checkpoint(tools,question,payload,run)
         except ValueError as exc:out['recovery_checkpoint_unavailable']=str(exc)
         out['recursive_improvement']={'replay':{k:v for k,v in replay.items() if k not in ('calls','final_answer','resume_draft')},'candidate':candidate,

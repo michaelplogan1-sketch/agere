@@ -562,8 +562,13 @@ def turns(path, conversation_id):
     finally:
         db.close()
     load = lambda s: json.loads(s) if s else None
-    return [{'turn': r[0], 'created': r[1], 'question': r[2], 'resolved_question': r[3], 'method': r[4], 'edits': load(r[5]),
+    out=[{'turn': r[0], 'created': r[1], 'question': r[2], 'resolved_question': r[3], 'method': r[4], 'edits': load(r[5]),
              'frame': load(r[6]), 'plan_summary': load(r[7]), 'answer_summary': load(r[8]), 'error': r[9]} for r in rows]
+    from .clarification import refresh_public
+    for row in out:
+        answer=row.get('answer_summary')or{}
+        if answer.get('clarification'):answer['clarification']=refresh_public(path,conversation_id,answer['clarification'])
+    return out
 
 
 def prior_context(path, conversation_id):
@@ -613,6 +618,7 @@ def summaries(result):
               'subject': a.get('subject'),
               'rows': len(a['table']) if isinstance(a.get('table'), list) else None,
               'patients': len(a['patient_ids']) if isinstance(a.get('patient_ids'), list) else None}
+    if result.get('clarification'):answer['clarification']=result['clarification']
     return plan, answer
 
 
@@ -622,6 +628,9 @@ def compose_shape(body):
     keys = set(body)
     if not isinstance(body.get('question'), str): raise ValueError('Explicit composition question and supported optional candidate policy required')
     conv = False
+    if 'interaction_mode'in keys:
+        if body['interaction_mode']not in ('interactive','autonomous'):raise ValueError('Choose interactive or autonomous interaction')
+        keys-={'interaction_mode'}
     if 'delivery_generation' in keys:
         if body['delivery_generation'] not in ('saved_report','frontier'):
             raise ValueError('Choose saved_report or frontier delivery')
@@ -925,7 +934,47 @@ def _stated_absence(stack, question, exc):
         return None
 
 
-def handle_compose(stack, body, hosted_factory=None):
+def handle_compose(stack,body,hosted_factory=None):
+    from . import clarification
+    with clarification.interaction(body.get('interaction_mode','interactive')):
+        if 'clarification_response'in body:return _resume_compose(stack,body)
+        return _handle_compose(stack,body,hosted_factory=hosted_factory)
+
+
+def _resume_compose(stack,body):
+    from . import clarification,cost_telemetry
+    if set(body)-{'conversation_id','clarification_response','interaction_mode'}or 'conversation_id'not in body:
+        raise ValueError('Clarification reply requires its conversation and exact pending request')
+    response=body['clarification_response']
+    if not isinstance(response,dict)or set(response)not in ({'id','option_id'},{'id','text'}):
+        raise ValueError('Supply the exact clarification ID and an option or intent text')
+    conv=check_id(body['conversation_id'])
+    row,reply,cached=clarification.claim(stack.path,conv,response['id'],{k:v for k,v in response.items()if k!='id'})
+    if cached is not None:
+        return {**cached,'cache_hit':True,'new_paid_api_calls':0,
+            'clarification_replay':{'new_paid_api_calls':0,'new_api_estimate_usd':0,'original_result_preserved':True,
+                'original_phase_paid_api_calls':cached.get('new_paid_api_calls'),
+                'original_phase_economics':cached.get('planning_economics')}}
+    probe=cost_telemetry.start(row['question']);t0=time.time()
+    try:
+        result=clarification.resume_investigator(stack,row['checkpoint'],reply,origin=row.get('origin'))
+        result['clarification_history']=[*row.get('history',[]),{'id':row['id'],'slot':row['checkpoint']['pause']['request']['slot'],
+            'response':reply,'authority':'user_intent_only','source_facts_established':False,
+            'previous_phase_accounting':row['phase_accounting']}]
+        resolution={'standalone':row['checkpoint']['question'],'method':'clarification_resumed','follow_up':True,
+            'frame':None,'edits':['Resolved intent: '+row['checkpoint']['pause']['request']['slot']],
+            'reason':'Continued the same saved investigation; completed native tools were restored without execution.'}
+        out=_finish_compose(stack,{**row.get('request_options',{}),**body},row['question'],conv,resolution,result,probe,t0)
+        clarification.finish(stack.path,row['id'],result=out)
+        return out
+    except Exception as exc:
+        clarification.finish(stack.path,row['id'],result=getattr(exc,'partial_result',None),error=exc)
+        exc.cost_telemetry=probe.finish(error=str(exc))
+        cost_telemetry.record(stack.path,exc.cost_telemetry)
+        raise
+
+
+def _handle_compose(stack, body, hosted_factory=None):
     """Run /api/stack/compose with optional conversation context. Logging matches the single-question route."""
     from . import answer_log, learning
     question, conv = str(body.get('question', '')), False
@@ -1108,6 +1157,11 @@ def handle_compose(stack, body, hosted_factory=None):
             exc.evaluation = evaluation.receipt()
             cost_telemetry.record(stack.path, exc.cost_telemetry)
             raise
+    return _finish_compose(stack,body,question,conv,resolution,result,probe,t0,hosted_calls,hosted_usd)
+
+
+def _finish_compose(stack,body,question,conv,resolution,result,probe,t0,hosted_calls=0,hosted_usd=0):
+    from . import answer_log,learning,cost_telemetry,evaluation,clarification
     probe.mark('compose')
     if hosted_calls or hosted_usd:
         econ = dict(result.get('planning_economics') or {})
@@ -1115,13 +1169,20 @@ def handle_compose(stack, body, hosted_factory=None):
         econ['follow_up_resolution_usd'] = hosted_usd
         result = {**result, 'planning_economics': econ, 'new_paid_api_calls': (result.get('new_paid_api_calls') or 0) + hosted_calls}
     from ..deliverables import answer_context
+    awaiting=clarification.pending(result)
+    if awaiting:
+        if conv is False:conv=check_id(None)
+        resolution=resolution or {'standalone':question,'method':'clarification','frame':None,'follow_up':False,'edits':[],'reason':'Material user intent is unresolved.'}
+        result=clarification.publish(stack.path,conv,question,result,
+            request_options={k:body[k]for k in ('delivery_generation',)if k in body})
     try:
-        if result.get('program_results') and not _evaluating():
+        if not awaiting and result.get('program_results') and not _evaluating():
             from . import request_program
             request_program.materialize(stack, result)
         from ..deliverables.workflow import fulfill
-        result=fulfill(stack,resolution['standalone'] if resolution else question,result,original_question=question,
-                       generation=body.get('delivery_generation'))
+        if not awaiting:
+            result=fulfill(stack,resolution['standalone'] if resolution else question,result,original_question=question,
+                           generation=body.get('delivery_generation'))
     except (OSError, ValueError, sqlite3.Error) as exc:
         result = {**result, 'action_context_error': str(exc)}
     if conv is not False:
@@ -1134,6 +1195,9 @@ def handle_compose(stack, body, hosted_factory=None):
     logged = resolution['standalone'] if resolution else question
     probe.mark('capture')
     answer_log.record(stack.path, logged, result=result, seconds=time.time() - t0, question_id=probe.question_id)
+    if awaiting:
+        telemetry=probe.finish(result);cost_telemetry.record(stack.path,telemetry)
+        return {**result,'cost_telemetry':telemetry,'cost_receipt':cost_telemetry.receipt(telemetry,result)}
     pr = result.get('planner_receipt') or {}
     local = pr.get('local_compiler_declined') or {}
     economics = result.get('planning_economics') or {}
@@ -1156,7 +1220,8 @@ def handle_compose(stack, body, hosted_factory=None):
         learning.record_routing(stack.path, logged, local['operator_router'], executed=pr.get('route') == 'operator_router')
     from .learning_hooks import after_answer  # every answer feeds learning: saved pairs, question learning, training corpus
     from .harness_improvement import finish as finish_harness
-    result = {**result, 'learning': after_answer(stack, logged, result, body=body)}
+    result = {**result, 'learning': ({'status':'not_captured','reason':'This answer depends on explicit user intent. Reuse needs qualified intent parameters; it must not become a default label for the ambiguous original question.'}
+        if result.get('clarification_history')else after_answer(stack, logged, result, body=body))}
     probe.mark('learning')
     telemetry = probe.finish(result)
     cost_telemetry.record(stack.path, telemetry)

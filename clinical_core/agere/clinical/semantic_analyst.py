@@ -505,7 +505,7 @@ def actor_result(value):
 
 def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None,
               format_retries=0, review=None, continuation_guard=None, initial_calls=None, initial_answer=None,
-              escalation_model=None, compact_execution_state=False, binding_system=None):
+              escalation_model=None, compact_execution_state=False, binding_system=None, restored_messages=None):
     """Bounded tool-use loop: every executed call (failed ones included) counts toward max_tools; all returned usage is
     recorded, including cache writes/reads; there are no automatic paid retries.
 
@@ -534,7 +534,11 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     repair_protocol_feedback=None;binding_query_required=False
     binding_query_reason='The previous patch changed a quantity instead of binding it.'
     declined_compiler_probes=set()
-    if initial_calls:
+    if restored_messages is not None:
+        import copy
+        messages=copy.deepcopy(restored_messages)
+        result['tool_calls']=list(initial_calls or [])
+    elif initial_calls:
         # Certified literal replay enters through the same native tool protocol.
         # The actor sees actual current receipts, never a cached final answer.
         blocks=[];answers=[]
@@ -1022,7 +1026,10 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     try: current_guard=digest(continuation_guard())
                     except (ValueError,OSError,sqlite3.Error): pass
                 blocked=guarded and (guard_identity is None or current_guard!=guard_identity or predecessor_failed)
-                if blocked:
+                if any(u.get('name')=='request_clarification'for u in uses)and len(uses)!=1:
+                    output={'error':'Call request_clarification alone, after completing independent work. No mixed-batch action was executed.'}
+                    failure=True
+                elif blocked:
                     output={'error':'Resolved continuation not executed: source/scope changed, identity unavailable, or predecessor failed. Replan from the retained evidence.'}
                     failure=True
                 elif max_tools is not None and calls >= max_tools:
@@ -1051,6 +1058,13 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                             'sql': (output.get('executed_query') if isinstance(output, dict) else None) or use.get('input', {}).get('sql'), 'result': output,
                                             'actor_callback_id':digest(body),'actor_turn':turns})
                 latest_calls.append(result['tool_calls'][-1])
+                if (use.get('name')=='request_clarification'and not failure and
+                        isinstance(output,dict)and output.get('clarification_required')and
+                        output.get('interaction_mode')=='interactive'):
+                    import copy
+                    result['clarification_pause']={'request':copy.deepcopy(output['clarification_required']),
+                        'messages':copy.deepcopy(messages),'tool_id':use['id']}
+                    return result
                 answers.append({'type': 'tool_result', 'tool_use_id': use['id'],
                                  'content': json.dumps(actor_result(output), allow_nan=False), 'is_error': failure})
                 predecessor_failed=predecessor_failed or failure

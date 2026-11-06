@@ -142,7 +142,7 @@ def policy_identity():
                      'decision_context.py', 'source_scope.py', 'literal_check.py', 'claim_count_policy.py', 'sql_read_roles.py', 'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py', 'local_prompt.py',
                      'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py', 'general_analysis.py', 'dose.py', 'clinical_definitions.py',
                      'analysis_evidence.py', 'request_program.py', 'answer_dependencies.py', 'procedural_memory.py', 'clinical_inputs.py',
-                     'conversation.py', 'answer_format.py', 'paraphrase.py', 'local_normalizer.py', 'data_domains.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
+                     'conversation.py', 'clarification.py', 'answer_format.py', 'paraphrase.py', 'local_normalizer.py', 'data_domains.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
                      'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py',
                      'analyst_acceptance.py', 'spec_fill.py', 'spec_verify.py', 'spec_readback.py', 'spec_path.py', 'spec_exec.py',
                      'chart_reader.py', 'chart_intents.py', 'chart_queries.py', 'chart_reader_op.py', 'chart_notes.py',
@@ -1225,6 +1225,7 @@ def _compose_once(stack, question, *, population=None, parent=None, model=None, 
             result = execute_contract(stack, question, graph, receipt, population=population, parent=parent, started=started)
             from . import spec_path  # every typed answer carries its read-back; a spec-path answer its verification receipts
             spec_path.attach(result, receipt['interpretation'], receipt['request_contract'], request_plan.Catalog.load(stack.path), question)
+        if result.get('clarification_checkpoint'):return result
         if receipt['request_contract'].get('kind') != 'checked_graph' and parent is None:  # a fast-path answer gets System One's second look
             from .proposers import second_look_fast_path
             replaced = second_look_fast_path(stack, question, graph, result, population=population, started=started)

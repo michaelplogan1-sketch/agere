@@ -28,7 +28,7 @@
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
   "last_observed_server_session": 2376,
-  "server_status": "Allownedjobs terminal/sourceunfrozen;57086attemptrows/43historicalpending retained. Latest ACO stages0newproviderattempts. AutomationPAUSED.",
+  "server_status": "All owned provider/build/test jobs terminal; temporary UI test server stopped. Source unfrozen. 57086 attempt rows/43 historical pending retained; clarification increment 0 new external attempts. Build ACTIVE / automation PAUSED.",
   "unsealed_work": {
     "status": "Q20_native_payer_prerequisite_and_partial_agenda_composition_verified",
     "product_commit": "31c837e6",
@@ -253,7 +253,16 @@
     "accountability_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/accountability-join-proof.json",
     "accountability_saved_context": "ANS-cb57ed3d886edac1c5040795",
     "native_ACO_agenda_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q20/patient-roster-repair/retained-agenda-proof.json",
-    "native_ACO_agenda_context": "ANS-219c79c0b76ec350d9988813"
+    "native_ACO_agenda_context": "ANS-219c79c0b76ec350d9988813",
+    "intent_clarification": {
+      "status": "engineering_verified_authored_transport_live_judgment_unqualified",
+      "proof": "artifacts/agere-intent-clarification-2026-11-06/engineering-proof.json",
+      "new_provider_attempts": 0,
+      "source_frozen": false,
+      "runtime_activation": false,
+      "all_attempt_rows_retained": 57086,
+      "historical_pending": 43
+    }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
