@@ -39,10 +39,11 @@ NATIVE_SQL_CONTRACT = 'complete-native-sql/2'
 
 class ProseIssue(ValueError):
     """A compiler failure identity independent of the model's wording."""
-    def __init__(self, code, field, message):
+    def __init__(self, code, field, message, *, literals=None):
         super().__init__(message)
         self.failure = {'code': code, 'field_group': field.split('.')[0]}
         self.field = field
+        self.unbound_literals = literals
 
 
 class ComputedProseError(ValueError):
@@ -361,6 +362,8 @@ has already declined this question, so it is yours to answer completely and corr
   Keep original findings and dates in the native table. Prose adds interpretation, not new observations or accepted facts;
   it undergoes the existing source-support review. Missing evidence and proposed actions remain explicit.
 - For a table answer, numeric claims in headline and facts must also be copied by code, not transcribed into prose.
+  Name the category explicitly instead of using a standalone "one" as its pronoun in a quantitative summary.
+  Genuine counts, doses and grouping quantities still need native scalar bindings; never hide an unbound quantity by rewording it.
   Use a template object instead of a numeric string, for example:
   {{"template":"{{stays}} hospital stays among {{people}} patients",
     "bindings":{{"stays":{{"result_view":"agere_result_9","row":0,"column":"hospital_stays"}},
@@ -1558,6 +1561,45 @@ def mask_prose_parameters(text,context,proofs):
     return re.sub(r'\bnot\s+(?:counted|treated)\s+as\s+(?P<zero>0)\s+(?P<unit>[A-Za-z]+)\b',missing_zero,text,flags=re.I)
 
 
+REFERENCE_CLARIFICATION_RULES = '''Diagnose only the exact word marked <REFERENCE_CANDIDATE>one</REFERENCE_CANDIDATE> in each complete marked_text. Native code selected that standalone token; do not substitute another word, a substring such as none, a placeholder name or any other occurrence. The tags mark the target, not a source assertion.
+Quantity includes counts, units, doses, rates, grouping or collapsing several records into one, and a single item even when its noun is omitted. Those require native scalar evidence; return quantity. If ambiguous, return unknown.
+Reference is permitted only when "one" substitutes for an exact earlier nonquantitative noun phrase in the SAME text, and expanding it to that phrase preserves every proposition, quantity, uncertainty and negation. Copy that earlier noun phrase verbatim as antecedent and return only the needed article (empty, a, an, the). Native code locates the phrase; do not count character offsets. A noun phrase can be introduced in a negative clause; that does not prevent reference. Copy only the noun phrase itself, without a preceding no/not, so the original clause's negation stays exactly where it was. Do not select a number, placeholder, text containing negation, or a new inferred category. Do not paraphrase any other wording. A template placeholder is retained verbatim and must not be interpreted as missing data.
+This is language clarification, not clinical/source support or answer acceptance. Do not infer a reason, diagnosis, absence or current state. For quantity/unknown return null antecedent/article. Return only the requested typed judgments.'''
+
+
+def review_reference_clarification(stack,request,*,ledger):
+    """Use the existing subscription reviewer for a located language problem."""
+    from . import semantic_analyst
+    from .. import model_policy
+    from .legacy_proposers import _send
+    from .execution_state import reference_clarification_model_view
+    from ..gateway import ProviderUnavailable,classify_provider_error
+    if (os.environ.get('AGERE_CLAUDE_TRANSPORT')!='subscription' or
+            os.environ.get('ANTHROPIC_API_KEY')!='subscription-transport'):
+        raise ValueError('Reference clarification requires the authorized Claude subscription transport')
+    item={'type':'object','properties':{
+        'role':{'type':'string','enum':['quantity','reference','unknown']},
+        'antecedent':{'type':['string','null']},
+        'article':{'type':['string','null'],'enum':['','a','an','the',None]},'reason':{'type':'string'}},
+        'required':['role','antecedent','article','reason'],'additionalProperties':False}
+    schema={'type':'object','properties':{'judgments':{'type':'object',
+        'properties':{key:item for key in request['references']},
+        'required':list(request['references']),'additionalProperties':False}},
+        'required':['judgments'],'additionalProperties':False}
+    receipts=[]
+    model_view=reference_clarification_model_view(request)
+    run=semantic_analyst.tool_loop(json.dumps(model_view),REFERENCE_CLARIFICATION_RULES,[],lambda use:None,
+        send=as_tool_calls(_send(stack,ledger,receipts)),model=model_policy.first('reviewer'),max_tools=None,
+        extra={'output_config':{'format':{'type':'json_schema','schema':schema}}})
+    if run.get('error')and classify_provider_error(RuntimeError(run['error']))=='rate_limit':
+        raise ProviderUnavailable(run['error'],kind='rate_limit',attempts=[run])
+    answer=run.get('answer')or{}
+    return {'judgments':answer.get('judgments'), 'calls':run.get('new_paid_api_calls',0),
+        'cost_usd':run.get('estimated_cost_usd')or 0.0,'cost_known':run.get('estimated_cost_usd')is not None,
+        'model':run.get('model'),'model_input':model_view,'provider_run':run,'provider_receipts':receipts,
+        'authority':'machine_language_diagnosis','clinical_qualification':False}
+
+
 def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_structure=None):
     """Compile quantitative table prose from actual native scalar cells.
 
@@ -1644,7 +1686,8 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
         except ValueError as exc:raise ProseIssue('invalid_scalar_address',field,str(exc)+' at '+field)from exc
         if not isinstance(value,dict) or 'template' not in value:
             if (row_mode or answer.get('table_binding')) and ((isinstance(value,str) and numeric(value)) or type(value) in (int,float)):
-                raise ProseIssue('unbound_literal',field,'Quantitative '+field+' needs a template with bindings to actual executed scalar cells; unbound literals: '+json.dumps(numeric(value) if isinstance(value,str) else [value]))
+                literals=numeric(value) if isinstance(value,str) else [value]
+                raise ProseIssue('unbound_literal',field,'Quantitative '+field+' needs a template with bindings to actual executed scalar cells; unbound literals: '+json.dumps(literals),literals=literals)
             if parameter_proofs:
                 proofs.append({'field':field,'template':value,'bindings':{},'rendered':value,'sources':{},
                                'parameters':list(parameter_proofs)})
@@ -1660,7 +1703,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
                 if not re.fullmatch(r'[A-Za-z_]\w*',name) or spec or conversion:raise ProseIssue('invalid_placeholder',field,'Use plain named scalar placeholders at '+field)
                 names.append(name)
             literals.extend(numeric(temporal_literals[index]))
-        if literals:raise ProseIssue('unbound_literal',field,'Numeric prose must use scalar placeholders at '+field+'; unbound literals: '+json.dumps(list(dict.fromkeys(literals))))
+        if literals:raise ProseIssue('unbound_literal',field,'Numeric prose must use scalar placeholders at '+field+'; unbound literals: '+json.dumps(list(dict.fromkeys(literals))),literals=list(dict.fromkeys(literals)))
         if not names or set(names)!=set(bindings):raise ProseIssue('placeholder_binding_mismatch',field,'Computed prose bindings must exactly match placeholders at '+field)
         resolved={};sources={}
         for name,binding in bindings.items():
@@ -1746,6 +1789,8 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
             failure=getattr(exc,'failure',{'code':'invalid_binding','field_group':field.split('.')[0]})
             errors.append(str(exc));failures.append(failure)
             answer_targets.append({'code':failure['code'],'path':path,'value_digest':digest(value),'reason':str(exc)})
+            if getattr(exc,'unbound_literals',None) is not None:
+                answer_targets[-1]['unbound_literals']=exc.unbound_literals
             return value
     if 'headline' in answer:updates['headline']=checked('headline',answer['headline'],['headline'])
     if isinstance(answer.get('facts'),dict):
@@ -2223,14 +2268,40 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and c['result'].get('result_view')}
     static_feedback.extend(collection_retention_issues(native,answer.get('table')or[],
         native_result_dependencies(calls,[(answer.get('table_binding')or{}).get('result_view')])))
-    try:
-        bind_computed_prose(answer,calls,verified_quotes=kept,question=question,native_structure=native_audit)
-        if definition_schema is not None:
-            # Compilation establishes the actual scalar-prose dependencies;
-            # a table-only preflight cannot inspect these addresses in advance.
-            issues=plan_fence.definition_premise_issues(question,definition_graph,definition_schema,native_calls=calls,answer=answer)
-            if issues:return definition_failure(issues)
-    except (ValueError,KeyError,IndexError,TypeError) as exc:
+    def compile_prose():
+        try:
+            bind_computed_prose(answer,calls,verified_quotes=kept,question=question,native_structure=native_audit)
+            return None
+        except (ValueError,KeyError,IndexError,TypeError) as exc:return exc
+    prose_exception=compile_prose()
+    if (prose_exception is not None and not static_feedback and getattr(stack,'allow_live',False) and
+            os.environ.get('AGERE_REFERENCE_CLARIFICATION_CHECK','on')=='on'):
+        from .execution_state import reference_clarification_request,apply_reference_clarification
+        request=reference_clarification_request(answer,getattr(prose_exception,'answer_repair_targets',[]),question)
+        if request:
+            try:
+                diagnosis=review_reference_clarification(stack,request,ledger=ledger)
+                assessment['reference_clarification']={'request':request,**diagnosis}
+                assessment['calls']+=diagnosis['calls'];assessment['cost_usd']+=diagnosis['cost_usd']
+                if not diagnosis.get('cost_known',True):assessment['cost_known']=False
+                expanded,receipt=apply_reference_clarification(answer,request,diagnosis['judgments'])
+                assessment['reference_clarification']['expansion']=receipt
+                if expanded is not None:
+                    answer.clear();answer.update(expanded)
+                    # A reference expansion changes no numerical requirement.
+                    # Compile again, then run every ordinary definition,
+                    # quantity, source and coverage check below.
+                    prose_exception=compile_prose()
+            except Exception as exc:
+                if getattr(exc,'kind',None)=='rate_limit':raise
+                assessment.setdefault('reference_clarification',{})['error']=f'{type(exc).__name__}: {exc}'
+    if prose_exception is None and definition_schema is not None:
+        # Compilation establishes the actual scalar-prose dependencies;
+        # a table-only preflight cannot inspect these addresses in advance.
+        issues=plan_fence.definition_premise_issues(question,definition_graph,definition_schema,native_calls=calls,answer=answer)
+        if issues:return definition_failure(issues)
+    if prose_exception is not None:
+        exc=prose_exception
         prose_problem=str(exc);prose_failures=getattr(exc,'progress_failures',[{'code':'invalid_binding','field_group':'prose'}])
         prose_targets=getattr(exc,'repair_targets',[])
         answer_prose_targets=getattr(exc,'answer_repair_targets',[])
@@ -2298,7 +2369,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                 from .evidence_projection import coverage_answer
                 composition=gate.check_composition(question,coverage_answer(answer,native_audit=native_audit,
                     native_interpretation=native_interpretation),ledger=ledger,as_of_date=as_of)
-                assessment.update(composition=composition,calls=composition['calls'],cost_usd=composition['cost_usd'])
+                assessment.update(composition=composition,calls=assessment['calls']+composition['calls'],cost_usd=assessment['cost_usd']+composition['cost_usd'])
                 if composition.get('targets'):
                     return incomplete_composition(assessment,composition,answer,feedback=prose_problem,progress_state=progress_state)
             except Exception as exc:
@@ -2337,7 +2408,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     except (AttributeError,ValueError,OSError,sqlite3.Error) as exc:
         numeric={'judgments':{'unavailable':{'label':'unknown','decided_by':None}},'steps':[],
                  'reason':'Quantitative role review unavailable: '+str(exc)}
-    n,usd=gate.cost(numeric);assessment.update(numeric_roles=numeric,calls=n,cost_usd=usd)
+    n,usd=gate.cost(numeric);assessment.update(numeric_roles=numeric,calls=assessment['calls']+n,cost_usd=assessment['cost_usd']+usd)
     contradicted=[k for k,r in numeric.get('judgments',{}).items() if r.get('label')=='contradicted' and r.get('decided_by')]
     if contradicted:
         return {**assessment,'status':'repair','feedback':'Quantitative meaning check failed: '+json.dumps(

@@ -9,6 +9,123 @@ from ...contracts import digest
 VERSION = 'execution-state/23'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
+REFERENCE_CLARIFICATION_VERSION = 'noun-reference-clarification/3'
+
+
+def reference_clarification_request(candidate, targets, question):
+    """Locate a narrow language ambiguity; do not waive quantity binding.
+
+    Sentence-final ``as one`` can denote either cardinality or an earlier
+    category. A model may identify the latter. Code then permits only an exact
+    antecedent expansion, preserving every other character and scalar binding.
+    Ordinary counts, doses, and incomplete/row-level producer targets stay on
+    the existing numeric path.
+    """
+    import copy,re
+    references={}
+    for target in targets:
+        path=target.get('path',[])
+        if (target.get('code')!='unbound_literal' or not isinstance(target.get('unbound_literals'),list) or
+                {str(v).lower() for v in target['unbound_literals']}!={'one'} or
+                not(path==['headline'] or len(path)==2 and path[0]=='facts')):
+            continue
+        try:value=candidate[path[0]] if len(path)==1 else candidate['facts'][path[1]]
+        except (KeyError,TypeError):continue
+        if target.get('value_digest')!=digest(value):continue
+        text=value.get('template') if isinstance(value,dict) else value
+        if not isinstance(text,str):continue
+        pattern=r'\b(?:treated|regarded|classified|interpreted|reported|considered)\s+as\s+(one)(?=\s*(?:[,.;:!?]|$))'
+        for match in re.finditer(pattern,text,re.I):
+            start,end=match.span(1)
+            references['reference_'+str(len(references))]={
+                'path':path,'value_digest':digest(value),'text':text,
+                'literal_start':start,'literal_end':end,'literal':text[start:end],
+                'bindings':copy.deepcopy(value.get('bindings',{})) if isinstance(value,dict) else {}}
+    if not references:return None
+    return {'schema':REFERENCE_CLARIFICATION_VERSION,'question':question,
+        'draft_digest':digest(candidate),'references':references,
+        'scope':'Language-reference diagnosis only. No observed quantity, source truth, clinical claim or answer acceptance.'}
+
+
+def apply_reference_clarification(candidate, request, judgments):
+    """Apply only model-selected, verbatim earlier noun references.
+
+    This confers no quantity or source authority. The unchanged numeric
+    compiler and full source/coverage review must run on the resulting draft.
+    """
+    import copy,re
+    if (not isinstance(request,dict) or request.get('schema')!=REFERENCE_CLARIFICATION_VERSION or
+            request.get('draft_digest')!=digest(candidate) or not isinstance(judgments,dict) or
+            set(judgments)!=set(request.get('references',{}))):
+        raise ValueError('Reference diagnosis does not match the complete current draft')
+    grouped={};edits=[]
+    for key,ref in request['references'].items():
+        judgment=judgments[key]
+        if not isinstance(judgment,dict) or set(judgment)!={'role','antecedent','article','reason'}:
+            raise ValueError('Reference diagnosis requires its exact typed fields')
+        if judgment['role'] not in ('quantity','reference','unknown') or not isinstance(judgment['reason'],str) or not judgment['reason'].strip():
+            raise ValueError('Reference diagnosis is missing a role or reason')
+        if judgment['role']!='reference':
+            if any(judgment[k] is not None for k in ('antecedent','article')):
+                raise ValueError('A quantity or unknown cannot authorize an antecedent expansion')
+            continue
+        path=ref['path'];value=candidate[path[0]] if len(path)==1 else candidate['facts'][path[1]]
+        text=value.get('template') if isinstance(value,dict) else value
+        if digest(value)!=ref['value_digest'] or text!=ref['text']:
+            raise ValueError('Reference source wording changed')
+        antecedent=judgment['antecedent'];article=judgment['article']
+        if not isinstance(antecedent,str) or not antecedent or article not in ('','a','an','the'):
+            raise ValueError('Reference antecedent must be an earlier exact text span')
+        word=r'[A-Za-z0-9_\-\u2010-\u2015]'
+        occurrences=[m for m in re.finditer(re.escape(antecedent),text[:ref['literal_start']])
+            if (m.start()==0 or not re.match(word,text[m.start()-1])) and
+               (m.end()==len(text) or not re.match(word,text[m.end()]))]
+        if len(occurrences)!=1:raise ValueError('Reference antecedent must have one exact earlier whole-word location')
+        start,end=occurrences[0].span()
+        if (antecedent!=antecedent.strip() or not re.fullmatch(r'[A-Za-z][A-Za-z\s\-\u2010-\u2015]*',antecedent) or
+                start and re.match(word,text[start-1]) or end<len(text) and re.match(word,text[end]) or
+                re.search(r'\d',canonical_repair_prose(antecedent)) or
+                re.search(r'\b(?:no|not|none|each|every|single|pair|couple|half|quarter|first|second|third|per)\b',antecedent,re.I) or
+                re.fullmatch(r'(?:it|this|that|they|as|and|or)',antecedent,re.I) or
+                article and re.match(r'^(?:a|an|the)\s',antecedent,re.I)):
+            raise ValueError('Reference antecedent must be a nonquantitative noun phrase, not a value, placeholder or negation')
+        replacement=(article+' ' if article else '')+antecedent
+        grouped.setdefault(tuple(path),[]).append((ref,replacement))
+        edits.append({'path':path,'literal_start':ref['literal_start'],'literal_end':ref['literal_end'],
+            'literal':ref['literal'],'antecedent_start':start,'antecedent_end':end,
+            'antecedent':antecedent,'replacement':replacement,'reason':judgment['reason']})
+    if not edits:return None,{'request_digest':digest(request),'edits':[],
+        'authority':'machine_language_diagnosis','quantity_binding_waived':False}
+    merged=copy.deepcopy(candidate)
+    for path,changes in grouped.items():
+        parent=merged if len(path)==1 else merged['facts'];value=parent[path[-1]]
+        text=value['template'] if isinstance(value,dict) else value
+        for ref,replacement in sorted(changes,key=lambda item:item[0]['literal_start'],reverse=True):
+            if text[ref['literal_start']:ref['literal_end']]!=ref['literal']:
+                raise ValueError('Reference literal changed or overlapping expansions')
+            text=text[:ref['literal_start']]+replacement+text[ref['literal_end']:]
+        if isinstance(value,dict):value['template']=text
+        else:parent[path[-1]]=text
+    return merged,{'schema':REFERENCE_CLARIFICATION_VERSION,'request_digest':digest(request),
+        'original_draft_digest':digest(candidate),'expanded_draft_digest':digest(merged),'edits':edits,
+        'authority':'machine_language_clarification','quantity_binding_waived':False,
+        'full_compilation_and_source_review_required':True}
+
+
+def reference_clarification_model_view(request):
+    """Mark the exact native occurrence without asking a model to count offsets."""
+    begin='<REFERENCE_CANDIDATE>';end='</REFERENCE_CANDIDATE>'
+    references={}
+    for key,ref in request['references'].items():
+        text=ref['text'];a,b=ref['literal_start'],ref['literal_end']
+        if (type(a)is not int or type(b)is not int or not(0<=a<b<=len(text)) or
+                text[a:b]!=ref['literal'] or ref['literal'].lower()!='one' or begin in text or end in text):
+            raise ValueError('Reference target cannot be projected exactly')
+        references[key]={'marked_text':text[:a]+begin+text[a:b]+end+text[b:],
+            'target_literal':ref['literal'],'bindings':ref['bindings']}
+    return {'schema':request['schema'],'request_digest':digest(request),'question':request['question'],
+        'references':references,'scope':request['scope']}
+
 
 class BindingPreservationError(ValueError):
     """A binding-only patch changed the original claim instead of its address."""
