@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-07T09:19:55.215908+00:00",
+  "updated_at": "2026-11-07T09:20:58.455578+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -664,7 +664,7 @@
       "artifacts/agere-current-ordinary-2026-11-07/Q20/dry/receipt.json"
     ],
     "remaining_gap": "Full original ordinary question acceptance after shared fixes remains unestablished across the fixed curriculum. Q20 automatic handoff is next; Q21 verification is undecided without located defect; Q23 exact-parent definitions are missing; Q24 visual/readability QA remains unassessed. IndependentG5/clinical/model/customer prerequisites remain separate.",
-    "next_action": "G3: Execute one current ordinary Q20 confirmation in artifacts/agere-current-ordinary-2026-11-07/Q20/stack using original question, normal conversation.handle_compose, no authored plan/prior answer. Current shared population/evidence/composition/report fixes and all4115-patient retained agenda justify this changed-path check; original failed pair remains separate. Freeze product/source while running; preserve all attempts/partials and stop on actual subscription limit. No unchanged Q21 campaign. Assess terminal full-population/source/quantity/unknown behavior against retained independent received references before deciding any further run. Current25case/tenarea assessment records historical failures and scoped repairs without restamping them; Q23 exact-parent diabetes/BP definitions remain absent and Q24 native fidelity passes but browser visual QA is unavailable. IndependentG5/clinical/model/customer dependencies remain. Owned app51654/session80409 healthy;quiet continuation ACTIVE.",
+    "next_action": "G3: Monitor only owned current ordinary Q20 confirmation PID51769/session97363 at artifacts/agere-current-ordinary-2026-11-07/Q20/stack/receipt.json. No duplicate and no product/source edits while frozen. Exact original ACO question through normal conversation.handle_compose, no authored plan/prior answer; allattempt accounting/subscription transport. On terminal reconcile full population/source/quantity/unknown behavior and current received native references before further work; preserve partials and stop provider work on actual subscription limit. Do not repeat unchanged Q21. Currentall25/tenarea assessment records historical failures separately from current scoped repairs; Q23 missing exact-parent diabetes/BP definitions, Q24 native fidelity with visual QA unavailable, independentG5/clinical/model/customer dependencies remain. App51654/session80409 healthy;quiet continuation ACTIVE.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
@@ -724,7 +724,7 @@
       "scope": "Preserve the healthcare-wide product across clinical/chronic disease/medication, population and individual, utilization/outcomes, finance/provider/contracts, discovery/explanation, deliverables, learning/reuse and shared industry-portable core. Keep all ten canonical acceptance areas and25fixedcases; no new finish-line expansion."
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-07T09:19:55.215908+00:00",
+    "at": "2026-11-07T09:20:58.455578+00:00",
     "workflow_change": "Requested brief now presents saved compound findings before complete records, exposes generic patient clinical/care-team context without HF therapy fields, and links exact retained source references. All source/answer/population/unknown fields remain unchanged; no new analytical or clinical claims.",
     "unsealed_work": {
       "status": "verified_full_native_scope_pending_ordinary_composition",
@@ -1815,7 +1815,21 @@
       "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/final-current-proof/receipt.json"
     },
     "provider_dependency": null,
-    "active_jobs": [],
+    "active_jobs": [
+      {
+        "kind": "ordinary_current_Q20_confirmation",
+        "case": "Q20",
+        "pid": 51769,
+        "session": 97363,
+        "receipt": "artifacts/agere-current-ordinary-2026-11-07/Q20/stack/receipt.json",
+        "status": "running",
+        "source_frozen": true,
+        "product_commit": "abd88c67bbc0a2c6165491a5b6b66af07468ba3b",
+        "ordinary_handler": "conversation.handle_compose",
+        "prior_answer_or_owner_plan_supplied": false,
+        "automatic_retry": false
+      }
+    ],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -6811,7 +6825,7 @@
     "product_fix_commit": "abd88c67bbc0a2c6165491a5b6b66af07468ba3b",
     "receipt": "artifacts/agere-retained-workflow-2026-11-06/source-review-2/engineering-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-    "source_frozen": false,
+    "source_frozen": true,
     "runtime_activation": false,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
@@ -7222,7 +7236,20 @@
     "q24_render_receipt": "artifacts/agere-q24-review-brief-2026-11-07-v3/receipt.json",
     "q24_fidelity_proof": "artifacts/agere-q24-review-brief-2026-11-07-v3/fidelity-proof.json",
     "q24_checks": "artifacts/agere-q24-review-brief-2026-11-07-v3/report-checks.log",
-    "current_25case_assessment": "artifacts/agere-ordinary-comparison-2026-11-05/current-assessment-2026-11-07/assessment.json"
+    "current_25case_assessment": "artifacts/agere-ordinary-comparison-2026-11-05/current-assessment-2026-11-07/assessment.json",
+    "owned_current_Q20_confirmation": {
+      "kind": "ordinary_current_Q20_confirmation",
+      "case": "Q20",
+      "pid": 51769,
+      "session": 97363,
+      "receipt": "artifacts/agere-current-ordinary-2026-11-07/Q20/stack/receipt.json",
+      "status": "running",
+      "source_frozen": true,
+      "product_commit": "abd88c67bbc0a2c6165491a5b6b66af07468ba3b",
+      "ordinary_handler": "conversation.handle_compose",
+      "prior_answer_or_owner_plan_supplied": false,
+      "automatic_retry": false
+    }
   },
   "current_visual_request": {
     "status": "completed",
@@ -7255,8 +7282,22 @@
       }
     }
   },
-  "active_jobs": [],
-  "next_action": "G3: Execute one current ordinary Q20 confirmation in artifacts/agere-current-ordinary-2026-11-07/Q20/stack using original question, normal conversation.handle_compose, no authored plan/prior answer. Current shared population/evidence/composition/report fixes and all4115-patient retained agenda justify this changed-path check; original failed pair remains separate. Freeze product/source while running; preserve all attempts/partials and stop on actual subscription limit. No unchanged Q21 campaign. Assess terminal full-population/source/quantity/unknown behavior against retained independent received references before deciding any further run. Current25case/tenarea assessment records historical failures and scoped repairs without restamping them; Q23 exact-parent diabetes/BP definitions remain absent and Q24 native fidelity passes but browser visual QA is unavailable. IndependentG5/clinical/model/customer dependencies remain. Owned app51654/session80409 healthy;quiet continuation ACTIVE.",
+  "active_jobs": [
+    {
+      "kind": "ordinary_current_Q20_confirmation",
+      "case": "Q20",
+      "pid": 51769,
+      "session": 97363,
+      "receipt": "artifacts/agere-current-ordinary-2026-11-07/Q20/stack/receipt.json",
+      "status": "running",
+      "source_frozen": true,
+      "product_commit": "abd88c67bbc0a2c6165491a5b6b66af07468ba3b",
+      "ordinary_handler": "conversation.handle_compose",
+      "prior_answer_or_owner_plan_supplied": false,
+      "automatic_retry": false
+    }
+  ],
+  "next_action": "G3: Monitor only owned current ordinary Q20 confirmation PID51769/session97363 at artifacts/agere-current-ordinary-2026-11-07/Q20/stack/receipt.json. No duplicate and no product/source edits while frozen. Exact original ACO question through normal conversation.handle_compose, no authored plan/prior answer; allattempt accounting/subscription transport. On terminal reconcile full population/source/quantity/unknown behavior and current received native references before further work; preserve partials and stop provider work on actual subscription limit. Do not repeat unchanged Q21. Currentall25/tenarea assessment records historical failures separately from current scoped repairs; Q23 missing exact-parent diabetes/BP definitions, Q24 native fidelity with visual QA unavailable, independentG5/clinical/model/customer dependencies remain. App51654/session80409 healthy;quiet continuation ACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",

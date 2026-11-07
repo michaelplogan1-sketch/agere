@@ -1,6 +1,6 @@
-# Current Agere checkpoint — ACTIVE 2026-11-07T09:19:55.215908+00:00
+# Current Agere checkpoint — ACTIVE 2026-11-07T09:20:58.455578+00:00
 
-G3: Execute one current ordinary Q20 confirmation in artifacts/agere-current-ordinary-2026-11-07/Q20/stack using original question, normal conversation.handle_compose, no authored plan/prior answer. Current shared population/evidence/composition/report fixes and all4115-patient retained agenda justify this changed-path check; original failed pair remains separate. Freeze product/source while running; preserve all attempts/partials and stop on actual subscription limit. No unchanged Q21 campaign. Assess terminal full-population/source/quantity/unknown behavior against retained independent received references before deciding any further run. Current25case/tenarea assessment records historical failures and scoped repairs without restamping them; Q23 exact-parent diabetes/BP definitions remain absent and Q24 native fidelity passes but browser visual QA is unavailable. IndependentG5/clinical/model/customer dependencies remain. Owned app51654/session80409 healthy;quiet continuation ACTIVE.
+G3: Monitor only owned current ordinary Q20 confirmation PID51769/session97363 at artifacts/agere-current-ordinary-2026-11-07/Q20/stack/receipt.json. No duplicate and no product/source edits while frozen. Exact original ACO question through normal conversation.handle_compose, no authored plan/prior answer; allattempt accounting/subscription transport. On terminal reconcile full population/source/quantity/unknown behavior and current received native references before further work; preserve partials and stop provider work on actual subscription limit. Do not repeat unchanged Q21. Currentall25/tenarea assessment records historical failures separately from current scoped repairs; Q23 missing exact-parent diabetes/BP definitions, Q24 native fidelity with visual QA unavailable, independentG5/clinical/model/customer dependencies remain. App51654/session80409 healthy;quiet continuation ACTIVE.
 
 Gate / workflow change: G3 / Requested brief now presents saved compound findings before complete records, exposes generic patient clinical/care-team context without HF therapy fields, and links exact retained source references. All source/answer/population/unknown fields remain unchanged; no new analytical or clinical claims.
 
@@ -11,6 +11,7 @@ Measured: Native report3.899s/0providers;4115patientnames/4115patients/6326rows 
 Remaining gap: Full original ordinary question acceptance after shared fixes remains unestablished across the fixed curriculum. Q20 automatic handoff is next; Q21 verification is undecided without located defect; Q23 exact-parent definitions are missing; Q24 visual/readability QA remains unassessed. IndependentG5/clinical/model/customer prerequisites remain separate.
 
 Last sealed receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json.
+
 
 ## Superseded checkpoint
 
