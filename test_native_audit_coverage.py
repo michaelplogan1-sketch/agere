@@ -29,7 +29,10 @@ class NativeAuditCoverage(unittest.TestCase):
         question='Identify received 2029 clinical accounts whose interpretation changes when qualifiers are respected.'
         with D.scope(question,AS_OF):
             tools=self.fixture.tools()
-            result=self.fixture.execute(tools,output='qualifier_accounts')
+            result=tools({'name':'execute_analysis','input':{'operation':'assertion_review',
+                'parameters':{'streams':['financial','notes'],'concepts':['financial hardship'],
+                    'assertion_window':{'basis':'arrival','start':'2029-01-01','end':AS_OF}},
+                'output':'qualifier_accounts'}})
             answer={'answer_type':'table','table_from_tool':result['result_view']}
             B.materialize_table(answer,tools.native_calls)
             proof=A.qualifier_coverage_review(answer,tools.native_calls,tools,AS_OF)

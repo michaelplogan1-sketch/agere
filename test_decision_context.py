@@ -79,6 +79,31 @@ class Fixture(unittest.TestCase):
 
 
 class Definitions(Fixture):
+    def test_receipt_year_requires_record_subjects_and_one_explicit_year(self):
+        for question,year in [
+            ('Identify received 2029 clinical accounts whose interpretation changes.','2029'),
+            ('Review records received in 2028 and their source dates.','2028'),
+            ('Show documents that were available during 2029.','2029'),
+            ('For received 2029 correspondence, show source clocks.','2029')]:
+            with self.subTest(question=question):
+                contract=DC.receipt_window_request(question)
+                expected={'basis':'arrival','start':year+'-01-01','end':year+'-12-31'}
+                self.assertEqual(contract['assertion_window'],expected)
+                DC.validate_receipt_window(question,{'assertion_window':expected})
+                with self.assertRaisesRegex(ValueError,'receipt-window binding'):
+                    DC.validate_receipt_window(question,{'assertion_window':{**expected,'basis':'source_event'}})
+        for question in [
+            'Which patients received treatment in 2029?',
+            'List patients who received 2029 immunizations.',
+            'Review recorded 2029 statements.',
+            'Review received statements with source-event dates in 2029.',
+            'Review records received in 2029 describing clinical events in 2028.']:
+            self.assertIsNone(DC.receipt_window_request(question),question)
+        clipped=DC.receipt_window_request('Review records received in 2029.','2029-08-15')
+        self.assertEqual(clipped['assertion_window']['end'],'2029-08-15')
+        self.assertEqual(clipped['requested_calendar_end'],'2029-12-31')
+        self.assertTrue(clipped['unobserved_remainder_after_snapshot'])
+
     def test_received_record_heads_keep_their_subjects_and_reject_survival_filters(self):
         for question in [
             'Identify received 2029 clinical accounts whose interpretation changes when source qualifiers are respected.',

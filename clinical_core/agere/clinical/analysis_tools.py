@@ -40,13 +40,14 @@ def list_analyses():
 
 
 def describe(operation, *, path=None):
-    from . import graph_contracts as G
+    from . import graph_contracts as G,decision_context as D
     if operation not in ANALYTICAL:raise ValueError('Choose an analytical operation from list_analyses')
     catalog={'cohort_fields':{'record_fields':{}},'evidence_catalog':{},'source_streams':[]}
     if operation in DOCUMENTARY:
         if path is None:raise ValueError('Documentary discovery requires the current source path')
         catalog=G.documentary_parameter_catalog(path)
     context={}
+    requested_window=D.receipt_window_request(getattr(D.current(),'question',''),getattr(D.current(),'as_of',None))if operation=='assertion_review'else None
     if operation in CRITERIA or operation=='accountability_review':
         if path is None:raise ValueError('Criteria discovery requires the current source path')
         import json
@@ -70,6 +71,7 @@ def describe(operation, *, path=None):
                 'parameters':'Supply only the requested assertion_window. Code supplies streams, concepts=[] and received_annotations=true before normal shared graph validation.',
                 'clock_roles':{'arrival':'When the account became available/received.',
                     'source_event':'The source statement/event date; distinct from receipt and explicit clinical/reference dates.'},
+                **({'question_window_contract':requested_window}if requested_window is not None else{}),
                 'resolved_streams':received_annotation_sources(path),
                 'scope':'Existing annotations only; no complete free-text or clinical-state claim.'}}}
                if operation=='assertion_review'else{}),
@@ -517,6 +519,8 @@ def qualifier_coverage_review(answer,calls,tools,as_of):
     require(result.get('receipt_digest')==digest(semantic_result(engine)),'engine provenance changed')
     report=(engine.get('results')or[{}])[-1].get('result')or{}
     parameters=AR.validate(result.get('parameters'))
+    from .decision_context import validate_receipt_window
+    validate_receipt_window(getattr(tools,'question',''),parameters,as_of)
     require(report.get('parameters')==parameters,'native parameters changed')
     identity,meta,_=AR.dependency(tools.stack.path,parameters)
     require(meta['snapshot']['as_of']==as_of and report.get('identity')==identity,'source, clock or native operator changed')
@@ -585,6 +589,9 @@ def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None,s
         if operation!='assertion_review' or patient_ids is not None or patient_query_sql is not None:
             raise ValueError('Inherited annotation selection requires assertion_review and the exact inherited population without overrides')
         parameters=inherited_annotation_parameters(tools.stack.path,parameters)
+    if operation=='assertion_review':
+        from .decision_context import validate_receipt_window
+        validate_receipt_window(getattr(tools,'question',''),parameters,tools.as_of)
     ids=population(tools,patient_ids,patient_query_sql)
     snapshot=tools.stack.retriever.meta['snapshot']['as_of']
     if str(snapshot)[:10]!=tools.as_of:raise ValueError('Analytical snapshot differs from request date')

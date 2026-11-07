@@ -29,7 +29,7 @@ import re
 import threading
 from pathlib import Path
 
-VERSION = 'decision-context/6'  # 6: received record subjects are not a current patient list
+VERSION = 'decision-context/7'  # 7: explicit record receipt years bind the arrival clock
 # 3 (2026-10-25, Mike): event counts include everyone (the living rule is for counts / lists of patients); observation stays are hospital
 # stays and admissions; pharmacy spend = net of reversals over all pharmacy claim transactions; medical spend = paid on counted claims
 DECIDED_BY = 'Mike (clinical owner), 2026-10-23 / 2026-10-25'
@@ -42,12 +42,12 @@ LIVING_ASK = re.compile(r'\b(?:living|alive)\b', re.I)
 ALL_RECEIVED_ROWS = re.compile(
     r'\b(?:all|every)\s+(?:the\s+)?received\s+(?:[a-z_]+[ -]+){0,5}'
     r'(?:rows?|records?|events?|claims?|stays?|appointments?|encounters?|observations?)\b', re.I)
+RECORD_OBJECT = (r'(?:rows?|records?|accounts?|assertions?|annotations?|statements?|documents?|reports?|'
+                 r'notes?|correspondence|observations?|events?|claims?)')
 RECEIVED_RECORD_HEAD = re.compile(
     r'^\s*(?:(?:identify|show|list|find|review|audit|compare|count)\s+)?'
     r'(?:(?:all|every|the)\s+)?(?:received|recorded)\s+'
-    r'(?:[a-z0-9_-]+\s+){0,5}?'
-    r'(?:rows?|records?|accounts?|assertions?|annotations?|statements?|documents?|reports?|'
-    r'notes?|correspondence|observations?|events?|claims?)\b', re.I)
+    r'(?:[a-z0-9_-]+\s+){0,5}?'+RECORD_OBJECT+r'\b', re.I)
 PATIENT_WORDS = re.compile(r'\b(?:patients?|people|persons?|individuals?|who|whom|whose|adults?|children|women|men|females?|males?|seniors?|elderly)\b', re.I)
 # questions about money or membership months are not patient counts: the living rule does not apply to them (they say "members",
 # "claims", "paid", "PMPM", never a count of patients)
@@ -86,7 +86,38 @@ ANY_LAB = re.compile(r"\b(?:ever|at any (?:time|point|visit)|any (?:time|result|
 ROLLING_YEAR = re.compile(r"\b(?:in |during |within |over |for )?the (?:last|past|previous|trailing) (?:year|12 months|twelve months|365 days)\b|"
                           r"\b(?:last|past) year\b|\bin the last 12 months\b|\btrailing 12 months\b", re.I)
 CALENDAR_YEAR = re.compile(r"\b(?:in|during|for|of)\s+((?:19|20)\d\d)\b", re.I)
+RECEIPT_YEAR = re.compile(r'\b(?:received|arrived|available)\s+(?:(?:in|during)\s+)?((?:19|20)\d{2})\b',re.I)
 ROLLING_YEAR_SQL = "date({as_of}, '-12 months')"  # an event date d is in the window when d > ROLLING_YEAR_SQL and d <= {as_of}
+
+
+def receipt_window_request(question,as_of=None):
+    """Bind only a directly stated, single receipt year; never guess other clocks."""
+    q=question or ''
+    head=RECEIVED_RECORD_HEAD.search(re.sub(r'^\s*(?:for|among)\s+','',q,flags=re.I))
+    matches=[m for m in RECEIPT_YEAR.finditer(q)
+        if(head is not None and m.group()in head.group()
+           or re.search(r'\b'+RECORD_OBJECT+r'(?:\s+(?:that\s+)?(?:were|was))?\s*$',q[:m.start()],re.I))]
+    years=set(re.findall(r'\b(?:19|20)\d{2}\b',q))
+    if not matches or len(years)!=1:return None
+    year=matches[0][1]
+    contract={'source_clause':matches[0].group(),
+            'assertion_window':{'basis':'arrival','start':year+'-01-01','end':year+'-12-31'},
+            'authority':'explicit_question_receipt_year',
+            'meaning':'Receipt/availability is distinct from source-event and clinical/reference dates.'}
+    cutoff=str(as_of)[:10]if as_of is not None else None
+    if cutoff and year+'-01-01'<=cutoff<year+'-12-31':
+        contract['requested_calendar_end']=year+'-12-31'
+        contract['unobserved_remainder_after_snapshot']=True
+        contract['assertion_window']['end']=cutoff
+    return contract
+
+
+def validate_receipt_window(question,parameters,as_of=None):
+    requested=receipt_window_request(question,as_of)
+    if requested is not None and parameters.get('assertion_window')!=requested['assertion_window']:
+        raise ValueError('Assertion receipt-window binding: '+repr(requested['source_clause'])+
+            ' requires assertion_window='+str(requested['assertion_window'])+
+            '. Correct the typed window before source acquisition; retain source-event and clinical/reference dates separately.')
 
 # --- conditions ----------------------------------------------------------------------------------------------------------------
 CONDITION_EVIDENCE = {

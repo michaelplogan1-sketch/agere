@@ -189,6 +189,27 @@ class DocumentaryHandoff(unittest.TestCase):
             self.tools()({'name':'execute_analysis','input':{'operation':'assertion_review',
                 'selection':'inherited_annotations','parameters':{'assertion_window':{**window,'end':'2031-01-01'}}}})
 
+    def test_explicit_receipt_clock_is_discovered_and_checked_before_engine_dispatch(self):
+        from clinical_core.agere.clinical import decision_context as D,analysis_graph
+        question='Identify received 2029 clinical accounts and their source-event dates.'
+        with D.scope(question,AS_OF):
+            tools=self.tools();tools.question=question
+            description=tools({'name':'describe_analysis','input':{'operation':'assertion_review'}})
+            requested=description['selection_contracts']['inherited_annotations']['question_window_contract']['assertion_window']
+            self.assertEqual(requested,{'basis':'arrival','start':'2029-01-01','end':AS_OF})
+            with patch.object(analysis_graph,'execute',side_effect=AssertionError('No wrong-clock engine dispatch')):
+                for window in (None,{**requested,'basis':'source_event'}):
+                    with self.subTest(window=window),self.assertRaisesRegex(ValueError,'receipt-window binding'):
+                        tools({'name':'execute_analysis','input':{'operation':'assertion_review','selection':'inherited_annotations',
+                            'parameters':{}if window is None else{'assertion_window':window},'output':'qualifier_accounts'}})
+        # A retained source-event result cannot bypass the same question binding
+        # merely by entering source review instead of new native execution.
+        tools=self.tools();result=self.execute(tools,output='qualifier_accounts');tools.question=question
+        answer={'answer_type':'table','table_from_tool':result['result_view']};B.materialize_table(answer,tools.native_calls)
+        with patch.object(A,'documentary_rows',side_effect=AssertionError('No wrong-clock source replay')):
+            with self.assertRaisesRegex(ValueError,'receipt-window binding'):
+                A.qualifier_coverage_review(answer,tools.native_calls,tools,AS_OF)
+
     def test_inherited_selection_refuses_scope_overrides_instead_of_silently_changing_them(self):
         t=self.tools()
         base={'operation':'assertion_review','selection':'inherited_annotations','parameters':{}}
