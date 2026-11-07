@@ -196,6 +196,35 @@ SHAPES = {'count': {'count', 'value', 'patient_set'}, 'value': {'value', 'count'
           'patient_set': {'patient_set', 'table'}, 'table': {'table'}}
 
 
+def attribution_misfit(question, answer):
+    """Explicit paired entity attribution needs row identities, not totals.
+
+    This only consumes output instructions such as "show patient/account
+    attribution". Questions counting missing links and source qualifications
+    do not request attributed rows. Unknown identity values may remain null.
+    """
+    entities=set()
+    for clause in re.split(r'[.;?!]', question or ''):
+        if not re.search(r'\b(?:show|include|return|report|give)\b',clause,re.I):continue
+        for match in re.finditer(r'\b([a-z][a-z_]*)\s*(?:/|and)\s*([a-z][a-z_]*)\s+attribution\b',clause,re.I):
+            entities.update(x.lower()for x in match.groups())
+    rows=(answer or {}).get('table')or[]
+    if not entities or not rows:return None
+    def keys(value):
+        if isinstance(value,dict):
+            for key,item in value.items():
+                yield re.sub(r'[^a-z0-9]','',str(key).lower())
+                yield from keys(item)
+        elif isinstance(value,list):
+            for item in value:yield from keys(item)
+    for entity in sorted(entities):
+        stems={entity,entity[:-1]}if entity.endswith('s')else{entity}
+        allowed={stem+suffix for stem in stems for suffix in ('','id','identifier','name','number','key')}
+        if any(not allowed.intersection(keys(row))for row in rows):
+            return f'the question requests {entity} attribution; each detail row needs its {entity} identity, not only aggregate totals'
+    return None
+
+
 def shape_misfit(question, answer, analyst=False):
     """None when the executed answer has the requested output shape (one-row tables count as scalars), else why not."""
     from .analysis_graph import requested_shape
@@ -203,6 +232,8 @@ def shape_misfit(question, answer, analyst=False):
     status = (answer or {}).get('status')
     if status in ('unsupported', 'not_available', 'clarify'): return None  # an honest decline is not a reshaped answer
     if status not in ('answered', 'partial'): return f'the plan did not produce an answer (status {status})'
+    attribution=attribution_misfit(question,answer)
+    if attribution:return attribution
     got = answer.get('answer_type')
     if got == 'composite': return None
     if analyst and wanted == 'patient_set' and got == 'count':
