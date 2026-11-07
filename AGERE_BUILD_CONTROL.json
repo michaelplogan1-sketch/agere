@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-07T07:39:56.870754+00:00",
+  "updated_at": "2026-11-07T08:28:12.078201+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -568,9 +568,9 @@
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Current original Q21 final composition, coverage/global meaning and save/reopen remain unaccepted. Q23 exact-parent definitions,Q24 requested capability,current25case/10area assessment and independentG5/clinical/model/customer prerequisites remain.",
+      "remaining_acceptance": "Original Q21 final meaning/coverage/save remains unaccepted; completed source unknowns must stay explicit. Q23 definitions,Q24 requested capability,current25case/10area assessment and independentG5/clinical/model/customer prerequisites remain.",
       "engineering_current_status": "Direct native coverage and full input admission verified; ordinary final SQL projection uncovered an unfinished shared composition binding. Retained exact projection is now blocked before provider dispatch; qualification is next. OriginalQ21 unaccepted.",
-      "next_action": "G3: Monitor only owned retained final-consumer v3 PID49394/session18199 (artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json), frozen productfe4bab11. No duplicate job or product/source edits. Actual completed36592arrival2029accounts/4115inputsubjects(1661matching)/source judgments and interrupted SQL actions are restored. New source votes blocked; current compiled-state answer has corrected immutable prior-reading boundary and uses the actual old draft as unaccepted context, allowing obsolete error prose to be recomposed. Final coverage/global meaning/save remains unaccepted. On terminal reconcile all attempts/partials/source/code and assess saved answer; restore app. Then Q23exact-parent definitions,Q24capability,currentall25/tenareas and independentG5/clinical/model/customer dependencies. Quiet continuation ACTIVE.",
+      "next_action": "G3: Monitor only retained-review completion PID50662/session3856 (artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json), frozen product2f00f7e1. No duplicate or product/source edits. Restore exact native/source/query receipts and actual last complete model draft; revalidate the recorded scalar-address edit as native binding replay, not a fresh model response. No new frontier/source-reading calls. Current pending-work reviewer now receives bound source-completion contract;85checks pass(1optional skip). Actual targeted probe2calls/$0.000555664/0newpending returns no confident pending target, with unavailable_factp=.4916/decided_by=null; uncertainty remains, not a positive qualification. V5 terminal1156.352s/21attempts/$12.423698886/0unpriced/0newpending, allsource/code/priorrows unchanged; full nativecalls preserved. Assess actual final coverage/global meaning/save/reopen when terminal, reconcile attempts and restore app. Q23exact-parent definitions,Q24capability,currentall25/tenareas and independentG5/clinical/model/customer dependencies remain. Quiet continuation ACTIVE.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -652,23 +652,20 @@
     "kind": "connected_source_handoff_and_explicit_receipt_clock_candidate",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Freeze restored-call membership before continuation. Newly requested complete readings stay visible even if the executor appends to the original call list; prior source-only readings remain distinct. Retain all source and SQL work from interrupted attempts.",
-    "measured_failure_reduction": "Regression reproduces missing complete_reading before fix and passes after with2model callbacks/1native read/0providers.35affected source/context checks and28execution-state/final checks pass. Full native36592/4115 proof retained; no paid source reread. Final consumer v2 stopped after9attempts/$2.3621394/0newpending; full original answer remains unaccepted.",
+    "user_behavior_delta": "Pending-work review consumes the already verified source-interpreted contract, distinguishing completed-but-uncertain source judgments and unbound sources from unread bound accounts or genuinely unperformed work. It retains typed confidence thresholds and cannot certify whole-answer/clinical acceptance.",
+    "measured_failure_reduction": "85affected checks pass(1optional skip), including source-contract/row/snapshot rejection and preservation of genuinely pending work. Actual source-context probe uses36592accounts/4115inputpatients with0newsourcevotes:2typedproviderattempts/$0.000555664/0newpending; no confident pending target, verdict remains undecided. All prior/source/code preserved. Retained final review in progress; no full question accepted.",
     "evidence": [
-      "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/state-repair-proof-v2/receipt.json",
-      "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/compiler-projection-proof.json",
-      "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v2/receipt.json",
-      "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/reading-boundary-before-v2.log",
-      "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/reading-boundary-regressions.log",
-      "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/reading-boundary-state-checks.log",
-      "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json"
+      "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-checks.log",
+      "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-probe/receipt.json",
+      "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v5/receipt.json",
+      "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json"
     ],
-    "remaining_gap": "Current original Q21 final composition, coverage/global meaning and save/reopen remain unaccepted. Q23 exact-parent definitions,Q24 requested capability,current25case/10area assessment and independentG5/clinical/model/customer prerequisites remain.",
-    "next_action": "G3: Monitor only owned retained final-consumer v3 PID49394/session18199 (artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json), frozen productfe4bab11. No duplicate job or product/source edits. Actual completed36592arrival2029accounts/4115inputsubjects(1661matching)/source judgments and interrupted SQL actions are restored. New source votes blocked; current compiled-state answer has corrected immutable prior-reading boundary and uses the actual old draft as unaccepted context, allowing obsolete error prose to be recomposed. Final coverage/global meaning/save remains unaccepted. On terminal reconcile all attempts/partials/source/code and assess saved answer; restore app. Then Q23exact-parent definitions,Q24capability,currentall25/tenareas and independentG5/clinical/model/customer dependencies. Quiet continuation ACTIVE.",
+    "remaining_gap": "Original Q21 final meaning/coverage/save remains unaccepted; completed source unknowns must stay explicit. Q23 definitions,Q24 requested capability,current25case/10area assessment and independentG5/clinical/model/customer prerequisites remain.",
+    "next_action": "G3: Monitor only retained-review completion PID50662/session3856 (artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json), frozen product2f00f7e1. No duplicate or product/source edits. Restore exact native/source/query receipts and actual last complete model draft; revalidate the recorded scalar-address edit as native binding replay, not a fresh model response. No new frontier/source-reading calls. Current pending-work reviewer now receives bound source-completion contract;85checks pass(1optional skip). Actual targeted probe2calls/$0.000555664/0newpending returns no confident pending target, with unavailable_factp=.4916/decided_by=null; uncertainty remains, not a positive qualification. V5 terminal1156.352s/21attempts/$12.423698886/0unpriced/0newpending, allsource/code/priorrows unchanged; full nativecalls preserved. Assess actual final coverage/global meaning/save/reopen when terminal, reconcile attempts and restore app. Q23exact-parent definitions,Q24capability,currentall25/tenareas and independentG5/clinical/model/customer dependencies remain. Quiet continuation ACTIVE.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
-      "Current original Q21 final composition, coverage/global meaning and save/reopen remain unaccepted. Q23 exact-parent definitions,Q24 requested capability,current25case/10area assessment and independentG5/clinical/model/customer prerequisites remain."
+      "Original Q21 final meaning/coverage/save remains unaccepted; completed source unknowns must stay explicit. Q23 definitions,Q24 requested capability,current25case/10area assessment and independentG5/clinical/model/customer prerequisites remain."
     ],
     "latest_progress": "Native discovery now exposes the existing source-review/interpretation handoff and clock roles. A directly stated single record-receipt year is bound to arrival before native acquisition or retained-source review. Source-event-only, patient treatment receipt and multiple-year requests are not guessed; midyear snapshots retain the unobserved calendar remainder.",
     "results_report": "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json",
@@ -724,12 +721,12 @@
       "scope": "Preserve the healthcare-wide product across clinical/chronic disease/medication, population and individual, utilization/outcomes, finance/provider/contracts, discovery/explanation, deliverables, learning/reuse and shared industry-portable core. Keep all ten canonical acceptance areas and25fixedcases; no new finish-line expansion."
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-07T07:39:56.870754+00:00",
-    "workflow_change": "Freeze restored-call membership before continuation. Newly requested complete readings stay visible even if the executor appends to the original call list; prior source-only readings remain distinct. Retain all source and SQL work from interrupted attempts.",
+    "at": "2026-11-07T08:28:12.078201+00:00",
+    "workflow_change": "Pending-work review consumes the already verified source-interpreted contract, distinguishing completed-but-uncertain source judgments and unbound sources from unread bound accounts or genuinely unperformed work. It retains typed confidence thresholds and cannot certify whole-answer/clinical acceptance.",
     "unsealed_work": {
       "status": "verified_full_native_scope_pending_ordinary_composition",
-      "product_commit": "fe4bab11aa646ee443a5074184284df9e86809dc",
-      "product_fix_commit": "fe4bab11aa646ee443a5074184284df9e86809dc",
+      "product_commit": "2f00f7e1745028f921aa97eee117781fb9a19011",
+      "product_fix_commit": "2f00f7e1745028f921aa97eee117781fb9a19011",
       "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json",
       "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
       "source_frozen": true,
@@ -1689,12 +1686,12 @@
       "q21_source_state_repair_receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/state-repair-proof-v2/receipt.json",
       "q21_context_regressions": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/provider-context-regressions.log",
       "q21_retained_final_consumer": {
-        "pid": 49394,
-        "status": "running",
-        "source_frozen": true,
-        "provider_work": true,
+        "pid": 49788,
+        "status": "failed_preserved_no_automatic_retry",
+        "source_frozen": false,
+        "provider_work": false,
         "kind": "Q21-retained-final-consumer",
-        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json"
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v5/receipt.json"
       },
       "q21_compiler_source_projection_proof": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/compiler-projection-proof.json",
       "q21_final_projection_checks": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/final-repair-projection-checks.log",
@@ -1708,14 +1705,48 @@
       "q21_read_boundary_checks": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/reading-boundary-regressions.log",
       "q21_read_boundary_state_checks": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/reading-boundary-state-checks.log",
       "q21_retained_final_consumer_v3": {
-        "pid": 49394,
+        "status": "failed_preserved_no_automatic_retry",
+        "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json",
+        "source_frozen": false,
+        "provider_work": false
+      },
+      "q21_retained_final_consumer_v4": {
+        "pid": 49754,
         "status": "running",
         "source_frozen": true,
         "provider_work": true,
-        "kind": "Q21-retained-final-consumer-v3",
-        "session": 18199,
-        "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json"
-      }
+        "kind": "Q21-current-source-final-consumer-v4",
+        "session": 1414,
+        "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v4/receipt.json"
+      },
+      "q21_retained_final_consumer_v5": {
+        "pid": 49788,
+        "status": "running",
+        "source_frozen": true,
+        "provider_work": true,
+        "kind": "Q21-current-source-final-consumer-v5",
+        "session": 63932,
+        "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v5/receipt.json"
+      },
+      "q21_source_completion_context_probe": {
+        "pid": 50435,
+        "status": "returned_for_assessment",
+        "source_frozen": false,
+        "provider_work": false,
+        "kind": "Q21-source-completion-context-probe",
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-probe/receipt.json"
+      },
+      "q21_retained_review_completion": {
+        "pid": 50662,
+        "status": "running",
+        "source_frozen": true,
+        "provider_work": true,
+        "kind": "Q21-retained-review-completion",
+        "session": 3856,
+        "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json"
+      },
+      "q21_pending_source_context_checks": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-checks.log",
+      "q21_pending_source_context_probe": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-probe/receipt.json"
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 47,
@@ -1771,13 +1802,13 @@
     "provider_dependency": null,
     "active_jobs": [
       {
-        "pid": 49394,
+        "pid": 50662,
         "status": "running",
         "source_frozen": true,
         "provider_work": true,
-        "kind": "Q21-retained-final-consumer-v3",
-        "session": 18199,
-        "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json"
+        "kind": "Q21-retained-review-completion",
+        "session": 3856,
+        "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json"
       }
     ],
     "previous_finite_completion": {
@@ -6708,6 +6739,28 @@
         "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/reading-boundary-state-checks.log"
       ],
       "scope_impact": "No acceptance area removed. Current original question final answer unaccepted."
+    },
+    {
+      "at": "2026-11-07T07:50:23.073288+00:00",
+      "gate": "G3",
+      "decision": "Two consumer attempts failed to complete final delivery: v2 hid new readings through mutable cutoff; fix reproduced and passed. v3 reads/bindings progressed but old unrequested independent-run prose caused a compiler repair loop. Retain every attempt/SQL/prose receipt; compose from the current verified native contract without supplying rejected prose as factual evidence/new draft. Ordinary discovery documentation restored in verification setup. No new source votes or changed thresholds.",
+      "evidence": [
+        "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v2/receipt.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/reading-boundary-regressions.log"
+      ],
+      "scope_impact": "No product area removed; original question/current full assessment still required."
+    },
+    {
+      "at": "2026-11-07T08:28:12.078201+00:00",
+      "gate": "G3",
+      "decision": "Missing source-completion state made pending-work classifier treat completed uncertain/unbound judgments as unread tasks. Bind existing verified contract without changing labels/thresholds. Probe no longer identifies confident pending task but remains uncertain. Reuse actual native receipts and scalar patch for final review; no further frontier/source campaign.",
+      "evidence": [
+        "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-checks.log",
+        "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-probe/receipt.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v5/receipt.json"
+      ],
+      "scope_impact": "All25/tenareas retained; final original question and independent qualification remain open."
     }
   ],
   "unsealed_work": {
@@ -7157,16 +7210,16 @@
   },
   "active_jobs": [
     {
-      "pid": 49394,
+      "pid": 50662,
       "status": "running",
       "source_frozen": true,
       "provider_work": true,
-      "kind": "Q21-retained-final-consumer-v3",
-      "session": 18199,
-      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json"
+      "kind": "Q21-retained-review-completion",
+      "session": 3856,
+      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json"
     }
   ],
-  "next_action": "G3: Monitor only owned retained final-consumer v3 PID49394/session18199 (artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json), frozen productfe4bab11. No duplicate job or product/source edits. Actual completed36592arrival2029accounts/4115inputsubjects(1661matching)/source judgments and interrupted SQL actions are restored. New source votes blocked; current compiled-state answer has corrected immutable prior-reading boundary and uses the actual old draft as unaccepted context, allowing obsolete error prose to be recomposed. Final coverage/global meaning/save remains unaccepted. On terminal reconcile all attempts/partials/source/code and assess saved answer; restore app. Then Q23exact-parent definitions,Q24capability,currentall25/tenareas and independentG5/clinical/model/customer dependencies. Quiet continuation ACTIVE.",
+  "next_action": "G3: Monitor only retained-review completion PID50662/session3856 (artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json), frozen product2f00f7e1. No duplicate or product/source edits. Restore exact native/source/query receipts and actual last complete model draft; revalidate the recorded scalar-address edit as native binding replay, not a fresh model response. No new frontier/source-reading calls. Current pending-work reviewer now receives bound source-completion contract;85checks pass(1optional skip). Actual targeted probe2calls/$0.000555664/0newpending returns no confident pending target, with unavailable_factp=.4916/decided_by=null; uncertainty remains, not a positive qualification. V5 terminal1156.352s/21attempts/$12.423698886/0unpriced/0newpending, allsource/code/priorrows unchanged; full nativecalls preserved. Assess actual final coverage/global meaning/save/reopen when terminal, reconcile attempts and restore app. Q23exact-parent definitions,Q24capability,currentall25/tenareas and independentG5/clinical/model/customer dependencies remain. Quiet continuation ACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",

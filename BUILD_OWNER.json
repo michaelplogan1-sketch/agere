@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: Monitor only owned retained final-consumer v3 PID49394/session18199 (artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json), frozen productfe4bab11. No duplicate job or product/source edits. Actual completed36592arrival2029accounts/4115inputsubjects(1661matching)/source judgments and interrupted SQL actions are restored. New source votes blocked; current compiled-state answer has corrected immutable prior-reading boundary and uses the actual old draft as unaccepted context, allowing obsolete error prose to be recomposed. Final coverage/global meaning/save remains unaccepted. On terminal reconcile all attempts/partials/source/code and assess saved answer; restore app. Then Q23exact-parent definitions,Q24capability,currentall25/tenareas and independentG5/clinical/model/customer dependencies. Quiet continuation ACTIVE.",
+  "active_work": "G3: Monitor only retained-review completion PID50662/session3856 (artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json), frozen product2f00f7e1. No duplicate or product/source edits. Restore exact native/source/query receipts and actual last complete model draft; revalidate the recorded scalar-address edit as native binding replay, not a fresh model response. No new frontier/source-reading calls. Current pending-work reviewer now receives bound source-completion contract;85checks pass(1optional skip). Actual targeted probe2calls/$0.000555664/0newpending returns no confident pending target, with unavailable_factp=.4916/decided_by=null; uncertainty remains, not a positive qualification. V5 terminal1156.352s/21attempts/$12.423698886/0unpriced/0newpending, allsource/code/priorrows unchanged; full nativecalls preserved. Assess actual final coverage/global meaning/save/reopen when terminal, reconcile attempts and restore app. Q23exact-parent definitions,Q24capability,currentall25/tenareas and independentG5/clinical/model/customer dependencies remain. Quiet continuation ACTIVE.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
   "owned_server_pid": null,
@@ -15,7 +15,7 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: Monitor only owned retained final-consumer v3 PID49394/session18199 (artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json), frozen productfe4bab11. No duplicate job or product/source edits. Actual completed36592arrival2029accounts/4115inputsubjects(1661matching)/source judgments and interrupted SQL actions are restored. New source votes blocked; current compiled-state answer has corrected immutable prior-reading boundary and uses the actual old draft as unaccepted context, allowing obsolete error prose to be recomposed. Final coverage/global meaning/save remains unaccepted. On terminal reconcile all attempts/partials/source/code and assess saved answer; restore app. Then Q23exact-parent definitions,Q24capability,currentall25/tenareas and independentG5/clinical/model/customer dependencies. Quiet continuation ACTIVE.",
+  "resume_priority": "G3: Monitor only retained-review completion PID50662/session3856 (artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json), frozen product2f00f7e1. No duplicate or product/source edits. Restore exact native/source/query receipts and actual last complete model draft; revalidate the recorded scalar-address edit as native binding replay, not a fresh model response. No new frontier/source-reading calls. Current pending-work reviewer now receives bound source-completion contract;85checks pass(1optional skip). Actual targeted probe2calls/$0.000555664/0newpending returns no confident pending target, with unavailable_factp=.4916/decided_by=null; uncertainty remains, not a positive qualification. V5 terminal1156.352s/21attempts/$12.423698886/0unpriced/0newpending, allsource/code/priorrows unchanged; full nativecalls preserved. Assess actual final coverage/global meaning/save/reopen when terminal, reconcile attempts and restore app. Q23exact-parent definitions,Q24capability,currentall25/tenareas and independentG5/clinical/model/customer dependencies remain. Quiet continuation ACTIVE.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-05T13:04:20.746654+00:00",
   "heartbeat_status": "ACTIVE",
@@ -28,11 +28,11 @@
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
   "last_observed_server_session": 83398,
-  "server_status": "App stopped; one owned selective final-consumer v3 running.",
+  "server_status": "App stopped; one owned retained final-review completion running.",
   "unsealed_work": {
     "status": "verified_full_native_scope_pending_ordinary_composition",
-    "product_commit": "fe4bab11aa646ee443a5074184284df9e86809dc",
-    "product_fix_commit": "fe4bab11aa646ee443a5074184284df9e86809dc",
+    "product_commit": "2f00f7e1745028f921aa97eee117781fb9a19011",
+    "product_fix_commit": "2f00f7e1745028f921aa97eee117781fb9a19011",
     "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
     "source_frozen": true,
@@ -991,12 +991,12 @@
     "q21_source_state_repair_receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/state-repair-proof-v2/receipt.json",
     "q21_context_regressions": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/provider-context-regressions.log",
     "q21_retained_final_consumer": {
-      "pid": 49394,
-      "status": "running",
-      "source_frozen": true,
-      "provider_work": true,
+      "pid": 49788,
+      "status": "failed_preserved_no_automatic_retry",
+      "source_frozen": false,
+      "provider_work": false,
       "kind": "Q21-retained-final-consumer",
-      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json"
+      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v5/receipt.json"
     },
     "q21_compiler_source_projection_proof": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/compiler-projection-proof.json",
     "q21_final_projection_checks": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/final-repair-projection-checks.log",
@@ -1010,14 +1010,48 @@
     "q21_read_boundary_checks": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/reading-boundary-regressions.log",
     "q21_read_boundary_state_checks": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/reading-boundary-state-checks.log",
     "q21_retained_final_consumer_v3": {
-      "pid": 49394,
+      "status": "failed_preserved_no_automatic_retry",
+      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json",
+      "source_frozen": false,
+      "provider_work": false
+    },
+    "q21_retained_final_consumer_v4": {
+      "pid": 49754,
       "status": "running",
       "source_frozen": true,
       "provider_work": true,
-      "kind": "Q21-retained-final-consumer-v3",
-      "session": 18199,
-      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json"
-    }
+      "kind": "Q21-current-source-final-consumer-v4",
+      "session": 1414,
+      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v4/receipt.json"
+    },
+    "q21_retained_final_consumer_v5": {
+      "pid": 49788,
+      "status": "running",
+      "source_frozen": true,
+      "provider_work": true,
+      "kind": "Q21-current-source-final-consumer-v5",
+      "session": 63932,
+      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v5/receipt.json"
+    },
+    "q21_source_completion_context_probe": {
+      "pid": 50435,
+      "status": "returned_for_assessment",
+      "source_frozen": false,
+      "provider_work": false,
+      "kind": "Q21-source-completion-context-probe",
+      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-probe/receipt.json"
+    },
+    "q21_retained_review_completion": {
+      "pid": 50662,
+      "status": "running",
+      "source_frozen": true,
+      "provider_work": true,
+      "kind": "Q21-retained-review-completion",
+      "session": 3856,
+      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json"
+    },
+    "q21_pending_source_context_checks": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-checks.log",
+    "q21_pending_source_context_probe": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-probe/receipt.json"
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
@@ -1288,13 +1322,13 @@
   },
   "active_jobs": [
     {
-      "pid": 49394,
+      "pid": 50662,
       "status": "running",
       "source_frozen": true,
       "provider_work": true,
-      "kind": "Q21-retained-final-consumer-v3",
-      "session": 18199,
-      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v3/receipt.json"
+      "kind": "Q21-retained-review-completion",
+      "session": 3856,
+      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json"
     }
   ],
   "overnight_completed_jobs": {
@@ -1432,7 +1466,7 @@
   },
   "previous_sealed_receipt": "artifacts/agere-whole-stack-release-2026-11-05/delivery-receipt.json",
   "review_followthrough_authorization": "Mike: okay i am stepping away, please take your time on this, it is critical we get this MVP correct, you know our north star, work with claude to figure out it. I wont be here to approve anything so do not ask me for anything just do it",
-  "last_product_commit": "fe4bab11aa646ee443a5074184284df9e86809dc",
+  "last_product_commit": "2f00f7e1745028f921aa97eee117781fb9a19011",
   "current_delivery_scope": "Native discovery now exposes the existing source-review/interpretation handoff and clock roles. A directly stated single record-receipt year is bound to arrival before native acquisition or retained-source review. Source-event-only, patient treatment receipt and multiple-year requests are not guessed; midyear snapshots retain the unobserved calendar remainder.",
   "current_financial_delivery": {
     "context_id": "ANS-8d56378ee795fc4226dc4828",
@@ -1440,7 +1474,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-07T07:39:56.870754+00:00",
+  "updated_at": "2026-11-07T08:28:12.078201+00:00",
   "last_commit": "81f8bbf5192b10a98cd28f4e1877cfda474bfa51",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
