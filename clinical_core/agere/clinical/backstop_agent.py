@@ -2353,7 +2353,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         assessment.update(coverage=coverage, calls=assessment['calls']+coverage['calls'], cost_usd=assessment['cost_usd']+coverage['cost_usd'])
         # Locate admitted work before constructing or reviewing its full source dependencies.
         if answer.get('missing'):
-            work=gate.check_pending_work(question,answer,calls,ledger=ledger,as_of_date=as_of)
+            work=gate.check_pending_work(question,answer,calls,ledger=ledger,as_of_date=as_of,
+                native_interpretation=native_interpretation)
             assessment.update(declared_work=work,calls=assessment['calls']+work['calls'],
                 cost_usd=assessment['cost_usd']+work['cost_usd'])
             if work.get('targets'):

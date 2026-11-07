@@ -117,6 +117,31 @@ class FinalInterpretation(unittest.TestCase):
         self.assertLess(len(json.dumps(seen[0])),30000)
         self.assertEqual(len(self.answer['table']),17)
 
+    def test_pending_work_sees_completed_source_contract_without_waiving_new_work(self):
+        proof=self.contract();seen=[]
+        def judge(subject,questions,evidence,**kw):
+            state=json.loads(evidence[0]['text']);seen.append(state)
+            self.assertEqual(state['source_interpretation_contract'],proof)
+            return {'judgments':{'missing_0':{'label':'verification_uncertain','probability':.99,'decided_by':'authored'},
+                'missing_1':{'label':'pending_work','probability':.99,'decided_by':'authored'}},'steps':[]}
+        self.answer['missing']=['Clinical adjudication remains unavailable.','Requested additional comparison has not run.']
+        with patch.object(G,'s1',return_value=SimpleNamespace(judge_fields=judge)):
+            out=G.check_pending_work(self.question,self.answer,self.tools.native_calls,as_of_date=self.tools.as_of,
+                native_interpretation=proof)
+        self.assertEqual(out['targets'],[{'path':['answer','missing',1],'text':self.answer['missing'][1]}])
+        self.assertEqual(seen[0]['source_interpretation_contract']['unreviewed_bound_source_accounts'],0)
+        self.assertLess(len(json.dumps(seen[0])),40000)
+
+    def test_pending_work_rejects_changed_table_or_stale_source_contract_before_dispatch(self):
+        proof=self.contract();self.answer['missing']=['Source interpretation remains uncertain.']
+        stale=copy.deepcopy(proof);stale['as_of']='2029-01-01'
+        with patch.object(G,'s1',return_value=SimpleNamespace(judge_fields=lambda *a,**kw:(_ for _ in ()).throw(AssertionError('No dispatch')))):
+            with self.assertRaises(ValueError):
+                G.check_pending_work(self.question,self.answer,self.tools.native_calls,as_of_date=self.tools.as_of,native_interpretation=stale)
+            self.answer['table'][0]['source_date']='2029-01-01'
+            with self.assertRaises(ValueError):
+                G.check_pending_work(self.question,self.answer,self.tools.native_calls,as_of_date=self.tools.as_of,native_interpretation=proof)
+
     def test_unread_source_accounts_cannot_be_reported_as_completed_unknowns(self):
         fresh=fixtures.Interpretation();fresh.setUp();self.addCleanup(fresh.doCleanups)
         def prepared(s,q,e,**kw):return {'judgments':{key:{'label':'unknown','decided_by':None}for key in q},
