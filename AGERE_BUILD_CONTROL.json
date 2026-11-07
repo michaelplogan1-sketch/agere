@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-07T01:26:13.609907+00:00",
+  "updated_at": "2026-11-07T01:28:04.064160+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -567,7 +567,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Complete one ordinary original Q21 answer through the connected stack, including semantic source checks and explicit unresolved meanings/bindings. Native annotation counts are not clinical accuracy. Do not rerun the passing native source audit or Q20 workflow. Q23 applicable definitions, Q24 requested-deliverable capability, the current ten-area/25-case assessment and independent G5/clinical/model/customer dependencies remain.",
       "engineering_current_status": "Complete retained native audit/output and compact descendant query origins verified; originalQ21 semantic review/ordinary composition remains unaccepted.189MB general coverage projection is a measured remaining defect.",
-      "next_action": "G3: Native query transport and complete qualifier-account output are verified offline on a23e3f97; no provider/build/training job running. Next repair the measured189488668byte general coverage projection using the existing typed evidence/review path: prove exact complete native audit copying and its conditional qualifier-effect role in code, retain every source/value/unit/domain/clock, and expose unresolved machine/source meanings rather than treating them as clinical facts. Do not add a disease handler or certify clinical meaning by digest. Measure unchanged full retained output and authored adverse cases before a small ordinary handoff; no paid fullQ21 while the model projection is oversized. Native audit proof uses all4115cached patients,71735input assertions,51233factrows,38263primary accounts(37032bound/1231unbound),0new extraction/providers. Preserve originalQ21 failures/attempts, Q23missing exact-parent definitions,Q24requested deliverable capability and whole25case/tenarea assessment plus separateG5/clinical/model/customer dependencies. App intentionally stopped for this candidate; restart after verified source/checkpoint. Quiet continuation ACTIVE.",
+      "next_action": "G3: Native query transport and complete qualifier-account output are verified offline on a23e3f97; no provider/build/training job running. Next repair the measured189488668byte general coverage projection using the existing typed evidence/review path: prove exact complete native audit copying and its conditional qualifier-effect role in code, retain every source/value/unit/domain/clock, and expose unresolved machine/source meanings rather than treating them as clinical facts. Do not add a disease handler or certify clinical meaning by digest. Measure unchanged full retained output and authored adverse cases before a small ordinary handoff; no paid fullQ21 while the model projection is oversized. Native audit proof uses all4115cached patients,71735input assertions,51233factrows,38263primary accounts(37032bound/1231unbound),0new extraction/providers. Preserve originalQ21 failures/attempts, Q23missing exact-parent definitions,Q24requested deliverable capability and whole25case/tenarea assessment plus separateG5/clinical/model/customer dependencies. Owned app40574/session76791 serves /ask HTTP200 on8885; native candidatea23e3f97 in4796e497, same verified source/ledger,0startup provider calls. Quiet continuation ACTIVE.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -656,10 +656,11 @@
       "artifacts/agere-q21-assertion-window-2026-11-06/bound-consumer/receipt.json",
       "artifacts/agere-q21-assertion-window-2026-11-06/bound-transport-scale.json",
       "artifacts/agere-q21-assertion-window-2026-11-06/bound-consumer/review-transport-observation.json",
-      "artifacts/agere-q21-assertion-window-2026-11-06/bound-complete-checks.log"
+      "artifacts/agere-q21-assertion-window-2026-11-06/bound-complete-checks.log",
+      "artifacts/agere-q21-assertion-window-2026-11-06/bound-consumer/app-proof.json"
     ],
     "remaining_gap": "Current general model coverage projection is189488668bytes; do not pay to resend it. Separate proven native audit fidelity from unresolved source meanings in existing typed review, keeping every row/clock/domain and source unknown; no blanket clinical acceptance. OriginalQ21 clock/meaning, Q23definitions,Q24requested capability,current all25/tenarea assessment and independentG5/clinical/customer dependencies remain.",
-    "next_action": "G3: Native query transport and complete qualifier-account output are verified offline on a23e3f97; no provider/build/training job running. Next repair the measured189488668byte general coverage projection using the existing typed evidence/review path: prove exact complete native audit copying and its conditional qualifier-effect role in code, retain every source/value/unit/domain/clock, and expose unresolved machine/source meanings rather than treating them as clinical facts. Do not add a disease handler or certify clinical meaning by digest. Measure unchanged full retained output and authored adverse cases before a small ordinary handoff; no paid fullQ21 while the model projection is oversized. Native audit proof uses all4115cached patients,71735input assertions,51233factrows,38263primary accounts(37032bound/1231unbound),0new extraction/providers. Preserve originalQ21 failures/attempts, Q23missing exact-parent definitions,Q24requested deliverable capability and whole25case/tenarea assessment plus separateG5/clinical/model/customer dependencies. App intentionally stopped for this candidate; restart after verified source/checkpoint. Quiet continuation ACTIVE.",
+    "next_action": "G3: Native query transport and complete qualifier-account output are verified offline on a23e3f97; no provider/build/training job running. Next repair the measured189488668byte general coverage projection using the existing typed evidence/review path: prove exact complete native audit copying and its conditional qualifier-effect role in code, retain every source/value/unit/domain/clock, and expose unresolved machine/source meanings rather than treating them as clinical facts. Do not add a disease handler or certify clinical meaning by digest. Measure unchanged full retained output and authored adverse cases before a small ordinary handoff; no paid fullQ21 while the model projection is oversized. Native audit proof uses all4115cached patients,71735input assertions,51233factrows,38263primary accounts(37032bound/1231unbound),0new extraction/providers. Preserve originalQ21 failures/attempts, Q23missing exact-parent definitions,Q24requested deliverable capability and whole25case/tenarea assessment plus separateG5/clinical/model/customer dependencies. Owned app40574/session76791 serves /ask HTTP200 on8885; native candidatea23e3f97 in4796e497, same verified source/ledger,0startup provider calls. Quiet continuation ACTIVE.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
@@ -719,7 +720,7 @@
       "scope": "Preserve the healthcare-wide product across clinical/chronic disease/medication, population and individual, utilization/outcomes, finance/provider/contracts, discovery/explanation, deliverables, learning/reuse and shared industry-portable core. Keep all ten canonical acceptance areas and25fixedcases; no new finish-line expansion."
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-07T01:26:13.609907+00:00",
+    "at": "2026-11-07T01:28:04.064160+00:00",
     "workflow_change": "Exact native origins plus complete qualifier account output; semantic/clinical acceptance remains separate.",
     "unsealed_work": {
       "status": "verified_full_native_scope_pending_ordinary_composition",
@@ -1313,7 +1314,8 @@
         "tests_passed": 217,
         "full_question_acceptance": false,
         "clinical_model_qualification": false,
-        "review_projection_bytes": 189488668
+        "review_projection_bytes": 189488668,
+        "app_proof": "artifacts/agere-q21-assertion-window-2026-11-06/bound-consumer/app-proof.json"
       }
     },
     "bottling_assessment": {
@@ -1540,7 +1542,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-07T01:26:13.609907+00:00",
+    "updated_at": "2026-11-07T01:28:04.064160+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -6502,7 +6504,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Native query transport and complete qualifier-account output are verified offline on a23e3f97; no provider/build/training job running. Next repair the measured189488668byte general coverage projection using the existing typed evidence/review path: prove exact complete native audit copying and its conditional qualifier-effect role in code, retain every source/value/unit/domain/clock, and expose unresolved machine/source meanings rather than treating them as clinical facts. Do not add a disease handler or certify clinical meaning by digest. Measure unchanged full retained output and authored adverse cases before a small ordinary handoff; no paid fullQ21 while the model projection is oversized. Native audit proof uses all4115cached patients,71735input assertions,51233factrows,38263primary accounts(37032bound/1231unbound),0new extraction/providers. Preserve originalQ21 failures/attempts, Q23missing exact-parent definitions,Q24requested deliverable capability and whole25case/tenarea assessment plus separateG5/clinical/model/customer dependencies. App intentionally stopped for this candidate; restart after verified source/checkpoint. Quiet continuation ACTIVE.",
+  "next_action": "G3: Native query transport and complete qualifier-account output are verified offline on a23e3f97; no provider/build/training job running. Next repair the measured189488668byte general coverage projection using the existing typed evidence/review path: prove exact complete native audit copying and its conditional qualifier-effect role in code, retain every source/value/unit/domain/clock, and expose unresolved machine/source meanings rather than treating them as clinical facts. Do not add a disease handler or certify clinical meaning by digest. Measure unchanged full retained output and authored adverse cases before a small ordinary handoff; no paid fullQ21 while the model projection is oversized. Native audit proof uses all4115cached patients,71735input assertions,51233factrows,38263primary accounts(37032bound/1231unbound),0new extraction/providers. Preserve originalQ21 failures/attempts, Q23missing exact-parent definitions,Q24requested deliverable capability and whole25case/tenarea assessment plus separateG5/clinical/model/customer dependencies. Owned app40574/session76791 serves /ask HTTP200 on8885; native candidatea23e3f97 in4796e497, same verified source/ledger,0startup provider calls. Quiet continuation ACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6591,8 +6593,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": null,
-  "owned_server_session": null,
+  "owned_server_pid": 40574,
+  "owned_server_session": 76791,
   "last_run_observation": {
     "at": "2026-11-06T23:41:06.479385+00:00",
     "status": "verified_full_native_scope_pending_ordinary_composition",
