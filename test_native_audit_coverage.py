@@ -142,5 +142,16 @@ class NativeAuditCoverage(unittest.TestCase):
         self.assertFalse(review['support']['all_dependencies_checked']);self.assertEqual(review['support']['label'],'not_run')
         self.assertEqual(self.answer['table'],original)
 
+    def test_unqualified_native_sql_audit_projection_is_repaired_before_paid_coverage(self):
+        root=self.result['result_view']
+        projected=self.tools({'name':'query_sql','input':{'sql':f'SELECT * FROM {root}'}})
+        self.answer['table_from_tool']=projected['result_view']
+        with patch.object(G,'check',side_effect=AssertionError('No large general-review fallback')):
+            review=B.review_final(self.fixture.stack,'Show all source accounts.',self.answer,self.tools.native_calls,
+                self.tools,ledger=None,as_of=AS_OF)
+        self.assertEqual(review['repair_kind'],'native_audit_binding');self.assertEqual(review['calls'],0)
+        self.assertIn('SQL projection is not yet covered',review['feedback'])
+        self.assertEqual(len(self.answer['table']),len(self.result['rows']))
+
 
 if __name__=='__main__':unittest.main()

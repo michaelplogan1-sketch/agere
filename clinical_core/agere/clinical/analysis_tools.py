@@ -340,6 +340,22 @@ def qualifier_coverage_review(answer,calls,tools,as_of):
             raise ValueError('Native audit coverage binding: ambiguous original view')
         return None
     call=matches[0];result=call['result']
+    if(call.get('name')=='query_sql'and answer.get('answer_type')=='table'
+        and any(isinstance(row,dict)and'audit_account_id'in row for row in answer.get('table')or[])):
+        # Until its complete projection contract is checked, a SQL descendant
+        # must not silently fall back to the large general review of this audit.
+        # Actual SQLite read bindings avoid guessing dependencies from literals.
+        by={c['result']['result_view']:c['result']for c in calls if isinstance(c.get('result'),dict)
+            and c['result'].get('result_view')};pending=list(result.get('read_views')or[]);seen=set()
+        while pending:
+            view=pending.pop()
+            if view in seen:continue
+            seen.add(view);parent=by.get(view)or{}
+            if parent.get('analysis')=='assertion_review'and parent.get('output')=='qualifier_accounts':
+                raise ValueError('Native audit coverage binding: SQL projection is not yet covered by the checked native audit role contract. '
+                    'Retain this projection and its original evidence. Use the complete primary native audit '+view+
+                    ' for the verified copy path; additional interpreted fields still require their own review. Do not dispatch the unchanged large general coverage input.')
+            pending.extend(parent.get('read_views')or[])
     if(call.get('name')!='execute_analysis'or result.get('analysis')!='assertion_review'
         or result.get('output')!='qualifier_accounts'or not result.get('rows')):return None
     def require(condition,message):
