@@ -10,7 +10,7 @@ from pathlib import Path
 from . import answer_context as A
 from .receipts import fingerprint
 
-VERSION = 'saved-report/3'
+VERSION = 'saved-report/4'
 
 
 def value(v):
@@ -66,7 +66,7 @@ def create(path, request):
     # Export intent belongs to this request, not a prior question or report.
     want_pdf = bool(re.search(r'\bpdf\b', title, re.I))
     pdf_url = '/api/stack/action-deliverable?' + urlencode({'context': context['id'], 'id': key, 'format': 'pdf'}) if want_pdf else None
-    body = dashboard(context, title=title, pdf_url=pdf_url, evidence=evidence)
+    body = dashboard(context, title=title, pdf_url=pdf_url, evidence=evidence, layout=request['template'])
     pdf_bytes = None
     pdf_receipt = None
     if want_pdf:
@@ -78,7 +78,7 @@ def create(path, request):
             pdf_receipt.pop('output', None)
     formats = {'html': {'filename': 'artifact.html', 'mime': 'text/html; charset=utf-8',
                         'sha256': hashlib.sha256(body.encode()).hexdigest()}}
-    downloads = exports(context, title=title, evidence=evidence)
+    downloads = exports(context, title=title, evidence=evidence, layout=request['template'])
     for name, data in downloads.items():
         formats[name] = {'filename':'artifact.'+name,
                          'mime':'application/json; charset=utf-8' if name=='json' else 'text/csv; charset=utf-8',

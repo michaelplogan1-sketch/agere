@@ -58,6 +58,40 @@ class SavedReport(unittest.TestCase):
         self.assertIn('Medication history unavailable',body)
         self.assertIn('No model call',body)
 
+    def test_requested_brief_exposes_compound_findings_without_new_analysis_or_pdf(self):
+        question,result=self.prepare(partial=True)
+        result['answer']['sections']=[{'title':'Received financial observations','answer':{
+            'status':'partial','facts':['Observed paid amounts are retained.'],
+            'missing':['Attribution and causal savings remain unknown.'],
+            'limitations':['Use the recorded payment period.'],'table':[{
+                'source_domain':'recorded payments','paid_cents':201,'attributable_savings':None,
+                'citations':[{'url':'https://example.org/received-definition'}]}]}}]
+        c=A.capture(self.path,question,result)
+        with patch('clinical_core.agere.deliverables.answer_context.compose_frontier',side_effect=AssertionError('No paid renderer')):
+            d=R.create(self.path,{'context_id':c['id'],'template':'brief','request':'Review brief'})
+        body=d['html'];payload=json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>',body,re.S).group(1))
+        overview=body.split('<section class="panel full-width" id="review-brief">')[1].split('<script id="data"')[0]
+        for text in ['Received financial observations','Observed paid amounts are retained.',
+                     'Attribution and causal savings remain unknown.','Use the recorded payment period.']:
+            self.assertIn(text,overview)
+        self.assertEqual(payload['answer'],result['answer']);self.assertEqual(payload['layout'],'brief')
+        self.assertIn('paid cents',overview);self.assertIn('201',overview)
+        self.assertIn('Unknown / not supplied',overview)
+        self.assertIn('href="https://example.org/received-definition"',overview)
+        self.assertEqual(d['new_paid_api_calls'],0);self.assertNotIn('pdf',d['formats'])
+        self.assertNotIn('PDF companion not yet generated',body)
+        raw,_,_=R.read_format(self.path,c['id'],d['id'],'json')
+        self.assertEqual(json.loads(raw),payload)
+
+    def test_brief_overview_escapes_source_text_and_keeps_formula_as_recorded_fields(self):
+        from clinical_core.agere.deliverables.patient_dashboard import brief_overview
+        formula={'template':'Unknown {count}','bindings':{'count':'not resolved'}}
+        answer={'status':'partial','headline':formula,'missing':['</section><script>bad()</script>']}
+        body=brief_overview({'answer':answer})
+        self.assertNotIn('<script>',body);self.assertIn('&lt;script&gt;',body)
+        self.assertIn('Recorded headline fields',body);self.assertIn('not resolved',body)
+        self.assertIn('later observations do not establish an earlier clinical state',body)
+
     def test_source_text_cannot_inject_html_script_or_replace_template_markers(self):
         question,result=self.prepare();result['answer']['limitations']=['</script><img src=x onerror=alert(1)> %%STATUS%%']
         c=A.capture(self.path,question,result)
