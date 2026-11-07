@@ -42,7 +42,10 @@ def install(semantic, documentation):
     db.set_authorizer(None)
     db.execute('PRAGMA query_only=OFF')
     try:
-        db.execute(f'DROP VIEW IF EXISTS temp.{VIEW}')
+        previous=db.execute('SELECT type FROM sqlite_temp_master WHERE name=?',(VIEW,)).fetchone()
+        if previous:
+            if previous[0]not in ('view','table'):raise ValueError('Unexpected native documentation object')
+            db.execute(f'DROP {previous[0].upper()} temp.{VIEW}')
     finally:
         db.execute('PRAGMA query_only=ON')
         db.set_authorizer(semantic._authorize)

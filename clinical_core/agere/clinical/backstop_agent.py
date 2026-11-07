@@ -495,6 +495,9 @@ class Tools:
                 if out.get('analysis')=='assertion_review'and out.get('output')!='qualifier_accounts':
                     from .analysis_tools import assertion_projections
                     out={**out,'native_projections':assertion_projections(name)}
+                elif out.get('analysis')=='financial_accounts':
+                    from .analysis_tools import financial_projections
+                    out={**out,'native_projections':financial_projections(name)}
                 self.result_sources[name] = define_result(self.semantic, name, columns, rows, receipt=out)
                 out = {**out, 'result_view': name}
                 self.executed_results[name]=out

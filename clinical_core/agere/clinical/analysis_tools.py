@@ -30,6 +30,56 @@ ANALYTICAL=PERSISTED_REPORTS | {
     'library_measure'}
 
 
+def financial_input_contract():
+    """The existing stock/flow rules, exposed before an analyst invents an identity."""
+    from .financial_accounts import mapping,LIMITS
+    m=mapping()
+    return {'schema':'registered-account-conservation/1','source_map_digest':digest(m),
+        'native_source':'record/current_record with stream, patient_id, event_date, available_date and payload',
+        'snapshot_stream':m['snapshot_stream'],'snapshot_amounts':m['snapshot_amounts'],
+        'account_currency_source':{k:m[k]for k in ('account_field','currency_field')},
+        'identities':m['identities'],'transactions':m['transactions'],
+        'reconciliation_contract':m['reconciliation_contract'],
+        'meaning':'Each identity residual is the signed sum of ALL listed integer-cent snapshot fields. A missing or noninteger term is unresolved, not zero. These reported stocks are separate from period cash flows. Refund and credit terms must not be dropped.',
+        'native_execution':'execute_analysis financial_accounts returns complete patient receipts and native_projections for account snapshots, identity results, cash comparisons and unresolved sources. query_sql can consume those projections without model arithmetic.',
+        'selection':'The native operator selects one unambiguous received account snapshot through available_by using source dates/timestamps. Declare that selection separately from a historical year-end alternative or a transaction posting period.',
+        'limits':LIMITS}
+
+
+def financial_projections(view):
+    """Complete account-grain views of actual persisted financial receipts."""
+    import re
+    from .financial_accounts import mapping
+    if not isinstance(view,str)or not re.fullmatch(r'agere_result_[1-9][0-9]*',view):
+        raise ValueError('Financial projections require an executed native result_view')
+    m=mapping()
+    fields=', '.join("json_extract(a.value,'$.snapshot_amounts."+f+"') AS snapshot_"+f for f in m['snapshot_amounts'])
+    accounts=("SELECT r.patient_id,r.receipt_id,json_extract(a.value,'$.account_id') AS account_id,"
+        "json_extract(a.value,'$.status') AS account_status,json_extract(a.value,'$.currency') AS currency,"
+        +fields+",json_extract(a.value,'$.selected_snapshots') AS selected_snapshots,"
+        "json_extract(a.value,'$.snapshot_count') AS snapshot_count,json_extract(a.value,'$.source_count') AS source_count,"
+        "json_extract(a.value,'$.equations') AS equations,json_extract(a.value,'$.issues') AS issues,"
+        "json_extract(a.value,'$.source_record_ids') AS source_record_ids "
+        f"FROM {view} r JOIN json_each(r.documentary_receipt,'$.accounts') a")
+    identities=("SELECT r.patient_id,r.receipt_id,json_extract(a.value,'$.account_id') AS account_id,"
+        "json_extract(a.value,'$.currency') AS currency,json_extract(a.value,'$.selected_snapshots') AS selected_snapshots,"
+        "json_extract(e.value,'$.id') AS identity_id,json_extract(e.value,'$.coefficients') AS coefficients,"
+        "json_extract(e.value,'$.residual_cents') AS residual_cents,json_extract(e.value,'$.status') AS identity_status "
+        f"FROM {view} r JOIN json_each(r.documentary_receipt,'$.accounts') a JOIN json_each(a.value,'$.equations') e")
+    cash=("SELECT r.patient_id,r.receipt_id,json_extract(a.value,'$.account_id') AS account_id,"
+        "json_extract(a.value,'$.currency') AS currency,json_extract(a.value,'$.selected_snapshots') AS selected_snapshots,"
+        "json_extract(c.value,'$.stream') AS cash_stream,json_extract(c.value,'$.snapshot_field') AS snapshot_field,"
+        "json_extract(c.value,'$.snapshot_reported_cents') AS snapshot_reported_cents,"
+        "json_extract(c.value,'$.received_transactions_cents') AS received_transactions_cents,"
+        "json_extract(c.value,'$.difference_cents') AS difference_cents,json_extract(c.value,'$.status') AS comparison_status,"
+        "c.value AS complete_cash_comparison "
+        f"FROM {view} r JOIN json_each(r.documentary_receipt,'$.accounts') a JOIN json_each(a.value,'$.cash_comparisons') c")
+    return {name:{'query_sql':{'sql':query,'complete':True}}for name,query in {
+        'accounts':accounts,'identities':identities,'cash_comparisons':cash,
+        'unassigned_sources':f"SELECT r.patient_id,r.receipt_id,u.value AS unresolved_source FROM {view} r JOIN json_each(r.documentary_receipt,'$.unassigned_sources') u",
+        'patient_coverage':f"SELECT r.patient_id,r.receipt_id,r.status,json_array_length(r.documentary_receipt,'$.accounts') AS recorded_accounts,json_array_length(r.documentary_receipt,'$.unassigned_sources') AS unassigned_sources,json_extract(r.documentary_receipt,'$.ignored_counts') AS ignored_counts FROM {view} r"}.items()}
+
+
 def list_analyses():
     from .capability_registry import PRODUCT
     from .graph_planner import CONTRACTS
@@ -47,6 +97,13 @@ def describe(operation, *, path=None):
         if path is None:raise ValueError('Documentary discovery requires the current source path')
         catalog=G.documentary_parameter_catalog(path)
     context={}
+    if operation=='financial_accounts':
+        context={'financial_source_contract':financial_input_contract(),
+            'native_output_contract':{'accounts':'Every recorded account with all mapped snapshot amounts, currency, selected source snapshots and issues.',
+                'identities':'Every actually evaluated registered identity, its full coefficient map, nullable residual_cents and status. Missing identity rows are not balanced accounts.',
+                'cash_comparisons':'Recorded snapshots versus received cash transactions through each selected snapshot; completeness is not established by equality.',
+                'patient_coverage':'Every input patient, including no-account and unresolved-source cases.',
+                'instruction':'Execution supplies native_projections bound to its complete result_view. Use query_sql for native summaries/joins and table_from_tool for complete output; do not send every account to a model to recalculate arithmetic. Preserve account_id AND patient_id; account snapshots and cash posting periods have distinct scopes. Retain unresolved source links separately.'}}
     requested_window=D.receipt_window_request(getattr(D.current(),'question',''),getattr(D.current(),'as_of',None))if operation=='assertion_review'else None
     if operation in CRITERIA or operation=='accountability_review':
         if path is None:raise ValueError('Criteria discovery requires the current source path')

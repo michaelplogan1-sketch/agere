@@ -61,5 +61,46 @@ class FinancialDocumentaryTools(unittest.TestCase):
         with F.storage(self.path)as db:db.execute('DELETE FROM receipts WHERE id=?',(report['review_members'][0]['receipt_id'],))
         with self.assertRaisesRegex(ValueError,'Missing documentary'):A.documentary_rows(self.path,'financial_accounts',report)
 
+    def test_native_conservation_preserves_refunds_credits_and_separate_cash_observations(self):
+        with sqlite3.connect(self.path/'stack.sqlite3')as db:
+            raw=json.loads(db.execute('SELECT payload FROM records WHERE id=?',('stock-p01',)).fetchone()[0])
+            raw.update(received_cents=1500,refunded_cents=200,balance_cents=0,patient_credit_cents=300)
+            db.execute('UPDATE records SET payload=? WHERE id=?',(json.dumps(raw),'stock-p01'))
+        t=self.tools();description=t({'name':'describe_analysis','input':{'operation':'financial_accounts'}})
+        self.assertEqual(description['financial_source_contract']['identities'],F.mapping()['identities'])
+        result=self.finance(t)
+        accounts=t({'name':'query_sql','input':result['native_projections']['accounts']['query_sql']})['rows']
+        self.assertEqual(len(accounts),2)
+        account=next(r for r in accounts if r['patient_id']=='p01')
+        self.assertEqual(account['snapshot_refunded_cents'],200)
+        self.assertEqual(account['snapshot_patient_credit_cents'],300)
+        self.assertEqual(account['snapshot_patient_responsibility_cents']-account['snapshot_received_cents']-account['snapshot_balance_cents'],-500)
+        identities=t({'name':'query_sql','input':result['native_projections']['identities']['query_sql']})['rows']
+        self.assertEqual(len(identities),4)
+        self.assertTrue(all(r['residual_cents']==0 and r['identity_status']=='balanced'for r in identities))
+        self.assertTrue(all(r['patient_id']in ('p00','p01')and r['account_id']=='account-'+r['patient_id']for r in identities))
+        cash=t({'name':'query_sql','input':result['native_projections']['cash_comparisons']['query_sql']})['rows']
+        paid=next(r for r in cash if r['patient_id']=='p01'and r['cash_stream']=='patient_payments')
+        self.assertEqual(paid['comparison_status'],'differs_from_received_transactions')
+        self.assertFalse(json.loads(paid['complete_cash_comparison'])['capture_complete'])
+
+    def test_native_coverage_keeps_no_account_and_unassigned_source_cases(self):
+        from test_financial_accounts import source
+        raw=source('unassigned','patient_payments',day='2029-08-01',account_id=None,amount_cents=25,status='received')
+        raw['patient_id']='p02'
+        with sqlite3.connect(self.path/'stack.sqlite3')as db:
+            db.execute('INSERT INTO records VALUES (?,?,?,?)',(raw['record_id'],'p02',raw['source_table'],json.dumps(raw)))
+        t=self.tools();result=self.finance(t)
+        coverage=t({'name':'query_sql','input':result['native_projections']['patient_coverage']['query_sql']})['rows']
+        self.assertEqual(len(coverage),12)
+        case=next(r for r in coverage if r['patient_id']=='p02')
+        self.assertEqual(case['recorded_accounts'],0);self.assertEqual(case['unassigned_sources'],1)
+        unresolved=t({'name':'query_sql','input':result['native_projections']['unassigned_sources']['query_sql']})['rows']
+        self.assertEqual(len(unresolved),1)
+        self.assertEqual(json.loads(unresolved[0]['unresolved_source'])['source']['record_id'],'unassigned')
+        self.assertNotIn('p02',{r['patient_id']for r in t({'name':'query_sql','input':result['native_projections']['identities']['query_sql']})['rows']})
+        for bad in ['agere_result_0','record','agere_result_1; DROP TABLE patient']:
+            with self.assertRaises(ValueError):A.financial_projections(bad)
+
 
 if __name__=='__main__':unittest.main()

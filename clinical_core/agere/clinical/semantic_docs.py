@@ -299,12 +299,9 @@ def source_clock_roles(columns):
 
 def _cash_reconciliation_section():
     """Publish the same registered source contract to every SQL consumer."""
-    spec=json.loads((CLINICAL/'financial_account_maps.json').read_text())
+    from .analysis_tools import financial_input_contract
     return ('## Received cash ledger reconciliation\n'
-            +json.dumps({'native_source':'record/current_record with stream, patient_id, event_date, available_date and payload',
-                'transactions':spec['transactions'],'account_currency_source':{
-                    k:spec[k]for k in ('snapshot_stream','account_field','currency_field')},
-                'reconciliation_contract':spec['reconciliation_contract']},ensure_ascii=False))
+            +json.dumps(financial_input_contract(),ensure_ascii=False))
 
 
 def build_context(columns, streams, drug_classes, snapshot, examples):
