@@ -233,14 +233,20 @@ def check(question, graph, result, *, stack, ledger=None, as_of_date=None):
         'cost_usd', 'calls', 'provider', 'cache_hit', 'version'}"""
     mod = s1()
     from ..deliverables.receipts import compact_json,uncompact_json
-    original={'question':question,'executed_plan':graph,'result':result}
+    from .graph_reports import financial_coverage_state
+    financial=financial_coverage_state(getattr(stack,'path',None),question,graph,result)
+    original={'question':question,'executed_plan':graph,'result':financial if financial is not None else result}
     encoded=compact_json(original)
     if uncompact_json(encoded)!=original:raise ValueError('Coverage evidence did not round-trip')
     summary=json.dumps(encoded,default=str,separators=(',',':'))
     when = as_of_date or as_of(stack)
+    instruction=('Native code checked every financial row, its scope and current source receipts. The full table remains in the saved answer; '
+        'this state contains complete field/role contracts, native identities, selection and all uncertainty categories. '
+        'Judge whether those computations/fields and explicit unknowns answer the original request. Native closure does not establish clinical truth. '
+        if financial is not None else 'The complete original question, definitions, executed plan and result are in that state. '
+        'Resolve all lossless table layouts and shared references before judging. Every original plan/result value is present. ')
     out = mod.decide('Does the computed result answer the original question in the computed evidence state? '
-                     'The complete original question, definitions, executed plan and result are in that state. '
-                     'Resolve all lossless table layouts and shared references before judging. Every original plan/result value is present.',
+                     +instruction,
                      CHECK_OPTIONS, [{'id': 'computed', 'text': summary, 'date': when, 'note_id': 'executed_plan'}],
                      as_of=when, task_key='s1_answer_check', ledger=ledger, allow_live=True,select_source=False,
                      long_context=len(summary.encode('utf-8'))>32768)

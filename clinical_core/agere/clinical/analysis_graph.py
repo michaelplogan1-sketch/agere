@@ -225,6 +225,11 @@ def headline(answer):
     if status in ('unsupported', 'grounding_failed') or kind == 'unsupported':
         missing = '; '.join(m.replace('Missing input: ', '') for m in answer.get('missing', [])[:4])
         return f'Not answerable from the received data. Missing: {missing}.' if missing else 'Not answerable from the received data.'
+    financial=(answer.get('overall')or{}).get('financial_account_scope')
+    if financial is not None:
+        rows=answer.get('table')or[];unknown=sum(r.get('account_status')=='unresolved_snapshot'for r in rows)
+        return (f"{len(rows):,} received accounts across {len(answer.get('patient_ids')or[]):,} patients"
+                +(f'; {unknown:,} have an unresolved snapshot.'if unknown else'.'))
     if kind == 'count': core = f"{_fmt(answer.get('count'))}"
     elif kind == 'patient_set': core = f"{_fmt(answer.get('count') if answer.get('count') is not None else len(answer.get('patient_ids') or []))} patients"
     elif kind == 'value': core = (_fmt(answer.get('value')) + answer.get('unit', '')) if not isinstance(answer.get('value'), str) else answer['value']

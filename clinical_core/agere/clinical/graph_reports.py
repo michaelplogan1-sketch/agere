@@ -258,4 +258,69 @@ def financial_table(path,result,*,selector_contract=None,prepared=None):
            'patient_coverage':coverage,'unassigned_sources':unassigned,
            'source_map_digest':digest(mapping),'clinical_eligibility_established':False,
            'meaning':'Record predicates select account ownership; patient membership alone does not select accounts. Source dates are reported calendar dates, not established account opening/closing dates. Snapshot comparisons and all received transactions through available_by are separate; missing currency/dates and capture completeness remain unresolved.'}
-    return {'rows':rows,'scope':scope}
+    proof={'schema':'native-financial-output/1','adapter':identity(),'financial_identity':prep['identity'],
+           'parameters':prep['base']['parameters'],'table_digest':digest(rows),'scope_digest':digest(scope),
+           'member_receipts_digest':digest(members)}
+    return {'rows':rows,'scope':scope,'coverage_proof':proof}
+
+
+def financial_coverage_state(path,question,graph,result):
+    """Code checks the complete native projection; models judge its meaning.
+
+    Keep every row in the answer. Only a current registered financial result
+    with identical output/scope and unchanged source receipts can use this
+    field/role inventory instead of asking a model to re-read numeric cells.
+    """
+    nodes=(graph or{}).get('nodes')or[]
+    if not nodes or nodes[-1]['operation']!='financial_accounts':return None
+    from . import request_plan,analysis_tools
+    answer=result.get('answer')or{};items=result.get('results')or[];node=nodes[-1]
+    if graph!=result.get('graph')or question!=result.get('question')or not items or items[-1]['node']!=node:
+        raise ValueError('Financial coverage requires its original executed graph/question')
+    report=items[-1]['result'];output=report.get('account_output')or{};proof=output.get('coverage_proof')or{}
+    rows=answer.get('table');scope=output.get('scope')or{};members=report.get('review_members')or[]
+    prep=F.prepare(path,node['parameters'])
+    expected={'schema':'native-financial-output/1','adapter':identity(),'financial_identity':prep['identity'],
+              'parameters':prep['base']['parameters'],'table_digest':digest(rows),'scope_digest':digest(scope),
+              'member_receipts_digest':digest(members)}
+    if (proof!=expected or rows!=output.get('rows')or scope!=answer.get('overall',{}).get('financial_account_scope')
+        or result.get('source_digest')!=prep['base']['source_digest']or result.get('snapshot')!=prep['base']['snapshot']
+        or answer.get('actionable_cohort')is not False):
+        raise ValueError('Financial output, scope or source changed before coverage')
+    ids=[m['patient_id']for m in members]
+    if len(set(ids))!=len(ids)or sorted(ids)!=scope['input_patients']or len(ids)!=report['patients_evaluated']:
+        raise ValueError('Financial coverage input membership changed')
+    parent=next((n for n in nodes if n['id']in node['inputs']),None)
+    if scope['selector_contract_id']is not None:
+        contract=(parent or{}).get('parameters',{}).get('contract');request_plan.assert_sealed(contract)
+        if contract['id']!=scope['selector_contract_id']or contract['original_question']!=question:
+            raise ValueError('Financial record selector changed before coverage')
+    db=F.storage(path)
+    try:
+        for member in members:
+            rid=member['receipt_id']
+            if rid!=F.receipt_id(prep,member['patient_id'])or digest(read(db,'financial_accounts',rid))!=member['receipt_digest']:
+                raise ValueError('Financial source receipt changed before coverage')
+    finally:db.close()
+    contracts=analysis_tools.describe('financial_accounts',path=path)
+    return {'schema':'native-financial-coverage/1','status':answer['status'],'answer_type':answer['answer_type'],
+        'proof':proof,'rows':len(rows),'patients':len(answer.get('patient_ids')or[]),
+        'columns':sorted({k for row in rows for k in row}),
+        'selection':{k:scope[k]for k in ('selection','selector_contract_id','selection_query','input_patients',
+            'input_accounts','presented_accounts','excluded_input_accounts','selected_source_records','entity_keys_digest','meaning')},
+        'account_status_counts':dict(Counter(r['account_status']for r in rows)),
+        'account_currency_counts':dict(Counter(r['currency']or'unknown'for r in rows)),
+        'identity_status_counts':dict(Counter(e['status']for r in rows for e in r['equations'])),
+        'identity_residual_counts':dict(Counter(str(e['residual_cents'])for r in rows for e in r['equations'])),
+        'cash_comparison_status_counts':dict(Counter(c['status']for r in rows for c in r['cash_comparisons'])),
+        'unassigned_sources':len(scope['unassigned_sources']),
+        'unassigned_reasons':dict(Counter(x['reason']for x in scope['unassigned_sources'])),
+        'unresolved_selected_sources':scope['unresolved_selected_sources'],
+        'financial_source_contract':contracts['financial_source_contract'],
+        'native_output_contract':contracts['native_output_contract'],
+        'field_roles':{'lifecycle':'first/last reported source calendar dates and receipt dates over received account-owned records; not established opening/closing dates',
+            'received_transactions':'Accepted integer-cent observations through available_by, separately grouped by recorded currency; no inferred cash completeness. Distinct from snapshot-point cash comparisons.',
+            'snapshot_amounts':'All registered snapshot amounts retained, null where unresolved. Registered signed identities checked by code; missing terms are not zero.',
+            'source_bindings':'Every row retains patient/account identity, original selected source records and current immutable financial receipt.'},
+        'missing':answer.get('missing',[]),'limitations':answer.get('limitations',[]),
+        'clinical_semantic_acceptance':False,'whole_question_acceptance':'Requires semantic coverage of the original request; native closure only verifies the produced fields/scope against source-bound receipts.'}

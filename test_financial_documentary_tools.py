@@ -217,6 +217,35 @@ class FinancialAccountConsumer(unittest.TestCase):
         self.assertEqual(answer['table'],[]);self.assertEqual(answer['patient_ids'],[])
         self.assertEqual(answer['overall']['financial_account_scope']['presented_accounts'],0)
 
+    def test_financial_coverage_checks_all_rows_and_preserves_roles_and_unknowns(self):
+        import copy
+        from clinical_core.agere.clinical import graph_reports as R,system_one_gate as S,analysis_graph as G
+        q,g=self.graph();result=self.execute(q,g);a=result['answer']
+        state=R.financial_coverage_state(self.path,q,result['graph'],result)
+        self.assertEqual(state['rows'],2);self.assertEqual(state['patients'],2)
+        self.assertEqual(state['identity_residual_counts'],{'0':4})
+        self.assertFalse(state['clinical_semantic_acceptance'])
+        self.assertEqual(state['proof']['table_digest'],R.digest(a['table']))
+        self.assertIn('not established opening/closing',state['field_roles']['lifecycle'])
+        self.assertEqual(G.headline(a),'2 received accounts across 2 patients.')
+        for kind in ('cell','omission','scope','question','receipt'):
+            changed=copy.deepcopy(result);question=q
+            if kind=='cell':changed['answer']['table'][0]['snapshot_received_cents']+=1
+            if kind=='omission':changed['answer']['table'].pop()
+            if kind=='scope':changed['answer']['overall']['financial_account_scope']['selected_source_records']+=1
+            if kind=='question':question='Another question'
+            if kind=='receipt':changed['results'][-1]['result']['review_members'][0]['receipt_digest']='changed'
+            with self.subTest(kind=kind),self.assertRaises(ValueError):R.financial_coverage_state(self.path,question,changed['graph'],changed)
+        class Decider:
+            def decide(_,text,options,evidence,**kw):
+                self.assertIn('Native code checked every financial row',text)
+                self.assertLess(len(evidence[0]['text']),len(json.dumps(result)))
+                self.assertNotIn('"rows":[{',evidence[0]['text'])
+                return {'label':'unknown','probabilities':{'unknown':1},'steps':[]}
+        before=copy.deepcopy(result)
+        with patch.object(S,'s1',return_value=Decider()):check=S.check(q,result['graph'],result,stack=self.stack)
+        self.assertEqual(check['label'],'unknown');self.assertEqual(result,before)
+
     def test_unknown_snapshot_and_unassigned_sources_stay_explicit(self):
         from test_financial_accounts import source
         with sqlite3.connect(self.path/'stack.sqlite3')as db:
