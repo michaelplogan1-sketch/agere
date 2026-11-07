@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-07T20:38:05.681687+00:00",
+  "updated_at": "2026-11-07T20:40:53.793620+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -680,7 +680,7 @@
       "artifacts/agere-Q06-current-original-2026-11-07/baseline-pre-dispatch-check.log"
     ],
     "remaining_gap": "Q06 remains partial/unverified: corrected population and typed entity/relation source interpretation must be composed through the normal continuation, and headline/facts unbound one needs native binding. No whole-case or release acceptance. All25cases/tenareas, baseline year-anchor/advisory/optional benchmark/fixture failures and independent G5/clinical/model/actuarial/customer dependencies remain.",
-    "next_action": "G3/WP4: Continue the existing Q06 from exact retained native history and recovered producer draft, not a whole-question rerun. Population repair3979d82c is qualified and active: historical source cohort81->83, all9389current-member rows exact; invalid original document requests/final native base now rejected before paid checks. Producer draft1144b85b341c0e3cb6ff07fa7544086b45088ce7efc343b2fb4170a142224a3d is recovered exactly via materialize_table from owned raw responsef0eb8a5c; do not regenerate it. Preserve all87toolcalls/73actorreceipts and original1938attempts/$76.424399468API-equivalent. Restore only exact successful native results against the unchanged source, retain failures and legacy fallback labels as unverified history, preserve the correctly refused incomplete recovery checkpoint. Let the normal Sonnet-entry continuation repair its source population and affected native dependencies from shared registered definitions; supply no diagnostic IDs, solution SQL or expected values. Obtain only remaining requested entity/relation/source judgments via the typed reader and bind headline/facts quantities to native cells. Full source/coverage/consumer checks still follow; old legacy labels and attempted reads are not completed typed findings.110checks pass;2explicit preexisting exclusions retained. No9GBrebuild/newcaps/revote campaigns. All25cases/tenareas and independent G5/clinical/model/customer prerequisites remain. App71643/session5702/8885; quiet continuationACTIVE.",
+    "next_action": "G3/WP4: Inspect owned Q06 retained-population/source continuation PID71762/session93571 first: artifacts/agere-Q06-current-original-2026-11-07/retained-population-continuation/receipt.json. Product source frozen; never duplicate provider work or edit product code while running. Exact87original calls/71native views and producer1144b85b restored with all receipts exact in0.840s/0providers; failed source reviews and legacy labels remain unverified history. Normal Sonnet-entry continuation receives original question/current native scope feedback/shared definitions only, no diagnostic patient IDs/expected values/solution SQL. It must repair historical population and affected source dependencies, obtain only missing typed entity/relation source judgments, bind quantities and complete normal source/coverage/save checks. Keep refused old recovery checkpoint guard. Population3979d82c is active and qualified (81->83source subjects/9389currentmembers exact/110checks/0repaircalls); app71643/session5702. After terminal return inspect every attempt/partial, native conservation and remaining actual failures before localized next work. All25cases/tenareas/independentG5/clinical/model/customer dependencies remain; quiet continuationACTIVE.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
@@ -740,15 +740,15 @@
       "scope": "Preserve the healthcare-wide product across clinical/chronic disease/medication, population and individual, utilization/outcomes, finance/provider/contracts, discovery/explanation, deliverables, learning/reuse and shared industry-portable core. Keep all ten canonical acceptance areas and25fixedcases; no new finish-line expansion."
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-07T20:38:05.681687+00:00",
+    "at": "2026-11-07T20:40:53.793620+00:00",
     "workflow_change": "Historical recorded-evidence cohorts retain source subjects; known living-only native dependencies are rejected before document dispatch/final review/save premises. Existing current membership is unchanged.",
     "unsealed_work": {
-      "status": "qualified_active_unsealed",
+      "status": "owned_Q06_retained_population_source_continuation_running",
       "product_commit": "3979d82ce5bc05a220bd91703c001658834e82b2",
       "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
       "receipt": "artifacts/agere-Q06-current-original-2026-11-07/population-repair-receipt.json",
       "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-      "source_frozen": false,
+      "source_frozen": true,
       "runtime_activation": true,
       "product_code_in_candidate_app": true,
       "answer_selected": false,
@@ -1675,6 +1675,17 @@
         "full_Q06_acceptance": false,
         "whole_MVP_acceptance": false,
         "clinical_qualification": false
+      },
+      "owned_Q06_retained_population_continuation": {
+        "kind": "Q06_owned_retained_population_source_continuation",
+        "pid": 71762,
+        "session_id": 93571,
+        "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-continuation/receipt.json",
+        "status": "running",
+        "source_frozen": true,
+        "started_at": "2026-11-07T20:40:24.531866+00:00",
+        "product_commit": "3979d82ce5bc05a220bd91703c001658834e82b2",
+        "preflight": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-preflight-v2/receipt.json"
       }
     },
     "bottling_assessment": {
@@ -1729,7 +1740,19 @@
       "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/final-current-proof/receipt.json"
     },
     "provider_dependency": null,
-    "active_jobs": [],
+    "active_jobs": [
+      {
+        "kind": "Q06_owned_retained_population_source_continuation",
+        "pid": 71762,
+        "session_id": 93571,
+        "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-continuation/receipt.json",
+        "status": "running",
+        "source_frozen": true,
+        "started_at": "2026-11-07T20:40:24.531866+00:00",
+        "product_commit": "3979d82ce5bc05a220bd91703c001658834e82b2",
+        "preflight": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-preflight-v2/receipt.json"
+      }
+    ],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -1871,7 +1894,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-07T20:38:05.681687+00:00",
+    "updated_at": "2026-11-07T20:40:53.793620+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -7255,12 +7278,12 @@
     }
   ],
   "unsealed_work": {
-    "status": "qualified_active_unsealed",
+    "status": "owned_Q06_retained_population_source_continuation_running",
     "product_commit": "3979d82ce5bc05a220bd91703c001658834e82b2",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/population-repair-receipt.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-    "source_frozen": false,
+    "source_frozen": true,
     "runtime_activation": true,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
@@ -8187,6 +8210,17 @@
       "full_Q06_acceptance": false,
       "whole_MVP_acceptance": false,
       "clinical_qualification": false
+    },
+    "owned_Q06_retained_population_continuation": {
+      "kind": "Q06_owned_retained_population_source_continuation",
+      "pid": 71762,
+      "session_id": 93571,
+      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-continuation/receipt.json",
+      "status": "running",
+      "source_frozen": true,
+      "started_at": "2026-11-07T20:40:24.531866+00:00",
+      "product_commit": "3979d82ce5bc05a220bd91703c001658834e82b2",
+      "preflight": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-preflight-v2/receipt.json"
     }
   },
   "current_visual_request": {
@@ -8220,8 +8254,20 @@
       }
     }
   },
-  "active_jobs": [],
-  "next_action": "G3/WP4: Continue the existing Q06 from exact retained native history and recovered producer draft, not a whole-question rerun. Population repair3979d82c is qualified and active: historical source cohort81->83, all9389current-member rows exact; invalid original document requests/final native base now rejected before paid checks. Producer draft1144b85b341c0e3cb6ff07fa7544086b45088ce7efc343b2fb4170a142224a3d is recovered exactly via materialize_table from owned raw responsef0eb8a5c; do not regenerate it. Preserve all87toolcalls/73actorreceipts and original1938attempts/$76.424399468API-equivalent. Restore only exact successful native results against the unchanged source, retain failures and legacy fallback labels as unverified history, preserve the correctly refused incomplete recovery checkpoint. Let the normal Sonnet-entry continuation repair its source population and affected native dependencies from shared registered definitions; supply no diagnostic IDs, solution SQL or expected values. Obtain only remaining requested entity/relation/source judgments via the typed reader and bind headline/facts quantities to native cells. Full source/coverage/consumer checks still follow; old legacy labels and attempted reads are not completed typed findings.110checks pass;2explicit preexisting exclusions retained. No9GBrebuild/newcaps/revote campaigns. All25cases/tenareas and independent G5/clinical/model/customer prerequisites remain. App71643/session5702/8885; quiet continuationACTIVE.",
+  "active_jobs": [
+    {
+      "kind": "Q06_owned_retained_population_source_continuation",
+      "pid": 71762,
+      "session_id": 93571,
+      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-continuation/receipt.json",
+      "status": "running",
+      "source_frozen": true,
+      "started_at": "2026-11-07T20:40:24.531866+00:00",
+      "product_commit": "3979d82ce5bc05a220bd91703c001658834e82b2",
+      "preflight": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-preflight-v2/receipt.json"
+    }
+  ],
+  "next_action": "G3/WP4: Inspect owned Q06 retained-population/source continuation PID71762/session93571 first: artifacts/agere-Q06-current-original-2026-11-07/retained-population-continuation/receipt.json. Product source frozen; never duplicate provider work or edit product code while running. Exact87original calls/71native views and producer1144b85b restored with all receipts exact in0.840s/0providers; failed source reviews and legacy labels remain unverified history. Normal Sonnet-entry continuation receives original question/current native scope feedback/shared definitions only, no diagnostic patient IDs/expected values/solution SQL. It must repair historical population and affected source dependencies, obtain only missing typed entity/relation source judgments, bind quantities and complete normal source/coverage/save checks. Keep refused old recovery checkpoint guard. Population3979d82c is active and qualified (81->83source subjects/9389currentmembers exact/110checks/0repaircalls); app71643/session5702. After terminal return inspect every attempt/partial, native conservation and remaining actual failures before localized next work. All25cases/tenareas/independentG5/clinical/model/customer dependencies remain; quiet continuationACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",

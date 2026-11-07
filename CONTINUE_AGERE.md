@@ -1,6 +1,6 @@
-# Current Agere checkpoint — ACTIVE 2026-11-07T20:38:05.681687+00:00
+# Current Agere checkpoint — ACTIVE 2026-11-07T20:40:53.793620+00:00
 
-G3/WP4: Continue the existing Q06 from exact retained native history and recovered producer draft, not a whole-question rerun. Population repair3979d82c is qualified and active: historical source cohort81->83, all9389current-member rows exact; invalid original document requests/final native base now rejected before paid checks. Producer draft1144b85b341c0e3cb6ff07fa7544086b45088ce7efc343b2fb4170a142224a3d is recovered exactly via materialize_table from owned raw responsef0eb8a5c; do not regenerate it. Preserve all87toolcalls/73actorreceipts and original1938attempts/$76.424399468API-equivalent. Restore only exact successful native results against the unchanged source, retain failures and legacy fallback labels as unverified history, preserve the correctly refused incomplete recovery checkpoint. Let the normal Sonnet-entry continuation repair its source population and affected native dependencies from shared registered definitions; supply no diagnostic IDs, solution SQL or expected values. Obtain only remaining requested entity/relation/source judgments via the typed reader and bind headline/facts quantities to native cells. Full source/coverage/consumer checks still follow; old legacy labels and attempted reads are not completed typed findings.110checks pass;2explicit preexisting exclusions retained. No9GBrebuild/newcaps/revote campaigns. All25cases/tenareas and independent G5/clinical/model/customer prerequisites remain. App71643/session5702/8885; quiet continuationACTIVE.
+G3/WP4: Inspect owned Q06 retained-population/source continuation PID71762/session93571 first: artifacts/agere-Q06-current-original-2026-11-07/retained-population-continuation/receipt.json. Product source frozen; never duplicate provider work or edit product code while running. Exact87original calls/71native views and producer1144b85b restored with all receipts exact in0.840s/0providers; failed source reviews and legacy labels remain unverified history. Normal Sonnet-entry continuation receives original question/current native scope feedback/shared definitions only, no diagnostic patient IDs/expected values/solution SQL. It must repair historical population and affected source dependencies, obtain only missing typed entity/relation source judgments, bind quantities and complete normal source/coverage/save checks. Keep refused old recovery checkpoint guard. Population3979d82c is active and qualified (81->83source subjects/9389currentmembers exact/110checks/0repaircalls); app71643/session5702. After terminal return inspect every attempt/partial, native conservation and remaining actual failures before localized next work. All25cases/tenareas/independentG5/clinical/model/customer dependencies remain; quiet continuationACTIVE.
 
 Gate / workflow change: G3 / Historical recorded-evidence cohorts retain source subjects; known living-only native dependencies are rejected before document dispatch/final review/save premises. Existing current membership is unchanged.
 
@@ -10,7 +10,7 @@ Measured: Canonical current membership9389rows exact; historical dated cohort81-
 
 Remaining gap: Q06 remains partial/unverified: corrected population and typed entity/relation source interpretation must be composed through the normal continuation, and headline/facts unbound one needs native binding. No whole-case or release acceptance. All25cases/tenareas, baseline year-anchor/advisory/optional benchmark/fixture failures and independent G5/clinical/model/actuarial/customer dependencies remain.
 
-No provider/build/training job running. Last sealed owner receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json. Quiet continuation ACTIVE.
+Owned Q06retained continuation PID71762/session93571 running; source frozen. Last sealed owner receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json. Quiet continuation ACTIVE.
 
 ## Superseded checkpoint
 
@@ -90,7 +90,7 @@ Measured: Actual Q13same context:13243account rows/1258patients fully retained. 
 
 Remaining gap: Whole25case/tenarea/current matched acceptance remains unfinished. Q01retained quantitative table is correct324cells/36groups, but facts.zero_or_missing_baselines makes a false year-baseline statement; correct only that source-bound field through existing composition. Q12observed math/source/persistence and Q20hard delivery/scopedfollowups remain demonstrated with publicpartial/unverified preserved; do not rerun unchangedQ12/Q13/Q20/Q21. Independent model/clinical/actuarial qualification, exact diabetes/BP definitions, Q24visualQA and customer deployment dependencies remain. UI measurements are single-context engineering observations, not scale or overall speed/cost qualification.
 
-No provider/build/training job running. App59691/session99827 on8885. Last sealed receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json. Quiet continuation ACTIVE.
+Owned Q06retained continuation PID71762/session93571 running; source frozen. App59691/session99827 on8885. Last sealed receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json. Quiet continuation ACTIVE.
 
 ## Superseded checkpoint
 
@@ -106,7 +106,7 @@ Measured: 13243accounts/1258patients;28413outside-scope accounts excluded;0missi
 
 Remaining gap: Q12 signed financial event history/runout and current all25/tenarea acceptance; Q21 uncertainty, Q23 absent exact definitions, Q24 visual QA and independent G5/clinical/model/customer dependencies retained.
 
-Live saved financial answer ANS-19bf05f49b6c23999f4bdcb6; app56534/session65244. No provider/build/training job running. Last sealed receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json. Quiet continuation ACTIVE.
+Live saved financial answer ANS-19bf05f49b6c23999f4bdcb6; app56534/session65244. Owned Q06retained continuation PID71762/session93571 running; source frozen. Last sealed receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json. Quiet continuation ACTIVE.
 
 ## Superseded checkpoint
 
@@ -142,7 +142,7 @@ Remaining gap: Q24 presentation/fidelity and all25/tenarea assessment; Q21 uncer
 
 # Current Agere checkpoint — ACTIVE 2026-11-07T08:45:27.200129+00:00
 
-G3: Q21 source/native/persistence path demonstrated; machine coverage/support remain uncertain with no located defect, allsource dependencies checked, no unread bound accounts. Retain ANS-891713b4620a3ce9578f2b2d as current unverified local inspection, not accepted original-question/clinical/model result. Do not repeat Q21 or its unchanged model votes without new evidence. Next inspect saved Q09 program comparison and actual installed diabetes/BP definition versions, then perform Q23 revised-spec/source-adapter/stale-reuse/rollback on applicable exact-parent definitions. Missing clinical definitions remain explicit input/qualification dependencies; do not invent authority or silently substitute HF/CKD. Then one requested Q24 HTML review brief capability on saved Q20, current25case/tenarea assessment and independentG5/clinical/model/customer prerequisites. App /ask HTTP200,PID50859/session80179,0startupcalls. No provider/build/training job running. Quiet continuation ACTIVE.
+G3: Q21 source/native/persistence path demonstrated; machine coverage/support remain uncertain with no located defect, allsource dependencies checked, no unread bound accounts. Retain ANS-891713b4620a3ce9578f2b2d as current unverified local inspection, not accepted original-question/clinical/model result. Do not repeat Q21 or its unchanged model votes without new evidence. Next inspect saved Q09 program comparison and actual installed diabetes/BP definition versions, then perform Q23 revised-spec/source-adapter/stale-reuse/rollback on applicable exact-parent definitions. Missing clinical definitions remain explicit input/qualification dependencies; do not invent authority or silently substitute HF/CKD. Then one requested Q24 HTML review brief capability on saved Q20, current25case/tenarea assessment and independentG5/clinical/model/customer prerequisites. App /ask HTTP200,PID50859/session80179,0startupcalls. Owned Q06retained continuation PID71762/session93571 running; source frozen. Quiet continuation ACTIVE.
 
 Gate / workflow change: G3 / Completed source observations and their unknowns now travel into pending-work review. Exact saved native/source/query receipts and the recorded scalar edit can finish current review/save/reopen without another frontier/source-reading campaign; unlocated semantic uncertainty stays explicit and is not rewritten into acceptance.
 
@@ -152,7 +152,7 @@ Measured: Retained final check:36592rows/1661matchingpatients/4115inputsubjects 
 
 Remaining gap: Q21 whole-question/machine/clinical acceptance remains unestablished; do not relabel uncertainty as a code defect or a pass. Q23 exact-parent spec/adapter/revision/rollback,Q24requested HTML capability,current25case/10area assessment and independentG5/clinical/model/customer prerequisites remain.
 
-Owned app50859/session80179 serves8885. No provider/build/training job running. Last sealed receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json.
+Owned app50859/session80179 serves8885. Owned Q06retained continuation PID71762/session93571 running; source frozen. Last sealed receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json.
 
 ## Superseded checkpoint
 
@@ -168,7 +168,7 @@ Measured: Authored source-final consumer:17accounts/12inputpatients,14original+3
 
 Remaining gap: G3 remains open: normal planner discovery/handoff must actually use the qualified source-review/interpretation/final-consumer path; full originalQ21 received-year clock andsource meanings remain unaccepted. No unchanged full rerun. Q23 applicable exact-parent definitions,Q24 requested deliverable capability,current25case/tenarea assessment and separateG5/clinical/model/customer dependencies remain.
 
-Owned app/askHTTP200,PID46612/session13194,product61eab39d,0startupcalls. No provider/build/training job running. Last sealed receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json.
+Owned app/askHTTP200,PID46612/session13194,product61eab39d,0startupcalls. Owned Q06retained continuation PID71762/session93571 running; source frozen. Last sealed receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json.
 
 ## Superseded checkpoint
 
