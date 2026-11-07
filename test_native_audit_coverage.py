@@ -91,6 +91,40 @@ class NativeAuditCoverage(unittest.TestCase):
             self.assertEqual(patients['patient_'+pid]['answer_rows'],expected)
         self.assertGreater(len(packets),1)
 
+    def test_audit_global_contract_keeps_every_patient_source_packet_byte_exact(self):
+        from clinical_core.agere.deliverables.receipts import uncompact_json
+        proof=self.proof();before=copy.deepcopy(self.answer)
+        original=B.support_packets('Inspect source meanings',self.answer,self.tools.native_calls,[],AS_OF)
+        qualified=B.support_packets('Inspect source meanings',self.answer,self.tools.native_calls,[],AS_OF,native_audit=proof)
+        old={p['id']:p for p in original};new={p['id']:p for p in qualified}
+        self.assertEqual(set(old),set(new));self.assertEqual(self.answer,before)
+        for packet in old:
+            if packet!='summary':self.assertEqual(old[packet],new[packet])
+        summary=uncompact_json(json.loads(new['summary']['text']))
+        self.assertEqual(summary['all_final_rows'],[])
+        self.assertEqual(summary['required_clinical_dependencies'],[])
+        self.assertEqual(summary['native_audit']['table_digest'],digest(self.answer['table']))
+        self.assertFalse(summary['native_audit']['clinical_semantic_acceptance'])
+        self.assertTrue(summary['native_audit']['separate_source_support_required'])
+        manifest=summary['required_patient_packets']
+        self.assertEqual(manifest['schema'],'native-audit-patient-packets/1')
+        entries=[dict(zip(manifest['columns'],row))for row in manifest['rows']]
+        for item in entries:
+            rows=uncompact_json(json.loads(new[manifest['packet_id_prefix']+item['patient_id']]['text']))['answer_rows']
+            self.assertEqual(item['rows'],len(rows));self.assertEqual(item['table_digest'],digest(rows))
+        self.assertEqual({manifest['packet_id_prefix']+x['patient_id']for x in entries},set(new)-{'summary'})
+
+    def test_audit_support_contract_rejects_stale_forged_or_interpreted_tables(self):
+        proof=self.proof()
+        for key,value in [('table_digest','changed'),('registered_origin_digest','changed'),
+                          ('clinical_semantic_acceptance',True),('separate_source_support_required',False)]:
+            changed=copy.deepcopy(proof);changed[key]=value
+            with self.subTest(key=key),self.assertRaises(ValueError):
+                B.support_packets('Inspect source meanings',self.answer,self.tools.native_calls,[],AS_OF,native_audit=changed)
+        self.answer['table_binding']['interpreted_columns']=['explanation']
+        with self.assertRaises(ValueError):
+            B.support_packets('Inspect source meanings',self.answer,self.tools.native_calls,[],AS_OF,native_audit=proof)
+
     def test_final_review_rejects_changed_origin_before_any_provider_check(self):
         self.result['rows'][0]['polarity']='invented'
         with patch('clinical_core.agere.clinical.system_one_gate.check',side_effect=AssertionError('No paid review of a changed origin')):

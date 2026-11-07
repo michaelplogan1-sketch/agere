@@ -2208,7 +2208,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                    'computed_table_value_counts':table_value_counts(answer.get('table') or [])})
         assessment['evidence_coverage'].update(original_fingerprint=fingerprint(original))
         packets=support_packets(request,answer,calls,getattr(tools,'document_reviews',[]),as_of,
-                                source_documents=getattr(tools,'read',{}),prior_review_reference=prior_reference)
+                                source_documents=getattr(tools,'read',{}),prior_review_reference=prior_reference,
+                                native_audit=native_audit)
         program_repairs=native_program_repairs(packets)
         if program_repairs:
             return {**assessment,'status':'repair','repair_kind':'native_program_verification',
@@ -2575,7 +2576,7 @@ def global_dependency_request(answer,calls):
     return missing if native_column_projections(calls,roots,dependencies)else []
 
 
-def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None):
+def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None,native_audit=None):
     """Final clinical claims, deduplicated and grouped by patient dependency.
 
     Raw operational receipts remain intact. SQL elapsed time is excluded only
@@ -2830,6 +2831,28 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     leaves={p['id']:p['answer_rows']for p in packets if p['id'].startswith('patient_')}
     if restore_table(summary_rows,dependencies,leaves)!=table:
         raise ValueError('Clinical dependency representation did not restore the complete native table')
+    if native_audit is not None:
+        # The ordinary review supplies this proof only after qualifying every
+        # native account against its original receipt. Global meaning sees the
+        # exact native role/program contract; each source claim still sees its
+        # complete, unchanged patient packet below. Per-cell reference objects
+        # are larger than the original audit and add no source meaning here.
+        from .evidence_projection import coverage_answer
+        if (not structural_prose_context(answer,calls,native_audit)
+                or (answer.get('table_binding')or{}).get('interpreted_columns')):
+            raise ValueError('Native audit support summary needs the current qualified, uninterpreted table')
+        contract=coverage_answer(answer,native_audit=native_audit)['native_audit']
+        groups={}
+        for row in table:groups.setdefault(row['patient_id'],[]).append(row)
+        if set(leaves)!={'patient_'+pid for pid in groups}or any(leaves['patient_'+pid]!=rows for pid,rows in groups.items()):
+            raise ValueError('Native audit source packets do not retain every final patient row')
+        manifest={'schema':'native-audit-patient-packets/1','packet_id_prefix':'patient_',
+            'columns':['patient_id','rows','table_digest'],
+            'rows':[[pid,len(rows),digest(rows)]for pid,rows in sorted(groups.items())]}
+        packets[0].update(scope='Global/headline/fact claims against the full checked native audit selection, field roles, conditional programs and exact scalar bindings. All source meanings remain in the complete required patient packets; this contract cannot establish clinical truth or resolve an unread contradiction.',
+            all_final_rows=[],required_clinical_dependencies=[],native_audit=contract,
+            required_patient_packets=manifest,
+            dependency_encoding='The qualified native audit binds the exact complete final table. Pair each required_patient_packets.rows array with its columns; packet_id_prefix + patient_id names the separate required packet containing that complete unchanged row set. All packets must still be checked. No source-support or clinical acceptance follows from a digest or native field label.')
     # Conservative UTF-8 byte bound beneath the smallest live context's token
     # limit, including prompt overhead. It bounds requests, never population.
     # An oversized dependency cannot be silently sampled or certified.
