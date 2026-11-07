@@ -91,7 +91,7 @@ class NativeAuditCoverage(unittest.TestCase):
             self.assertEqual(patients['patient_'+pid]['answer_rows'],expected)
         self.assertGreater(len(packets),1)
 
-    def test_audit_global_contract_keeps_every_patient_source_packet_byte_exact(self):
+    def test_audit_global_contract_keeps_every_native_patient_value_and_requires_context(self):
         from clinical_core.agere.deliverables.receipts import uncompact_json
         proof=self.proof();before=copy.deepcopy(self.answer)
         original=B.support_packets('Inspect source meanings',self.answer,self.tools.native_calls,[],AS_OF)
@@ -99,7 +99,12 @@ class NativeAuditCoverage(unittest.TestCase):
         old={p['id']:p for p in original};new={p['id']:p for p in qualified}
         self.assertEqual(set(old),set(new));self.assertEqual(self.answer,before)
         for packet in old:
-            if packet!='summary':self.assertEqual(old[packet],new[packet])
+            if packet!='summary':
+                prior=uncompact_json(json.loads(old[packet]['text']))
+                current=uncompact_json(json.loads(new[packet]['text']))
+                for key,value in prior.items():
+                    if key not in ('source_contexts','source_context_gaps'):self.assertEqual(current[key],value)
+                if current['source_context_gaps']:self.assertFalse(new[packet]['source_context_complete'])
         summary=uncompact_json(json.loads(new['summary']['text']))
         self.assertEqual(summary['all_final_rows'],[])
         self.assertEqual(summary['required_clinical_dependencies'],[])
@@ -113,6 +118,110 @@ class NativeAuditCoverage(unittest.TestCase):
             rows=uncompact_json(json.loads(new[manifest['packet_id_prefix']+item['patient_id']]['text']))['answer_rows']
             self.assertEqual(item['rows'],len(rows));self.assertEqual(item['table_digest'],digest(rows))
         self.assertEqual({manifest['packet_id_prefix']+x['patient_id']for x in entries},set(new)-{'summary'})
+
+    def received_contexts(self,proof):
+        required=B.audit_source_requirements(self.answer,self.tools.native_calls,proof)
+        return {(pid,rid):self.tools._source_record(pid,rid)for pid,records in required.items()for rid in records}
+
+    def test_complete_native_record_contexts_preserve_all_structured_and_narrative_fields(self):
+        from clinical_core.agere.deliverables.receipts import uncompact_json
+        proof=self.proof();records=self.received_contexts(proof)
+        packets=B.support_packets('Interpret the original sources',self.answer,self.tools.native_calls,[],AS_OF,
+                                  native_audit=proof,source_records=records)
+        supplied={}
+        for packet in packets:
+            if packet['id']=='summary':continue
+            state=uncompact_json(json.loads(packet['text']))
+            self.assertTrue(packet['source_context_complete']);self.assertEqual(state['source_context_gaps'],[])
+            for context in state['source_contexts']:
+                self.assertEqual(context['schema'],'native-received-record-context/1')
+                key=(context['patient_id'],context['record_id']);supplied[key]=context
+                self.assertEqual(context['record_hash'],digest(records[key]))
+                if 'difficulty_paying_medical_bills'in records[key]:
+                    self.assertEqual(context['structured_fields']['difficulty_paying_medical_bills'],records[key]['difficulty_paying_medical_bills'])
+                if 'text'in records[key]:
+                    self.assertIn({'field':'text','text':records[key]['text']},context['received_text_fields'])
+        self.assertEqual(set(supplied),set(records))
+        self.assertTrue(any('difficulty_paying_medical_bills'in row['structured_fields']for row in supplied.values()))
+        self.assertTrue(any(row['received_text_fields']for row in supplied.values()))
+        self.assertFalse(proof['clinical_semantic_acceptance'])
+
+    def test_record_context_uses_existing_forbidden_field_and_received_ocr_policy(self):
+        record={'patient_id':'authored','record_id':'doc','source_table':'documents',
+            'event_date':'2029-01-01','available_date':'2029-01-02','synthetic':True,
+            'original_text':'AUTHORED_FORBIDDEN_PRE_OCR','text':'AUTHORED_UNRECEIVED_TEXT',
+            'truth':{'diagnosis':'AUTHORED_FORBIDDEN_TRUTH'},'nested':{'original_text':'AUTHORED_FORBIDDEN_NESTED'},
+            'extracted_text':'Received OCR observation; interpretation remains unknown.'}
+        source={k:record[k]for k in ('patient_id','record_id','source_table')};source['record_hash']=digest(record)
+        context=B.received_record_context(record,source,AS_OF);wire=json.dumps(context)
+        self.assertNotIn('AUTHORED_FORBIDDEN',wire);self.assertNotIn('AUTHORED_UNRECEIVED_TEXT',wire)
+        self.assertEqual(context['received_text_fields'],[{'field':'extracted_text','text':record['extracted_text']}])
+        self.assertEqual(context['record_hash'],digest(record))
+        self.assertFalse(any(k in context['structured_fields']for k in ('truth','original_text','text')))
+
+    def test_missing_changed_foreign_or_retimed_context_cannot_buy_a_source_vote(self):
+        proof=self.proof();original=self.received_contexts(proof);key=next(iter(original))
+        for change in ('missing','value','patient','clock'):
+            records=copy.deepcopy(original)
+            if change=='missing':records.pop(key)
+            elif change=='value':records[key]['invented_value']='A new unreceived source field'
+            elif change=='patient':records[key]['patient_id']='another-patient'
+            else:records[key]['event_date']='2030-01-01'
+            packets=B.support_packets('Interpret original sources',self.answer,self.tools.native_calls,[],AS_OF,
+                                      native_audit=proof,source_records=records)
+            packet=next(p for p in packets if p.get('source_dependency_patient_id')==key[0])
+            self.assertFalse(packet['source_context_complete'])
+            with self.subTest(change=change):
+                result=B.check_support_packets([packet],lambda *a,**k:(_ for _ in ()).throw(AssertionError('No model can replace missing context')),
+                                               as_of=AS_OF,ledger=None)
+                self.assertIsNone(result.get('decided_by'));self.assertNotEqual(result['label'],'supported')
+
+    def test_received_record_reader_keeps_inherited_patient_and_snapshot_scope(self):
+        proof=self.proof();records=self.received_contexts(proof);pid,rid=next(iter(records))
+        with self.assertRaises(ValueError):self.tools._source_record('another-patient',rid)
+        scoped=self.fixture.tools(cohort=[p for p in self.fixture.ids if p!=pid])
+        with self.assertRaises(ValueError):scoped._source_record(pid,rid)
+        import sqlite3
+        with sqlite3.connect(self.fixture.path/'semantic.sqlite3')as db:
+            db.execute('DELETE FROM record WHERE patient_id=? AND record_id=?',(pid,rid))
+        with self.assertRaises(ValueError):self.tools._source_record(pid,rid)
+        self.assertNotIn((pid,rid),self.tools.source_records)
+
+    def test_received_future_plan_is_visible_but_future_arrival_is_not(self):
+        import sqlite3
+        proof=self.proof();records=self.received_contexts(proof);pid,rid=next(iter(records))
+        raw=copy.deepcopy(records[(pid,rid)]);raw['event_date']='2031-01-01'
+        with sqlite3.connect(self.fixture.path/'semantic.sqlite3')as db:
+            db.execute('UPDATE record SET payload=?WHERE patient_id=?AND record_id=?',(json.dumps(raw),pid,rid))
+        self.assertEqual(self.tools._source_record(pid,rid),raw)
+        raw['available_date']='2031-01-02'
+        with sqlite3.connect(self.fixture.path/'semantic.sqlite3')as db:
+            db.execute('UPDATE record SET payload=?WHERE patient_id=?AND record_id=?',(json.dumps(raw),pid,rid))
+        with self.assertRaises(ValueError):self.tools._source_record(pid,rid)
+        self.assertNotIn((pid,rid),self.tools.source_records)
+
+    def test_ordinary_source_review_acquires_exact_records_before_the_support_boundary(self):
+        from clinical_core.agere.deliverables.receipts import uncompact_json
+        seen=[]
+        def support(packets,*args,**kwargs):
+            seen.extend(packets)
+            for packet in packets:
+                if packet['id']=='summary':continue
+                state=uncompact_json(json.loads(packet['text']))
+                self.assertTrue(packet['source_context_complete'])
+                self.assertTrue(state['source_contexts']);self.assertEqual(state['source_context_gaps'],[])
+            return {'label':'unknown','decided_by':None,'steps':[],'packets':[],
+                    'all_dependencies_checked':False,'scope':'Authored boundary observation; no semantic judgment.'}
+        # Script coverage/work solely to reach the changed source boundary.
+        # Neither these callbacks nor record acquisition validate the answer.
+        with patch.object(G,'ready',return_value=True),\
+             patch.object(G,'check',return_value={'label':'answers_fully','decided_by':'authored-routing','calls':0,'cost_usd':0.}),\
+             patch.object(G,'check_pending_work',return_value={'targets':[],'calls':0,'cost_usd':0.}),\
+             patch.object(B,'check_support_packets',side_effect=support):
+            review=B.review_final(self.fixture.stack,'Interpret source-bound assertions',self.answer,
+                self.tools.native_calls,self.tools,ledger=None,as_of=AS_OF)
+        self.assertGreater(len(seen),1);self.assertTrue(self.tools.source_records)
+        self.assertNotEqual(review['status'],'accepted')
 
     def test_audit_support_contract_rejects_stale_forged_or_interpreted_tables(self):
         proof=self.proof()

@@ -809,6 +809,28 @@ class Tools:
             raise ValueError(f'document {record_id} is not visible at the as-of date {self.as_of}')
         return doc
 
+    def _source_record(self, patient_id, record_id):
+        """An entire received record, including non-note narrative fields.
+
+        Keep the document/citation reader unchanged: offsets into a particular
+        source field cannot be replaced by a concatenation of unrelated fields.
+        """
+        self.in_scope(patient_id)
+        if hasattr(self,'source_records'):self.source_records.pop((patient_id,record_id),None)
+        rows=self.db.execute('SELECT payload FROM record WHERE patient_id=? AND record_id=?',
+                             (patient_id,record_id)).fetchall()
+        if len(rows)!=1:raise ValueError('Received source record is missing or ambiguous')
+        record=json.loads(rows[0][0])
+        if record.get('patient_id')!=patient_id or record.get('record_id')!=record_id:
+            raise ValueError('Received source record identity differs from its native row')
+        # Received future plans are still visible source records. Event and
+        # clinical dates govern interpretation, not whether receipt occurred.
+        if str(record.get('available_date')or'')[:10]>self.as_of:
+            raise ValueError('Received source record is outside the snapshot cutoff')
+        if not hasattr(self,'source_records'):self.source_records={}
+        self.source_records[(patient_id,record_id)]=record
+        return record
+
     def read_document(self, record_id, offset=0):
         doc = self.read.get(record_id)
         if doc is None:  # an uncached read carries its own event and availability dates, so the as-of check below applies to it too
@@ -1212,6 +1234,52 @@ def structural_prose_context(answer,calls,proof):
         'parent_result_view':parent_view,'parent_origin_digest':digest({k:v for k,v in parent.items()if k!='result_view'}),
         'window':window,'key':key,'account_ids_digest':scope['account_ids_digest'],
         'columns':columns,'column_manifest_digest':digest(columns)}
+
+
+def audit_source_requirements(answer,calls,proof):
+    """Exact original record obligations of the qualified native audit.
+
+    Use the parent audit for SQL projections, so omitted source metadata does
+    not drop a dependency. An unbound proposal remains unbound, not a source.
+    """
+    if proof is None:return {}
+    context=structural_prose_context(answer,calls,proof)
+    from .evidence_projection import coverage_answer
+    coverage_answer(answer,native_audit=proof)  # reject semantic/clinical proof forgery
+    if not context:raise ValueError('Native audit source context requires its current qualified origin')
+    parent=next(c['result']for c in calls if isinstance(c.get('result'),dict)
+                and c['result'].get('result_view')==context['parent_result_view'])
+    required={}
+    for row in parent['rows']:
+        if row.get('source_binding_established')is not True:continue
+        pid=row['patient_id'];rid=row.get('source_record_id');source=row.get('source')or{}
+        if(not isinstance(rid,str)or source.get('record_id')!=rid or source.get('patient_id')!=pid
+                or not isinstance(source.get('record_hash'),str)):
+            raise ValueError('Native audit source record identity is incomplete')
+        old=required.setdefault(pid,{}).get(rid)
+        if old is not None and old!=source:raise ValueError('Native audit has conflicting source versions')
+        required[pid][rid]=source
+    return required
+
+
+def received_record_context(raw,source,as_of):
+    """Full eligible source fields through the existing received/OCR policy."""
+    from . import context_builder
+    from .. import narrative_sources
+    from ...contracts import digest
+    if(any(raw.get(k)!=source.get(k)for k in ('patient_id','record_id','source_table'))
+            or digest(raw)!=source.get('record_hash')):
+        raise ValueError('Received record context differs from its bound source version')
+    pid=raw['patient_id'];units=context_builder.units(pid,[raw],[],
+        {'streams':[raw['source_table']],'concepts':[]},as_of)
+    structured=next(u for u in units if u['kind']=='structured')
+    return {'schema':'native-received-record-context/1','patient_id':pid,'record_id':raw['record_id'],
+        'date':raw.get('event_date'),'available_date':raw.get('available_date'),
+        'record_hash':source['record_hash'],'source':source,
+        'structured_fields':structured['reported_fields'],
+        'received_text_fields':list(narrative_sources.text_fields(raw)),
+        'source_units':[{k:u[k]for k in ('id','kind','field','start','end')}for u in units],
+        'scope':'Complete eligible received source fields and original unit spans, using the existing received-text/OCR and forbidden-field policy. Native hashes establish version fidelity only; machine assertion meanings, subject, polarity, relation and time still require source review.'}
 
 
 def mask_prose_parameters(text,context,proofs):
@@ -2207,9 +2275,14 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                   {'question':request,'answer':interpretation,'evidence':evidence,
                    'computed_table_value_counts':table_value_counts(answer.get('table') or [])})
         assessment['evidence_coverage'].update(original_fingerprint=fingerprint(original))
+        if native_audit is not None:
+            for pid,records in audit_source_requirements(answer,calls,native_audit).items():
+                for rid in records:
+                    try:tools._source_record(pid,rid)
+                    except (ValueError,KeyError,sqlite3.Error):pass  # the exact gap is retained below
         packets=support_packets(request,answer,calls,getattr(tools,'document_reviews',[]),as_of,
                                 source_documents=getattr(tools,'read',{}),prior_review_reference=prior_reference,
-                                native_audit=native_audit)
+                                native_audit=native_audit,source_records=getattr(tools,'source_records',{}))
         program_repairs=native_program_repairs(packets)
         if program_repairs:
             return {**assessment,'status':'repair','repair_kind':'native_program_verification',
@@ -2576,7 +2649,7 @@ def global_dependency_request(answer,calls):
     return missing if native_column_projections(calls,roots,dependencies)else []
 
 
-def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None,native_audit=None):
+def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None,native_audit=None,source_records=None):
     """Final clinical claims, deduplicated and grouped by patient dependency.
 
     Raw operational receipts remain intact. SQL elapsed time is excluded only
@@ -2734,6 +2807,21 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
                     isinstance(document.get('text'),str)and quote in document['text']):
                 cited_sources.append({'citation':citation,'executed_source_document':document})
                 break
+    if native_audit is not None:
+        for pid,records in audit_source_requirements(answer,calls,native_audit).items():
+            for rid,source in records.items():
+                raw=(source_records or{}).get((pid,rid))
+                reason=None
+                if not isinstance(raw,dict):reason='Complete received record context was not supplied.'
+                elif(raw.get('patient_id')!=pid or raw.get('record_id')!=rid
+                     or raw.get('source_table')!=source.get('source_table')):
+                    reason='Received source context belongs to another patient, record or stream.'
+                elif digest(raw)!=source['record_hash']:reason='Received source context changed from the bound record version.'
+                if reason:
+                    context_gaps.setdefault(pid,[]).append({'patient_id':pid,'record_id':rid,
+                        'record_hash':source['record_hash'],'source_table':source.get('source_table'),'reason':reason})
+                    continue
+                contexts.setdefault(pid,{})['native_record:'+rid]=received_record_context(raw,source,as_of)
     global_fields={'headline':answer['headline']}if 'headline'in answer else{}
     global_fields.update({'facts.'+str(k):v for k,v in (answer.get('facts')or{}).items()})
     bound_fields={p.get('field')for p in answer.get('computed_prose',[])
