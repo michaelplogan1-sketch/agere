@@ -460,6 +460,9 @@ class Tools:
                 name = f'agere_result_{len(self.seen) + 1}'
                 self.result_sources[name] = define_result(self.semantic, name, columns, rows, receipt=out)
                 out = {**out, 'result_view': name}
+                if out.get('analysis')=='assertion_review':
+                    from .analysis_tools import assertion_projections
+                    out['native_projections']=assertion_projections(name)
                 self.executed_results[name]=out
         self.seen.append(json.dumps(out, default=str))
         operational=any(item.get('authority')=='unverified_review_feedback' for item in (out.get('incomplete_dependencies')or[])) if isinstance(out,dict) else False

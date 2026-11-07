@@ -9,6 +9,11 @@ from ..request_lineage import component
 # Analytical reports only. Stateful identity decisions, monitors and care work
 # retain their own explicit workflows and are never certified read-only replay.
 DOCUMENTARY={'assertion_review','source_state'}
+ASSERTION_PROJECTIONS={
+    'assertions':'Every bound assertion with its exact value/unit/domain, source, qualifiers, clocks and unresolved meaning.',
+    'qualifier_effects':'Assertions with nonaffirmative, nonpatient, noncurrent, unresolved or repeated-source qualifiers. Candidate accounting effects, not verified clinical changes.',
+    'dated_accounts':'Intact relation/domain-specific dated account groups. Opposing reports across time are not necessarily clinical contradictions.',
+    'unbound_annotations':'Every selected or unknown-window annotation whose source binding failed; retain its original value and failure reason.'}
 CRITERIA={'requirements','protocol_review','program_document'}
 PERSISTED_REPORTS=DOCUMENTARY | CRITERIA | {'financial_accounts','accountability_review'}
 ANALYTICAL=PERSISTED_REPORTS | {
@@ -63,6 +68,7 @@ def describe(operation, *, path=None):
             'meaning':'The existing native validator remains authoritative. Parameters and assumptions are not inferred clinical facts.',
             **({'output_contract':{
                 'columns':['patient_id','receipt_id','status','documentary_receipt'],
+                'native_projections':ASSERTION_PROJECTIONS,
                 'collections':{
                     'assertions':{'json_path':'$.assertions','fields':{
                         'id':'Stable source assertion identity','annotation_origin':'derived_note_fact only for derived note-fact proposals',
@@ -84,11 +90,54 @@ def describe(operation, *, path=None):
                     'unknown_window_assertions':'$.coverage.assertion_window.assertions_with_unknown_date',
                     'outside_window_assertions':'$.coverage.assertion_window.assertions_outside_window',
                     'clinical_truth':'$.current_clinical_state_established'},
-                'instruction':'Query the complete result_view with JSON_EXTRACT and JSON_EACH(documentary_receipt, path). A patient preview never substitutes for the full population or assertion window. Preserve failed bindings and unvalidated meaning.'}}
+                'instruction':'Execution returns native_projections with executable query_sql inputs bound to its complete result_view. Use them to compose the full assertion/qualifier/domain audit rather than inferring meaning from broad note_fact groups. A patient preview never substitutes for the full population or assertion window. Preserve failed bindings and unvalidated meaning.'}}
                if operation=='assertion_review'else{}),
             **context,
             **({'documentary_scope':'Explicit streams and mapped concepts at the current snapshot. assertion_review optionally accepts assertion_window with an explicit date basis and received_annotations=true to include existing annotations with all values/units and failed bindings; concepts=[] then means all existing annotations in those streams, not all clinical knowledge. Selecting patients with a dated record alone does not restrict assertion dates. Unknown qualifiers and machine interpretations remain unresolved; repeated text is not independent corroboration.'}
                if operation in DOCUMENTARY else {})}
+
+
+def assertion_projections(view):
+    """Read-only projections of checked receipts; no new reading or inference.
+
+    Bind to the actual request-local result, never a model-supplied table or an
+    arbitrary source. All evidence objects and account groups remain intact.
+    """
+    import re
+    if not isinstance(view,str) or not re.fullmatch(r'agere_result_[1-9][0-9]*',view):
+        raise ValueError('Native assertion projections require an executed result_view')
+    fields={
+        'assertion_id':'id','concept':'concept','relation':'relation','value':'value','unit':'unit',
+        'value_domain':'value_domain','polarity':'polarity','subject':'subject','temporality':'temporality',
+        'authority':'authority','semantic_validation':'semantic_validation','annotation_origin':'annotation_origin',
+        'assertion_window_state':'assertion_window_state','source_record_id':'source.record_id',
+        'source_date':'clocks.source_date','arrival_date':'clocks.arrival_date',
+        'clinical_date':'clocks.clinical_date','reference_date':'clocks.reference_date',
+        'source':'source','evidence':'evidence','source_repetition':'source_repetition',
+        'repeated_statement_family':'repeated_statement_family',
+        'qualifier_effects':'qualifier_effects','positive_under_received_qualifiers':'positive_under_received_qualifiers',
+        'current_clinical_state_established':'current_clinical_state_established'}
+    columns=', '.join(f"json_extract(a.value,'$.{path}') AS {key}"for key,path in fields.items())
+    assertions=f"SELECT r.patient_id,r.receipt_id,{columns} FROM {view} r JOIN json_each(r.documentary_receipt,'$.assertions') a"
+    effects=(f'WITH assertions AS ({assertions}) SELECT * FROM assertions WHERE '
+        "COALESCE(polarity,'unknown')<>'affirmed' OR COALESCE(subject,'unknown')<>'patient' "
+        "OR COALESCE(temporality,'unknown')<>'current' OR assertion_window_state='unknown' "
+        "OR COALESCE(json_array_length(qualifier_effects),0)>0 "
+        "OR source_repetition IS NOT NULL")
+    groups=(f"SELECT r.patient_id,r.receipt_id,json_extract(g.value,'$.concept') AS concept,"
+        "json_extract(g.value,'$.relation') AS relation,json_extract(g.value,'$.value_domain') AS value_domain,"
+        "json_extract(g.value,'$.status') AS account_status,g.value AS dated_account_group "
+        f"FROM {view} r JOIN json_each(r.documentary_receipt,'$.groups') g")
+    unbound=(f"SELECT r.patient_id,r.receipt_id,json_extract(u.value,'$.id') AS annotation_id,"
+        "json_extract(u.value,'$.reason') AS binding_failure,json_extract(u.value,'$.assertion_window_state') AS assertion_window_state,"
+        "json_extract(u.value,'$.source_date') AS source_date,json_extract(u.value,'$.arrival_date') AS arrival_date,"
+        "json_extract(u.value,'$.annotation') AS received_annotation,u.value AS unbound_account,"
+        "0 AS source_binding_established,0 AS current_clinical_state_established "
+        f"FROM {view} r JOIN json_each(r.documentary_receipt,'$.coverage.unbound_annotation_rows') u "
+        "WHERE COALESCE(json_extract(u.value,'$.assertion_window_state'),'selected') IN ('selected','unknown')")
+    return {key:{'meaning':ASSERTION_PROJECTIONS[key],'query_sql':{'sql':sql,'complete':True}}
+            for key,sql in {'assertions':assertions,'qualifier_effects':effects,
+                            'dated_accounts':groups,'unbound_annotations':unbound}.items()}
 
 
 def population(tools,patient_ids=None,patient_query_sql=None):

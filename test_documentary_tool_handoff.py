@@ -116,6 +116,55 @@ class DocumentaryHandoff(unittest.TestCase):
             self.assertIsNone(states[pid]['value'])
             self.assertFalse(states[pid]['current_clinical_state_established'])
 
+    def test_executable_assertion_projections_keep_the_complete_source_domains(self):
+        t=self.tools();result=self.execute(t)
+        projections=result['native_projections']
+        self.assertEqual(set(projections),set(A.ASSERTION_PROJECTIONS))
+        original={a['id']:a for row in result['rows']for a in row['documentary_receipt']['assertions']}
+        flattened=t({'name':'query_sql','input':projections['assertions']['query_sql']})
+        self.assertFalse(flattened.get('truncated'))
+        self.assertEqual({r['assertion_id']for r in flattened['rows']},set(original))
+        for row in flattened['rows']:
+            a=original[row['assertion_id']]
+            self.assertEqual(row['patient_id'],a['patient_id'])
+            for key in ('source','evidence','value_domain','source_repetition','qualifier_effects'):
+                expected=a.get(key);actual=row[key]
+                if isinstance(expected,(dict,list)):actual=json.loads(actual)
+                self.assertEqual(actual,expected,key)
+            for key in ('value','unit','polarity','subject','temporality','authority','semantic_validation'):
+                self.assertEqual(row[key],a.get(key),key)
+            for key in ('source_date','arrival_date','clinical_date','reference_date'):
+                self.assertEqual(row[key],a['clocks'].get(key),key)
+            self.assertEqual(row['current_clinical_state_established'],0)
+        effects=t({'name':'query_sql','input':projections['qualifier_effects']['query_sql']})['rows']
+        self.assertTrue({'p04','p05','p06','p07'}<={r['patient_id']for r in effects})
+        dated=t({'name':'query_sql','input':projections['dated_accounts']['query_sql']})['rows']
+        expected=[(row['patient_id'],g)for row in result['rows']for g in row['documentary_receipt']['groups']]
+        self.assertEqual([(r['patient_id'],json.loads(r['dated_account_group']))for r in dated],expected)
+        self.assertIn('native_projections',S.actor_result(result))
+
+    def test_unbound_projection_preserves_unknown_window_and_failure_without_inventing_evidence(self):
+        t=self.tools();rows=[]
+        for i,state in enumerate(('selected','unknown','outside')):
+            rows.append({'id':str(i),'reason':'source_span_mismatch','assertion_window_state':state,
+                'source_date':None,'arrival_date':'2029-05-01',
+                'annotation':{'value':'unverified proposal','unit':'mg','evidence_text':'unbound text'}})
+        result=t.retain_result({'analysis':'assertion_review','columns':['patient_id','receipt_id','documentary_receipt'],
+            'rows':[{'patient_id':'p00','receipt_id':'authored-fixture','documentary_receipt':{
+                'assertions':[],'groups':[],'coverage':{'unbound_annotation_rows':rows}}}]})
+        got=t({'name':'query_sql','input':result['native_projections']['unbound_annotations']['query_sql']})['rows']
+        self.assertEqual([r['assertion_window_state']for r in got],['selected','unknown'])
+        for row in got:
+            self.assertEqual(row['binding_failure'],'source_span_mismatch')
+            self.assertEqual(row['source_binding_established'],0)
+            self.assertEqual(json.loads(row['received_annotation'])['unit'],'mg')
+            self.assertEqual(row['current_clinical_state_established'],0)
+        self.assertEqual(t({'name':'query_sql','input':result['native_projections']['assertions']['query_sql']})['rows'],[])
+
+    def test_projection_only_binds_an_executed_native_result_name(self):
+        for name in ('record','agere_result_0','agere_result_1;DROP TABLE patient','agere_result_1 --'):
+            with self.subTest(name=name),self.assertRaises(ValueError):A.assertion_projections(name)
+
     def test_inherited_population_stays_complete_and_cannot_widen(self):
         t=self.tools(['p00','p04']);result=self.execute(t)
         self.assertEqual([r['patient_id']for r in result['rows']],['p00','p04'])
