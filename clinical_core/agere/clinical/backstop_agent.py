@@ -1282,6 +1282,85 @@ def received_record_context(raw,source,as_of):
         'scope':'Complete eligible received source fields and original unit spans, using the existing received-text/OCR and forbidden-field policy. Native hashes establish version fidelity only; machine assertion meanings, subject, polarity, relation and time still require source review.'}
 
 
+# These fields describe received provenance/copy fidelity, not what a clinical
+# assertion means. Clinical clocks and every interpretation/effect stay outside.
+AUDIT_LITERAL_FIELDS=frozenset(('audit_account_id','assertion_id','annotation_id','receipt_id',
+    'source_record_id','reported_record_id','source_date','arrival_date','source_binding_established',
+    'authority','semantic_validation','annotation_origin','assertion_window_state','binding_failure',
+    'current_clinical_state_established','source','evidence','received_annotation'))
+AUDIT_SEMANTIC_FIELDS=frozenset(('audit_account_id','patient_id','source_record_id','concept','relation',
+    'value','unit','value_domain','polarity','subject','temporality','clinical_date'))
+
+
+def audit_literal_columns(answer,calls,proof):
+    """Qualify literal copies only when the full semantic axes remain visible."""
+    if proof is None:return []
+    context=structural_prose_context(answer,calls,proof)
+    if(not context or not AUDIT_SEMANTIC_FIELDS<=set(context['columns'])
+        or proof.get('clinical_semantic_acceptance')is not False
+        or proof.get('separate_source_support_required')is not True):return []
+    projection=proof.get('native_projection')
+    fields=projection['fields']if projection else {
+        field:{'kind':'native_copy','source_columns':[field]}for field in context['columns']}
+    return sorted(field for field in AUDIT_LITERAL_FIELDS if field in context['columns']
+        and(fields.get(field)or{}).get('kind')=='native_copy'
+        and(fields.get(field)or{}).get('source_columns')==[field])
+
+
+def audit_field_context(packet,state):
+    """Validate once per review; individual fields retain exact native values."""
+    from ...contracts import digest
+    proof=packet.get('native_audit_fields')or{};pid=packet.get('source_dependency_patient_id')
+    try:
+        if(proof.get('schema')!='native-audit-fields/1'or proof.get('patient_id')!=pid
+            or state.get('patient_id')!=pid or packet.get('patient_dependency_bound')is not True
+            or packet.get('source_context_complete')is not True or state.get('source_context_gaps')
+            or proof.get('as_of')!=packet.get('date')or proof.get('result_view')!=packet.get('result_view')
+            or proof.get('binding_digest')!=digest({k:v for k,v in proof.items()if k!='binding_digest'})
+            or not proof.get('qualified_contract_digest')or not proof.get('source_digest')
+            or not set(proof['columns'])<=AUDIT_LITERAL_FIELDS
+            or digest(state.get('source_contexts'))!=proof.get('source_contexts_digest')
+            or not state.get('source_contexts')or state.get('claim_manifest')!=packet.get('claim_manifest')):return None
+        partition=state.get('claim_partition')
+        if partition:
+            protected={k:v for k,v in state.items()if k not in
+                {'answer','answer_rows','all_final_rows','claim_manifest','scope','claim_partition'}}
+            if(partition.get('parent_fingerprint')!=proof['state_digest']
+               or packet.get('parent_packet_id')!=proof['packet_id']
+               or partition.get('parent_packet_id')!=proof['packet_id']
+               or partition.get('source_inputs_digest')!=proof['protected_inputs_digest']
+               or digest(protected)!=proof['protected_inputs_digest']):return None
+        elif packet.get('id')!=proof['packet_id']or digest(state)!=proof['state_digest']:return None
+        rows=state.get('answer_rows')
+        if(not isinstance(rows,list)or len(rows)!=len(proof['rows'])
+           or any(not isinstance(r,dict)or r.get('patient_id')!=pid for r in rows)):return None
+        return proof
+    except (KeyError,ValueError,TypeError):return None
+
+
+def native_field_proof(packet,claim,state,*,audit_context=None):
+    """Received audit copies and profile scalars have separate native roles."""
+    from ...contracts import digest
+    proof=audit_context if audit_context is not None else audit_field_context(packet,state)
+    path=claim.get('path')or[];field=claim.get('field')
+    if (proof and len(path)==3 and path[0]=='answer_rows'and type(path[1])is int
+        and path[2]==field and field in proof['columns']and field in AUDIT_LITERAL_FIELDS
+        and 0<=path[1]<len(proof['rows'])):
+        original=proof['rows'][path[1]]
+        if original is not None and field in original:
+            try:value=_claim_value(state,path)
+            except (KeyError,IndexError,TypeError):return None
+            if digest(value)==digest(original[field]):
+                return {'schema':proof['schema'],'patient_id':proof['patient_id'],'as_of':proof['as_of'],
+                    'source_digest':proof['source_digest'],'result_view':proof['result_view'],
+                    'qualified_contract_digest':proof['qualified_contract_digest'],
+                    'audit_account_id':original['audit_account_id'],'source_record_id':original.get('source_record_id'),
+                    'field':field,'path':path,'value_digest':digest(value),
+                    'authority':'native_received_audit_copy','clinical_qualification':False,
+                    'scope':'Literal received metadata/quote fidelity only. Entity, relation, value, subject, polarity, clinical time and analytical interpretation still require complete-source judgments.'}
+    return native_profile_field_proof(packet,claim,state)
+
+
 def mask_prose_parameters(text,context,proofs):
     """Mask only syntactically described parameters for the quantity scanner.
 
@@ -2951,6 +3030,12 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             alternate=json.dumps(compact_json(packet,expand_json_strings=True),ensure_ascii=False,separators=(',',':'),default=str)
             if len(alternate.encode())<len(text.encode()):text=alternate
         return text,text==readable
+    literal_fields=audit_literal_columns(answer,calls,native_audit)
+    bound_audit_ids=set()
+    if literal_fields:
+        parent=structural_prose_context(answer,calls,native_audit)['parent_result_view']
+        origin=next(c['result']for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')==parent)
+        bound_audit_ids={r['audit_account_id']for r in origin['rows']if r.get('source_binding_established')is True}
     result=[]
     for packet in packets:
         claims=[]
@@ -2975,6 +3060,19 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             'source_context_complete':not bool(packet.get('source_context_gaps')),
             'claim_manifest':claims,'result_view':final_view,
             'representation':'readable_native_json' if readable else 'lossless_compact_fallback'})
+        if(literal_fields and packet.get('patient_id')and packet.get('source_contexts')
+           and not packet.get('source_context_gaps')and not unsafe_operational):
+            native_rows=[{field:row[field]for field in literal_fields}
+                         if row.get('audit_account_id')in bound_audit_ids else None for row in packet['answer_rows']]
+            if any(row is not None for row in native_rows):
+                proof={'schema':'native-audit-fields/1','patient_id':packet['patient_id'],'as_of':as_of,'packet_id':packet['id'],
+                    'result_view':final_view,'source_digest':native_audit['source_digest'],
+                    'qualified_contract_digest':digest(native_audit),'columns':literal_fields,'rows':native_rows,
+                    'state_digest':digest(packet),'source_contexts_digest':digest(packet['source_contexts']),
+                    'protected_inputs_digest':digest({k:v for k,v in packet.items()if k not in
+                        {'answer','answer_rows','all_final_rows','claim_manifest','scope'}}),
+                    'scope':'Received literal copy fidelity only; all semantic axes and analytical effects remain source judgments.'}
+                result[-1]['native_audit_fields']={**proof,'binding_digest':digest(proof)}
         calculated=[{'result_view':p['result_view'],'complete_receipt_digest':p['complete_receipt_digest'],
             'input_fidelity':p['input_fidelity']}for p in packet.get('native_column_projections',[])if p.get('schema')=='native-calculation-input/1']
         if calculated:result[-1]['native_calculation_input_fidelity']=calculated
@@ -3755,7 +3853,7 @@ def joint_dependency_wait(packets,results):
                     or reading.get('value_digest')!=digest(_claim_value(state,claim['path']))
                     or observed.get('state')!='supported'):return []
                 if observed.get('native_provenance'):
-                    proof=native_profile_field_proof(packet,claim,state)
+                    proof=native_field_proof(packet,claim,state)
                     if not proof or proof!=observed['native_provenance']:return []
                     continue
                 if (judgment.get('label')!='supported'or not judgment.get('decided_by')
@@ -3840,8 +3938,9 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None):
         'unknown':'The source does not settle whether this field is supported.'}
     from ...contracts import digest
     feedback=[];steps=[];supported=[];claims=packet['claim_manifest'];semantic_claims=[]
+    audit_context=audit_field_context(packet,state)or{}
     for claim in claims:
-        proof=native_profile_field_proof(packet,claim,state)
+        proof=native_field_proof(packet,claim,state,audit_context=audit_context)
         if proof:
             supported.append({'claim_id':claim['id'],'field':claim['field'],'path':claim['path'],
                 'value_digest':digest(_claim_value(state,claim['path'])),
@@ -3913,10 +4012,14 @@ def complete_claim_composition(packet,review):
     try:
         state=uncompact_json(json.loads(packet['text']));pid=packet['source_dependency_patient_id']
         rows=state.get('answer_rows');contexts=state.get('source_contexts');claims=packet.get('claim_manifest')
+        audit_context=audit_field_context(packet,state)or{}
         if (state.get('patient_id')!=pid or not rows or not contexts or state.get('source_context_gaps')or
             state.get('claim_manifest')!=claims or not all(isinstance(r,dict)and r.get('patient_id')==pid for r in rows)or
-            not all(isinstance(c,dict)and c.get('patient_id')==pid and isinstance(c.get('text'),str)and
-                    c.get('record_id')and c.get('date')for c in contexts)):return None
+            not all(isinstance(c,dict)and c.get('patient_id')==pid and c.get('record_id')and(
+                isinstance(c.get('text'),str)and c.get('date')or audit_context and
+                c.get('schema')=='native-received-record-context/1'and c.get('record_hash')
+                and isinstance(c.get('structured_fields'),dict)and isinstance(c.get('received_text_fields'),list))
+                for c in contexts)):return None
         expected=[{'id':'claim_'+str(n),'field':str(k),'path':['answer_rows',i,k]}
                   for n,(i,k)in enumerate((i,k)for i,row in enumerate(rows)for k in row if k!='patient_id')]
         if claims!=expected or not claims:return None
@@ -3931,7 +4034,7 @@ def complete_claim_composition(packet,review):
             observed=reading.get('verification_observation')or{};judgment=observed.get('model_judgment')or{}
             if observed.get('state')!='supported':return None
             if observed.get('native_provenance'):
-                proof=native_profile_field_proof(packet,claim,state)
+                proof=native_field_proof(packet,claim,state,audit_context=audit_context)
                 if not proof or proof!=observed['native_provenance']:return None
                 continue
             p,threshold=judgment.get('probability'),judgment.get('threshold')
