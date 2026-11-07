@@ -183,8 +183,24 @@ def restore_table(rows,edges,patient_rows):
     return restored
 
 
-def coverage_answer(answer, *, native_table=None):
+def coverage_answer(answer, *, native_table=None, native_audit=None):
     """Coverage-only projection; support receives every complete native value."""
+    if native_audit is not None:
+        if(native_audit.get('schema')!='native-qualifier-coverage/1'
+            or native_audit.get('table_digest')!=digest(answer.get('table'))
+            or native_audit.get('result_view')!=answer.get('table_from_tool')
+            or native_audit.get('separate_source_support_required')is not True
+            or native_audit.get('clinical_semantic_acceptance')is not False):
+            raise ValueError('Native audit coverage proof does not bind this complete table')
+        out=copy.deepcopy({k:v for k,v in answer.items()if k!='table'})
+        out['table']=[];out['native_audit']=copy.deepcopy(native_audit)
+        binding=out.get('table_binding')
+        if isinstance(binding,dict):binding.pop('query',None)
+        prior=out.pop('investigation_review',None)
+        if prior is not None:out['prior_review_native_digest']=digest(prior)
+        out['coverage_contract']={'schema':'native-qualifier-coverage/1',
+            'scope':'Every native audit account/cell was checked by code against the complete original receipt set. Review the original request against the full parameter, field and conditional-effect contracts. These are received-label effects, not clinically validated conclusions. Do not treat faithful copying, a machine label, or an unresolved requested interpretation as clinical acceptance or complete work. Separate source support remains mandatory.'}
+        return out
     if native_table is not None:
         # The producer has checked every primitive cell against a complete
         # native SQL result. Coverage reviews the requested fields and method,

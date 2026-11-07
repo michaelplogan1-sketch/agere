@@ -1891,6 +1891,10 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     scope_errors=qualifier_output_scope_errors(answer,calls)
     if scope_errors:
         return {**assessment,'status':'repair','repair_kind':'native_output_scope','feedback':' '.join(scope_errors)}
+    from .analysis_tools import qualifier_coverage_review
+    try:native_audit=qualifier_coverage_review(answer,calls,tools,as_of)
+    except (ValueError,KeyError,TypeError,AttributeError)as exc:
+        return {**assessment,'status':'repair','repair_kind':'native_audit_binding','feedback':str(exc)}
     if (answer.get('answer_type') == 'table' or answer.get('table')) and not answer.get('table_binding'):
         return {**assessment, 'status': 'repair', 'feedback': 'Compute the requested table in SQL, using earlier result_view tables as needed, and return table_from_tool. Do not transcribe rows or calculate changes in the final answer.'}
     kept, dropped = verified_sources(answer, tools)
@@ -1983,7 +1987,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                 and answer.get('table') and gate.ready(stack, 'AGERE_S1_CHECK')):
             try:
                 from .evidence_projection import coverage_answer
-                composition=gate.check_composition(question,coverage_answer(answer),ledger=ledger,as_of_date=as_of)
+                composition=gate.check_composition(question,coverage_answer(answer,native_audit=native_audit),ledger=ledger,as_of_date=as_of)
                 assessment.update(composition=composition,calls=composition['calls'],cost_usd=composition['cost_usd'])
                 if composition.get('targets'):
                     return incomplete_composition(assessment,composition,answer,feedback=prose_problem,progress_state=progress_state)
@@ -2047,7 +2051,14 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         prior_review=answer.get('investigation_review')
         prior_reference=review_reference(prior_review,tools) if isinstance(prior_review,dict) else None
         native_table=native_table_copy_review(answer,calls,getattr(tools,'document_reviews',[]),as_of)
-        coverage_view=coverage_answer(answer,native_table=native_table)
+        # Row prose is compiled after the initial native-origin check. Its
+        # actual interpretations must remain visible to coverage and support.
+        if (answer.get('table_binding')or{}).get('interpreted_columns'):native_audit=None
+        coverage_view=coverage_answer(answer,native_table=native_table,native_audit=native_audit)
+        if native_audit is not None:
+            assessment['native_audit_coverage']={'schema':native_audit['schema'],'rows':native_audit['rows'],
+                'table_digest':native_audit['table_digest'],'separate_source_support_required':True,
+                'clinical_semantic_acceptance':False}
         if isinstance(coverage_view.get('limitations'),list) and prior_reference is not None:
             coverage_view['limitations']=[review_limitation_view(text,prior_review,prior_reference)
                 for text in coverage_view['limitations']]

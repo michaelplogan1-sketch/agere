@@ -319,6 +319,99 @@ def qualifier_output_scope_errors(answer,calls):
     return []
 
 
+def qualifier_coverage_review(answer,calls,tools,as_of):
+    """Prove a complete native audit copy for coverage, never source meaning.
+
+    Rebuild the primary projection from every hash-checked original receipt.
+    A matching table may be represented by its complete field/role contract in
+    the coverage question. All patient source-support obligations remain.
+    """
+    import copy,hashlib
+    from pathlib import Path
+    from collections import Counter
+    from . import assertion_reconciliation as AR
+    from .harness_improvement import semantic_result
+    from .result_assembly import incomplete_reason
+    root=answer.get('table_from_tool');matches=[c for c in calls if isinstance(c.get('result'),dict)
+        and c['result'].get('result_view')==root]
+    if not root:return None
+    if len(matches)!=1:
+        if any(c['result'].get('output')=='qualifier_accounts'for c in matches):
+            raise ValueError('Native audit coverage binding: ambiguous original view')
+        return None
+    call=matches[0];result=call['result']
+    if(call.get('name')!='execute_analysis'or result.get('analysis')!='assertion_review'
+        or result.get('output')!='qualifier_accounts'or not result.get('rows')):return None
+    def require(condition,message):
+        if not condition:raise ValueError('Native audit coverage binding: '+message)
+    require(not result.get('error')and not incomplete_reason(result),'complete original output required')
+    require((answer.get('table_binding')or{}).get('result_view')==root,'native table binding required')
+    require(not (answer.get('table_binding')or{}).get('interpreted_columns'),'interpreted columns require their own source review')
+    require(digest(answer.get('table'))==digest(result['rows']),'every original cell and row order must remain exact')
+    require(not qualifier_output_scope_errors(answer,calls),'complete account identities required')
+    registered=getattr(getattr(getattr(tools,'semantic',None),'_local',None),'native_results',{}).get(root.casefold())or{}
+    original_digest=digest({k:v for k,v in result.items()if k!='result_view'})
+    require(registered.get('receipt_digest')==original_digest,'registered native origin changed or unavailable')
+    engine=result.get('engine_result')or{}
+    require(result.get('receipt_digest')==digest(semantic_result(engine)),'engine provenance changed')
+    report=(engine.get('results')or[{}])[-1].get('result')or{}
+    parameters=AR.validate(result.get('parameters'))
+    require(report.get('parameters')==parameters,'native parameters changed')
+    identity,meta,_=AR.dependency(tools.stack.path,parameters)
+    require(meta['snapshot']['as_of']==as_of and report.get('identity')==identity,'source, clock or native operator changed')
+    ids=result.get('input_patient_ids');members=report.get('review_members')or[]
+    if ids is None:
+        require(getattr(tools,'cohort',None)is None,'implicit population differs from inherited scope')
+        ids=[r[0]for r in tools.semantic.db.execute('SELECT patient_id FROM patient')]
+    require(isinstance(ids,list)and len(ids)==len(set(ids))==len(members)==report.get('patients_evaluated')
+        and set(ids)=={m['patient_id']for m in members},'native population changed')
+    inherited=getattr(tools,'cohort',None)
+    require(inherited is None or set(ids)<=set(inherited),'native population is outside inherited scope')
+    if result.get('input_selection')=='inherited_annotations':
+        require(inherited is None or set(ids)==set(inherited),'inherited native population narrowed')
+    code=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    key=digest([original_digest,digest(answer['table']),identity,code,as_of])
+    cached=getattr(tools,'_qualifier_coverage_reviews',{})
+    if key in cached:return copy.deepcopy(cached[key])
+    originals=documentary_rows(tools.stack.path,'assertion_review',report)
+    expected,scope=qualifier_account_rows(originals)
+    require(digest(expected)==digest(result['rows'])and digest(scope)==digest(result.get('native_output_scope')),
+        'audit values, qualifiers, effects, domains or clocks differ from original receipts')
+    require(AR.dependency(tools.stack.path,parameters)[0]==identity,'source changed during proof')
+    fields=list(dict.fromkeys(k for row in expected for k in row))
+    require(result.get('columns')==fields,'complete original field manifest required')
+    effect_meanings={
+        'negated_proposal_not_affirmed_evidence':'Conditional on the received polarity label, this proposal cannot be counted as affirmative evidence.',
+        'polarity_unresolved':'The received polarity is unresolved; neither affirmation nor negation is established.',
+        'not_established_as_current':'The received temporality does not establish a current assertion at the source statement.',
+        'patient_subject_not_established':'The received subject does not establish that this assertion concerns the patient.',
+        'repetition_not_independent_corroboration':'Repeated source text cannot be counted as independent corroboration.',
+        'repetition_cannot_refresh_state':'A repeated source statement cannot acquire a newer clinical date from its transport.',
+        'assertion_window_date_unresolved':'The source date does not establish whether this assertion belongs to the requested window.',
+        'opposing_documentary_accounts_need_review':'Native relation/domain grouping contains opposing accounts; this is not itself an established clinical contradiction.',
+        'source_binding_unresolved':'The annotation did not bind to a verified source assertion; retain its failure and value without a source/clinical claim.'}
+    effects=Counter(e for row in expected for e in row['analytical_effects'])
+    require(set(effects)<=set(effect_meanings),'unknown conditional effect')
+    proof={'schema':'native-qualifier-coverage/1','result_view':root,'rows':len(expected),'columns':fields,
+        'table_digest':digest(expected),'registered_origin_digest':original_digest,
+        'source_digest':meta['source_digest'],'as_of':as_of,'native_dependency_identity':identity,
+        'projection_code_digest':code,'parameters':parameters,
+        'population':{'input_patients':len(ids),'patient_ids_digest':digest(sorted(ids)),
+            'patients_with_audit_accounts':len({r['patient_id']for r in expected})},
+        'original_patient_receipts':{'count':len(members),'manifest_digest':digest(members),'all_hash_checked':True},
+        'output_scope':scope,'conditional_effect_counts':dict(effects),'conditional_effect_definitions':effect_meanings,
+        'qualifier_account_distributions':{field:dict(Counter(str(r.get(field))for r in expected))
+            for field in ('source_binding_established','polarity','subject','temporality','assertion_window_state','semantic_validation')},
+        'mechanically_checked':['Every original patient receipt hash','Every projected account, cell, object, row order and account ID',
+            'Exact native conditional-effect transformation','Exact source/value/unit/domain and separate clocks','Complete population and parameter binding'],
+        'not_established':['Machine annotation meanings','Complete free-text interpretation','Clinical consequences or eligibility',
+            'Snapshot-current care','A clinical contradiction from opposing reports alone'],
+        'separate_source_support_required':True,'clinical_semantic_acceptance':False,
+        'scope':'Coverage-only representation of a complete native received-label audit. Conditional effect enums explain how received qualifiers affect counting; their presence does not prove that machine labels or clinical interpretations are correct. All actual rows and original evidence remain native. Source support still receives full patient dependencies. Assess whether the requested interpretation is actually complete; a faithful provisional audit may still be an incomplete answer.'}
+    cached[key]=copy.deepcopy(proof);tools._qualifier_coverage_reviews=cached
+    return proof
+
+
 def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None,selection='parameters',output='operator_default'):
     from . import analysis_graph as A,graph_contracts as G,cohorts
     if operation not in ANALYTICAL:raise ValueError('Choose an analytical operation from list_analyses')
