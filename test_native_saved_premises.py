@@ -67,5 +67,21 @@ class NativePremises(unittest.TestCase):
         g,calls,_=self.prepare();calls[1]['result']['native_query_receipt']['source_bindings']=None
         self.assertTrue(self.issues(g,calls))
 
+    def test_governed_scalar_projection_reopens_and_still_binds_its_value_and_unit(self):
+        tools=self.fixture.tools()
+        metric=tools.retain_result({'metric_id':'authored_paid','name':'Recorded paid',
+            'status':'answered','value':125,'unit':'cents','method':'authored received observations'})
+        query='SELECT metric_id,value,unit FROM '+metric['result_view']
+        result=tools({'name':'query_sql','input':{'sql':query}})
+        calls=[{'name':'execute_metric','input':{'metric_id':'authored_paid'},'result':metric},
+               {'name':'query_sql','input':{'sql':query},'result':result}]
+        g=graph(result['executed_query'])
+        self.assertEqual(self.issues(g,calls),[])
+        for field,value in [('value',126),('unit','dollars'),('method','different source')]:
+            changed=copy.deepcopy(calls);changed[0]['result'][field]=value
+            with self.subTest(field=field):self.assertTrue(self.issues(g,changed))
+        changed=graph(query.replace('value','unreceived_column'))
+        self.assertTrue(self.issues(changed,calls))
+
 
 if __name__=='__main__':unittest.main()

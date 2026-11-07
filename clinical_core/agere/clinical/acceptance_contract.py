@@ -536,6 +536,13 @@ def requested_output(question):
     if re.search(r'\b(?:women|men|female|male|commercial|medicare|medicaid|dual|medigap)\b[^?]{0,35}\band\s+(?:of\s+)?(?:women|men|female|male|commercial|medicare|medicaid|dual|medigap)\b',q,re.I): return 'table'
     if re.search(r'\b(?:in|during)\s+(?:19|20)\d\d\s+and\s+(?:in|during)\s+(?:19|20)\d\d',q,re.I): return 'table'
     if re.search(r'\bwhich\s+(?:\d+|one|two|three|four|five)\b',q,re.I) and wanted_ranking(q)[0]: return 'table'
+    if re.search(r'\bwhich\b',q,re.I) and not _COUNT_ASK.search(q):
+        # "Which inputs ... behind each total" requests named rows; an
+        # incidental measure word must not collapse that output to one value.
+        # The shared parser keeps direct scalar asks and patient sets distinct.
+        from .answer_shape import requested
+        shared=requested(q)['shape']
+        if shared in ('patient_set','table'):return shared
     if _COUNT_ASK.search(q) and not _VALUE_ASK.search(q): return 'table' if _BY_DIM.search(q) else 'count'
     if _BY_DIM.search(q) or re.search(r'\b(?:break(?:s)?\s*(?:it\s+)?(?:down|out)|breakdown|split|tabulate|monthly|quarterly|weekly|trend)\b', q, re.I): return 'table'
     if _LIST_ASK.search(q):

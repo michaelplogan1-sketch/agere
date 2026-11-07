@@ -127,6 +127,24 @@ class Windows(unittest.TestCase):
 
 
 class Outputs(unittest.TestCase):
+    def test_named_nonpatient_rows_keep_their_shape_with_measure_words(self):
+        questions=[
+            'Build a review agenda. Show the populations behind each total and which payer inputs are needed before estimating savings.',
+            'Show which supplier contracts account for the total procurement cost.',
+            'Identify which inventory sources contribute to the average lead time.']
+        table={'status':'partial','answer_type':'table','table':[{'source':'a'},{'source':'b'}]}
+        for question in questions:
+            with self.subTest(question=question):
+                self.assertEqual(AC.requested_output(question),'table')
+                self.assertIsNone(AC.output_misfit(question,table))
+
+    def test_direct_scalar_and_patient_requests_are_not_overridden_by_which(self):
+        for question,wanted in [
+            ('How many reports state which inputs are needed?','count'),
+            ('What is the total cost of reports stating which inputs are missing?','value'),
+            ('Which patients have unpaid balances?','patient_set')]:
+            with self.subTest(question=question):self.assertEqual(AC.requested_output(question),wanted)
+
     def share(self, denominator_where=None, where=None):
         measure = {'kind': 'ratio', 'alias': 'percent', 'scale': 100,
                    'numerator': {'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'meeting',

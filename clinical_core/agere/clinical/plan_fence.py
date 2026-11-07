@@ -162,9 +162,13 @@ def native_premise_graph(graph,calls):
     errors=native_query_binding_errors(calls)
     if errors:return graph,['native: '+e['reason']for e in errors]
     from .sql_query import validate_bound_native_query
+    from .backstop_agent import output_table
     native={};replacements={};producers=[]
     def columns(result):
-        fields=result.get('columns')or[]
+        # Governed scalar metrics use value/unit rather than a columns list.
+        # Match the exact projection used when retain_result materialized the
+        # hash-bound native source, including its unchanged scalar contract.
+        fields,_=output_table(result)
         if not fields or any(not isinstance(c,str)or not c for c in fields)or len(fields)!=len(set(fields)):
             raise ValueError('Native source has no complete unique column contract')
         return 'SELECT '+', '.join('NULL AS "'+c.replace('"','""')+'"'for c in fields)+' WHERE 0'
