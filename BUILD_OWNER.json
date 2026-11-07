@@ -5,17 +5,17 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: Complete source interpretation from retained Q21 evidence on 5db5435f. Jev located missing[0] as unfinished source review (p=.94); missing[1] remains undecided. Before further dispatch, qualify copied native fields through the existing fidelity proofs and identify claims needing original full-source interpretation. The measured path still has 1,300,947 field claims and 281 patient packets above 230,000 bytes; do not repeat that full campaign. Preserve all 38,263 accounts, 1,739 output patient partitions, 4,115 input patients, separate source-event/arrival/clinical clocks and every unresolved semantic dependency. Use cached original documentary receipts, localized source review and adverse cases, then one justified ordinary handoff. Retain Q23 definitions, Q24 deliverable capability, all 25 cases, all ten acceptance areas and separate G5/clinical/customer dependencies. Inspect owned receipts first. App PID 42424/session 25673 serves port 8885; no provider/build/training job running. Quiet continuation ACTIVE.",
+  "active_work": "G3: Qualify received-field fidelity separately from source interpretation in the existing audit support path on ca2bbf1e. Exact eligible context is now wired for all 14,689 records and all 37,032 bound quotations, with missing/changed/foreign contexts rejected before provider dispatch. The full source path still has 1,300,947 field claims, 351 patient packets above 230,000 bytes and 284,034,087 total wire bytes: do not dispatch or repeat that full campaign. Use the qualified native audit/SQL field-role contract and original received source contexts to discharge only copied metadata/program fidelity; actual entity/relation/value/subject/polarity/time interpretation and opposing accounts must retain complete-source judgments. Preserve Jev-located missing[0], undecided missing[1], all 38,263 accounts/1,739 output partitions/4,115 input patients and separate clocks. Verify adverse cases before focused semantic review, then one justified ordinary handoff. Retain Q23 definitions, Q24 deliverable capability, all 25 cases/ten areas and separate G5/clinical/customer dependencies. Inspect receipts first; app PID 42957/session 75235 serves port 8885. No provider/build/training job running; quiet continuation ACTIVE.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
-  "owned_server_pid": 42424,
-  "owned_server_session": 25673,
+  "owned_server_pid": 42957,
+  "owned_server_session": 75235,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: Complete source interpretation from retained Q21 evidence on 5db5435f. Jev located missing[0] as unfinished source review (p=.94); missing[1] remains undecided. Before further dispatch, qualify copied native fields through the existing fidelity proofs and identify claims needing original full-source interpretation. The measured path still has 1,300,947 field claims and 281 patient packets above 230,000 bytes; do not repeat that full campaign. Preserve all 38,263 accounts, 1,739 output patient partitions, 4,115 input patients, separate source-event/arrival/clinical clocks and every unresolved semantic dependency. Use cached original documentary receipts, localized source review and adverse cases, then one justified ordinary handoff. Retain Q23 definitions, Q24 deliverable capability, all 25 cases, all ten acceptance areas and separate G5/clinical/customer dependencies. Inspect owned receipts first. App PID 42424/session 25673 serves port 8885; no provider/build/training job running. Quiet continuation ACTIVE.",
+  "resume_priority": "G3: Qualify received-field fidelity separately from source interpretation in the existing audit support path on ca2bbf1e. Exact eligible context is now wired for all 14,689 records and all 37,032 bound quotations, with missing/changed/foreign contexts rejected before provider dispatch. The full source path still has 1,300,947 field claims, 351 patient packets above 230,000 bytes and 284,034,087 total wire bytes: do not dispatch or repeat that full campaign. Use the qualified native audit/SQL field-role contract and original received source contexts to discharge only copied metadata/program fidelity; actual entity/relation/value/subject/polarity/time interpretation and opposing accounts must retain complete-source judgments. Preserve Jev-located missing[0], undecided missing[1], all 38,263 accounts/1,739 output partitions/4,115 input patients and separate clocks. Verify adverse cases before focused semantic review, then one justified ordinary handoff. Retain Q23 definitions, Q24 deliverable capability, all 25 cases/ten areas and separate G5/clinical/customer dependencies. Inspect receipts first; app PID 42957/session 75235 serves port 8885. No provider/build/training job running; quiet continuation ACTIVE.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-05T13:04:20.746654+00:00",
   "heartbeat_status": "ACTIVE",
@@ -28,7 +28,7 @@
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
   "last_observed_server_session": 83398,
-  "server_status": "Owned app healthy /ask HTTP200 on8885;0startup provider calls. No provider/build/training job running.",
+  "server_status": "Owned app restored /ask HTTP200 on8885; no startup provider calls or running provider/build/training job.",
   "unsealed_work": {
     "status": "verified_full_native_scope_pending_ordinary_composition",
     "product_commit": "15f9b8d7e9a6d0ab896a687499b8ea261710feca",
@@ -721,12 +721,12 @@
       "session": null
     },
     "q21_retained_support_preflight": {
-      "pid": 42335,
-      "status": "passed_full_native_global_manifest_below_existing_boundary_source_review_still_required",
+      "pid": 42825,
+      "status": "passed_complete_received_source_context_wiring_not_semantic_acceptance",
       "source_frozen": false,
       "provider_work": false,
       "kind": "retained-support-preflight",
-      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/qualified-audit-summary-final/receipt.json",
+      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/audit-source-context-eligible/receipt.json",
       "session": null
     },
     "q21_structural_prose_and_save": {
@@ -753,6 +753,18 @@
       "source_frozen": false,
       "app_proof": "artifacts/agere-q21-assertion-window-2026-11-06/qualified-audit-summary-final/app-proof.json",
       "full_question_acceptance": false
+    },
+    "q21_complete_received_source_context": {
+      "status": "source_context_engineering_verified_semantics_pending",
+      "product_commit": "ca2bbf1eb8aa5d66453fc4c5bbb8869409cc71b3",
+      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/audit-source-context-engineering-proof.json",
+      "full_check": "artifacts/agere-q21-assertion-window-2026-11-06/audit-source-context-eligible/receipt.json",
+      "source_frozen": false,
+      "provider_attempts": 0,
+      "source_engine_calls": 0,
+      "affected_tests_passed": 147,
+      "full_question_acceptance": false,
+      "app_proof": "artifacts/agere-q21-assertion-window-2026-11-06/audit-source-context-eligible/app-proof.json"
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
