@@ -1181,12 +1181,80 @@ def prose_parameter_context(question,calls):
             'scales':scales,'zero_rates':zero_rates}
 
 
+def structural_prose_context(answer,calls,proof):
+    """Method/schema witnesses from the already qualified native result.
+
+    No entity observation is inferred from a numeral. Recheck the final native
+    origin and derive window/key/field witnesses from actual retained outputs,
+    rather than accepting a model's or saved proof's parameter declarations.
+    """
+    from ...contracts import digest
+    root=(answer.get('table_binding')or{}).get('result_view')or answer.get('table_from_tool')
+    native={c['result']['result_view']:c['result']for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')}
+    result=native.get(root);table=answer.get('table')
+    if(not isinstance(proof,dict)or proof.get('schema')!='native-qualifier-coverage/1'or result is None
+        or proof.get('result_view')!=root or proof.get('table_digest')!=digest(table)
+        or proof.get('registered_origin_digest')!=digest({k:v for k,v in result.items()if k!='result_view'})):
+        return {}
+    parent_view=(proof.get('native_projection')or{}).get('parent_result_view')or root
+    parent=native.get(parent_view)or{};scope=parent.get('native_output_scope')or{}
+    if(parent.get('analysis')!='assertion_review'or parent.get('output')!='qualifier_accounts'
+        or scope.get('schema')!='native-qualifier-account-output/1'or not isinstance(table,list)):
+        return {}
+    key=scope.get('account_key');keys=[r.get(key)for r in table if isinstance(r,dict)]
+    if(not isinstance(key,str)or len(keys)!=len(table)or any(not isinstance(k,str)for k in keys)
+        or len(set(keys))!=len(keys)or len(keys)!=scope.get('accounts')
+        or digest(sorted(keys))!=scope.get('account_ids_digest')):return {}
+    columns=result.get('columns')or[]
+    if not isinstance(columns,list)or any(not isinstance(c,str)for c in columns):return {}
+    window=(parent.get('parameters')or{}).get('assertion_window')or{}
+    return {'root':root,'native_origin_digest':proof['registered_origin_digest'],
+        'parent_result_view':parent_view,'parent_origin_digest':digest({k:v for k,v in parent.items()if k!='result_view'}),
+        'window':window,'key':key,'account_ids_digest':scope['account_ids_digest'],
+        'columns':columns,'column_manifest_digest':digest(columns)}
+
+
 def mask_prose_parameters(text,context,proofs):
     """Mask only syntactically described parameters for the quantity scanner.
 
     Original prose is unchanged and still receives source/meaning review. This
     function is never used to exempt patient/entity prose from scalar binding.
     """
+    structure=context.get('native_structure')or{}
+    if structure:
+        window=structure['window'];start=window.get('start');end=window.get('end');basis=window.get('basis')
+        from datetime import date
+        try:
+            start=date.fromisoformat(start);end=date.fromisoformat(end)
+            year=str(start.year)if start.year==end.year and start<=end else None
+        except (ValueError,TypeError):year=None
+        if year and isinstance(basis,str)and re.fullmatch('[a-z_]+',basis):
+            basis_pattern=r'[-_\s]+'.join(re.escape(word)for word in basis.split('_'))
+            def window_year(m):
+                proofs.append({'kind':'executed_window_year','literal':m.group(),'year':year,'window':window,
+                    'result_view':structure['parent_result_view'],'native_origin_digest':structure['parent_origin_digest']})
+                return m.group()[len(m['year']):]
+            text=re.sub(r'\b(?P<year>'+re.escape(year)+r')\s+'+basis_pattern+r'\s+(?:clock|window|basis)\b',window_year,text,flags=re.I)
+        key=structure['key'];stem=key[:-3]if key.endswith('_id')else key
+        names=[re.escape(key),r'[-_\s]+'.join(re.escape(w)for w in stem.split('_'))]
+        def unique_grain(m):
+            proofs.append({'kind':'verified_native_key_grain','literal':m.group(),'result_view':structure['root'],
+                'key':key,'rows_per_key':1,'account_ids_digest':structure['account_ids_digest']})
+            return m.group()[len(m['number']):]
+        text=re.sub(r'\b(?P<number>one|1)\s+row\s+per\s+(?:native\s+)?(?:'+'|'.join(names)+r')\b',unique_grain,text,flags=re.I)
+        number_words={word:n for n,word in enumerate('zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty'.split())}
+        def field_count(m):
+            word=m['number'].lower();n=int(word)if word.isdigit()else number_words.get(word)
+            fields=[v.strip().strip('`')for v in re.split(r'\s*,\s*(?:and\s+)?|\s+and\s+',m['fields'])]
+            if(n is None or n!=len(fields)or len(set(fields))!=len(fields)
+                or any(not re.fullmatch(r'[A-Za-z_]\w*',f)or f not in structure['columns']for f in fields)):
+                return m.group()
+            proofs.append({'kind':'executed_named_output_field_count','literal':m.group(),'result_view':structure['root'],
+                'fields':fields,'count':n,'column_manifest_digest':structure['column_manifest_digest'],
+                'meaning':'Cardinality of explicitly listed received output fields only; derived/clinical meaning still requires review.'})
+            return m.group()[len(m['number']):]
+        text=re.sub(r'\b(?P<number>\d+|[A-Za-z]+)\s+(?:(?:derived|new|native|output|selected)\s+)?(?:columns|fields)\b[^:;.\n]*:\s*(?P<fields>[^;.\n]+)',
+                    field_count,text,flags=re.I)
     def per_scale(m):
         amount=m['number'].replace(',','')
         matches=context.get('scales',{}).get(amount,[])
@@ -1286,7 +1354,7 @@ def mask_prose_parameters(text,context,proofs):
     return re.sub(r'\bnot\s+(?:counted|treated)\s+as\s+(?P<zero>0)\s+(?P<unit>[A-Za-z]+)\b',missing_zero,text,flags=re.I)
 
 
-def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
+def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_structure=None):
     """Compile quantitative table prose from actual native scalar cells.
 
     Templates and addresses are untrusted model output. Only executed cells
@@ -1298,6 +1366,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
     formatter=string.Formatter();proofs=[];row_mode=False;row_quotes=[];field_quotes=[];parameter_proofs=[]
     parameters=prose_parameter_context(question,calls)
     parameters['final_result_view']=(answer.get('table_binding')or{}).get('result_view')or answer.get('table_from_tool')
+    parameters['native_structure']=structural_prose_context(answer,calls,native_structure)
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')}
     old={p.get('field'):p for p in answer.get('computed_prose',[]) if isinstance(p,dict)}
     request_years=set(re.findall(r'\b(?:19|20|21)\d{2}\b',question or ''))
@@ -1920,7 +1989,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     static_feedback.extend(collection_retention_issues(native,answer.get('table')or[],
         native_result_dependencies(calls,[(answer.get('table_binding')or{}).get('result_view')])))
     try:
-        bind_computed_prose(answer,calls,verified_quotes=kept,question=question)
+        bind_computed_prose(answer,calls,verified_quotes=kept,question=question,native_structure=native_audit)
     except (ValueError,KeyError,IndexError,TypeError) as exc:
         prose_problem=str(exc);prose_failures=getattr(exc,'progress_failures',[{'code':'invalid_binding','field_group':'prose'}])
         prose_targets=getattr(exc,'repair_targets',[])

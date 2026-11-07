@@ -208,5 +208,53 @@ class NativeAuditCoverage(unittest.TestCase):
         self.project(f'SELECT patient_id AS audit_account_id,audit_account_id AS patient_id FROM {root}')
         with self.assertRaises(ValueError):self.proof()
 
+    def structural_candidate(self):
+        self.tools=self.fixture.tools()
+        self.result=self.fixture.execute(self.tools,output='qualifier_accounts',parameters={
+            'streams':['financial','notes'],'concepts':['financial hardship'],
+            'assertion_window':{'basis':'source_event','start':'2029-01-01','end':AS_OF}})
+        self.answer={'status':'partial','answer_type':'table','table_from_tool':self.result['result_view']}
+        root=self.result['result_view']
+        self.project(f"SELECT *,CASE WHEN polarity='negated'THEN'negative'ELSE'other'END AS role_a,"
+            f"CASE WHEN subject='patient'THEN'patient label'ELSE'unknown'END AS role_b,"
+            f"CASE WHEN temporality='current'THEN'current label'ELSE'unknown'END AS role_c FROM {root}")
+        proof=self.proof()
+        total=self.tools({'name':'query_sql','input':{'sql':f"SELECT COUNT(*)AS accounts FROM {self.answer['table_from_tool']}"}})
+        self.answer['headline']={'template':'On the 2029 source-event clock, {n} accounts are retained.',
+            'bindings':{'n':{'result_view':total['result_view'],'row':0,'column':'accounts'}}}
+        self.answer['facts']={'table_contents':'The table has one row per native audit account. Three derived columns are added: role_a, role_b and role_c.'}
+        return proof
+
+    def test_method_year_unique_grain_and_named_fields_use_executed_structural_witnesses(self):
+        proof=self.structural_candidate();original=self.answer['facts']['table_contents']
+        B.bind_computed_prose(self.answer,self.tools.native_calls,question='Inspect 2029 accounts.',native_structure=proof)
+        self.assertEqual(self.answer['facts']['table_contents'],original)
+        kinds={p['kind']for f in self.answer['computed_prose']for p in f.get('parameters',[])}
+        self.assertTrue({'executed_window_year','verified_native_key_grain','executed_named_output_field_count'}<=kinds)
+        self.assertIn('2029 source-event clock',self.answer['headline'])
+
+    def test_wrong_window_clock_grain_field_count_and_observed_quantities_still_bind(self):
+        proof=self.structural_candidate();original=copy.deepcopy(self.answer)
+        cases=[('headline','2029 source-event','2028 source-event'),('headline','source-event','arrival'),
+            ('facts','one row per native audit account','one row per patient'),
+            ('facts','Three derived','Four derived'),('facts','role_b','missing_field'),
+            ('facts','role_b','role_a')]
+        for field,old,new in cases:
+            self.answer=copy.deepcopy(original)
+            if field=='headline':self.answer['headline']['template']=self.answer['headline']['template'].replace(old,new)
+            else:self.answer['facts']['table_contents']=self.answer['facts']['table_contents'].replace(old,new)
+            with self.subTest(case=(field,old,new)),self.assertRaises(ValueError):
+                B.bind_computed_prose(self.answer,self.tools.native_calls,question='Inspect 2029 accounts.',native_structure=proof)
+        for observation in ('Three patients have the condition.','A dose of 2029 mg was observed.','One visit was completed.'):
+            self.answer=copy.deepcopy(original);self.answer['facts']['observation']=observation
+            with self.subTest(observation=observation),self.assertRaises(ValueError):
+                B.bind_computed_prose(self.answer,self.tools.native_calls,question='Inspect 2029 accounts.',native_structure=proof)
+
+    def test_structural_proof_cannot_be_forged_or_used_without_current_native_origin(self):
+        proof=self.structural_candidate()
+        for changed in (None,{**proof,'table_digest':'changed'},{**proof,'registered_origin_digest':'changed'}):
+            with self.subTest(proof=changed is None),self.assertRaises(ValueError):
+                B.bind_computed_prose(copy.deepcopy(self.answer),self.tools.native_calls,question='Inspect 2029 accounts.',native_structure=changed)
+
 
 if __name__=='__main__':unittest.main()
