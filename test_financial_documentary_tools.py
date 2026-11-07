@@ -26,6 +26,17 @@ class FinancialDocumentaryTools(unittest.TestCase):
     def finance(self,t):
         return t({'name':'execute_analysis','input':{'operation':'financial_accounts','parameters':{'available_by':AS_OF}}})
 
+    def test_typed_planner_receives_the_same_registered_financial_contract(self):
+        from clinical_core.agere.clinical import shared_planner as S,request_plan as R
+        question=('Reconcile recorded payments, refunds and remaining balances for accounts active during 2029. '
+                  'Show conservation checks in integer cents, patient/account attribution, lifecycle dates and unresolved links.')
+        view=S.schema_prompt_view(S.schema_slice(R.Catalog.load(self.path),question))
+        actual=view['selected_operator_contracts']['financial_accounts']
+        expected=A.describe('financial_accounts',path=self.path)
+        self.assertEqual(actual['financial_source_contract'],expected['financial_source_contract'])
+        self.assertEqual(actual['native_output_contract'],expected['native_output_contract'])
+        self.assertEqual(actual['financial_source_contract']['identities'],F.mapping()['identities'])
+
     def test_full_financial_population_and_documentary_membership_are_composable(self):
         t=self.tools();menu=t({'name':'list_analyses','input':{}})
         self.assertIn('financial_accounts',[r['operation']for r in menu['analyses']])

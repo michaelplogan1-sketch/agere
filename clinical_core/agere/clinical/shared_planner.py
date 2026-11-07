@@ -412,12 +412,13 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
                 if documentary_catalog is None:
                     documentary_catalog=documentary_parameter_catalog(catalog.target.parent,catalog.stream_fields)
                 parameter_catalog=documentary_catalog
-            if op in ('requirements','protocol_review','program_document','accountability_review'):
+            if op in ('requirements','protocol_review','program_document','accountability_review','financial_accounts'):
                 from .analysis_tools import describe as describe_native
                 native=describe_native(op,path=catalog.target.parent)
                 selected_contracts[op]['parameter_schema']=native['parameters']
                 selected_contracts[op].update({k:v for k,v in native.items()
-                    if k in ('criteria_context','buyer_context','protocol_definitions','requirement_definitions')})
+                    if k in ('criteria_context','buyer_context','protocol_definitions','requirement_definitions',
+                             'financial_source_contract','native_output_contract')})
             else:selected_contracts[op]['parameter_schema'] = parameter_schema(op,parameter_catalog)
         except (KeyError, ValueError, OSError, sqlite3.Error) as exc:
             # A legacy example is not a complete typed contract. Expose a
