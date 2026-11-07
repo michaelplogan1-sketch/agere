@@ -40,7 +40,7 @@
     "product_code_in_candidate_app": true,
     "answer_selected": false,
     "affected_tests_passed": 110,
-    "provider_calls_this_increment": 0,
+    "provider_calls_this_increment": null,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
       "status": "ordinary_check_returned_unsealed_paused_for_claude_review",
@@ -61,14 +61,14 @@
       "offline_proof_provider_calls": 0
     },
     "new_provider_attempts": 0,
-    "known_api_equivalent_usd": 0,
+    "known_api_equivalent_usd": null,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
     "all_attempt_rows_retained": 61800,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 0,
+    "latest_increment_provider_attempts": null,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -973,7 +973,9 @@
       "started_at": "2026-11-07T20:40:24.531866+00:00",
       "product_commit": "3979d82ce5bc05a220bd91703c001658834e82b2",
       "preflight": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-preflight-v2/receipt.json"
-    }
+    },
+    "Q06_retained_running_observation": "artifacts/agere-Q06-current-original-2026-11-07/retained-running-observation.json",
+    "current_run_accounting_pending": true
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
@@ -1253,7 +1255,48 @@
       "source_frozen": true,
       "started_at": "2026-11-07T20:40:24.531866+00:00",
       "product_commit": "3979d82ce5bc05a220bd91703c001658834e82b2",
-      "preflight": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-preflight-v2/receipt.json"
+      "preflight": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-preflight-v2/receipt.json",
+      "latest_observation": {
+        "schema": "Q06-owned-running-observation/1",
+        "at": "2026-11-07T20:47:44.328410+00:00",
+        "pid": 71762,
+        "session_id": 93571,
+        "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-continuation/receipt.json",
+        "status": "running",
+        "source_frozen": true,
+        "partial_attempt_snapshot": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-continuation/running-attempts-2026-11-07T204744_328410+0000.json.gz",
+        "attributed_attempts_so_far": 398,
+        "model_status": [
+          {
+            "model": "claude-sonnet-5-5",
+            "status": "pending",
+            "count": 1
+          },
+          {
+            "model": "claude-sonnet-5-5",
+            "status": "validated",
+            "count": 31
+          },
+          {
+            "model": "jev-1.13.0",
+            "status": "validated",
+            "count": 153
+          },
+          {
+            "model": "pplx-decider-v1.1-27b",
+            "status": "validated",
+            "count": 213
+          }
+        ],
+        "known_api_equivalent_usd_so_far": 11.970429808,
+        "unpriced_attempts_so_far": 1,
+        "typed_reader_completion_statuses": {
+          "completed": 67
+        },
+        "final_cost_and_acceptance_unknown": true,
+        "whole_question_reexecuted": false,
+        "no_other_owned_provider_job": true
+      }
     }
   ],
   "overnight_completed_jobs": {
@@ -1399,7 +1442,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-07T20:40:53.793620+00:00",
+  "updated_at": "2026-11-07T20:48:11.227042+00:00",
   "last_commit": "81f8bbf5192b10a98cd28f4e1877cfda474bfa51",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {

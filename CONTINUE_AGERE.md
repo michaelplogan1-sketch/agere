@@ -10,7 +10,7 @@ Measured: Canonical current membership9389rows exact; historical dated cohort81-
 
 Remaining gap: Q06 remains partial/unverified: corrected population and typed entity/relation source interpretation must be composed through the normal continuation, and headline/facts unbound one needs native binding. No whole-case or release acceptance. All25cases/tenareas, baseline year-anchor/advisory/optional benchmark/fixture failures and independent G5/clinical/model/actuarial/customer dependencies remain.
 
-Owned Q06retained continuation PID71762/session93571 running; source frozen. Last sealed owner receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json. Quiet continuation ACTIVE.
+Owned Q06retained continuation PID71762/session93571 running; source frozen. At20:47:44UTC the retained continuation has67completed typed-reader steps,31completed Sonnet calls/0Opus and398attributed attempts total (1pending); $11.970429808API-equivalent known so far, pending/final cost unknown. Full partial attempt snapshot and observation retained at artifacts/agere-Q06-current-original-2026-11-07/retained-running-observation.json. No source edits or duplicate jobs while frozen. Last sealed owner receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json. Quiet continuation ACTIVE.
 
 ## Superseded checkpoint
 
