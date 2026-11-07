@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-06T23:41:06.479385+00:00",
+  "updated_at": "2026-11-07T00:35:06.370836+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -567,7 +567,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Complete one ordinary original Q21 answer through the connected stack, including semantic source checks and explicit unresolved meanings/bindings. Native annotation counts are not clinical accuracy. Do not rerun the passing native source audit or Q20 workflow. Q23 applicable definitions, Q24 requested-deliverable capability, the current ten-area/25-case assessment and independent G5/clinical/model/customer dependencies remain.",
       "engineering_current_status": "Full native Q21 source/window accounting verified. Original ordinary Q21 semantic composition is next; no source/model/clinical accuracy or full-question acceptance claim.",
-      "next_action": "G3: Q21 full native source/window accounting is verified on 15f9b8d7. The shared assertion-review operator processed all 4115 patients / 41 source streams; all 51233 received 2029 note-fact row IDs are accounted for, with 71735 source-bound assertions and exact value/unit/entity qualifiers. Pre-window repetitions cannot refresh later evidence; unknown clocks and failed bindings remain explicit. 102 affected tests pass; zero new provider calls. Native calculation semantics remain unchanged from the full source check on 765326bb; the subsequent change only exposes output paths for composition. Next start the authorized local app and complete ONE ordinary original Q21 answer through the connected question path, using these existing native receipts and documented output paths. Preserve the exact 2029 source-event scope, assertions, dates/polarity/subjects, affected conclusions and unresolved contradictions; source-check semantics rather than endorsing extraction labels. Inspect owned receipts first, preserve every attempt/partial result, and freeze product source during the check. Do not rerun the passing full native source audit, Q20 actor/engines/source review/population checks or codecs. No sampled account may replace the full request. Then address Q23 applicable definitions, Q24 requested-deliverable capability and the current whole ten-area/25-case assessment. Independent G5/clinical/model/customer qualification remains separate. App is currently stopped; no active job and source unfrozen. Quiet continuation ACTIVE; all healthcare and portable core remain in scope.",
+      "next_action": "G3: Original Q21 ordinary confirmation is running. Inspect artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v1/receipt.json and owned PID 37196 / session 94516 first; do not start a duplicate or edit product source while frozen. The request uses the normal conversation.handle_compose with the exact original question, no owner-authored plan or prior answer, existing warm native receipts, protected-source guard, isolated learning and Claude subscription transport only. Preserve all attempts and partial outputs; on a real subscription limit stop provider work and continue independent offline work. When terminal, reconcile source/code/attempt accounting and assess the actual answer against the full original Q21 2029 assertion/date/polarity/subject/conclusion/contradiction scope, preserving old failed attempts. No automatic retry or passing native source audit/Q20 replay. Native source accounting is already verified on 765326bb plus output-path metadata 15f9b8d7: all 4115 patients / 41 streams / 51233 source-window fact rows, exact value/unit/entity qualifiers, unknown clocks and failed bindings; 102 tests, zero providers for that native increment. Then Q23 applicable definitions, Q24 requested-deliverable capability and whole ten-area/25-case assessment; independent G5/clinical/model/customer dependencies remain separate. App PID 37101 / session 21853 is launched on 8885. Quiet continuation ACTIVE; all healthcare and portable core remain in scope.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -649,8 +649,8 @@
     "kind": "unsealed_connected_engineering_increment",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The existing assertion-review tool now applies an assertion date window, audits all existing annotations across explicit source streams, preserves every derived value/unit/entity qualifier and invalid binding, and keeps pre-window repetitions from refreshing evidence. Its discovered output paths allow native composition without guessing receipt fields.",
-    "measured_failure_reduction": "The earlier three-account mapped-concept handoff had no assertion-level 2029 window or complete derived annotation accounting. The actual shared operator now processed all 4115 received patients / 41 source streams and accounted for all 51233 source-window note_fact row IDs.",
+    "user_behavior_delta": "Native assertion audit now binds whole inherited source/population in code and exposes executable complete projections.",
+    "measured_failure_reduction": "Focused ordinary admission changed6streams/2960patients to41streams/4115patients; no costly narrative acquisition or engine rerun in the probes.",
     "evidence": [
       "artifacts/agere-retained-workflow-2026-11-06/source-review-2/engineering-proof.json",
       "artifacts/agere-retained-workflow-2026-11-06/attempt-2/automatic-arithmetic-proof.json",
@@ -662,8 +662,8 @@
       "artifacts/agere-native-populations-2026-11-06/conditional-ranked/engineering-proof.json",
       "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json"
     ],
-    "remaining_gap": "Complete one ordinary original Q21 answer through the connected stack, including semantic source checks and explicit unresolved meanings/bindings. Native annotation counts are not clinical accuracy. Do not rerun the passing native source audit or Q20 workflow. Q23 applicable definitions, Q24 requested-deliverable capability, the current ten-area/25-case assessment and independent G5/clinical/model/customer dependencies remain.",
-    "next_action": "G3: Q21 full native source/window accounting is verified on 15f9b8d7. The shared assertion-review operator processed all 4115 patients / 41 source streams; all 51233 received 2029 note-fact row IDs are accounted for, with 71735 source-bound assertions and exact value/unit/entity qualifiers. Pre-window repetitions cannot refresh later evidence; unknown clocks and failed bindings remain explicit. 102 affected tests pass; zero new provider calls. Native calculation semantics remain unchanged from the full source check on 765326bb; the subsequent change only exposes output paths for composition. Next start the authorized local app and complete ONE ordinary original Q21 answer through the connected question path, using these existing native receipts and documented output paths. Preserve the exact 2029 source-event scope, assertions, dates/polarity/subjects, affected conclusions and unresolved contradictions; source-check semantics rather than endorsing extraction labels. Inspect owned receipts first, preserve every attempt/partial result, and freeze product source during the check. Do not rerun the passing full native source audit, Q20 actor/engines/source review/population checks or codecs. No sampled account may replace the full request. Then address Q23 applicable definitions, Q24 requested-deliverable capability and the current whole ten-area/25-case assessment. Independent G5/clinical/model/customer qualification remains separate. App is currently stopped; no active job and source unfrozen. Quiet continuation ACTIVE; all healthcare and portable core remain in scope.",
+    "remaining_gap": "One current ordinary Q21 answer and source/clock/semantic assessment; Q23/Q24/whole current assessment; independent qualification/deployment.",
+    "next_action": "G3: Monitor only owned ordinary Q21 native-selection composition PID39077/session16666 on ab6aca1e; inspect artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v4-native-selection/receipt.json first. Source/product frozen, no duplicate or edits. This one normal full composition is justified by closed measured source/population narrowing: actual focused admission now binds41/41streams and4115/4115patients through native selector+shared validation (2newcalls/$0.2132446 API-equivalent,0pending). Original exact question/no authored plan/no prior answer; app ledger and all-attempt/partial logging; native4115receipt cache verified compatible. Native projections cover71735assertions/51233source-windowfactrows with exact values/units/domains/clocks and unbound unknowns; assertion engine unchanged. Assess original Q21 scope/meaning/clock convention and contradictions on return, preserving earlier failures and no automatic retry. Then Q23missing exact-parent definitions,Q24requested-deliverable capability and current ten-area25-case assessment; G5/clinical/model/customer dependencies remain distinct. AppPID39083/session75735 on8885. Quiet continuation ACTIVE.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
@@ -723,8 +723,8 @@
       "scope": "Preserve the healthcare-wide product across clinical/chronic disease/medication, population and individual, utilization/outcomes, finance/provider/contracts, discovery/explanation, deliverables, learning/reuse and shared industry-portable core. Keep all ten canonical acceptance areas and25fixedcases; no new finish-line expansion."
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-06T23:41:06.479385+00:00",
-    "workflow_change": "The existing assertion-review tool now applies an assertion date window, audits all existing annotations across explicit source streams, preserves every derived value/unit/entity qualifier and invalid binding, and keeps pre-window repetitions from refreshing evidence. Its discovered output paths allow native composition without guessing receipt fields.",
+    "at": "2026-11-07T00:35:06.370836+00:00",
+    "workflow_change": "Native analyst startup repaired; ordinary full-scope composition still failed; source audit remains reusable.",
     "unsealed_work": {
       "status": "verified_full_native_scope_pending_ordinary_composition",
       "product_commit": "15f9b8d7e9a6d0ab896a687499b8ea261710feca",
@@ -1162,6 +1162,122 @@
         "provider_attempts": 0,
         "full_question_acceptance": false,
         "clinical_model_qualification": false
+      },
+      "q21_ordinary_source_window": {
+        "kind": "Q21-ordinary-source-window-confirmation",
+        "pid": 37196,
+        "session": null,
+        "status": "failed_preserved_no_automatic_retry",
+        "source_frozen": false,
+        "provider_work": false,
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v1/receipt.json",
+        "accounting_reconciliation": "artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v1/accounting-reconciliation.json",
+        "recovered_trace": "artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v1/recovered-conversation-failure.json",
+        "actual_provider_attempts": 17,
+        "actual_known_api_equivalent_usd": 5.360542712,
+        "original_wrapper_totals_invalid": true
+      },
+      "q21_ordinary_startup_repaired": {
+        "kind": "Q21-ordinary-startup-repaired-confirmation",
+        "pid": 37917,
+        "session": null,
+        "status": "terminal_interrupted_observed_scope_failure",
+        "source_frozen": false,
+        "provider_work": false,
+        "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v3/receipt.json",
+        "provider_attempts": 762,
+        "known_api_equivalent_usd": 4.60247624,
+        "pending_attempts": 0,
+        "scope_evidence": "artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v3/scope-observation.json",
+        "full_question_acceptance": false
+      },
+      "q21_analyst_startup_repair": {
+        "status": "offline_verified_ordinary_running",
+        "product_commit": "ee346eb2",
+        "proof": "artifacts/agere-q21-assertion-window-2026-11-06/analyst-startup-proof.json",
+        "checks_passed": 42,
+        "provider_attempts": 0,
+        "full_question_acceptance": false
+      },
+      "q21_network_blocked_attempt": {
+        "status": "terminal_explicit_retry_after_network_context_repair",
+        "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v2/receipt.json",
+        "disposition": "artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v2/network-disposition.json",
+        "provider_attempts": 3,
+        "unpriced_attempts": 3,
+        "full_question_acceptance": false
+      },
+      "q21_native_projection_check": {
+        "kind": "retained-native-assertion-projections",
+        "pid": 38684,
+        "session": null,
+        "status": "passed_full_retained_native_projection_not_ordinary_answer",
+        "source_frozen": false,
+        "provider_work": false,
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/native-projections/receipt.json"
+      },
+      "q21_native_admission_check": {
+        "kind": "Q21-native-admission-probe",
+        "pid": 38812,
+        "session": null,
+        "status": "terminal_incomplete_source_and_population_admission",
+        "source_frozen": false,
+        "provider_work": false,
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/ordinary-native-admission/receipt.json",
+        "provider_attempts": 3,
+        "known_api_equivalent_usd": 0.2987035,
+        "full_question_acceptance": false
+      },
+      "q21_native_projection_candidate": {
+        "status": "full_retained_native_projection_verified_admission_pending",
+        "product_commit": "3b0e1939",
+        "entry_guidance_commit": "c9f4c379",
+        "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/native-projections/receipt.json",
+        "tests_passed": 122,
+        "baseline_failures": 1,
+        "baseline_proof": "artifacts/agere-q21-assertion-window-2026-11-06/projection-baseline-check.json",
+        "patients": 4115,
+        "source_bound_assertions": 71735,
+        "source_window_fact_rows": 51233,
+        "qualifier_effect_rows": 36133,
+        "unbound_selected_or_unknown": 1231,
+        "provider_attempts": 0,
+        "source_frozen": false,
+        "full_question_acceptance": false,
+        "clinical_model_qualification": false
+      },
+      "q21_native_admission_check_2": {
+        "kind": "Q21-native-admission-probe",
+        "pid": 38987,
+        "session": null,
+        "status": "complete_native_assertion_admission",
+        "source_frozen": false,
+        "provider_work": false,
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/ordinary-native-admission-2/receipt.json",
+        "provider_attempts": 2,
+        "known_api_equivalent_usd": 0.2132446,
+        "full_question_acceptance": false
+      },
+      "q21_native_scope_selector": {
+        "status": "verified_native_scope_binding_in_normal_composer_admission",
+        "product_commit": "ab6aca1e",
+        "proof": "artifacts/agere-q21-assertion-window-2026-11-06/native-selector-proof.json",
+        "checks_passed": 47,
+        "native_cached_patients": 4115,
+        "received_annotation_streams": 41,
+        "native_assertion_engine_code_unchanged": true,
+        "provider_calls": 0,
+        "full_question_acceptance": false,
+        "admission_receipt": "artifacts/agere-q21-assertion-window-2026-11-06/ordinary-native-admission-2/receipt.json"
+      },
+      "q21_ordinary_native_selection": {
+        "kind": "Q21-ordinary-native-selection-confirmation",
+        "pid": 39077,
+        "session": 16666,
+        "status": "running",
+        "source_frozen": true,
+        "provider_work": true,
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v4-native-selection/receipt.json"
       }
     },
     "bottling_assessment": {
@@ -1216,7 +1332,17 @@
       "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/final-current-proof/receipt.json"
     },
     "provider_dependency": null,
-    "active_jobs": [],
+    "active_jobs": [
+      {
+        "kind": "Q21-ordinary-source-window-confirmation",
+        "pid": 37196,
+        "session": 94516,
+        "status": "running",
+        "source_frozen": true,
+        "provider_work": true,
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v1/receipt.json"
+      }
+    ],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -1240,7 +1366,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "The earlier three-account mapped-concept handoff had no assertion-level 2029 window or complete derived annotation accounting. The actual shared operator now processed all 4115 received patients / 41 source streams and accounted for all 51233 source-window note_fact row IDs.",
+    "measured_failure_removed": "Startup KeyError removed (3existing errors ->42passing checks). Current ordinary route narrowed before expensive narrative acquisition; unaccepted.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -5856,6 +5982,51 @@
         "artifacts/agere-retained-workflow-2026-11-06/source-review-2/receipt.json"
       ],
       "scope_impact": "All rows, patient mappings and source values remain native. No cap, new codec/model, clinical promotion or lower source threshold. This does not establish normal-entry or clinical acceptance."
+    },
+    {
+      "at": "2026-11-06T23:56:54.838795+00:00",
+      "gate": "G3",
+      "decision": "Reconcile terminal Q21 and target native analyst startup before further provider work",
+      "evidence": [
+        "artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v1/recovered-conversation-failure.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v1/accounting-reconciliation.json"
+      ],
+      "observed": "backstop_agent failed before provider dispatch in 0.111 seconds: KeyError basis,start,end; Qwen fallback then spent120.096seconds and typed planners rejected narrowed source/population proposals. No ordinary answer accepted.",
+      "correction": "Escape literal prompt braces and exercise actual answer startup offline; use app ledger in future confirmation and preserve exception attributes. Native audit is reusable; no broad replay."
+    },
+    {
+      "at": "2026-11-07T00:15:44.917631+00:00",
+      "gate": "G3",
+      "decision": "Stop narrowed ordinary narrative rereading; complete native assertion projection before another paid workflow",
+      "evidence": [
+        "artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v3/receipt.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v3/scope-observation.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/analyst-startup-proof.json"
+      ],
+      "reason": "The actor discovered assertion_review but manually rebuilt147historical rows from5facttypes, then read120patients. It omitted1058additional patients with negated2029annotations; same-year fact-type co-occurrence cannot establish a clinical contradiction. The existing full native audit already binds4115patients/41streams and71735assertions. Metadata JSON paths alone did not make the native output easy to compose.",
+      "correction": "Expose executable projections of that same checked result through the existing typed tool; test full retained receipt population without source/paid rerun. Preserve unknowns and avoid new catalog/router/training."
+    },
+    {
+      "at": "2026-11-07T00:27:41.270202+00:00",
+      "gate": "G3",
+      "decision": "Bind inherited annotation sources/population in native code rather than model-generated lists",
+      "evidence": [
+        "artifacts/agere-q21-assertion-window-2026-11-06/ordinary-native-admission/receipt.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/native-projections/receipt.json"
+      ],
+      "reason": "Native-first admission now occurs but model narrowed to6assumed note families/2960patients. Native source enumeration and inherited population are exact existing data, not model judgments.",
+      "correction": "Add an optional input selector to the existing execute_analysis interface; resolve explicit41streams and inherited scope into the same shared graph. Preserve explicit legacy calls and all source identities; assertion engine/cache calculation unchanged."
+    },
+    {
+      "at": "2026-11-07T00:35:06.370836+00:00",
+      "gate": "G3",
+      "decision": "One full ordinary composition on repaired native scope after positive focused admission",
+      "evidence": [
+        "artifacts/agere-q21-assertion-window-2026-11-06/ordinary-native-admission-2/receipt.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/native-selector-proof.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/native-projections/receipt.json"
+      ],
+      "justification": "Both observed narrowing failures are removed at actual native admission (41sources/4115patients). Full native receipts remain reusable; current full answer not yet tested. This is a changed-workflow confirmation, not a replay of a passing campaign."
     }
   ],
   "unsealed_work": {
@@ -6268,8 +6439,18 @@
       }
     }
   },
-  "active_jobs": [],
-  "next_action": "G3: Q21 full native source/window accounting is verified on 15f9b8d7. The shared assertion-review operator processed all 4115 patients / 41 source streams; all 51233 received 2029 note-fact row IDs are accounted for, with 71735 source-bound assertions and exact value/unit/entity qualifiers. Pre-window repetitions cannot refresh later evidence; unknown clocks and failed bindings remain explicit. 102 affected tests pass; zero new provider calls. Native calculation semantics remain unchanged from the full source check on 765326bb; the subsequent change only exposes output paths for composition. Next start the authorized local app and complete ONE ordinary original Q21 answer through the connected question path, using these existing native receipts and documented output paths. Preserve the exact 2029 source-event scope, assertions, dates/polarity/subjects, affected conclusions and unresolved contradictions; source-check semantics rather than endorsing extraction labels. Inspect owned receipts first, preserve every attempt/partial result, and freeze product source during the check. Do not rerun the passing full native source audit, Q20 actor/engines/source review/population checks or codecs. No sampled account may replace the full request. Then address Q23 applicable definitions, Q24 requested-deliverable capability and the current whole ten-area/25-case assessment. Independent G5/clinical/model/customer qualification remains separate. App is currently stopped; no active job and source unfrozen. Quiet continuation ACTIVE; all healthcare and portable core remain in scope.",
+  "active_jobs": [
+    {
+      "kind": "Q21-ordinary-native-selection-confirmation",
+      "pid": 39077,
+      "session": 16666,
+      "status": "running",
+      "source_frozen": true,
+      "provider_work": true,
+      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v4-native-selection/receipt.json"
+    }
+  ],
+  "next_action": "G3: Monitor only owned ordinary Q21 native-selection composition PID39077/session16666 on ab6aca1e; inspect artifacts/agere-q21-assertion-window-2026-11-06/ordinary-v4-native-selection/receipt.json first. Source/product frozen, no duplicate or edits. This one normal full composition is justified by closed measured source/population narrowing: actual focused admission now binds41/41streams and4115/4115patients through native selector+shared validation (2newcalls/$0.2132446 API-equivalent,0pending). Original exact question/no authored plan/no prior answer; app ledger and all-attempt/partial logging; native4115receipt cache verified compatible. Native projections cover71735assertions/51233source-windowfactrows with exact values/units/domains/clocks and unbound unknowns; assertion engine unchanged. Assess original Q21 scope/meaning/clock convention and contradictions on return, preserving earlier failures and no automatic retry. Then Q23missing exact-parent definitions,Q24requested-deliverable capability and current ten-area25-case assessment; G5/clinical/model/customer dependencies remain distinct. AppPID39083/session75735 on8885. Quiet continuation ACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6358,8 +6539,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": null,
-  "owned_server_session": null,
+  "owned_server_pid": 39083,
+  "owned_server_session": 75735,
   "last_run_observation": {
     "at": "2026-11-06T23:41:06.479385+00:00",
     "status": "verified_full_native_scope_pending_ordinary_composition",
