@@ -2164,6 +2164,27 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     scope_errors=qualifier_output_scope_errors(answer,calls)
     if scope_errors:
         return {**assessment,'status':'repair','repair_kind':'native_output_scope','feedback':' '.join(scope_errors)}
+    # Resolve a known definition mismatch before paying for source votes or
+    # asking for scalar bindings to prose about the wrong financial domain.
+    # The same check runs again on the saved answer; this is no acceptance.
+    definition_schema=None
+    def definition_failure(issues):
+        return {**assessment,'status':'repair','repair_kind':'source_definition',
+            'progress_state':{'definition_premises':issues},
+            'feedback':'The current payer-adjudicated medical-claim definition supersedes this answer basis. '
+                'Use counted payer claims for requested medical allowed/paid amounts unless provider billing claims were explicitly requested. '
+                'A provider claim identity, payer and service-date lookup may attribute actual payer cash, but its amounts or claim counts cannot replace or add an unasked provider financial domain. '
+                'Recompose the requested source roles from complete retained native results, preserving every required payer, date, unknown and cash-attribution exception. '
+                'Keep exploratory receipts; do not repeat successful source queries or change a source label to evade the definition. '
+                'Update affected prose/bindings to the corrected native basis. Complete compilation, coverage, source checks and saved-premise validation still follow.'}
+    if answer.get('table_from_tool')and getattr(stack,'path',None):
+        from . import plan_fence
+        definition_schema=plan_fence._schema(stack.path)
+        if definition_schema is not None:
+            definition_graph={'nodes':[{'parameters':{'query':c['result'].get('declared_executed_query')or c['result'].get('executed_query')}}
+                for c in calls if c.get('name')=='query_sql'and isinstance(c.get('result'),dict)and not c['result'].get('error')]}
+            definition_issues=plan_fence.definition_premise_issues(question,definition_graph,definition_schema,native_calls=calls,answer=answer)
+            if definition_issues:return definition_failure(definition_issues)
     from .analysis_tools import qualifier_coverage_review
     try:native_audit=qualifier_coverage_review(answer,calls,tools,as_of)
     except (ValueError,KeyError,TypeError,AttributeError)as exc:
@@ -2204,6 +2225,11 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         native_result_dependencies(calls,[(answer.get('table_binding')or{}).get('result_view')])))
     try:
         bind_computed_prose(answer,calls,verified_quotes=kept,question=question,native_structure=native_audit)
+        if definition_schema is not None:
+            # Compilation establishes the actual scalar-prose dependencies;
+            # a table-only preflight cannot inspect these addresses in advance.
+            issues=plan_fence.definition_premise_issues(question,definition_graph,definition_schema,native_calls=calls,answer=answer)
+            if issues:return definition_failure(issues)
     except (ValueError,KeyError,IndexError,TypeError) as exc:
         prose_problem=str(exc);prose_failures=getattr(exc,'progress_failures',[{'code':'invalid_binding','field_group':'prose'}])
         prose_targets=getattr(exc,'repair_targets',[])

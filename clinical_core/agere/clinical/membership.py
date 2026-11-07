@@ -414,8 +414,6 @@ def native_populations(calls, roots, execute, known_ids, source):
             if tree.find(exp.Intersect)or tree.find(exp.Except):raise ValueError('Unsupported set selection.')
             columns,expected=output_table(result)
             if not columns or len(set(columns))!=len(columns)or any(len(r)!=len(columns)for r in expected):raise ValueError('Complete unique output columns required.')
-            actual_columns,actual=execute(query,{})
-            if actual_columns!=columns or digest(actual)!=digest(expected):raise ValueError('Current native SQL output differs from the complete published result.')
             branches=[]
             ctes={c.alias_or_name.casefold():c.this for c in (tree.args.get('with_')or exp.With()).expressions}
             def leaves(node):
@@ -423,6 +421,15 @@ def native_populations(calls, roots, execute, known_ids, source):
                 elif isinstance(node,exp.Select):branches.append(node)
                 else:raise ValueError('Unsupported native select shape.')
             leaves(tree);matches={};plans=[]
+            if not any(_native_count_selection(expression,branch,ctes)
+                    for branch in branches for expression in branch.selects):
+                # Money and event counts cannot define a patient population.
+                # Do not repeat their source calculations just to discover
+                # that this existing patient-count proof does not apply.
+                unavailable.append({'result_view':view,'reason':'No qualified patient-count expression; financial/event quantities retain their original domain.'})
+                continue
+            actual_columns,actual=execute(query,{})
+            if actual_columns!=columns or digest(actual)!=digest(expected):raise ValueError('Current native SQL output differs from the complete published result.')
             for branch_index,original in enumerate(branches):
                 if len(original.selects)!=len(columns)or original.args.get('distinct'):continue
                 counts=[]

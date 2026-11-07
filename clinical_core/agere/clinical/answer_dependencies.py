@@ -69,7 +69,7 @@ def validate(path, context, *, source, policy, check_probes=False):
         try:
             from .plan_fence import premise_issues
             premises = premise_issues(path, context.get('question'), context['graph'],
-                native_calls=(context.get('investigation')or{}).get('tool_calls'))
+                native_calls=(context.get('investigation')or{}).get('tool_calls'),answer=context.get('answer'))
         except Exception:  # noqa: BLE001 - premise validation annotates; it never makes a saved answer unreadable
             premises = []
         issues += ['Premise changed: ' + p for p in premises]

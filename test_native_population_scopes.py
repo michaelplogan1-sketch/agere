@@ -54,6 +54,19 @@ class NativePopulations(unittest.TestCase):
         for query in ('SELECT COUNT(*) AS events FROM agere_result_1','SELECT SUM(flag) AS amount FROM agere_result_1'):
             with self.subTest(query=query):self.assertEqual(self.derive(query)['scopes'],[])
 
+    def test_nonpatient_quantities_do_not_reexecute_source_while_saving(self):
+        for query in ('SELECT COUNT(*) AS events FROM agere_result_1',
+                      'SELECT SUM(flag) AS money FROM agere_result_1'):
+            cursor=self.db.execute(query);columns=[c[0]for c in cursor.description];rows=[list(r)for r in cursor]
+            result={'result_view':'agere_result_2','columns':columns,'rows':rows,
+                'executed_query':query,'native_sql_contract':B.NATIVE_SQL_CONTRACT,
+                'source_contracts':self.source,'truncated':False}
+            def forbidden(*args):self.fail('A nonpatient quantity cannot justify repeating its source query')
+            out=M.native_populations([{'name':'query_sql','input':{'sql':query},'result':result}],
+                ['agere_result_2'],forbidden,{'A','B','C'},self.source)
+            self.assertEqual(out['scopes'],[])
+            self.assertIn('No qualified patient-count',out['unavailable'][0]['reason'])
+
     def test_wrong_source_date_incomplete_query_and_changed_output_fail_closed(self):
         query='SELECT COUNT(DISTINCT patient_id) AS patients FROM agere_result_1'
         for kind in ('date','source','incomplete','output','query'):

@@ -204,7 +204,162 @@ def native_premise_graph(graph,calls):
     return {**(graph or{}),'nodes':nodes},[]
 
 
-def premise_issues(path, question, graph, *, saved=None, schema=None,native_calls=None):
+def native_claim_lookup_only(calls, answer, schema):
+    """Classify the complete bound answer's provider-claim source role.
+
+    This is a syntax/source-role check, not cash arithmetic, subject-link or
+    clinical acceptance. The complete journal still receives schema/provenance
+    checks. Unused exploratory reads cannot become the answer's definition.
+    """
+    from . import backstop_agent as B
+    from .sql_query import portable_native_query,validate_bound_native_query,native_query_binding_errors
+    if not isinstance(answer,dict)or not calls or native_query_binding_errors(calls):return False
+    root=(answer.get('table_binding')or{}).get('result_view')or answer.get('table_from_tool')
+    roots=list(dict.fromkeys([*([root]if root else[]),*B.computed_prose_views(answer.get('computed_prose')or[])]))
+    selected={root:None}
+    def address(binding):
+        if not isinstance(binding,dict)or not isinstance(binding.get('result_view'),str):return
+        view=binding['result_view'];field=binding.get('column')
+        if not isinstance(field,str):selected[view]=None
+        elif view not in selected:selected[view]={field}
+        elif selected[view]is not None:selected[view].add(field)
+    for proof in answer.get('computed_prose')or[]:
+        for basis in proof.get('basis',[]):address(basis)
+        for source in proof.get('sources',{}).values():
+            binding=source.get('binding')or{};address(binding)
+            measure=binding.get('measure')or{};address(measure);address(measure.get('population'))
+    required=B.native_result_dependencies(calls,roots)
+    if not root or not required:return False
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.optimizer import optimize
+    from sqlglot.optimizer.scope import traverse_scope
+    from .financial_accounts import mapping
+    cash_streams={r['stream']for r in mapping()['transactions']if r['snapshot_field']=='payer_received_cents'}
+    resolved={};native={}
+    try:
+        for call in calls:
+            result=call.get('result')or{};name=result.get('result_view')
+            if name not in required:continue
+            if result.get('error'):return False
+            if call.get('name')=='compose_table':
+                from .result_assembly import source_query
+                query=source_query({**native,name:result},name)
+                if not query:return False
+                assembly=result['assembly'];dependencies=[assembly['base_result_view'],*[j['result_view']for j in assembly.get('joins',[])]]
+                query=portable_native_query(query,resolved,dependencies)
+            else:
+                if call.get('name')!='query_sql'or result.get('native_sql_contract')!=B.NATIVE_SQL_CONTRACT:return False
+                query=result['executed_query']
+                if 'native_query_receipt'in result:
+                    if not validate_bound_native_query(result,native):return False
+                    query=portable_native_query(query,resolved,result['read_views'])
+            resolved[name]=query;native[name]=result
+        if any(r not in resolved for r in roots):return False
+        fields={'claim_id','patient_id','payer','service_date'}
+        def bare(n):
+            while isinstance(n,exp.Paren):n=n.this
+            return n
+        def atoms(n):
+            n=bare(n)
+            if isinstance(n,exp.Where):return atoms(n.this)
+            if isinstance(n,exp.And):return atoms(n.this)+atoms(n.expression)
+            return [n]if n is not None else[]
+        def column(n,alias,name):return isinstance(n,exp.Column)and n.table.casefold()==alias.casefold()and n.name.casefold()==name
+        def origin(scope,column,seen=frozenset()):
+            key=(id(scope),column.sql())
+            if key in seen:return None
+            source=scope.sources.get(column.table)
+            if isinstance(source,exp.Table):return scope,column
+            select=getattr(source,'expression',None)
+            if not isinstance(select,exp.Select):return None
+            value=next((e.unalias()for e in select.selects if e.alias_or_name.casefold()==column.name.casefold()),None)
+            if value is None:return None
+            return origin(source,value,seen|{key})if isinstance(value,exp.Column)else(source,value)
+        def payload_claim(scope,n,seen=frozenset()):
+            n=bare(n)
+            if isinstance(n,exp.Column):
+                found=origin(scope,n)
+                if found is None or(found[0]is scope and found[1]==n):return False
+                key=(id(found[0]),found[1].sql())
+                return False if key in seen else payload_claim(*found,seen|{key})
+            if not isinstance(n,(exp.JSONExtract,exp.JSONExtractScalar))or not isinstance(n.this,exp.Column):return False
+            path=n.args.get('expression')
+            if not isinstance(path,exp.JSONPath)or [p.this for p in path.expressions if isinstance(p,exp.JSONPathKey)]!=['claim_id']:return False
+            found=origin(scope,n.this)
+            if found is None:return False
+            base,payload=found
+            if not isinstance(payload,exp.Column)or payload.name.casefold()!='payload':return False
+            relation=base.sources.get(payload.table)
+            if not isinstance(relation,exp.Table)or relation.name.casefold()not in('record','current_record'):return False
+            mandatory=atoms(base.expression.args.get('where'))+[a for j in base.expression.args.get('joins')or[]for a in atoms(j.args.get('on'))]
+            return any(isinstance(n,exp.EQ)and any(column(a,payload.table,'stream')and isinstance(b,exp.Literal)
+                and b.is_string and b.this in cash_streams for a,b in[(n.this,n.expression),(n.expression,n.this)])for n in mandatory)
+        def classification_count(column):
+            aggregate=column.find_ancestor(exp.AggFunc)
+            if aggregate is None:return True
+            if not isinstance(aggregate,exp.Count):return False
+            value=aggregate.this
+            if isinstance(value,exp.Distinct):
+                if len(value.expressions)!=1:return False
+                value=value.expressions[0]
+            if not isinstance(value,exp.Case):return False
+            labels=[c.args.get('true')for c in value.args.get('ifs')or[]]+[value.args.get('default')]
+            return bool(labels)and all(isinstance(v,exp.Literal)and v.is_string for v in labels)
+        for root in roots:
+            query=sqlglot.parse_one(resolved[root],read='sqlite')
+            if selected.get(root):
+                # This is only a definition probe over actual compiled scalar
+                # addresses. All native rows/columns and physical producers
+                # remain intact in the saved receipt and schema checks.
+                query=exp.select(*[exp.column(c,quoted=True)for c in sorted(selected[root])]).from_(query.subquery('__definition_values'))
+            tree=optimize(query,schema={t:{c:'UNKNOWN'for c in cols}for t,cols in schema.items()},dialect='sqlite')
+            for scope in traverse_scope(tree)or[]:
+                sources={a:s for a,(_,s)in scope.selected_sources.items()if isinstance(s,exp.Table)}
+                if any(s.name.casefold()=='claim_adjustment'for s in sources.values()):return False
+                claim_aliases=[a for a,s in sources.items()if s.name.casefold()=='claim']
+                if not claim_aliases:continue
+                select=scope.expression
+                if not isinstance(select,exp.Select):return False
+                mandatory=atoms(select.args.get('where'))+[a for j in select.args.get('joins')or[]for a in atoms(j.args.get('on'))]
+                for alias in claim_aliases:
+                    used=[c for c in scope.columns if c.table.casefold()==alias.casefold()]
+                    if not used or any(c.name.casefold()not in fields for c in used):return False
+                    # A provider claim count is a financial denominator, not
+                    # an identity lookup, even beside an unrelated cash read.
+                    if not all(classification_count(c)for c in used):return False
+                    linked=any(isinstance(n,exp.EQ)and any(column(a,alias,'claim_id')and payload_claim(scope,b)
+                        for a,b in[(n.this,n.expression),(n.expression,n.this)])for n in mandatory)
+                    # A payer-key dimension may enumerate received labels. It
+                    # cannot carry provider amounts, counts or other facts.
+                    attribute_only=(len(scope.selected_sources)==1 and all(
+                        isinstance(e.unalias(),exp.Column)and e.unalias().table.casefold()==alias.casefold()
+                        for e in select.selects))
+                    if not linked and not attribute_only:return False
+        return True
+    except (ValueError,KeyError,TypeError,AttributeError,RecursionError,sqlglot.errors.SqlglotError):return False
+
+
+def definition_premise_issues(question, graph, schema, *, native_calls=None, answer=None):
+    from .clinical_definitions import superseded
+    plan={'query':'\n'.join(_sqls(graph))}
+    retired=superseded(question,plan,schema)
+    # The legacy JSON-text probe can miss a trailing FROM claim. Use actual
+    # executable dependencies here, never source text inside data literals.
+    provider_read=False
+    if 'counts_in_metrics'in schema.get('payer_claim',[])and not re.search(r'\bprovider\b',str(question),re.I):
+        try:provider_read=bool({'claim','claim_adjustment'}&set(premises(graph)['tables']))
+        except Exception:pass  # no parser failure grants a role exception below
+    if not retired and not provider_read:return []
+    try:lookup_only=native_claim_lookup_only(native_calls,answer,schema)if native_calls is not None else False
+    except Exception:lookup_only=False  # a failed role proof cannot waive the existing definition
+    # Query plans invoke the owner provider-claim precedence rule. Only the
+    # fully bound answer's classified lookup role refines that source-presence
+    # check; unrelated retirements and ordinary saved plans remain strict.
+    return []if provider_read and lookup_only else ['definitions: a clinical definition decided since supersedes this saved plan']
+
+
+def premise_issues(path, question, graph, *, saved=None, schema=None,native_calls=None,answer=None):
     """Readable reasons the plan's premises no longer hold (empty list = current)."""
     issues = []
     effective=graph
@@ -224,9 +379,7 @@ def premise_issues(path, question, graph, *, saved=None, schema=None,native_call
         lost = [f'{t}.{c}' for t, c in prem['columns'] if t in schema and c not in schema[t]]
         if lost: issues.append('schema: column(s) ' + ', '.join(lost[:6]) + ' no longer exist')
         try:
-            from .clinical_definitions import superseded
-            plan = {'query': '\n'.join(_sqls(graph))}
-            if superseded(question, plan, schema): issues.append('definitions: a clinical definition decided since supersedes this saved plan')
+            issues.extend(definition_premise_issues(question,graph,schema,native_calls=native_calls,answer=answer))
         except Exception:  # noqa: BLE001 - no definitions module: nothing superseded
             pass
     if saved:
