@@ -3020,7 +3020,14 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     for review in document_reviews:
         review_manifests.append({'questions':review['questions'],'manifest':review['manifest'],
             'native_receipt_digest':digest(review),'rows':review['rows'],'operational_receipts_retained_in_native':True})
-        for row in review['rows']:add(row,origin={'kind':'machine_document_observation','question_digest':digest(review['questions'])})
+        for row in review['rows']:
+            # Correlate only exact complete native rows. A detached review has
+            # unknown lineage and must remain available conservatively.
+            ident=digest(decode(row));pid=row.get('patient_id')
+            views=sorted({o['result_view']for o in origins.get(pid,{}).get(ident,{}).values()
+                          if o.get('tool')=='review_documents'and o.get('result_view')})
+            add(row,origin={'kind':'machine_document_observation','question_digest':digest(review['questions']),
+                           **({'native_result_views':views}if views else{})})
     table=answer.get('table')or[]
     summary={k:v for k,v in answer.items()if k not in ('table','sources','computed_prose','row_prose','system_one_judgments','investigation_review','evidence_text','table_binding')}
     if isinstance(summary.get('limitations'),list) and prior_review_reference is not None:
@@ -3160,16 +3167,27 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         patient_dependencies=native_result_dependencies(calls,list(dict.fromkeys(patient_roots)))
         local_shared=[row for ident,row in shared.items() if patient_dependencies is None or
                       None in shared_views[ident] or bool(shared_views[ident]&patient_dependencies)]
-        patient_evidence={};bindings=[]
+        patient_evidence={};bindings=[];unbound_reviews=[]
         for ident,row in by.get(pid,{}).items():
             observed=list(origins.get(pid,{}).get(ident,{}).values())
-            # Match the existing shared-evidence closure. A superseded SQL
-            # calculation is not a dependency of this patient's final claims.
-            # Documents, source reviews and unknown lineage remain available;
-            # every original calculation still survives in the global receipt.
-            required=[o for o in observed if patient_dependencies is None or o.get('tool')!='query_sql'
-                      or not o.get('result_view')or o['result_view']in patient_dependencies]
-            if observed and not required:continue
+            # A new, unused document review is not evidence for a different
+            # final field merely because it concerns the same patient. This
+            # follows the same native closure as SQL; every original review,
+            # unresolved span and selection manifest stays in its receipt.
+            # Direct documents and any unknown lineage remain conservative.
+            def required_origin(origin):
+                if patient_dependencies is None:return True
+                if origin.get('tool')in ('query_sql','review_documents'):
+                    return not origin.get('result_view')or origin['result_view']in patient_dependencies
+                if origin.get('kind')=='machine_document_observation':
+                    views=origin.get('native_result_views')
+                    return not views or bool(set(views)&patient_dependencies)
+                return True
+            required=[o for o in observed if required_origin(o)]
+            if observed and not required:
+                if any(o.get('tool')=='review_documents'for o in observed):
+                    unbound_reviews.append({'row_digest':ident,'origins':observed})
+                continue
             patient_evidence[ident]=row
             if required:bindings.append({'row_digest':ident,'origins':required})
         views={o.get('result_view')for b in bindings for o in b['origins']if o.get('result_view')}
@@ -3186,6 +3204,10 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             'evidence':list(patient_evidence.values()),
             'evidence_provenance':bindings,'native_calculation_contracts':contracts['executions'],
             'executed_source_definitions':contracts['source_definitions'],
+            **({'unbound_review_receipts':{'rows':unbound_reviews,
+                'required_result_views':sorted(patient_dependencies),
+                'authority':'native_lineage_only',
+                'meaning':'These complete review rows are retained in original native receipts and review metadata, outside the exact final-field dependency closure. Their references establish no clinical fact, absence or source support. Review scope and every final field/source remain below; question coverage is checked separately.'}}if unbound_reviews else{}),
             'review_scope':[{'questions':m['questions'],'manifest':[x for x in m['manifest']if x['patient_id']==pid],
                 'patient_observation_digest':digest({'questions':m['questions'],
                     'manifest':[x for x in m['manifest']if x['patient_id']==pid],
