@@ -10,6 +10,7 @@ Two levels, both semantics-preserving and both receipted:
                        (for example a correlated sub-select that cannot stand alone) is re-run unfused: the optimizer heals, never blocks.
 AGERE_PLAN_OPTIMIZER=off disables both. SQL fusion requires a live schema check,
 verbatim subquery text and a supported deterministic, locally bound expression.
+Reused named source stages are also materialized after the same local/deterministic proof.
 Unproven correlation, views, CTE dependencies and volatile functions retain the original query.
 """
 import copy
@@ -17,7 +18,7 @@ import json
 import os
 import re
 
-VERSION = 'plan-optimizer/3'
+VERSION = 'plan-optimizer/4'
 MIN_FUSE_CHARS = 40  # a repeated one-token sub-select is not worth a CTE
 
 
@@ -144,7 +145,7 @@ def _safe_subquery(inner, db):
         return False
 
 
-def fuse_sql(query, db=None):
+def _fuse_repeated_subselects(query, db=None):
     """-> (fused_query, receipt). Unchanged text and fused=[] when no repeated sub-select exists."""
     none = (query, {'version': VERSION, 'fused': []})
     if not enabled() or not isinstance(query, str) or query.lower().count('select') < 3: return none
@@ -175,3 +176,50 @@ def fuse_sql(query, db=None):
     return fused, {'version': VERSION, 'fused': [{'name': names[i], 'occurrences': len(sp), 'chars': len(inner)}
                                                  for i, (_, inner, sp) in enumerate(picks)],
                    'chars_before': len(query), 'chars_after': len(fused)}
+
+
+def _materialize_reused_sources(query, db):
+    """Fence reused, pure source CTEs so correlated consumers use indexed rows.
+
+    Scope objects distinguish a named stage from a shadowed name. The existing
+    schema/qualification proof permits only local physical tables and supported
+    deterministic expressions. Views, dependencies on other CTEs, unbound outer
+    columns, window/limit selection and explicit materialization choices stay as
+    planned. No row, predicate, key, aggregate or financial formula is changed.
+    """
+    if db is None or '--' in query or '/*' in query:return query, []
+    try:
+        from collections import Counter
+        from sqlglot import parse_one,exp
+        from sqlglot.optimizer.scope import traverse_scope,Scope
+        tree=parse_one(query,read='sqlite')
+        if any(w.args.get('recursive')for w in tree.find_all(exp.With)):return query, []
+        ctes={id(c.this):c for c in tree.find_all(exp.CTE)}
+        if not ctes:return query, []
+        uses=Counter()
+        for scope in traverse_scope(tree):
+            for _,source in scope.selected_sources.values():
+                if isinstance(source,Scope)and id(source.expression)in ctes:
+                    uses[id(source.expression)]+=1
+        selected=[]
+        for key,cte in ctes.items():
+            if uses[key]<2 or cte.args.get('materialized')is not None:continue
+            body=cte.this
+            if any(body.find(kind)is not None for kind in (exp.Limit,exp.Offset,exp.Window)):continue
+            if not _safe_subquery(body.sql(dialect='sqlite'),db):continue
+            cte.set('materialized',True)
+            selected.append({'name':cte.alias,'kind':'reused_source_stage','occurrences':uses[key]})
+        return (tree.sql(dialect='sqlite'),selected)if selected else(query,[])
+    except Exception:
+        return query, []  # an unproven optimization never changes the query
+
+
+def fuse_sql(query, db=None):
+    """Fuse repeated pure subqueries and materialize proven reused sources."""
+    fused,receipt=_fuse_repeated_subselects(query,db)
+    if not enabled()or not isinstance(fused,str):return fused,receipt
+    materialized,stages=_materialize_reused_sources(fused,db)
+    if stages:
+        receipt={**receipt,'fused':[*receipt['fused'],*stages],
+                 'chars_before':len(query),'chars_after':len(materialized)}
+    return materialized,receipt

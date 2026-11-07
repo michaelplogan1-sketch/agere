@@ -57,6 +57,48 @@ class Optimizer(unittest.TestCase):
             out = sql_query.execute('p', {'query': corr, 'returns': 'value'})
             self.assertEqual(out['value'], db().execute(corr).fetchone()[0])
 
+    def test_reused_source_stage_preserves_cells_types_nulls_and_correlated_aggregates(self):
+        d=_connect(':memory:')
+        d.executescript("CREATE TABLE raw(entity_id,amount,payload); CREATE TABLE subjects(entity_id);")
+        d.executemany('INSERT INTO subjects VALUES (?)',[('a',),('b',),('c',),(None,)])
+        d.executemany('INSERT INTO raw VALUES (?,?,?)',[
+            ('a',12,'{"kind":"x"}'),('a',-3,'{"kind":"x"}'),('a',12,'{"kind":"x"}'),
+            ('b',None,'{"kind":"x"}'),('b','5','{"kind":"x"}'),('z',99,'{"kind":"y"}')])
+        q=("WITH source_rows AS (SELECT entity_id,amount FROM raw WHERE json_extract(payload,'$.kind')='x') "
+           "SELECT s.entity_id,(SELECT sum(amount) FROM source_rows r WHERE r.entity_id=s.entity_id) total,"
+           "(SELECT count(*) FROM source_rows r WHERE r.entity_id=s.entity_id) records,"
+           "(SELECT typeof(max(amount)) FROM source_rows r WHERE r.entity_id=s.entity_id) max_type "
+           "FROM subjects s ORDER BY s.entity_id")
+        optimized,receipt=O.fuse_sql(q,d)
+        self.assertIn({'name':'source_rows','kind':'reused_source_stage','occurrences':3},receipt['fused'])
+        self.assertEqual(d.execute(q).fetchall(),d.execute(optimized).fetchall())
+        self.assertEqual([c[0]for c in d.execute(q).description],[c[0]for c in d.execute(optimized).description])
+        self.assertEqual(d.execute(q).fetchall(),[(None,None,0,'null'),('a',21,3,'integer'),('b',5,2,'text'),('c',None,0,'null')])
+        self.assertEqual(O.fuse_sql(q)[0],q)  # no live schema proof
+        with patch.dict('os.environ',{'AGERE_PLAN_OPTIMIZER':'off'}):self.assertEqual(O.fuse_sql(q,d)[0],q)
+
+    def test_reused_stage_does_not_materialize_volatile_opaque_or_selected_rows(self):
+        d=db();d.execute('CREATE VIEW opaque AS SELECT random() n FROM patient')
+        for body in ['SELECT random() n FROM patient','SELECT * FROM opaque',
+                     'SELECT age n FROM patient LIMIT 1',
+                     'SELECT row_number() OVER (ORDER BY age) n FROM patient',
+                     'SELECT outer_row.age n FROM patient']:
+            q=f'WITH x AS ({body}) SELECT (SELECT count(*) FROM x),(SELECT count(*) FROM x)'
+            with self.subTest(body=body):self.assertEqual(O.fuse_sql(q,d)[0],q)
+        for hint in ['MATERIALIZED','NOT MATERIALIZED']:
+            q=f'WITH x AS {hint} (SELECT age FROM patient) SELECT (SELECT count(*) FROM x),(SELECT max(age) FROM x)'
+            self.assertEqual(O.fuse_sql(q,d)[0],q)
+
+    def test_cte_shadowing_uses_scope_identity_and_preserves_the_inner_stage(self):
+        d=db()
+        q=("WITH x AS (SELECT age FROM patient) SELECT (SELECT sum(age) FROM x),"
+           "(SELECT max(age) FROM x),(WITH x AS (SELECT 7 AS age) SELECT max(age) FROM x)")
+        optimized,receipt=O.fuse_sql(q,d)
+        self.assertEqual(len(receipt['fused']),1)
+        self.assertEqual(receipt['fused'][0]['occurrences'],2)
+        self.assertEqual(optimized.count('AS MATERIALIZED'),1)
+        self.assertEqual(d.execute(q).fetchall(),d.execute(optimized).fetchall())
+
     def plan(self, nodes): return {'interpretation': 'q', 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': nodes}
 
     def test_graph_fusion_executes_identical_nodes_once_and_rewires_consumers(self):
