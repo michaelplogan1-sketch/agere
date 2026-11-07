@@ -67,9 +67,10 @@ TOOLS = [
      'input_schema':{'type':'object','properties':{},'additionalProperties':False}},
     {'name':'describe_analysis','description':'Get an existing analytical engine\'s typed parameters, assumptions and population contract before calling it. Program/requirement/protocol/accountability descriptions include installed source/version/date and buyer context. A date-effective example or quoted rule is not approved clinical criteria; do not silently choose overlapping versions or map a care gap to an unrelated program.',
      'input_schema':{'type':'object','properties':{'operation':{'type':'string'}},'required':['operation'],'additionalProperties':False}},
-    {'name':'execute_analysis','description':'Execute an existing analytical engine through the shared graph with typed parameters and the exact inherited patient population. Optionally narrow with received patient_ids or complete patient_query_sql; [] remains empty. Returns native results and a composable result_view. Methods, assumptions, uncertainty and any engine output limits remain visible. Never substitute a mathematical estimate for observed facts.',
+    {'name':'execute_analysis','description':'Execute an existing analytical engine through the shared graph with typed parameters and the exact inherited patient population. For an audit of all existing source annotations, choose operation=assertion_review, selection=inherited_annotations and parameters containing the requested assertion_window only: code binds every annotation stream and the exact inherited population. This selection forbids population overrides. The default selection=parameters retains explicit native parameters and optional received patient_ids or complete patient_query_sql; [] remains empty. Returns native results and a composable result_view. Methods, assumptions, uncertainty and any engine output limits remain visible. Never substitute a mathematical estimate for observed facts.',
      'input_schema':{'type':'object','properties':{'operation':{'type':'string'},'parameters':{'type':'object'},
-        'patient_ids':{'type':'array','items':{'type':'string'}},'patient_query_sql':{'type':'string'}},
+        'patient_ids':{'type':'array','items':{'type':'string'}},'patient_query_sql':{'type':'string'},
+        'selection':{'enum':['parameters','inherited_annotations'],'default':'parameters'}},
         'required':['operation','parameters'],'additionalProperties':False}},
     {'name': 'ask_agere', 'description': "Ask Agere's governed engines ONE simple, self-contained sub-question (one measure, one population, one "
      "period, one grouping, e.g. 'How many inpatient admissions were there in 2028?', 'Plan-paid pharmacy spend by year', 'ED visit rate by "
@@ -266,6 +267,9 @@ has already declined this question, so it is yours to answer completely and corr
   population and explicit clock; a subgroup selected for one qualifier does not cover the other requested qualifiers. Same-patient,
   same-year fact-type co-occurrence is not a domain-bound contradiction. Use exact source IDs for unresolved meaning where possible;
   expand source review when the original request requires it, and retain unassessed free text and clock ambiguity explicitly.
+  For all existing annotations in the inherited population, set selection=inherited_annotations and supply only assertion_window
+  in parameters. Native code binds the complete source list and population; do not guess note families or preselect patients
+  from a subset of records. Use selection=parameters only for an explicitly restricted source/population audit.
   library_measure output patients returns the complete evaluated patient-status roster; output gaps returns every recorded gap.
   Preserve exclusions and indeterminate rows, distinguish the input roster from a measure denominator, and retain unknown full-
   population rates separately from known-subset observations. Read patient names with read_patient_profiles and join by patient_id.

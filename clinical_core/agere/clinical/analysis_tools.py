@@ -65,6 +65,12 @@ def describe(operation, *, path=None):
         elif operation=='requirements':context['requirement_definitions']=list(R.definitions().values())
     return {'operation':operation,'parameters':G.parameter_schema(operation,catalog),
             'population_contract':G.input_contract(operation),
+            **({'selection_contracts':{'inherited_annotations':{
+                'meaning':'Native code binds every received annotation source stream and the exact inherited population. Do not supply patient_ids/patient_query_sql or invent a source subset.',
+                'parameters':'Supply only the requested assertion_window. Code supplies streams, concepts=[] and received_annotations=true before normal shared graph validation.',
+                'resolved_streams':received_annotation_sources(path),
+                'scope':'Existing annotations only; no complete free-text or clinical-state claim.'}}}
+               if operation=='assertion_review'else{}),
             'meaning':'The existing native validator remains authoritative. Parameters and assumptions are not inferred clinical facts.',
             **({'output_contract':{
                 'columns':['patient_id','receipt_id','status','documentary_receipt'],
@@ -95,6 +101,29 @@ def describe(operation, *, path=None):
             **context,
             **({'documentary_scope':'Explicit streams and mapped concepts at the current snapshot. assertion_review optionally accepts assertion_window with an explicit date basis and received_annotations=true to include existing annotations with all values/units and failed bindings; concepts=[] then means all existing annotations in those streams, not all clinical knowledge. Selecting patients with a dated record alone does not restrict assertion dates. Unknown qualifiers and machine interpretations remain unresolved; repeated text is not independent corroboration.'}
                if operation in DOCUMENTARY else {})}
+
+
+def received_annotation_sources(path):
+    """Exact native source inventory, independent of familiar stream names."""
+    import sqlite3
+    from pathlib import Path
+    from . import longitudinal
+    with sqlite3.connect((Path(path)/'semantic.sqlite3').resolve().as_uri()+'?mode=ro',uri=True)as db:
+        streams={r[0]for r in db.execute('SELECT DISTINCT stream FROM note_fact')}
+    events,_=longitudinal.connect(path)
+    try:streams|={r[0]for r in events.execute("SELECT DISTINCT stream FROM events WHERE kind='text'")}
+    finally:events.close()
+    if not streams:raise ValueError('No received annotation source streams established')
+    return sorted(streams)
+
+
+def inherited_annotation_parameters(path,parameters):
+    if set(parameters)-{'streams','concepts','received_annotations','assertion_window'}:
+        raise ValueError('Unknown inherited annotation parameter')
+    if (parameters.get('streams')not in (None,[])or parameters.get('concepts')not in (None,[])
+        or 'received_annotations'in parameters and parameters['received_annotations']is not True):
+        raise ValueError('Inherited annotations bind all sources and existing annotations; use selection=parameters for an explicit restricted audit')
+    return {**parameters,'streams':received_annotation_sources(path),'concepts':[],'received_annotations':True}
 
 
 def assertion_projections(view):
@@ -187,22 +216,29 @@ def documentary_rows(path,operation,report):
     return rows
 
 
-def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None):
+def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None,selection='parameters'):
     from . import analysis_graph as A,graph_contracts as G,cohorts
     if operation not in ANALYTICAL:raise ValueError('Choose an analytical operation from list_analyses')
     if not isinstance(parameters,dict):raise ValueError('Supply typed analytical parameters')
+    guard=digest(tools.continuation_identity())
+    if selection not in ('parameters','inherited_annotations'):raise ValueError('Unknown native input selection')
+    if selection=='inherited_annotations':
+        if operation!='assertion_review' or patient_ids is not None or patient_query_sql is not None:
+            raise ValueError('Inherited annotation selection requires assertion_review and the exact inherited population without overrides')
+        parameters=inherited_annotation_parameters(tools.stack.path,parameters)
     ids=population(tools,patient_ids,patient_query_sql)
     snapshot=tools.stack.retriever.meta['snapshot']['as_of']
     if str(snapshot)[:10]!=tools.as_of:raise ValueError('Analytical snapshot differs from request date')
     if G.input_contract(operation)['count'][1]<1:raise ValueError('This operation cannot inherit a patient population')
-    guard=digest(tools.continuation_identity())
     plan={'interpretation':'Received-source analytical tool execution','coverage':'supported_observation','unmet_requirements':[],
         'nodes':[{'id':'input','operation':'cohort','inputs':[],
                   'parameters':{'specification':cohorts.empty(),**({'patient_ids':ids} if ids is not None else {})},'purpose':'Exact request population'},
                  {'id':'analysis','operation':operation,'inputs':['input'],'parameters':parameters,'purpose':'Requested analytical calculation'}]}
     plan=A.validate(plan,tools.as_of)  # even an empty input must not accept malformed parameters
     if ids==[]:
+        if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope/definitions changed during selection')
         return {'analysis':operation,'status':'no_matches','columns':[],'rows':[],'input_patient_ids':[],
+                **({'input_selection':selection,'parameters':plan['nodes'][-1]['parameters']}if selection!='parameters'else{}),
                 'method':'Explicit empty population; no estimate computed and engine not executed'}
     with component('analytical_engine',operation=operation,population_size=None if ids is None else len(ids)):
         result=A.execute(tools.stack,plan)
@@ -215,5 +251,6 @@ def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None):
     from .harness_improvement import semantic_result
     return {'analysis':operation,'status':answer.get('status'),'columns':columns,'rows':rows,'answer':answer,
             'input_patient_ids':ids,'parameters':plan['nodes'][-1]['parameters'],'engine_result':result,
+            **({'input_selection':selection}if selection!='parameters'else{}),
             'method':answer.get('method'),'limitations':answer.get('limitations') or [],
             'receipt_digest':digest(semantic_result(result)),'new_paid_api_calls':result.get('new_paid_api_calls',0)}

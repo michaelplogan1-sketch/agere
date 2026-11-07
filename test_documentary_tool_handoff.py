@@ -165,6 +165,35 @@ class DocumentaryHandoff(unittest.TestCase):
         for name in ('record','agere_result_0','agere_result_1;DROP TABLE patient','agere_result_1 --'):
             with self.subTest(name=name),self.assertRaises(ValueError):A.assertion_projections(name)
 
+    def test_native_annotation_selection_preserves_inherited_scope_and_shared_validation(self):
+        window={'basis':'source_event','start':'2029-01-01','end':AS_OF}
+        description=self.tools()({'name':'describe_analysis','input':{'operation':'assertion_review'}})
+        self.assertEqual(description['selection_contracts']['inherited_annotations']['resolved_streams'],['notes'])
+        for ids in (None,['p04','p05'],[]):
+            t=self.tools(ids)
+            out=t({'name':'execute_analysis','input':{'operation':'assertion_review',
+                'selection':'inherited_annotations','parameters':{'assertion_window':window}}})
+            expected=set(self.ids)if ids is None else set(ids)
+            self.assertEqual({r['patient_id']for r in out['rows']},expected)
+            if not ids and ids is not None:
+                self.assertEqual(out['status'],'no_matches');continue
+            self.assertEqual(out['input_selection'],'inherited_annotations')
+            self.assertEqual(out['parameters'],{'streams':['notes'],'concepts':[],
+                'received_annotations':True,'assertion_window':window})
+        with self.assertRaises(ValueError):
+            self.tools()({'name':'execute_analysis','input':{'operation':'assertion_review',
+                'selection':'inherited_annotations','parameters':{'assertion_window':{**window,'end':'2031-01-01'}}}})
+
+    def test_inherited_selection_refuses_scope_overrides_instead_of_silently_changing_them(self):
+        t=self.tools()
+        base={'operation':'assertion_review','selection':'inherited_annotations','parameters':{}}
+        for edit in ({'patient_ids':[]},{'patient_query_sql':'SELECT patient_id FROM patient'},
+                     {'operation':'source_state'},{'selection':'unknown'},
+                     {'parameters':{'streams':['notes']}},{'parameters':{'concepts':['financial hardship']}},
+                     {'parameters':{'received_annotations':False}},{'parameters':{'mystery':True}}):
+            with self.subTest(edit=edit),self.assertRaises(ValueError):
+                t({'name':'execute_analysis','input':{**base,**edit}})
+
     def test_inherited_population_stays_complete_and_cannot_widen(self):
         t=self.tools(['p00','p04']);result=self.execute(t)
         self.assertEqual([r['patient_id']for r in result['rows']],['p00','p04'])
