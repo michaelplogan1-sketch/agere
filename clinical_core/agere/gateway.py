@@ -300,6 +300,20 @@ class PersistentGateway:
     def __init__(self,ledger,allow_live=False,transport=None):
         self.ledger=ledger;self.allow_live=allow_live;self.transport=transport or urllib.request.urlopen
         self.events=[]
+    @staticmethod
+    def needs_jev_long_context(body):
+        """Conservative byte upper bounds for both standard token contexts.
+
+        TypeSafe documents 64k/request and 32k/question; expanded transport is
+        already supported. This selects a context mode, never trims evidence
+        or limits question/document/population counts. JSON wire bytes are an
+        upper bound, not a claim to reproduce the provider's token count.
+        https://docs.typesafe.ai/models (verified 2026-11-07).
+        """
+        encoded=lambda value:len(json.dumps(value,allow_nan=False).encode())
+        if encoded(body)>64000:return True
+        base={k:v for k,v in body.items()if k!='questions'}
+        return any(encoded({**base,'questions':{key:q}})>32000 for key,q in body['questions'].items())
     def classify(self,provider,task):
         # Future source dates cannot enter any provider request.
         date.fromisoformat(task.as_of)
@@ -314,7 +328,17 @@ class PersistentGateway:
         body=parser.request(task)
         parser.name=provider  # Perplexity Decisions and Jev share this typed Choice contract.
         identity={'provider':provider,'body':body,'contract':2}
-        long_context=provider=='jev' and getattr(task,'long_context',False)
+        requested_context=getattr(task,'long_context',False)
+        long_context=provider=='jev'and bool(requested_context)
+        if provider=='jev'and requested_context is None:
+            standard_key=self.ledger.resolve_request_key(digest(identity))
+            standard=self.ledger.db.execute('SELECT status,error FROM calls WHERE id=?',(standard_key,)).fetchone()
+            # Preserve successful standard reads and pending/failed-key
+            # protections. A recorded context rejection can use the distinct,
+            # supported expanded transport rather than repeat a failed key.
+            protected=bool(standard and(standard[0]in ('validated','pending')or
+                standard[0]=='failed'and'max_tokens_exceeded'not in(standard[1]or'')))
+            long_context=False if protected else self.needs_jev_long_context(body)
         if long_context:identity['transport']={'TypeSafe-Danger-Zone-Long-Context':'true'}
         key=self.ledger.resolve_request_key(digest(identity))
         old=self.ledger.db.execute('SELECT status,response FROM calls WHERE id=?',(key,)).fetchone()

@@ -220,7 +220,25 @@ def judge_fields(subject,questions,evidence,*,as_of,ledger=None,allow_live=True,
     """
     if not questions:return {'judgments':{},'steps':[],'cost_usd':0.0}
     pending=dict(questions);accepted={};steps=[];observed={}
-    for provider in (PROVIDERS if order is None else order):
+    providers=list(PROVIDERS if order is None else order)
+    if long_context is None:
+        # Transport repair must not buy a new primary vote when an exact,
+        # validated fallback observation already exists. Cached-only lookups
+        # neither reserve nor send a provider request; normal field acceptance
+        # below still consumes only deciding judgments.
+        cached=[]
+        task=EvidenceTask(str(subject),str(as_of)[:10],{'unknown':UNKNOWN},_evidence(evidence,as_of),
+                          select_source=False,long_context=None,questions=pending)
+        handle,owned=_open_ledger(ledger)
+        try:
+            for provider in providers:
+                try:
+                    if _classify(provider,task,handle,False,cache_evidence).get('cache_hit'):cached.append(provider)
+                except Exception:pass  # ordinary provider handling below retains failures
+        finally:
+            if owned:handle.close()
+        providers=cached+[p for p in providers if p not in cached]
+    for provider in providers:
         task=EvidenceTask(str(subject),str(as_of)[:10],{'unknown':UNKNOWN},_evidence(evidence,as_of),
                           select_source=False,long_context=long_context,questions=pending)
         handle,owned=_open_ledger(ledger)

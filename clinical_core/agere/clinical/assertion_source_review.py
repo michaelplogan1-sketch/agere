@@ -223,7 +223,7 @@ def review(tools,result_view):
             'Review each proposed assertion ONLY against its exact complete bound original record.',questions,
             [{'id':digest(state),'date':tools.as_of,'text':_encode(state)}],
             as_of=tools.as_of,ledger=ledger,allow_live=bool(tools.stack.allow_live),
-            long_context=len(_encode([state,questions]).encode())>BATCH_BYTES)
+            long_context=None)
         return state,result
     def retain(state,result):
         binding={'task_identity':task_identity(),'state_digest':digest(state),
@@ -316,7 +316,7 @@ def qualifier_payload(items,sources):
     return state,questions
 
 
-def categorical_candidate(item,readings):
+def categorical_candidate(item,readings,*,qualifiers=None):
     """A proposal from existing reader labels, never a human-reviewed revision.
 
     Numerical values, units/domains and clinical/reference dates are not invented
@@ -328,7 +328,9 @@ def categorical_candidate(item,readings):
        or proposal.get('value')!=proposal.get('polarity')
        or proposal.get('value')not in ('affirmed','negated','unknown','hypothetical','retracted','nonclinical','other_person')):return None
     labels={axis:readings[axis]['label']for axis,options in S.AXES.items()if _deciding(readings.get(axis)or{},options)}
-    if not labels:return None
+    precise={axis:(qualifiers or{})[axis]['label']for axis,options in S.QUALIFIER_AXES.items()
+             if _deciding((qualifiers or{}).get(axis)or{},options)}
+    if not labels and not precise:return None
     candidate=dict(item['proposal'])
     if 'statement'in labels:
         statement=labels['statement'];polarity={'patient_affirmed':'affirmed','patient_negated':'negated'}.get(statement,statement)
@@ -342,6 +344,14 @@ def categorical_candidate(item,readings):
     if relation=='clinical_observation'and candidate['relation']in ('reported_barrier','received_observation'):
         relation=candidate['relation']
     if relation is not None:candidate['relation']=relation
+    # Keep the existing independent follow-up's proposal rule in one place.
+    # An unchanged follow-up must reproduce its already checked candidate,
+    # rather than restarting from a different legacy-axis proposal.
+    refined=dict(proposal)
+    for axis,label in precise.items():
+        refined[axis]=label
+        if axis=='polarity':refined['value']=label
+    if refined!=proposal:return refined
     return candidate
 
 
@@ -406,14 +416,15 @@ def interpret_rejected(tools,result_view,*,verify_only=False):
                 if mode=='reader_axes':
                     readings={axis:(check['result'].get('judgments')or{}).get(digest([item['audit_account_id'],axis]))or{}for axis in S.AXES}
                     axis_observations[item['audit_account_id']]=readings
-                    if target.get('reader_axes')!=readings:raise ValueError('Retained reader axes changed')
                 elif mode=='qualifier_axes':
                     readings={axis:(check['result'].get('judgments')or{}).get(digest([item['audit_account_id'],'qualifier',axis]))or{}for axis in S.QUALIFIER_AXES}
                     qualifier_observations[item['audit_account_id']]=readings
-                    if target.get('qualifier_axes')!=readings:raise ValueError('Retained precise qualifiers changed')
                 else:
                     obs=observation(item,state,check['result'],prepared['audit_proof']['source_digest'],tools.as_of)
                     post_observations[item['audit_account_id']]=obs
+        # Every historical state above is source/task bound. The active axes
+        # correspond to the latest retained check for that account, not to all
+        # earlier outputs simultaneously. Keep the complete history intact.
         for row in rows:
             retained=retained_rows[row['audit_account_id']]
             if any(retained.get(k)!=v for k,v in row.items()):raise ValueError('Retained source review account changed')
@@ -455,14 +466,14 @@ def interpret_rejected(tools,result_view,*,verify_only=False):
                    and old_support.get('judgment',{}).get('label')=='supported'):
                     target.update(copy.deepcopy(retained));confirmed[ident]={**items[ident],'proposal':target['assertion']}
                 elif retained.get('reader_axes'):
-                    target['reader_axes']=copy.deepcopy(retained['reader_axes'])
-                    candidate=categorical_candidate(items[ident],target['reader_axes'])
-                    if candidate is None:target['status']='source_axes_unresolved'
-                    elif candidate==items[ident]['proposal']:target['status']='rejected_tuple_not_repaired_by_reader_axes'
-                    elif candidate==retained.get('candidate'):
-                        target.update(copy.deepcopy(retained))  # unchanged rejected/unknown vote remains unresolved
-                    else:
-                        target.update(status='changed_tuple_pending_source_check',candidate=candidate,
+                    # Unknown and negative observations are retained work too.
+                    # Dropping precise axes here re-asked identical questions
+                    # after unrelated accounts left the next batch.
+                    target.update(copy.deepcopy(retained))
+                    candidate=categorical_candidate(items[ident],target['reader_axes'],qualifiers=target.get('qualifier_axes'))
+                    if(candidate is not None and candidate!=items[ident]['proposal']
+                       and candidate!=retained.get('candidate')):
+                        target.update(status='changed_tuple_pending_source_check',candidate=candidate,assertion=None,machine_support=None,
                             changed_fields=[field for field in FIELDS if candidate[field]!=items[ident]['proposal'][field]])
                         candidates[ident]={**items[ident],'proposal':candidate}
                 else:selected.append(items[ident])
@@ -488,7 +499,7 @@ def interpret_rejected(tools,result_view,*,verify_only=False):
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed before source interpretation dispatch')
         result=system_one.judge_fields(role,questions,[{'id':digest(state),'date':tools.as_of,'text':_encode(state)}],
             as_of=tools.as_of,ledger=ledger,allow_live=bool(tools.stack.allow_live),
-            long_context=len(_encode([state,questions]).encode())>BATCH_BYTES)
+            long_context=None)
         checks.append({'role':role,'mode':mode,'state_digest':digest(state),'account_ids':list(state['proposed_assertions']),
                        'proposed_assertions':state['proposed_assertions'],
                        'result':result});return result
@@ -516,12 +527,9 @@ def interpret_rejected(tools,result_view,*,verify_only=False):
             result=ask(state,questions,'Interpret the exact source subject and polarity as independent qualifiers.','qualifier_axes')
             for ident,item in state['proposed_assertions'].items():
                 target=by[ident]['source_interpretation'];readings={axis:(result.get('judgments')or{}).get(digest([ident,'qualifier',axis]))or{}for axis in S.QUALIFIER_AXES}
-                target['qualifier_axes']=readings;proposal=dict(item['proposal'])
-                for axis,options in S.QUALIFIER_AXES.items():
-                    if _deciding(readings[axis],options):
-                        proposal[axis]=readings[axis]['label']
-                        if axis=='polarity':proposal['value']=proposal[axis]
-                if proposal==item['proposal']:continue
+                target['qualifier_axes']=readings
+                proposal=categorical_candidate(item,target['reader_axes'],qualifiers=readings)
+                if proposal is None or proposal==item['proposal']:continue
                 if proposal==target.get('candidate')and target.get('machine_support'):continue
                 target.update(status='changed_tuple_pending_source_check',candidate=proposal,
                     changed_fields=[field for field in FIELDS if proposal[field]!=item['proposal'][field]])
@@ -573,12 +581,14 @@ def interpret_rejected(tools,result_view,*,verify_only=False):
     except BaseException as error:
         error.partial_assertion_interpretation={'rows':rows,'typed_checks':checks,'received_annotations_modified':False,'complete':False}
         raise
-    for check in checks[retained_check_count:]:
+    new_checks=checks[retained_check_count:]
+    for check in new_checks:
         count,known=system_one_gate.cost(check['result']);tools.subtool_accounting['new_paid_api_calls']+=count
         tools.subtool_accounting['estimated_cost_usd']+=known
-    known=all(s.get('cache_hit')or s.get('cost_usd')is not None or s.get('status')=='prepared'
-              for check in checks[retained_check_count:]for s in check['result'].get('steps')or[])
-    tools.subtool_accounting['api_cost_known']=tools.subtool_accounting.get('api_cost_known',True)and known
+    if new_checks:
+        known=all(s.get('cache_hit')or s.get('cost_usd')is not None or s.get('status')=='prepared'
+                  for check in new_checks for s in check['result'].get('steps')or[])
+        tools.subtool_accounting['api_cost_known']=tools.subtool_accounting.get('api_cost_known',True)and known
     return {'analysis':'assertion_source_interpretation','columns':list(rows[0])if rows else [],'rows':rows,
         'assertion_source_interpretation':{'schema':'assertion-source-interpretation/1','source_review_view':result_view,
             'continuation_view':(continuation or{}).get('result_view'),

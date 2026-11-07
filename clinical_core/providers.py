@@ -20,7 +20,7 @@ class EvidenceTask:
     options: dict
     evidence: list
     select_source: bool = True
-    long_context: bool = False
+    long_context: bool | None = False  # None: select transport from the rendered request's capacity bounds
     questions: dict | None = None
 
     def state(self):

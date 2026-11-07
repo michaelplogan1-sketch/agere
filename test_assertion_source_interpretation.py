@@ -76,6 +76,39 @@ class Interpretation(unittest.TestCase):
         self.assertEqual(judge.call_count,2)  # distinct legacy and independent-qualifier tasks
         self.assertEqual(out['assertion_source_interpretation']['status_counts'],{'original_tuple_supported':14,'source_axes_unresolved':3})
         self.assertTrue(all(r['source_interpretation']['assertion']is None for r in out['rows']if r['source_support']=='not_supported'))
+        self.tools.subtool_accounting.pop('api_cost_known',None)  # a restored executor starts without new cost observations
+        before=digest(out['rows']);counter=dict(self.tools.subtool_accounting)
+        with patch.object(system_one,'judge_fields',side_effect=AssertionError('Unchanged unknown axes must not be re-voted')):
+            again=self.tools({'name':'review_documents','input':{'assertion_result_view':out['result_view']}})
+            verified=R.interpret_rejected(self.tools,again['result_view'],verify_only=True)
+        self.assertEqual(digest(again['rows']),before);self.assertEqual(digest(verified['rows']),before)
+        self.assertEqual(again['assertion_source_interpretation']['new_provider_check_count'],0)
+        self.assertEqual(self.tools.subtool_accounting,counter)
+
+    def test_historical_axes_bind_each_input_and_validate_the_active_latest_observation(self):
+        with patch.object(system_one,'judge_fields',side_effect=self.source_judge):first=self.call()
+        with patch.object(system_one,'judge_fields',side_effect=lambda s,q,e,**kw:fixtures.judgment(q,'unknown',1.,None)):
+            out=self.tools({'name':'review_documents','input':{'assertion_result_view':first['result_view']}})
+        meta=out['assertion_source_interpretation'];target=None
+        for mode,axis,label in [('reader_axes','time','historical'),('qualifier_axes','subject','patient')]:
+            old=next(c for c in meta['typed_checks']if c['mode']==mode);later=copy.deepcopy(old)
+            ident=later['account_ids'][0]
+            key=digest([ident,axis]if mode=='reader_axes'else[ident,'qualifier',axis])
+            later['result']['judgments'][key]={'label':label,'probabilities':{label:.7,'unknown':.3},
+                'probability':.7,'threshold':.8,'decided_by':None}
+            meta['typed_checks'].append(later)
+            target=next(r['source_interpretation']for r in out['rows']if r['audit_account_id']==ident)
+            target[mode][axis]=copy.deepcopy(later['result']['judgments'][key])
+        self.tools.semantic.register_native_result(out['result_view'],out)
+        before=digest(out['rows'])
+        with patch.object(system_one,'judge_fields',side_effect=AssertionError('No new votes in history verification')):
+            checked=R.interpret_rejected(self.tools,out['result_view'],verify_only=True)
+        self.assertEqual(digest(checked['rows']),before)
+        # Active tampering still fails even when older observations exist.
+        target['qualifier_axes']['subject']['label']='family'
+        self.tools.semantic.register_native_result(out['result_view'],out)
+        with self.assertRaisesRegex(ValueError,'precise qualifiers lack a source-bound check'):
+            R.interpret_rejected(self.tools,out['result_view'],verify_only=True)
 
     def test_categorical_reader_cannot_change_quantities_units_domains_or_dates(self):
         item={'proposal':{'concept':'authored','relation':'received_observation','value':12.5,'unit':'mg','value_domain':'dose',
