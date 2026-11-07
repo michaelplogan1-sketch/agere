@@ -110,7 +110,7 @@ TOOLS = [
      'source_scope=all explicitly requests exhaustive source coverage when needed. '
      'Use field_patient_queries to apply conditional fields to native patient subsets while retaining the full output population. '
      'Field IDs keep their exact question/entity/relation/subject contract throughout this request. Reuse that contract for expanded patient or source scope; a changed question, entity, relation or alias set requires a new versioned field ID. '
-     'Alternatively supply only assertion_result_view: review every complete proposed assertion tuple in a qualified native qualifier-account audit against its exact complete original received record. Original annotations stay unchanged; new support/unknown/rejected machine observations return separately in a composable result_view. This does not establish clinical truth, source recall or resolve opposing records. '
+     'Alternatively supply only assertion_result_view: review every complete proposed assertion tuple in a qualified native qualifier-account audit against its exact complete original received record. Supply the resulting assertion_source_review view to the same tool to interpret its rejected categorical narrative proposals with the existing semantic-reader axes, check changed tuples, and compose conditional effects/documentary state. Original annotations stay unchanged; new machine observations/interpretations return separately in a composable result_view. This does not establish clinical truth, source recall or resolve opposing records. '
      'The question-based mode returns coverage and a SQL result_view containing patient_id, review_status, documents_reviewed and review_json. '
      'Each review_json field is a list of {value,record_id,date,quote}; empty means no documented finding, not absent disease. '
      'For a relation about a specific entity use {question,entity:{kind,id,aliases},relation,subject} instead of a question string. '
@@ -1298,12 +1298,14 @@ AUDIT_LITERAL_FIELDS=frozenset(('audit_account_id','assertion_id','annotation_id
     'source_record_id','reported_record_id','source_date','arrival_date','source_binding_established',
     'authority','semantic_validation','annotation_origin','assertion_window_state','binding_failure',
     'current_clinical_state_established','source','evidence','received_annotation'))
+AUDIT_CONDITIONAL_FIELDS=frozenset(('source_repetition','qualifier_effects','positive_under_received_qualifiers',
+    'source_structure','reader_review_reasons','analytical_effects','account_group','native_exclusion_reasons'))
 AUDIT_SEMANTIC_FIELDS=frozenset(('audit_account_id','patient_id','source_record_id','concept','relation',
     'value','unit','value_domain','polarity','subject','temporality','clinical_date'))
 
 
 def audit_literal_columns(answer,calls,proof):
-    """Qualify literal copies only when the full semantic axes remain visible."""
+    """Qualify native copies/conditional fields with semantic axes still visible."""
     if proof is None:return []
     context=structural_prose_context(answer,calls,proof)
     if(not context or not AUDIT_SEMANTIC_FIELDS<=set(context['columns'])
@@ -1312,7 +1314,7 @@ def audit_literal_columns(answer,calls,proof):
     projection=proof.get('native_projection')
     fields=projection['fields']if projection else {
         field:{'kind':'native_copy','source_columns':[field]}for field in context['columns']}
-    return sorted(field for field in AUDIT_LITERAL_FIELDS if field in context['columns']
+    return sorted(field for field in AUDIT_LITERAL_FIELDS|AUDIT_CONDITIONAL_FIELDS if field in context['columns']
         and(fields.get(field)or{}).get('kind')=='native_copy'
         and(fields.get(field)or{}).get('source_columns')==[field])
 
@@ -1328,7 +1330,7 @@ def audit_field_context(packet,state):
             or proof.get('as_of')!=packet.get('date')or proof.get('result_view')!=packet.get('result_view')
             or proof.get('binding_digest')!=digest({k:v for k,v in proof.items()if k!='binding_digest'})
             or not proof.get('qualified_contract_digest')or not proof.get('source_digest')
-            or not set(proof['columns'])<=AUDIT_LITERAL_FIELDS
+            or not set(proof['columns'])<=AUDIT_LITERAL_FIELDS|AUDIT_CONDITIONAL_FIELDS
             or digest(state.get('source_contexts'))!=proof.get('source_contexts_digest')
             or not state.get('source_contexts')or state.get('claim_manifest')!=packet.get('claim_manifest')):return None
         partition=state.get('claim_partition')
@@ -1354,7 +1356,7 @@ def native_field_proof(packet,claim,state,*,audit_context=None):
     proof=audit_context if audit_context is not None else audit_field_context(packet,state)
     path=claim.get('path')or[];field=claim.get('field')
     if (proof and len(path)==3 and path[0]=='answer_rows'and type(path[1])is int
-        and path[2]==field and field in proof['columns']and field in AUDIT_LITERAL_FIELDS
+        and path[2]==field and field in proof['columns']and field in AUDIT_LITERAL_FIELDS|AUDIT_CONDITIONAL_FIELDS
         and 0<=path[1]<len(proof['rows'])):
         original=proof['rows'][path[1]]
         if original is not None and field in original:
@@ -1366,8 +1368,10 @@ def native_field_proof(packet,claim,state,*,audit_context=None):
                     'qualified_contract_digest':proof['qualified_contract_digest'],
                     'audit_account_id':original['audit_account_id'],'source_record_id':original.get('source_record_id'),
                     'field':field,'path':path,'value_digest':digest(value),
-                    'authority':'native_received_audit_copy','clinical_qualification':False,
-                    'scope':'Literal received metadata/quote fidelity only. Entity, relation, value, subject, polarity, clinical time and analytical interpretation still require complete-source judgments.'}
+                    'authority':'native_conditional_audit_projection'if field in AUDIT_CONDITIONAL_FIELDS else'native_received_audit_copy',
+                    'clinical_qualification':False,
+                    'scope':('Exact native audit field, conditional on the received proposed qualifiers and versioned native transformation. Repetition, structural flags, grouping and counting effects are not established clinical meaning, independent corroboration or clinical contradictions.'if field in AUDIT_CONDITIONAL_FIELDS else
+                        'Literal received metadata/quote fidelity only. Entity, relation, value, subject, polarity and clinical time still require complete-source judgments.')}
     return native_profile_field_proof(packet,claim,state)
 
 
@@ -3121,7 +3125,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
                     'state_digest':digest(packet),'source_contexts_digest':digest(packet['source_contexts']),
                     'protected_inputs_digest':digest({k:v for k,v in packet.items()if k not in
                         {'answer','answer_rows','all_final_rows','claim_manifest','scope'}}),
-                    'scope':'Received literal copy fidelity only; all semantic axes and analytical effects remain source judgments.'}
+                    'scope':'Received copy fidelity and native transformations conditional on received qualifiers. Actual subject, polarity, relation, values, clinical time and clinical consequences still require source interpretation.'}
                 tuples={}
                 for row in packet['answer_rows']:
                     ident=row.get('audit_account_id');observed=(assertion_observations or{}).get(ident)

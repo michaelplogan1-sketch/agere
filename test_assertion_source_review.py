@@ -142,7 +142,7 @@ class AssertionReview(unittest.TestCase):
                     self.assertEqual(observed['source_tuple_support']['observation']['authority'],'machine_source_observation')
                     self.assertFalse(observed['clinical_qualification'])
                     self.assertNotIn(claim,asked)
-        self.assertGreater(reused,0);self.assertTrue(asked)
+        self.assertGreater(reused,0);self.assertFalse(asked)
         self.assertTrue(all(c['field']not in R.FIELDS for c in asked))
 
     def test_rejected_joint_tuple_cannot_support_any_constituent_field(self):

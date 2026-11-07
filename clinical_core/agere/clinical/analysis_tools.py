@@ -220,6 +220,21 @@ def documentary_rows(path,operation,report):
     return rows
 
 
+def conditional_qualifier_effects(assertion,group=None):
+    """Counting effects of supplied qualifiers, never source/clinical truth."""
+    a=assertion;effects=[]
+    if a.get('polarity')=='negated':effects.append('negated_proposal_not_affirmed_evidence')
+    elif a.get('polarity')!='affirmed':effects.append('polarity_unresolved')
+    if a.get('temporality')!='current':effects.append('not_established_as_current')
+    if a.get('subject')!='patient':effects.append('patient_subject_not_established')
+    if a.get('source_repetition')is not None:effects.append('repetition_not_independent_corroboration')
+    if (a.get('source_repetition')or{}).get('cannot_refresh_state'):effects.append('repetition_cannot_refresh_state')
+    if a.get('assertion_window_state')=='unknown':effects.append('assertion_window_date_unresolved')
+    if (group or{}).get('status')in ('same_date_conflict','opposing_reports_over_time_or_unresolved_clock'):
+        effects.append('opposing_documentary_accounts_need_review')
+    return effects
+
+
 def qualifier_account_rows(patients):
     """Native documentary effects, never diagnosed clinical consequences.
 
@@ -249,16 +264,7 @@ def qualifier_account_rows(patients):
                 or a.get('temporality','unknown')!='current'or a.get('assertion_window_state')=='unknown'
                 or a.get('qualifier_effects')or a.get('source_repetition')is not None or exclusions.get(a['id'])
                 or (groups.get(a['id'])or{}).get('status')in ('same_date_conflict','opposing_reports_over_time_or_unresolved_clock')):continue
-            effects=[]
-            if a.get('polarity')=='negated':effects.append('negated_proposal_not_affirmed_evidence')
-            elif a.get('polarity')!='affirmed':effects.append('polarity_unresolved')
-            if a.get('temporality')!='current':effects.append('not_established_as_current')
-            if a.get('subject')!='patient':effects.append('patient_subject_not_established')
-            if a.get('source_repetition')is not None:effects.append('repetition_not_independent_corroboration')
-            if (a.get('source_repetition')or{}).get('cannot_refresh_state'):effects.append('repetition_cannot_refresh_state')
-            if a.get('assertion_window_state')=='unknown':effects.append('assertion_window_date_unresolved')
-            if (groups.get(a['id'])or{}).get('status')in ('same_date_conflict','opposing_reports_over_time_or_unresolved_clock'):
-                effects.append('opposing_documentary_accounts_need_review')
+            effects=conditional_qualifier_effects(a,groups.get(a['id']))
             row={k:a.get(k)for k in fields}
             row.update(audit_account_id=digest([receipt['id'],a['id']]),patient_id=pid,assertion_id=a['id'],
                 annotation_id=None,receipt_id=receipt['id'],source_binding_established=True,

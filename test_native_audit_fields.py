@@ -26,10 +26,10 @@ class AuditFields(unittest.TestCase):
         result=B.localize_support_failure(packet,unknown,as_of=AS_OF,ledger=None)
         native=[r for r in result['field_review']['supported_claims']if r['verification_observation'].get('native_provenance')]
         self.assertTrue(native);self.assertTrue(requested)
-        self.assertTrue(all(r['field']in B.AUDIT_LITERAL_FIELDS for r in native))
+        self.assertTrue(all(r['field']in B.AUDIT_LITERAL_FIELDS|B.AUDIT_CONDITIONAL_FIELDS for r in native))
         fields={c['field']for c in requested}
         self.assertTrue({'concept','relation','value','unit','value_domain','polarity','subject','temporality','clinical_date'}<=fields)
-        self.assertIn('analytical_effects',fields);self.assertIn('account_group',fields)
+        self.assertNotIn('analytical_effects',fields);self.assertNotIn('account_group',fields)
         self.assertEqual(len(requested)+len(native),len(packet['claim_manifest']))
         self.assertIsNone(B.complete_claim_composition(packet,result['field_review']))
         self.assertFalse(result['field_review']['all_fields_supported'])
@@ -45,8 +45,20 @@ class AuditFields(unittest.TestCase):
         packet=next(p for p in self.packets()if p.get('native_audit_fields'))
         state=uncompact_json(json.loads(packet['text']))
         for claim in packet['claim_manifest']:
-            if claim['field']in ('value','unit','subject','polarity','temporality','clinical_date','analytical_effects','account_group'):
+            if claim['field']in ('value','unit','subject','polarity','temporality','clinical_date'):
                 with self.subTest(field=claim['field']):self.assertIsNone(B.native_field_proof(packet,claim,state))
+
+    def test_conditional_counting_fields_are_code_verified_without_accepting_their_clinical_premise(self):
+        packet=next(p for p in self.packets()if p.get('native_audit_fields'))
+        state=uncompact_json(json.loads(packet['text']))
+        for claim in packet['claim_manifest']:
+            if claim['field']in B.AUDIT_CONDITIONAL_FIELDS:
+                proof=B.native_field_proof(packet,claim,state)
+                self.assertEqual(proof['authority'],'native_conditional_audit_projection')
+                self.assertFalse(proof['clinical_qualification'])
+        self.assertIsNone(B.complete_claim_composition(packet,B.localize_support_failure(packet,
+            lambda s,q,e,**kw:{'judgments':{k:{'label':'unknown','decided_by':None}for k in q},'steps':[]},
+            as_of=AS_OF,ledger=None)['field_review']))
 
     def test_changed_claim_source_patient_clock_and_native_role_fail_closed(self):
         original=next(p for p in self.packets()if p.get('native_audit_fields'))
