@@ -62,6 +62,17 @@ class NativeColumnProjection(unittest.TestCase):
         projection=self.project()['agere_result_1']
         self.assertEqual(projection['columns'],['patient_id']);self.assertEqual(projection['rows'],[['A'],['A'],['B']])
 
+    def test_independent_projection_sources_have_a_stable_packet_order(self):
+        other=copy.deepcopy(self.producer);other['result']['result_view']='agere_result_4'
+        other['result']['rows']=[['C','unresolved',{'quote':'A different received source.'}]]
+        B.define_result(self.wh,'agere_result_4',other['result']['columns'],other['result']['rows'],receipt=other['result'])
+        consumer=self.execute("SELECT (SELECT COUNT(*) FROM agere_result_1 WHERE status='unresolved') a, (SELECT COUNT(*) FROM agere_result_4 WHERE status='unresolved') b")
+        calls=[self.producer,other,consumer];before=copy.deepcopy(calls)
+        projections=native_column_projections(calls,['agere_result_2'],{'agere_result_4','agere_result_2','agere_result_1'})
+        self.assertEqual(list(projections),['agere_result_1','agere_result_4'])
+        self.assertEqual([p['row_count']for p in projections.values()],[3,1])
+        self.assertEqual(calls,before)
+
     def sql_intermediate(self):
         producer=self.execute('SELECT * FROM agere_result_1')
         producer['result']['result_view']='agere_result_4'

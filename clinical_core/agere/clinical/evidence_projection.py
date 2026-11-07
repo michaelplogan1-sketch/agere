@@ -710,7 +710,9 @@ def native_column_projections(calls, roots, dependencies):
     if dependencies is None or duplicates:return {}
     replays=replayed_column_dependencies(calls,roots,dependencies,by)
     projections={}
-    for view in dependencies-set(roots):
+    # A set's process-local order must not change an otherwise identical
+    # source-review packet or its paid-request/cache identity after restart.
+    for view in sorted(dependencies-set(roots)):
         producer=by.get(view)
         if not producer or producer.get('name')not in ('execute_analysis','query_sql','read_patient_profiles'):continue
         result=producer['result']
