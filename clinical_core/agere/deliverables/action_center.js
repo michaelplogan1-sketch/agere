@@ -33,12 +33,30 @@ const initials = owner => String(owner || '').trim().split(/\s+/).slice(0,2).map
 let data = null, selected = new Set(), busy = false, currentView = 'overview', pageIndex = 0, intent = null, toastTimer, lastDialogTrigger;
 const viewNames = {overview:'Overview',cohort:'Your cohort',work:'Work board',studio:'Creative studio'};
 
+function restoreWorkspaceRows(record) {
+  const c=record?.context, encoding=c?.patient_row_encoding;
+  if (!encoding) return record;
+  if (encoding.schema!=='answer-row-indices/1' || encoding.native_context_id!==c.id
+      || encoding.context_derivation!==c.dependencies?.derivation
+      || JSON.stringify(encoding.table)!=='["answer","table"]' || !Array.isArray(c.answer?.table)
+      || !Array.isArray(c.patient_rows)) throw Error('The saved evidence row references are unavailable. Refresh the answer.');
+  const table=c.answer.table;
+  const patients=c.patient_rows.map(patient => {
+    if (!Array.isArray(patient.evidence_row_indices) || patient.evidence_rows!==undefined
+        || patient.evidence_row_indices.some(i=>!Number.isInteger(i)||i<0||i>=table.length))
+      throw Error('The saved patient evidence does not match this answer. Refresh the answer.');
+    const {evidence_row_indices,...rest}=patient;
+    return {...rest,evidence_rows:evidence_row_indices.map(i=>table[i])};
+  });
+  return {...record,context:{...c,patient_rows:patients}};
+}
 async function api(url, body) {
-  const response = await fetch(url, body ? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)} : undefined);
+  const response = await fetch(url, body ? {method:'POST',headers:{'Content-Type':'application/json','X-Agere-Response-View':'workspace'},body:JSON.stringify(body)}
+    : {headers:{'X-Agere-Response-View':'workspace'}});
   let result;
   try { result = await response.json(); } catch (_) { throw Error('Could not read the server response. Try again.'); }
   if (!response.ok || result.error) throw Error(result.error || 'The request could not be completed.');
-  return result;
+  return restoreWorkspaceRows(result);
 }
 function notify(message, error=false) {
   clearTimeout(toastTimer);
@@ -113,7 +131,22 @@ for (const dialog of document.querySelectorAll('dialog')) {
 function evidence() {
   const c = data.context;
   $('evidence-summary').innerHTML = '<div class="evidence-summary"><h3>'+esc(c.question)+'</h3><p>'+esc(c.answer.headline || '')+'</p><dl><dt>Snapshot</dt><dd>'+esc(date(c.source.as_of))+'</dd><dt>Answer status</dt><dd>'+esc(pretty(c.answer.status))+'</dd><dt>Patient scope</dt><dd>'+num(c.patient_rows.length)+' patients in this saved answer</dd><dt>Known API cost</dt><dd>'+(c.planning_economics?.known_api_estimate_usd == null ? 'Unavailable' : '$'+Number(c.planning_economics.known_api_estimate_usd).toFixed(4))+'</dd></dl></div>';
-  $('evidence').textContent = JSON.stringify({answer:c.answer,graph:c.graph,results:c.results,source:c.source,planner_receipt:c.planner_receipt,planning_economics:c.planning_economics}, null, 2);
+  const native=c.inspection_projection?.native_view_url;
+  const answer=native ? {status:c.answer.status,verification:c.answer.verification,headline:c.answer.headline,
+    missing:c.answer.missing,limitations:c.answer.limitations,table_rows:c.answer.table?.length,
+    table_columns:Object.keys(c.answer.table?.[0]||{}),complete_answer_url:native} : c.answer;
+  $('evidence').textContent = JSON.stringify({answer,graph:c.graph,results:c.results,source:c.source,planner_receipt:c.planner_receipt,planning_economics:c.planning_economics}, null, 2);
+  if (native) {
+    const button=document.createElement('button');button.type='button';button.className='btn';button.textContent='Inspect full calculation';
+    button.onclick=()=>run(async()=>{
+      button.disabled=true;button.textContent='Loading saved calculation…';
+      try { const full=await api(native), n=full.context;
+        $('evidence').textContent=JSON.stringify({answer:n.answer,graph:n.graph,results:n.results,source:n.source,planner_receipt:n.planner_receipt,planning_economics:n.planning_economics},null,2);
+        button.remove();
+      } finally {button.disabled=false;button.textContent='Inspect full calculation';}
+    });
+    $('evidence-summary').append(button);
+  }
   openDialog('evidence-dialog');
 }
 function start(program) {

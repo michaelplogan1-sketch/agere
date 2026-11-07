@@ -324,7 +324,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         result=answer_context.compose_frontier(connected_stack.path,body,allow_live=connected_stack.allow_live)
                     if path.endswith(('/action-work/create','/action-work/update','/action-work/refresh')):
                         from .deliverables.action_center import inspection_view
-                        result=inspection_view(result)
+                        result=inspection_view(result,compact_rows=self.headers.get('X-Agere-Response-View')=='workspace')
                 elif path=='/api/stack/action-workflow/retry':
                     from .deliverables.workflow import retry_deliverable
                     result=retry_deliverable(connected_stack.path,body,allow_live=connected_stack.allow_live)
@@ -935,7 +935,10 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         from .deliverables.compose import context_review
                         result['independent_review']=context_review(connected_stack.path,result['context'])
                         from .deliverables.action_center import inspection_view
-                        result=inspection_view(result)
+                        view=params.get('view',[''])[0]
+                        if view not in ('','native'):raise ValueError('Unknown saved evidence view')
+                        if view!='native':
+                            result=inspection_view(result,compact_rows=self.headers.get('X-Agere-Response-View')=='workspace')
                     else:
                         if parsed.path.endswith('/action-deliverable') and params.get('format'):
                             # read_format loads the context and validates its source,
@@ -961,7 +964,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         raw,encoding=encode_inspection(result,self.headers.get('Accept-Encoding',''))
                         self.send_response(200);self.send_header('Content-Type',mime)
                         self.send_header('Content-Length',str(len(raw)))
-                        self.send_header('Vary','Accept-Encoding')
+                        self.send_header('Vary','X-Agere-Response-View, Accept-Encoding')
                         self.send_header('Cache-Control','no-store')
                         self.send_header('X-Content-Type-Options','nosniff')
                         if encoding:self.send_header('Content-Encoding',encoding)

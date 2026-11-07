@@ -4,6 +4,8 @@ import json
 import gzip
 import tempfile
 import unittest
+import shutil
+import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
@@ -79,6 +81,17 @@ class ComposePayload(unittest.TestCase):
         self.assertEqual(view['answer'],result['answer']);self.assertEqual(view['workflow'],result['workflow'])
         self.assertFalse(view['investigation']['draft_resume_available'])
 
+    def test_native_graph_compose_keeps_every_answer_and_cost_without_duplicate_results(self):
+        self.result.pop('investigation');self.context.pop('investigation')
+        self.file.write_text(json.dumps(self.context));before=copy.deepcopy(self.result)
+        view=compose_view(self.root,self.result)
+        for key in ('answer','cost_receipt','cost_telemetry','workflow','conversation','question'):
+            self.assertEqual(view[key],before[key])
+        self.assertNotIn('investigation',view)
+        self.assertEqual(view['results']['native_reference']['path'],['results'])
+        self.assertEqual(view['results']['native_reference']['context_derivation'],'exact-native-snapshot')
+        self.assertEqual(self.result,before)
+
     def test_json_encoding_does_not_emit_nonstandard_nan(self):
         with self.assertRaises(ValueError):encode_inspection({'amount':float('nan')},'gzip')
 
@@ -116,6 +129,77 @@ class ComposePayload(unittest.TestCase):
 
 
 class WorkspacePayload(unittest.TestCase):
+    def native_record(self):
+        rows=[{'patient_id':'A','account_id':'same','amount_cents':0,'source':None},
+              {'patient_id':'A','account_id':'same','amount_cents':0,'source':None},
+              {'patient_id':'B','account_id':'same','amount_cents':None,'source':'Exact β </script> source'}]
+        return {'context':{'id':'ANS-'+'b'*24,'source':{'source_digest':'received'},
+            'dependencies':{'derivation':'sealed-native'},'graph':{'nodes':[{'id':'accounts','operation':'financial_accounts'}]},
+            'results':[{'complete':'Retained calculation '*1000}],
+            'answer':{'status':'partial','verification':'unverified','table':rows,'missing':['Currency unresolved']},
+            'patient_ids':['A','B'],'patient_rows':[{'patient_id':'A','evidence_rows':rows[:2]},
+                {'patient_id':'B','evidence_rows':rows[2:]},{'patient_id':'EMPTY','evidence_rows':[]}],
+            'stale':True,'invalidated':True,'supports_patient_work':False},
+            'items':[{'id':'work','revision':2,'state':'blocked'}],'workflow':{'steps':[{'status':'blocked'}]}}
+
+    def test_native_graph_projection_retains_rows_unknowns_work_and_resolvable_history(self):
+        record=self.native_record();before=copy.deepcopy(record);shown=inspection_view(record)
+        for key in ('answer','patient_rows','patient_ids','source','dependencies','stale','invalidated','supports_patient_work'):
+            self.assertEqual(shown['context'][key],before['context'][key])
+        self.assertEqual(shown['items'],record['items']);self.assertEqual(shown['workflow'],record['workflow'])
+        ref=shown['context']['results']['native_reference'];value=record['context']
+        for key in ref['path']:value=value[key]
+        self.assertEqual(value,before['context']['results']);self.assertIn('view=native',ref['url'])
+        self.assertEqual(record,before)
+
+    def test_browser_evidence_indices_preserve_duplicate_rows_order_and_empty_members(self):
+        record=self.native_record();before=copy.deepcopy(record);shown=inspection_view(record,compact_rows=True)['context']
+        self.assertEqual([p['evidence_row_indices']for p in shown['patient_rows']],[[0,1],[2],[]])
+        restored=[{**{k:v for k,v in p.items()if k!='evidence_row_indices'},
+            'evidence_rows':[shown['answer']['table'][i]for i in p['evidence_row_indices']]}for p in shown['patient_rows']]
+        self.assertEqual(restored,before['context']['patient_rows']);self.assertEqual(record,before)
+
+    def test_nonmatching_or_extra_patient_evidence_keeps_its_complete_original_rows(self):
+        for row in ({'patient_id':'A','amount_cents':999},{'patient_id':'A','amount_cents':True}):
+            record=self.native_record();record['context']['patient_rows'][0]['evidence_rows'].append(row)
+            shown=inspection_view(record,compact_rows=True)['context']
+            self.assertNotIn('patient_row_encoding',shown)
+            self.assertEqual(shown['patient_rows'],record['context']['patient_rows'])
+        record=self.native_record();record['context']['patient_rows'][0]['evidence_row_indices']=['source field, not transport metadata']
+        shown=inspection_view(record,compact_rows=True)['context']
+        self.assertNotIn('patient_row_encoding',shown);self.assertEqual(shown['patient_rows'],record['context']['patient_rows'])
+
+    @unittest.skipUnless(shutil.which('node'),'Node is required for the browser hydration check')
+    def test_actual_browser_hydration_and_invalid_reference_guards(self):
+        record=self.native_record();shown=inspection_view(record,compact_rows=True)
+        script=Path('clinical_core/agere/deliverables/action_center.js').read_text()
+        body='function restoreWorkspaceRows(record) {'+script.split('function restoreWorkspaceRows(record) {',1)[1].split('\nasync function api(',1)[0]
+        checks=r'''
+const assert=require('node:assert/strict');
+const input=JSON.parse(require('node:fs').readFileSync(0,'utf8'));
+const native=input.native, encoded=input.encoded, before=JSON.stringify(encoded);
+const full=restoreWorkspaceRows(encoded);
+assert.deepEqual(full.context.patient_rows,native.context.patient_rows);
+assert.strictEqual(full.context.patient_rows[0].evidence_rows[0],full.context.answer.table[0]);
+assert.strictEqual(full.context.patient_rows[0].evidence_rows[1],full.context.answer.table[1]);
+assert.equal(JSON.stringify(encoded),before);
+for(const change of ['id','derivation','schema','negative','outside','fraction','missing','both']) {
+  const bad=JSON.parse(before),c=bad.context;
+  if(change==='id')c.patient_row_encoding.native_context_id='other';
+  if(change==='derivation')c.patient_row_encoding.context_derivation='other';
+  if(change==='schema')c.patient_row_encoding.schema='unknown';
+  if(change==='negative')c.patient_rows[0].evidence_row_indices=[-1];
+  if(change==='outside')c.patient_rows[0].evidence_row_indices=[100];
+  if(change==='fraction')c.patient_rows[0].evidence_row_indices=[0.5];
+  if(change==='missing')delete c.patient_rows[0].evidence_row_indices;
+  if(change==='both')c.patient_rows[0].evidence_rows=[];
+  assert.throws(()=>restoreWorkspaceRows(bad),Error,change);
+}
+console.log('Browser hydration and eight invalid-reference cases passed');
+'''
+        result=subprocess.run(['node','-e',body+'\n'+checks],input=json.dumps({'native':record,'encoded':shown}),text=True,capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+
     def test_resume_availability_does_not_send_draft_checkpoint_to_browser(self):
         record={'context':{'id':'ANS-fixture','answer':{'status':'partial'},'workflow':[],
             'investigation':{'recovery_checkpoint':{'draft':{'headline':'Retained internal draft'}},

@@ -68,7 +68,35 @@ def _review_projection(context):
         (context.get('investigation')or{}).get('answer_reviews')or[],['investigation','answer_reviews'])
 
 
-def inspection_view(record):
+def _patient_row_indices(context):
+    """Share only exact answer rows, retaining order, duplicates and extras.
+
+    Browser hydration points back to complete answer rows. An unmatched row
+    keeps the original patient representation; no evidence is guessed or lost.
+    """
+    from collections import defaultdict,deque
+    from ...contracts import digest
+    table=(context.get('answer')or{}).get('table')
+    patients=context.get('patient_rows')
+    if not isinstance(table,list)or not isinstance(patients,list):return None
+    available=defaultdict(deque)
+    for index,row in enumerate(table):available[digest(row)].append(index)
+    encoded=[]
+    for patient in patients:
+        if(not isinstance(patient,dict)or not isinstance(patient.get('evidence_rows'),list)
+            or 'evidence_row_indices'in patient):return None
+        indices=[]
+        for row in patient['evidence_rows']:
+            candidates=available[digest(row)]
+            if not candidates:return None
+            index=candidates.popleft()
+            if table[index]!=row:return None
+            indices.append(index)
+        encoded.append({**{k:v for k,v in patient.items()if k!='evidence_rows'},'evidence_row_indices':indices})
+    return encoded
+
+
+def inspection_view(record, *, compact_rows=False):
     """Present a saved investigation without transferring duplicate native history.
 
     Mutation and source checks still use the complete immutable server context.
@@ -79,7 +107,23 @@ def inspection_view(record):
     investigation = (context or {}).get('investigation') or {}
     calls = investigation.get('tool_calls') or []
     if not calls:
-        return record
+        graph=(context or{}).get('graph')or{}
+        if not(graph.get('nodes')and isinstance(context.get('results'),list)
+               and(context.get('dependencies')or{}).get('derivation')):return record
+        from urllib.parse import urlencode
+        native_url='/api/stack/action-context?'+urlencode({'context':context['id'],'view':'native'})
+        reference={'native_context_id':context['id'],'path':['results'],
+                   'context_derivation':context['dependencies']['derivation'],'url':native_url}
+        shown={**context,'results':{'native_reference':reference},'inspection_projection':{
+            'schema':'native-investigation-workspace-view/3','kind':'native_graph',
+            'native_context_id':context['id'],'native_view_url':native_url,
+            'complete_native_history_retained':True,'clinical_acceptance_changed':False}}
+        indices=_patient_row_indices(context)if compact_rows else None
+        if indices is not None:
+            shown.update(patient_rows=indices,patient_row_encoding={
+                'schema':'answer-row-indices/1','table':['answer','table'],
+                'native_context_id':context['id'],'context_derivation':context['dependencies']['derivation']})
+        return {**record,'context':shown}
     from ..clinical.backstop_agent import execution_review_graph
     graph = execution_review_graph(calls, context.get('answer'))
     # The verifier's graph may contain inline SQL/JSON and full intermediate
@@ -134,8 +178,7 @@ def compose_view(path, result):
     from . import answer_context
     key = (result.get('action_context') or {}).get('id')
     investigation = result.get('investigation') or {}
-    if (not isinstance(key, str) or not re.fullmatch(r'ANS-[0-9a-f]{24}', key)
-            or not investigation.get('tool_calls')):
+    if not isinstance(key, str) or not re.fullmatch(r'ANS-[0-9a-f]{24}', key):
         return result
     try:
         context = json.loads((answer_context.root(path) / key / 'answer.json').read_text())
@@ -187,17 +230,18 @@ def compose_view(path, result):
         return value
     receipt = graphs(receipt)
     out = {**result, 'graph':compact_graph, 'planner_receipt':receipt,
-           'investigation':{
+           'response_projection':{'schema':'saved-compose-view/1', 'native_context_id':key,
+                                  'complete_native_history_retained':True,
+                                  'clinical_acceptance_changed':False}}
+    if investigation.get('tool_calls'):
+        out['investigation']={
                'model':investigation.get('model'),
                'tool_call_count':len(investigation['tool_calls']),
                'document_review_count':len(investigation.get('document_reviews') or []),
                'answer_reviews':reviews,
                'draft_resume_available':bool(investigation.get('recovery_checkpoint')) and not result.get('workflow'),
                'native_reference':reference(['investigation']),
-               'complete_native_history_retained':True},
-           'response_projection':{'schema':'saved-compose-view/1', 'native_context_id':key,
-                                  'complete_native_history_retained':True,
-                                  'clinical_acceptance_changed':False}}
+               'complete_native_history_retained':True}
     native_contract = (context.get('planner_receipt') or {}).get('request_contract')
     if 'request_contract' in result and result['request_contract'] == native_contract:
         out['request_contract'] = receipt.get('request_contract')
