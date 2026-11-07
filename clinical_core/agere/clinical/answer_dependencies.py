@@ -68,7 +68,8 @@ def validate(path, context, *, source, policy, check_probes=False):
     if context.get('graph'):  # PlanFence: the premises the saved plan was derived under must still hold before reuse or action
         try:
             from .plan_fence import premise_issues
-            premises = premise_issues(path, context.get('question'), context['graph'])
+            premises = premise_issues(path, context.get('question'), context['graph'],
+                native_calls=(context.get('investigation')or{}).get('tool_calls'))
         except Exception:  # noqa: BLE001 - premise validation annotates; it never makes a saved answer unreadable
             premises = []
         issues += ['Premise changed: ' + p for p in premises]

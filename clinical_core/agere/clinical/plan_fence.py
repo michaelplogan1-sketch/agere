@@ -150,10 +150,69 @@ def _saved_row(path, graph):
     return None
 
 
-def premise_issues(path, question, graph, *, saved=None, schema=None):
+def native_premise_graph(graph,calls):
+    """Resolve only hash-bound, actually executed native query dependencies.
+
+    This is syntax-only schema checking. Empty column projections stand in for
+    immutable native rows; they never execute or replace captured observations.
+    Every physical producer query is also checked against the current schema.
+    Unknown names, changed statements and changed source receipts fail closed.
+    """
+    from .sql_query import native_query_binding_errors,portable_native_query
+    errors=native_query_binding_errors(calls)
+    if errors:return graph,['native: '+e['reason']for e in errors]
+    from .sql_query import validate_bound_native_query
+    native={};replacements={};producers=[]
+    def columns(result):
+        fields=result.get('columns')or[]
+        if not fields or any(not isinstance(c,str)or not c for c in fields)or len(fields)!=len(set(fields)):
+            raise ValueError('Native source has no complete unique column contract')
+        return 'SELECT '+', '.join('NULL AS "'+c.replace('"','""')+'"'for c in fields)+' WHERE 0'
+    for call in calls:
+        result=call.get('result')or{}
+        if not isinstance(result,dict)or result.get('error'):continue
+        name=result.get('result_view')
+        if not isinstance(name,str):continue
+        if name in native:return graph,['native: Duplicate native result identity']
+        if call.get('name')=='query_sql':
+            query=result.get('executed_query')
+            if not isinstance(query,str):return graph,['native: Executed query is unavailable']
+            resolved=query
+            if 'native_query_receipt'in result:
+                if not validate_bound_native_query(result,native):return graph,['native: Native query binding changed']
+                try:
+                    sources={v:columns(native[v])for v in result['read_views']}
+                    resolved=portable_native_query(query,sources,result['read_views'])
+                except (ValueError,KeyError,TypeError):return graph,['native: Native source columns or bindings unavailable']
+            replacements[query.strip()]=resolved
+            producers.append(resolved)
+        native[name]=result
+    nodes=[]
+    for node in(graph or{}).get('nodes')or[]:
+        params=dict(node.get('parameters')or{})
+        for key in('query','membership_query','unknown_membership_query'):
+            if isinstance(params.get(key),str):params[key]=replacements.get(params[key].strip(),params[key])
+        nodes.append({**node,'parameters':params})
+    present=set(_sqls({'nodes':nodes}))
+    for index,query in enumerate(producers):
+        if query not in present:
+            nodes.append({'id':'native_premise_'+str(index),'operation':'sql','parameters':{'query':query}});present.add(query)
+    return {**(graph or{}),'nodes':nodes},[]
+
+
+def premise_issues(path, question, graph, *, saved=None, schema=None,native_calls=None):
     """Readable reasons the plan's premises no longer hold (empty list = current)."""
     issues = []
-    prem = premises(graph)
+    effective=graph
+    if native_calls is not None:
+        try:effective,native_issues=native_premise_graph(graph,native_calls)
+        except (ValueError,KeyError,TypeError,AttributeError,RecursionError):
+            native_issues=['native: Native result provenance could not be validated']
+        issues.extend(native_issues)
+    try:prem = premises(effective)
+    except Exception:
+        if native_calls is not None:return [*issues,'native: Executed dependency schema could not be resolved']
+        raise
     schema = _schema(path) if schema is None else schema
     if schema is not None:
         gone = [t for t in prem['tables'] if t not in schema]
