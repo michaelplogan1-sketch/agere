@@ -319,6 +319,141 @@ def qualifier_output_scope_errors(answer,calls):
     return []
 
 
+def _qualifier_projection_coverage(answer,calls,tools,as_of,call,parent_view):
+    """Checked row-local display of one complete native received-label audit.
+
+    This certifies copying and deterministic projection execution only. New
+    conditional labels remain explicit expressions for separate meaning review.
+    No clinical source judgment is inherited from this proof.
+    """
+    import copy
+    from collections import Counter
+    import sqlglot
+    from sqlglot import exp
+    from . import sql_query as Q
+    from .backstop_agent import output_table
+    from .result_assembly import incomplete_reason
+    def require(condition,message):
+        if not condition:raise ValueError('Native audit projection binding: '+message)
+    index=next(i for i,c in enumerate(calls)if c is call);prior=calls[:index]
+    native={};counts=Counter()
+    for c in prior:
+        r=c.get('result')or{};view=r.get('result_view')if isinstance(r,dict)else None
+        if view:native[view]=r;counts[view]+=1
+    result=call['result'];root=result['result_view'];parent=native.get(parent_view)or{}
+    require(counts[parent_view]==1 and parent.get('analysis')=='assertion_review'
+        and parent.get('output')=='qualifier_accounts','one exact preceding native audit required')
+    require(result.get('read_views')==[parent_view]and not incomplete_reason(result),'complete single-parent input required')
+    require(Q.validate_bound_native_query(result,native),'executed statement or native origins changed')
+    require((answer.get('table_binding')or{}).get('result_view')==root,'native table binding required')
+    require(not (answer.get('table_binding')or{}).get('interpreted_columns'),'clinical row prose requires separate source review')
+    registered=getattr(getattr(tools.semantic,'_local',None),'native_results',{}).get(root.casefold())or{}
+    origin=digest({k:v for k,v in result.items()if k!='result_view'})
+    require(registered.get('receipt_digest')==origin,'registered projection changed')
+    columns,matrix=output_table(result);table=[dict(zip(columns,row))for row in matrix]
+    require(len(set(columns))==len(columns)and digest(table)==digest(answer.get('table')),'exact complete projected cells required')
+    require(not qualifier_output_scope_errors(answer,calls),'complete audit identities required')
+    query=result['executed_query']
+    try:tree=sqlglot.parse_one(query,read='sqlite')
+    except sqlglot.errors.SqlglotError as exc:raise ValueError('Native audit projection SQL is unavailable')from exc
+    require(isinstance(tree,exp.Select),'one row-local SELECT required')
+    require(not any(v for k,v in tree.args.items()if k not in ('expressions','from_','order')),
+        'filters, joins, aggregates, subqueries and population changes need their own contract')
+    tables=list(tree.find_all(exp.Table));source=(tree.args.get('from_')or exp.From()).this
+    require(len(tables)==1 and source is tables[0]and isinstance(source.this,exp.Identifier)
+        and source.name.casefold()==parent_view.casefold()and source.db.casefold()in ('','temp')
+        and not source.catalog,'one physical native source required')
+    aliases={parent_view.casefold(),source.alias_or_name.casefold()}
+    original_columns=parent.get('columns')or[];lookup={c.casefold():c for c in original_columns}
+    def field(column):
+        require(not column.table or column.table.casefold()in aliases,'foreign source qualifier')
+        require(column.name.casefold()in lookup,'unreceived native field')
+        return lookup[column.name.casefold()]
+    if tree.args.get('order'):
+        for ordered in tree.args['order'].expressions:
+            require(isinstance(ordered.this,exp.Column),'row order must use native fields')
+            field(ordered.this)
+    qualifiers={'assertion_id','annotation_id','source_binding_established','polarity','subject','temporality',
+        'assertion_window_state','analytical_effects','authority','semantic_validation','annotation_origin'}
+    case_nodes=(exp.Case,exp.If,exp.And,exp.Or,exp.Not,exp.Paren,exp.Is,exp.EQ,exp.NEQ,exp.Like,
+        exp.Literal,exp.Null,exp.Boolean,exp.Column,exp.Identifier)
+    contracts={}
+    for expression in tree.expressions:
+        value=expression.this if isinstance(expression,exp.Alias)else expression
+        if isinstance(value,exp.Star)or isinstance(value,exp.Column)and isinstance(value.this,exp.Star):
+            require(not value.args.get('except_')and not value.args.get('replace'),'plain native star required')
+            if isinstance(value,exp.Column):require(not value.table or value.table.casefold()in aliases,'foreign star source')
+            for name in original_columns:
+                require(name not in contracts,'duplicate projected name')
+                contracts[name]={'kind':'native_copy','source_columns':[name],'expression':name}
+            continue
+        copied=field(value)if isinstance(value,exp.Column)else None
+        name=expression.alias if isinstance(expression,exp.Alias)else copied
+        require(isinstance(name,str)and bool(name)and name not in contracts,'explicit unique computed field names required')
+        referenced=sorted({field(c)for c in value.find_all(exp.Column)})
+        if copied is not None:
+            require(name not in original_columns or name==copied,'native field roles cannot be overwritten or clock-swapped')
+            kind='native_copy'
+        elif isinstance(value,(exp.JSONExtract,exp.JSONExtractScalar)):
+            require(name not in original_columns and isinstance(value.this,exp.Column)
+                and isinstance(value.expression,exp.JSONPath),'literal received-object extraction required')
+            require(all(isinstance(n,(exp.JSONExtract,exp.JSONExtractScalar,exp.Column,exp.Identifier,
+                exp.JSONPath,exp.JSONPathRoot,exp.JSONPathKey,exp.JSONPathSubscript))for n in value.walk()),
+                'computed JSON expressions require their own interpretation')
+            kind='received_json_field'
+        elif isinstance(value,exp.Case):
+            require(name not in original_columns and set(referenced)<=qualifiers
+                and all(isinstance(n,case_nodes)for n in value.walk()),'CASE may label received qualifier metadata only')
+            branches=[n.args.get('true')for n in value.args.get('ifs')or[]]+[value.args.get('default')]
+            require(all(v is None or isinstance(v,(exp.Literal,exp.Null,exp.Boolean))for v in branches),
+                'conditional labels must be literal outcomes, not new source findings')
+            kind='conditional_received_label'
+        elif isinstance(value,(exp.Literal,exp.Null,exp.Boolean)):
+            require(name not in original_columns,'native fields cannot be replaced with constants')
+            kind='computed_constant'
+        else:raise ValueError('Native audit projection binding: interpreted or mathematical expression requires its own contract')
+        contracts[name]={'kind':kind,'source_columns':referenced,'expression':expression.sql(dialect='sqlite')}
+    require(list(contracts)==columns,'complete ordered expression/field manifest required')
+    require(contracts.get('audit_account_id',{}).get('source_columns')==['audit_account_id']
+        and contracts.get('patient_id',{}).get('source_columns')==['patient_id'],'literal audit and patient identities required')
+    originals=parent['rows'];by_id={r['audit_account_id']:r for r in originals}
+    ids=[r.get('audit_account_id')for r in table]
+    require(len(ids)==len(set(ids))==len(by_id)==len(originals)and set(ids)==set(by_id),
+        'every original account must remain exactly once')
+    require(all(r.get('patient_id')==by_id[r['audit_account_id']]['patient_id']for r in table),'account/patient binding changed')
+    base_answer={'answer_type':'table','table_from_tool':parent_view,'table':originals,
+        'table_binding':{'result_view':parent_view,'columns':original_columns,'rows':len(originals)}}
+    base=qualifier_coverage_review(base_answer,prior,tools,as_of)
+    require(base is not None,'original audit proof unavailable')
+    key=digest(['audit-projection',origin,base['table_digest'],base['native_dependency_identity'],base['projection_code_digest'],as_of])
+    cached=getattr(tools,'_qualifier_coverage_reviews',{})
+    if key in cached:return copy.deepcopy(cached[key])
+    replay=tools.semantic.query(query,as_of=as_of,max_rows=None,max_chars=None,inspect_incomplete=True)
+    replay_columns,replay_rows=output_table(replay)
+    require(replay_columns==columns and digest(replay_rows)==digest(matrix),
+        'projection replay differs in a value, type, domain, date, order, duplicate or null')
+    # Only literal CASE/constant outcomes enter this manifest; arbitrary source
+    # quote text stays in its complete native row and patient support packet.
+    outcomes={}
+    for name,contract in contracts.items():
+        if contract['kind']not in ('conditional_received_label','computed_constant'):continue
+        values={}
+        for row in table:
+            item=values.setdefault(digest(row[name]),{'value':row[name],'accounts':0});item['accounts']+=1
+        outcomes[name]=list(values.values())
+    proof={**base,'result_view':root,'rows':len(table),'columns':columns,'table_digest':digest(table),
+        'registered_origin_digest':origin,
+        'native_projection':{'schema':'native-qualifier-projection/1','parent_result_view':parent_view,
+            'parent_table_digest':base['table_digest'],'parent_columns':original_columns,
+            'parent_registered_origin_digest':base['registered_origin_digest'],'executed_query':query,
+            'native_query_receipt':result['native_query_receipt'],'native_read_columns':result['native_read_columns'],
+            'fields':contracts,'computed_literal_outcomes':outcomes,'one_account_to_one_patient_exact':True,
+            'all_output_cells_replayed_exactly':True,'all_omitted_parent_evidence_retained':True,
+            'meaning':'Native copies and received-object extraction remain original data. CASE/constant outcomes are computed labels conditional on unvalidated received qualifiers; their names/text are not source observations or established clinical consequences. Review every complete expression and its literal meanings against the original question. All actual clinical/source interpretations still need separate support.'}}
+    cached[key]=copy.deepcopy(proof);tools._qualifier_coverage_reviews=cached
+    return proof
+
+
 def qualifier_coverage_review(answer,calls,tools,as_of):
     """Prove a complete native audit copy for coverage, never source meaning.
 
@@ -342,9 +477,8 @@ def qualifier_coverage_review(answer,calls,tools,as_of):
     call=matches[0];result=call['result']
     if(call.get('name')=='query_sql'and answer.get('answer_type')=='table'
         and any(isinstance(row,dict)and'audit_account_id'in row for row in answer.get('table')or[])):
-        # Until its complete projection contract is checked, a SQL descendant
-        # must not silently fall back to the large general review of this audit.
-        # Actual SQLite read bindings avoid guessing dependencies from literals.
+        # Use actual SQLite read bindings, not names found in source literals.
+        # Unsupported descendants keep the pre-provider repair guard.
         by={c['result']['result_view']:c['result']for c in calls if isinstance(c.get('result'),dict)
             and c['result'].get('result_view')};pending=list(result.get('read_views')or[]);seen=set()
         while pending:
@@ -352,9 +486,7 @@ def qualifier_coverage_review(answer,calls,tools,as_of):
             if view in seen:continue
             seen.add(view);parent=by.get(view)or{}
             if parent.get('analysis')=='assertion_review'and parent.get('output')=='qualifier_accounts':
-                raise ValueError('Native audit coverage binding: SQL projection is not yet covered by the checked native audit role contract. '
-                    'Retain this projection and its original evidence. Use the complete primary native audit '+view+
-                    ' for the verified copy path; additional interpreted fields still require their own review. Do not dispatch the unchanged large general coverage input.')
+                return _qualifier_projection_coverage(answer,calls,tools,as_of,call,view)
             pending.extend(parent.get('read_views')or[])
     if(call.get('name')!='execute_analysis'or result.get('analysis')!='assertion_review'
         or result.get('output')!='qualifier_accounts'or not result.get('rows')):return None

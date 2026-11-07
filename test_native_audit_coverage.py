@@ -144,14 +144,69 @@ class NativeAuditCoverage(unittest.TestCase):
 
     def test_unqualified_native_sql_audit_projection_is_repaired_before_paid_coverage(self):
         root=self.result['result_view']
-        projected=self.tools({'name':'query_sql','input':{'sql':f'SELECT * FROM {root}'}})
+        projected=self.tools({'name':'query_sql','input':{'sql':f'SELECT *,LENGTH(concept)AS new_interpretation FROM {root}'}})
         self.answer['table_from_tool']=projected['result_view']
         with patch.object(G,'check',side_effect=AssertionError('No large general-review fallback')):
             review=B.review_final(self.fixture.stack,'Show all source accounts.',self.answer,self.tools.native_calls,
                 self.tools,ledger=None,as_of=AS_OF)
         self.assertEqual(review['repair_kind'],'native_audit_binding');self.assertEqual(review['calls'],0)
-        self.assertIn('SQL projection is not yet covered',review['feedback'])
+        self.assertIn('requires its own contract',review['feedback'])
         self.assertEqual(len(self.answer['table']),len(self.result['rows']))
+
+    def project(self,sql):
+        result=self.tools({'name':'query_sql','input':{'sql':sql}})
+        self.answer['table_from_tool']=result['result_view'];B.materialize_table(self.answer,self.tools.native_calls)
+        return result
+
+    def test_complete_sql_copy_and_row_order_are_bound_without_source_engine_replay(self):
+        root=self.result['result_view'];projected=self.project(f'SELECT * FROM {root} ORDER BY patient_id DESC,audit_account_id')
+        original=copy.deepcopy(self.answer);n=len(self.tools.native_calls)
+        with patch.object(A,'documentary_rows',wraps=A.documentary_rows)as receipts:
+            first=self.proof();second=self.proof()
+        self.assertEqual(first,second);self.assertEqual(receipts.call_count,1);self.assertEqual(len(self.tools.native_calls),n)
+        self.assertEqual(first['rows'],len(projected['rows']));self.assertEqual(self.answer,original)
+        self.assertTrue(first['native_projection']['all_output_cells_replayed_exactly'])
+        self.assertFalse(first['clinical_semantic_acceptance']);self.assertTrue(first['separate_source_support_required'])
+        self.assertEqual(E.coverage_answer(self.answer,native_audit=first)['table'],[])
+
+    def test_received_quote_and_conditional_labels_are_explicit_unverified_computations(self):
+        root=self.result['result_view']
+        self.project(f"SELECT audit_account_id,patient_id,source_record_id,source_date,value,unit,value_domain,"
+            "polarity,subject,temporality,current_clinical_state_established,json_extract(evidence,'$.quote')AS source_quote,"
+            f"CASE WHEN polarity='negated'THEN'conditional negative account'ELSE'unresolved'END AS account_role FROM {root}")
+        proof=self.proof();projection=proof['native_projection']
+        self.assertEqual(projection['fields']['source_quote']['kind'],'received_json_field')
+        self.assertEqual(projection['fields']['account_role']['kind'],'conditional_received_label')
+        self.assertEqual(sum(v['accounts']for v in projection['computed_literal_outcomes']['account_role']),len(self.answer['table']))
+        self.assertTrue(projection['all_omitted_parent_evidence_retained']);self.assertIn('reference_date',projection['parent_columns'])
+        self.assertIn('not source observations',projection['meaning']);self.assertFalse(proof['clinical_semantic_acceptance'])
+
+    def test_clock_role_swaps_clinical_text_conditions_and_query_shape_fail_closed(self):
+        root=self.result['result_view']
+        queries=[f'SELECT audit_account_id,patient_id,arrival_date AS source_date FROM {root}',
+            f"SELECT *,CASE WHEN concept LIKE '%hardship%'THEN'clinical fact'ELSE'other'END AS diagnosis FROM {root}",
+            f'SELECT * FROM {root} WHERE 1=1',
+            f'SELECT a.* FROM {root} a JOIN {root} b ON a.audit_account_id=b.audit_account_id',
+            f'SELECT *,ROW_NUMBER()OVER(ORDER BY patient_id)AS ordinal FROM {root}']
+        for sql in queries:
+            self.project(sql)
+            with self.subTest(sql=sql),self.assertRaises(ValueError):self.proof()
+
+    def test_registered_forged_projection_and_changed_native_parent_are_rejected(self):
+        root=self.result['result_view'];projected=self.project(f"SELECT *,CASE WHEN polarity='negated'THEN'negative'ELSE'other'END AS role FROM {root}")
+        projected['rows'][0]['role']='invented'
+        self.tools.semantic.register_native_result(projected['result_view'],projected)
+        B.materialize_table(self.answer,self.tools.native_calls)
+        with self.assertRaisesRegex(ValueError,'projection replay differs'):self.proof()
+        self.result['rows'][0]['source_date']='2030-01-01'
+        with self.assertRaisesRegex(ValueError,'origins changed'):self.proof()
+
+    def test_missing_bound_sql_receipt_and_renamed_identity_cannot_qualify(self):
+        root=self.result['result_view'];projected=self.project(f'SELECT * FROM {root}')
+        projected.pop('native_query_receipt');self.tools.semantic.register_native_result(projected['result_view'],projected)
+        with self.assertRaises(ValueError):self.proof()
+        self.project(f'SELECT patient_id AS audit_account_id,audit_account_id AS patient_id FROM {root}')
+        with self.assertRaises(ValueError):self.proof()
 
 
 if __name__=='__main__':unittest.main()

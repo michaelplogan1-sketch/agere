@@ -199,7 +199,7 @@ def coverage_answer(answer, *, native_table=None, native_audit=None):
         prior=out.pop('investigation_review',None)
         if prior is not None:out['prior_review_native_digest']=digest(prior)
         out['coverage_contract']={'schema':'native-qualifier-coverage/1',
-            'scope':'Every native audit account/cell was checked by code against the complete original receipt set. Review the original request against the full parameter, field and conditional-effect contracts. These are received-label effects, not clinically validated conclusions. Do not treat faithful copying, a machine label, or an unresolved requested interpretation as clinical acceptance or complete work. Separate source support remains mandatory.'}
+            'scope':'Every native audit account/cell was checked by code against the complete original receipt set. A native_projection also preserves every account/patient identity, the exact received-field roles and an independently replayed output; its complete SQL and computed label meanings are supplied for review. Review the original request against the full parameter, field and conditional-effect contracts. These are received-label effects, not clinically validated conclusions. Do not treat faithful copying, a machine label, a computed literal or an unresolved requested interpretation as clinical acceptance or complete work. Separate source support remains mandatory.'}
         return out
     if native_table is not None:
         # The producer has checked every primitive cell against a complete
