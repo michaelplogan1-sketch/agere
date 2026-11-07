@@ -261,6 +261,11 @@ has already declined this question, so it is yours to answer completely and corr
   unit, entity qualifier and failed binding. The window applies to assertions, with unknown dates retained; source/reference/
   clinical clocks remain separate. Repetitions before the window still prevent a later copy from refreshing evidence. This is
   annotation accounting, not complete free-text interpretation or clinical qualification; inspect unresolved source meaning.
+  For a qualifier/copy-lineage audit, execute this native review before acquiring new narrative judgments. Its native_projections
+  give complete executable assertion, qualifier-effect, dated-account and unbound-annotation queries. Keep the requested streams,
+  population and explicit clock; a subgroup selected for one qualifier does not cover the other requested qualifiers. Same-patient,
+  same-year fact-type co-occurrence is not a domain-bound contradiction. Use exact source IDs for unresolved meaning where possible;
+  expand source review when the original request requires it, and retain unassessed free text and clock ambiguity explicitly.
   library_measure output patients returns the complete evaluated patient-status roster; output gaps returns every recorded gap.
   Preserve exclusions and indeterminate rows, distinguish the input roster from a measure denominator, and retain unknown full-
   population rates separately from known-subset observations. Read patient names with read_patient_profiles and join by patient_id.

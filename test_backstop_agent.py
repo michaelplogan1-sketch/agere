@@ -14,6 +14,8 @@ class EntryModelReuse(unittest.TestCase):
         rendered = B.RULES.format(tool_quota='No fixed tool-call quota.')
         self.assertIn('assertion_window={basis,start,end}', rendered)
         self.assertIn('No fixed tool-call quota.', rendered)
+        self.assertIn('execute this native review before acquiring new narrative judgments', rendered)
+        self.assertIn('a subgroup selected for one qualifier does not cover the other requested qualifiers', rendered)
         result, replay, _ = self.entry_result()
         self.assertEqual(result['answer']['headline'], 'Native result retained.')
         replay.assert_called_once()
