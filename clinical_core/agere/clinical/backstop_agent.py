@@ -599,6 +599,9 @@ class Tools:
                 return review_assertions(self,args['assertion_result_view'])
             from .document_review import review, validate_questions
             from .drug_classes import patient_scope_issues
+            from .decision_context import population_scope_issues
+            scope_issues=population_scope_issues(self.question,calls=getattr(self,'native_calls',[]),query=args.get('patient_query_sql'))
+            if scope_issues:raise ValueError('No source review was dispatched. '+' '.join(scope_issues))
             queries = {'population': args['patient_query_sql']} if args.get('patient_query_sql') else {}
             queries.update(args.get('field_patient_queries') or {})
             issues = patient_scope_issues(getattr(self, 'question', ''), getattr(self, 'native_calls', []), queries)
@@ -2205,6 +2208,12 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                 materialize_table(answer,calls)
     except ValueError as exc:
         return {**assessment, 'status': 'repair', 'feedback': str(exc)}
+    from .decision_context import population_scope_issues
+    population_issues=population_scope_issues(question,calls=calls,
+        result_view=(answer.get('table_binding')or{}).get('result_view'))
+    if population_issues:
+        return {**assessment,'status':'repair','repair_kind':'native_population_scope',
+                'progress_state':{'population_premises':population_issues},'feedback':' '.join(population_issues)}
     from .analysis_tools import qualifier_output_scope_errors
     scope_errors=qualifier_output_scope_errors(answer,calls)
     if scope_errors:

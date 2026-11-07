@@ -657,26 +657,92 @@ def event_source_findings(question, sqls):
     return list(dict.fromkeys(out))
 
 
-def _living_restriction(sql):
+def _living_restriction(sql, restricted_views=()):
     """Known population exclusions, not a ban on reading death as evidence."""
-    masked, _ = _mask(sql)
-    if re.search(r'\b(?:FROM|JOIN)\s+living_patient\b', masked, re.I):return True
-    # A projected death flag does not narrow the cohort. Only a negative
-    # membership predicate in a filter is an exclusion here.
     try:
         from sqlglot import exp, parse_one
-        tree = parse_one(sql, read='sqlite')
-        if any(t.name.casefold() == 'living_patient' for t in tree.find_all(exp.Table)):return True
-        for predicate in tree.find_all(exp.Not):
-            if not isinstance(predicate.this, (exp.In, exp.Exists)):continue
-            if not any(t.name.casefold() == 'death' for t in predicate.this.find_all(exp.Table)):continue
-            parent = predicate.parent
-            while parent is not None and not isinstance(parent, (exp.Select, exp.Case)):
-                if isinstance(parent, (exp.Where, exp.Having)):return True
-                parent = parent.parent
+        from sqlglot.optimizer.scope import traverse_scope
+        from .analyst_definitions import LIVING_VIEWS
+        from .clinical_definitions import PHENOTYPES
+        from .plan_fence import _dependency_sql
+        policies={*LIVING_VIEWS,*restricted_views,*('phenotype_'+name for name in PHENOTYPES)}
+        tree=parse_one(_dependency_sql(sql),read='sqlite');scopes=list(traverse_scope(tree)or[]);restricted={}
+        for scope in scopes:
+            query=scope.expression;nullable=set();seen=[]
+            origin=query.args.get('from_')
+            if origin is not None and origin.this is not None:seen.append(origin.this.alias_or_name.casefold())
+            for join in query.args.get('joins')or[]:
+                right=join.this.alias_or_name.casefold();side=join.side.upper()
+                if side in ('RIGHT','FULL'):nullable.update(seen)
+                if side in ('LEFT','FULL'):nullable.add(right)
+                seen.append(right)
+            filters=[query.args[k]for k in ('where','having','qualify')if query.args.get(k)is not None]
+            def filtered(alias):
+                return any(not column.table or column.table.casefold()==alias.casefold()
+                           for clause in filters for column in clause.find_all(exp.Column))
+            narrowed=False
+            for alias,(_,source)in scope.selected_sources.items():
+                bound=(isinstance(source,exp.Table)and isinstance(source.this,exp.Identifier)
+                       and not source.catalog and source.db.casefold()in ('','temp')and source.name.casefold()in policies)
+                bound=bound or restricted.get(source,False)
+                if bound and (alias.casefold()not in nullable or filtered(alias)):narrowed=True
+            # Scalar/CASE projections do not change outer membership. A
+            # filtered subquery does, including one reached through a CTE.
+            for child in scope.subquery_scopes:
+                if not restricted.get(child):continue
+                parent=child.expression.parent
+                while parent is not None and parent is not query:
+                    if isinstance(parent,(exp.Where,exp.Having)):narrowed=True;break
+                    parent=parent.parent
+            narrowed=narrowed or any(restricted.get(child,False)for child in scope.set_operation_scopes)
+            for predicate in query.find_all(exp.Not):
+                if predicate.find_ancestor(exp.Select)is not query or not isinstance(predicate.this,(exp.In,exp.Exists)):continue
+                if not any(t.name.casefold()=='death'for t in predicate.this.find_all(exp.Table)):continue
+                parent=predicate.parent
+                while parent is not None and parent is not query:
+                    if isinstance(parent,(exp.Where,exp.Having)):narrowed=True;break
+                    parent=parent.parent
+            restricted[scope]=narrowed
+        return bool(scopes and restricted[scopes[-1]])
     except Exception:  # native SQL validity is checked by its executor
         pass
     return False
+
+
+def living_policy_results(calls):
+    """Follow actual native population producers, not unused exploration.
+
+    This detects known survival restrictions only. It does not certify general
+    cohort completeness, clinical evidence or an arbitrary unknown operator.
+    """
+    narrowed=set()
+    for call in calls or []:
+        result=call.get('result')or{}
+        if not isinstance(result,dict)or result.get('error')or not result.get('result_view'):continue
+        args=call.get('input')or{};name=result['result_view'];restricted=False
+        if call.get('name')=='query_sql':
+            queries=[args.get('sql'),result.get('declared_executed_query')or result.get('executed_query')or call.get('sql')]
+            restricted=any(isinstance(q,str)and _living_restriction(q,narrowed)for q in queries)
+        elif call.get('name')=='compose_table':
+            base=(result.get('assembly')or{}).get('base_result_view')or args.get('base')
+            restricted=base in narrowed
+        elif args.get('patient_query_sql'):
+            restricted=_living_restriction(args['patient_query_sql'],narrowed)
+        if restricted:narrowed.add(name)
+    return narrowed
+
+
+def population_scope_issues(question, *, calls=(), query=None, result_view=None):
+    state=population(question)
+    if not any(state.get(k)for k in ('all_received_rows','event_selected_cohort','record_subject_scope')):return []
+    narrowed=living_policy_results(calls)
+    if result_view in narrowed or isinstance(query,str)and _living_restriction(query,narrowed):
+        return ['The requested historical/received population is narrowed by a living-only membership dependency. '
+                'Retain its source subjects, including subsequent deaths. Use registered evidence with the requested time scope '
+                '(condition_evidence preserves canonical condition evidence without condition_member survival filtering). '
+                'Current membership does not establish historical eligibility. Preserve prior observations as history; '
+                'repair the population and its affected native dependencies before source interpretation.']
+    return []
 
 
 def verify(question, answer, state=None, db=None, sqls=()):

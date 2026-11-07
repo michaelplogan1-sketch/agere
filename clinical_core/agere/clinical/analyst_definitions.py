@@ -5,9 +5,10 @@ Measured 2026-10-23: the semantic analyst (one Claude tool loop, the documented 
 wrong share). decision_context.py already defines all of these; this module puts them where the analyst works:
 
   1. DEFINITION VIEWS: temp views on the analyst's read-only connection (never written to the stack), documented FIRST in the analyst's
-     system documentation with "always build on these":
+     system documentation with explicit evidence and population roles:
          living_patient(<patient columns>, age)         no death row, a duplicate chart counted once, age from birth date at as-of
-         condition_member(patient_id, concept, first_date, evidence)   the ONE condition-evidence rule, canonical code sets
+         condition_evidence(patient_id, concept, first_date, evidence) canonical evidence without survival filtering
+         condition_member(patient_id, concept, first_date, evidence)   the same evidence for living members
          latest_lab(patient_id, concept, value, unit, event_date)      the latest result per patient and concept
          last_12_months(start_exclusive, end_inclusive)                the 12 months ending at as-of
          medicare_member(patient_id, coverage_type, age)               medicare + dual + medigap
@@ -28,8 +29,8 @@ import sqlite3
 
 from . import decision_context as DC
 
-VERSION = 'analyst-definitions/2'
-VIEW_NAMES = ('living_patient', 'condition_member', 'latest_lab', 'last_12_months', 'medicare_member')
+VERSION = 'analyst-definitions/3'
+VIEW_NAMES = ('living_patient', 'condition_evidence', 'condition_member', 'latest_lab', 'last_12_months', 'medicare_member')
 LIVING_VIEWS = ('living_patient', 'condition_member', 'latest_lab', 'medicare_member')  # living-only by construction
 _DATE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
@@ -63,8 +64,9 @@ def build_views(columns, as_of):
             sub = DC.condition_evidence_sql([name], columns)
             if sub: parts.append(f"SELECT patient_id, '{name}' AS concept, event_date, source FROM {sub}")
         if parts:
-            views['condition_member'] = ('SELECT patient_id, concept, MIN(event_date) AS first_date, group_concat(DISTINCT source) AS evidence '
-                                         f'FROM ({" UNION ALL ".join(parts)}) WHERE {excluded_predicate(columns)} GROUP BY patient_id, concept')
+            views['condition_evidence'] = ('SELECT patient_id, concept, MIN(event_date) AS first_date, group_concat(DISTINCT source) AS evidence '
+                                          f'FROM ({" UNION ALL ".join(parts)}) GROUP BY patient_id, concept')
+            views['condition_member'] = f'SELECT * FROM condition_evidence WHERE {excluded_predicate(columns)}'
     if {'patient_id', 'concept', 'value_canonical'} <= set(columns.get('measurement_latest', [])):
         views['latest_lab'] = ('SELECT patient_id, concept, value_canonical AS value, unit_canonical AS unit, event_date FROM measurement_latest '
                                f'WHERE {excluded_predicate(columns)}')
@@ -88,14 +90,20 @@ def build_views(columns, as_of):
 def definitions_doc(names):
     """The documentation of the views present, placed first in the analyst's cached system documentation."""
     have = set(names)
-    lines = ['AGERE DEFINITION VIEWS: ALWAYS BUILD ON THESE (Mike, 2026-10-23). They are temporary read-only views on your connection that carry '
-             "Agere's decision context, so you do not re-derive it. :as_of is already bound inside them. Do not re-implement these definitions "
-             'from the base tables, and do not describe them in grounding as anything but what they are.']
+    lines = ['AGERE DEFINITION VIEWS: use the registered evidence and membership definitions according to the original population/date scope. '
+             'They are temporary read-only views on your connection; :as_of is already bound inside them. '
+             'Evidence is separate from current membership. A dated event-selected or all-received population retains its source subjects; '
+             'do not narrow it with a living-only view unless living patients were requested. Do not re-derive canonical condition evidence.']
     if 'living_patient' in have:
         lines.append("- living_patient (all patient columns + age): patients are LIVING PEOPLE: no row in death, and a duplicate chart "
-                     "(data_segment = 'duplicate_chart') counted once. `age` = completed years from birth_date at the as-of date. EVERY count or list of "
-                     'patients starts here: SELECT COUNT(*) FROM living_patient WHERE ... Never use patient.age_reported or age_latest (feed ages are stale); '
-                     'use `age`. Denominators of patient shares come from here too.')
+                     "(data_segment = 'duplicate_chart') counted once. `age` = completed years from birth_date at the as-of date. For current or explicitly living "
+                     'patient counts and lists, start here: SELECT COUNT(*) FROM living_patient WHERE ... Never use patient.age_reported or age_latest (feed ages are stale); '
+                     'use `age`. This is the default for current-patient questions, not an extra survival exclusion on historical source cohorts.')
+    if 'condition_evidence' in have:
+        lines.append('- condition_evidence(patient_id, concept, first_date, evidence): ONE row per received patient and condition concept, '
+                     'using exactly the same canonical diagnosis, counted-claim and applicable lab evidence as condition_member, '
+                     'without its living-only population filter. Use this evidence for a dated event-selected or all-received cohort; '
+                     'retain subsequent deaths and source uncertainty. This does not establish condition onset at an event or clinical eligibility.')
     if 'condition_member' in have:
         lines.append('- condition_member(patient_id, concept, first_date, evidence): ONE row per living patient and condition concept, from the '
                      'canonical evidence (an EHR diagnosis, a counted payer-claim diagnosis by the concept\'s ICD-10 code set; diabetes and CKD also '
@@ -121,8 +129,9 @@ def definitions_doc(names):
                          f'Owner definition v{definition["version"]}, {definition["decision"]}: '
                          + definition['disclosure'] + ' Use this view for the phenotype; condition_member supplies coded '
                          'condition membership only. The view preserves the compiler macro columns, including the evidence basis.')
-    lines.append('These views exclude the deceased by construction. When the question asks about the deceased (died, death, mortality, "including '
-                 'deceased", "all patients ever"), use the base tables and the death table instead and say so.')
+    lines.append('living_patient, condition_member, latest_lab, medicare_member and phenotype views exclude the deceased by construction. '
+                 'condition_evidence does not. Historical/received record cohorts and explicit deceased/all-ever questions must use evidence '
+                 'with the appropriate source/time scope; current membership does not establish historical eligibility.')
     lines.append('SHARES, RATES AND AVERAGES: compute the numerator and the denominator as two single-value queries and report both '
                  '(see the answer contract); the system computes the share.')
     return '\n'.join(lines)

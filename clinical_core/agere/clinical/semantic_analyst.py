@@ -101,7 +101,7 @@ class SemanticWarehouse:
     """
     DENIED_FUNCTIONS = {'load_extension', 'readfile', 'writefile', 'eval', 'fts3_tokenizer'}
     MISSING = 'Semantic layer not found'
-    DEFINITION_VIEWS = frozenset(('living_patient', 'condition_member', 'latest_lab', 'last_12_months', 'medicare_member'))
+    DEFINITION_VIEWS = frozenset(('living_patient', 'condition_evidence', 'condition_member', 'latest_lab', 'last_12_months', 'medicare_member'))
 
     def __init__(self, path, timeout_s=30):
         if path is None or not Path(path).is_file():
@@ -1059,7 +1059,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                             if indeterminate or not escalate('Answer review repeated with unchanged evidence'):
                                 result['review_stopped'] = 'no_progress'
                                 return result
-                        elif assessment.get('status') == 'repair' and assessment.get('repair_kind')not in ('deterministic_compiler','global_source_dependencies','unresolved_verification','incomplete_work'):
+                        elif assessment.get('status') == 'repair' and assessment.get('repair_kind')not in ('deterministic_compiler','native_population_scope','global_source_dependencies','unresolved_verification','incomplete_work'):
                             escalate('Answer failed its existing evidence/coverage checks: '+str(feedback))
                         if not compiler and key not in reviewed:
                             # Passing the compiler and reaching a new source

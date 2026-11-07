@@ -486,7 +486,7 @@ def source_tuple_issues(query):
     return list(dict.fromkeys(issues))
 
 
-_DEFINITION_VIEW = re.compile(r'(?i)\b(?:living_patient|condition_member|latest_lab|last_12_months|medicare_member)\b')
+_DEFINITION_VIEW = re.compile(r'(?i)\b(?:living_patient|condition_evidence|condition_member|latest_lab|last_12_months|medicare_member)\b')
 
 
 def uses_definition_views(query):

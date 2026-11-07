@@ -363,6 +363,10 @@ def premise_issues(path, question, graph, *, saved=None, schema=None,native_call
     """Readable reasons the plan's premises no longer hold (empty list = current)."""
     issues = []
     effective=graph
+    if native_calls is not None and isinstance(answer,dict):
+        from .decision_context import population_scope_issues
+        issues.extend('population: '+issue for issue in population_scope_issues(question,calls=native_calls,
+            result_view=(answer.get('table_binding')or{}).get('result_view')or answer.get('table_from_tool')))
     if native_calls is not None:
         try:effective,native_issues=native_premise_graph(graph,native_calls)
         except (ValueError,KeyError,TypeError,AttributeError,RecursionError):

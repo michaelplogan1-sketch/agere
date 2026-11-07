@@ -145,6 +145,16 @@ class Views(Base):
                          self.scoped('How many patients have a potassium above 5.5?',
                                      "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'potassium' AND value_canonical > 5.5"))
 
+    def test_recorded_condition_evidence_keeps_historical_subjects_with_the_same_rules(self):
+        evidence = self.q("SELECT * FROM condition_evidence WHERE concept='diabetes' ORDER BY patient_id")
+        self.assertEqual([r['patient_id'] for r in evidence], ['A','B','C','D','F','G'])
+        members = self.q("SELECT * FROM condition_member WHERE concept='diabetes' ORDER BY patient_id")
+        self.assertEqual(members, [r for r in evidence if r['patient_id'] not in ('D','G')])
+        self.assertEqual(self.q("SELECT patient_id FROM condition_evidence WHERE concept='hyperlipidemia'"), [])
+        self.assertEqual(self.q("SELECT patient_id FROM condition_evidence WHERE concept='copd' ORDER BY patient_id"),
+                         [{'patient_id':'A'},{'patient_id':'D'}])
+        self.assertNotIn('E', [r['patient_id'] for r in evidence])  # encounter diagnosis alone is not canonical evidence
+
     def test_window_and_medicare_views(self):
         row = self.q('SELECT start_exclusive, end_inclusive FROM last_12_months')[0]
         self.assertEqual((row['start_exclusive'], row['end_inclusive']), ('2029-05-27', AS_OF))
@@ -165,7 +175,9 @@ class Views(Base):
 
     def test_the_documentation_leads_with_the_views(self):
         docs, ids = AD.agere_context(self.wh, ('BASE DOCS', frozenset({'ex1'})))
-        self.assertTrue(docs.startswith('AGERE DEFINITION VIEWS: ALWAYS BUILD ON THESE'))
+        self.assertTrue(docs.startswith('AGERE DEFINITION VIEWS: use the registered evidence and membership definitions'))
+        self.assertIn('Evidence is separate from current membership', docs)
+        self.assertNotIn('EVERY count or list', docs)
         self.assertTrue(docs.endswith('BASE DOCS'))
         for name in AD.VIEW_NAMES: self.assertIn(name, docs)
         self.assertEqual(ids, frozenset({'ex1'}))
