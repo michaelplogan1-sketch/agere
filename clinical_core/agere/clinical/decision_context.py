@@ -29,7 +29,7 @@ import re
 import threading
 from pathlib import Path
 
-VERSION = 'decision-context/7'  # 7: explicit record receipt years bind the arrival clock
+VERSION = 'decision-context/8'  # 8: financial record heads retain their subjects
 # 3 (2026-10-25, Mike): event counts include everyone (the living rule is for counts / lists of patients); observation stays are hospital
 # stays and admissions; pharmacy spend = net of reversals over all pharmacy claim transactions; medical spend = paid on counted claims
 DECIDED_BY = 'Mike (clinical owner), 2026-10-23 / 2026-10-25'
@@ -48,6 +48,13 @@ RECEIVED_RECORD_HEAD = re.compile(
     r'^\s*(?:(?:identify|show|list|find|review|audit|compare|count)\s+)?'
     r'(?:(?:all|every|the)\s+)?(?:received|recorded)\s+'
     r'(?:[a-z0-9_-]+\s+){0,5}?'+RECORD_OBJECT+r'\b', re.I)
+# Financial records remain the requested objects even when patient attribution
+# is a requested field. A patient-first count/list still keeps its usual scope.
+FINANCIAL_RECORD_HEAD = re.compile(
+    r'^\s*(?:reconcile|review|audit|show|list|find|compare|count|summari[sz]e|aggregate|sum|'
+    r'how many|number of|count of|total|sum of)\s+'
+    r'(?:(?:all|every|the|received|recorded|patient|payer|account|remaining)\s+){0,4}'
+    r'(?:payments?|refunds?|balances?|remittances?|charges?|credits?)\b', re.I)
 PATIENT_WORDS = re.compile(r'\b(?:patients?|people|persons?|individuals?|who|whom|whose|adults?|children|women|men|females?|males?|seniors?|elderly)\b', re.I)
 # questions about money or membership months are not patient counts: the living rule does not apply to them (they say "members",
 # "claims", "paid", "PMPM", never a count of patients)
@@ -227,6 +234,9 @@ def population(question):
     if RECEIVED_RECORD_HEAD.search(q) and not LIVING_ASK.search(q):
         return {'living_only': False, 'record_subject_scope': True,
                 'reason': 'received records are the requested objects; present survival does not remove their subjects'}
+    if FINANCIAL_RECORD_HEAD.search(q) and not LIVING_ASK.search(q):
+        return {'living_only': False, 'record_subject_scope': True,
+                'reason': 'financial records are the requested objects; patient attribution does not remove their subjects'}
     if event_selected_cohort(q) and not LIVING_ASK.search(q):
         return {'living_only': False, 'event_selected_cohort': True,
                 'reason': 'dated event-selected cohort retains every subject; present survival does not remove historical records'}
@@ -320,6 +330,8 @@ def prompt_block():
         'counts inside grouped event summaries. Do not add living_patient or death exclusions there unless the question asks for living patients.\n'
         'A request to identify/show/audit received records, statements, accounts or documents also retains their subjects; '
         'a relative clause such as "whose interpretation changes" refers to those records, not a living-patient population.\n'
+        'A reconciliation/count/list of payments, refunds, account balances or remittances also retains every record subject, '
+        'including when patient attribution is requested. A count/list of patients with those records keeps its own patient scope.\n'
         'A For/Among cohort selected by a dated recorded event (such as patients receiving a referral in a named year) also retains '
         'every subject of that historical event. Current survival/enrollment does not establish eligibility at the event. '
         'Keep subsequent deaths, ended relationships and unknown dates visible; apply living-only scope only when requested.\n'

@@ -191,6 +191,25 @@ class Definitions(Fixture):
         self.assertFalse(DC.population('What was the total paid per member per month in 2029?')['living_only'])
         self.assertTrue(DC.population('How many patients had a paid claim in 2029?')['living_only'])
 
+    def test_financial_record_heads_keep_subjects_without_changing_patient_counts(self):
+        for question in [
+            'Reconcile recorded payments and refunds by patient and account.',
+            'Show patient payments during 2029 and their account balances.',
+            'Count recorded refunds by patient.',
+            'Review account balances with patient attribution.',
+            'Summarize payer remittances and patient links.']:
+            with self.subTest(question=question):
+                self.assertFalse(DC.population(question)['living_only'])
+                self.assertTrue(DC.population(question)['record_subject_scope'])
+                self.assertTrue(DC.population(question+' For living patients only.')['living_only'])
+        for question in [
+            'How many patients made payments during 2029?',
+            'List patients with unpaid balances.',
+            'Which patients need a refund?',
+            'Reconcile patient records with account balances.',
+            'How many patients are taking a credit counseling class?']:
+            with self.subTest(question=question):self.assertTrue(DC.population(question)['living_only'])
+
     def test_labs_are_latest_unless_the_question_says_ever_or_any(self):
         self.assertEqual(DC.lab_mode('How many patients have a potassium above 5.5?'), 'latest')
         for q in ('How many patients ever had a potassium above 5.5?', 'potassium above 5.5 at any time', 'patients with a history of high potassium',

@@ -51,6 +51,22 @@ class FinancialDocumentaryTools(unittest.TestCase):
         empty=t({'name':'execute_analysis','input':{'operation':'financial_accounts','parameters':{'available_by':AS_OF},'patient_ids':[]}})
         self.assertEqual(empty['rows'],[])
 
+    def test_account_reconciliation_preserves_deceased_and_duplicate_record_subjects(self):
+        from clinical_core.agere.clinical import decision_context as D
+        with sqlite3.connect(self.path/'semantic.sqlite3')as db:
+            db.execute("INSERT INTO death(patient_id,death_date) VALUES ('p01','2029-09-01')")
+            db.execute("UPDATE patient SET data_segment='duplicate_chart' WHERE patient_id='p00'")
+        question=('Reconcile recorded payments, refunds and remaining balances for accounts active during 2029. '
+                  'Show conservation checks in integer cents, patient/account attribution and unresolved links. '
+                  'Do not treat account balance as proof of patient payment.')
+        for suffix,expected in [('',set(self.ids)),(' For living patients only.',set(self.ids)-{'p01'})]:
+            with self.subTest(suffix=suffix),D.scope(question+suffix,AS_OF):
+                t=self.tools();t.question=question+suffix
+                result=self.finance(t)
+                self.assertEqual({r['patient_id']for r in result['rows']},expected)
+                accounts=t({'name':'query_sql','input':result['native_projections']['accounts']['query_sql']})['rows']
+                self.assertEqual({r['patient_id']for r in accounts},{'p00','p01'}&expected)
+
     def test_future_cutoff_is_rejected_before_preparing_financial_sources(self):
         with patch.object(F,'prepare',side_effect=AssertionError('No preparation for future cutoff')):
             with self.assertRaises(ValueError):
