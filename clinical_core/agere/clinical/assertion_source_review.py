@@ -345,7 +345,7 @@ def categorical_candidate(item,readings):
     return candidate
 
 
-def interpret_rejected(tools,result_view):
+def interpret_rejected(tools,result_view,*,verify_only=False):
     from . import backstop_agent as B,analysis_tools as A,assertion_reconciliation as AR
     from . import semantic_reader as S,system_one,system_one_gate,cost_telemetry
     from ..gateway import default_ledger_path
@@ -418,6 +418,12 @@ def interpret_rejected(tools,result_view):
             retained=retained_rows[row['audit_account_id']]
             if any(retained.get(k)!=v for k,v in row.items()):raise ValueError('Retained source review account changed')
             ident=row['audit_account_id'];target=retained['source_interpretation'];original_obs=observations.get(ident)
+            allowed={'status','assertion','changed_fields','machine_support','authority','clinical_qualification',
+                     'current_clinical_state_established','reader_axes','qualifier_axes','candidate',
+                     'received_conditional_effects','interpreted_conditional_effects','documentary_group_after'}
+            if(set(target)-allowed or target.get('authority')!='machine_source_interpretation'
+               or target.get('clinical_qualification')is not False or target.get('current_clinical_state_established')is not False):
+                raise ValueError('Retained source interpretation changed authority or added unreviewed claims')
             positive=bool(original_obs and original_obs['deciding']and original_obs['judgment']['label']=='supported')
             if positive:
                 if(target.get('status')!='original_tuple_supported'or target.get('assertion')!=row['proposed_assertion']
@@ -467,7 +473,7 @@ def interpret_rejected(tools,result_view):
     ledger=cost_telemetry.bind_ledger_path(ledger if ledger is not None else default_ledger_path())
     retained_check_count=len(checks)
     reused_hashes=[]
-    if continuation:
+    if continuation and not verify_only:
         from ..gateway import BudgetLedger
         handle=BudgetLedger(ledger)
         try:
@@ -478,6 +484,7 @@ def interpret_rejected(tools,result_view):
                         cost_telemetry.tag(handle,key,reused=True);reused_hashes.append(key)
         finally:handle.close()
     def ask(state,questions,role,mode):
+        if verify_only:raise ValueError('Source interpretation has unfinished typed work; continue its native result before final verification')
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed before source interpretation dispatch')
         result=system_one.judge_fields(role,questions,[{'id':digest(state),'date':tools.as_of,'text':_encode(state)}],
             as_of=tools.as_of,ledger=ledger,allow_live=bool(tools.stack.allow_live),
@@ -557,6 +564,8 @@ def interpret_rejected(tools,result_view):
                 for ident in ids:group_by[(patient['patient_id'],ident)]=group
         for row in rows:
             old=originals[row['audit_account_id']];target=row['source_interpretation'];effective=target['assertion']
+            row.update(source_date=old.get('source_date'),arrival_date=old.get('arrival_date'),
+                       source_evidence=old.get('evidence'))
             group=group_by.get((row['patient_id'],row['assertion_id']))
             target['received_conditional_effects']=old['analytical_effects']
             target['interpreted_conditional_effects']=(A.conditional_qualifier_effects({**old,**effective},group)if effective is not None else None)
@@ -576,6 +585,8 @@ def interpret_rejected(tools,result_view):
             'reused_review_request_hashes':sorted(set(reused_hashes)),
             'new_provider_check_count':len(checks)-retained_check_count,
             'audit_result_view':audit_view,'parent_result_view':prepared['parent_result_view'],
+            'parameters':prepared['audit_proof']['parameters'],'source_digest':prepared['audit_proof']['source_digest'],
+            'conditional_effect_definitions':prepared['audit_proof']['conditional_effect_definitions'],
             'parent_rows_digest':prepared['parent_rows_digest'],'task_identity':task_identity(),
             'reader_contract':digest([S.AXES,S.INSTRUCTIONS]),'typed_checks':checks,'documentary_groups':groups,
             'qualifier_reader_contract':digest([S.QUALIFIER_AXES,S.INSTRUCTIONS]),
@@ -585,3 +596,147 @@ def interpret_rejected(tools,result_view):
             'original_assertions_composed':sum(len(p['documentary_receipt']['assertions'])for p in patients),
             'received_annotations_modified':False,'clinical_qualification':False,'human_review_created':False,
             'scope':'Source-bound machine interpretations and conditional documentary recomposition, preserving all original accounts. Opposing reports are not clinically resolved; clinical/reference dates and quantitative values require their own source interpretation.'}}
+
+
+def final_contract(tools,answer,calls,as_of):
+    """Reproduce the full native/machine result, without any provider dispatch.
+
+    This conjoins existing source observations and deterministic transformations.
+    It does not certify model quality, clinical truth or additional row prose.
+    """
+    root=answer.get('table_from_tool');matches=[c for c in calls if isinstance(c.get('result'),dict)
+        and c['result'].get('result_view')==root and c['result'].get('analysis')=='assertion_source_interpretation']
+    if not matches:
+        by={c['result']['result_view']:c for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')}
+        def interpreted(view,seen=None):
+            seen=set()if seen is None else seen
+            if view in seen:return False
+            seen.add(view);result=(by.get(view)or{}).get('result')or{}
+            return result.get('analysis')=='assertion_source_interpretation'or any(interpreted(v,seen)for v in result.get('read_views')or[])
+        if root in by and interpreted(root):return _projection_contract(tools,answer,calls,as_of,by[root])
+        return None
+    if(len(matches)!=1 or matches[0].get('name')!='review_documents'or as_of!=tools.as_of
+       or answer.get('row_prose')is not None or (answer.get('table_binding')or{}).get('interpreted_columns')):
+        raise ValueError('Source-interpreted final table requires one exact native origin and separate review for added prose')
+    result=matches[0]['result']
+    if(answer.get('table_binding',{}).get('result_view')!=root or digest(answer.get('table'))!=digest(result['rows'])):
+        raise ValueError('Source-interpreted final table changed or omitted an original row/value')
+    expected=interpret_rejected(tools,root,verify_only=True)
+    if expected['columns']!=result['columns']or digest(expected['rows'])!=digest(result['rows']):
+        raise ValueError('Source-interpreted final result differs from current source/model/conditional composition')
+    meta=expected['assertion_source_interpretation'];rows=result['rows'];changes=Counter();attempted=Counter();transitions={}
+    for row in rows:
+        target=row['source_interpretation']
+        for field in target['changed_fields']:
+            if target.get('assertion')is not None:
+                changes[field]+=1
+                key=_encode([row['proposed_assertion'][field],target['assertion'][field]])
+                transitions.setdefault(field,Counter())[key]+=1
+            else:attempted[field]+=1
+    return {'schema':'source-interpreted-native-result/1','result_view':root,'as_of':as_of,
+        'rows':len(rows),'columns':result['columns'],'table_digest':digest(rows),
+        'registered_result_digest':digest({k:v for k,v in result.items()if k!='result_view'}),
+        'source_review_view':meta['source_review_view'],'parent_result_view':meta['parent_result_view'],
+        'parameters':meta['parameters'],'source_digest':meta['source_digest'],
+        'conditional_effect_definitions':meta['conditional_effect_definitions'],
+        'received_conditional_effect_counts':dict(Counter(effect for r in rows for effect in r['source_interpretation']['received_conditional_effects'])),
+        'source_interpreted_conditional_effect_counts':dict(Counter(effect for r in rows for effect in r['source_interpretation']['interpreted_conditional_effects']or[])),
+        'conditional_effects_unresolved_accounts':sum(r['source_interpretation']['interpreted_conditional_effects']is None for r in rows),
+        'parent_rows_digest':meta['parent_rows_digest'],'task_identity':meta['task_identity'],
+        'input_patients':meta['input_patients'],'output_patients':len({r['patient_id']for r in rows}),
+        'patient_state_coverage':dict(Counter(p['status']for p in meta['patient_state_coverage'])),
+        'status_counts':meta['status_counts'],'changed_field_counts':dict(changes),
+        'unaccepted_candidate_field_counts':dict(attempted),
+        'source_review_performed_accounts':sum(r['review_performed']is True for r in rows),
+        'unreviewed_bound_source_accounts':sum(r['source_record_id']is not None and r['review_performed']is not True for r in rows),
+        'unbound_source_accounts':sum(r['source_record_id']is None for r in rows),
+        'source_review_gap_reasons':dict(Counter((r.get('review_gap')or{}).get('reason')for r in rows if r.get('review_gap'))),
+        'source_supported_field_transitions':{field:[{'received':json.loads(key)[0],'interpreted':json.loads(key)[1],'accounts':n}
+            for key,n in values.items()]for field,values in transitions.items()},
+        'documentary_group_status_counts':dict(Counter(g['documentary_group']['status']for g in meta['documentary_groups'])),
+        'original_assertions_composed':meta['original_assertions_composed'],
+        'field_roles':{'proposed_assertion':'Exact received proposal; not an accepted source meaning.',
+            'source_support':'Support decision on the received proposal before repair; it does not describe a later corrected tuple.',
+            'source_date':'Original source statement/event date; not substituted for clinical date.',
+            'arrival_date':'Original availability date; not substituted for source/clinical date.',
+            'source_evidence':'Exact received field/span/quote, not semantic validation.',
+            'source_interpretation.assertion':'Existing source-supported machine tuple, or null when unresolved.',
+            'source_interpretation.machine_support':'Actual deciding model observation bound to full original source/task/tuple.',
+            'source_interpretation.interpreted_conditional_effects':'Code transformation conditional on that machine interpretation, or null.',
+            'source_interpretation.documentary_group_after':'Recomposition from all original assertions; opposing reports remain unadjudicated.'},
+        'reproduction_without_provider_dispatch':True,'all_accounts_and_values_reproduced':True,
+        'authority':'native_computation_and_bound_machine_source_observations','clinical_qualification':False,
+        'human_review_created':False,'received_annotations_modified':False,
+        'scope':meta['scope']+' This contract establishes the structured result from actual prior source judgments and native code. Original question coverage, new prose and workflow meaning remain separate checks; no completion or clinical acceptance follows from copy fidelity.'}
+
+
+def _projection_contract(tools,answer,calls,as_of,call):
+    """Exact one-to-one native selections/JSON getters of interpreted results."""
+    import sqlglot
+    from sqlglot import exp
+    from . import backstop_agent as B,sql_query as Q
+    result=call['result'];root=result['result_view'];views=result.get('read_views')or[]
+    def require(condition,message):
+        if not condition:raise ValueError('Source-interpreted projection: '+message)
+    require(call.get('name')=='query_sql'and len(views)==1,'one complete native parent required')
+    index=next(i for i,c in enumerate(calls)if c is call);prior=calls[:index]
+    parents={c['result']['result_view']:c['result']for c in prior if isinstance(c.get('result'),dict)and c['result'].get('result_view')}
+    require(Q.validate_bound_native_query(result,parents),'executed query/native origins changed')
+    parent=parents.get(views[0]);require(parent is not None,'parent must precede its projection')
+    base_answer={'answer_type':'table','table_from_tool':views[0]};B.materialize_table(base_answer,prior)
+    base=final_contract(tools,base_answer,prior,as_of);require(base is not None,'qualified interpreted parent required')
+    query=result.get('declared_executed_query')or(call.get('input')or{}).get('sql')
+    tree=sqlglot.parse_one(query,read='sqlite');tables=list(tree.find_all(exp.Table))
+    require(isinstance(tree,exp.Select)and len(list(tree.find_all(exp.Select)))==1 and len(tables)==1,
+            'one plain native SELECT required')
+    require(not any(tree.args.get(k)for k in ('where','joins','group','having','qualify','limit','offset','distinct','with_', 'windows')),
+            'filtering, aggregation, joins and windowing need a separate composition contract')
+    source=tables[0]
+    require(source.name.casefold()==views[0].casefold()and source.db.casefold()in ('','temp')and not source.catalog,
+            'physical parent differs from bound input')
+    original_columns=parent['columns'];lookup={c.casefold():c for c in original_columns};aliases={views[0].casefold(),source.alias_or_name.casefold()}
+    def field(column):
+        require(not column.table or column.table.casefold()in aliases,'foreign source qualifier')
+        require(column.name.casefold()in lookup,'unreceived field')
+        return lookup[column.name.casefold()]
+    fields={}
+    for expression in tree.expressions:
+        value=expression.this if isinstance(expression,exp.Alias)else expression
+        if isinstance(value,exp.Star)or isinstance(value,exp.Column)and isinstance(value.this,exp.Star):
+            require(not value.args.get('except_')and not value.args.get('replace'),'plain native star required')
+            if isinstance(value,exp.Column):require(not value.table or value.table.casefold()in aliases,'foreign star')
+            for name in original_columns:
+                require(name not in fields,'duplicate output field')
+                fields[name]={'kind':'native_copy','source_column':name,'expression':name}
+            continue
+        copied=field(value)if isinstance(value,exp.Column)else None
+        name=expression.alias if isinstance(expression,exp.Alias)else copied
+        require(isinstance(name,str)and name and name not in fields,'explicit unique output field required')
+        if copied is not None:kind='native_copy';origin=copied
+        else:
+            require(isinstance(value,(exp.JSONExtract,exp.JSONExtractScalar))and isinstance(value.this,exp.Column)
+                and isinstance(value.expression,exp.JSONPath),'only exact copies and literal JSON getters are supported')
+            require(all(isinstance(n,(exp.JSONExtract,exp.JSONExtractScalar,exp.Column,exp.Identifier,exp.JSONPath,
+                exp.JSONPathRoot,exp.JSONPathKey,exp.JSONPathSubscript))for n in value.walk()),'computed JSON expression requires its own review')
+            origin=field(value.this);kind='received_json_field'
+        require(name not in original_columns or copied==name,'native roles/clocks cannot be overwritten')
+        if name in ('clinical_date','reference_date'):
+            keys=[n.this for n in value.expression.find_all(exp.JSONPathKey)]if kind=='received_json_field'else[]
+            require(origin=='source_interpretation'and keys==['assertion',name],'clinical/reference clocks must come from the interpreted tuple')
+        fields[name]={'kind':kind,'source_column':origin,'expression':expression.sql(dialect='sqlite')}
+    require({'audit_account_id','patient_id'}<=set(fields),'complete native account/patient identities required')
+    table=answer.get('table');require(isinstance(table,list)and digest(table)==digest(result['rows']),
+        'final values differ from registered query output')
+    require(not(answer.get('table_binding')or{}).get('interpreted_columns')and answer.get('row_prose')is None,'new row prose needs separate review')
+    replay=tools.semantic.query(query,as_of=as_of,max_rows=None,max_chars=None,inspect_incomplete=True)
+    require(replay['columns']==result['columns']and digest(replay['rows'])==digest(result['rows']),'literal projection replay changed')
+    identity={r['audit_account_id']:r['patient_id']for r in base_answer['table']}
+    require(len(table)==len(identity)and len({r.get('audit_account_id')for r in table})==len(table)
+        and all(r.get('patient_id')==identity.get(r.get('audit_account_id'))for r in table),'every original account must remain exactly once')
+    return {**base,'result_view':root,'columns':result['columns'],'table_digest':digest(table),
+        'registered_result_digest':digest({k:v for k,v in result.items()if k!='result_view'}),
+        'source_role_definitions':base.get('source_role_definitions')or base['field_roles'],
+        'field_roles':{name:{**contract,'meaning':'Exactly this copied/extracted source expression is delivered; ancestor fields omitted by SQL are not final output fields.'}for name,contract in fields.items()},
+        'native_projection':{'parent_result_view':views[0],'parent_table_digest':base['table_digest'],
+            'executed_query':query,'fields':fields,'all_accounts_and_values_replayed':True,
+            'scope':'Native copies and literal JSON extraction retain actual received-versus-interpreted field roles. New aliases do not establish new clinical meaning; question coverage and global prose still require review.'}}

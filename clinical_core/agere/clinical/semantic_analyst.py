@@ -467,6 +467,20 @@ def actor_result(value):
     if value.get('executed_query'):
         from ...contracts import digest
         shown['executed_query_digest']=digest(value['executed_query'])
+    # These complete operational arrays are native receipts, not frontier
+    # reading context. Keep source meanings in row fields and explicit native
+    # views; never duplicate every prior typed response/group in each tool turn.
+    if value.get('analysis')in ('assertion_source_review','assertion_source_interpretation'):
+        from ...contracts import digest
+        key=value['analysis'];meta=shown.get(key)
+        if isinstance(meta,dict):
+            projected=dict(meta)
+            for field in ('typed_checks','documentary_groups','patient_state_coverage'):
+                items=projected.get(field)
+                if isinstance(items,list):
+                    projected[field]={'native_records':len(items),'native_digest':digest(items),
+                        'meaning':'Complete original data retained in the native receipt; this is a transport manifest, not clinical acceptance.'}
+            shown[key]=projected
     rows=shown.get('rows')
     if complete_actor_reading(value):
         shown.update(rows_computed=len(rows),preview_only=False,

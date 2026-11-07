@@ -183,8 +183,25 @@ def restore_table(rows,edges,patient_rows):
     return restored
 
 
-def coverage_answer(answer, *, native_table=None, native_audit=None):
+def coverage_answer(answer, *, native_table=None, native_audit=None, native_interpretation=None):
     """Coverage-only projection; support receives every complete native value."""
+    if native_interpretation is not None:
+        if(native_interpretation.get('schema')!='source-interpreted-native-result/1'
+           or native_interpretation.get('result_view')!=answer.get('table_from_tool')
+           or native_interpretation.get('table_digest')!=digest(answer.get('table'))
+           or native_interpretation.get('all_accounts_and_values_reproduced')is not True
+           or native_interpretation.get('reproduction_without_provider_dispatch')is not True
+           or native_interpretation.get('clinical_qualification')is not False
+           or native_interpretation.get('human_review_created')is not False):
+            raise ValueError('Source interpretation contract does not bind this complete native table')
+        out=copy.deepcopy({k:v for k,v in answer.items()if k!='table'})
+        out['table']=[];out['source_interpretation_contract']=copy.deepcopy(native_interpretation)
+        if isinstance(out.get('table_binding'),dict):out['table_binding'].pop('query',None)
+        prior=out.pop('investigation_review',None)
+        if prior is not None:out['prior_review_native_digest']=digest(prior)
+        out['coverage_contract']={'schema':'source-interpreted-native-result/1','scope':
+            'Code reproduced every original account, source/task/tuple binding, existing machine judgment and conditional documentary transformation without a provider dispatch. Received proposals and source-supported machine interpretations are distinct fields. Only columns/field_roles and native_projection.fields are delivered fields; source_role_definitions describes ancestor data and does not supply omitted final columns. Review requested scope, dates, fields, unresolved reports, new prose and workflow meaning. This is neither independent clinical qualification nor proof of complete question coverage.'}
+        return out
     if native_audit is not None:
         if(native_audit.get('schema')!='native-qualifier-coverage/1'
             or native_audit.get('table_digest')!=digest(answer.get('table'))

@@ -118,7 +118,7 @@ TOOLS = [
      'Bound findings also retain entity,relation,subject,polarity,temporality and a source-bound assertion compatible with documentary state. '
      'Query the result_view to compose the final patient table; use json_extract/json_each for findings. All findings retain exact source quotes. source_clinicians_json retains literal signed correspondence roles. Unchanged fields reuse exact-source observations in explicit continuation; ask only missing/changed fields. Use record_ids for a source-specific repair. Use candidate_result_view to recheck every retained observation in a native review_json result against explicit entity/relation questions and complete original source contexts. This reviews candidate spans only and cannot establish whole-document absence or recall; retain the original result separately for audit.',
      'input_schema': {'type':'object','properties':{'patient_ids':{'type':'array','items':{'type':'string'}},
-          'assertion_result_view':{'type':'string','description':'Use alone. Complete native qualifier-account result_view (or qualified one-to-one native SQL projection). Code binds every original account, patient, source and proposed tuple; no source/population overrides.'},
+          'assertion_result_view':{'type':'string','description':'Use alone. A complete native qualifier-account result_view first checks every source-bound tuple. Its assertion_source_review result interprets rejected categorical proposals; its assertion_source_interpretation result continues only new unresolved work. Code binds every original account/patient/source; no scope overrides. The interpreted result or a complete one-parent literal/JSON SQL projection can supply table_from_tool.'},
           'patient_query_sql':{'type':'string','description':'Preferred for a population: a read-only SELECT returning every patient_id, e.g. SELECT patient_id FROM a governed phenotype or cohort view. Avoid transcribing IDs.'},
           'record_ids':{'type':'array','items':{'type':'string'},'description':'Optional exact received source IDs for targeted repair. Reviews only these records, never a complete-patient absence claim.'},
           'candidate_result_view':{'type':'string','description':'Existing complete result_view with patient_id and review_json. Recheck all observations for the requested bound fields against their complete source documents; no whole-document absence or recall claim. Incompatible with record/date filters.'},
@@ -268,6 +268,9 @@ has already declined this question, so it is yours to answer completely and corr
   unit, entity qualifier and failed binding. The window applies to assertions, with unknown dates retained; source/reference/
   clinical clocks remain separate. Repetitions before the window still prevent a later copy from refreshing evidence. This is
   annotation accounting, not complete free-text interpretation or clinical qualification; inspect unresolved source meaning.
+  Choose the date basis from the request: arrival is when an account became available/received; source_event is its source
+  statement/event date. Neither is an explicit clinical date. Preserve an unresolved date-basis ambiguity rather than silently
+  substituting one clock for another.
   For a qualifier/copy-lineage audit, execute this native review before acquiring new narrative judgments. Its native_projections
   give complete executable assertion, qualifier-effect, dated-account and unbound-annotation queries. Keep the requested streams,
   population and explicit clock; a subgroup selected for one qualifier does not cover the other requested qualifiers. Same-patient,
@@ -277,8 +280,14 @@ has already declined this question, so it is yours to answer completely and corr
   in parameters. Native code binds the complete source list and population; do not guess note families or preselect patients
   from a subset of records. Use selection=parameters only for an explicitly restricted source/population audit.
   For the requested qualifier/account audit table, also set output=qualifier_accounts. Its primary result is already the complete
-  native rowset with analytical effects, exact qualifiers/clocks and unresolved bindings; use it as table_from_tool and preserve
-  each audit_account_id exactly once. Explanatory examples may supplement it; never replace it with a disease/theme subset.
+  native rowset with conditional analytical effects, exact qualifiers/clocks and unresolved bindings. Preserve each audit_account_id
+  exactly once. When source meaning is requested, call review_documents with only assertion_result_view naming that native result,
+  then supply the returned assertion_source_review view to the same tool for localized interpretation and documentary recomposition.
+  A returned assertion_source_interpretation view continues only new unresolved work; unchanged source observations are reused.
+  Received proposals, source-supported machine tuples and human review have different authority. Return the complete interpreted
+  view or a one-parent native SQL projection using literal copies/json_extract as table_from_tool; the final consumer preserves
+  exact source bindings and still checks question coverage and global prose. Do not turn receipt fidelity or a model judgment into
+  clinical qualification. Examples may supplement the complete result, never replace it with a disease/theme subset.
   library_measure output patients returns the complete evaluated patient-status roster; output gaps returns every recorded gap.
   Preserve exclusions and indeterminate rows, distinguish the input roster from a measure denominator, and retain unknown full-
   population rates separately from known-subset observations. Read patient names with read_patient_profiles and join by patient_id.
@@ -2156,6 +2165,14 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     try:native_audit=qualifier_coverage_review(answer,calls,tools,as_of)
     except (ValueError,KeyError,TypeError,AttributeError)as exc:
         return {**assessment,'status':'repair','repair_kind':'native_audit_binding','feedback':str(exc)}
+    from .assertion_source_review import final_contract as source_interpretation_contract
+    try:native_interpretation=source_interpretation_contract(tools,answer,calls,as_of)
+    except (ValueError,KeyError,TypeError,AttributeError)as exc:
+        return {**assessment,'status':'repair','repair_kind':'source_interpretation_binding','feedback':str(exc)}
+    if native_interpretation is not None and native_interpretation['unreviewed_bound_source_accounts']:
+        return {**assessment,'status':'repair','repair_kind':'unfinished_source_interpretation',
+            'feedback':'Bound source accounts have no completed source judgment. Continue review_documents from the original audit result, preserving all prior observations and unavailable-provider receipts. An unread/prepared account is not a completed interpretation.',
+            'source_interpretation_composition':native_interpretation}
     if (answer.get('answer_type') == 'table' or answer.get('table')) and not answer.get('table_binding'):
         return {**assessment, 'status': 'repair', 'feedback': 'Compute the requested table in SQL, using earlier result_view tables as needed, and return table_from_tool. Do not transcribe rows or calculate changes in the final answer.'}
     kept, dropped = verified_sources(answer, tools)
@@ -2315,7 +2332,10 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         # Row prose is compiled after the initial native-origin check. Its
         # actual interpretations must remain visible to coverage and support.
         if (answer.get('table_binding')or{}).get('interpreted_columns'):native_audit=None
-        coverage_view=coverage_answer(answer,native_table=native_table,native_audit=native_audit)
+        coverage_view=coverage_answer(answer,native_table=native_table,native_audit=native_audit,native_interpretation=native_interpretation)
+        if native_interpretation is not None:
+            assessment['source_interpretation_composition']={k:native_interpretation[k]for k in
+                ('schema','rows','table_digest','status_counts','authority','clinical_qualification')}
         if native_audit is not None:
             assessment['native_audit_coverage']={'schema':native_audit['schema'],'rows':native_audit['rows'],
                 'table_digest':native_audit['table_digest'],'separate_source_support_required':True,
@@ -2393,7 +2413,9 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             interpretation['table'] = {k: v for k, v in answer['table_binding'].items() if k != 'query'}
             interpretation['table_binding'] = interpretation['table']  # the final rows are supplied once, in their actual tool result
         from ..deliverables.receipts import compact_json,uncompact_json,fingerprint
-        original=({'question':request,'answer':coverage_view,
+        original=({'question':request,'answer':coverage_view}
+                  if native_interpretation is not None else
+                  {'question':request,'answer':coverage_view,
                    'native_receipt_digests':native_table['native_receipt_digests']}
                   if native_table is not None else
                   {'question':request,'answer':interpretation,'evidence':evidence,
@@ -2409,7 +2431,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         packets=support_packets(request,answer,calls,getattr(tools,'document_reviews',[]),as_of,
                                 source_documents=getattr(tools,'read',{}),prior_review_reference=prior_reference,
                                 native_audit=native_audit,source_records=getattr(tools,'source_records',{}),
-                                assertion_observations=assertion_observations)
+                                assertion_observations=assertion_observations,native_interpretation=native_interpretation)
         program_repairs=native_program_repairs(packets)
         if program_repairs:
             return {**assessment,'status':'repair','repair_kind':'native_program_verification',
@@ -2423,8 +2445,10 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                     'Do not re-read every patient or ask for repeated model votes on copies of the same SQL result. The repaired program still requires source/question verification.'}
         copied=all(p.get('representation')=='native_table_copy_and_meaning_review'for p in packets)
         calculated=any(p.get('native_calculation_input_fidelity')for p in packets)
-        assessment['evidence_coverage'].update(model_view='native-table-copy-and-meaning/1'if copied else'native-calculation-inputs-and-meaning/1'if calculated else'patient-dependency-packets/1',
-            full_results_supplied=not(copied or calculated),native_full_results_retained=True,
+        source_composed=all(p.get('representation')=='source_interpreted_result_and_global_meaning_review'for p in packets)
+        assessment['evidence_coverage'].update(model_view='source-interpreted-native-result/1'if source_composed else'native-table-copy-and-meaning/1'if copied else'native-calculation-inputs-and-meaning/1'if calculated else'patient-dependency-packets/1',
+            full_results_supplied=not(copied or calculated or source_composed),native_full_results_retained=True,
+            **({'source_interpretation_composition':packets[0]['source_interpretation_composition']}if source_composed else{}),
             **({'native_table_copy':packets[0]['native_table_copy']}if copied else{}),
             complete_dependency_packets=len(packets),max_dependency_bytes=max((p['bytes']for p in packets),default=0),
             total_dependency_bytes=sum(p['bytes']for p in packets),
@@ -2776,7 +2800,7 @@ def global_dependency_request(answer,calls):
     return missing if native_column_projections(calls,roots,dependencies)else []
 
 
-def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None,native_audit=None,source_records=None,assertion_observations=None):
+def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None,native_audit=None,source_records=None,assertion_observations=None,native_interpretation=None):
     """Final clinical claims, deduplicated and grouped by patient dependency.
 
     Raw operational receipts remain intact. SQL elapsed time is excluded only
@@ -2787,6 +2811,25 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     dependency closure; unknown lineage retains all shared results.
     Diagnostic observations remain native audit history, not extra final claims.
     """
+    if native_interpretation is not None:
+        from .evidence_projection import coverage_answer
+        from ..deliverables.receipts import readable_json
+        checked=coverage_answer(answer,native_interpretation=native_interpretation)
+        state={'id':'summary','question':question,'as_of':as_of,'answer':checked,
+            'scope':'The complete structured native table is reproduced from original received records, actual source-bound machine judgments and deterministic conditional transformations. Review every NEW headline/fact, requested meaning and workflow against that explicit result contract. Do not infer clinical qualification, current care or resolution of opposing reports. No new source interpretation is established by this global review.',
+            'computed_claims':answer.get('computed_prose',[])}
+        claims=[]
+        if 'headline'in answer:claims.append({'id':'headline','field':'headline','path':['answer','headline']})
+        for i,key in enumerate(answer.get('facts')or{}):claims.append({'id':'fact_'+str(i),'field':'facts.'+str(key),'path':['answer','facts',key]})
+        state['claim_manifest']=claims
+        text=json.dumps(readable_json(state),ensure_ascii=False,separators=(',',':'),default=str)
+        return [{'id':'summary','date':as_of,'text':text,'bytes':len(text.encode()),'claim_manifest':claims,
+            'dependency_complete':True,'source_context_complete':True,'result_view':native_interpretation['result_view'],
+            'representation':'source_interpreted_result_and_global_meaning_review',
+            'source_interpretation_composition':{'schema':native_interpretation['schema'],
+                'table_digest':native_interpretation['table_digest'],'rows':native_interpretation['rows'],
+                'packet_sha256':hashlib.sha256(text.encode()).hexdigest(),'global_meaning_review_required':True,
+                'clinical_qualification':False}}]
     copy_review=native_table_copy_review(answer,calls,document_reviews,as_of)
     if copy_review is not None:
         from .evidence_projection import coverage_answer
