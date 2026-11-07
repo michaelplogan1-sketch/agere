@@ -231,6 +231,47 @@ class NativeColumnProjection(unittest.TestCase):
         projected=native_column_projections(calls,['agere_result_2','agere_result_3'],{'agere_result_2','agere_result_3','agere_result_4'})['agere_result_4']
         self.assertTrue(projected['json_path_output_checks'][0]['full_output_cells_types_order_duplicates_nulls_exact'])
 
+    def direct_json_fixture(self, expression="json_extract(r.value,'$.id') AS rule_id", uniform=True):
+        calls=self.json_fixture(uniform=uniform)
+        query=('SELECT '+expression+', COUNT(DISTINCT a.patient_id) AS patients, MIN(a.rowid) AS first_rowid '
+            "FROM agere_result_4 a, json_each(json_extract(a.documentary_receipt,'$.contract.requirements')) r GROUP BY 1 ORDER BY 1")
+        consumer=self.execute(query);consumer['result']['result_view']='agere_result_3';calls[-1]=consumer
+        return calls
+
+    def test_direct_static_json_and_intrinsic_row_order_require_complete_output_replay(self):
+        calls=self.direct_json_fixture();before=copy.deepcopy(calls)
+        projected=native_column_projections(calls,['agere_result_2','agere_result_3'],
+            {'agere_result_2','agere_result_3','agere_result_4'})['agere_result_4']
+        self.assertEqual(projected['columns'],['patient_id','status'])
+        self.assertEqual(projected['row_count'],4)
+        self.assertEqual(projected['json_path_observations'][0]['path'],'$.contract.requirements')
+        proof=next(c for c in projected['consumers']if c['result_view']=='agere_result_3')
+        self.assertEqual(proof['intrinsic_rowid_reads'],['ROWID'])
+        self.assertTrue(projected['json_path_output_checks'][0]['full_output_cells_types_order_duplicates_nulls_exact'])
+        view=native_calculation_input_view(projected,calls[0],calls)
+        self.assertEqual(view['input_fidelity']['row_count'],4)
+        self.assertEqual(view['input_fidelity']['distinct_patient_ids'],3)
+        self.assertTrue(view['json_path_observations'][0]['native_all_row_equality']['present'])
+        self.assertEqual(calls,before)
+        calls[-1]['result']['rows'][0]['first_rowid']=99
+        self.assertNotIn('agere_result_4',native_column_projections(calls,
+            ['agere_result_2','agere_result_3'],{'agere_result_2','agere_result_3','agere_result_4'}))
+
+    def test_direct_json_hidden_fields_and_varying_branches_keep_full_evidence(self):
+        calls=self.direct_json_fixture(expression='r.json AS original_document')
+        self.assertNotIn('agere_result_4',native_column_projections(calls,
+            ['agere_result_2','agere_result_3'],{'agere_result_2','agere_result_3','agere_result_4'}))
+        # Original nonuniform branches include JSON null and absent keys.
+        self.wh.db.set_authorizer(None);self.wh.db.execute('PRAGMA query_only=OFF')
+        self.wh.db.execute('DROP TABLE temp.agere_result_4')
+        self.wh.db.execute('PRAGMA query_only=ON');self.wh.db.set_authorizer(self.wh._authorize)
+        calls=self.direct_json_fixture(uniform=False)
+        projected=native_column_projections(calls,['agere_result_2','agere_result_3'],
+            {'agere_result_2','agere_result_3','agere_result_4'})['agere_result_4']
+        branch=projected['json_path_observations'][0]
+        self.assertEqual(branch['row_values'][-2:],[[True,'null'],[False,None]])
+        self.assertEqual(native_calculation_input_view(projected,calls[0],calls),projected)
+
     def legacy_fixture(self):
         columns,rows=B.output_table(self.producer['result'])
         query='SELECT * FROM ('+native_result_source(columns,rows)+') x WHERE patient_id IN (SELECT value FROM json_each(\'["A","B"]\')) ORDER BY patient_id'

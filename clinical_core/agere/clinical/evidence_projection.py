@@ -332,7 +332,7 @@ def restore_native_observations(view):
 
 
 def native_json_paths(query, view, column):
-    """Recognize complete static JSON branches read through a scalar subquery.
+    """Recognize complete static JSON branches read by table-valued expansion.
 
     Only an unmodified forwarded cell consumed by json_each qualifies. Hidden
     whole-document/parse-position columns, dynamic paths and other uses retain
@@ -347,6 +347,32 @@ def native_json_paths(query, view, column):
     if len(tables)!=1:return None
     table=tables[0];inner=table.find_ancestor(exp.Select)
     source=inner.args.get('from_')if inner is not None else None
+    if inner is tree and source is not None and source.this is table:
+        # A table-valued expansion can consume a static branch directly from
+        # every native row. Retain that COMPLETE branch at every original row
+        # index; the caller reexecutes the full query before using it.
+        refs=[c for c in tree.find_all(exp.Column)if c.name==column]
+        if not refs:return None
+        paths=[]
+        for ref in refs:
+            extract=ref.parent
+            if(ref.table!=table.alias_or_name or not isinstance(extract,(exp.JSONExtract,exp.JSONExtractScalar))
+                or extract.this is not ref):return None
+            path=extract.expression.sql(dialect='sqlite')
+            if len(path)<2 or path[0]!="'"or path[-1]!="'":return None
+            path=path[1:-1]
+            if not re.fullmatch(r'\$\.[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*',path):return None
+            fn=extract.parent
+            if(not isinstance(fn,exp.Anonymous)or fn.name.lower()!='json_each'
+                or len(fn.expressions)!=1 or fn.expressions[0]is not extract):return None
+            owner=fn.parent
+            if not isinstance(owner,exp.Table)or not owner.alias:return None
+            for col in tree.find_all(exp.Column):
+                if col.find_ancestor(exp.Select)is not tree:continue
+                if not col.table:return None
+                if col.table==owner.alias and col.name not in ('key','value','type','atom','fullkey','path'):return None
+            paths.append(path)
+        return list(dict.fromkeys(paths))
     if (inner is None or inner is tree or len(inner.selects)!=1 or source is None or source.this is not table
         or any(v for k,v in inner.args.items()if k not in ('expressions','from_','limit','offset'))):return None
     selected=inner.selects[0];cell=selected.this if isinstance(selected,exp.Alias)else selected
@@ -486,10 +512,18 @@ def _native_column_consumers(view, columns, receipt_digest, by, dependencies, re
                 or not isinstance(query,str)or reads.get('query_digest')!=digest(query)
                 or source.get('complete')is not True or source.get('receipt_digest')!=receipt_digest):return None
             read=source.get('columns');proof={}
-        if not isinstance(read,list)or any(not isinstance(c,str)for c in read)or not set(read)<=set(columns):return None
-        needed.update(read)
+        if not isinstance(read,list)or any(not isinstance(c,str)for c in read):return None
+        extra=set(read)-set(columns)
+        # SQLite records intrinsic ROWID reads separately from declared fields.
+        # They qualify only after the complete JSON consumer is replayed below;
+        # never discard them based on an assumed order or matching cell alone.
+        intrinsic={'rowid','_rowid_','oid'}
+        if extra and (not all(c.casefold()in intrinsic for c in extra)
+                      or any(c.casefold()in intrinsic for c in columns)):return None
+        needed.update(set(read)&set(columns))
         consumers.append({'result_view':name,'query':query,'query_digest':digest(query),
-            'columns_read':read,'result_digest':digest(observed),**proof})
+            'columns_read':read,'result_digest':digest(observed),
+            **({'intrinsic_rowid_reads':sorted(extra)}if extra else{}),**proof})
     return (needed,consumers)if consumers else None
 
 
@@ -699,6 +733,9 @@ def native_column_projections(calls, roots, dependencies):
         needed,consumers=used
         # Keep explicit entity identity even when only row cardinality was read.
         json_paths=native_json_projection(view,columns,rows,consumers,by)
+        intrinsic_consumers={c['result_view']for c in consumers if c.get('intrinsic_rowid_reads')}
+        if intrinsic_consumers and (not json_paths or not intrinsic_consumers<=
+                {check['result_view']for check in json_paths['checks']}):continue
         json_columns=json_paths['columns']if json_paths else set()
         selected=[c for c in columns if (c in needed or c=='patient_id')and c not in json_columns]
         if set(selected)==set(columns):continue
