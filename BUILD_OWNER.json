@@ -5,17 +5,17 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: No provider/build/training job running. Complete the existing native audit projection binding offline, using retained-projection-guard/actual-projection.sql and ordinary-v5-native-audit-coverage/new-attempts.json.gz; no new source/reader campaign or paid fullQ21 yet. Direct native audit coverage is verified(38263accounts/4115originals,189488668->7820bytes); normal actor admitsfull4115/all41/outputqualifier_accounts. The actual finalSQLprojection preservedall38263IDs but bypassed the direct-only proof and triggered PerplexityHTTP413. Do not treat this wiring failure as an unknown clinical fact. Guard039e93bb now rejects that exact retained projection before providers(7.3196s/0calls;333affectedchecks). Extend qualifier_coverage_review through this existing single-SELECT/json_extract/conditionalCASE composition using real SQLite read/hash origins, complete one-to-one account/patient binding and source/value/unit/domain/separate-clock fidelity; retain original parent evidence and expose new computed-expression meanings for separate review. Actual added clinical interpretations still need their full source path. Prove on the actual retained SQL plus adverse cases before further paid original-question confirmation. Preserve originalQ21clock/semantic failures,Q23missing exact-parent definitions,Q24requested capability,current25case/tenarea assessment and separateG5/clinical/model/customer dependencies. Owned app41392/session11002 serves /askHTTP200 on8885. Quiet continuation ACTIVE.",
+  "active_work": "G3: Complete source interpretation from retained Q21 evidence on 5db5435f. Jev located missing[0] as unfinished source review (p=.94); missing[1] remains undecided. Before further dispatch, qualify copied native fields through the existing fidelity proofs and identify claims needing original full-source interpretation. The measured path still has 1,300,947 field claims and 281 patient packets above 230,000 bytes; do not repeat that full campaign. Preserve all 38,263 accounts, 1,739 output patient partitions, 4,115 input patients, separate source-event/arrival/clinical clocks and every unresolved semantic dependency. Use cached original documentary receipts, localized source review and adverse cases, then one justified ordinary handoff. Retain Q23 definitions, Q24 deliverable capability, all 25 cases, all ten acceptance areas and separate G5/clinical/customer dependencies. Inspect owned receipts first. App PID 42424/session 25673 serves port 8885; no provider/build/training job running. Quiet continuation ACTIVE.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
-  "owned_server_pid": 41392,
-  "owned_server_session": 11002,
+  "owned_server_pid": 42424,
+  "owned_server_session": 25673,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: No provider/build/training job running. Complete the existing native audit projection binding offline, using retained-projection-guard/actual-projection.sql and ordinary-v5-native-audit-coverage/new-attempts.json.gz; no new source/reader campaign or paid fullQ21 yet. Direct native audit coverage is verified(38263accounts/4115originals,189488668->7820bytes); normal actor admitsfull4115/all41/outputqualifier_accounts. The actual finalSQLprojection preservedall38263IDs but bypassed the direct-only proof and triggered PerplexityHTTP413. Do not treat this wiring failure as an unknown clinical fact. Guard039e93bb now rejects that exact retained projection before providers(7.3196s/0calls;333affectedchecks). Extend qualifier_coverage_review through this existing single-SELECT/json_extract/conditionalCASE composition using real SQLite read/hash origins, complete one-to-one account/patient binding and source/value/unit/domain/separate-clock fidelity; retain original parent evidence and expose new computed-expression meanings for separate review. Actual added clinical interpretations still need their full source path. Prove on the actual retained SQL plus adverse cases before further paid original-question confirmation. Preserve originalQ21clock/semantic failures,Q23missing exact-parent definitions,Q24requested capability,current25case/tenarea assessment and separateG5/clinical/model/customer dependencies. Owned app41392/session11002 serves /askHTTP200 on8885. Quiet continuation ACTIVE.",
+  "resume_priority": "G3: Complete source interpretation from retained Q21 evidence on 5db5435f. Jev located missing[0] as unfinished source review (p=.94); missing[1] remains undecided. Before further dispatch, qualify copied native fields through the existing fidelity proofs and identify claims needing original full-source interpretation. The measured path still has 1,300,947 field claims and 281 patient packets above 230,000 bytes; do not repeat that full campaign. Preserve all 38,263 accounts, 1,739 output patient partitions, 4,115 input patients, separate source-event/arrival/clinical clocks and every unresolved semantic dependency. Use cached original documentary receipts, localized source review and adverse cases, then one justified ordinary handoff. Retain Q23 definitions, Q24 deliverable capability, all 25 cases, all ten acceptance areas and separate G5/clinical/customer dependencies. Inspect owned receipts first. App PID 42424/session 25673 serves port 8885; no provider/build/training job running. Quiet continuation ACTIVE.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-05T13:04:20.746654+00:00",
   "heartbeat_status": "ACTIVE",
@@ -28,7 +28,7 @@
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
   "last_observed_server_session": 83398,
-  "server_status": "Owned app41392/session11002 healthy /askHTTP200 on8885 at039e93bb; no provider/build/training job running. SQLauditprojection role binding remains unfinished, protected by pre-providerguard.",
+  "server_status": "Owned app healthy /ask HTTP200 on8885;0startup provider calls. No provider/build/training job running.",
   "unsealed_work": {
     "status": "verified_full_native_scope_pending_ordinary_composition",
     "product_commit": "15f9b8d7e9a6d0ab896a687499b8ea261710feca",
@@ -37,7 +37,7 @@
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
     "source_frozen": false,
     "runtime_activation": false,
-    "product_code_in_candidate_app": false,
+    "product_code_in_candidate_app": true,
     "answer_selected": false,
     "affected_tests_passed": 102,
     "provider_calls_this_increment": 0,
@@ -634,12 +634,12 @@
       "session": null
     },
     "q21_audit_coverage_provider": {
-      "pid": 40911,
+      "pid": 42408,
       "status": "returned_scoped_provider_coverage_not_full_answer",
       "source_frozen": false,
       "provider_work": false,
       "kind": "native-audit-coverage-provider",
-      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/audit-coverage-provider/receipt.json",
+      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/retained-pending-work-provider/receipt.json",
       "session": null
     },
     "q21_native_audit_admission": {
@@ -701,6 +701,58 @@
       "ordinary_unpriced_attempts": 2,
       "ordinary_new_pending_after_disposition": 0,
       "app_proof": "artifacts/agere-q21-assertion-window-2026-11-06/audit-coverage-full/app-proof.json"
+    },
+    "q21_qualified_projection_check": {
+      "pid": 41640,
+      "status": "passed_actual_projection_compact_coverage_wiring_not_model_verdict",
+      "source_frozen": false,
+      "provider_work": false,
+      "kind": "qualified-native-audit-projection",
+      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/qualified-projection/receipt.json",
+      "session": null
+    },
+    "q21_retained_draft_save_check": {
+      "pid": 41993,
+      "status": "passed_unverified_retained_draft_saved_and_reopened_not_semantic_acceptance",
+      "source_frozen": false,
+      "provider_work": false,
+      "kind": "retained-actual-draft-save-wiring",
+      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/retained-draft-save-structural/receipt.json",
+      "session": null
+    },
+    "q21_retained_support_preflight": {
+      "pid": 42335,
+      "status": "passed_full_native_global_manifest_below_existing_boundary_source_review_still_required",
+      "source_frozen": false,
+      "provider_work": false,
+      "kind": "retained-support-preflight",
+      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/qualified-audit-summary-final/receipt.json",
+      "session": null
+    },
+    "q21_structural_prose_and_save": {
+      "status": "retained_actual_draft_saved_and_reopened_unverified",
+      "product_commit": "cb3c9c2f",
+      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/retained-draft-save-structural/receipt.json",
+      "checks_log": "artifacts/agere-q21-assertion-window-2026-11-06/structural-prose-regressions.log",
+      "affected_checks_passed": 238,
+      "documented_unchanged_baseline_failure_excluded": 1,
+      "provider_calls": 0,
+      "source_engine_reruns": 0,
+      "rows": 38263,
+      "patients": 1739,
+      "context_scope": "evaluation scratch only",
+      "full_question_acceptance": false,
+      "clinical_model_qualification": false
+    },
+    "q21_audit_composition_and_support_summary": {
+      "status": "scoped_engineering_verified_source_interpretation_pending",
+      "product_commit": "5db5435fcce990b7d1421a9643e51e01bf943445",
+      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/audit-composition-engineering-proof.json",
+      "provider_calls": 2,
+      "known_api_equivalent_usd": 0.00044020200000000005,
+      "source_frozen": false,
+      "app_proof": "artifacts/agere-q21-assertion-window-2026-11-06/qualified-audit-summary-final/app-proof.json",
+      "full_question_acceptance": false
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
