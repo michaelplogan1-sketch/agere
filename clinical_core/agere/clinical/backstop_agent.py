@@ -2095,6 +2095,17 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                     'from the retained native results and source observations, including individual explanations where requested. '
                     'Keep genuine missing source facts explicit; do not replace unfinished reading or composition with an unknown. '
                     'Reuse unchanged evidence and repair the missing work. Full source support review will run on the completed proposal.'}
+        if native_audit is not None and not coverage.get('decided_by'):
+            # An undecided coverage vote has not established that this
+            # received-label audit completes the requested clinical meaning.
+            # Preserve it without buying a whole patient-support campaign to
+            # repair an unlocated coverage problem. No source check is waived.
+            return {**assessment,'status':'unavailable','review_stop_reason':'unresolved_native_audit_coverage',
+                'retry_disposition':'retain_partial_until_new_evidence',
+                'progress_state':{'coverage':'unknown','native_audit_semantics':'unresolved'},
+                'support':{'label':'not_run','decided_by':None,'packets':[],
+                    'all_dependencies_checked':False,'reason':'Coverage of the requested interpretation is undecided; no source-support acceptance inferred.'},
+                'reason':'Complete native audit fidelity is verified, but coverage of the requested source/clinical interpretation is undecided. Retain the complete partial result and exact unresolved review; locate the specific missing meaning or obtain a deciding coverage check before full patient source dispatch. Do not rewrite unchanged accounts merely to seek another vote.'}
         if coverage_view.get('table') and (not coverage.get('decided_by') or coverage.get('label')!='answers_fully'):
             composition=gate.check_composition(question,coverage_view,ledger=ledger,as_of_date=as_of)
             assessment.update(composition=composition,calls=assessment['calls']+composition['calls'],

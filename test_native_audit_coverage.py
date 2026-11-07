@@ -130,5 +130,17 @@ class NativeAuditCoverage(unittest.TestCase):
         self.assertNotIn('native_audit',seen[0]);self.assertEqual(len(seen[0]['table']),len(self.result['rows']))
         self.assertTrue(all(r['explanation']=='Clinical meaning is not established by the received label.'for r in seen[0]['table']))
 
+    def test_undecided_native_audit_coverage_retains_partial_without_source_fanout(self):
+        original=copy.deepcopy(self.answer['table']);self.answer.pop('missing')
+        verdict={'label':'answers_partially','decided_by':None,'p':.68,'calls':2,'cost_usd':.00035}
+        with patch.object(G,'ready',return_value=True),patch.object(G,'check',return_value=verdict),\
+             patch.object(B,'support_packets',side_effect=AssertionError('No full source campaign for an unlocated coverage uncertainty')):
+            review=B.review_final(self.fixture.stack,'Interpret source accounts.',self.answer,self.tools.native_calls,
+                self.tools,ledger=None,as_of=AS_OF)
+        self.assertEqual(review['status'],'unavailable');self.assertEqual(review['calls'],2)
+        self.assertEqual(review['retry_disposition'],'retain_partial_until_new_evidence')
+        self.assertFalse(review['support']['all_dependencies_checked']);self.assertEqual(review['support']['label'],'not_run')
+        self.assertEqual(self.answer['table'],original)
+
 
 if __name__=='__main__':unittest.main()
