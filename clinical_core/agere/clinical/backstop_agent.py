@@ -67,10 +67,11 @@ TOOLS = [
      'input_schema':{'type':'object','properties':{},'additionalProperties':False}},
     {'name':'describe_analysis','description':'Get an existing analytical engine\'s typed parameters, assumptions and population contract before calling it. Program/requirement/protocol/accountability descriptions include installed source/version/date and buyer context. A date-effective example or quoted rule is not approved clinical criteria; do not silently choose overlapping versions or map a care gap to an unrelated program.',
      'input_schema':{'type':'object','properties':{'operation':{'type':'string'}},'required':['operation'],'additionalProperties':False}},
-    {'name':'execute_analysis','description':'Execute an existing analytical engine through the shared graph with typed parameters and the exact inherited patient population. For an audit of all existing source annotations, choose operation=assertion_review, selection=inherited_annotations and parameters containing the requested assertion_window only: code binds every annotation stream and the exact inherited population. This selection forbids population overrides. The default selection=parameters retains explicit native parameters and optional received patient_ids or complete patient_query_sql; [] remains empty. Returns native results and a composable result_view. Methods, assumptions, uncertainty and any engine output limits remain visible. Never substitute a mathematical estimate for observed facts.',
+    {'name':'execute_analysis','description':'Execute an existing analytical engine through the shared graph with typed parameters and the exact inherited patient population. For an audit of all existing source annotations, choose operation=assertion_review, selection=inherited_annotations and parameters containing the requested assertion_window only: code binds every annotation stream and the exact inherited population. Use output=qualifier_accounts for a complete primary qualifier-account table; retain every audit_account_id in the answer. This selection forbids population overrides. The default selection=parameters retains explicit native parameters and optional received patient_ids or complete patient_query_sql; [] remains empty. Returns native results and a composable result_view. Methods, assumptions, uncertainty and any engine output limits remain visible. Never substitute a mathematical estimate for observed facts.',
      'input_schema':{'type':'object','properties':{'operation':{'type':'string'},'parameters':{'type':'object'},
         'patient_ids':{'type':'array','items':{'type':'string'}},'patient_query_sql':{'type':'string'},
-        'selection':{'enum':['parameters','inherited_annotations'],'default':'parameters'}},
+        'selection':{'enum':['parameters','inherited_annotations'],'default':'parameters'},
+        'output':{'enum':['operator_default','qualifier_accounts'],'default':'operator_default'}},
         'required':['operation','parameters'],'additionalProperties':False}},
     {'name': 'ask_agere', 'description': "Ask Agere's governed engines ONE simple, self-contained sub-question (one measure, one population, one "
      "period, one grouping, e.g. 'How many inpatient admissions were there in 2028?', 'Plan-paid pharmacy spend by year', 'ED visit rate by "
@@ -270,6 +271,9 @@ has already declined this question, so it is yours to answer completely and corr
   For all existing annotations in the inherited population, set selection=inherited_annotations and supply only assertion_window
   in parameters. Native code binds the complete source list and population; do not guess note families or preselect patients
   from a subset of records. Use selection=parameters only for an explicitly restricted source/population audit.
+  For the requested qualifier/account audit table, also set output=qualifier_accounts. Its primary result is already the complete
+  native rowset with analytical effects, exact qualifiers/clocks and unresolved bindings; use it as table_from_tool and preserve
+  each audit_account_id exactly once. Explanatory examples may supplement it; never replace it with a disease/theme subset.
   library_measure output patients returns the complete evaluated patient-status roster; output gaps returns every recorded gap.
   Preserve exclusions and indeterminate rows, distinguish the input roster from a measure denominator, and retain unknown full-
   population rates separately from known-subset observations. Read patient names with read_patient_profiles and join by patient_id.
@@ -446,17 +450,24 @@ class Tools:
 
     def __call__(self, use):
         try:
-            out = self.retain_result(self._call(use))
+            out = self._call(use)
+            # Finalize warnings before registering the receipt fingerprint.
+            # A later mutation would make the next native query's origin stale.
+            if use.get('name')=='query_sql'and isinstance(out,dict)and not out.get('error'):
+                columns,_=output_table(out)
+                if columns and self.semantic is not None:
+                    from .drug_classes import group_query_issues
+                    name=f'agere_result_{len(self.seen)+1}'
+                    prospective={**out,'result_view':name}
+                    prior=[*getattr(self,'native_calls',[]),{'name':'query_sql','input':use.get('input')or{},'result':prospective}]
+                    warnings=[issue for issue in group_query_issues(getattr(self,'question',''),prior,name)
+                              if 'all-history drug_fill membership'in issue]
+                    if warnings:out={**out,'scope_warnings':warnings}
+            out = self.retain_result(out)
             calls = getattr(self, 'native_calls', [])
             call = {'name': use.get('name'), 'input': json.loads(json.dumps(use.get('input') or {})), 'result': out}
             calls.append(call)
             self.native_calls = calls
-            if use.get('name') == 'query_sql' and isinstance(out, dict) and out.get('result_view'):
-                from .drug_classes import group_query_issues
-                warnings = [issue for issue in group_query_issues(getattr(self, 'question', ''), calls, out['result_view'])
-                            if 'all-history drug_fill membership' in issue]
-                if warnings:
-                    out['scope_warnings'] = warnings
             return out
         except TypeError as exc:  # a malformed call (unknown argument): a tool error the model can correct, not the end of the loop
             raise ValueError(f'bad arguments for {use.get("name")}: {exc}') from exc
@@ -467,11 +478,11 @@ class Tools:
             columns, rows = output_table(out)
             if columns and self.semantic is not None:
                 name = f'agere_result_{len(self.seen) + 1}'
+                if out.get('analysis')=='assertion_review'and out.get('output')!='qualifier_accounts':
+                    from .analysis_tools import assertion_projections
+                    out={**out,'native_projections':assertion_projections(name)}
                 self.result_sources[name] = define_result(self.semantic, name, columns, rows, receipt=out)
                 out = {**out, 'result_view': name}
-                if out.get('analysis')=='assertion_review':
-                    from .analysis_tools import assertion_projections
-                    out['native_projections']=assertion_projections(name)
                 self.executed_results[name]=out
         # Only the ordinal is used. Canonical results already live in
         # executed_results/native_calls; duplicating their full JSON here also
@@ -541,13 +552,18 @@ class Tools:
             out = self.semantic.query(sql, as_of=self.as_of, max_rows=None, max_chars=None, inspect_incomplete=True)
             out['native_sql_contract'] = NATIVE_SQL_CONTRACT
             out['executed_query'] = sql
-            # A portable execution receipt includes the exact intermediate rows, rather than a dangling TEMP-view name.
+            # Canonical preceding receipts already retain complete native rows.
+            # Bind their actual SQLite fingerprints instead of copying those
+            # rows into every descendant query. Legacy/export SQL stays exact.
             sources = getattr(self, 'result_sources', {})
             used = [name for name in out.get('read_views', []) if name in sources]
             if used:
-                from .sql_query import portable_native_query
-                out = {**out, 'declared_executed_query': sql,
-                       'executed_query': portable_native_query(sql, sources, used)}
+                from .sql_query import portable_native_query,bound_native_query_receipt
+                receipt=bound_native_query_receipt(sql,out['read_views'],out.get('native_read_columns'),sources)
+                if receipt is not None and os.environ.get('AGERE_NATIVE_QUERY_RECEIPT','bound')=='bound':
+                    out={**out,'declared_executed_query':sql,'native_query_receipt':receipt}
+                else:
+                    out={**out,'declared_executed_query':sql,'executed_query':portable_native_query(sql,sources,used)}
             from .analyst_context import bind_loaded
             out = bind_loaded(self.semantic, args['sql'], out)
             if args.get('read_all_rows') and isinstance(out.get('rows'),list):
@@ -1785,8 +1801,14 @@ def execution_review_graph(calls,answer=None):
             if bindings:
                 from ...contracts import digest
                 params['native_result_bindings']=sorted(bindings)
-                params['native_executable_provenance']={'query_digest':digest(query),'characters':len(query),
-                    'scope':'Complete expanded SQL and bound rows retained natively. Declared query and native result bindings shown here; no source acceptance inherited.'}
+                if result.get('native_query_receipt'):
+                    params['query']=query
+                    params['native_query_receipt']=result['native_query_receipt']
+                    params['native_executable_provenance']={'query_digest':digest(query),'characters':len(query),
+                        'scope':'Exact executed SQL and hash-bound preceding native receipts; every source row remains in its original receipt. No source acceptance inherited.'}
+                else:
+                    params['native_executable_provenance']={'query_digest':digest(query),'characters':len(query),
+                        'scope':'Complete expanded SQL and bound rows retained natively. Declared query and native result bindings shown here; no source acceptance inherited.'}
             elif declared and declared!=query:params['requested_query']=declared
             if name and name!='query_sql':params['native_tool']=name
             operation='sql'
@@ -1835,6 +1857,11 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     This is a recorded model judgment, not clinical qualification. Quote provenance and claim support remain distinct."""
     from . import system_one_gate as gate
     assessment = {'status': 'unavailable', 'calls': 0, 'cost_usd': 0.0, 'feedback': None}
+    from .sql_query import native_query_binding_errors
+    binding_errors=native_query_binding_errors(calls)
+    if binding_errors:
+        return {**assessment,'status':'repair','feedback':'Restore exact native query origins before answer review: '+json.dumps(binding_errors),
+                'repair_kind':'native_query_binding'}
     if not isinstance(answer, dict):
         return {**assessment, 'status': 'repair', 'feedback': 'Return the required JSON answer object.'}
     if any(k in answer for k in ('tool_use', 'tool_uses')):
@@ -1860,6 +1887,10 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                 materialize_table(answer,calls)
     except ValueError as exc:
         return {**assessment, 'status': 'repair', 'feedback': str(exc)}
+    from .analysis_tools import qualifier_output_scope_errors
+    scope_errors=qualifier_output_scope_errors(answer,calls)
+    if scope_errors:
+        return {**assessment,'status':'repair','repair_kind':'native_output_scope','feedback':' '.join(scope_errors)}
     if (answer.get('answer_type') == 'table' or answer.get('table')) and not answer.get('table_binding'):
         return {**assessment, 'status': 'repair', 'feedback': 'Compute the requested table in SQL, using earlier result_view tables as needed, and return table_from_tool. Do not transcribe rows or calculate changes in the final answer.'}
     kept, dropped = verified_sources(answer, tools)

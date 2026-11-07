@@ -219,6 +219,96 @@ def portable_native_query(query, sources, read_views):
     return 'WITH ' + ctes + ' ' + body
 
 
+def bound_native_query_receipt(query, read_views, read_columns, available):
+    """Reference exact preceding native receipts instead of copying their rows.
+
+    Actual SQLite read receipts supply the hashes. Unsupported dependency
+    shapes retain the legacy portable representation; no evidence is omitted.
+    """
+    from ...contracts import digest
+    if (not isinstance(read_views,list)or not read_views or len(set(read_views))!=len(read_views)
+        or not isinstance(read_columns,dict)or read_columns.get('schema')!='sqlite-native-column-reads/1'
+        or read_columns.get('query_digest')!=digest(query)):return None
+    tree,tables=native_query_bindings(query,{name.casefold():name for name in available})
+    if tree is None or {t.name.casefold()for t in tables}!={v.casefold()for v in read_views}:return None
+    sources=read_columns.get('sources')or{}
+    if set(sources)!=set(read_views):return None
+    bindings=[]
+    for name in sorted(read_views):
+        value=sources[name].get('receipt_digest')
+        if name not in available or not isinstance(value,str)or not re.fullmatch('[0-9a-f]{64}',value):return None
+        bindings.append({'result_view':name,'receipt_digest':value})
+    return {'schema':'native-bound-query/1','query_digest':digest(query),'read_columns_digest':digest(read_columns),'source_bindings':bindings,
+        'scope':'Exact executed statement plus hash-bound preceding native receipts. Complete source rows remain in those receipts; standalone export must resolve them. No clinical/source acceptance is inherited.'}
+
+
+def _validate_bound_native_query(result, native, *, digests=None):
+    """Fail closed on a changed statement, missing source or changed receipt."""
+    from ...contracts import digest
+    receipt=result.get('native_query_receipt')if isinstance(result,dict)else None
+    if not isinstance(receipt,dict)or receipt.get('schema')!='native-bound-query/1':return False
+    query=result.get('executed_query');views=result.get('read_views')
+    if (not isinstance(query,str)or result.get('declared_executed_query')!=query
+        or receipt.get('query_digest')!=digest(query)or not isinstance(views,list)
+        or len(set(views))!=len(views)or not views
+        or receipt.get('read_columns_digest')!=digest(result.get('native_read_columns'))):return False
+    bindings=receipt.get('source_bindings')
+    if (not isinstance(bindings,list)or any(not isinstance(b,dict)or set(b)!={'result_view','receipt_digest'}for b in bindings)
+        or len(bindings)!=len(views)or {b['result_view']for b in bindings}!=set(views)):return False
+    reads=result.get('native_read_columns')or{}
+    if(reads.get('schema')!='sqlite-native-column-reads/1'or reads.get('query_digest')!=digest(query)
+        or set(reads.get('sources')or{})!=set(views)
+        or any(reads['sources'][b['result_view']].get('receipt_digest')!=b['receipt_digest']for b in bindings)):return False
+    tree,tables=native_query_bindings(query,{v.casefold():v for v in native})
+    if tree is None or {t.name.casefold()for t in tables}!={v.casefold()for v in views}:return False
+    checked={}if digests is None else digests
+    for binding in bindings:
+        name=binding['result_view'];source=native.get(name)
+        if not isinstance(source,dict):return False
+        if name not in checked:checked[name]=digest({k:v for k,v in source.items()if k!='result_view'})
+        if checked[name]!=binding['receipt_digest']:return False
+    return True
+
+
+def validate_bound_native_query(result, native, *, digests=None):
+    try:return _validate_bound_native_query(result,native,digests=digests)
+    except (KeyError,TypeError,ValueError,AttributeError):return False
+
+
+def native_query_binding_errors(calls):
+    """Validate each new-format query against preceding, unique call results."""
+    native={};digests={};ambiguous=set();errors=[]
+    for index,call in enumerate(calls):
+        result=call.get('result')or{}
+        if not isinstance(result,dict):continue
+        if 'native_query_receipt'in result and (call.get('name')!='query_sql'or
+                not validate_bound_native_query(result,native,digests=digests)or
+                bool(set(result.get('read_views')or[])&ambiguous)):
+            errors.append({'tool_index':index,'reason':'Native query source/statement binding changed or is unavailable'})
+        name=result.get('result_view')
+        if isinstance(name,str):
+            if name in native:ambiguous.add(name)
+            native[name]=result;digests.pop(name,None)
+    return errors
+
+
+def resolve_bound_native_query(result, native):
+    """Explicit standalone export: reconstruct exact legacy SQL from origins."""
+    digests={};checked=set()
+    def check(value,active):
+        if not validate_bound_native_query(value,native,digests=digests):raise ValueError('Native query origins are missing or changed')
+        for binding in value['native_query_receipt']['source_bindings']:
+            name=binding['result_view']
+            if name in active:raise ValueError('Cyclic native query origin')
+            parent=native[name]
+            if name not in checked and parent.get('native_query_receipt'):
+                check(parent,active|{name});checked.add(name)
+    check(result,set())
+    from .backstop_agent import output_table
+    sources={name:native_result_source(*output_table(native[name]))for name in result['read_views']}
+    return portable_native_query(result['executed_query'],sources,result['read_views'])
+
+
 def validate(p):
     if not isinstance(p, dict) or set(p) - {'query', 'returns'} or not isinstance(p.get('query'), str):
         raise ValueError('sql parameters: query (one SELECT), returns')

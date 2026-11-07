@@ -71,6 +71,10 @@ def describe(operation, *, path=None):
                 'resolved_streams':received_annotation_sources(path),
                 'scope':'Existing annotations only; no complete free-text or clinical-state claim.'}}}
                if operation=='assertion_review'else{}),
+            **({'output_contracts':{'qualifier_accounts':{
+                'meaning':'Complete qualifier-sensitive bound accounts plus every selected/unknown unbound annotation. Exact source/value/unit/clocks, native group references and provisional meanings remain explicit.',
+                'usage':'Set output=qualifier_accounts to obtain the requested source-account audit as the primary native table. Keep every audit_account_id in a table answer; examples may supplement this rowset, not replace it.',
+                'clinical_state_established':False}}}if operation=='assertion_review'else{}),
             'meaning':'The existing native validator remains authoritative. Parameters and assumptions are not inferred clinical facts.',
             **({'output_contract':{
                 'columns':['patient_id','receipt_id','status','documentary_receipt'],
@@ -216,11 +220,112 @@ def documentary_rows(path,operation,report):
     return rows
 
 
-def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None,selection='parameters'):
+def qualifier_account_rows(patients):
+    """Native documentary effects, never diagnosed clinical consequences.
+
+    The original complete patient receipts remain hash-addressed in the engine
+    report/cache. This primary output carries each affected bound assertion and
+    every selected/unknown failed binding, without inventing clinical state.
+    """
+    rows=[];assertions=0;group_count=0;unbound_count=0
+    fields=('concept','relation','value','unit','value_domain','polarity','subject','temporality','authority',
+        'semantic_validation','annotation_origin','assertion_window_state','evidence','source_repetition','qualifier_effects',
+        'positive_under_received_qualifiers','source_structure','reader_review_reasons')
+    for patient in patients:
+        receipt=patient['documentary_receipt'];pid=patient['patient_id'];groups={};exclusions={}
+        assertions+=len(receipt['assertions']);group_count+=len(receipt['groups'])
+        for group in receipt['groups']:
+            ids={i for a in group['dated_accounts']for i in a['assertion_ids']}
+            ids.update(a['assertion_id']for a in group['excluded_from_dated_accounts'])
+            for item in group['excluded_from_dated_accounts']:
+                exclusions.setdefault(item['assertion_id'],[]).append(item['reason'])
+            ids.update(i for family in group['repeated_statement_groups']for i in family['assertion_ids'])
+            ref={'group_digest':digest(group),'status':group['status']}
+            for ident in ids:
+                if ident in groups and groups[ident]!=ref:raise ValueError('Ambiguous native assertion group')
+                groups[ident]=ref
+        for a in receipt['assertions']:
+            if not (a.get('polarity','unknown')!='affirmed'or a.get('subject','unknown')!='patient'
+                or a.get('temporality','unknown')!='current'or a.get('assertion_window_state')=='unknown'
+                or a.get('qualifier_effects')or a.get('source_repetition')is not None or exclusions.get(a['id'])
+                or (groups.get(a['id'])or{}).get('status')in ('same_date_conflict','opposing_reports_over_time_or_unresolved_clock')):continue
+            effects=[]
+            if a.get('polarity')=='negated':effects.append('negated_proposal_not_affirmed_evidence')
+            elif a.get('polarity')!='affirmed':effects.append('polarity_unresolved')
+            if a.get('temporality')!='current':effects.append('not_established_as_current')
+            if a.get('subject')!='patient':effects.append('patient_subject_not_established')
+            if a.get('source_repetition')is not None:effects.append('repetition_not_independent_corroboration')
+            if (a.get('source_repetition')or{}).get('cannot_refresh_state'):effects.append('repetition_cannot_refresh_state')
+            if a.get('assertion_window_state')=='unknown':effects.append('assertion_window_date_unresolved')
+            if (groups.get(a['id'])or{}).get('status')in ('same_date_conflict','opposing_reports_over_time_or_unresolved_clock'):
+                effects.append('opposing_documentary_accounts_need_review')
+            row={k:a.get(k)for k in fields}
+            row.update(audit_account_id=digest([receipt['id'],a['id']]),patient_id=pid,assertion_id=a['id'],
+                annotation_id=None,receipt_id=receipt['id'],source_binding_established=True,
+                source=a['source'],source_record_id=a['source']['record_id'],reported_record_id=None,
+                **a['clocks'],analytical_effects=effects,account_group=groups.get(a['id']),
+                native_exclusion_reasons=exclusions.get(a['id'],[]),
+                binding_failure=None,received_annotation=a.get('received_annotation'),
+                current_clinical_state_established=False)
+            rows.append(row)
+        for item in receipt['coverage'].get('unbound_annotation_rows',[]):
+            if item.get('assertion_window_state','selected')not in ('selected','unknown'):continue
+            a=item['annotation'];row={k:None for k in fields}
+            row.update(audit_account_id=digest([receipt['id'],item['id']]),patient_id=pid,assertion_id=None,
+                annotation_id=item['id'],receipt_id=receipt['id'],source_binding_established=False,
+                source=None,source_record_id=None,reported_record_id=a.get('record_id'),
+                source_date=item.get('source_date'),arrival_date=item.get('arrival_date'),clinical_date=None,reference_date=None,
+                value=a.get('value'),unit=a.get('unit'),received_annotation=a,
+                assertion_window_state=item.get('assertion_window_state'),semantic_validation='unbound_proposal',
+                analytical_effects=['source_binding_unresolved'],account_group=None,binding_failure=item['reason'],
+                native_exclusion_reasons=[],
+                current_clinical_state_established=False)
+            rows.append(row);unbound_count+=1
+    ids=[r['audit_account_id']for r in rows]
+    if len(set(ids))!=len(ids):raise ValueError('Duplicate native qualifier account')
+    scope={'schema':'native-qualifier-account-output/1','account_key':'audit_account_id','accounts':len(rows),
+        'account_ids_digest':digest(sorted(ids)),'input_patients':len(patients),'input_assertions':assertions,
+        'input_dated_groups':group_count,'unbound_selected_or_unknown':unbound_count,
+        'whole_free_text_interpretation_established':False,'clinical_state_established':False,
+        'meaning':'Complete received-qualifier accounting, conditional on unvalidated machine meanings; not established clinical changes. Full original receipts remain in the native engine report/cache.'}
+    return rows,scope
+
+
+def qualifier_output_scope_errors(answer,calls):
+    """A table can explain an audit but cannot silently replace its rowset."""
+    if answer.get('answer_type')!='table':return []
+    expected=set();views=[]
+    for call in calls:
+        result=call.get('result')or{}
+        if not isinstance(result,dict)or result.get('analysis')!='assertion_review'or result.get('output')!='qualifier_accounts':continue
+        scope=result.get('native_output_scope')or{};rows=result.get('rows')
+        if (scope.get('schema')!='native-qualifier-account-output/1'or scope.get('account_key')!='audit_account_id'
+            or not isinstance(rows,list)):return ['Native audit output scope is unavailable; restore its original receipt.']
+        if any(not isinstance(r,dict)for r in rows):return ['Native audit rows are unavailable.']
+        keys=[r.get('audit_account_id')for r in rows]
+        if(any(not isinstance(k,str)or not k for k in keys)or len(set(keys))!=len(keys)
+            or len(keys)!=scope.get('accounts')or digest(sorted(keys))!=scope.get('account_ids_digest')):
+            return ['Native audit account identities changed; restore the original complete result.']
+        expected.update(keys);views.append(result.get('result_view'))
+    if not views:return []
+    table=answer.get('table')or[]
+    actual=[r.get('audit_account_id')for r in table if isinstance(r,dict)and r.get('audit_account_id')is not None]
+    if any(not isinstance(k,str)or not k for k in actual):return ['Keep literal native audit_account_id values in the complete audit table.']
+    if len(actual)!=len(set(actual))or set(actual)!=expected:
+        return ['Preserve every native audit_account_id exactly once in the table. Missing='+str(len(expected-set(actual)))+
+            ', extra='+str(len(set(actual)-expected))+', duplicates='+str(len(actual)-len(set(actual)))+
+            '. Use the complete native audit result '+', '.join(str(v)for v in views)+
+            ' as table_from_tool, or a source-equivalent projection retaining its account IDs. Do not substitute unrequested clinical themes or examples.']
+    return []
+
+
+def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None,selection='parameters',output='operator_default'):
     from . import analysis_graph as A,graph_contracts as G,cohorts
     if operation not in ANALYTICAL:raise ValueError('Choose an analytical operation from list_analyses')
     if not isinstance(parameters,dict):raise ValueError('Supply typed analytical parameters')
     guard=digest(tools.continuation_identity())
+    if output not in ('operator_default','qualifier_accounts')or output=='qualifier_accounts'and operation!='assertion_review':
+        raise ValueError('Qualifier account output requires assertion_review')
     if selection not in ('parameters','inherited_annotations'):raise ValueError('Unknown native input selection')
     if selection=='inherited_annotations':
         if operation!='assertion_review' or patient_ids is not None or patient_query_sql is not None:
@@ -237,20 +342,27 @@ def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None,s
     plan=A.validate(plan,tools.as_of)  # even an empty input must not accept malformed parameters
     if ids==[]:
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope/definitions changed during selection')
-        return {'analysis':operation,'status':'no_matches','columns':[],'rows':[],'input_patient_ids':[],
+        empty_scope=qualifier_account_rows([])[1]if output=='qualifier_accounts'else None
+        return {'analysis':operation,'status':'no_matches','columns':['audit_account_id','patient_id']if empty_scope is not None else[],
+                'rows':[],'input_patient_ids':[],
                 **({'input_selection':selection,'parameters':plan['nodes'][-1]['parameters']}if selection!='parameters'else{}),
+                **({'output':output,'native_output_scope':empty_scope}if empty_scope is not None else{}),
                 'method':'Explicit empty population; no estimate computed and engine not executed'}
     with component('analytical_engine',operation=operation,population_size=None if ids is None else len(ids)):
         result=A.execute(tools.stack,plan)
     answer=result.get('answer') or {};rows=answer.get('table') or []
     if operation in PERSISTED_REPORTS:
         rows=documentary_rows(tools.stack.path,operation,result['results'][-1]['result'])
+    scope=None
+    if output=='qualifier_accounts':rows,scope=qualifier_account_rows(rows)
     if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope/definitions changed during analysis')
     if not isinstance(rows,list):raise ValueError('Native analysis did not return a table')
     columns=list(dict.fromkeys(k for row in rows for k in row)) if all(isinstance(r,dict) for r in rows) else []
+    if scope is not None and not columns:columns=['audit_account_id','patient_id']
     from .harness_improvement import semantic_result
     return {'analysis':operation,'status':answer.get('status'),'columns':columns,'rows':rows,'answer':answer,
             'input_patient_ids':ids,'parameters':plan['nodes'][-1]['parameters'],'engine_result':result,
             **({'input_selection':selection}if selection!='parameters'else{}),
+            **({'output':output,'native_output_scope':scope}if scope is not None else{}),
             'method':answer.get('method'),'limitations':answer.get('limitations') or [],
             'receipt_digest':digest(semantic_result(result)),'new_paid_api_calls':result.get('new_paid_api_calls',0)}

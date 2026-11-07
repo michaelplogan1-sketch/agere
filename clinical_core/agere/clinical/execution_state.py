@@ -1199,7 +1199,7 @@ def catalog(calls,*,readings_start=0):
                 elif not any(isinstance(r,dict)and'patient_id'in r for r in rows) and len(json.dumps(rows,default=str))<2500:
                     entry['computed_rows']=rows
                 for key in ('coverage','method','record_ids_filter','accounting','assembly','source_scope','field_patient_queries','exhaustive_reason','scope_warnings',
-                            'native_sql_contract','read_views','incomplete_dependencies','registered_domain_functions',
+                            'native_sql_contract','read_views','native_query_receipt','incomplete_dependencies','registered_domain_functions',
                             'metric_id','name','unit','period','computed_as','status','parameters','analysis_population_count','missing','limitations'):
                     if key in out:
                         if key=='coverage'and isinstance(out[key],list):

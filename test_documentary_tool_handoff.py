@@ -122,6 +122,8 @@ class DocumentaryHandoff(unittest.TestCase):
         self.assertEqual(set(projections),set(A.ASSERTION_PROJECTIONS))
         original={a['id']:a for row in result['rows']for a in row['documentary_receipt']['assertions']}
         flattened=t({'name':'query_sql','input':projections['assertions']['query_sql']})
+        self.assertEqual(flattened['native_read_columns']['sources'][result['result_view']]['receipt_digest'],
+                         digest({k:v for k,v in result.items()if k!='result_view'}))
         self.assertFalse(flattened.get('truncated'))
         self.assertEqual({r['assertion_id']for r in flattened['rows']},set(original))
         for row in flattened['rows']:
@@ -202,11 +204,60 @@ class DocumentaryHandoff(unittest.TestCase):
             result=t({'name':'query_sql','input':{'sql':f'SELECT COUNT(*) AS n FROM {first} WHERE row_index >= {i}'}})
             self.assertEqual(result['rows'],[{'n':128-i}])
             self.assertIn(first,result['declared_executed_query'])
-            self.assertIn('authored blob',result['executed_query'])
+            from clinical_core.agere.clinical.sql_query import resolve_bound_native_query
+            self.assertIn('authored blob',resolve_bound_native_query(result,t.executed_results))
         self.assertEqual(t.seen,[None]*7)
         self.assertEqual(len(t.executed_results),7)
         self.assertEqual(t.executed_results[first]['rows'],rows)
         self.assertNotEqual(first,result['result_view'])
+
+    def test_qualifier_account_output_keeps_opposing_partners_all_axes_and_empty_scope(self):
+        t=self.tools();full=self.execute(t)
+        native=self.execute(t,output='qualifier_accounts')
+        self.assertNotIn('native_projections',native)
+        self.assertEqual(native['native_output_scope']['input_patients'],12)
+        by={a['id']:a for r in full['rows']for a in r['documentary_receipt']['assertions']}
+        selected={r['assertion_id']:r for r in native['rows']if r['assertion_id']is not None}
+        self.assertTrue({'p03','p04','p05','p06','p07'}<={r['patient_id']for r in native['rows']})
+        opposing=next(r['documentary_receipt']for r in full['rows']if r['patient_id']=='p03')
+        self.assertTrue({a['id']for a in opposing['assertions']}<=set(selected))
+        for ident,row in selected.items():
+            a=by[ident]
+            for key in ('source','evidence','value','unit','value_domain','polarity','subject','temporality','semantic_validation','source_repetition'):
+                self.assertEqual(row[key],a.get(key),key)
+            for key,value in a['clocks'].items():self.assertEqual(row[key],value,key)
+            self.assertFalse(row['current_clinical_state_established'])
+            self.assertTrue(row['source_binding_established'])
+        self.assertEqual(A.qualifier_output_scope_errors({'answer_type':'table','table':native['rows']},t.native_calls),[])
+        empty=self.execute(self.tools([]),output='qualifier_accounts')
+        self.assertEqual(empty['rows'],[]);self.assertEqual(empty['native_output_scope']['accounts'],0)
+        self.assertIn('result_view',empty)
+
+    def test_qualifier_output_scope_rejects_theme_narrowing_before_provider_review(self):
+        t=self.tools();native=self.execute(t,output='qualifier_accounts')
+        q=t({'name':'query_sql','input':{'sql':f"SELECT *FROM {native['result_view']} LIMIT 1"}})
+        answer={'status':'answered','answer_type':'table','table_from_tool':q['result_view']}
+        review=B.review_final(self.stack,'Show the complete source audit',answer,t.native_calls,t,ledger=None,as_of=AS_OF)
+        self.assertEqual(review['repair_kind'],'native_output_scope')
+        self.assertEqual(review['status'],'repair');self.assertEqual(review['calls'],0)
+        duplicated={'answer_type':'table','table':native['rows']+[native['rows'][0]]}
+        self.assertTrue(A.qualifier_output_scope_errors(duplicated,t.native_calls))
+
+    def test_qualifier_accounts_preserve_failed_bindings_without_false_source_citations(self):
+        missing=[{'id':str(i),'reason':'source_clock_mismatch','assertion_window_state':state,
+            'source_date':'2029-02-03','arrival_date':None,'annotation':{'record_id':'proposed-id',
+                'value':5.9,'unit':'mmol/L','negated':1,'experiencer':'patient'}}
+            for i,state in enumerate(('selected','unknown','outside'))]
+        patients=[{'patient_id':'p00','documentary_receipt':{'id':'fixture','assertions':[],
+            'groups':[],'coverage':{'unbound_annotation_rows':missing}}}]
+        rows,scope=A.qualifier_account_rows(patients)
+        self.assertEqual(scope['unbound_selected_or_unknown'],2)
+        for r in rows:
+            self.assertFalse(r['source_binding_established']);self.assertIsNone(r['source_record_id'])
+            self.assertNotIn('record_id',r);self.assertIsNone(r['polarity'])
+            self.assertEqual((r['value'],r['unit']),(5.9,'mmol/L'))
+            self.assertIsNone(r['clinical_date']);self.assertIsNone(r['arrival_date'])
+            self.assertFalse(r['current_clinical_state_established'])
 
     def test_inherited_population_stays_complete_and_cannot_widen(self):
         t=self.tools(['p00','p04']);result=self.execute(t)

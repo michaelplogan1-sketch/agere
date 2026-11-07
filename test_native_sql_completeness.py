@@ -262,15 +262,19 @@ class NativeCompleteness(unittest.TestCase):
 
     def test_portable_receipt_preserves_quoted_case_and_cte_bindings(self):
         source = self.query('SELECT event_id, amount FROM financial_event WHERE event_id < 3')
-        for sql in ['SELECT SUM(amount) AS total FROM temp."' + source['result_view'].upper() + '"',
+        queries=['SELECT SUM(amount) AS total FROM temp."' + source['result_view'].upper() + '"',
                     'WITH selected AS (SELECT * FROM ' + source['result_view'] + ') SELECT COUNT(*) AS n FROM selected',
-                    '/* retained comment */ SELECT COUNT(*) AS n FROM ' + source['result_view']]:
-            with self.subTest(sql=sql):
-                out = self.query(sql)
-                with sqlite3.connect(':memory:') as fresh:
-                    fresh.row_factory = sqlite3.Row
-                    replayed = [dict(row) for row in fresh.execute(out['executed_query'])]
-                self.assertEqual(replayed, out['rows'])
+                    '/* retained comment */ SELECT COUNT(*) AS n FROM ' + source['result_view']]
+        for strategy in ('inline','bound'):
+            for sql in queries:
+                with self.subTest(sql=sql,strategy=strategy),patch.dict('os.environ',{'AGERE_NATIVE_QUERY_RECEIPT':strategy}):
+                    out = self.query(sql)
+                    from clinical_core.agere.clinical.sql_query import resolve_bound_native_query
+                    portable=resolve_bound_native_query(out,self.tools.executed_results)if strategy=='bound'else out['executed_query']
+                    with sqlite3.connect(':memory:') as fresh:
+                        fresh.row_factory = sqlite3.Row
+                        replayed = [dict(row) for row in fresh.execute(portable)]
+                    self.assertEqual(replayed, out['rows'])
 
     def test_portable_receipt_separates_qualified_native_reads_from_shadowing_ctes(self):
         source = self.query('SELECT event_id, amount FROM financial_event WHERE event_id < 3')
@@ -283,13 +287,16 @@ class NativeCompleteness(unittest.TestCase):
             f'WITH RECURSIVE {name}(value) AS (SELECT 1 UNION ALL SELECT value+1 FROM {name} WHERE value<3) '
             f'SELECT SUM(s.amount) AS total FROM temp.{name} s JOIN {name} c ON c.value=s.amount',
         ]
-        for sql in queries:
-            with self.subTest(sql=sql):
-                out = self.query(sql)
-                with sqlite3.connect(':memory:') as fresh:
-                    fresh.row_factory = sqlite3.Row
-                    replayed = [dict(row) for row in fresh.execute(out['executed_query'])]
-                self.assertEqual(replayed, out['rows'])
+        for strategy in ('inline','bound'):
+            for sql in queries:
+                with self.subTest(sql=sql,strategy=strategy),patch.dict('os.environ',{'AGERE_NATIVE_QUERY_RECEIPT':strategy}):
+                    out = self.query(sql)
+                    from clinical_core.agere.clinical.sql_query import resolve_bound_native_query
+                    portable=resolve_bound_native_query(out,self.tools.executed_results)if strategy=='bound'else out['executed_query']
+                    with sqlite3.connect(':memory:') as fresh:
+                        fresh.row_factory = sqlite3.Row
+                        replayed = [dict(row) for row in fresh.execute(portable)]
+                    self.assertEqual(replayed, out['rows'])
 
 
 if __name__ == '__main__':

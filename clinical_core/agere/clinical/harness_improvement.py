@@ -216,7 +216,7 @@ def _retrieval_meaning(value):
     return {k:v for k,v in value.items() if k!='prior_source_seeds'}
 
 
-def comparison_result(name,value,prior_calls):
+def comparison_result(name,value,prior_calls,*,_memo=None):
     """Compare a portable SQL receipt only after proving its exact raw binding.
 
     The declared SQL and actual rows remain intact. Each earlier source output
@@ -231,6 +231,24 @@ def comparison_result(name,value,prior_calls):
     from .sql_query import native_result_source,portable_native_query
     sources={c['result']['result_view']:c['result'] for c in prior_calls
              if isinstance(c.get('result'),dict) and c['result'].get('result_view')}
+    if 'native_query_receipt'in value:
+        from .sql_query import validate_bound_native_query
+        if not validate_bound_native_query(value,sources):
+            return {**result,'native_query_binding_validation':'failed'}
+        # Normalize only after exact raw origin/statement validation, matching
+        # the existing native replay's permitted executor-only changes.
+        memo={}if _memo is None else _memo
+        for binding in result['native_query_receipt']['source_bindings']:
+            view=binding['result_view']
+            if view not in memo:
+                index=next(i for i,c in enumerate(prior_calls)if c.get('result')is sources[view])
+                parent=prior_calls[index]
+                memo[view]=comparison_result(parent.get('name'),sources[view],prior_calls[:index],_memo=memo)
+            source=memo[view]
+            binding['receipt_digest']=digest({k:v for k,v in source.items()if k!='result_view'})
+            result['native_read_columns']['sources'][binding['result_view']]['receipt_digest']=binding['receipt_digest']
+        result['native_query_receipt']['read_columns_digest']=digest(result['native_read_columns'])
+        return result
     if any(name not in sources for name in views):return result
     raw={name:native_result_source(*output_table(sources[name])) for name in views}
     try:
