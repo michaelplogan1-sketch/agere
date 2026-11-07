@@ -39,6 +39,27 @@ def unmet(question, request, query=PLAIN, **kw):
 class Operators(unittest.TestCase):
     Q_AND = 'How many patients have diabetes and CKD?'
 
+    def test_proof_caution_is_not_a_data_exclusion_and_keeps_coordinated_filters(self):
+        from clinical_core.agere.clinical.literal_check import missing
+        from clinical_core.agere.clinical import requirement_ledger as R
+        query='SELECT balance_cents FROM accounts'
+        cautions=[
+            'Show balances. Do not treat a payer remittance or account balance as proof of patient payment.',
+            "Show balances. Don't interpret recorded revenue as evidence of cash receipt.",
+            'Show balances. Never use a billing balance as confirmation of payment.']
+        for question in cautions:
+            with self.subTest(question=question):
+                self.assertFalse(any('negates' in g for g in missing(question,query)))
+                self.assertFalse(any('negates' in g for g in R.gaps(question,query)))
+        for question in [
+            'Show patients without payments. Do not treat remittances as proof of payment.',
+            'Show balances. Do not treat remittances as proof of payment and exclude reversed records.',
+            'Show balances. Do not include reversed records.',
+            'Show patients with no evidence of payment.']:
+            with self.subTest(question=question):
+                self.assertTrue(any('negates' in g for g in missing(question,query)))
+                self.assertFalse(any('negates' in g for g in missing(question,query+" WHERE status <> 'reversed'")))
+
     def test_and_asked_and_or_planned_is_unmet(self):
         r = unmet(self.Q_AND, spec({'op': 'or', 'args': [concept('diabetes'), concept('chronic_kidney_disease')]}))
         self.assertFalse(r['ok'])

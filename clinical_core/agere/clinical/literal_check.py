@@ -94,7 +94,8 @@ AS_OF_CLAUSE = re.compile(r'\b(?:use|using)\s+(?:the\s+)?(?:data|records?)\s+(?:
 # predicates. Ignore them only for this coarse negation check; all other literal
 # checks still see the original question, and clinical exclusions remain intact.
 REPORTING_CAUTION = re.compile(r"(?:^|[.!?;])\s*(?:please\s+)?(?:(?:do not|don't|never)\s+"
-    r"(?:infer|invent|guess|assume|impute|fabricate|extrapolate)\b[^.!?;]*|"
+    r"(?:(?:infer|invent|guess|assume|impute|fabricate|extrapolate)\b[^.!?;]*|"
+    r"(?:treat|interpret|regard|use)\b[^.!?;]*?\bas\s+(?:proof|evidence|confirmation)\b[^.!?;]*)|"
     r"(?:keep|report|show|display|label|make|preserve)\s+(?:the\s+)?(?:missing|unknown|null|unavailable)\s+"
     r"(?:values|data|information)\b[^.!?;]*\b(?:explicit|separate(?:ly)?|distinct|visible|unknown|unavailable)\b[^.!?;]*)",re.I)
 
