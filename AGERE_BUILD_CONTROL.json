@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-07T04:35:19.473273+00:00",
+  "updated_at": "2026-11-07T05:03:36.931053+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -570,7 +570,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Complete one ordinary original Q21 answer through the connected stack, including semantic source checks and explicit unresolved meanings/bindings. Native annotation counts are not clinical accuracy. Do not rerun the passing native source audit or Q20 workflow. Q23 applicable definitions, Q24 requested-deliverable capability, the current ten-area/25-case assessment and independent G5/clinical/model/customer dependencies remain.",
       "engineering_current_status": "Direct native coverage and full input admission verified; ordinary final SQL projection uncovered an unfinished shared composition binding. Retained exact projection is now blocked before provider dispatch; qualification is next. OriginalQ21 unaccepted.",
-      "next_action": "G3: Continue source-to-result closure on321be665 using the existing typed assertion/state/composition. First inspect the retained17account native source-review and consumer receipts:14supported tuples feed140semantic field checks without new votes;3tuples are rejected and166other fields remain unresolved. Localize the actual rejected subject/time/value axes against complete bound original records through the existing typed reader; retain received labels, new machine interpretations and human/clinical review as separate authorities. Compose conditional qualifier effects and opposing-account state with explicit source/task/domain/clock bindings, not independent clinical votes on each copied cell. Qualify the located repair and ordinary final consumer on this retained workflow before any further full paid Q21; no unchanged votes or thresholds lowered. Preserve all38263accounts/37032boundassertions/14689records/1739outputpatients/4115inputpatients, originalQ21 clock/meaning failures, Q23exact-parent definitions,Q24requested capability,current25case/tenarea assessment and independentG5/clinical/model/customer dependencies. Full-native tuple transport is verified123699038bytes/554partitions/20.58s/0providers; this is not full-question performance. Inspect jobs first; no provider/build/training job running. App44497/session18035 serves8885 on321be665. Quiet continuation ACTIVE.",
+      "next_action": "G3: On 286a78f5, finish the ordinary final consumer for the source-interpreted audit through existing typed assertion/state/composition. Inspect assertion-source-repair/qualifier-continuation source-interpreted-result.json and native-composed-result.json first. All 17 authored accounts now preserve received proposals and 14 original plus 3 corrected source-supported tuples; 12 input patients and the opposing group remain. Bind this explicit received-versus-interpreted contract into compact final coverage/support and the existing saved-question context, without re-reading/re-voting on supported tuples or treating machine review as human/clinical qualification. Reuse the current deterministic interpretation continuation validator and native conditional transforms; preserve rejected attempts and unknowns. Demonstrate an actual final consumer/save/reopen on the retained workflow, then assess source dispatch size/remaining semantics before one original full-Q21 confirmation. Do not rerun the full paid question while that consumer wiring is absent. Full native conditional check has passed all 38263 accounts/37032 bound/296256 conditional fields/4115 input/1739 output at 0 provider calls; do not repeat it unchanged. Preserve all 25 fixed cases and ten acceptance areas, Q21 date/meaning requirements, Q23 exact-parent definitions, Q24 requested capability, G5 and clinical/model/customer dependencies. App PID45144/session55976 serves8885 on286a78f5; no provider/build/training job running; quiet continuation ACTIVE.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -649,22 +649,23 @@
     }
   ],
   "checkpoint": {
-    "kind": "connected_assertion_source_review_and_consumer_candidate",
+    "kind": "connected_source_interpretation_and_conditional_state_candidate",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Existing review_documents can review all complete bound assertion tuples against exact original received records; native SQL preserves every account and received proposal. Qualified positive machine source observations feed the final field verifier without a second vote. Rejected/unknown tuples cannot certify constituent fields or human/clinical review.",
-    "measured_failure_reduction": "Full native source/tuple transport preserves38263accounts,37032boundassertions,14689complete originalrecords,all4115inputpatients and1739outputpatients;20.58s/0providers. Task diagnostic15/15authoreddecidingcorrect,0unsupportedaccepts. Actual native tool17accounts:14supported/3rejected,knownfamilymismatchrejected. Cached final field consumer reuses140semantic judgments and306native copies, leaves166fields unresolved,0newcalls.136affectedtests pass.4newJev/Perplexityattempts/$0.002190126APIequivalent/0unpriced/0newpending;58053ledgerrows/44historicalpendingunchanged.",
+    "user_behavior_delta": "The existing review_documents path now interprets rejected categorical narrative proposals, checks only genuinely changed tuples, and recomposes conditional effects/documentary groups from all original assertions. Received annotations, new machine interpretations and explicit human review remain separate. Continuation validates retained task/source/tuple inputs and reuses prior observations; only new work is charged. Native code verifies eight conditional audit fields without certifying their clinical premises.",
+    "measured_failure_reduction": "Retained authored workflow: all 3 rejected tuples corrected and source-supported; all 17 accounts and 12 input patients preserved, with 1 opposing documentary group still unresolved. The first reader/repair left 1 uncertainty; the intermediate time-only candidate was correctly rejected and retained. A distinct subject/polarity task resolved the source subject (Jev patient=.99, affirmed=.97), and Perplexity supported the complete new tuple at .9771. No probability sums or lowered thresholds. 136 former copied-field questions in the fixture are code-owned conditional transforms. Full retained native scope: 296256 conditional fields over 37032 bound accounts, 38263 total accounts, all 4115 input patients and 1739 output patients verified in 13.41s, 0 providers/engines. 185 affected checks pass. This increment: 7 new provider attempts, $0.000785794 API-equivalent, 0 unpriced/0 new pending; 58060 ledger rows, 44 historical pending unchanged.",
     "evidence": [
-      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-role/engineering-proof.json",
-      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-transport/receipt.json",
-      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-role/provider/receipt.json",
-      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-role/provider/authored-score.json",
-      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-role/consumer/receipt.json",
-      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-role/final-regressions.log",
-      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-role/app-proof.json"
+      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/engineering-proof.json",
+      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/provider/receipt.json",
+      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/continuation/receipt.json",
+      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/qualifier-continuation/receipt.json",
+      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/qualifier-continuation/native-composed-result.json",
+      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/full-conditional-fields/receipt.json",
+      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/qualifier-regressions.log",
+      "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/app-proof.json"
     ],
-    "remaining_gap": "OriginalQ21source interpretation/date/conclusions remain unfinished. Localized repair of rejected tuples and conditional/group/effect composition remain; exact positive tuple decisions alone cannot accept every field or final question. Q23definitions,Q24capability,current25case10area evidence,G5clinical/model/customer dependencies remain. No broad task or model promotion, clinical acceptance or fullMVP readiness.",
-    "next_action": "G3: Continue source-to-result closure on321be665 using the existing typed assertion/state/composition. First inspect the retained17account native source-review and consumer receipts:14supported tuples feed140semantic field checks without new votes;3tuples are rejected and166other fields remain unresolved. Localize the actual rejected subject/time/value axes against complete bound original records through the existing typed reader; retain received labels, new machine interpretations and human/clinical review as separate authorities. Compose conditional qualifier effects and opposing-account state with explicit source/task/domain/clock bindings, not independent clinical votes on each copied cell. Qualify the located repair and ordinary final consumer on this retained workflow before any further full paid Q21; no unchanged votes or thresholds lowered. Preserve all38263accounts/37032boundassertions/14689records/1739outputpatients/4115inputpatients, originalQ21 clock/meaning failures, Q23exact-parent definitions,Q24requested capability,current25case/tenarea assessment and independentG5/clinical/model/customer dependencies. Full-native tuple transport is verified123699038bytes/554partitions/20.58s/0providers; this is not full-question performance. Inspect jobs first; no provider/build/training job running. App44497/session18035 serves8885 on321be665. Quiet continuation ACTIVE.",
+    "remaining_gap": "The full original Q21 answer is not accepted. The new source_interpretation result is inspectable/composable in native SQL, but the compact final coverage/support/save path still primarily qualifies the original native audit or its one-parent SQL projection; it must consume the received-versus-interpreted result contract before a full paid Q21 is justified. Actual source interpretations for the full warehouse, original clock meaning, Q23 applicable exact-parent definitions, Q24 requested deliverable capability and current all25/tenarea assessment remain, with independent G5/clinical/model/customer prerequisites. No general clinical/model promotion or whole-MVP readiness.",
+    "next_action": "G3: On 286a78f5, finish the ordinary final consumer for the source-interpreted audit through existing typed assertion/state/composition. Inspect assertion-source-repair/qualifier-continuation source-interpreted-result.json and native-composed-result.json first. All 17 authored accounts now preserve received proposals and 14 original plus 3 corrected source-supported tuples; 12 input patients and the opposing group remain. Bind this explicit received-versus-interpreted contract into compact final coverage/support and the existing saved-question context, without re-reading/re-voting on supported tuples or treating machine review as human/clinical qualification. Reuse the current deterministic interpretation continuation validator and native conditional transforms; preserve rejected attempts and unknowns. Demonstrate an actual final consumer/save/reopen on the retained workflow, then assess source dispatch size/remaining semantics before one original full-Q21 confirmation. Do not rerun the full paid question while that consumer wiring is absent. Full native conditional check has passed all 38263 accounts/37032 bound/296256 conditional fields/4115 input/1739 output at 0 provider calls; do not repeat it unchanged. Preserve all 25 fixed cases and ten acceptance areas, Q21 date/meaning requirements, Q23 exact-parent definitions, Q24 requested capability, G5 and clinical/model/customer dependencies. App PID45144/session55976 serves8885 on286a78f5; no provider/build/training job running; quiet continuation ACTIVE.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
@@ -724,7 +725,7 @@
       "scope": "Preserve the healthcare-wide product across clinical/chronic disease/medication, population and individual, utilization/outcomes, finance/provider/contracts, discovery/explanation, deliverables, learning/reuse and shared industry-portable core. Keep all ten canonical acceptance areas and25fixedcases; no new finish-line expansion."
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-07T04:35:19.473273+00:00",
+    "at": "2026-11-07T05:03:36.931053+00:00",
     "workflow_change": "Qualified audit review now establishes literal ID/provenance/source-clock/quote-copy fidelity in code. Clinical meaning and analytical effects remain typed source judgments; copied data cannot qualify them. This uses the existing field-review/composition path, with exact complete-source and claim-partition bindings.",
     "unsealed_work": {
       "status": "verified_full_native_scope_pending_ordinary_composition",
@@ -1517,6 +1518,45 @@
         "provider_work": false,
         "kind": "assertion-source-consumer",
         "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-role/consumer/receipt.json"
+      },
+      "q21_assertion_source_repair": {
+        "pid": 44870,
+        "status": "returned_source_repair_workflow_for_assessment",
+        "source_frozen": false,
+        "provider_work": false,
+        "kind": "assertion-source-repair",
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/provider/receipt.json"
+      },
+      "q21_assertion_source_repair_continuation": {
+        "pid": 45083,
+        "status": "returned_localized_continuation_for_assessment",
+        "source_frozen": false,
+        "provider_work": false,
+        "kind": "assertion-source-repair-continuation",
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/qualifier-continuation/receipt.json"
+      },
+      "q21_conditional_audit_fields": {
+        "pid": 45123,
+        "status": "passed_complete_native_conditional_fields",
+        "source_frozen": false,
+        "provider_work": false,
+        "kind": "conditional-audit-fields",
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/full-conditional-fields/receipt.json"
+      },
+      "q21_source_interpretation_repair": {
+        "status": "connected_source_repair_and_documentary_composition_verified_unsealed",
+        "product_commit": "286a78f52144081652cb57d2f9e714ae093cffcd",
+        "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/engineering-proof.json",
+        "tests_passed": 185,
+        "new_provider_attempts": 7,
+        "known_api_equivalent_usd": 0.000785794,
+        "source_frozen": false,
+        "new_pending": 0,
+        "runtime_activation": false,
+        "product_code_in_candidate_app": true,
+        "answer_selected": false,
+        "original_Q21_acceptance": false,
+        "final_consumer_gap_explicit": true
       }
     },
     "bottling_assessment": {
@@ -1743,7 +1783,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-07T04:35:19.473273+00:00",
+    "updated_at": "2026-11-07T05:03:36.931053+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -6390,6 +6430,22 @@
         "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-role/app-proof.json"
       ],
       "scope_impact": "All25cases and tenareas retained. This closes missing source-review/tool/field-consumer wiring; fullQ21meaning/repair/composition and independent qualification remain."
+    },
+    {
+      "at": "2026-11-07T05:03:36.931053+00:00",
+      "gate_id": "G3",
+      "decision": "Use explicit source-interpretation continuation and independent subject/polarity follow-up where the older combined statement axis is unresolved. Retain failed changes, recheck complete changed tuples, and recompose all documentary assertions. Code owns conditional copies, models own source meaning, and explicit human reviews stay separate. Reuse old paid observations without charging them again.",
+      "evidence": [
+        "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/engineering-proof.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/provider/receipt.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/continuation/receipt.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/qualifier-continuation/receipt.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/qualifier-continuation/native-composed-result.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/full-conditional-fields/receipt.json",
+        "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/qualifier-regressions.log",
+        "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/app-proof.json"
+      ],
+      "scope_impact": "No acceptance area or fixed case removed. This reduces actual source-repair and repeated-field work; compact final consumer wiring and original full Q21 remain outstanding."
     }
   ],
   "unsealed_work": {
@@ -6838,7 +6894,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Continue source-to-result closure on321be665 using the existing typed assertion/state/composition. First inspect the retained17account native source-review and consumer receipts:14supported tuples feed140semantic field checks without new votes;3tuples are rejected and166other fields remain unresolved. Localize the actual rejected subject/time/value axes against complete bound original records through the existing typed reader; retain received labels, new machine interpretations and human/clinical review as separate authorities. Compose conditional qualifier effects and opposing-account state with explicit source/task/domain/clock bindings, not independent clinical votes on each copied cell. Qualify the located repair and ordinary final consumer on this retained workflow before any further full paid Q21; no unchanged votes or thresholds lowered. Preserve all38263accounts/37032boundassertions/14689records/1739outputpatients/4115inputpatients, originalQ21 clock/meaning failures, Q23exact-parent definitions,Q24requested capability,current25case/tenarea assessment and independentG5/clinical/model/customer dependencies. Full-native tuple transport is verified123699038bytes/554partitions/20.58s/0providers; this is not full-question performance. Inspect jobs first; no provider/build/training job running. App44497/session18035 serves8885 on321be665. Quiet continuation ACTIVE.",
+  "next_action": "G3: On 286a78f5, finish the ordinary final consumer for the source-interpreted audit through existing typed assertion/state/composition. Inspect assertion-source-repair/qualifier-continuation source-interpreted-result.json and native-composed-result.json first. All 17 authored accounts now preserve received proposals and 14 original plus 3 corrected source-supported tuples; 12 input patients and the opposing group remain. Bind this explicit received-versus-interpreted contract into compact final coverage/support and the existing saved-question context, without re-reading/re-voting on supported tuples or treating machine review as human/clinical qualification. Reuse the current deterministic interpretation continuation validator and native conditional transforms; preserve rejected attempts and unknowns. Demonstrate an actual final consumer/save/reopen on the retained workflow, then assess source dispatch size/remaining semantics before one original full-Q21 confirmation. Do not rerun the full paid question while that consumer wiring is absent. Full native conditional check has passed all 38263 accounts/37032 bound/296256 conditional fields/4115 input/1739 output at 0 provider calls; do not repeat it unchanged. Preserve all 25 fixed cases and ten acceptance areas, Q21 date/meaning requirements, Q23 exact-parent definitions, Q24 requested capability, G5 and clinical/model/customer dependencies. App PID45144/session55976 serves8885 on286a78f5; no provider/build/training job running; quiet continuation ACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6927,14 +6983,14 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 44497,
-  "owned_server_session": 18035,
+  "owned_server_pid": 45144,
+  "owned_server_session": 55976,
   "last_run_observation": {
-    "at": "2026-11-07T04:35:19.473273+00:00",
-    "status": "scoped_tuple_source_role_and_cached_consumer_returned_unsealed",
-    "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-role/engineering-proof.json",
+    "at": "2026-11-07T05:03:36.931053+00:00",
+    "status": "three_localized_repairs_source_supported_native_state_composed_unsealed",
+    "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/engineering-proof.json",
     "provider_job": null,
-    "new_provider_attempts": 4
+    "new_provider_attempts": 7
   },
   "ordinary_curriculum_progress": {
     "total_fixed_cases": 25,
