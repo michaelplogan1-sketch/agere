@@ -171,6 +171,9 @@ class DocumentaryHandoff(unittest.TestCase):
         window={'basis':'source_event','start':'2029-01-01','end':AS_OF}
         description=self.tools()({'name':'describe_analysis','input':{'operation':'assertion_review'}})
         self.assertEqual(description['selection_contracts']['inherited_annotations']['resolved_streams'],['notes'])
+        self.assertIn('received',description['selection_contracts']['inherited_annotations']['clock_roles']['arrival'])
+        meaning=description['output_contracts']['qualifier_accounts']['source_meaning_workflow']
+        self.assertIn('review_documents',meaning[1]);self.assertIn('assertion_source_review',meaning[2])
         for ids in (None,['p04','p05'],[]):
             t=self.tools(ids)
             out=t({'name':'execute_analysis','input':{'operation':'assertion_review',

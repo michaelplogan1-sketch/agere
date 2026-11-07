@@ -68,12 +68,19 @@ def describe(operation, *, path=None):
             **({'selection_contracts':{'inherited_annotations':{
                 'meaning':'Native code binds every received annotation source stream and the exact inherited population. Do not supply patient_ids/patient_query_sql or invent a source subset.',
                 'parameters':'Supply only the requested assertion_window. Code supplies streams, concepts=[] and received_annotations=true before normal shared graph validation.',
+                'clock_roles':{'arrival':'When the account became available/received.',
+                    'source_event':'The source statement/event date; distinct from receipt and explicit clinical/reference dates.'},
                 'resolved_streams':received_annotation_sources(path),
                 'scope':'Existing annotations only; no complete free-text or clinical-state claim.'}}}
                if operation=='assertion_review'else{}),
             **({'output_contracts':{'qualifier_accounts':{
                 'meaning':'Complete qualifier-sensitive bound accounts plus every selected/unknown unbound annotation. Exact source/value/unit/clocks, native group references and provisional meanings remain explicit.',
                 'usage':'Set output=qualifier_accounts to obtain the requested source-account audit as the primary native table. Keep every audit_account_id in a table answer; examples may supplement this rowset, not replace it.',
+                'source_meaning_workflow':[
+                    'This native table accounts for received proposals and conditional effects; it does not establish that their labels correctly interpret the source.',
+                    'When source interpretation is required, call review_documents with only assertion_result_view equal to this returned native result_view. Code binds each tuple to its complete original record.',
+                    'Pass the resulting assertion_source_review result_view to review_documents using assertion_result_view to interpret rejected categorical proposals and recompose documentary groups. A resulting assertion_source_interpretation view continues only new unresolved work.',
+                    'Use the complete interpreted result_view, or a one-parent literal/JSON SQL projection, as table_from_tool. Received proposals, machine interpretations and human review remain distinct; retain unresolved meanings and opposing reports.'],
                 'clinical_state_established':False}}}if operation=='assertion_review'else{}),
             'meaning':'The existing native validator remains authoritative. Parameters and assumptions are not inferred clinical facts.',
             **({'output_contract':{
