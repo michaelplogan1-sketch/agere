@@ -4225,6 +4225,9 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     from .financial_accounts import payer_cash_requested,cash_input_contract
     if payer_cash_requested(question):
         rules+='\nEXISTING REGISTERED CASH SOURCE CONTRACT:\n'+json.dumps(cash_input_contract())
+    from .adjudication_history import development_requested,development_input_contract
+    if 'payer_adjudication'in wh.columns and development_requested(question):
+        rules+='\nEXISTING RECEIVED SIGNED PAYMENT DEVELOPMENT CONTRACT:\n'+json.dumps(development_input_contract())
     system = [{'type': 'text', 'text': rules}, {'type': 'text', 'text': docs, 'cache_control': {'type': 'ephemeral'}}]
     from . import patient_ids
     prior = patient_ids.current_prior() or {}

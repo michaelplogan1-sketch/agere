@@ -56,6 +56,24 @@ def _seq(v):
         return 0
 
 
+def development_requested(question):
+    import re
+    return bool(re.search(r'\b(?:paid|payments?|payer)\b',str(question or ''),re.I)and
+                re.search(r'\b(?:development|run[- ]?out|ibnr|completion)\b',str(question or ''),re.I))
+
+
+def development_input_contract():
+    return {'schema':'received-signed-paid-development/1','source':'payer_adjudication',
+        'amount':{'field':'paid_cents','role':'received signed financial event; not a cumulative replacement balance'},
+        'history':'Full observed development sums every received signed event in the requested scope, including superseded events and negative reversals/recoupments. Current/last versions are a separately named alternative.',
+        'clocks':{'cohort':'service_from','development':'adjudication_date when requested; declare another clock explicitly',
+                  'received_cutoff':'available_date through the snapshot; future/unreceived observations do not enter the observed history'},
+        'native_computation':'Group the requested service-month/cohort and development period, SUM signed paid_cents, then compute cumulative observed development in code/SQL. Do not subtract LAG of individual signed events.',
+        'unknowns':'Missing source/receipt dates remain explicit. Recent development is incomplete; elapsed months do not establish complete capture.',
+        'completion_estimate':'Optional, separately labeled from observations; state its method/assumptions and retain missing fit/ultimate qualification. No assumed tail factor is an observed payment.',
+        'unit':'Source integer cents. This table alone does not establish currency or receipt of cash.'}
+
+
 def development_source_issues(question, answer, calls):
     """Check the received signed-event role behind returned paid development.
 
@@ -65,9 +83,7 @@ def development_source_issues(question, answer, calls):
     """
     import re
     q=str(question or '')
-    if not (re.search(r'\b(?:paid|payments?|payer)\b',q,re.I)and
-            re.search(r'\b(?:development|run[- ]?out|ibnr|completion)\b',q,re.I)):
-        return []
+    if not development_requested(q):return []
     if re.search(r'\b(?:current|latest|surviving)\s+versions?\s+only\b|\bexclud(?:e|ing)\s+superseded\b',q,re.I):
         return []  # an explicitly requested alternative keeps its own basis
     root=answer.get('table_from_tool')
