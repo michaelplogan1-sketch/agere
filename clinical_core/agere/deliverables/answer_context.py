@@ -130,6 +130,12 @@ def capture(path, question, result, *, original_question=None, _population_scope
             'patient_rows': rows, 'patient_ids': [r['patient_id'] for r in rows],
             'input_patient_ids': input_ids,
             'synthetic': True, 'clinical_eligibility_established': False}
+    if(_population_scopes is None and not data['patient_ids']
+       and answer.get('answer_type')in ('count','value','table','composite')
+       and (data.get('investigation')or{}).get('tool_calls')):
+        _population_scopes,checks=_prepare_native_population_snapshot(path,data)
+        data['native_population_preparation']={'new_paid_api_calls':0,
+            'original_analytical_engine_replays':0,'native_sql_checks':checks}
     if _population_scopes is not None:
         from ..clinical import membership
         if (_population_scopes.get('schema')!=membership.NATIVE_POPULATIONS
@@ -467,21 +473,10 @@ def _current_population_scopes(context):
     return scopes
 
 
-def prepare_population_scopes(path, request):
-    """Discover exact native patient populations on demand, without providers."""
-    if set(request)!={'context_id'}:raise ValueError('Exact saved answer identity required')
-    context=load(path,request['context_id'],current=True)
+def _prepare_native_population_snapshot(path,context):
+    """Recover exact native count memberships without rerunning an analyst."""
     calls=(context.get('investigation')or{}).get('tool_calls')or[]
-    if not calls:raise ValueError('This answer has no retained native calculations to inspect')
     from ..clinical import membership,backstop_agent as B,semantic_analyst as S,sql_query,semantic_layer
-    cached=context.get('native_population_scopes')or{}
-    if (cached.get('schema')==membership.NATIVE_POPULATIONS and cached.get('source')==context['source']
-        and cached.get('membership_policy')==membership.native_population_identity()):
-        options=scope_options(context)
-        return {'status':'prepared','action_context':{'id':context['id'],'patients':len(context['patient_ids']),
-            'url':'/action-center?context='+context['id'],**options},'population_scopes':options['population_scopes'],
-            'unavailable':cached.get('unavailable',[]),'new_paid_api_calls':0,'original_analytical_engine_replays':0,
-            'native_sql_checks':0,'cache_hit':True,'clinical_eligibility_established':False}
     import sqlglot
     from sqlglot import exp
     source=context['source'];by={};names=set();all_columns=False
@@ -522,7 +517,31 @@ def prepare_population_scopes(path, request):
         snapshot=membership.native_populations(calls,roots,execute,known,source)
         if source_identity(path)!=source:raise ValueError('Warehouse changed while preparing the native populations')
     finally:wh.close()
+    # An unresolved dependency can yield no scopes. Record the attempted native
+    # policy and its explicit unavailable reason, rather than losing the saved
+    # analytical answer or substituting an empty patient population.
+    snapshot.setdefault('membership_policy',membership.native_population_identity())
     snapshot['native_calls_digest']=fingerprint(calls)
+    return snapshot,checks
+
+
+def prepare_population_scopes(path, request):
+    """Discover exact native patient populations on demand, without providers."""
+    if set(request)!={'context_id'}:raise ValueError('Exact saved answer identity required')
+    context=load(path,request['context_id'],current=True)
+    calls=(context.get('investigation')or{}).get('tool_calls')or[]
+    if not calls:raise ValueError('This answer has no retained native calculations to inspect')
+    from ..clinical import membership
+    cached=context.get('native_population_scopes')or{}
+    if (cached.get('schema')==membership.NATIVE_POPULATIONS and cached.get('source')==context['source']
+        and cached.get('membership_policy')==membership.native_population_identity()):
+        options=scope_options(context)
+        return {'status':'prepared','action_context':{'id':context['id'],'patients':len(context['patient_ids']),
+            'url':'/action-center?context='+context['id'],**options},'population_scopes':options['population_scopes'],
+            'unavailable':cached.get('unavailable',[]),'new_paid_api_calls':0,'original_analytical_engine_replays':0,
+            'native_sql_checks':0,'cache_hit':True,'clinical_eligibility_established':False}
+    snapshot,checks=_prepare_native_population_snapshot(path,context)
+    source=context['source']
     result={'answer':context['answer'],'graph':context.get('graph'),'results':context.get('results'),
         'planner_receipt':context.get('planner_receipt'),'planning_economics':context.get('planning_economics'),
         'investigation':context.get('investigation'),'workflow':context.get('workflow')or[],

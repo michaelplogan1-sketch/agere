@@ -43,6 +43,22 @@ class PopulationContext(unittest.TestCase):
         self.assertEqual(loaded['input_patient_ids'],['A'])
         self.assertEqual(Path(A.root(self.path)/saved['id']/'answer.json').read_bytes(),before)
 
+    def test_summary_capture_already_exposes_complete_count_populations(self):
+        saved=self.capture_summary()
+        self.assertEqual({s['label']:s['patients']for s in saved['population_scopes']},{'x':1,'y':1})
+        self.assertFalse(saved['result_scope_available'])
+        context=A.load(self.path,saved['id'],current=True)
+        self.assertEqual(context['patient_ids'],[])
+        self.assertIsNone(context['input_patient_ids'])
+        preparation=context['native_population_preparation']
+        self.assertEqual(preparation['new_paid_api_calls'],0)
+        self.assertEqual(preparation['original_analytical_engine_replays'],0)
+        self.assertGreater(preparation['native_sql_checks'],0)
+        from unittest.mock import patch
+        with patch.object(A,'_prepare_native_population_snapshot',side_effect=AssertionError('No repeated SQL')):
+            cached=A.prepare_population_scopes(self.path,{'context_id':saved['id']})
+        self.assertTrue(cached['cache_hit'])
+
     def test_unknown_population_and_generic_summary_followup_never_widen(self):
         saved=self.capture_summary();out=A.prepare_population_scopes(self.path,{'context_id':saved['id']})
         context=A.load(self.path,out['action_context']['id'],current=True)
