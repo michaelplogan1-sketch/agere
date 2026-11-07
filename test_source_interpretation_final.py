@@ -100,6 +100,23 @@ class FinalInterpretation(unittest.TestCase):
                 ledger=self.tools.ledger,as_of=self.tools.as_of)
         self.assertNotEqual(result['status'],'confirmed')
 
+    def test_compiler_repair_composition_uses_bound_source_contract_without_resending_rows(self):
+        self.answer['headline']='There are 1234567 received accounts.'
+        seen=[]
+        def composition(question,answer,**kw):
+            seen.append(answer)
+            return {'targets':[],'calls':0,'cost_usd':0.}
+        with(patch.object(G,'ready',return_value=True),patch.object(G,'check_composition',side_effect=composition),
+             patch.object(system_one,'judge_fields',side_effect=AssertionError('No repeated source reading'))):
+            result=B.review_final(self.tools.stack,self.question,self.answer,self.tools.native_calls,self.tools,
+                ledger=self.tools.ledger,as_of=self.tools.as_of)
+        self.assertEqual(result['repair_kind'],'deterministic_compiler')
+        self.assertEqual(len(seen),1)
+        self.assertEqual(seen[0]['table'],[])
+        self.assertEqual(seen[0]['source_interpretation_contract']['rows'],17)
+        self.assertLess(len(json.dumps(seen[0])),30000)
+        self.assertEqual(len(self.answer['table']),17)
+
     def test_unread_source_accounts_cannot_be_reported_as_completed_unknowns(self):
         fresh=fixtures.Interpretation();fresh.setUp();self.addCleanup(fresh.doCleanups)
         def prepared(s,q,e,**kw):return {'judgments':{key:{'label':'unknown','decided_by':None}for key in q},

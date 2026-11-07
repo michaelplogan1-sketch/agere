@@ -2265,7 +2265,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                 and answer.get('table') and gate.ready(stack, 'AGERE_S1_CHECK')):
             try:
                 from .evidence_projection import coverage_answer
-                composition=gate.check_composition(question,coverage_answer(answer,native_audit=native_audit),ledger=ledger,as_of_date=as_of)
+                composition=gate.check_composition(question,coverage_answer(answer,native_audit=native_audit,
+                    native_interpretation=native_interpretation),ledger=ledger,as_of_date=as_of)
                 assessment.update(composition=composition,calls=composition['calls'],cost_usd=composition['cost_usd'])
                 if composition.get('targets'):
                     return incomplete_composition(assessment,composition,answer,feedback=prose_problem,progress_state=progress_state)
