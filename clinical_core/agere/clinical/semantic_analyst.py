@@ -569,6 +569,10 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     New explicit readings, certified replay defaults and restored same-actor
     messages retain their complete source content across subsequent turns."""
     if type(initial_readings)is not bool:raise ValueError('initial_readings must be a boolean')
+    # An executor may append new calls to the list used for restoration.
+    # Snapshot its membership so that new explicit readings never become
+    # "prior" readings as that caller-owned list grows across turns.
+    initial_calls=list(initial_calls or [])
     result = new_result(model)
     def escalate(reason):
         nonlocal model
