@@ -130,4 +130,107 @@ class FinancialDocumentaryTools(unittest.TestCase):
             with self.assertRaises(ValueError):A.financial_projections(bad)
 
 
+class FinancialAccountConsumer(unittest.TestCase):
+    setUpBase=documentary_fixture.DocumentaryHandoff.setUp
+    setUp=FinancialDocumentaryTools.setUp
+    tools=documentary_fixture.DocumentaryHandoff.tools
+    finance=FinancialDocumentaryTools.finance
+
+    def add(self,raw):
+        with sqlite3.connect(self.path/'stack.sqlite3')as db:
+            db.execute('INSERT INTO records VALUES (?,?,?,?)',(raw['record_id'],raw['patient_id'],raw['source_table'],json.dumps(raw)))
+
+    def graph(self,year=2029):
+        from clinical_core.agere.clinical import request_plan as R,shared_planner as S,semantic_layer
+        # Native source metadata, not a manually supplied expected account set.
+        semantic_layer.build(self.path)
+        q=f'Reconcile recorded accounts active during {year}. Show patient/account attribution and lifecycle dates.'
+        spec={'source':{'table':'record','stream':'patient_billing_accounts','quote':'accounts'},
+              'select':[{'kind':'count_distinct','field':'record.patient_id','alias':'patients','quote':'patient/account attribution'}],
+              'where':{'op':'and','args':[{'op':'>=','field':'record.event_date','value':f'{year}-01-01','quote':f'active during {year}'},
+                  {'op':'<','field':'record.event_date','value':f'{year+1}-01-01','quote':f'active during {year}'}],'quote':f'active during {year}'},
+              'group_by':[],'order_by':[],'limit':None,'analyses':[{'operation':'financial_accounts','parameters':{'available_by':AS_OF},
+                    'quote':q}],'unresolved':[]}
+        # The documentary fixture deliberately keeps a small profile. The
+        # source rows/typed record schema remain real for the compiled selector.
+        catalog=R.Catalog.load(self.path)
+        profile=json.loads((self.path/'source-profile.json').read_text())
+        profile['source_digest']=catalog.identity['source_digest']
+        profile['streams']['patient_billing_accounts']={'fields':{'account_id':{},'event_date':{}}}
+        (self.path/'source-profile.json').write_text(json.dumps(profile))
+        catalog=R.Catalog.load(self.path)
+        return q,S.graph_for(R.compile_request(catalog,q,spec))
+
+    def execute(self,q,g):
+        from clinical_core.agere.clinical import analysis_graph as G,decision_context as D
+        with D.scope(q,AS_OF):return G.execute(self.stack,g,question=q)
+
+    def test_complete_account_scope_and_lifecycle_do_not_expand_to_all_patient_accounts(self):
+        from test_financial_accounts import source
+        raw=snapshot('old-stock','2028-08-01');raw.update(patient_id='p00',account_id='older-account')
+        self.add(raw)
+        # Equal account labels in different patients remain different keys.
+        with sqlite3.connect(self.path/'stack.sqlite3')as db:
+            row=json.loads(db.execute("SELECT payload FROM records WHERE id='stock-p01'").fetchone()[0])
+            row['account_id']='account-p00';db.execute("UPDATE records SET payload=? WHERE id='stock-p01'",(json.dumps(row),))
+        for rid,day,fields in [
+            ('pay-before','2029-07-15',dict(amount_cents=60)),
+            ('pay-after','2029-08-02',dict(amount_cents=40)),
+            ('pay-eur','2029-07-16',dict(amount_cents=25,currency='EUR')),
+            ('pay-bad','2029-07-17',dict(amount_cents='5')),
+            ('pay-undated','2029-08-03',dict(amount_cents=50,event_date=None,event_time=None))]:
+            tx=source(rid,'patient_payments',day=day,account_id='account-p00',status='received',**fields)
+            tx['patient_id']='p00';self.add(tx)
+        q,g=self.graph();self.finance(self.tools())  # prewarm source interpretation
+        with patch.object(F,'project',side_effect=AssertionError('Do not recompute passing financial sources')):
+            result=self.execute(q,g)
+        answer=result['answer'];rows=answer['table'];scope=answer['overall']['financial_account_scope']
+        self.assertEqual({(r['patient_id'],r['account_id'])for r in rows},{('p00','account-p00'),('p01','account-p00')})
+        self.assertEqual(scope['input_accounts'],3);self.assertEqual(scope['excluded_input_accounts'],1)
+        self.assertEqual(scope['selected_source_records'],2);self.assertFalse(answer['actionable_cohort'])
+        row=next(r for r in rows if r['patient_id']=='p00')
+        self.assertEqual(row['first_reported_source_date'],'2029-07-15')
+        self.assertEqual(row['last_reported_source_date'],'2029-08-02')
+        self.assertEqual(row['last_received_date'],'2029-08-03');self.assertEqual(row['unknown_source_date_records'],1)
+        flow=row['received_transactions']['patient_payments']
+        self.assertEqual(flow['by_currency'],{'USD':{'known_received_cents':150,'records':3},'EUR':{'known_received_cents':25,'records':1}})
+        self.assertEqual(flow['unresolved_records'],[{'record_id':'pay-bad','reason':'noninteger_or_missing_amount'}])
+        self.assertFalse(flow['capture_complete']);self.assertEqual(flow['unknown_event_date_records'],1)
+        self.assertEqual(row['snapshot_received_cents'],100)
+        self.assertTrue(all(e['residual_cents']==0 for e in row['equations']))
+        self.assertEqual({r['patient_id']for r in scope['patient_coverage']},{'p00','p01'})
+        self.assertEqual(answer['patient_ids'],['p00','p01'])
+        from clinical_core.agere.deliverables import answer_context as C
+        with patch.object(F,'project',side_effect=AssertionError('Saving or follow-up must not reprocess financial sources')):
+            saved=C.capture(self.path,q,result)
+            reopened=C.load(self.path,saved['id'],current=True)
+            self.assertEqual(reopened['answer'],answer)
+            self.assertEqual(set(reopened['patient_ids']),{'p00','p01'})
+            self.assertFalse(C.supports_patient_work(reopened))
+            follow=C.followup(self.path,saved['id'],'show me the patient list')
+            self.assertEqual(follow['answer']['table'],rows)
+            self.assertEqual(follow['new_paid_api_calls'],0)
+
+    def test_explicit_empty_record_scope_is_not_replaced_by_patient_receipts(self):
+        q,g=self.graph(2027)
+        answer=self.execute(q,g)['answer']
+        self.assertEqual(answer['table'],[]);self.assertEqual(answer['patient_ids'],[])
+        self.assertEqual(answer['overall']['financial_account_scope']['presented_accounts'],0)
+
+    def test_unknown_snapshot_and_unassigned_sources_stay_explicit(self):
+        from test_financial_accounts import source
+        with sqlite3.connect(self.path/'stack.sqlite3')as db:
+            raw=json.loads(db.execute("SELECT payload FROM records WHERE id='stock-p00'").fetchone()[0])
+            raw['event_time']='2029-08-02T01:00:00+00:00'
+            db.execute("UPDATE records SET payload=? WHERE id='stock-p00'",(json.dumps(raw),))
+        raw=source('unassigned','patient_payments','2029-08-01',account_id=None,amount_cents=25,status='received')
+        raw['patient_id']='p00';self.add(raw)
+        q,g=self.graph();a=self.execute(q,g)['answer']
+        row=next(r for r in a['table']if r['patient_id']=='p00')
+        self.assertIsNone(row['snapshot_balance_cents']);self.assertEqual(row['equations'],[])
+        self.assertEqual(row['account_status'],'unresolved_snapshot')
+        sources=a['overall']['financial_account_scope']['unassigned_sources']
+        self.assertEqual([x['source']['record_id']for x in sources],['unassigned'])
+
+
 if __name__=='__main__':unittest.main()

@@ -108,6 +108,7 @@ class Definitions(Fixture):
         for question in [
             'Identify received 2029 clinical accounts whose interpretation changes when source qualifiers are respected.',
             'Audit recorded 2028 laboratory statements and their source dates.',
+            'Reconcile recorded accounts with patient attribution and lifecycle dates.',
             'Show received correspondence whose source is unresolved.',
             'List the received source documents for comparison.']:
             with self.subTest(question=question):

@@ -343,6 +343,16 @@ def build_answer_core(plan, results, memberships, question):
             report_index = len(plan['nodes']) - 1
     else:
         report_index = len(plan['nodes']) - 1
+    if last['operation'] == 'financial_accounts'and results[-1]['result'].get('account_output')is not None:
+        report=results[-1]['result'];output=report['account_output'];rows=output['rows'];scope=output['scope']
+        partial=plan.get('coverage')!='supported_observation'or bool(plan.get('unmet_requirements'))or bool(scope['unresolved_selected_sources'])
+        answer.update(status='partial'if partial else'answered',answer_type='table',count=len(rows),table=rows,
+            patient_ids=sorted({r['patient_id']for r in rows}|{r['patient_id']for r in scope['unresolved_selected_sources']}),
+            membership_role='financial_record_subjects',actionable_cohort=False,
+            method='Complete received account detail with registered native integer-cent identities; snapshots and received transactions have separate clock/currency scopes.',
+            overall={'financial_account_scope':scope},limitations=report['limits'])
+        if scope['unresolved_selected_sources']:answer['missing'].append('Selected source records without a unique received account remain listed in financial_account_scope.')
+        return answer
     if last['operation'] == 'governed_metric':
         return results[-1]['result']['answer']
     if last['operation'] in ('retrieve', 'review'):
@@ -2094,6 +2104,12 @@ def execute(stack, plan, *, question=None):
                       'accountability_review':accountability_preparations,'outcome':outcome_preparations,
                       'observation_process':observation_preparations}[op][node['id']]
                 graph_reports.attach(path,op,sorted(chosen.yes),params,prep,detail,membership_receipt(chosen))
+                if op=='financial_accounts'and question is not None:
+                    parent=node_index[node['inputs'][0]]
+                    state=decision_context.current()
+                    source_contract=parent['parameters']['contract']if(parent['operation']=='query_population'and state is not None
+                        and state.population.get('record_subject_scope')and parent['parameters']['contract']['request']['source']['table']!='patient')else None
+                    detail['account_output']=graph_reports.financial_table(path,detail,selector_contract=source_contract,prepared=prep)
             results.append({'node': node, 'result': detail})
             node_seconds.append({'id': node['id'], 'operation': op, 'seconds': round(time.perf_counter() - node_started, 4)})
         answer_started = time.perf_counter()

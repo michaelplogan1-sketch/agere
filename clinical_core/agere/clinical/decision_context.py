@@ -45,7 +45,7 @@ ALL_RECEIVED_ROWS = re.compile(
 RECORD_OBJECT = (r'(?:rows?|records?|accounts?|assertions?|annotations?|statements?|documents?|reports?|'
                  r'notes?|correspondence|observations?|events?|claims?)')
 RECEIVED_RECORD_HEAD = re.compile(
-    r'^\s*(?:(?:identify|show|list|find|review|audit|compare|count)\s+)?'
+    r'^\s*(?:(?:identify|show|list|find|review|audit|compare|count|reconcile)\s+)?'
     r'(?:(?:all|every|the)\s+)?(?:received|recorded)\s+'
     r'(?:[a-z0-9_-]+\s+){0,5}?'+RECORD_OBJECT+r'\b', re.I)
 # Financial records remain the requested objects even when patient attribution
