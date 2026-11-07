@@ -4424,7 +4424,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
         # automatically validating or selecting a reuse candidate.
         # A reply's intent is scoped to this investigation. It has not been
         # qualified as a parameter of a reusable workflow or training label.
-        if continuation is None and not request_cancelled and not run.get('clarification_pause') and not unresolved_intent and (reviewable_proposal or partial_prefix or isinstance(run.get('answer'),dict) and run['answer'].get('status')=='answered' and (run.get('answer_reviews') or [{}])[-1].get('status')=='confirmed'):
+        if continuation is None and not request_cancelled and not run.get('runtime_dependency') and not run.get('clarification_pause') and not unresolved_intent and (reviewable_proposal or partial_prefix or isinstance(run.get('answer'),dict) and run['answer'].get('status')=='answered' and (run.get('answer_reviews') or [{}])[-1].get('status')=='confirmed'):
             def fresh_executor():
                 fresh=semantic_analyst.SemanticWarehouse(path);fresh.define(as_of)
                 if discover_context: install_context(fresh, full_docs)
@@ -4444,6 +4444,8 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                'new_paid_api_calls': run.get('new_paid_api_calls', 0) + sum(r.get('calls') or 0 for r in reviews),
                'answer_reviews': reviews, 'review_stopped': run.get('review_stopped'),
                'model_escalations':run.get('model_escalations',[]),
+               'runtime_dependency':run.get('runtime_dependency'),
+               'runtime_pause':run.get('runtime_pause'),
                'actor_prompt_receipts':run.get('actor_prompt_receipts',[]),
                'prose_repairs':run.get('prose_repairs',[]),
                'compiler_evidence_requests':run.get('compiler_evidence_requests',[]),
@@ -4482,7 +4484,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
             a = shaped(dict(a))
             kept, dropped = verified_sources(a, tools)
             a['sources'] = kept
-            if reviews:
+            if reviews and not run.get('runtime_dependency'):
                 # A rejected edit's compiler failure is not the source review
                 # of the complete earlier answer returned to the user.
                 a['investigation_review'] = returned_answer_review(run)

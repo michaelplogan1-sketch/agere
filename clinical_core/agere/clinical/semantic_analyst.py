@@ -377,6 +377,22 @@ def new_result(model):
             'error': None, 'cost_scope': 'returned_provider_usage'}
 
 
+def native_runtime_failure(error):
+    """Classify native storage failures, never text supplied by a document."""
+    import errno
+    code = getattr(error, 'sqlite_errorcode', None)
+    full = isinstance(error, sqlite3.Error) and isinstance(code, int) and (code & 255) == sqlite3.SQLITE_FULL
+    no_space = isinstance(error, OSError) and error.errno == errno.ENOSPC
+    if not (full or no_space):
+        return None
+    return {'schema': 'native-runtime-failure/1', 'kind': 'storage_unavailable',
+            'error_type': type(error).__name__, 'message': str(error),
+            'sqlite_errorcode': code, 'sqlite_errorname': getattr(error, 'sqlite_errorname', None),
+            'errno': getattr(error, 'errno', None), 'model_retry_can_repair': False,
+            'retry_disposition': 'retain_partial_until_runtime_recovers',
+            'data_absence_established': False}
+
+
 def successful_sql_calls(calls):
     """Successful computation receipts only; failed attempts remain in the investigation history."""
     return [c for c in calls if c.get('sql') and not (isinstance(c.get('result'), dict) and c['result'].get('error'))]
@@ -1043,7 +1059,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                             if indeterminate or not escalate('Answer review repeated with unchanged evidence'):
                                 result['review_stopped'] = 'no_progress'
                                 return result
-                        elif assessment.get('status') == 'repair' and assessment.get('repair_kind')not in ('deterministic_compiler','unresolved_verification','incomplete_work'):
+                        elif assessment.get('status') == 'repair' and assessment.get('repair_kind')not in ('deterministic_compiler','global_source_dependencies','unresolved_verification','incomplete_work'):
                             escalate('Answer failed its existing evidence/coverage checks: '+str(feedback))
                         if not compiler and key not in reviewed:
                             # Passing the compiler and reaching a new source
@@ -1077,6 +1093,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
             predecessor_failed=False
             for index,use in enumerate(uses):
                 failure = False
+                runtime_failure = None
                 guarded=len(uses)>1 and continuation_guard is not None
                 current_guard=None
                 if guarded:
@@ -1098,8 +1115,11 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     calls += 1
                     try:
                         output = execute(use)
-                    except (ValueError, sqlite3.Error) as exc:
-                        output = {'error': str(exc)}
+                    except (ValueError, sqlite3.Error, OSError) as exc:
+                        runtime_failure = native_runtime_failure(exc)
+                        if isinstance(exc, OSError) and runtime_failure is None:
+                            raise  # preserve the existing non-storage failure path
+                        output = {'error': str(exc), **({'runtime_dependency': runtime_failure} if runtime_failure else {})}
                         failure = True
                 failure=failure or (isinstance(output,dict) and bool(output.get('error')))
                 if use.get('name')=='query_sql'and not failure:binding_query_required=False
@@ -1115,6 +1135,30 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                             'sql': (output.get('executed_query') if isinstance(output, dict) else None) or use.get('input', {}).get('sql'), 'result': output,
                                             'actor_callback_id':digest(body),'actor_turn':turns})
                 latest_calls.append(result['tool_calls'][-1])
+                if runtime_failure is not None:
+                    # A different model cannot allocate disk space. Retain the
+                    # failed native action and every prior receipt before any
+                    # sibling action, repair callback or stronger-model turn.
+                    import copy
+                    problem={**runtime_failure,'failed_tool':use.get('name'),
+                             'failed_call_index':len(result['tool_calls'])-1}
+                    result.update(runtime_dependency=problem,review_stopped='native_runtime_unavailable',
+                                  error='NativeRuntimeUnavailable: storage_unavailable')
+                    result['runtime_pause']={'actor_callback_id':digest(body),'actor_turn':turns,
+                        'unexecuted_actions':copy.deepcopy(uses[index+1:]),
+                        'pending_actions_executed':False,'resume_requires_runtime_recovery':True}
+                    retained=last_complete_candidate if isinstance(last_complete_candidate,dict) else result.get('answer')
+                    answer=copy.deepcopy(retained) if isinstance(retained,dict) else {
+                        'status':'partial','answer_type':'composite',
+                        'headline':'Document analysis could not finish because required storage is unavailable. Completed work is retained for recovery.',
+                        'missing':['Restore storage before resuming the unfinished analysis.'],
+                        'data_absence_established':False,'actionable_cohort':False}
+                    answer.update(status='partial',verification='unverified',actionable_cohort=False,
+                        investigation_review={'status':'unavailable','runtime_dependency':problem,
+                            'retry_disposition':problem['retry_disposition'],
+                            'reason':'Required storage is unavailable. Completed native work and all attempts are retained; no further model reasoning or source acceptance is performed.'})
+                    result['answer']=answer
+                    return result
                 if (use.get('name')=='request_clarification'and not failure and
                         isinstance(output,dict)and output.get('clarification_required')and
                         output.get('interaction_mode')=='interactive'):

@@ -59,6 +59,44 @@ def scratch_dir(stack_path):
 _OPERATIONAL_LOCK = threading.Lock()
 
 
+def _clone_sqlite_snapshot(source, target, original):
+    """Clone a locked, checkpointed database without allocating its data twice.
+
+    The caller holds a SQLite read transaction. A live WAL or rollback journal
+    requires SQLite backup instead; copying only its database would lose state.
+    Native clones remain independent on later writes. Unsupported filesystems
+    retain the existing portable backup path.
+    """
+    import sys
+    if sys.platform != 'darwin' or not original.in_transaction:
+        return False
+    journals = [Path(str(source) + suffix) for suffix in ('-wal', '-journal')]
+    def has_journal():
+        for path in journals:
+            try:
+                if path.stat().st_size:
+                    return True
+            except FileNotFoundError:
+                pass
+        return False
+    if has_journal():
+        return False
+    import ctypes
+    try:
+        clone = ctypes.CDLL(None, use_errno=True).clonefile
+        clone.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int]
+        clone.restype = ctypes.c_int
+        if clone(os.fsencode(source), os.fsencode(target), 0) != 0:
+            return False
+    except (AttributeError, OSError):
+        return False
+    # Be conservative if a concurrent writer created a journal while cloning.
+    if has_journal():
+        target.unlink(missing_ok=True)
+        return False
+    return True
+
+
 def operational_path(stack_path, name):
     """Evaluation previews use a consistent private copy, including prior work state.
 
@@ -79,16 +117,26 @@ def operational_path(stack_path, name):
             real_connect = _original_connect.get('connect', sqlite3.connect)
             temporary = target.with_suffix('.copying')
             try:
-                destination = real_connect(temporary)
-                try:
-                    if source.exists():
-                        original = real_connect(source.resolve().as_uri() + '?mode=ro', uri=True)
-                        try:
-                            original.backup(destination)
-                        finally:
-                            original.close()
-                finally:
-                    destination.close()
+                if source.exists():
+                    original = real_connect(source.resolve().as_uri() + '?mode=ro', uri=True)
+                    try:
+                        original.execute('BEGIN')
+                        original.execute('SELECT name FROM sqlite_master').fetchall()
+                        cloned = _clone_sqlite_snapshot(source.resolve(), temporary, original)
+                        if not cloned:
+                            destination = real_connect(temporary)
+                            try:
+                                original.backup(destination)
+                            finally:
+                                destination.close()
+                    finally:
+                        original.close()
+                else:
+                    destination = real_connect(temporary)
+                    try:
+                        pass
+                    finally:
+                        destination.close()
                 temporary.replace(target)
             finally:
                 temporary.unlink(missing_ok=True)
