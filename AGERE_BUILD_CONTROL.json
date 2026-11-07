@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-07T18:16:46.836075+00:00",
+  "updated_at": "2026-11-07T18:37:04.444071+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -661,27 +661,23 @@
     }
   ],
   "checkpoint": {
-    "kind": "Q05_reference_compiler_and_current_partial_source_comparison",
+    "kind": "Q05_native_review_source_transport_qualified_current_partial",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The shared quantity compiler now clarifies a located noun reference using an exact earlier phrase while retaining every actual numerical binding and native value. It no longer forces a made-up number for a missing fill is not treated as one. The actual clinical draft advanced through its source work and now exposes the complete37patient fill/statement comparison and targeted findings in the current local app, with partial/unverified status and unresolved source dependencies preserved.",
-    "measured_failure_reduction": "104focused checks pass; wider155checks have154pass/one existing requested-year-anchor failure reproduced on33b4a0be. Initial24authoredroles passed; actual long-context target misread and2conservative negative-context failures were preserved and corrected through native marking/clarified instructions, with targeted4/4follow-up and0truequantity expansions. Actual bound reference revalidates offline: onlyheadline wording changed, all scalar bindings/37native rows exact,0newproviders. Actual source continuation320.563s/221attempts/$3.076953732knownAPI-equivalent/6unpriced,0newpending; it performed a newly requested37patient nonuse-reason review and a targeted4patient/5record review, not merely grammar repair. Final37rows:14fills+statements/12fillswithoutretrievedstatements/4statementswithoutfills/7neither,100original+7targetedmachinefindings.262native conservationchecks, allpriorrows/nulls/patientIDs exact; current save/inspect3.130s andHTTP1.652s,each0providers/0sourceengines/0populationrecalculation. This increment230attempts/$3.745063532knownAPI-equivalent plus6unknowncosts;ledger59856/44historicalpending/allpriorrows exact. No clinical, full-case or matched-savings claim.",
+    "user_behavior_delta": "The active patient source verifier now follows complete native final-field review dependencies. Unused diagnostic review rows remain intact in original native/document-review receipts and scope manifests instead of being treated as evidence for a different final claim. Three source dependencies that previously overflowed now receive deciding source support without rerunning the clinical question or reading documents again. The unchanged complete37patient answer is saved and current in the app as partial/unverified.",
+    "measured_failure_reduction": "Exact offline reconstruction matches all three previous overflow packet digests. Those requests included unused agere_result_15 reviews with thousands of unresolved machine spans.560conservation checks retain37patients,100original+7targetedfindings,374claims, every required source/context/date/qualifier, query and definition; complete unused review rows and unknowns stay native. The three failed packet sizes fall778427->173132(-77.76%),1138838->184953(-83.76%),523323->120695(-76.94%); all38current packets fit the existing230KB envelope.136focused/source regression checks pass. Targeted normal verifier only on those3:all supported,9.468s,6attempts,$0.01531411knownAPI-equivalent,0errors/0unpriced/0newpending; ledger59862/allpriorattemptrows exact. Current native save/load3.040s and HTTP1.687s,each0providers/0sourceengines/0populationrecalculation;37rows and supplementary receipts exact. Measurements are this localized check, not whole-question savings, generalized latency or clinical/model qualification.",
     "evidence": [
-      "artifacts/agere-Q05-reference-clarification-2026-11-07/actual-reference-revalidation.json",
-      "artifacts/agere-Q05-reference-clarification-2026-11-07/native-conservation-proof.json",
-      "artifacts/agere-Q05-reference-clarification-2026-11-07/app-consumption-proof.json",
-      "artifacts/agere-Q05-reference-clarification-2026-11-07/final-reference-checks.log",
-      "artifacts/agere-Q05-reference-clarification-2026-11-07/final-quantity-source-regressions.log",
-      "artifacts/agere-Q05-reference-clarification-2026-11-07/baseline-year-anchor-failure.log",
-      "artifacts/agere-Q05-reference-clarification-2026-11-07/authored-qualification/receipt.json",
-      "artifacts/agere-Q05-reference-clarification-2026-11-07/actual-continuation/receipt.json",
-      "artifacts/agere-Q05-reference-clarification-2026-11-07/long-target-qualification/receipt.json",
-      "artifacts/agere-Q05-reference-clarification-2026-11-07/negative-context-qualification/receipt.json",
-      "artifacts/agere-Q05-reference-clarification-2026-11-07/actual-reviewed-v3/receipt.json",
-      "artifacts/agere-Q05-reference-clarification-2026-11-07/source-request-size-observation.json"
+      "artifacts/agere-Q05-source-transport-2026-11-07/offline-observation.json",
+      "artifacts/agere-Q05-source-transport-2026-11-07/candidate-offline-observation.json",
+      "artifacts/agere-Q05-source-transport-2026-11-07/field-conservation-proof.json",
+      "artifacts/agere-Q05-source-transport-2026-11-07/targeted-checks-final.log",
+      "artifacts/agere-Q05-source-transport-2026-11-07/source-regressions.log",
+      "artifacts/agere-Q05-source-transport-2026-11-07/targeted-source-check/receipt.json",
+      "artifacts/agere-Q05-source-transport-2026-11-07/native-persistence-proof.json",
+      "artifacts/agere-Q05-source-transport-2026-11-07/app-consumption-proof.json"
     ],
-    "remaining_gap": "Q05 verification packets exceed provider context and some semantic dependencies remain undecided; no repeated vote can establish support. Fix field/source transport while preserving complete evidence. Current25case/tenarea acceptance and matched correctness/cost metrics remain unfinished. The existing requested-year-anchor regression, Q04 taxonomy/clock uncertainties, Q02 unlabeled cash currency, Q01 cheap verifier false acceptance, Q12 estimator fit, Q20/Q21 uncertainty, exact diabetes/BP definitions, Q24visualQA and independentG5/clinical/model/actuarial/customer prerequisites remain. Prior native contexts retain their historical evidence; revalidate under current rules before follow-up rather than force old policy stamps.",
-    "next_action": "G3/WP4: Repair Q05 source-verification transport next, before another provider call. Read artifacts/agere-Q05-reference-clarification-2026-11-07/actual-reviewed-v3/receipt.json, source-request-size-observation.json and native-conservation-proof.json. The noun-reference compiler failure is removed and the complete37patient comparison/100original+7targeted findings is current in app ANS-7823138413b3ebf9ebb22960. Source review attempted38packets:33supported/5unknown,0finaldecidingfaults; coverage undecided. Three Jev and three Perplexity attempts failed context capacity (reported312481/469816/698800 tokens versus262144). Six costs remain unpriced. Calls ledger has no request bodies and request IDs were not mapped to packet IDs; do not invent their contents/sizes. Reconstruct only the affected source/dependency packets OFFLINE from the retained own tool calls, complete document review metadata and source records via existing backstop_agent.support_packets/check_support_packets/localize_support_failure and evidence_projection paths. Locate repeated/shared data and actual per-field/source requirements; retain every patient, finding, qualifier, date and source context. Use native lineage/copy checks and existing hierarchical/typed-source assembly; no truncation, new patient/document/token caps, numeric/model threshold relaxation or quote-only source acceptance. Obtain lossless workflow evidence before targeted provider repair. Do not rerun the unchanged whole clinical question, documents, passing cases or uncertain votes. Keep the earlier requested-year-anchor regression explicit. All25cases/tenareas and independentG5/clinical/model/customer prerequisites remain. App67228/session11792 on8885 servesfa6aaf43; no provider/build/training job running; quiet continuationACTIVE.",
+    "remaining_gap": "Q05 other two prior semantic dependencies and coverage remain undecided; its partial/unverified status is unchanged and no whole-case source support is inherited. Current25case/tenarea release acceptance and matched correctness/cost metrics remain unfinished. Next unfinished original caseQ06 has never completed on current compound-scope-capable product. The existing requested-year-anchor regression, Q04 taxonomy/clock uncertainties, Q02 unlabeled cash currency, Q01 cheap verifier false acceptance, Q12 estimator fit, Q20/Q21 uncertainty, exact diabetes/BP definitions, Q24visualQA and independentG5/clinical/model/actuarial/customer prerequisites remain. Revalidate historical native contexts under current policies before follow-up.",
+    "next_action": "G3/WP4: Continue the next unfinished fixed original question, Q06 COPD/2029 respiratory encounters, through the existing conversation.handle_compose handler. Prior Q06 stack request was cancelled at incapable compound-scope planning; its scratch contains no recoverable native answer. Read artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/receipt.json and atomic-routing-proof.json plus the Q06 entry in current-assessment-2026-11-07/assessment.json; use only the original question/source configuration, never the frontier answer or scoring keys. The compound-scope fix already exists; one current original handler request is warranted, not a paired/whole campaign or repeat of a passing/uncertain result. Inspect owned receipts first; freeze product source and preserve every attempt/partial once running. Check actual cohort/date/source roles, intention vs reported taking vs dispensing vs nonuse, full source/qualifier context, native output and saved follow-up; missing source evidence remains unknown. No new model/clinical acceptance, source-specific handlers or output/population caps. Q05 transport is qualified/current: three exact prior overflow dependencies now supported in9.468s/6attempts/$0.01531411API-equivalent,0errors/0unpriced/0newpending. Its other prior source/coverage uncertainty remains, so do not replay unchanged Q05. Keep the preexisting requested-year-anchor regression explicit. All25cases/tenareas and independent model/clinical/customer dependencies remain. App67896/session50678 serves441e0041 on8885, current Q05contextANS-1c9a41d1a05f2895fc85b02d; no provider/build/training job running; quiet continuationACTIVE.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
@@ -7403,20 +7399,36 @@
         "artifacts/agere-Q05-reference-clarification-2026-11-07/source-request-size-observation.json"
       ],
       "scope_impact": "Existing fixedQ05/G3 shared language/source consumer only; all25/tenareas preserved, no optional model catalog/training or clinical promotion."
+    },
+    {
+      "at": "2026-11-07T18:37:04.444071+00:00",
+      "gate": "G3",
+      "decision": "Use the existing native dependency closure for exact registered review rows as well as SQL. Direct documents, detached/changed review rows and unknown lineage remain conservative; only unconsumed native review rows leave the final-field verifier context. Every original unknown stays native and review scope remains. Activate after full own-workflow conservation,136focused checks and deciding support of only the three formerly overflowing packets. Do not repeat unchanged uncertain Q05 checks. Advance to the next unfinished fixed questionQ06; no charter expansion or change to acceptance/model thresholds.",
+      "evidence": [
+        "artifacts/agere-Q05-source-transport-2026-11-07/offline-observation.json",
+        "artifacts/agere-Q05-source-transport-2026-11-07/candidate-offline-observation.json",
+        "artifacts/agere-Q05-source-transport-2026-11-07/field-conservation-proof.json",
+        "artifacts/agere-Q05-source-transport-2026-11-07/targeted-checks-final.log",
+        "artifacts/agere-Q05-source-transport-2026-11-07/source-regressions.log",
+        "artifacts/agere-Q05-source-transport-2026-11-07/targeted-source-check/receipt.json",
+        "artifacts/agere-Q05-source-transport-2026-11-07/native-persistence-proof.json",
+        "artifacts/agere-Q05-source-transport-2026-11-07/app-consumption-proof.json"
+      ],
+      "scope_impact": "All25fixedcases/tenareas retained; no source data, clinical meaning, hidden truth or unperformed acceptance substituted."
     }
   ],
   "unsealed_work": {
-    "status": "Q05_complete_native_comparison_current_partial_source_transport_next",
-    "product_commit": "fa6aaf43f5fb62720a4c6af260482dff7d2e472c",
+    "status": "Q05_native_source_transport_qualified_current_partial_Q06_next",
+    "product_commit": "441e004175b941e1d691ed53b405d71f0c21f0ec",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
-    "receipt": "artifacts/agere-Q05-reference-clarification-2026-11-07/native-conservation-proof.json",
+    "receipt": "artifacts/agere-Q05-source-transport-2026-11-07/app-consumption-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
     "source_frozen": false,
     "runtime_activation": true,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
-    "affected_tests_passed": 104,
-    "provider_calls_this_increment": 230,
+    "affected_tests_passed": 136,
+    "provider_calls_this_increment": 6,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
       "status": "ordinary_check_returned_unsealed_paused_for_claude_review",
@@ -7436,15 +7448,15 @@
       "new_provider_attempts": 21,
       "offline_proof_provider_calls": 0
     },
-    "new_provider_attempts": 230,
-    "known_api_equivalent_usd": 3.745063532,
+    "new_provider_attempts": 6,
+    "known_api_equivalent_usd": 0.01531411,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 59856,
+    "all_attempt_rows_retained": 59862,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 230,
+    "latest_increment_provider_attempts": 6,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -7518,7 +7530,7 @@
     "clock_role_commit": "3f895bc5",
     "full_Q04_acceptance": false,
     "known_partial_api_equivalent_usd": 1.44628118,
-    "unpriced_attempts": 9,
+    "unpriced_attempts": 0,
     "pending_rows_total": 44,
     "population_routing_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/routing-replay-proof.json",
     "native_clinical_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/native-composition-proof.json",
@@ -8232,7 +8244,40 @@
     "broader_checks_run": 155,
     "broader_checks_passed": 154,
     "reference_clarification_default_active": true,
-    "full_Q05_acceptance": false
+    "full_Q05_acceptance": false,
+    "owned_Q05_source_transport": {
+      "case": "Q05-targeted-source-transport",
+      "pid": 67836,
+      "session": 57209,
+      "status": "returned_three_supported_no_provider_errors",
+      "source_frozen": false,
+      "receipt": "artifacts/agere-Q05-source-transport-2026-11-07/targeted-source-check/receipt.json",
+      "started_at": "2026-11-07T18:31:38.814654+00:00"
+    },
+    "Q05_source_transport_proof": "artifacts/agere-Q05-source-transport-2026-11-07/field-conservation-proof.json",
+    "candidate_product_commit": "441e0041",
+    "source_transport_checks_passed": 136,
+    "previous_Q05_reference_compiler_increment": {
+      "attempts": 230,
+      "known_api_equivalent_usd": 3.745063532,
+      "unpriced_attempts": 6,
+      "receipt": "artifacts/agere-Q05-reference-clarification-2026-11-07/native-conservation-proof.json"
+    },
+    "source_transport_default_active": true,
+    "Q05_source_transport_completion": {
+      "product_commit": "441e004175b941e1d691ed53b405d71f0c21f0ec",
+      "status": "qualified_three_prior_overflows_supported_partial_preserved",
+      "source_receipt": "artifacts/agere-Q05-source-transport-2026-11-07/targeted-source-check/receipt.json",
+      "conservation_proof": "artifacts/agere-Q05-source-transport-2026-11-07/field-conservation-proof.json",
+      "app_proof": "artifacts/agere-Q05-source-transport-2026-11-07/app-consumption-proof.json",
+      "context_id": "ANS-1c9a41d1a05f2895fc85b02d",
+      "new_provider_attempts": 6,
+      "known_api_equivalent_usd": 0.01531411,
+      "unpriced_attempts": 0,
+      "whole_case_acceptance": false,
+      "clinical_qualification": false,
+      "known_good_recovery_commit": "e9711dab838f72cc604fa2b68cc6f934b31321ef"
+    }
   },
   "current_visual_request": {
     "status": "completed",
@@ -8266,7 +8311,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3/WP4: Repair Q05 source-verification transport next, before another provider call. Read artifacts/agere-Q05-reference-clarification-2026-11-07/actual-reviewed-v3/receipt.json, source-request-size-observation.json and native-conservation-proof.json. The noun-reference compiler failure is removed and the complete37patient comparison/100original+7targeted findings is current in app ANS-7823138413b3ebf9ebb22960. Source review attempted38packets:33supported/5unknown,0finaldecidingfaults; coverage undecided. Three Jev and three Perplexity attempts failed context capacity (reported312481/469816/698800 tokens versus262144). Six costs remain unpriced. Calls ledger has no request bodies and request IDs were not mapped to packet IDs; do not invent their contents/sizes. Reconstruct only the affected source/dependency packets OFFLINE from the retained own tool calls, complete document review metadata and source records via existing backstop_agent.support_packets/check_support_packets/localize_support_failure and evidence_projection paths. Locate repeated/shared data and actual per-field/source requirements; retain every patient, finding, qualifier, date and source context. Use native lineage/copy checks and existing hierarchical/typed-source assembly; no truncation, new patient/document/token caps, numeric/model threshold relaxation or quote-only source acceptance. Obtain lossless workflow evidence before targeted provider repair. Do not rerun the unchanged whole clinical question, documents, passing cases or uncertain votes. Keep the earlier requested-year-anchor regression explicit. All25cases/tenareas and independentG5/clinical/model/customer prerequisites remain. App67228/session11792 on8885 servesfa6aaf43; no provider/build/training job running; quiet continuationACTIVE.",
+  "next_action": "G3/WP4: Continue the next unfinished fixed original question, Q06 COPD/2029 respiratory encounters, through the existing conversation.handle_compose handler. Prior Q06 stack request was cancelled at incapable compound-scope planning; its scratch contains no recoverable native answer. Read artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/receipt.json and atomic-routing-proof.json plus the Q06 entry in current-assessment-2026-11-07/assessment.json; use only the original question/source configuration, never the frontier answer or scoring keys. The compound-scope fix already exists; one current original handler request is warranted, not a paired/whole campaign or repeat of a passing/uncertain result. Inspect owned receipts first; freeze product source and preserve every attempt/partial once running. Check actual cohort/date/source roles, intention vs reported taking vs dispensing vs nonuse, full source/qualifier context, native output and saved follow-up; missing source evidence remains unknown. No new model/clinical acceptance, source-specific handlers or output/population caps. Q05 transport is qualified/current: three exact prior overflow dependencies now supported in9.468s/6attempts/$0.01531411API-equivalent,0errors/0unpriced/0newpending. Its other prior source/coverage uncertainty remains, so do not replay unchanged Q05. Keep the preexisting requested-year-anchor regression explicit. All25cases/tenareas and independent model/clinical/customer dependencies remain. App67896/session50678 serves441e0041 on8885, current Q05contextANS-1c9a41d1a05f2895fc85b02d; no provider/build/training job running; quiet continuationACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -8355,8 +8400,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 67228,
-  "owned_server_session": 11792,
+  "owned_server_pid": 67896,
+  "owned_server_session": 50678,
   "last_run_observation": {
     "at": "2026-11-07T18:16:46.836075+00:00",
     "status": "Q05_current_native_partial_app_verified_source_context_transport_next",
@@ -8387,7 +8432,7 @@
     },
     "separate_pilot": "Q03, not pooled/repeated",
     "authored_generic_core": "Q25, scoped8engineering checks passed",
-    "next_case": "Q05offline source/field transport repair; no unchanged whole-case provider run",
+    "next_case": "Q06current original handler question; prior cancelled scope-order failure never completed",
     "clinical_qualification": false,
     "completion_percent": null,
     "connected_workflows": {
@@ -8410,7 +8455,7 @@
     "Q13_status": "Current complete account output/save/followup and native browser view qualified;gzip reduced63.64%withallrows;not a newly frozen whole-release pass",
     "Q02_status": "Original question plus localized source-definition/producer-draft completion verified; final source/coverage and current app save/reopen exact.18rows/16payergroups/2exceptions; no newly frozen ordinary-release pass inferred.",
     "Q04_status": "Actual source precision access and23row native/current app fixed; coverage undecided/publicpartial retained. No repeat until new evidence, no clinicaltaxonomy or physicalreceipt qualification.",
-    "Q05_status": "Compilerblockremoved;37patients/107machinefindings and completecomparison saved/currentHTTPexact.38packetsattempted33supported/5unknown;6context-rejected attempts unpriced;source/coverage unaccepted."
+    "Q05_status": "Current37patientanswer/107machinefindings exact. Dependency transport qualified:three prior overflows now supported,6attempts/9.468s/$0.01531411,0errors; other prior source/coverage uncertainty remains. No full original-case acceptance inherited."
   },
   "research_lane": {
     "thread_id": "01a1b0c3-39c3-7993-95f5-8404d6fec61e",
