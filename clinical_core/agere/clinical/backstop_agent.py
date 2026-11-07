@@ -110,13 +110,15 @@ TOOLS = [
      'source_scope=all explicitly requests exhaustive source coverage when needed. '
      'Use field_patient_queries to apply conditional fields to native patient subsets while retaining the full output population. '
      'Field IDs keep their exact question/entity/relation/subject contract throughout this request. Reuse that contract for expanded patient or source scope; a changed question, entity, relation or alias set requires a new versioned field ID. '
-     'Returns coverage and a SQL result_view containing patient_id, review_status, documents_reviewed and review_json. '
+     'Alternatively supply only assertion_result_view: review every complete proposed assertion tuple in a qualified native qualifier-account audit against its exact complete original received record. Original annotations stay unchanged; new support/unknown/rejected machine observations return separately in a composable result_view. This does not establish clinical truth, source recall or resolve opposing records. '
+     'The question-based mode returns coverage and a SQL result_view containing patient_id, review_status, documents_reviewed and review_json. '
      'Each review_json field is a list of {value,record_id,date,quote}; empty means no documented finding, not absent disease. '
      'For a relation about a specific entity use {question,entity:{kind,id,aliases},relation,subject} instead of a question string. '
      'A medication_class entity ID must be a registered medication class/group; keep dose, titration and other tasks in the question/relation. '
      'Bound findings also retain entity,relation,subject,polarity,temporality and a source-bound assertion compatible with documentary state. '
      'Query the result_view to compose the final patient table; use json_extract/json_each for findings. All findings retain exact source quotes. source_clinicians_json retains literal signed correspondence roles. Unchanged fields reuse exact-source observations in explicit continuation; ask only missing/changed fields. Use record_ids for a source-specific repair. Use candidate_result_view to recheck every retained observation in a native review_json result against explicit entity/relation questions and complete original source contexts. This reviews candidate spans only and cannot establish whole-document absence or recall; retain the original result separately for audit.',
      'input_schema': {'type':'object','properties':{'patient_ids':{'type':'array','items':{'type':'string'}},
+          'assertion_result_view':{'type':'string','description':'Use alone. Complete native qualifier-account result_view (or qualified one-to-one native SQL projection). Code binds every original account, patient, source and proposed tuple; no source/population overrides.'},
           'patient_query_sql':{'type':'string','description':'Preferred for a population: a read-only SELECT returning every patient_id, e.g. SELECT patient_id FROM a governed phenotype or cohort view. Avoid transcribing IDs.'},
           'record_ids':{'type':'array','items':{'type':'string'},'description':'Optional exact received source IDs for targeted repair. Reviews only these records, never a complete-patient absence claim.'},
           'candidate_result_view':{'type':'string','description':'Existing complete result_view with patient_id and review_json. Recheck all observations for the requested bound fields against their complete source documents; no whole-document absence or recall claim. Incompatible with record/date filters.'},
@@ -124,7 +126,10 @@ TOOLS = [
           'source_scope':{'enum':['focused','all'],'default':'focused'},
           'exhaustive_reason':{'type':'string','description':'Required for source_scope=all: identify the unresolved requirement and why focused retrieval or exact-source expansion cannot settle it.'},
           'field_patient_queries':{'type':'object','additionalProperties':{'type':'string'},'description':'Requested field to read-only patient query over native results. A conditional narrative field is reviewed only for those patients; every patient remains in the final population.'}},
-          'required':['questions'],'oneOf':[{'required':['patient_ids']},{'required':['patient_query_sql']}],'additionalProperties':False}},
+          'oneOf':[{'required':['assertion_result_view'],'maxProperties':1},
+                   {'required':['questions','patient_ids'],'not':{'anyOf':[{'required':['assertion_result_view']},{'required':['patient_query_sql']}]}},
+                   {'required':['questions','patient_query_sql'],'not':{'anyOf':[{'required':['assertion_result_view']},{'required':['patient_ids']}]}}],
+          'additionalProperties':False}},
     {'name': 'list_documents', 'description': "One patient's clinical notes, HIE documents and scanned documents, newest first: record_id, "
      "source, document type, date, title, length. Optional inclusive date range (YYYY-MM-DD). Follow next_offset for further pages.",
      'input_schema': {'type': 'object', 'properties': {'patient_id': {'type': 'string'}, 'date_from': {'type': 'string'},
@@ -572,6 +577,11 @@ class Tools:
                                       'columns_digest':digest(out.get('columns'))}
             return out
         if name == 'review_documents':
+            if 'assertion_result_view' in args:
+                if set(args)!={'assertion_result_view'}:
+                    raise ValueError('Assertion review binds its complete native source/population; supply only assertion_result_view')
+                from .assertion_source_review import review as review_assertions
+                return review_assertions(self,args['assertion_result_view'])
             from .document_review import review, validate_questions
             from .drug_classes import patient_scope_issues
             queries = {'population': args['patient_query_sql']} if args.get('patient_query_sql') else {}
@@ -1359,6 +1369,37 @@ def native_field_proof(packet,claim,state,*,audit_context=None):
                     'authority':'native_received_audit_copy','clinical_qualification':False,
                     'scope':'Literal received metadata/quote fidelity only. Entity, relation, value, subject, polarity, clinical time and analytical interpretation still require complete-source judgments.'}
     return native_profile_field_proof(packet,claim,state)
+
+
+def source_tuple_field_observation(packet,claim,state,*,audit_context=None):
+    """Consume an already observed joint source judgment without a second vote.
+
+    Exact supported tuple fields inherit model authority, never native fidelity.
+    Rejected/unknown tuples cannot locate which constituent field is wrong.
+    """
+    from ...contracts import digest
+    from . import assertion_source_review as R
+    proof=audit_context if audit_context is not None else audit_field_context(packet,state)
+    path=claim.get('path')or[];field=claim.get('field')
+    if(not proof or len(path)!=3 or path[0]!='answer_rows'or type(path[1])is not int
+       or path[2]!=field or field not in proof.get('tuple_columns',[])or field not in R.FIELDS):return None
+    try:
+        row=state['answer_rows'][path[1]];entry=proof.get('tuple_observations',{}).get(row['audit_account_id'])or{}
+        item=entry['item'];observed=entry['observation'];judgment=observed['judgment']
+        source_key=observed['source_key']
+        contexts=[c for c in state['source_contexts']if digest([c.get('patient_id'),c.get('record_id'),c.get('record_hash')])==source_key]
+        if(len(contexts)!=1 or item['patient_id']!=row['patient_id']or item['audit_account_id']!=row['audit_account_id']
+           or item['source_key']!=source_key or digest(item)!=observed['proposal_digest']
+           or digest(contexts[0])!=observed['source_context_digest']
+           or observed.get('task_identity')!=R.task_identity()or observed.get('as_of')!=packet['date']
+           or observed.get('source_digest')!=proof['source_digest']
+           or observed.get('authority')!='machine_source_observation'or observed.get('clinical_qualification')is not False
+           or not R._deciding(judgment)or judgment['label']!='supported'
+           or digest(_claim_value(state,path))!=digest(item['proposal'][field])):return None
+        return {'state':'supported','model_judgment':judgment,
+            'source_tuple_support':{'field':field,'path':path,'audit_account_id':row['audit_account_id'],
+                'value_digest':digest(item['proposal'][field]),'observation':observed},'clinical_qualification':False}
+    except (ValueError,KeyError,TypeError,IndexError):return None
 
 
 def mask_prose_parameters(text,context,proofs):
@@ -2359,9 +2400,12 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                 for rid in records:
                     try:tools._source_record(pid,rid)
                     except (ValueError,KeyError,sqlite3.Error):pass  # the exact gap is retained below
+        from .assertion_source_review import qualified_observations
+        assertion_observations=qualified_observations(tools,answer,calls,native_audit)
         packets=support_packets(request,answer,calls,getattr(tools,'document_reviews',[]),as_of,
                                 source_documents=getattr(tools,'read',{}),prior_review_reference=prior_reference,
-                                native_audit=native_audit,source_records=getattr(tools,'source_records',{}))
+                                native_audit=native_audit,source_records=getattr(tools,'source_records',{}),
+                                assertion_observations=assertion_observations)
         program_repairs=native_program_repairs(packets)
         if program_repairs:
             return {**assessment,'status':'repair','repair_kind':'native_program_verification',
@@ -2728,7 +2772,7 @@ def global_dependency_request(answer,calls):
     return missing if native_column_projections(calls,roots,dependencies)else []
 
 
-def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None,native_audit=None,source_records=None):
+def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None,native_audit=None,source_records=None,assertion_observations=None):
     """Final clinical claims, deduplicated and grouped by patient dependency.
 
     Raw operational receipts remain intact. SQL elapsed time is excluded only
@@ -3031,11 +3075,17 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             if len(alternate.encode())<len(text.encode()):text=alternate
         return text,text==readable
     literal_fields=audit_literal_columns(answer,calls,native_audit)
-    bound_audit_ids=set()
+    bound_audit_ids=set();audit_originals={};tuple_columns=[]
     if literal_fields:
         parent=structural_prose_context(answer,calls,native_audit)['parent_result_view']
         origin=next(c['result']for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')==parent)
         bound_audit_ids={r['audit_account_id']for r in origin['rows']if r.get('source_binding_established')is True}
+        audit_originals={r['audit_account_id']:r for r in origin['rows']}
+        from . import assertion_source_review as R
+        contracts=(native_audit.get('native_projection')or{}).get('fields')
+        tuple_columns=[field for field in R.FIELDS if field in native_audit['columns']and(
+            contracts is None or (contracts.get(field)or{}).get('kind')=='native_copy'
+            and contracts[field].get('source_columns')==[field])]
     result=[]
     for packet in packets:
         claims=[]
@@ -3072,6 +3122,16 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
                     'protected_inputs_digest':digest({k:v for k,v in packet.items()if k not in
                         {'answer','answer_rows','all_final_rows','claim_manifest','scope'}}),
                     'scope':'Received literal copy fidelity only; all semantic axes and analytical effects remain source judgments.'}
+                tuples={}
+                for row in packet['answer_rows']:
+                    ident=row.get('audit_account_id');observed=(assertion_observations or{}).get(ident)
+                    if not observed:continue
+                    original=audit_originals[ident]
+                    item={'audit_account_id':ident,'patient_id':original['patient_id'],'assertion_id':original['assertion_id'],
+                        'source_key':digest([original['patient_id'],original['source_record_id'],original['source']['record_hash']]),
+                        'proposal':{field:original.get(field)for field in R.FIELDS},'source_evidence':original.get('evidence')}
+                    tuples[ident]={'item':item,'observation':observed}
+                if tuples:proof.update(tuple_columns=tuple_columns,tuple_observations=tuples)
                 result[-1]['native_audit_fields']={**proof,'binding_digest':digest(proof)}
         calculated=[{'result_view':p['result_view'],'complete_receipt_digest':p['complete_receipt_digest'],
             'input_fidelity':p['input_fidelity']}for p in packet.get('native_column_projections',[])if p.get('schema')=='native-calculation-input/1']
@@ -3856,6 +3916,8 @@ def joint_dependency_wait(packets,results):
                     proof=native_field_proof(packet,claim,state)
                     if not proof or proof!=observed['native_provenance']:return []
                     continue
+                if observed.get('source_tuple_support'):
+                    if source_tuple_field_observation(packet,claim,state)!=observed:return []
                 if (judgment.get('label')!='supported'or not judgment.get('decided_by')
                     or type(p)not in(int,float)or type(threshold)not in(int,float)
                     or not math.isfinite(p)or not math.isfinite(threshold)or not 0<threshold<=p<=1):return []
@@ -3945,7 +4007,12 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None):
             supported.append({'claim_id':claim['id'],'field':claim['field'],'path':claim['path'],
                 'value_digest':digest(_claim_value(state,claim['path'])),
                 'verification_observation':{'state':'supported','native_provenance':proof}})
-        else:semantic_claims.append(claim)
+        else:
+            observed=source_tuple_field_observation(packet,claim,state,audit_context=audit_context)
+            if observed:
+                supported.append({'claim_id':claim['id'],'field':claim['field'],'path':claim['path'],
+                    'value_digest':digest(_claim_value(state,claim['path'])),'verification_observation':observed})
+            else:semantic_claims.append(claim)
     for start in range(0,len(semantic_claims),64):
         chunk=semantic_claims[start:start+64]
         named={c['id']:{'type':'choice','instructions':{'claim':c,
@@ -3990,6 +4057,7 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None):
         'packet_digest':digest(packet['text']),'manifest_digest':digest(claims),
         'expected_count':len(claims),'supported_count':len(supported),
         'native_supported_count':native_count,
+        'source_tuple_supported_count':sum('source_tuple_support'in r['verification_observation']for r in supported),
         'unresolved_count':sum(not f.get('decided_by')for f in feedback),
         'fault_count':sum(bool(f.get('decided_by'))for f in feedback),
         'all_fields_supported':bool(claims)and len(supported)==len(claims),
@@ -4037,6 +4105,9 @@ def complete_claim_composition(packet,review):
                 proof=native_field_proof(packet,claim,state,audit_context=audit_context)
                 if not proof or proof!=observed['native_provenance']:return None
                 continue
+            if observed.get('source_tuple_support'):
+                bound=source_tuple_field_observation(packet,claim,state,audit_context=audit_context)
+                if bound!=observed:return None
             p,threshold=judgment.get('probability'),judgment.get('threshold')
             if (observed.get('state')!='supported'or judgment.get('label')!='supported'or not judgment.get('decided_by')or
                 type(p)not in(int,float)or type(threshold)not in(int,float)or
