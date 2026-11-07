@@ -79,6 +79,23 @@ class Fixture(unittest.TestCase):
 
 
 class Definitions(Fixture):
+    def test_received_record_heads_keep_their_subjects_and_reject_survival_filters(self):
+        for question in [
+            'Identify received 2029 clinical accounts whose interpretation changes when source qualifiers are respected.',
+            'Audit recorded 2028 laboratory statements and their source dates.',
+            'Show received correspondence whose source is unresolved.',
+            'List the received source documents for comparison.']:
+            with self.subTest(question=question):
+                self.assertTrue(DC.population(question)['record_subject_scope'])
+                self.assertFalse(DC.population(question)['living_only'])
+                self.assertEqual(self.run_sql(question,'SELECT count(DISTINCT patient_id) FROM utilization_event')['value'],3)
+                with DC.scope(question):
+                    self.assertFalse(DC.verify(question,{},sqls=['SELECT * FROM living_patient'])['ok'])
+                self.assertTrue(DC.population(question+' For living patients only.')['living_only'])
+        for question in ['List patients with received 2029 documents.',
+                         'Identify patients whose received reports show diabetes.']:
+            self.assertTrue(DC.population(question)['living_only'])
+
     def test_dated_event_selected_cohorts_keep_historical_subjects(self):
         questions = [
             'For patients receiving a recorded cardiology referral in 2029, show the received PCP assignment, referral destination, document authors and evidence of attendance separately.',

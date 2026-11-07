@@ -20,6 +20,24 @@ class NativeAuditCoverage(unittest.TestCase):
 
     def proof(self):return A.qualifier_coverage_review(self.answer,self.tools.native_calls,self.tools,AS_OF)
 
+    def test_received_account_scope_survives_the_actual_graph_and_native_coverage(self):
+        import sqlite3
+        from clinical_core.agere.clinical import decision_context as D
+        with sqlite3.connect(self.fixture.path/'semantic.sqlite3')as db:
+            db.execute("INSERT INTO death(patient_id,death_date) VALUES('p04','2029-01-01')")
+            db.execute("UPDATE patient SET data_segment='duplicate_chart' WHERE patient_id='p05'")
+        question='Identify received 2029 clinical accounts whose interpretation changes when qualifiers are respected.'
+        with D.scope(question,AS_OF):
+            tools=self.fixture.tools()
+            result=self.fixture.execute(tools,output='qualifier_accounts')
+            answer={'answer_type':'table','table_from_tool':result['result_view']}
+            B.materialize_table(answer,tools.native_calls)
+            proof=A.qualifier_coverage_review(answer,tools.native_calls,tools,AS_OF)
+        self.assertEqual(proof['population']['input_patients'],12)
+        self.assertTrue({'p04','p05'}<={r['patient_id']for r in result['rows']})
+        report=result['engine_result']['results'][-1]['result']
+        self.assertEqual({p['patient_id']for p in report['review_members']},set(self.fixture.ids))
+
     def test_full_cached_native_output_gets_coverage_only_proof_and_exact_reuse(self):
         original=copy.deepcopy(self.answer)
         with patch.object(A,'documentary_rows',wraps=A.documentary_rows)as originals:

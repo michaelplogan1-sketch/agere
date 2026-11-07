@@ -29,7 +29,7 @@ import re
 import threading
 from pathlib import Path
 
-VERSION = 'decision-context/5'  # 5: dated membership is not limited to an event-noun catalog
+VERSION = 'decision-context/6'  # 6: received record subjects are not a current patient list
 # 3 (2026-10-25, Mike): event counts include everyone (the living rule is for counts / lists of patients); observation stays are hospital
 # stays and admissions; pharmacy spend = net of reversals over all pharmacy claim transactions; medical spend = paid on counted claims
 DECIDED_BY = 'Mike (clinical owner), 2026-10-23 / 2026-10-25'
@@ -42,6 +42,12 @@ LIVING_ASK = re.compile(r'\b(?:living|alive)\b', re.I)
 ALL_RECEIVED_ROWS = re.compile(
     r'\b(?:all|every)\s+(?:the\s+)?received\s+(?:[a-z_]+[ -]+){0,5}'
     r'(?:rows?|records?|events?|claims?|stays?|appointments?|encounters?|observations?)\b', re.I)
+RECEIVED_RECORD_HEAD = re.compile(
+    r'^\s*(?:(?:identify|show|list|find|review|audit|compare|count)\s+)?'
+    r'(?:(?:all|every|the)\s+)?(?:received|recorded)\s+'
+    r'(?:[a-z0-9_-]+\s+){0,5}?'
+    r'(?:rows?|records?|accounts?|assertions?|annotations?|statements?|documents?|reports?|'
+    r'notes?|correspondence|observations?|events?|claims?)\b', re.I)
 PATIENT_WORDS = re.compile(r'\b(?:patients?|people|persons?|individuals?|who|whom|whose|adults?|children|women|men|females?|males?|seniors?|elderly)\b', re.I)
 # questions about money or membership months are not patient counts: the living rule does not apply to them (they say "members",
 # "claims", "paid", "PMPM", never a count of patients)
@@ -187,6 +193,9 @@ def population(question):
     if ALL_RECEIVED_ROWS.search(q) and not LIVING_ASK.search(q):
         return {'living_only': False, 'all_received_rows': True,
                 'reason': 'explicit all-received-row scope includes every received patient ID in those rows'}
+    if RECEIVED_RECORD_HEAD.search(q) and not LIVING_ASK.search(q):
+        return {'living_only': False, 'record_subject_scope': True,
+                'reason': 'received records are the requested objects; present survival does not remove their subjects'}
     if event_selected_cohort(q) and not LIVING_ASK.search(q):
         return {'living_only': False, 'event_selected_cohort': True,
                 'reason': 'dated event-selected cohort retains every subject; present survival does not remove historical records'}
@@ -278,6 +287,8 @@ def prompt_block():
         'appointments, no-shows, discharges) include every patient who had them: no living filter on events. '
         'An explicit all-received-row scope also includes all patient IDs within those rows, including distinct-patient '
         'counts inside grouped event summaries. Do not add living_patient or death exclusions there unless the question asks for living patients.\n'
+        'A request to identify/show/audit received records, statements, accounts or documents also retains their subjects; '
+        'a relative clause such as "whose interpretation changes" refers to those records, not a living-patient population.\n'
         'A For/Among cohort selected by a dated recorded event (such as patients receiving a referral in a named year) also retains '
         'every subject of that historical event. Current survival/enrollment does not establish eligibility at the event. '
         'Keep subsequent deaths, ended relationships and unknown dates visible; apply living-only scope only when requested.\n'
@@ -630,7 +641,7 @@ def verify(question, answer, state=None, db=None, sqls=()):
     restrict, when a patient list of a living-only answer holds a deceased patient, or when an event is read from an EHR-only table."""
     state = state or _SCOPE.get() or Scope(question)
     reasons = [*state.problems, *event_source_findings(question, sqls)]
-    if state.population.get('all_received_rows') or state.population.get('event_selected_cohort'):
+    if any(state.population.get(k)for k in ('all_received_rows','event_selected_cohort','record_subject_scope')):
         # Native bindings describe the returned fields. Earlier exploratory
         # queries remain in the audit but must not poison a repaired answer.
         bound = []
