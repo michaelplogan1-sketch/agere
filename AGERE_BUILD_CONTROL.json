@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-07T09:56:21.873809+00:00",
+  "updated_at": "2026-11-07T11:06:41.607727+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -662,8 +662,8 @@
       "artifacts/agere-current-ordinary-2026-11-07/Q20/provider-packet-check-v2/receipt.json",
       "artifacts/agere-current-ordinary-2026-11-07/Q20/app-proof.json"
     ],
-    "remaining_gap": "Original fixed-case whole-question completion and named remaining Q12/Q13 defects; Q20 coverage/current original question remains unaccepted. Q21 uncertainty, Q23definitions,Q24visual QA and independentG5/clinical/model/customer dependencies remain.",
-    "next_action": "G3: Continue the fixed curriculum with retained Q13 account conservation, then Q12 signed adjudication runout. Inspect Q13 stack original result/query and independent-account-proof.json:13243accounts/1258patients/291346cells already match declared source selection; do not rerun that passing table. Remaining actual failure is undelivered full balance identity/refund-credit terms and wrong residual-sign prose, not wrong copied cells. Reuse existing financial_accounts/registered conservation and native scalar/state/composition; preserve integer cents, patient/account attribution, source lifecycle clocks and explicitly declared year-end versus snapshot policy. Keep native arithmetic/transport separate from financial interpretation and ordinary-question acceptance. Q12 similarly retains signed-event versus replacement-state development and incomplete-month assumptions. No paid wholeQ20/Q21 rerun or unchanged verification votes. Q20 shared packet/scope repairs are verified:9399808->137835bytes(-98.5336%),exact1062accountability/1141caregapinputs,82checks; actual repaired support3validatedtypedcalls/$0.004424626API-equivalent/0errors/0unpriced/0newpending,supported. Aggregate capture20namedscopes/36SQLchecks/1.947s/0models/0engine reruns,71context/reportchecks. Original Q20 remainspartial/unverified; old planner authority is correctly rejected, retained inspection only. App52772/session16768 serves64caa338 with these native fixes, /ask+action-center HTTP200/0startupcalls;no provider/build/training job running. Preserve all25/tenareas, current assessment,Q21uncertainty,Q23missing exact-parent definitions,Q24visual QA unavailable, independentG5/clinical/model/customer prerequisites. Quiet continuation ACTIVE.",
+    "remaining_gap": "Current original Q13 semantic/source/clock/currency and final save/reopen acceptance remains unestablished. Retained plan omits patient_credit in its candidate balance identity; do not promote performance proof as correctness. Q12 signed-history/runout and current25case/tenarea release assessment follow; named qualification/customer dependencies persist.",
+    "next_action": "G3: Shared native Q13 execution and discovery corrections are verified ondf14c90f. The retained model-selected query now returns13243accounts/304589cells in2.613s (native1.955s),0newmodels,exact original account membership; reused pure source stages materialize once (raw stream searches21->3). Authored null/type/order/correlation/volatility/source-scope checks158pass. Typed financial discovery now receives the same full registered identities/output contract as the investigator;64checks and actual default-source metadata parity pass. Perform one connected ordinary original Q13 confirmation with these changed shared behaviors before Q12 signed-runout; no evaluator plan/cohort/answer and no rerun of passing old native tables or financial source engines. Preserve original interrupted plan/draft/all8validated attempts/$1.7610784API-equivalent and the preceding sandbox1unpriced attempt. Prior plan omitted credit in its candidate identity; native performance success does not establish semantic or whole-question acceptance. Source day versus UTC-time conflicts remain explicit. All25/tenareas,Q21uncertainty,Q23missingdefs,Q24visual QA,G5/clinical/model/customer prerequisites remain. App54570/session98185 servesdf14c90f,HTTP200,0startupcalls;no provider/build/training job running;quiet continuation ACTIVE.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
@@ -723,12 +723,12 @@
       "scope": "Preserve the healthcare-wide product across clinical/chronic disease/medication, population and individual, utilization/outcomes, finance/provider/contracts, discovery/explanation, deliverables, learning/reuse and shared industry-portable core. Keep all ten canonical acceptance areas and25fixedcases; no new finish-line expansion."
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-07T09:56:21.873809+00:00",
-    "workflow_change": "Requested brief now presents saved compound findings before complete records, exposes generic patient clinical/care-team context without HF therapy fields, and links exact retained source references. All source/answer/population/unknown fields remain unchanged; no new analytical or clinical claims.",
+    "at": "2026-11-07T11:06:41.607727+00:00",
+    "workflow_change": "Account reconciliation exposes complete registered native identities and source-linked cash comparisons. Financial record heads retain subjects. Reused pure source stages compute once and correlated consumers use indexed rows; typed planning receives the full financial contract.",
     "unsealed_work": {
-      "status": "verified_full_native_scope_pending_ordinary_composition",
-      "product_commit": "2f00f7e1745028f921aa97eee117781fb9a19011",
-      "product_fix_commit": "2f00f7e1745028f921aa97eee117781fb9a19011",
+      "status": "shared_financial_execution_and_discovery_verified_ordinary_confirmation_pending",
+      "product_commit": "df14c90f",
+      "product_fix_commit": "df14c90f",
       "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json",
       "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
       "source_frozen": false,
@@ -759,7 +759,7 @@
       "new_provider_attempts": 0,
       "known_api_equivalent_usd": 0.508862532,
       "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-      "all_attempt_rows_retained": 57243,
+      "all_attempt_rows_retained": 59321,
       "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
       "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
       "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
@@ -1760,7 +1760,80 @@
         "retention_rule": "No unchanged replay/vote campaign; require new evidence for unresolved verification."
       },
       "q21_active_unverified_context": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/unverified-inspection-reference.json",
-      "q21_app_restored_proof": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/app-restored-proof.json"
+      "q21_app_restored_proof": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/app-restored-proof.json",
+      "q13_native_financial_candidate": {
+        "product_commit": "0afffee8",
+        "discovery_commit": "a6fe89cc",
+        "receipt": "artifacts/agere-Q13-native-conservation-2026-11-07/cached-consumer-v3/receipt.json",
+        "prior_preserved_attempts": [
+          "artifacts/agere-Q13-native-conservation-2026-11-07/cached-consumer/receipt.json",
+          "artifacts/agere-Q13-native-conservation-2026-11-07/cached-consumer-v2/receipt.json"
+        ],
+        "affected_checks_passed": 123,
+        "full_Q13_acceptance": false,
+        "ordinary_fresh_question": false,
+        "status": "passed_cached_native_consumer",
+        "source_frozen": false,
+        "source_unchanged": true,
+        "code_unchanged": true,
+        "all_attempt_rows_exact": true,
+        "new_provider_calls": 0,
+        "seconds": 93.4648737499956,
+        "input_patients": 4115,
+        "original_accounts": 13243,
+        "balanced_accounts": 9858,
+        "unresolved_snapshot_accounts": 3385,
+        "unassigned_sources": 12336
+      },
+      "q13_ordinary_network_confirmation": {
+        "kind": "ordinary_Q13_confirmation",
+        "case": "Q13",
+        "pid": 54062,
+        "session": 4393,
+        "receipt": "artifacts/agere-current-ordinary-2026-11-07/Q13/network-enabled-stack/receipt.json",
+        "status": "interrupted_native_query_recovered",
+        "source_frozen": false,
+        "provider_work": false,
+        "preceding_failed_receipt": "artifacts/agere-current-ordinary-2026-11-07/Q13/stack/receipt.json",
+        "preceding_unpriced_attempts": 1,
+        "execution_disposition": "artifacts/agere-Q13-native-conservation-2026-11-07/ordinary-execution-disposition.json",
+        "full_Q13_acceptance": false,
+        "new_provider_attempts": 8,
+        "known_api_equivalent_usd": 1.7610784,
+        "unpriced_attempts": 0,
+        "new_pending_attempts": 0
+      },
+      "q13_native_execution_and_financial_discovery": {
+        "status": "shared_financial_execution_and_discovery_verified_ordinary_confirmation_pending",
+        "product_commit": "df14c90f",
+        "scope_commit": "0afffee8",
+        "native_optimization_commit": "77d07a3f",
+        "financial_discovery_commit": "a6fe89cc",
+        "native_execution_receipt": "artifacts/agere-Q13-native-conservation-2026-11-07/native-execution-repair/receipt.json",
+        "retained_consumer_receipt": "artifacts/agere-Q13-native-conservation-2026-11-07/cached-consumer-v3/receipt.json",
+        "clock_disposition": "artifacts/agere-Q13-native-conservation-2026-11-07/cached-consumer-v3/clock-disposition.json",
+        "typed_context_proof": "artifacts/agere-Q13-native-conservation-2026-11-07/typed-context-proof.json",
+        "typed_context_checks": "artifacts/agere-Q13-native-conservation-2026-11-07/typed-financial-contract-checks.log",
+        "native_optimization_checks": "artifacts/agere-Q13-native-conservation-2026-11-07/materialization-final-regressions.log",
+        "native_optimization_edge_checks": "artifacts/agere-Q13-native-conservation-2026-11-07/materialization-checks.log",
+        "ordinary_interrupted_receipt": "artifacts/agere-current-ordinary-2026-11-07/Q13/network-enabled-stack/receipt.json",
+        "sandbox_interrupted_receipt": "artifacts/agere-current-ordinary-2026-11-07/Q13/stack/receipt.json",
+        "app_proof": "artifacts/agere-Q13-native-conservation-2026-11-07/app-proof.json",
+        "native_optimization_checks_passed": 158,
+        "typed_context_checks_passed": 64,
+        "native_seconds": 2.612639916827902,
+        "native_rows": 13243,
+        "native_cells": 304589,
+        "new_native_provider_calls": 0,
+        "ordinary_new_provider_attempts": 9,
+        "ordinary_known_api_equivalent_usd": 1.7610784,
+        "ordinary_unpriced_attempts": 1,
+        "new_pending_attempts": 0,
+        "original_plan_math_fully_qualified": false,
+        "full_Q13_acceptance": false,
+        "clinical_qualification": false,
+        "known_recovery_point": "0afffee8"
+      }
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 47,
@@ -1838,18 +1911,11 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Native report3.899s/0providers;4115patientnames/4115patients/6326rows exact;21report/transport checks pass;HTML/JSON/CSV only. App51654/session80409 /ask and action-center HTTP200,0startup calls. Current all25/tenarea assessment reconciles scoped evidence with original results; no current whole-product answer-rate/cost or superiority claim.59286ledgerrows/44historicalpending retained. Browser file policy blocks visual preview, not native data checks.",
+    "measured_failure_removed": "Reproduced deceased-account omission fixed; actual retained query with13correlated subqueries raw-searches21->3 and completes13243accounts/304589cells in2.613s without new model calls. Missing typed financial identities/output contract reproduced and corrected.",
     "ordinary_confirmation": {
-      "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
-      "context_id": "ANS-072b2e40b263f01efdeec306",
-      "report_id": "DLV-991526416074",
-      "wall_seconds": 1273.2093687079614,
-      "reference_wall_seconds": 1226.386,
-      "new_attempts": 817,
-      "known_api_equivalent_usd": 2.6848395800000007,
-      "unpriced_attempts": 4,
-      "all_new_attempts_explicitly_owned": true,
-      "native_diagnostic": "Explicit29successfulactions15.545s/27comparisons pass; no automatic candidate selected."
+      "receipt": "artifacts/agere-current-ordinary-2026-11-07/Q13/network-enabled-stack/receipt.json",
+      "status": "interrupted_native_query_recovered",
+      "source_frozen": false
     },
     "ordinary_numeric_confirmation": {
       "receipt": "artifacts/agere-numeric-native-confirmation-2026-11-03/delivery-receipt.json",
@@ -1946,10 +2012,7 @@
       ],
       "estimate_scope": "Local synthetic engineering only; provisional, no guaranteed deadline; independent clinical/model/customer dependencies explicit."
     },
-    "running_observation": {
-      "status": "terminal_interrupted_preserved",
-      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/receipt.json"
-    },
+    "running_observation": "Q13 v3 cached-native consumer on0afffee8. v1 historical view-number harness mismatch preserved; v2 exposed shared living-scope error for a financial-record head with patient attribution. Authored actual financial-tool check reproduces deceased-account omission; shared correction passes123affectedchecks. All4115 current financial cache keys exist; no financial math/cache producer change. Preserve original13243account/1258patient table; no original SQL/source/provider rerun.",
     "prefix_preflight": {
       "native_actions": 28,
       "callback_ids_in_current_receipt": 3,
@@ -2546,6 +2609,37 @@
       "proof": "artifacts/agere-retained-workflow-2026-11-06/attempt-2/json-path-engineering-proof.json",
       "provider_attempts": 0,
       "source_frozen": false
+    },
+    "native_query_execution_repair": {
+      "status": "shared_financial_execution_and_discovery_verified_ordinary_confirmation_pending",
+      "product_commit": "df14c90f",
+      "scope_commit": "0afffee8",
+      "native_optimization_commit": "77d07a3f",
+      "financial_discovery_commit": "a6fe89cc",
+      "native_execution_receipt": "artifacts/agere-Q13-native-conservation-2026-11-07/native-execution-repair/receipt.json",
+      "retained_consumer_receipt": "artifacts/agere-Q13-native-conservation-2026-11-07/cached-consumer-v3/receipt.json",
+      "clock_disposition": "artifacts/agere-Q13-native-conservation-2026-11-07/cached-consumer-v3/clock-disposition.json",
+      "typed_context_proof": "artifacts/agere-Q13-native-conservation-2026-11-07/typed-context-proof.json",
+      "typed_context_checks": "artifacts/agere-Q13-native-conservation-2026-11-07/typed-financial-contract-checks.log",
+      "native_optimization_checks": "artifacts/agere-Q13-native-conservation-2026-11-07/materialization-final-regressions.log",
+      "native_optimization_edge_checks": "artifacts/agere-Q13-native-conservation-2026-11-07/materialization-checks.log",
+      "ordinary_interrupted_receipt": "artifacts/agere-current-ordinary-2026-11-07/Q13/network-enabled-stack/receipt.json",
+      "sandbox_interrupted_receipt": "artifacts/agere-current-ordinary-2026-11-07/Q13/stack/receipt.json",
+      "app_proof": "artifacts/agere-Q13-native-conservation-2026-11-07/app-proof.json",
+      "native_optimization_checks_passed": 158,
+      "typed_context_checks_passed": 64,
+      "native_seconds": 2.612639916827902,
+      "native_rows": 13243,
+      "native_cells": 304589,
+      "new_native_provider_calls": 0,
+      "ordinary_new_provider_attempts": 9,
+      "ordinary_known_api_equivalent_usd": 1.7610784,
+      "ordinary_unpriced_attempts": 1,
+      "new_pending_attempts": 0,
+      "original_plan_math_fully_qualified": false,
+      "full_Q13_acceptance": false,
+      "clinical_qualification": false,
+      "known_recovery_point": "0afffee8"
     }
   },
   "decisions": [
@@ -6824,12 +6918,30 @@
         "artifacts/agere-current-ordinary-2026-11-07/Q20/provider-packet-check-v2/receipt.json"
       ],
       "scope_impact": "No original-question/clinical/model/default-answer promotion or scope narrowing; all25/tenareas retained."
+    },
+    {
+      "at": "2026-11-07T10:42:50.382300+00:00",
+      "gate": "G3",
+      "decision": "After two retained consumer attempts, distinguish harness numbering failure from a shared population defect. Correct only the reproduced financial-record scope; reuse all current per-patient receipts and preserve original SQL/results. No financial engine rewrite or new cohort campaign.",
+      "evidence": "artifacts/agere-Q13-native-conservation-2026-11-07/cached-consumer-v3/receipt.json",
+      "scope_impact": "None; all25cases andtenareas retained. Native consumer is evaluator-selected and not ordinary acceptance."
+    },
+    {
+      "at": "2026-11-07T11:06:41.607727+00:00",
+      "gate": "G3",
+      "decision": "Stop the actually slow ordinaryQ13 native query after plan inspection proves13correlated subqueries repeatedly searching raw financial streams. Retain every returned model plan/draft and allattempts. Fix the shared native optimizer, demonstrate the same retained query, and align missing typed financial contracts before another paid question.",
+      "evidence": [
+        "artifacts/agere-Q13-native-conservation-2026-11-07/ordinary-native-query-plan.json",
+        "artifacts/agere-Q13-native-conservation-2026-11-07/native-execution-repair/receipt.json",
+        "artifacts/agere-Q13-native-conservation-2026-11-07/typed-context-proof.json"
+      ],
+      "scope_impact": "No finish-line expansion; Q13 remains unaccepted and Q12 remains next fixed case. No new training, model catalog, disease handler or source engine rerun."
     }
   ],
   "unsealed_work": {
-    "status": "scoped_shared_repairs_verified_current_ordinary_Q20_confirmation_pending",
-    "product_commit": "f25f7ca4",
-    "product_fix_commit": "f25f7ca4",
+    "status": "shared_financial_execution_and_discovery_verified_ordinary_confirmation_pending",
+    "product_commit": "df14c90f",
+    "product_fix_commit": "df14c90f",
     "receipt": "artifacts/agere-retained-workflow-2026-11-06/source-review-2/engineering-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
     "source_frozen": false,
@@ -6860,7 +6972,7 @@
     "new_provider_attempts": 6,
     "known_api_equivalent_usd": 0.508862532,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 57243,
+    "all_attempt_rows_retained": 59321,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
@@ -7284,7 +7396,82 @@
     "current_Q20_native_scope_context": "ANS-a20520f58ff5730008e9344e",
     "current_Q20_native_scope_count": 20,
     "current_Q20_native_scope_authority": "Retained inspection only; old planner guard remains intact.",
-    "candidate_app_product_commit": "64caa3389b463a5a3b58820566d69eba5f25e1c8"
+    "candidate_app_product_commit": "64caa3389b463a5a3b58820566d69eba5f25e1c8",
+    "Q13_native_candidate_checks": "artifacts/agere-Q13-native-conservation-2026-11-07/checks-final.log",
+    "Q13_financial_math_source_unchanged": true,
+    "q13_native_financial_candidate": {
+      "product_commit": "0afffee8",
+      "discovery_commit": "a6fe89cc",
+      "receipt": "artifacts/agere-Q13-native-conservation-2026-11-07/cached-consumer-v3/receipt.json",
+      "prior_preserved_attempts": [
+        "artifacts/agere-Q13-native-conservation-2026-11-07/cached-consumer/receipt.json",
+        "artifacts/agere-Q13-native-conservation-2026-11-07/cached-consumer-v2/receipt.json"
+      ],
+      "affected_checks_passed": 123,
+      "full_Q13_acceptance": false,
+      "ordinary_fresh_question": false,
+      "status": "passed_cached_native_consumer",
+      "source_frozen": false,
+      "source_unchanged": true,
+      "code_unchanged": true,
+      "all_attempt_rows_exact": true,
+      "new_provider_calls": 0,
+      "seconds": 93.4648737499956,
+      "input_patients": 4115,
+      "original_accounts": 13243,
+      "balanced_accounts": 9858,
+      "unresolved_snapshot_accounts": 3385,
+      "unassigned_sources": 12336
+    },
+    "q13_ordinary_network_confirmation": {
+      "kind": "ordinary_Q13_confirmation",
+      "case": "Q13",
+      "pid": 54062,
+      "session": 4393,
+      "receipt": "artifacts/agere-current-ordinary-2026-11-07/Q13/network-enabled-stack/receipt.json",
+      "status": "interrupted_native_query_recovered",
+      "source_frozen": false,
+      "provider_work": false,
+      "preceding_failed_receipt": "artifacts/agere-current-ordinary-2026-11-07/Q13/stack/receipt.json",
+      "preceding_unpriced_attempts": 1,
+      "execution_disposition": "artifacts/agere-Q13-native-conservation-2026-11-07/ordinary-execution-disposition.json",
+      "full_Q13_acceptance": false,
+      "new_provider_attempts": 8,
+      "known_api_equivalent_usd": 1.7610784,
+      "unpriced_attempts": 0,
+      "new_pending_attempts": 0
+    },
+    "q13_native_execution_and_financial_discovery": {
+      "status": "shared_financial_execution_and_discovery_verified_ordinary_confirmation_pending",
+      "product_commit": "df14c90f",
+      "scope_commit": "0afffee8",
+      "native_optimization_commit": "77d07a3f",
+      "financial_discovery_commit": "a6fe89cc",
+      "native_execution_receipt": "artifacts/agere-Q13-native-conservation-2026-11-07/native-execution-repair/receipt.json",
+      "retained_consumer_receipt": "artifacts/agere-Q13-native-conservation-2026-11-07/cached-consumer-v3/receipt.json",
+      "clock_disposition": "artifacts/agere-Q13-native-conservation-2026-11-07/cached-consumer-v3/clock-disposition.json",
+      "typed_context_proof": "artifacts/agere-Q13-native-conservation-2026-11-07/typed-context-proof.json",
+      "typed_context_checks": "artifacts/agere-Q13-native-conservation-2026-11-07/typed-financial-contract-checks.log",
+      "native_optimization_checks": "artifacts/agere-Q13-native-conservation-2026-11-07/materialization-final-regressions.log",
+      "native_optimization_edge_checks": "artifacts/agere-Q13-native-conservation-2026-11-07/materialization-checks.log",
+      "ordinary_interrupted_receipt": "artifacts/agere-current-ordinary-2026-11-07/Q13/network-enabled-stack/receipt.json",
+      "sandbox_interrupted_receipt": "artifacts/agere-current-ordinary-2026-11-07/Q13/stack/receipt.json",
+      "app_proof": "artifacts/agere-Q13-native-conservation-2026-11-07/app-proof.json",
+      "native_optimization_checks_passed": 158,
+      "typed_context_checks_passed": 64,
+      "native_seconds": 2.612639916827902,
+      "native_rows": 13243,
+      "native_cells": 304589,
+      "new_native_provider_calls": 0,
+      "ordinary_new_provider_attempts": 9,
+      "ordinary_known_api_equivalent_usd": 1.7610784,
+      "ordinary_unpriced_attempts": 1,
+      "new_pending_attempts": 0,
+      "original_plan_math_fully_qualified": false,
+      "full_Q13_acceptance": false,
+      "clinical_qualification": false,
+      "known_recovery_point": "0afffee8"
+    }
   },
   "current_visual_request": {
     "status": "completed",
@@ -7318,7 +7505,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Continue the fixed curriculum with retained Q13 account conservation, then Q12 signed adjudication runout. Inspect Q13 stack original result/query and independent-account-proof.json:13243accounts/1258patients/291346cells already match declared source selection; do not rerun that passing table. Remaining actual failure is undelivered full balance identity/refund-credit terms and wrong residual-sign prose, not wrong copied cells. Reuse existing financial_accounts/registered conservation and native scalar/state/composition; preserve integer cents, patient/account attribution, source lifecycle clocks and explicitly declared year-end versus snapshot policy. Keep native arithmetic/transport separate from financial interpretation and ordinary-question acceptance. Q12 similarly retains signed-event versus replacement-state development and incomplete-month assumptions. No paid wholeQ20/Q21 rerun or unchanged verification votes. Q20 shared packet/scope repairs are verified:9399808->137835bytes(-98.5336%),exact1062accountability/1141caregapinputs,82checks; actual repaired support3validatedtypedcalls/$0.004424626API-equivalent/0errors/0unpriced/0newpending,supported. Aggregate capture20namedscopes/36SQLchecks/1.947s/0models/0engine reruns,71context/reportchecks. Original Q20 remainspartial/unverified; old planner authority is correctly rejected, retained inspection only. App52772/session16768 serves64caa338 with these native fixes, /ask+action-center HTTP200/0startupcalls;no provider/build/training job running. Preserve all25/tenareas, current assessment,Q21uncertainty,Q23missing exact-parent definitions,Q24visual QA unavailable, independentG5/clinical/model/customer prerequisites. Quiet continuation ACTIVE.",
+  "next_action": "G3: Shared native Q13 execution and discovery corrections are verified ondf14c90f. The retained model-selected query now returns13243accounts/304589cells in2.613s (native1.955s),0newmodels,exact original account membership; reused pure source stages materialize once (raw stream searches21->3). Authored null/type/order/correlation/volatility/source-scope checks158pass. Typed financial discovery now receives the same full registered identities/output contract as the investigator;64checks and actual default-source metadata parity pass. Perform one connected ordinary original Q13 confirmation with these changed shared behaviors before Q12 signed-runout; no evaluator plan/cohort/answer and no rerun of passing old native tables or financial source engines. Preserve original interrupted plan/draft/all8validated attempts/$1.7610784API-equivalent and the preceding sandbox1unpriced attempt. Prior plan omitted credit in its candidate identity; native performance success does not establish semantic or whole-question acceptance. Source day versus UTC-time conflicts remain explicit. All25/tenareas,Q21uncertainty,Q23missingdefs,Q24visual QA,G5/clinical/model/customer prerequisites remain. App54570/session98185 servesdf14c90f,HTTP200,0startupcalls;no provider/build/training job running;quiet continuation ACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -7407,8 +7594,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 52772,
-  "owned_server_session": 16768,
+  "owned_server_pid": 54570,
+  "owned_server_session": 98185,
   "last_run_observation": {
     "at": "2026-11-07T05:03:36.931053+00:00",
     "status": "three_localized_repairs_source_supported_native_state_composed_unsealed",
