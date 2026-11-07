@@ -1,16 +1,46 @@
-# Current Agere checkpoint — ACTIVE 2026-11-07T08:28:12.078201+00:00
+# Current Agere checkpoint — ACTIVE 2026-11-07T09:19:55.215908+00:00
 
-G3: Monitor only retained-review completion PID50662/session3856 (artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json), frozen product2f00f7e1. No duplicate or product/source edits. Restore exact native/source/query receipts and actual last complete model draft; revalidate the recorded scalar-address edit as native binding replay, not a fresh model response. No new frontier/source-reading calls. Current pending-work reviewer now receives bound source-completion contract;85checks pass(1optional skip). Actual targeted probe2calls/$0.000555664/0newpending returns no confident pending target, with unavailable_factp=.4916/decided_by=null; uncertainty remains, not a positive qualification. V5 terminal1156.352s/21attempts/$12.423698886/0unpriced/0newpending, allsource/code/priorrows unchanged; full nativecalls preserved. Assess actual final coverage/global meaning/save/reopen when terminal, reconcile attempts and restore app. Q23exact-parent definitions,Q24capability,currentall25/tenareas and independentG5/clinical/model/customer dependencies remain. Quiet continuation ACTIVE.
+G3: Execute one current ordinary Q20 confirmation in artifacts/agere-current-ordinary-2026-11-07/Q20/stack using original question, normal conversation.handle_compose, no authored plan/prior answer. Current shared population/evidence/composition/report fixes and all4115-patient retained agenda justify this changed-path check; original failed pair remains separate. Freeze product/source while running; preserve all attempts/partials and stop on actual subscription limit. No unchanged Q21 campaign. Assess terminal full-population/source/quantity/unknown behavior against retained independent received references before deciding any further run. Current25case/tenarea assessment records historical failures and scoped repairs without restamping them; Q23 exact-parent diabetes/BP definitions remain absent and Q24 native fidelity passes but browser visual QA is unavailable. IndependentG5/clinical/model/customer dependencies remain. Owned app51654/session80409 healthy;quiet continuation ACTIVE.
 
-Gate / workflow change: G3 / Pending-work review consumes the already verified source-interpreted contract, distinguishing completed-but-uncertain source judgments and unbound sources from unread bound accounts or genuinely unperformed work. It retains typed confidence thresholds and cannot certify whole-answer/clinical acceptance.
+Gate / workflow change: G3 / Requested brief now presents saved compound findings before complete records, exposes generic patient clinical/care-team context without HF therapy fields, and links exact retained source references. All source/answer/population/unknown fields remain unchanged; no new analytical or clinical claims.
 
-Evidence: artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-checks.log, artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-probe/receipt.json, artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-final-consumer-v5/receipt.json, artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json.
+Evidence: artifacts/agere-q24-review-brief-2026-11-07-v3/receipt.json, artifacts/agere-q24-review-brief-2026-11-07-v3/fidelity-proof.json, artifacts/agere-q24-review-brief-2026-11-07-v3/report-checks.log, artifacts/agere-q24-review-brief-2026-11-07-v3/app-proof.json, artifacts/agere-q23-specification-2026-11-07/definition-dependency.json, artifacts/agere-ordinary-comparison-2026-11-05/current-assessment-2026-11-07/assessment.json, artifacts/agere-current-ordinary-2026-11-07/Q20/dry/receipt.json.
 
-Measured: 85affected checks pass(1optional skip), including source-contract/row/snapshot rejection and preservation of genuinely pending work. Actual source-context probe uses36592accounts/4115inputpatients with0newsourcevotes:2typedproviderattempts/$0.000555664/0newpending; no confident pending target, verdict remains undecided. All prior/source/code preserved. Retained final review in progress; no full question accepted.
+Measured: Native report3.899s/0providers;4115patientnames/4115patients/6326rows exact;21report/transport checks pass;HTML/JSON/CSV only. App51654/session80409 /ask and action-center HTTP200,0startup calls. Current all25/tenarea assessment reconciles scoped evidence with original results; no current whole-product answer-rate/cost or superiority claim.59286ledgerrows/44historicalpending retained. Browser file policy blocks visual preview, not native data checks.
 
-Remaining gap: Original Q21 final meaning/coverage/save remains unaccepted; completed source unknowns must stay explicit. Q23 definitions,Q24 requested capability,current25case/10area assessment and independentG5/clinical/model/customer prerequisites remain.
+Remaining gap: Full original ordinary question acceptance after shared fixes remains unestablished across the fixed curriculum. Q20 automatic handoff is next; Q21 verification is undecided without located defect; Q23 exact-parent definitions are missing; Q24 visual/readability QA remains unassessed. IndependentG5/clinical/model/customer prerequisites remain separate.
 
-App stopped; one owned retained final-review completion running. Last sealed receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json.
+Last sealed receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — ACTIVE 2026-11-07T09:10:05.270973+00:00
+
+G3: Finish Q24 shared HTML report presentation on the canonical saved Q20 ANS-219c79c0b76ec350d9988813. Native render/reopen passed in3.976s/0providers/all4115patients; inspection found clinical-context/care-team fields hidden behind a therapy-only tab and no inline source links. Correct the existing generic report path, preserve exact saved answer/source/scope and partial status, verify fidelity and requested HTML/no-PDF behavior. Browser file preview is unavailable under URL policy; do not bypass it or claim visual QA. Q23 exact-parent diabetes/BP definitions are absent; preserve explicit input dependency, not zero nominations or substituted HF/CKD. Then update currentall25/tenarea assessment and independentG5/clinical/model/customer prerequisites. Do not repeat unchanged Q21. App50859/session80179;no provider/build/training job running;quiet continuation ACTIVE.
+
+Gate / workflow change: G3 / Requested HTML rendering is demonstrated, but generic clinical fields are not yet exposed by the therapy-only report navigation.
+
+Evidence: artifacts/agere-q23-specification-2026-11-07/definition-dependency.json, artifacts/agere-q24-review-brief-2026-11-07-v2/receipt.json.
+
+Measured: 4115 patients,6326 complete result rows;3.976s/0providers;HTML bytes reopened exactly. Visual browser preview unavailable.
+
+Remaining gap: Q24 presentation/fidelity and all25/tenarea assessment; Q21 uncertain review and Q23 missing exact-parent definitions remain explicit. Last sealed receipt unchanged.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — ACTIVE 2026-11-07T08:45:27.200129+00:00
+
+G3: Q21 source/native/persistence path demonstrated; machine coverage/support remain uncertain with no located defect, allsource dependencies checked, no unread bound accounts. Retain ANS-891713b4620a3ce9578f2b2d as current unverified local inspection, not accepted original-question/clinical/model result. Do not repeat Q21 or its unchanged model votes without new evidence. Next inspect saved Q09 program comparison and actual installed diabetes/BP definition versions, then perform Q23 revised-spec/source-adapter/stale-reuse/rollback on applicable exact-parent definitions. Missing clinical definitions remain explicit input/qualification dependencies; do not invent authority or silently substitute HF/CKD. Then one requested Q24 HTML review brief capability on saved Q20, current25case/tenarea assessment and independentG5/clinical/model/customer prerequisites. App /ask HTTP200,PID50859/session80179,0startupcalls. No provider/build/training job running. Quiet continuation ACTIVE.
+
+Gate / workflow change: G3 / Completed source observations and their unknowns now travel into pending-work review. Exact saved native/source/query receipts and the recorded scalar edit can finish current review/save/reopen without another frontier/source-reading campaign; unlocated semantic uncertainty stays explicit and is not rewritten into acceptance.
+
+Evidence: artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-checks.log, artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/pending-source-context-probe/receipt.json, artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/receipt.json, artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/retained-review-completion/native-binding-replay.json, artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/unverified-inspection-reference.json, artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/app-restored-proof.json.
+
+Measured: Retained final check:36592rows/1661matchingpatients/4115inputsubjects saved/reopened exactly;314.950s,0newfrontiercalls,0newsourcevotes,6typedreviewattempts/$0.00425219API-equivalent/0unpriced/0newpending. Coverage undecided(answers_partiallyp=.5635,decided_by=null); source support unknown, all dependencies checked, no identified field fault, retain_partial_until_new_evidence. Actual pending-state probe2attempts/$0.000555664,no confident pending target/undecided verdict.85affectedtests pass(1optional skip). Current unverified local context available; app startup0provider calls;59286ledgerrows/44historicalpending;allsource/code/priorrows retained.
+
+Remaining gap: Q21 whole-question/machine/clinical acceptance remains unestablished; do not relabel uncertainty as a code defect or a pass. Q23 exact-parent spec/adapter/revision/rollback,Q24requested HTML capability,current25case/10area assessment and independentG5/clinical/model/customer prerequisites remain.
+
+Owned app50859/session80179 serves8885. No provider/build/training job running. Last sealed receipt unchanged: artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json.
 
 ## Superseded checkpoint
 
