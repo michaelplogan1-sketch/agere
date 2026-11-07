@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-07T12:29:04.442900+00:00",
+  "updated_at": "2026-11-07T13:58:45.338211+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -570,6 +570,10 @@
         {
           "path": "artifacts/agere-Q13-native-conservation-2026-11-07/connected-workflow-assessment.json",
           "sha256": "c783b439db423fe8ff9397c59ee1bb04dd6dc36fe0d433c4ce88aaba903411b5"
+        },
+        {
+          "path": "artifacts/agere-Q12-signed-development-2026-11-07/recovery-preflight-v2/receipt.json",
+          "sha256": "0b2b1f43f52abc5455b094a2598d3eca0330acf350edd3a2ae1c110d0c4feb99"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -577,8 +581,8 @@
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Q12 signed financial event history/runout and current all25/tenarea acceptance; Q21 uncertainty, Q23 absent exact definitions, Q24 visual QA and independent G5/clinical/model/customer dependencies retained.",
-      "engineering_current_status": "Original financial question now reaches selected source/account detail rather than an aggregate-only answer; every patient/account row, native identity, lifecycle/cash scope and source unknown survives saving/reopening/follow-up. Native code closes row/scope/source values; System One reviews a compact complete field/role/unknown inventory. Full current release acceptance remains separate.",
-      "next_action": "G3: Continue Q12 signed financial event history/runout through existing native source/quantity contracts. Read artifacts/agere-ordinary-comparison-2026-11-05/Q12/independent-financial-proof.json first: received payer_adjudication.paid_cents are signed events; old stack current-version filter drops superseded development, frontier LAG incorrectly treats signed events as cumulative states (729tied sequence rows). Full received signed history2656446686cents vs current-version2626432990 across24differentmonths. Preserve each clock, reversals/recoupments, incomplete development and optional completion assumptions; no invented ultimate/actuarial qualification. Locate shared source-basis/quantity guard/installed definition before any model or full campaign. No unchanged Q13 rerun: connected normal question now returns13243accounts/1258patients and exact save/follow-up; localized native coverage33KB confirmedp=.8861 in4.620s,2validatedcalls/$0.001557736API-equivalent,priorfailedHTTP413unpricedpreserved. No finance source recomputation. Current all25/tenarea assessment retained, Q21uncertainty/Q23exactdefinitions/Q24visualQA/G5 and clinical/model/customer dependencies remain. App56534/session65244 serves c556cd3c,HTTP200/0startupcalls; no provider/build/training job running; quiet continuation ACTIVE.",
+      "engineering_current_status": "Current-state balances cannot silently stand in for full signed claim-payment development; the original analyst receives the declared signed-event/clock contract and a native source-role failure reaches localized repair before another model review. Original Q12 continuation is running and remains unaccepted.",
+      "next_action": "G3: OwnedQ12 continuation returned corrected full signed-history observed totals and confirmed final source review; post-return current-save check failed because PlanFence treats hash-bound native result views as missing physical tables. Preserve result.json.gz and failed_preserved receipt:198.872s/19validatedcalls/$3.309016426API-equivalent/0unpriced,source/code/priorrows exact. Fix only saved native-result premise closure through existing PlanFence/sql_query binding receipts; validate exact query/source hashes, current physical producer schemas and missing/changed native dependencies. No prefix-based ignore, guard relaxation, provider work or whole Q12 rerun. Qualify authored adversarial closures and reopen the actual retained answer; independently assess its24monthly observed amounts and declared completion assumptions. Then baseline generic analyze validate_window bug, currentall25/tenareas and existing qualification/deployment dependencies. App stopped; no provider/build/training job running; quiet continuationACTIVE.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -660,26 +664,23 @@
     "kind": "connected_source_handoff_and_explicit_receipt_clock_candidate",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Original financial question now reaches selected source/account detail rather than an aggregate-only answer; every patient/account row, native identity, lifecycle/cash scope and source unknown survives saving/reopening/follow-up. Native code closes row/scope/source values; System One reviews a compact complete field/role/unknown inventory.",
-    "measured_failure_reduction": "13243accounts/1258patients;28413outside-scope accounts excluded;0missing/0extra originalaccountkeys;19716zero-residual native identities;3385clock-unknown snapshots and10599unassigned source observations retained. Ordinary typed output108.118s then localized changed coverage repair47.216s total(native22.674s,model4.620s),33,423bytes,answers_fullyp=.8861. Separate stages, no speed/cost savings claim. This increment3providerattempts:2validated/$0.001557736knownAPI-equivalent plus1HTTP413unpriced;allpriorrows/source/code exact,ledger59327/44historicalpending/0newpending. Full live save/reopen/follow-up exact;0startupcalls.99consumerchecks and99outputchecks pass in separate overlapping suites;financialcoverage100run/99pass/1optional skip;2unrelated wider-suite failures reproduce on preceding shape code.",
+    "user_behavior_delta": "Signed payment development retains full received reversals/superseded event history; actual native result chains now reopen through exact query/source bindings. Both repaired financial answers are available in the current local app with unchanged values and qualification status.",
+    "measured_failure_reduction": "Q12 normal owned continuation198.872s/19validatedattempts/$3.309016426API-equivalent/0unpriced. Independent source-row proof24months/144observedcells and72declared conditional-estimate arithmetic checks,0faults; observed totals1320612638cents(2028),1335834048cents(2029). Current native proof1.020s/0providers; live Q12/Q13 full current save/reopen and Q13followup exact in15.023s/0providers/0source-engine replays.55affected tests pass, including previously failing generic analyze validation. Original Q12 publicpartial/unverified retained; model/actuarial qualification not inferred. All59346attemptrows/source/code retained;44historicalpending/0newpending. AppHTTP200/0startupcalls.",
     "evidence": [
-      "artifacts/agere-Q13-native-conservation-2026-11-07/connected-workflow-assessment.json",
-      "artifacts/agere-Q13-native-conservation-2026-11-07/full-account-consumer/receipt.json",
-      "artifacts/agere-current-ordinary-2026-11-07/Q13/attribution-qualified-stack/receipt.json",
-      "artifacts/agere-Q13-native-conservation-2026-11-07/financial-coverage-repair/receipt.json",
-      "artifacts/agere-Q13-native-conservation-2026-11-07/completed-local-answer.json",
-      "artifacts/agere-Q13-native-conservation-2026-11-07/financial-completion-app-proof.json",
-      "artifacts/agere-Q13-native-conservation-2026-11-07/attribution-output-proof.json",
-      "artifacts/agere-Q13-native-conservation-2026-11-07/financial-coverage-checks.log"
+      "artifacts/agere-Q12-signed-development-2026-11-07/owned-source-repair/receipt.json",
+      "artifacts/agere-Q12-signed-development-2026-11-07/native-persistence-repair-v2/receipt.json",
+      "artifacts/agere-Q12-signed-development-2026-11-07/live-native-revalidation/receipt.json",
+      "artifacts/agere-Q12-signed-development-2026-11-07/restored-app-proof.json",
+      "artifacts/agere-Q12-signed-development-2026-11-07/native-persistence-and-analysis-checks.log"
     ],
-    "remaining_gap": "Q12 signed financial event history/runout and current all25/tenarea acceptance; Q21 uncertainty, Q23 absent exact definitions, Q24 visual QA and independent G5/clinical/model/customer dependencies retained.",
-    "next_action": "G3: Continue Q12 signed financial event history/runout through existing native source/quantity contracts. Read artifacts/agere-ordinary-comparison-2026-11-05/Q12/independent-financial-proof.json first: received payer_adjudication.paid_cents are signed events; old stack current-version filter drops superseded development, frontier LAG incorrectly treats signed events as cumulative states (729tied sequence rows). Full received signed history2656446686cents vs current-version2626432990 across24differentmonths. Preserve each clock, reversals/recoupments, incomplete development and optional completion assumptions; no invented ultimate/actuarial qualification. Locate shared source-basis/quantity guard/installed definition before any model or full campaign. No unchanged Q13 rerun: connected normal question now returns13243accounts/1258patients and exact save/follow-up; localized native coverage33KB confirmedp=.8861 in4.620s,2validatedcalls/$0.001557736API-equivalent,priorfailedHTTP413unpricedpreserved. No finance source recomputation. Current all25/tenarea assessment retained, Q21uncertainty/Q23exactdefinitions/Q24visualQA/G5 and clinical/model/customer dependencies remain. App56534/session65244 serves c556cd3c,HTTP200/0startupcalls; no provider/build/training job running; quiet continuation ACTIVE.",
+    "remaining_gap": "Current whole25case/tenarea acceptance is unfinished. Q20 original-handler completion is next. Many earlier scoped component repairs lack current whole-question evidence; do not equate55tests or local repairs with MVP completion. Q21 undecided verification, exact diabetes/BP definition inputs, Q24 visual QA, independent G5/clinical/model qualification and customer deployment dependencies remain. No clinical/actuarial or superiority claim.",
+    "next_action": "G3/WP4: Return to the full original Q20 connected workflow. Read artifacts/agere-current-ordinary-2026-11-07/Q20/stack/receipt.json, provider-packet-check-v2/receipt.json and retained-population-capture-v3/receipt.json first. Packet/source support and all4115-member native scope have already been repaired; identify the remaining original-handler blocked-delivery/hard-requirement failure using retained result/state before edits or provider work. Repair only demonstrated missing wiring through existing shared context/composition; then at most the changed-path owned continuation, never a whole unchanged source/engine campaign. Preserve original scopes and every partial/attempt; distinguish answered-with-unknowns from missing implementation. Q12 full signed-history144 observed cells/72 conditional calculations and exact current save/reopen now pass; publicpartial/unverified and unqualified estimate fit remain explicit, no repeatQ12/Q13. Known generic analyze validate_window bug fixed on a02c001a/55affectedchecks. Fixed25cases/tenareas/current comparative acceptance remain unfinished; Q21uncertainty/Q23exactdefinitions/Q24visualQA/G5/clinical/model/customer dependencies remain. App58596/session96054 serves8885 on a02c001a,HTTP200/0startupcalls; no provider/build/training job running;quiet continuationACTIVE.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
-      "Q21 whole-question/machine/clinical acceptance remains unestablished; do not relabel uncertainty as a code defect or a pass. Q23 exact-parent spec/adapter/revision/rollback,Q24requested HTML capability,current25case/10area assessment and independentG5/clinical/model/customer prerequisites remain."
+      "Current whole25case/tenarea acceptance is unfinished. Q20 original-handler completion is next. Many earlier scoped component repairs lack current whole-question evidence; do not equate55tests or local repairs with MVP completion. Q21 undecided verification, exact diabetes/BP definition inputs, Q24 visual QA, independent G5/clinical/model qualification and customer deployment dependencies remain. No clinical/actuarial or superiority claim."
     ],
-    "latest_progress": "Closed the actual Q20 native packet construction and aggregate-population capture failures using retained workflow evidence. Actual provider support now completes; no original-question or clinical acceptance restamped. Continue existing known financial-case failures rather than repeat the large workflow.",
+    "latest_progress": "Signed payment development retains full received reversals/superseded event history; actual native result chains now reopen through exact query/source bindings. Both repaired financial answers are available in the current local app with unchanged values and qualification status.",
     "results_report": "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -733,8 +734,8 @@
       "scope": "Preserve the healthcare-wide product across clinical/chronic disease/medication, population and individual, utilization/outcomes, finance/provider/contracts, discovery/explanation, deliverables, learning/reuse and shared industry-portable core. Keep all ten canonical acceptance areas and25fixedcases; no new finish-line expansion."
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-07T12:29:04.442900+00:00",
-    "workflow_change": "Original financial question now reaches selected source/account detail rather than an aggregate-only answer; every patient/account row, native identity, lifecycle/cash scope and source unknown survives saving/reopening/follow-up. Native code closes row/scope/source values; System One reviews a compact complete field/role/unknown inventory.",
+    "at": "2026-11-07T13:08:57.133470+00:00",
+    "workflow_change": "Current-state balances cannot silently stand in for full signed claim-payment development; the original analyst receives the declared signed-event/clock contract and a native source-role failure reaches localized repair before another model review.",
     "unsealed_work": {
       "status": "reporting_boundary_fixed_entity_scope_consumer_missing",
       "product_commit": "beb62a9d",
@@ -1958,7 +1959,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "13243accounts/1258patients;28413outside-scope accounts excluded;0missing/0extra originalaccountkeys;19716zero-residual native identities;3385clock-unknown snapshots and10599unassigned source observations retained. Ordinary typed output108.118s then localized changed coverage repair47.216s total(native22.674s,model4.620s),33,423bytes,answers_fullyp=.8861. Separate stages, no speed/cost savings claim. This increment3providerattempts:2validated/$0.001557736knownAPI-equivalent plus1HTTP413unpriced;allpriorrows/source/code exact,ledger59327/44historicalpending/0newpending. Full live save/reopen/follow-up exact;0startupcalls.99consumerchecks and99outputchecks pass in separate overlapping suites;financialcoverage100run/99pass/1optional skip;2unrelated wider-suite failures reproduce on preceding shape code.",
+    "measured_failure_removed": "75affected checks pass. Authored signed100,-20,+50 events sum130 versus current-only50; tied sequence rows require no invented financial ordering. Actual retained source producer current-only exclusion identified; actual old recursive final composition blocked for unresolved paid-value ancestry. Existing native recovery restores13actions in2.051s/0providers with no inherited answer, source/code/59327ledgerrows exact, Fcacheidentity unchanged. Source/model/clinical and actuarial qualification remain distinct; declared source event role is the installed synthetic adapter contract, not realized cash.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-current-ordinary-2026-11-07/Q13/execution-repaired-stack/receipt.json",
       "status": "returned_owner_not_accepted",
@@ -2076,7 +2077,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-07T12:29:04.442900+00:00",
+    "updated_at": "2026-11-07T13:08:57.133470+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -2793,6 +2794,28 @@
         "artifacts/agere-Q13-native-conservation-2026-11-07/financial-coverage-checks.log"
       ],
       "remaining": "Q12 signed financial event history/runout and current all25/tenarea acceptance; Q21 uncertainty, Q23 absent exact definitions, Q24 visual QA and independent G5/clinical/model/customer dependencies retained."
+    },
+    "signed_payment_development": {
+      "product_commits": [
+        "dbd3320b",
+        "5205ae5c"
+      ],
+      "proofs": [
+        "artifacts/agere-Q12-signed-development-2026-11-07/retained-source-guard-v4.json",
+        "artifacts/agere-Q12-signed-development-2026-11-07/source-role-checks-v7.log",
+        "artifacts/agere-Q12-signed-development-2026-11-07/recovery-preflight-v2/receipt.json"
+      ],
+      "owned_continuation": {
+        "kind": "owned_Q12_signed_history_repair",
+        "pid": 57406,
+        "session": 14259,
+        "receipt": "artifacts/agere-Q12-signed-development-2026-11-07/owned-source-repair/receipt.json",
+        "status": "running",
+        "source_frozen": true,
+        "product_commit": "5205ae5c"
+      },
+      "original_question_acceptance": false,
+      "source_semantics_authority": "Installed synthetic adjudication-history/1 contract; no independent actuarial or cash-receipt qualification."
     }
   },
   "decisions": [
@@ -7134,12 +7157,36 @@
         "artifacts/agere-Q13-native-conservation-2026-11-07/financial-coverage-checks.log"
       ],
       "scope_impact": "Full25cases/tenareas unchanged; optional research and models did not expand finish line. No clinical/model qualification or customer readiness inferred."
+    },
+    {
+      "at": "2026-11-07T13:08:57.133470+00:00",
+      "gate": "G3",
+      "decision": "Resolve the installed distinction between signed received payment events and current claim state in the existing adapter/source guard, then use existing owned-run native recovery through the normal handler. Source checks follow actual returned value ancestry, not labels or unused diagnostics. Native source role is not independent clinical/actuarial qualification. Reuse every current native observation; no full investigation restart or answer-key data.",
+      "evidence": [
+        "artifacts/agere-Q12-signed-development-2026-11-07/retained-source-guard-v4.json",
+        "artifacts/agere-Q12-signed-development-2026-11-07/source-role-checks-v7.log",
+        "artifacts/agere-Q12-signed-development-2026-11-07/recovery-preflight-v2/receipt.json"
+      ],
+      "scope_impact": "Same connected Q12 acceptance increment; all25cases/tenareas retained; no new model, service, disease handler, corpus or optional research."
+    },
+    {
+      "at": "2026-11-07T13:58:45.338211+00:00",
+      "gate": "G3",
+      "decision": "Resolve the observed native save failure in PlanFence through exact executed statement/source binding closure and physical producer schemas; no name-prefix bypass. Independently check signed source arithmetic and declared estimator arithmetic. Preserve failed v1 harness assumption about rounded factors and original provider receipt. Restore exact current financial answers with no new models or source replay. Both measured defects are now reduced; return to full workflow completion instead of further financial or optional bottling work. The2-4hour estimate covered known repairs/assessment, not a finished sellable product.",
+      "evidence": [
+        "artifacts/agere-Q12-signed-development-2026-11-07/owned-source-repair/receipt.json",
+        "artifacts/agere-Q12-signed-development-2026-11-07/native-persistence-repair-v2/receipt.json",
+        "artifacts/agere-Q12-signed-development-2026-11-07/live-native-revalidation/receipt.json",
+        "artifacts/agere-Q12-signed-development-2026-11-07/restored-app-proof.json",
+        "artifacts/agere-Q12-signed-development-2026-11-07/native-persistence-and-analysis-checks.log"
+      ],
+      "scope_impact": "All25cases/tenareas retained. No scope expansion, optional learning campaign, clinical/actuarial qualification or whole-release acceptance."
     }
   ],
   "unsealed_work": {
-    "status": "financial_account_workflow_and_localized_coverage_demonstrated",
-    "product_commit": "c556cd3c",
-    "product_fix_commit": "c556cd3c",
+    "status": "signed_history_and_native_persistence_repaired_current_whole_workflow_acceptance_pending",
+    "product_commit": "a02c001a4648c853742e9c9d078264d1d3891500",
+    "product_fix_commit": "a02c001a4648c853742e9c9d078264d1d3891500",
     "receipt": "artifacts/agere-Q13-native-conservation-2026-11-07/financial-coverage-repair/receipt.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
     "source_frozen": false,
@@ -7170,7 +7217,7 @@
     "new_provider_attempts": 6,
     "known_api_equivalent_usd": 0.508862532,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 59327,
+    "all_attempt_rows_retained": 59346,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
@@ -7466,7 +7513,7 @@
     "compiled_context_diagnosis": "artifacts/agere-retained-workflow-2026-11-06/prompt-size-diagnosis.json",
     "compiled_context_commit": "44e7c0b8",
     "compiled_context_proof": "artifacts/agere-native-context-2026-11-06/native-proof.json",
-    "baseline_reproduced_test_failures": 1,
+    "baseline_reproduced_test_failures": 2,
     "shared_address_and_layout_repair": {
       "status": "offline_verified_original_question_unaccepted",
       "product_commit": "a2b4d5c29bacb9d8ab7302faeda8cabaf483e4b3",
@@ -7573,7 +7620,7 @@
     },
     "current_Q20_answer_context": "ANS-1c0ab7fb506bf52db129aa43",
     "current_Q20_answer_scope_patients": 0,
-    "current_ledger_rows": 59312,
+    "current_ledger_rows": 59346,
     "current_Q20_packet_proof": "artifacts/agere-current-ordinary-2026-11-07/Q20/offline-packet-diagnosis/native-proof.json",
     "current_Q20_population_proof": "artifacts/agere-current-ordinary-2026-11-07/Q20/retained-population-capture-v3/receipt.json",
     "owned_current_Q20_packet_check": {
@@ -7594,7 +7641,7 @@
     "current_Q20_native_scope_context": "ANS-a20520f58ff5730008e9344e",
     "current_Q20_native_scope_count": 20,
     "current_Q20_native_scope_authority": "Retained inspection only; old planner guard remains intact.",
-    "candidate_app_product_commit": "64caa3389b463a5a3b58820566d69eba5f25e1c8",
+    "candidate_app_product_commit": "a02c001a4648c853742e9c9d078264d1d3891500",
     "Q13_native_candidate_checks": "artifacts/agere-Q13-native-conservation-2026-11-07/checks-final.log",
     "Q13_financial_math_source_unchanged": true,
     "q13_native_financial_candidate": {
@@ -7687,7 +7734,7 @@
       "full_Q13_acceptance": false,
       "workflow_assessment": "artifacts/agere-current-ordinary-2026-11-07/Q13/execution-repaired-stack/workflow-assessment.json"
     },
-    "last_verified_private_push": "9090d43307a0f9751a1dfcd73ac14528aee024d9",
+    "last_verified_private_push": "a02c001a4648c853742e9c9d078264d1d3891500",
     "q13_current_original_assessment": "artifacts/agere-current-ordinary-2026-11-07/Q13/execution-repaired-stack/workflow-assessment.json",
     "q13_reporting_boundary_and_entity_scope": {
       "status": "reporting_boundary_fixed_entity_scope_consumer_missing",
@@ -7716,7 +7763,37 @@
     "localized_financial_coverage": "artifacts/agere-Q13-native-conservation-2026-11-07/financial-coverage-repair/receipt.json",
     "financial_completion_assessment": "artifacts/agere-Q13-native-conservation-2026-11-07/connected-workflow-assessment.json",
     "financial_local_answer": "artifacts/agere-Q13-native-conservation-2026-11-07/completed-local-answer.json",
-    "financial_coverage_app_proof": "artifacts/agere-Q13-native-conservation-2026-11-07/financial-completion-app-proof.json"
+    "financial_coverage_app_proof": "artifacts/agere-Q12-signed-development-2026-11-07/restored-app-proof.json",
+    "q12_source_guard": "artifacts/agere-Q12-signed-development-2026-11-07/retained-source-guard-v4.json",
+    "q12_native_recovery": "artifacts/agere-Q12-signed-development-2026-11-07/recovery-preflight-v2/receipt.json",
+    "q12_owned_repair": "artifacts/agere-Q12-signed-development-2026-11-07/owned-source-repair/receipt.json",
+    "q12_run_status": "terminal_result_preserved_native_persistence_repaired",
+    "q12_native_persistence": {
+      "receipt": "artifacts/agere-Q12-signed-development-2026-11-07/native-persistence-repair-v2/receipt.json",
+      "observed_cells_checked": 144,
+      "conditional_arithmetic_checks": 72,
+      "new_provider_calls": 0,
+      "public_answer_status": "partial",
+      "full_original_acceptance": false
+    },
+    "current_native_answers": {
+      "receipt": "artifacts/agere-Q12-signed-development-2026-11-07/live-native-revalidation/receipt.json",
+      "Q12": "ANS-5ae105e78a36028924f90a37",
+      "Q13": "ANS-9c6c761a35f064d2f598cfcd",
+      "new_provider_calls": 0,
+      "source_engine_replays": 0
+    },
+    "generic_analysis_validation_fix": {
+      "commit": "a02c001a4648c853742e9c9d078264d1d3891500",
+      "evidence": "artifacts/agere-Q12-signed-development-2026-11-07/native-persistence-and-analysis-checks.log",
+      "previous_failure": "UnboundLocalError validate_window",
+      "status": "resolved_existing_test_passes"
+    },
+    "baseline_failure_followthrough": {
+      "historical_reproduced": 2,
+      "generic_analyze_bug": "resolved on a02c001a; prior failing legacy test passes",
+      "optional_bench_run": "still unavailable; no protected package read/installed"
+    }
   },
   "current_visual_request": {
     "status": "completed",
@@ -7750,7 +7827,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Continue Q12 signed financial event history/runout through existing native source/quantity contracts. Read artifacts/agere-ordinary-comparison-2026-11-05/Q12/independent-financial-proof.json first: received payer_adjudication.paid_cents are signed events; old stack current-version filter drops superseded development, frontier LAG incorrectly treats signed events as cumulative states (729tied sequence rows). Full received signed history2656446686cents vs current-version2626432990 across24differentmonths. Preserve each clock, reversals/recoupments, incomplete development and optional completion assumptions; no invented ultimate/actuarial qualification. Locate shared source-basis/quantity guard/installed definition before any model or full campaign. No unchanged Q13 rerun: connected normal question now returns13243accounts/1258patients and exact save/follow-up; localized native coverage33KB confirmedp=.8861 in4.620s,2validatedcalls/$0.001557736API-equivalent,priorfailedHTTP413unpricedpreserved. No finance source recomputation. Current all25/tenarea assessment retained, Q21uncertainty/Q23exactdefinitions/Q24visualQA/G5 and clinical/model/customer dependencies remain. App56534/session65244 serves c556cd3c,HTTP200/0startupcalls; no provider/build/training job running; quiet continuation ACTIVE.",
+  "next_action": "G3/WP4: Return to the full original Q20 connected workflow. Read artifacts/agere-current-ordinary-2026-11-07/Q20/stack/receipt.json, provider-packet-check-v2/receipt.json and retained-population-capture-v3/receipt.json first. Packet/source support and all4115-member native scope have already been repaired; identify the remaining original-handler blocked-delivery/hard-requirement failure using retained result/state before edits or provider work. Repair only demonstrated missing wiring through existing shared context/composition; then at most the changed-path owned continuation, never a whole unchanged source/engine campaign. Preserve original scopes and every partial/attempt; distinguish answered-with-unknowns from missing implementation. Q12 full signed-history144 observed cells/72 conditional calculations and exact current save/reopen now pass; publicpartial/unverified and unqualified estimate fit remain explicit, no repeatQ12/Q13. Known generic analyze validate_window bug fixed on a02c001a/55affectedchecks. Fixed25cases/tenareas/current comparative acceptance remain unfinished; Q21uncertainty/Q23exactdefinitions/Q24visualQA/G5/clinical/model/customer dependencies remain. App58596/session96054 serves8885 on a02c001a,HTTP200/0startupcalls; no provider/build/training job running;quiet continuationACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -7839,14 +7916,15 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 56534,
-  "owned_server_session": 65244,
+  "owned_server_pid": 58596,
+  "owned_server_session": 96054,
   "last_run_observation": {
-    "at": "2026-11-07T05:03:36.931053+00:00",
-    "status": "three_localized_repairs_source_supported_native_state_composed_unsealed",
-    "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/assertion-source-repair/engineering-proof.json",
+    "at": "2026-11-07T13:58:45.338211+00:00",
+    "status": "owned_Q12_returned_and_native_persistence_repaired",
+    "receipt": "artifacts/agere-Q12-signed-development-2026-11-07/live-native-revalidation/receipt.json",
     "provider_job": null,
-    "new_provider_attempts": 7
+    "new_provider_attempts": 19,
+    "native_revalidation_new_provider_calls": 0
   },
   "ordinary_curriculum_progress": {
     "total_fixed_cases": 25,
@@ -7871,7 +7949,7 @@
     },
     "separate_pilot": "Q03, not pooled/repeated",
     "authored_generic_core": "Q25, scoped8engineering checks passed",
-    "next_case": "Q13-retained-conservation-then-Q12-signed-runout",
+    "next_case": "Q20-connected-original-handler-completion",
     "clinical_qualification": false,
     "completion_percent": null,
     "connected_workflows": {
@@ -7889,7 +7967,8 @@
     "Q19_status": "Original target mismatch failed; predictor qualification remains separate dependency",
     "Q20_status": "Original current run remainspartial/unverified; native packet/scope failures repaired and retained support check supported; no full-answer restamp",
     "Q21_status": "Full source/native/save processing demonstrated; coverage/support undecided without located fault; no unchanged repeat",
-    "Q24_status": "Current native brief fidelity passed4115patients/6326rows/21checks; visual QA unavailable, no full clinical/parent acceptance"
+    "Q24_status": "Current native brief fidelity passed4115patients/6326rows/21checks; visual QA unavailable, no full clinical/parent acceptance",
+    "Q12_status": "Full signed-history observed arithmetic and current native persistence demonstrated; publicpartial/unverified retained; current whole-case acceptance not inferred."
   },
   "research_lane": {
     "thread_id": "01a1b0c3-39c3-7993-95f5-8404d6fec61e",
