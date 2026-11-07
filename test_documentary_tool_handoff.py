@@ -194,6 +194,20 @@ class DocumentaryHandoff(unittest.TestCase):
             with self.subTest(edit=edit),self.assertRaises(ValueError):
                 t({'name':'execute_analysis','input':{**base,**edit}})
 
+    def test_native_ordinals_do_not_retain_duplicate_result_json(self):
+        t=self.tools();rows=[{'row_index':i,'payload':'authored blob '+('x'*1024)}for i in range(128)]
+        source=t.retain_result({'columns':['row_index','payload'],'rows':rows})
+        first=source['result_view']
+        for i in range(6):
+            result=t({'name':'query_sql','input':{'sql':f'SELECT COUNT(*) AS n FROM {first} WHERE row_index >= {i}'}})
+            self.assertEqual(result['rows'],[{'n':128-i}])
+            self.assertIn(first,result['declared_executed_query'])
+            self.assertIn('authored blob',result['executed_query'])
+        self.assertEqual(t.seen,[None]*7)
+        self.assertEqual(len(t.executed_results),7)
+        self.assertEqual(t.executed_results[first]['rows'],rows)
+        self.assertNotEqual(first,result['result_view'])
+
     def test_inherited_population_stays_complete_and_cannot_widen(self):
         t=self.tools(['p00','p04']);result=self.execute(t)
         self.assertEqual([r['patient_id']for r in result['rows']],['p00','p04'])

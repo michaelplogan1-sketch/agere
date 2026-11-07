@@ -473,7 +473,10 @@ class Tools:
                     from .analysis_tools import assertion_projections
                     out['native_projections']=assertion_projections(name)
                 self.executed_results[name]=out
-        self.seen.append(json.dumps(out, default=str))
+        # Only the ordinal is used. Canonical results already live in
+        # executed_results/native_calls; duplicating their full JSON here also
+        # duplicates every portable SQL source embedded in subsequent results.
+        self.seen.append(None)
         operational=any(item.get('authority')=='unverified_review_feedback' for item in (out.get('incomplete_dependencies')or[])) if isinstance(out,dict) else False
         for row in (() if operational else rows_with_record(out)):
             self.rows_by_record.setdefault(str(row['record_id']), []).append(json.dumps(row, default=str))
