@@ -2195,6 +2195,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     static_feedback.extend(relation_composition_issues(answer,getattr(tools,'document_reviews',[])))
     from .financial_accounts import cash_source_issues
     static_feedback.extend(cash_source_issues(question,answer,calls))
+    from .adjudication_history import development_source_issues
+    static_feedback.extend(development_source_issues(question,answer,calls))
     from .result_assembly import collection_retention_issues,RETENTION_CONTRACT
     assessment['collection_retention_contract']=RETENTION_CONTRACT
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and c['result'].get('result_view')}

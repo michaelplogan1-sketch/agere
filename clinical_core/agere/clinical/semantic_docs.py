@@ -229,6 +229,13 @@ CONVENTIONS = """## Canonical conventions (apply unless the question defines oth
     (sequence, claim_status, carc, adjudication_date, paid_date, signed paid_cents, is_first, is_last, superseded).
     payer_claim, claim and record hold only the CURRENT state, so a denial later reworked and paid is visible only in
     payer_adjudication. Use it for denials or CARCs dated in a period, initial denials (is_first) and overturned denials.
+  - Paid development/runout is a signed-event history, distinct from current claim balances. Sum the received
+    payer_adjudication.paid_cents events, including superseded events and negative reversals/recoupments. Do not apply
+    superseded=0/is_last=1 or subtract LAG of successive signed event amounts to represent full observed development.
+    Select service cohorts with service_from; state the development clock (adjudication_date when requested), and
+    bound received observations with available_date through the snapshot. Keep unknown clocks and incomplete months
+    explicit. A current-version alternative must be named separately. Observed signed payments are distinct from
+    estimated ultimate amounts; an optional completion estimate needs stated assumptions and is not realized cash.
   - Facility settings come from claim lines: revenue 045x = ED, 0762 or HCPCS G0378/G0379 = observation; TOB 011x =
     inpatient, 013x = hospital outpatient; POS 23 ED, 21 inpatient, 22 outpatient, 11 office, 02/10 telehealth.
 - Visits: one real visit = one person + setting + calendar date across EHR (visit), ADT (adt_visit) and claims; stays span

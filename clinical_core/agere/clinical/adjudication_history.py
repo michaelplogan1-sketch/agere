@@ -56,6 +56,119 @@ def _seq(v):
         return 0
 
 
+def development_source_issues(question, answer, calls):
+    """Check the received signed-event role behind returned paid development.
+
+    Diagnostic queries may inspect current versions. Only ancestors of the
+    returned monetary columns are checked. This is a source obligation, not
+    qualification of a completion model, cash receipt or actuarial estimate.
+    """
+    import re
+    q=str(question or '')
+    if not (re.search(r'\b(?:paid|payments?|payer)\b',q,re.I)and
+            re.search(r'\b(?:development|run[- ]?out|ibnr|completion)\b',q,re.I)):
+        return []
+    if re.search(r'\b(?:current|latest|surviving)\s+versions?\s+only\b|\bexclud(?:e|ing)\s+superseded\b',q,re.I):
+        return []  # an explicitly requested alternative keeps its own basis
+    root=answer.get('table_from_tool')
+    by={c['result']['result_view']:c for c in calls if isinstance(c.get('result'),dict)
+        and c['result'].get('result_view')and not c['result'].get('error')}
+    if root not in by:return []
+    from .backstop_agent import native_result_dependencies
+    from .result_assembly import source_query
+    from sqlglot import exp
+    from sqlglot.lineage import lineage
+    from sqlglot.errors import SqlglotError
+    needed=native_result_dependencies(calls,[root]);sources={};native_sources={};schema={}
+    for name in needed:
+        call=by[name];out=call['result'];contracts=out.get('source_contracts')or{}
+        for relation in contracts.get('relations')or[]:
+            if relation.get('columns'):schema[relation['name']]={k:'UNKNOWN'for k in relation['columns']}
+        for definition in contracts.get('definitions')or[]:sources[definition['name']]=definition['query']
+        if call.get('name')=='query_sql':
+            native_sources[name]=out.get('declared_executed_query')or out.get('executed_query')or(call.get('input')or{}).get('sql')
+        else:
+            query=source_query({k:c['result']for k,c in by.items()},name)
+            if query:native_sources[name]=query
+    # Native tables are lossless value copies; their JSON definitions are not
+    # substitutes for the actual producer's source/quantity ancestry.
+    sources.update(native_sources)
+    if not sources.get(root):return []
+    def paths(node):
+        if not node.downstream:return [[node]]
+        return [[node,*tail]for child in node.downstream for tail in paths(child)]
+    def financial(path):
+        leaf=path[-1]
+        return (isinstance(leaf.expression,exp.Table)and leaf.expression.name.casefold()in('payer_adjudication','payer_claim')
+                and leaf.name.rsplit('.',1)[-1].casefold()=='paid_cents'
+                and not any(isinstance(x,exp.Count)for n in path[:-1]for x in n.expression.walk()))
+    def raw_event_lag(node):
+        for lag in node.expression.find_all(exp.Lag):
+            if any(isinstance(x,exp.Sum)for x in lag.this.walk()):continue
+            for column in lag.this.find_all(exp.Column):
+                for child in node.downstream:
+                    if child.name.rsplit('.',1)[-1].casefold()!=column.name.casefold():continue
+                    if any(financial(p)and p[-1].expression.name.casefold()=='payer_adjudication'
+                           and not any(isinstance(x,exp.Sum)for n in p[:-1]for x in n.expression.walk())for p in paths(child)):
+                        return True
+        return False
+    filter_roles={}
+    def history_filter(column,source):
+        key=(source.sql(dialect='sqlite'),column.sql(dialect='sqlite'))
+        if key not in filter_roles:
+            projected=source.copy();projected.set('expressions',[exp.alias_(column.copy(),'__history_filter')])
+            try:
+                role=lineage('__history_filter',projected,schema=schema,
+                    sources={k:v for k,v in sources.items()if k!=root},dialect='sqlite')
+                filter_roles[key]=any(not n.downstream and isinstance(n.expression,exp.Table)
+                    and n.expression.name.casefold()=='payer_adjudication'
+                    and n.name.rsplit('.',1)[-1].casefold()in('superseded','superseded_by','is_last')for n in role.walk())
+            except (SqlglotError,ValueError,KeyError):filter_roles[key]=False
+        return filter_roles[key]
+    restricted=[];complete=[];differenced=[]
+    try:
+        for column in by[root]['result'].get('columns')or[]:
+            value=lineage(column,sources[root],schema=schema,sources={k:v for k,v in sources.items()if k!=root},
+                          dialect='sqlite',trim_selects=False)
+            money=[p for p in paths(value)if financial(p)]
+            if not money:continue
+            has_full=False
+            for path in money:
+                cut=path[-1].expression.name.casefold()!='payer_adjudication'
+                for node in path[:-1]:
+                    predicates=[node.source.args.get(k)for k in('where','having')]
+                    predicates.extend(node.expression.find_all(exp.If,exp.Filter))
+                    if any(history_filter(c,node.source)
+                           for predicate in predicates if predicate is not None for c in predicate.find_all(exp.Column)):
+                        cut=True
+                has_full=has_full or not cut
+            (complete if has_full else restricted).append(column)
+            if any(any(isinstance(x,exp.Sub)for x in n.expression.walk())and
+                   any(raw_event_lag(child)for child in n.walk())for n in value.walk()):
+                differenced.append(column)
+    except (SqlglotError,ValueError,KeyError,RecursionError):
+        return ['The returned paid-development value ancestry could not be resolved; retain a supported unknown rather than assert full received development.']
+    issues=[]
+    if restricted and not complete:
+        issues.append('Paid development was requested, but returned monetary columns use only current/last adjudications or exclude superseded events. '
+            'payer_adjudication.paid_cents are received signed financial events: sum the full requested history, including reversals/recoupments, '
+            'through the declared receipt cutoff. A current-version balance is a separately named alternative, not full observed development.')
+    elif not restricted and not complete and 'payer_adjudication'in schema:
+        columns=by[root]['result'].get('columns')or[];rows=by[root]['result'].get('rows')or[]
+        known_money=any(re.search(r'paid|amount|cents|dollars?|usd',column,re.I)
+            and any(type(row.get(column)if isinstance(row,dict)else row[index])in(int,float)for row in rows)
+            for index,column in enumerate(columns))
+        if known_money:
+            issues.append('The returned paid-development amounts have no resolved signed-event source binding. '
+                'Preserve the received native results, but bind observed payments directly to full payer_adjudication signed history before '
+                'asserting observed runout or a completion estimate. An opaque recursive/value-copy calculation is not evidence that its current-state inputs are full event history.')
+    if differenced:
+        issues.append('Returned paid-development columns ('+', '.join(differenced)+') subtract LAG of individual signed payment events. '
+            'These amounts are events, not cumulative replacement balances. Sum signed events for observed development; '
+            'do not difference successive event amounts. Cumulative sums and separately declared current-version alternatives retain their own meanings.')
+    return issues
+
+
 def build(out, warehouse_path):
     """Write payer_adjudication into an open semantic-layer connection from the received warehouse. -> summary."""
     # The semantic layer's patient ids differ from the received store's for some segments (deep-chart P-* ids); every claim
