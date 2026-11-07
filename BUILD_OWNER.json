@@ -5,17 +5,17 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3/WP4: Continue the next unfinished fixed original question, Q06 COPD/2029 respiratory encounters, through the existing conversation.handle_compose handler. Prior Q06 stack request was cancelled at incapable compound-scope planning; its scratch contains no recoverable native answer. Read artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/receipt.json and atomic-routing-proof.json plus the Q06 entry in current-assessment-2026-11-07/assessment.json; use only the original question/source configuration, never the frontier answer or scoring keys. The compound-scope fix already exists; one current original handler request is warranted, not a paired/whole campaign or repeat of a passing/uncertain result. Inspect owned receipts first; freeze product source and preserve every attempt/partial once running. Check actual cohort/date/source roles, intention vs reported taking vs dispensing vs nonuse, full source/qualifier context, native output and saved follow-up; missing source evidence remains unknown. No new model/clinical acceptance, source-specific handlers or output/population caps. Q05 transport is qualified/current: three exact prior overflow dependencies now supported in9.468s/6attempts/$0.01531411API-equivalent,0errors/0unpriced/0newpending. Its other prior source/coverage uncertainty remains, so do not replay unchanged Q05. Keep the preexisting requested-year-anchor regression explicit. All25cases/tenareas and independent model/clinical/customer dependencies remain. App67896/session50678 serves441e0041 on8885, current Q05contextANS-1c9a41d1a05f2895fc85b02d; no provider/build/training job running; quiet continuationACTIVE.",
+  "active_work": "G3/WP4: Finish the existing Q06 dated medication/source workflow from retained work; no unchanged whole-question, document or uncertain-vote campaign. First reconcile the unasked living-only population premise: analyst_definitions.condition_member is living-only, while the original question asks recorded COPD evidence with a2029respiratory encounter. Read retained-cohort-scope-observation.json (81retained vs83received-evidence diagnostic; not an answer key or accepted roster), the installed source definitions and actual producing SQL. Repair/generalize the existing source-scope guard/guidance using declared membership/time roles, not a COPD-specific handler, and preserve every original row/history. Do not inject diagnostic patient IDs, a solution query or expected values into an ordinary planner. Then locate the exact last producer draft1144b85b341c0e3cb6ff07fa7544086b45088ce7efc343b2fb4170a142224a3d from the owned raw responses/new-attempts (not a protected key): its headline and facts.third_pass_remaining_documents have an unbound one. The original recovery checkpoint correctly refused incomplete native dependencies/operational feedback as evidence; preserve this guard. Retain all87toolcalls/73actorreceipts but restore only proven native/source dependencies through existing lineage/recovery paths, keeping legacy fallbacks as unverified history. Bind actual quantities to native cells and obtain only the remaining requested entity/relation/source judgments through the existing typed reader, starting on Sonnet when reasoning is needed. No semantic/clinical acceptance follows from counts, snapshots or old machine labels. Storage repair9fcd7b02 is qualified and active: actual623MBcache copied independently with all361810observations, exact original document prep4993documents succeeds3.305s/0providers; native failure control stops before further callbacks and preserves all prior native work. All repair work0newproviders; original Q06 remains partial36.7minutes/1938attempts/$76.424399468API-equivalent, allaccounted. No provider/build/training job running; app70765/session41153 on8885. All25cases/tenareas and independentG5/clinical/model/customer dependencies, prior requested-year-anchor and explicit baseline test failures remain. Quiet continuationACTIVE.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
-  "owned_server_pid": 67896,
-  "owned_server_session": 50678,
+  "owned_server_pid": 70765,
+  "owned_server_session": 41153,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3/WP4: Continue the next unfinished fixed original question, Q06 COPD/2029 respiratory encounters, through the existing conversation.handle_compose handler. Prior Q06 stack request was cancelled at incapable compound-scope planning; its scratch contains no recoverable native answer. Read artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/receipt.json and atomic-routing-proof.json plus the Q06 entry in current-assessment-2026-11-07/assessment.json; use only the original question/source configuration, never the frontier answer or scoring keys. The compound-scope fix already exists; one current original handler request is warranted, not a paired/whole campaign or repeat of a passing/uncertain result. Inspect owned receipts first; freeze product source and preserve every attempt/partial once running. Check actual cohort/date/source roles, intention vs reported taking vs dispensing vs nonuse, full source/qualifier context, native output and saved follow-up; missing source evidence remains unknown. No new model/clinical acceptance, source-specific handlers or output/population caps. Q05 transport is qualified/current: three exact prior overflow dependencies now supported in9.468s/6attempts/$0.01531411API-equivalent,0errors/0unpriced/0newpending. Its other prior source/coverage uncertainty remains, so do not replay unchanged Q05. Keep the preexisting requested-year-anchor regression explicit. All25cases/tenareas and independent model/clinical/customer dependencies remain. App67896/session50678 serves441e0041 on8885, current Q05contextANS-1c9a41d1a05f2895fc85b02d; no provider/build/training job running; quiet continuationACTIVE.",
+  "resume_priority": "G3/WP4: Finish the existing Q06 dated medication/source workflow from retained work; no unchanged whole-question, document or uncertain-vote campaign. First reconcile the unasked living-only population premise: analyst_definitions.condition_member is living-only, while the original question asks recorded COPD evidence with a2029respiratory encounter. Read retained-cohort-scope-observation.json (81retained vs83received-evidence diagnostic; not an answer key or accepted roster), the installed source definitions and actual producing SQL. Repair/generalize the existing source-scope guard/guidance using declared membership/time roles, not a COPD-specific handler, and preserve every original row/history. Do not inject diagnostic patient IDs, a solution query or expected values into an ordinary planner. Then locate the exact last producer draft1144b85b341c0e3cb6ff07fa7544086b45088ce7efc343b2fb4170a142224a3d from the owned raw responses/new-attempts (not a protected key): its headline and facts.third_pass_remaining_documents have an unbound one. The original recovery checkpoint correctly refused incomplete native dependencies/operational feedback as evidence; preserve this guard. Retain all87toolcalls/73actorreceipts but restore only proven native/source dependencies through existing lineage/recovery paths, keeping legacy fallbacks as unverified history. Bind actual quantities to native cells and obtain only the remaining requested entity/relation/source judgments through the existing typed reader, starting on Sonnet when reasoning is needed. No semantic/clinical acceptance follows from counts, snapshots or old machine labels. Storage repair9fcd7b02 is qualified and active: actual623MBcache copied independently with all361810observations, exact original document prep4993documents succeeds3.305s/0providers; native failure control stops before further callbacks and preserves all prior native work. All repair work0newproviders; original Q06 remains partial36.7minutes/1938attempts/$76.424399468API-equivalent, allaccounted. No provider/build/training job running; app70765/session41153 on8885. All25cases/tenareas and independentG5/clinical/model/customer dependencies, prior requested-year-anchor and explicit baseline test failures remain. Quiet continuationACTIVE.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-05T13:04:20.746654+00:00",
   "heartbeat_status": "ACTIVE",
@@ -28,19 +28,19 @@
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
   "last_observed_server_session": 83398,
-  "server_status": "Owned app67896/session50678 serves441e0041 on8885. Q05current37rowpartial exact; localized source3supported, no clinical/full-case acceptance.0startup providercalls; no provider/build/training job running.",
+  "server_status": "Owned app70765/session41153 serves9fcd7b02 on8885,HTTP200/0startupcalls. Native storage repair qualified; Q06original81rowpartial preserved and scope/source/prose completion pending. No provider/build/training job running.",
   "unsealed_work": {
-    "status": "Q05_native_source_transport_qualified_current_partial_Q06_next",
-    "product_commit": "441e004175b941e1d691ed53b405d71f0c21f0ec",
+    "status": "native_storage_recovery_qualified_Q06_scope_source_completion_next",
+    "product_commit": "9fcd7b023946a75eaabb9d680f619b306a41884c",
     "product_fix_commit": "5e89acfa012c9de21516b02a77d4edca8c18304d",
-    "receipt": "artifacts/agere-Q05-source-transport-2026-11-07/app-consumption-proof.json",
+    "receipt": "artifacts/agere-Q06-current-original-2026-11-07/resource-repair-receipt.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
     "source_frozen": false,
     "runtime_activation": true,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
-    "affected_tests_passed": 136,
-    "provider_calls_this_increment": 6,
+    "affected_tests_passed": 11,
+    "provider_calls_this_increment": 0,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
       "status": "ordinary_check_returned_unsealed_paused_for_claude_review",
@@ -60,15 +60,15 @@
       "new_provider_attempts": 21,
       "offline_proof_provider_calls": 0
     },
-    "new_provider_attempts": 6,
-    "known_api_equivalent_usd": 0.01531411,
+    "new_provider_attempts": 0,
+    "known_api_equivalent_usd": 0,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 59862,
+    "all_attempt_rows_retained": 61800,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 6,
+    "latest_increment_provider_attempts": 0,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -1462,8 +1462,8 @@
       "receipt": "artifacts/agere-Q05-reference-clarification-2026-11-07/actual-reviewed-v3/receipt.json",
       "started_at": "2026-11-07T17:49:17.450726+00:00"
     },
-    "broader_checks_run": 155,
-    "broader_checks_passed": 154,
+    "broader_checks_run": 129,
+    "broader_checks_passed": 128,
     "reference_clarification_default_active": true,
     "full_Q05_acceptance": false,
     "owned_Q05_source_transport": {
@@ -1498,6 +1498,39 @@
       "whole_case_acceptance": false,
       "clinical_qualification": false,
       "known_good_recovery_commit": "e9711dab838f72cc604fa2b68cc6f934b31321ef"
+    },
+    "owned_Q06_current_original": {
+      "case": "Q06-current-original-completion",
+      "pid": 68001,
+      "session": 23034,
+      "status": "returned_partial_high_cost_all_attempts_preserved",
+      "source_frozen": false,
+      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/current-stack/receipt.json",
+      "started_at": "2026-11-07T18:37:59.571713+00:00"
+    },
+    "baseline_regression_failures": 1,
+    "baseline_evaluation_fixture_errors": 10,
+    "full_Q06_acceptance": false,
+    "Q06_original_run": {
+      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/current-stack/receipt.json",
+      "seconds": 2204.9063127080444,
+      "provider_attempts": 1938,
+      "known_api_equivalent_usd": 76.424399468,
+      "unpriced_attempts": 0,
+      "new_pending_attempts": 0,
+      "status": "partial",
+      "cohort_membership_accepted": false,
+      "rows": 81,
+      "checkpoint_unavailable_reason": "Draft recovery needs complete native dependencies without operational feedback as evidence"
+    },
+    "Q06_native_storage_recovery": {
+      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/resource-repair-receipt.json",
+      "product_commit": "9fcd7b023946a75eaabb9d680f619b306a41884c",
+      "new_provider_attempts": 0,
+      "known_good_recovery_commit": "00decb7cea476f7d1dd20c8aee8e19fddcce4414",
+      "current_app_pid": 70765,
+      "current_app_session": 41153,
+      "clinical_or_model_qualification": false
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
@@ -1904,7 +1937,7 @@
   },
   "previous_sealed_receipt": "artifacts/agere-whole-stack-release-2026-11-05/delivery-receipt.json",
   "review_followthrough_authorization": "Mike: okay i am stepping away, please take your time on this, it is critical we get this MVP correct, you know our north star, work with claude to figure out it. I wont be here to approve anything so do not ask me for anything just do it",
-  "last_product_commit": "441e004175b941e1d691ed53b405d71f0c21f0ec",
+  "last_product_commit": "9fcd7b023946a75eaabb9d680f619b306a41884c",
   "current_delivery_scope": "Direct native graph answers now use the existing saved-workspace/compose presentation path. Browser patient evidence shares exact complete answer rows instead of transferring duplicate copies, with ordered duplicates and unknowns preserved. Full intermediate calculations remain available through an explicit same-context native view. Source checks and work authority still run on the complete immutable server context.",
   "current_financial_delivery": {
     "context_id": "ANS-8d56378ee795fc4226dc4828",
@@ -1912,7 +1945,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-07T18:37:04.444071+00:00",
+  "updated_at": "2026-11-07T20:07:46.544952+00:00",
   "last_commit": "81f8bbf5192b10a98cd28f4e1877cfda474bfa51",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -1958,11 +1991,11 @@
     "image_tool": "built-in image_gen"
   },
   "last_run_observation": {
-    "at": "2026-11-07T16:09:48.930822+00:00",
-    "status": "Q02_owned_definition_continuation_running",
-    "receipt": "artifacts/agere-Q02-native-definition-2026-11-07/owned-continuation/receipt.json",
-    "pid": 62061,
-    "session": 38952
+    "at": "2026-11-07T20:07:46.544952+00:00",
+    "status": "native_storage_repair_qualified_Q06_retained_partial",
+    "receipt": "artifacts/agere-Q06-current-original-2026-11-07/resource-repair-receipt.json",
+    "pid": null,
+    "session": null
   },
   "current_review_prompt": {
     "at": "2026-11-05T12:45:50.567972+00:00",
