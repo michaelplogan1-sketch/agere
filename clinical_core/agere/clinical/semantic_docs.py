@@ -298,7 +298,7 @@ def _conventions_section():
 def source_clock_roles(columns):
     """Meaning supplied by this received-source model, independent of a query."""
     roles={
-        'event_date':{'role':'reported_event_date','precision':'Use the received event_date_precision when present; do not assume sharper precision.'},
+        'event_date':{'role':'reported_event_date','precision':'Use the received event_date_precision when present; do not assume sharper precision. In record, read it with json_extract(payload, \'$.event_date_precision\'); it is not a SQL column. Missing precision stays unknown.'},
         'recorded_date':{'role':'source_recorded_date','does_not_establish':'Physical warehouse receipt or clinical occurrence.'},
         'available_date':{'role':'reported_source_availability','does_not_establish':'Physical warehouse receipt/ingestion timestamp. If that distinct clock is absent, keep it unknown.'}}
     return {name:roles[name]for name in columns if name in roles}

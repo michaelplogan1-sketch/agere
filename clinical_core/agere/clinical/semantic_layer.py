@@ -382,7 +382,9 @@ SCHEMA_DOC = {
               'payer_adjudication. Use json_extract(payload, \'$.field\') for fields of streams not modelled above. '
               'payload supersedes_record_id is set on a correction: the record replaces that earlier record of the same stream '
               '(corrections per feed = records with it set, by stream; current version = not superseded). '
-              'event_date_precision = minute | day | month | year | unknown. Fields ending _record_id point at another '
+              "event_date_precision is retained inside payload, not a SQL column: read json_extract(payload, '$.event_date_precision'). "
+              'Received values are minute | day | month | year | unknown; missing precision stays unknown. Do not infer day precision '
+              'from the normalized event_date string or treat a failed column query as absence from the payload. Fields ending _record_id point at another '
               'record (see link).',
     'appointment': 'One row per appointment_id (appointments arrive as a booked record plus later status records). scheduled_date from '
                    'the latest version carrying a scheduled_date (a reschedule moves it), else the date of slot_start (population-feed '
