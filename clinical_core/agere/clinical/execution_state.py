@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/22'
+VERSION = 'execution-state/23'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -162,6 +162,7 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
     repair=proposal['repair_draft']
     answer_targets=answer_prose_repair_targets(candidate,feedback)
     if answer_targets:
+        source_meaning=feedback['prose_repair'].get('intent')=='source_meaning_review'
         if (not isinstance(repair,dict)or set(repair)!={'draft_digest','fields'}
                 or repair['draft_digest']!=digest(candidate)or not isinstance(repair['fields'],list)or not repair['fields']):
             raise ValueError('This exact draft requires only located headline/facts binding edits in repair_draft.fields')
@@ -171,12 +172,23 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
         merged=copy.deepcopy(candidate);merged.update(copy.deepcopy(draft_state(candidate)['last_draft']))
         for edit in repair['fields']:
             if not isinstance(edit,dict)or set(edit)!={'path','bind_literals'}or not isinstance(edit['path'],list):
-                raise ValueError('Answer binding edits require path and bind_literals only')
+                if not source_meaning or not isinstance(edit,dict)or set(edit)!={'path','value'}or not isinstance(edit['path'],list):
+                    raise ValueError('Answer edits require the exact located path and its permitted binding or source-meaning value')
             if any(not isinstance(k,str)for k in edit['path']):raise ValueError('Answer repair path must contain literal keys')
             path=tuple(edit['path'])
             if path not in allowed or path in seen:raise ValueError('Answer repair may edit each producer-located path once')
             seen.add(path);parent=merged if len(path)==1 else merged['facts'];field=path[-1]
-            parent[field]=bind_prose_literals(parent[field],{'bind_literals':edit['bind_literals']},native)
+            if source_meaning:
+                value=edit.get('value')
+                if not isinstance(value,(str,dict))or not value:
+                    raise ValueError('Source-meaning edits require nonempty text or a computed template')
+                parent[field]=copy.deepcopy(value)
+            else:parent[field]=bind_prose_literals(parent[field],{'bind_literals':edit['bind_literals']},native)
+        if source_meaning and all(
+            repair_rendered_value((merged if len(t['path'])==1 else merged['facts'])[t['path'][-1]],native)==
+            repair_rendered_value((candidate if len(t['path'])==1 else candidate['facts'])[t['path'][-1]],native)
+            for t in answer_targets):
+            raise UnchangedProseRepair('No source-supported answer prose changed')
         for name in ('computed_prose','investigation_review','verification'):merged.pop(name,None)
         return merged
     if not isinstance(repair,dict) or set(repair)!={'draft_digest','rows'}:
@@ -504,6 +516,7 @@ def binding_repair_schema(focus):
     checks the exact draft, target entity/field, value, basis and full answer.
     """
     if focus and focus.get('scope')=='answer':
+        if focus.get('intent')=='source_meaning_review':return None
         def obj(properties):return {'type':'object','properties':properties,'required':list(properties),'additionalProperties':False}
         address=obj({'result_view':{'type':'string'},'row':{'type':'integer','minimum':0},'column':{'type':'string'}})
         edit={'type':'object','properties':{'literal':{'type':'string','minLength':1},'binding':address,
@@ -698,6 +711,8 @@ def source_prose_repair(candidate,support,packets,coverage):
                 len(set(unchecked))!=len(unchecked)or not faults.intersection(support.get('failed_packet_ids')or[])or
                 any(k not in checks or checks[k].get('decided_by')or checks[k].get('label')!='unknown'for k in unchecked)):
             return None
+    global_repair=global_source_prose_repair(candidate,support,packets)
+    if global_repair:return global_repair
     spec=candidate.get('row_prose')or{}
     if spec.get('keys')!=['patient_id']:return None
     try:
@@ -787,6 +802,50 @@ def source_prose_repair(candidate,support,packets,coverage):
     except (KeyError,ValueError,TypeError,IndexError):return None
 
 
+def global_source_prose_repair(candidate,support,packets):
+    """Bind a global meaning edit to its exact complete source review.
+
+    A global packet may locate prose faults as well as patient packets. Retain
+    the whole packet and every unrelated obligation; no native cell is editable.
+    """
+    from ..deliverables.receipts import uncompact_json
+    from .backstop_agent import global_narrative_claims
+    try:
+        packet=next(p for p in packets if p['id']=='summary')
+        checked=next(p for p in support['packets']if p['id']=='summary')
+        review=checked.get('field_review')or{}
+        claims=global_narrative_claims(packet)
+        if (packet.get('source_context_complete')is not True or packet.get('dependency_complete')is not True
+                or not claims or review.get('packet_digest')!=digest(packet['text'])
+                or review.get('manifest_digest')!=digest(claims)):return None
+        state=json.loads(packet['text'])
+        if 'encoding'in state:state=uncompact_json(state)
+        by_id={c['id']:c for c in claims};targets=[];seen=set()
+        for f in checked.get('claim_feedback')or[]:
+            claim=by_id.get(f.get('claim_id'));path=f.get('path')
+            if (not claim or f.get('packet_id')!='summary'or f.get('field')!=claim['field']
+                    or path!=claim['path']or tuple(path)in seen or
+                    f.get('label')not in('unknown','wrong_entity','wrong_domain','wrong_subject','wrong_time','wrong_role','missing_evidence')):return None
+            seen.add(tuple(path));path=path[1:]
+            value=candidate[path[0]]if len(path)==1 else candidate['facts'][path[1]]
+            observed=state['answer'][path[0]]if len(path)==1 else state['answer']['facts'][path[1]]
+            if not isinstance(value,(str,dict))or value!=observed:return None
+            targets.append({'path':path,'field':claim['field'],'code':'source_meaning_review',
+                'value_digest':digest(value),'reviewed_value_digest':digest(observed),
+                'packet_id':'summary','packet_digest':review['packet_digest'],'claim_id':claim['id'],
+                'review_disposition':f.get('label'),'decided_by':f.get('decided_by'),
+                'reason':f.get('reason'),'source_fault_established':bool(f.get('decided_by')and f.get('label')not in('supported','unknown',None))})
+        if not targets:return None
+        sources=[{k:packet[k]for k in ('id','text','claim_manifest','source_context_complete','dependency_complete')}]
+        return {'schema':'native-prose-repair-targets/1','scope':'answer','intent':'source_meaning_review',
+            'draft_digest':digest(candidate),'answer_targets':targets,'source_packets':sources,
+            'source_packets_digest':digest(sources),'coverage_still_required':True,
+            'all_dependencies_checked':support.get('all_dependencies_checked')is True,
+            'unchecked_packet_ids':list(support.get('unchecked_packet_ids')or[]),
+            'authority':'machine_review','clinical_qualification':False}
+    except (StopIteration,KeyError,ValueError,TypeError,IndexError):return None
+
+
 def answer_prose_repair_targets(candidate,feedback):
     """Only compiler-bound top-level quantities authorize a small binding edit."""
     # Aggregate/scalar answers have the same headline/fact binding contract
@@ -795,8 +854,26 @@ def answer_prose_repair_targets(candidate,feedback):
     if not isinstance(candidate,dict)or not isinstance(feedback,dict):return None
     receipt=feedback.get('prose_repair')
     if (not isinstance(receipt,dict)or receipt.get('schema')!='native-prose-repair-targets/1'
-            or receipt.get('draft_digest')!=digest(candidate)or feedback.get('repair_kind')!='deterministic_compiler'):
+            or receipt.get('draft_digest')!=digest(candidate)):
         return None
+    source_meaning=receipt.get('intent')=='source_meaning_review'and receipt.get('scope')=='answer'
+    if source_meaning:
+        # Reconstruct from the complete producer packet, rather than trusting
+        # target paths/digests copied into operational feedback.
+        from .backstop_agent import global_narrative_claims
+        try:
+            sources=receipt.get('source_packets');targets=receipt.get('answer_targets')
+            if (not isinstance(sources,list)or len(sources)!=1 or receipt.get('source_packets_digest')!=digest(sources)
+                    or not isinstance(targets,list)or not targets):return None
+            checks=[{'id':'summary','field_review':{'packet_digest':targets[0].get('packet_digest'),
+                'manifest_digest':digest(global_narrative_claims(sources[0]))},
+                'claim_feedback':[{'packet_id':t.get('packet_id'),'claim_id':t.get('claim_id'),'field':t.get('field'),
+                    'path':['answer',*t.get('path',[])],'label':t.get('review_disposition'),
+                    'decided_by':t.get('decided_by'),'reason':t.get('reason')}for t in targets]}]
+            rebuilt=global_source_prose_repair(candidate,{'packets':checks},sources)
+            return targets if rebuilt and rebuilt['answer_targets']==targets else None
+        except (KeyError,TypeError,ValueError,IndexError):return None
+    if feedback.get('repair_kind')!='deterministic_compiler':return None
     targets=receipt.get('answer_targets')
     if not isinstance(targets,list)or not targets:return None
     seen=set()
@@ -903,6 +980,15 @@ def focused_prose_state(candidate,feedback,calls):
     if answer_targets:
         editable=draft_state(candidate)['last_draft']
         row_prose=candidate.get('row_prose')
+        if feedback['prose_repair'].get('intent')=='source_meaning_review':
+            receipt=feedback['prose_repair']
+            return {'schema':'focused-native-prose-repair/1','scope':'answer','intent':'source_meaning_review',
+                'draft_digest':digest(candidate),'keys':[],'targets':[],
+                'answer_targets':[{**t,'value':editable[t['path'][0]]if len(t['path'])==1 else editable['facts'][t['path'][1]]}for t in answer_targets],
+                'source_packets':receipt['source_packets'],'unchecked_packet_ids':receipt.get('unchecked_packet_ids',[]),
+                'native_answer_rows':len(candidate.get('table')or[]),'coverage_still_required':True,
+                'patch_contract':{'draft_digest':digest(candidate),'fields':[{'path':'exact located path array','value':'source-supported text or computed template'}]},
+                'instruction':'Inspect the named prose against the complete retained source packet. Unknown is not a finding of error. Change only a justified source meaning using repair_draft.fields with path and value. Keep all unrelated statements and native values unchanged. Every quantitative literal needs a binding to actual executed evidence; all existing basis rows are retained. Empty fields means no justified edit, not source acceptance. Complete compilation, coverage and source review still follow.'}
         return {'schema':'focused-native-prose-repair/1','scope':'answer','draft_digest':digest(candidate),'keys':[],
             'targets':[],'answer_targets':[{**t,'value':editable[t['path'][0]]if len(t['path'])==1 else editable['facts'][t['path'][1]]}for t in answer_targets],
             'native_answer_rows':len(candidate.get('table')or[]),'complete_row_prose_rows':len(row_prose.get('rows')or[])if isinstance(row_prose,dict)else 0,
@@ -1338,7 +1424,7 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
         else:state['current_review_feedback']=feedback
     if focus and focus.get('scope')=='answer':
         state['focused_prose_repair']=focus
-        state['instruction']+=' Only the producer-located headline/facts bindings are editable now; the complete native answer, any entity prose and all row repair obligations remain retained.'
+        state['instruction']+=' Only the producer-located headline/facts fields are editable now under their exact patch contract; the complete native answer, any entity prose and all row repair obligations remain retained.'
     elif focus:
         # This subset is a repair view, never complete population evidence.
         from .result_assembly import _rows

@@ -712,7 +712,9 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                                  'cache_control':{'type':'ephemeral'}})
                         binding_role=True
                 if focused_repair:
-                    patch_fields='fields:[{path:[exact located keys],bind_literals:[native scalar edits]}]'if focused_repair.get('scope')=='answer'else'rows:[changed entity fields]'
+                    patch_fields=('fields:[{path:[exact located keys],value:source-supported text or computed template}]'
+                        if focused_repair.get('intent')=='source_meaning_review'else
+                        'fields:[{path:[exact located keys],bind_literals:[native scalar edits]}]')if focused_repair.get('scope')=='answer'else'rows:[changed entity fields]'
                     actor_system=[*(actor_system if isinstance(actor_system,list)else[{'type':'text','text':actor_system}]),
                         {'type':'text','text':'Current operation: repair the retained draft. Use literal registered tools if needed, then return ONLY repair_draft with the exact focused_prose_repair draft_digest and '+patch_fields+'. Follow its patch_contract. A replacement final answer is invalid in this operation. If the evidence justifies no changes, return the same repair_draft contract with an empty edit list; the existing answer remains partial and unresolved.'}]
             body = {'model': model, 'max_tokens': max_tokens, 'system': actor_system, 'messages': actor_messages, 'tools': tools,
