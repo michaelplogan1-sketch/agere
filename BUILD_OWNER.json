@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: Start exactly one selective original-Q21 continuation with artifacts/agere-q21-assertion-window-2026-11-06/run_receipt_source_continuation.py on002a2128. Execute the actual prior model-selected arrival2029 native action captured in bound-receipt-clock-admission/receipt.json, then resume the normal caller/source-tuple review/local interpretation/native composition/final save path. No new owner plan/prior answer or whole planning restart. Current discovery source handoff was selected in1call from retained fullnative evidence; fresh planning now selects correct arrival/all4115 in2calls,42.799s/$0.1894413;236checks pass. Explicit receipt-year binding rejects wrong native/retained-source windows before acquisition, preserving distinct source/clinical/reference dates, subject scope and snapshot unknowns. Once running inspect only its owned receipt/progress/allattempts; freeze source/product, no duplicate, preserve every partial/source stage/unknowncost and stop provider work on actual subscription limit. App stopped for this sequence; restore after terminal. Full originalQ21 acceptance remains false until actual result/clock/source meaning/save assessed. Then Q23definitions,Q24requested capability,currentall25/tenareas and separateG5/clinical/model/customer dependencies. Quiet continuation ACTIVE.",
+  "active_work": "G3: Source-continuation state repair verified on all36592arrival2029accounts/4115inputsubjects: unchanged normal continuation and final native contract reproduce every row,0newsourcevotes,accounting/source/code/59238ledgerrows unchanged.119provider/state regression checks pass(2optional skips). No full source rerun. Continue original Q21 from retained complete source stages and actual model drafts; correct obsolete continuation-error prose and run existing final coverage/global support/save/reopen without repeating paid source judgments. Jev input routing now selects supported expanded transport from rendered capacity and checks exact validated standard/fallback caches first; mocked transport proof does not qualify long-context clinical accuracy. App stopped;no jobrunning. Preserve original1152attempts/$11.754060138known/563unpriced/44historicalpending. Then Q23exact-parent definitions,Q24requested capability,currentall25/tenareas and separateG5/clinical/model/customer dependencies. Quiet continuation ACTIVE.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
   "owned_server_pid": null,
@@ -15,7 +15,7 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: Start exactly one selective original-Q21 continuation with artifacts/agere-q21-assertion-window-2026-11-06/run_receipt_source_continuation.py on002a2128. Execute the actual prior model-selected arrival2029 native action captured in bound-receipt-clock-admission/receipt.json, then resume the normal caller/source-tuple review/local interpretation/native composition/final save path. No new owner plan/prior answer or whole planning restart. Current discovery source handoff was selected in1call from retained fullnative evidence; fresh planning now selects correct arrival/all4115 in2calls,42.799s/$0.1894413;236checks pass. Explicit receipt-year binding rejects wrong native/retained-source windows before acquisition, preserving distinct source/clinical/reference dates, subject scope and snapshot unknowns. Once running inspect only its owned receipt/progress/allattempts; freeze source/product, no duplicate, preserve every partial/source stage/unknowncost and stop provider work on actual subscription limit. App stopped for this sequence; restore after terminal. Full originalQ21 acceptance remains false until actual result/clock/source meaning/save assessed. Then Q23definitions,Q24requested capability,currentall25/tenareas and separateG5/clinical/model/customer dependencies. Quiet continuation ACTIVE.",
+  "resume_priority": "G3: Source-continuation state repair verified on all36592arrival2029accounts/4115inputsubjects: unchanged normal continuation and final native contract reproduce every row,0newsourcevotes,accounting/source/code/59238ledgerrows unchanged.119provider/state regression checks pass(2optional skips). No full source rerun. Continue original Q21 from retained complete source stages and actual model drafts; correct obsolete continuation-error prose and run existing final coverage/global support/save/reopen without repeating paid source judgments. Jev input routing now selects supported expanded transport from rendered capacity and checks exact validated standard/fallback caches first; mocked transport proof does not qualify long-context clinical accuracy. App stopped;no jobrunning. Preserve original1152attempts/$11.754060138known/563unpriced/44historicalpending. Then Q23exact-parent definitions,Q24requested capability,currentall25/tenareas and separateG5/clinical/model/customer dependencies. Quiet continuation ACTIVE.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-05T13:04:20.746654+00:00",
   "heartbeat_status": "ACTIVE",
@@ -28,16 +28,16 @@
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
   "last_observed_server_session": 83398,
-  "server_status": "Owned app intentionally stopped; both targeted admission checks terminal; no provider/build/training job running.",
+  "server_status": "Stopped during verified local source-state repair; no provider/build job running.",
   "unsealed_work": {
     "status": "verified_full_native_scope_pending_ordinary_composition",
-    "product_commit": "15f9b8d7e9a6d0ab896a687499b8ea261710feca",
-    "product_fix_commit": "15f9b8d7e9a6d0ab896a687499b8ea261710feca",
+    "product_commit": "9bd7ff7d8c4be35c2efbaada15b16dfc2cb970b2",
+    "product_fix_commit": "9bd7ff7d8c4be35c2efbaada15b16dfc2cb970b2",
     "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
     "source_frozen": false,
     "runtime_activation": false,
-    "product_code_in_candidate_app": true,
+    "product_code_in_candidate_app": false,
     "answer_selected": false,
     "affected_tests_passed": 102,
     "provider_calls_this_increment": 0,
@@ -963,7 +963,33 @@
       "provider_work": false,
       "original_Q21_acceptance": false,
       "clinical_qualification": false
-    }
+    },
+    "q21_receipt_source_continuation": {
+      "kind": "Q21-receipt-source-continuation",
+      "pid": 47281,
+      "session": null,
+      "status": "failed_preserved_no_automatic_retry",
+      "source_frozen": false,
+      "provider_work": false,
+      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/receipt.json",
+      "accounting": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/per-provider-accounting.json",
+      "diagnosis": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/continuation-history-diagnosis.json"
+    },
+    "q21_receipt_source_provider_input_observation": {
+      "status": "observed_during_frozen_run",
+      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/provider-input-limit-observation.json",
+      "source_frozen": true,
+      "provider_work": true
+    },
+    "q21_retained_state_repair": {
+      "status": "passed_full_retained_scope_no_model_votes",
+      "receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/state-repair-proof-v2/receipt.json",
+      "source_frozen": false,
+      "provider_work": false
+    },
+    "q21_source_state_repair_proof": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/repair-engineering-proof.json",
+    "q21_source_state_repair_receipt": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/state-repair-proof-v2/receipt.json",
+    "q21_context_regressions": "artifacts/agere-q21-assertion-window-2026-11-06/receipt-source-continuation/provider-context-regressions.log"
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
@@ -1368,7 +1394,7 @@
   },
   "previous_sealed_receipt": "artifacts/agere-whole-stack-release-2026-11-05/delivery-receipt.json",
   "review_followthrough_authorization": "Mike: okay i am stepping away, please take your time on this, it is critical we get this MVP correct, you know our north star, work with claude to figure out it. I wont be here to approve anything so do not ask me for anything just do it",
-  "last_product_commit": "002a2128da2090842da3dcd430230783e86509b0",
+  "last_product_commit": "9bd7ff7d8c4be35c2efbaada15b16dfc2cb970b2",
   "current_delivery_scope": "Native discovery now exposes the existing source-review/interpretation handoff and clock roles. A directly stated single record-receipt year is bound to arrival before native acquisition or retained-source review. Source-event-only, patient treatment receipt and multiple-year requests are not guessed; midyear snapshots retain the unobserved calendar remainder.",
   "current_financial_delivery": {
     "context_id": "ANS-8d56378ee795fc4226dc4828",
@@ -1376,7 +1402,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-07T06:14:37.649276+00:00",
+  "updated_at": "2026-11-07T07:19:58.414840+00:00",
   "last_commit": "81f8bbf5192b10a98cd28f4e1877cfda474bfa51",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
