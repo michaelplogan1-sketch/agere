@@ -114,5 +114,40 @@ class BoundNativeQueries(unittest.TestCase):
         self.assertIn('authored O',result['executed_query'])
         with sqlite3.connect(':memory:')as db:self.assertEqual(db.execute(result['executed_query']).fetchall(),[(sum(range(10,50)),)])
 
+    def test_operational_review_read_is_portable_without_becoming_source_evidence(self):
+        from clinical_core.agere.clinical import plan_fence as P,result_assembly as A
+        t=self.fixture.tools();source=self.source(t)
+        feedback={'status':'repair','feedback':"Inspect O'Brien's annual scope β",
+            'support':{'packets':[{'id':'summary','label':'unknown'}]}}
+        reference=E.review_reference(feedback,t)
+        query="SELECT json_extract(feedback_json,'$.feedback') AS guidance FROM "+reference['result_view']
+        reading=t({'name':'query_sql','input':{'sql':query}})
+        self.assertNotIn('native_query_receipt',reading)
+        self.assertEqual(reading['declared_executed_query'],query)
+        self.assertIn('feedback_json',reading['executed_query'])
+        with sqlite3.connect(':memory:')as db:
+            self.assertEqual(db.execute(reading['executed_query']).fetchall(),[(feedback['feedback'],)])
+        self.assertTrue(A.incomplete_reason(reading))
+        self.assertIn('unverified_review_feedback',json.dumps(reading['incomplete_dependencies']))
+        final=self.query(t,source)
+        calls=[{'name':'fixture_source','result':source},
+            {'name':'query_sql','input':{'sql':query},'result':reading},
+            {'name':'query_sql','result':final}]
+        self.assertEqual(Q.native_query_binding_errors(calls),[])
+        _,errors=P.native_premise_graph({'nodes':[]},calls)
+        self.assertEqual(errors,[])
+        # Changing operational state later cannot rewrite its captured origin.
+        t.executed_results[reference['result_view']]['rows'][0]['feedback_json']='changed'
+        with sqlite3.connect(':memory:')as db:
+            self.assertEqual(db.execute(reading['executed_query']).fetchall(),[(feedback['feedback'],)])
+
+    def test_feedback_names_do_not_bypass_ordinary_missing_receipt_guards(self):
+        t=self.fixture.tools();source=self.source(t);result=self.query(t,source)
+        fake=copy.deepcopy(source);fake['result_view']='agere_review_feedback_'+'a'*64
+        # An ordinary result only carrying a feedback-like name is not a
+        # registered operational receipt and cannot escape exact hash binding.
+        result['native_query_receipt']['source_bindings'][0]['result_view']=fake['result_view']
+        self.assertFalse(Q.validate_bound_native_query(result,{fake['result_view']:fake}))
+
 
 if __name__=='__main__':unittest.main()

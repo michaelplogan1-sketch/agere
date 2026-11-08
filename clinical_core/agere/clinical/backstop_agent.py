@@ -579,7 +579,13 @@ class Tools:
             used = [name for name in out.get('read_views', []) if name in sources]
             if used:
                 from .sql_query import portable_native_query,bound_native_query_receipt
-                receipt=bound_native_query_receipt(sql,out['read_views'],out.get('native_read_columns'),sources)
+                # Operational feedback lives in its review receipt, outside the
+                # clinical call journal. Preserve its exact self-contained SQL
+                # origin rather than creating an unresolved journal reference.
+                # Its inherited incomplete dependency still bars answer evidence.
+                operational=any(self.executed_results.get(view,{}).get('kind') in
+                    ('unverified_review_feedback','unverified_recovery_feedback')for view in used)
+                receipt=None if operational else bound_native_query_receipt(sql,out['read_views'],out.get('native_read_columns'),sources)
                 if receipt is not None and os.environ.get('AGERE_NATIVE_QUERY_RECEIPT','bound')=='bound':
                     out={**out,'declared_executed_query':sql,'native_query_receipt':receipt}
                 else:
