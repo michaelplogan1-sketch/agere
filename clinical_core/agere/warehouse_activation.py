@@ -22,7 +22,9 @@ def validate_receipts(connection,general,native,diagnostic,*,current_code):
         general.get('source_categories')!=connection['source_categories'] or general.get('searchable_records')!=connection['records']):
         raise ValueError('Incomplete received-source coverage')
     for receipt,key in ((general,'frontier_request_bytes_1500_char_question'),(native,'frontier_request_bytes_1500_ascii_question')):
-        if type(receipt.get(key)) is not int or not 0<receipt[key]<=REQUEST_MAX_BYTES:raise ValueError('Planner request exceeds qualified bound')
+        if (type(receipt.get(key)) is not int or receipt[key]<=0 or
+            (REQUEST_MAX_BYTES is not None and receipt[key]>REQUEST_MAX_BYTES)):
+            raise ValueError('Planner request measurement is invalid or exceeds qualified bound')
     contracts={r['contract'] for r in native.get('results',[]) if r.get('public_source_patient_sets_match') is True}
     required={'native_affordability_report','native_medication_nonuse','native_outside_service','native_advance_document_review'}
     if not required<=contracts:raise ValueError('Missing full-population source-account qualification')

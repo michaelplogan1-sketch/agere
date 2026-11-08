@@ -1,6 +1,6 @@
 import copy,unittest
+from unittest.mock import patch
 from clinical_core.agere.warehouse_activation import validate_receipts,validate_extension
-from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES
 
 
 def fixture():
@@ -35,10 +35,25 @@ class WarehouseActivation(unittest.TestCase):
         rows=fixture();rows[3]['protocol_positive_measurement_population_matches_public_fields']=False
         with self.assertRaises(ValueError):validate_receipts(*rows,current_code='code')
 
-    def test_failed_request_size_or_missing_bound_cannot_activate(self):
-        for value in (None,True,REQUEST_MAX_BYTES+1,0):
-            rows=fixture();rows[1]['frontier_request_bytes_1500_char_question']=value
-            with self.assertRaises(ValueError):validate_receipts(*rows,current_code='code')
+    def test_missing_or_invalid_request_measurements_cannot_activate(self):
+        for i,key in ((1,'frontier_request_bytes_1500_char_question'),(2,'frontier_request_bytes_1500_ascii_question')):
+            for value in (None,True,0,-1,19000.0,'19000'):
+                rows=fixture();rows[i][key]=value
+                with self.assertRaises(ValueError):validate_receipts(*rows,current_code='code')
+
+    def test_unlimited_policy_accepts_measured_requests_without_imposing_a_cap(self):
+        rows=fixture()
+        rows[1]['frontier_request_bytes_1500_char_question']=1000000
+        rows[2]['frontier_request_bytes_1500_ascii_question']=2000000
+        with patch('clinical_core.agere.warehouse_activation.REQUEST_MAX_BYTES',None):
+            self.assertTrue(validate_receipts(*rows,current_code='code'))
+
+    def test_explicit_finite_policy_enforces_both_receipts_and_includes_boundary(self):
+        with patch('clinical_core.agere.warehouse_activation.REQUEST_MAX_BYTES',19000):
+            self.assertTrue(validate_receipts(*fixture(),current_code='code'))
+            for i,key in ((1,'frontier_request_bytes_1500_char_question'),(2,'frontier_request_bytes_1500_ascii_question')):
+                rows=fixture();rows[i][key]=19001
+                with self.assertRaises(ValueError):validate_receipts(*rows,current_code='code')
 
     def test_source_extension_requires_full_current_contract_qualification(self):
         c=fixture()[0];c['source_coverage']={'new_table':4}
