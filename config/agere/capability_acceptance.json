@@ -3,8 +3,8 @@
   "longitudinal_prediction_path": "artifacts/agere-release-current-2026-11-08/acceptance/longitudinal_prediction_path.json",
   "discovery_explanation_path": "artifacts/agere-release-current-2026-11-08/acceptance/discovery_explanation_path.json",
   "outcome_and_financial_reconciliation": "artifacts/agere-release-current-2026-11-08/acceptance/outcome_and_financial_reconciliation.json",
-  "evidence_change_reassessment": "artifacts/agere-release-current-2026-11-08/acceptance/evidence_change_reassessment.json",
+  "evidence_change_reassessment": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-final-ordinary-entry-2026-11-08/acceptance-v3/evidence_change_reassessment.json",
   "source_and_adapter_conformance": "artifacts/agere-release-current-2026-11-08/acceptance/source_and_adapter_conformance.json",
-  "economical_role_routing": "artifacts/agere-release-current-2026-11-08/acceptance/economical_role_routing.json",
-  "portable_local_operations": "artifacts/agere-release-current-2026-11-08/acceptance/portable_local_operations.json"
+  "economical_role_routing": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-final-ordinary-entry-2026-11-08/acceptance-v3/economical_role_routing.json",
+  "portable_local_operations": "artifacts/agere-final-ordinary-entry-2026-11-08/acceptance-v3/portable_local_operations.json"
 }
