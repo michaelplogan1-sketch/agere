@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T20:12:49.888666+00:00",
+  "updated_at": "2026-11-08T20:42:12.395058+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -598,7 +598,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Current full conversational-handler/ordinary-entry and whole25case/tenarea acceptance remain open; native original-question compilation/execution is now demonstrated.; No qualified90dayinpatient predictor attached; origin-state feature reconstruction, complete outcome capture, calibration and model-versus-baseline evidence are not established. No fitting was authorized by this request.; Other fixed cases retain exact program-definition/capacity inputs, source semantic uncertainty, requested report visual QA, independent clinical/model/scientific qualification and customer deployment prerequisites.",
       "engineering_current_status": "Current summary/source-change delivery active and sealed; respiratory full-roster program/work/financial/prediction-limit/discovery workflow passed in retained continuation. Behavioral second-program work running. Current source/adapter, evidence-change and economical-role candidates qualified within scoped engineering evidence; current25/tenarea disposition, remaining currentcaps and final consolidated package still pending.",
-      "next_action": "Follow top-level next_action: two existing ordinary-entry evidence gaps, then current25case disposition and final exact package; no active native job.",
+      "next_action": "G3/WP4: Inspect owned Q14current ordinary-entry PID12096/session73887 FIRST: artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json. Product source/config frozen while it runs; no duplicate provider/native/build job. Original public question only, no owner plan/expectedvalues. Preserve full source-supported affordability versus recorded-balance distinction and unknown hardship, every partial/attempt; do not force coverage or restart wholequestion. Actual subscription usage limit stops provider work. Q15delivery is SEALED: artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json, product6f5f0f26/app12061/session64670; one rangefield corrected/all1646rows exact/59checks/native+browserHTTP/source supported/coverage undecided. All25/tenareas/principal/October11baseline retained. After terminal Q14reconcile source/quantity/scope/current-save evidence, apply already-proved scoped receipt metadata compatibility(no native reruns), final25case disposition, then one exactcurrent archive/install/recovery using existing coldAPFSclone. Prior5aca0a3a recovery and named definition/capacity/model/clinical/customer/Q24visual dependencies remain. No agents/chats/services/newcaps/gating; quiet continuationACTIVE.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -677,23 +677,26 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_adapter_conformance_supported_changed_evidence_workflow_running",
+    "kind": "current_Q15_source_meaning_repair_and_HTTP",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Independent renamed-source API workflow preserves4members and3unaffected results; missing mapping, source comparison, dates and source activation guards remain explicit. Source conformance is qualified by exact data/code applicability rather than another model/source scan. Current full-roster changed-evidence workflow is running, not yet accepted.",
+    "user_behavior_delta": "Ordinary Q15 saves all1646provider-month rows; one false range corrected, complete current output consumed natively and in browser view.",
     "measured_failure_reduction": {
-      "stale_source_adapter_evidence_requirement_now_supported_in_candidate": true,
-      "candidate_required_engineering_predicates_supported": 2,
-      "candidate_required_engineering_predicates_total": 9,
-      "not_a_product_completion_percentage": true
+      "located_prose_faults_removed": 1,
+      "native_rows_preserved": 1646,
+      "complete_model_packet_bytes_before": 1860765,
+      "complete_model_packet_bytes_after": 507212,
+      "current_HTTP_verified": true,
+      "relevant_checks_passed": 59
     },
     "evidence": [
-      "artifacts/agere-adapter-conformance-2026-11-08/source-compatibility-proof.json",
-      "artifacts/agere-adapter-conformance-2026-11-08/capability-candidates/validation.json",
-      "artifacts/agere-evidence-change-current-2026-11-08/dependencies-current-v2/run-receipt.json"
+      "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/ordinary-v1/receipt.json",
+      "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/localized-repair-v3/receipt.json",
+      "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/http-consumer-proof.json",
+      "artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json"
     ],
-    "remaining_gap": "Current3scenario/4115member graph compatibility is running. Remaining existing receipt applicability and final consolidated package are pending; named independent/input/visual dependencies retained.",
-    "next_action": "G3/WP4: Inspect owned current full-roster changed-evidence native workflow PID6745/session78399 FIRST: artifacts/agere-evidence-change-current-2026-11-08/dependencies-current-v2/run-receipt.json. Source frozen; do not duplicate or edit product source. Current phase execute_full_roster_native_graph, all4115received members,3authored source mutations,0provider dispatch expected. First attempt6504ended before graph execution because a historical buyer fixture path was missing; preserve its383.996s partial receipt/data copy. V2 reuses the verified complete copy after source/code/size/mtime/roster/count checks, recovers only the existing authored navigation-review declaration from the retained graph fixture, and does not repeat the large clone. On terminal result require corrected-balance/late-receipt/conflicting-snapshot scenarios to update1member while preserving4114others, exact original question/graph/population, blocking acquisition dependency and work ownership; preserve every partial/error and do not claim pass before results. If successful, qualify the EXISTING evidence_change_reassessment receipt with this current workflow. Adapter conformance is NOW SUPPORTED: artifacts/agere-adapter-conformance-2026-11-08/source-compatibility-proof.json and capability-candidates/validation.json verify exact received/semantic DB hashes versus the historical validated snapshot, unchanged materialization AST except precision documentation,4115IDs/2396490rows/237record labels,32activation/source tests, and a fresh4member renamed-schema live API workflow. Candidate preview accepts2/9engineering predicates (not product completion); runtime config mapping is unchanged. Portable operations adapter check is resolved, but final exact consolidated code/config archive/startup/restore remains pending after source fixabcddf6d; keep5aca0a3a as known-good9a8 recovery, no repeated128GB packaging after metadata. App5752/session82142 on8885 remains9a8; activation guard fix tested but no real warehouse migration. After this workflow reconcile remaining EXISTING population/program, longitudinal, discovery, outcome/financial and economical-role receipt scopes with current connected proofs, only missing/materially affected checks; do not merely restamp79file monolithic hashes, repeat source/coverage votes, Q19probes or optional models/research. Keep all25cases/10areas, current principal/October11baseline, exact program/capacity inputs, Q24browserQA without bypass, G5/clinical/model/scientific/actuarial/customer dependencies, every attempt/unknown cost and old-policy new-work rejection. No additional agents/chats/services/caps; quiet continuation ACTIVE; no gating questions. Mike reaffirmed product completion/north star; do not revisit model-choice discussion."
+    "remaining_gap": "Owned Q14ordinary entry running/sourcefrozen; current receipt compatibility/disposition/final package, independent/input/visual dependencies.",
+    "next_action": "G3/WP4: Inspect owned Q14current ordinary-entry PID12096/session73887 FIRST: artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json. Product source/config frozen while it runs; no duplicate provider/native/build job. Original public question only, no owner plan/expectedvalues. Preserve full source-supported affordability versus recorded-balance distinction and unknown hardship, every partial/attempt; do not force coverage or restart wholequestion. Actual subscription usage limit stops provider work. Q15delivery is SEALED: artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json, product6f5f0f26/app12061/session64670; one rangefield corrected/all1646rows exact/59checks/native+browserHTTP/source supported/coverage undecided. All25/tenareas/principal/October11baseline retained. After terminal Q14reconcile source/quantity/scope/current-save evidence, apply already-proved scoped receipt metadata compatibility(no native reruns), final25case disposition, then one exactcurrent archive/install/recovery using existing coldAPFSclone. Prior5aca0a3a recovery and named definition/capacity/model/clinical/customer/Q24visual dependencies remain. No agents/chats/services/newcaps/gating; quiet continuationACTIVE."
   },
   "decisions": [
     {
@@ -5743,6 +5746,13 @@
       "basis": "Current fixed-case matrix explicitly labels Q14andQ15automatic_entry_unqualified; native/source/browser scopes exist and are not repeated. Other unchanged uncertain/model/input-dependent cases are not new campaigns.",
       "scope_impact": "No new capabilities or acceptance areas; all25cases/tenareas retained. One normal original question each, no owner answer/plan.",
       "resource_correction": "Existing APFS cold clones make logical du sizes poor physical-space estimates; optional duplicate scan stopped after exact preservation. Final package follows existing tested path, no data deletion."
+    },
+    {
+      "at": "2026-11-08T20:31:43.442675+00:00",
+      "decision": "Correct verifier metadata input for the located Q15range fault before another provider attempt.",
+      "evidence": "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/localized-repair-v1/receipt.json",
+      "reason": "Complete packet exceeds1Mtoken subscription context after transport overhead; not a subscription usage limit.18113mechanical claim addresses dominate payload while every actual source/output value is separately present. Reuse existing reversible integrity projection for a strictly code-generated complete manifest; preserve allvalues/queries/definitions, exact native manifest and independent source judgment. No new model/threshold, no fullquestion/SQL replay.",
+      "scope_impact": "Only verifier metadata representation for complete nonpatient global tables; all25cases/tenareas retained."
     }
   ],
   "unsealed_work": {
@@ -5751,7 +5761,7 @@
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-    "source_frozen": false,
+    "source_frozen": true,
     "runtime_activation": true,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
@@ -5779,7 +5789,7 @@
     "new_provider_attempts": 185,
     "known_api_equivalent_usd": 4.933035236,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 64569,
+    "all_attempt_rows_retained": 64594,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
@@ -7267,7 +7277,7 @@
     "source_activation_guard_checks_passed": 32,
     "real_warehouse_activated": false,
     "current_archive_product_code": "9a8bcc8a1e0ec2929928ffdec9a3a545928c735e",
-    "current_serving_product_code": "9a8bcc8a1e0ec2929928ffdec9a3a545928c735e",
+    "current_serving_product_code": "6f5f0f261810a3ba1db2806aab5e6d60eb1b47a3",
     "current_source_adapter_compatibility": "artifacts/agere-adapter-conformance-2026-11-08/source-compatibility-proof.json",
     "current_capability_candidate_validation": "artifacts/agere-adapter-conformance-2026-11-08/capability-candidates/validation.json",
     "current_changed_evidence_receipt": "artifacts/agere-evidence-change-current-2026-11-08/dependencies-current-v2/run-receipt.json",
@@ -7326,7 +7336,30 @@
       "free_bytes_before": 6973227008,
       "reconciliation": "artifacts/agere-release-current-2026-11-08/storage-sharing-v1/maintenance-reconciliation.json"
     },
-    "current_capability_consolidation": "artifacts/agere-release-current-2026-11-08/capability-consolidation.json"
+    "current_capability_consolidation": "artifacts/agere-release-current-2026-11-08/capability-consolidation.json",
+    "owned_Q15_final_ordinary_entry": {
+      "pid": 11272,
+      "session": 5027,
+      "receipt": "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/ordinary-v1/receipt.json",
+      "status": "terminal_partial_unverified_located_prose_range_fault",
+      "source_frozen": false,
+      "provider_work": false,
+      "request_progress_key": "baecc85aa28149638be3122d9488abd5",
+      "owner_plan_or_answer_supplied": false
+    },
+    "Q15_retained_native_preparation": "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/localized-preparation-v1/receipt.json",
+    "Q15_current_normal_entry_and_repair": {
+      "ordinary_receipt": "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/ordinary-v1/receipt.json",
+      "repair_receipt": "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/localized-repair-v3/receipt.json",
+      "current_persistence": "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/current-persistence-v1/receipt.json",
+      "consumer": "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/http-consumer-proof.json",
+      "original_question_reexecuted_during_repair": false,
+      "raw_source_queries_reexecuted_during_repair": 0,
+      "machine_source_supported": true,
+      "machine_coverage_undecided": true,
+      "full_case_accepted": false
+    },
+    "Q15_current_source_repair_delivery": "artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json"
   },
   "current_visual_request": {
     "status": "completed",
@@ -7361,8 +7394,16 @@
       }
     }
   },
-  "active_jobs": [],
-  "next_action": "G3/WP4: Current two-program/routing/evidence-mapping delivery SEALED in artifacts/agere-release-current-2026-11-08/connected-delivery-receipt.json. All active native/storage jobs terminal; no source freeze. Product-config586e328a; serving code315b772e/app7824/session64521 on8885. Both4115member programs pass with112+129internal handoffs, exact work replay, finance/prediction-limit/discovery links and member-open,0providers/all64569rows preserved. Live /api/stack/workflow-evaluation HTTP200validates8/9declared engineering predicates; current package pending, not product-completion percentage. Before final snapshot exercise the two PREEXISTING current ordinary-entry gaps Q15thenQ14 from the retained public25case questions, one normal interactive request each, no owner plan/answer/expectedvalues. The existing current matrix labels these automatic_entry_unqualified; these are targeted missing behavior checks, not a new campaign or scope. Preserve all outputs/attempts and partial/unverified statuses; do not force fully-answered votes or repeat unchanged Q20/Q21/Q19/model/source campaigns. On actual subscription limit stop provider work and continue final independent offline consolidation/packaging. After those results update current25case/tenarea disposition, then one exactcode/config archive/install/startup/recovery using existing cold APFS-clone path; all actual main data/source/ledger intact. Do not assume137GiBlogical snapshot size requires another137GiBphysical copy; activebuildcurrently has no nonempty journals. Storage scan9390stopped obsolete with byte-exact completed replacements/partials preserved; no sourcecode/active data changes. Current seven capability receipts are wired under artifacts/agere-release-current-2026-11-08/acceptance; only the receipt-registry JSON changed, native/workflow code/contexts untouched. Final portable checks remain unassessed until actual current install. All25cases/tenareas/principal/October11baseline and exact Q09/Q23definitions/Q16capacity/Q19qualification/Q24visual(no bypass), independent clinical/model/scientific/actuarial/customer dependencies retained. No agents/chats/services/newcaps/gating;quiet continuationACTIVE.",
+  "active_jobs": [
+    {
+      "pid": 12096,
+      "receipt": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json",
+      "kind": "Q14_current_final_ordinary_engineering_entry",
+      "source_frozen": true,
+      "provider_work": true
+    }
+  ],
+  "next_action": "G3/WP4: Inspect owned Q14current ordinary-entry PID12096/session73887 FIRST: artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json. Product source/config frozen while it runs; no duplicate provider/native/build job. Original public question only, no owner plan/expectedvalues. Preserve full source-supported affordability versus recorded-balance distinction and unknown hardship, every partial/attempt; do not force coverage or restart wholequestion. Actual subscription usage limit stops provider work. Q15delivery is SEALED: artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json, product6f5f0f26/app12061/session64670; one rangefield corrected/all1646rows exact/59checks/native+browserHTTP/source supported/coverage undecided. All25/tenareas/principal/October11baseline retained. After terminal Q14reconcile source/quantity/scope/current-save evidence, apply already-proved scoped receipt metadata compatibility(no native reruns), final25case disposition, then one exactcurrent archive/install/recovery using existing coldAPFSclone. Prior5aca0a3a recovery and named definition/capacity/model/clinical/customer/Q24visual dependencies remain. No agents/chats/services/newcaps/gating; quiet continuationACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -7451,8 +7492,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 5752,
-  "owned_server_session": 82142,
+  "owned_server_pid": 12061,
+  "owned_server_session": 64670,
   "last_run_observation": {
     "at": "2026-11-07T20:07:46.544952+00:00",
     "status": "native_storage_repair_qualified_Q06_retained_partial",
@@ -7627,5 +7668,5 @@
       "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json"
     }
   },
-  "server_status": "owned app ready on8885; currentQ03 exact native consumer and archived HTTP passed"
+  "server_status": "Owned local current6f5f0f26; Q15native/browser/askHTTP200; no startup providerwork."
 }
