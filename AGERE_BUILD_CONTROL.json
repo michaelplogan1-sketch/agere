@@ -145,6 +145,10 @@
         {
           "path": "artifacts/agere-whole-stack-release-2026-11-05/delivery-receipt.json",
           "sha256": "7f5bc6b929e9a0798a483c1a8efb849777af2bfe5f3d98e508bfbdbe945b0472"
+        },
+        {
+          "path": "artifacts/agere-release-compatibility-2026-11-08/delivery-receipt.json",
+          "sha256": "7f9d030d8281676d564dca4c72f26762ec907036967f915f04c8d42a74c2f9a6"
         }
       ],
       "acceptance_kind": "same_platform_declared_local_operations_with_explicit_external_and_qualification_dependencies"
@@ -574,6 +578,10 @@
         {
           "path": "artifacts/agere-Q12-signed-development-2026-11-07/recovery-preflight-v2/receipt.json",
           "sha256": "0b2b1f43f52abc5455b094a2598d3eca0330acf350edd3a2ae1c110d0c4feb99"
+        },
+        {
+          "path": "artifacts/agere-release-compatibility-2026-11-08/delivery-receipt.json",
+          "sha256": "7f9d030d8281676d564dca4c72f26762ec907036967f915f04c8d42a74c2f9a6"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -661,24 +669,23 @@
     }
   ],
   "checkpoint": {
-    "kind": "Q03_current_entry_and_scoped_Q20_Q25_compatibility_package_running",
+    "kind": "current_scoped_package_and_workflow_delivery_release_compatibility_next",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Original discharge completeness/LOS question now demonstrably completes through ordinary chat, saves and reopens under current source/policy. No owner plan/expected values sent.",
+    "user_behavior_delta": "The current synthetic candidate now has a sealed same-platform checkpoint/archive/isolated installation and actual archived HTTP inspection of the normal-entry Q03 analysis. The live app was restored on8885; all92organization rows and complete partial answer reopen exactly. Current source-change work and generic invoice contracts remain intact. No new provider judgment, source replacement, qualification or restamping was needed.",
     "measured_failure_reduction": {
-      "missing_current_ordinary_evidence_before": true,
-      "missing_current_ordinary_evidence_after": false,
-      "organization_groups_reconciled": 92,
-      "native_cells_reconciled": 1196
+      "current_package_install_and_archived_context_unassessed_before": true,
+      "current_package_install_and_archived_context_unassessed_after": false,
+      "Q03_all92groups_1196cells_retained": true,
+      "source_or_ledger_rows_lost": 0
     },
     "evidence": [
-      "artifacts/agere-Q03-current-2026-11-08/source-reconciliation.json",
-      "artifacts/agere-Q03-current-2026-11-08/ordinary-v1/receipt.json",
-      "artifacts/agere-release-compatibility-2026-11-08/scoped-compatibility-proof.json",
-      "artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json"
+      "artifacts/agere-release-compatibility-2026-11-08/delivery-receipt.json",
+      "artifacts/agere-release-compatibility-2026-11-08/executable-release-assessment.json",
+      "artifacts/agere-release-compatibility-2026-11-08/current-capability-candidates/portable-candidate-validation.json"
     ],
-    "remaining_gap": "Current archive/install and archived HTTP verification in progress. Full finite release disposition and qualification/input/visual/customer dependencies remain.",
-    "next_action": "G3/WP4: Inspect owned local release PID5336/session66394 and artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json FIRST. Current phase checkpoint; source frozen, owned app3518/session51360 was stopped to release the required exclusive checkpoint lock. Never duplicate the job or edit product source. The checkpoint has reached the large retained runtime databases (observed3339files/128195939400logical bytes); this is existing state preservation, not new source/model work. After terminal success, restart ONLY the owned app on8885 using the existing launcher with current9a8bcc8a and approved environment, retain previous app receipt, then verify actual current Q03 native save/reopen. Run isolated archived-server health/meta/Q03 inspection with hosted inference disabled, stop that temporary server, and verify all64569ledger rows/source unchanged; no ledger restore. If packaging fails, preserve partial output and diagnose the actual error before any retry. Q03 ordinary current entry/all92groups/1196cells now reconcile; Q20/Q21 inspection/invalidation guards, Q22 source-change workflow and Q25 portable core pass scoped current compatibility. Q23 exact diabetes/BP definitions and Q24 browser visual QA remain explicit dependencies; no policy bypass. Finish the EXISTING fixed25/tenarea current release disposition using latest completed proofs and only missing/materially affected checks; no unchanged source/coverage revotes, Q19 reruns, threshold changes, optional models/research or architecture rewrite. Verifier candidates OFF; year-anchor/validate_window already resolved. Preserve current principal/October11baseline and separate G5/clinical/model/scientific/actuarial/customer prerequisites. Quiet continuation ACTIVE; all ten areas/all25fixedcases remain."
+    "remaining_gap": "Existing current evidence compatibility: portable operations current startup/restore/transactions/scope checks are supported; adapter_conformance remains unassessed and candidate OFF. Remaining existing capability receipts still require scoped current applicability; named clinical/input/visual/customer dependencies remain.",
+    "next_action": "G3/WP4: Current9a8 same-platform archive/install/actual archived HTTP and live app restoration are SEALED in artifacts/agere-release-compatibility-2026-11-08/delivery-receipt.json. App5752/session82142 ready on8885; all64569ledger rows/source unchanged, all package/temporary-server jobs terminal, no source freeze. Continue the EXISTING finite25case/tenarea release disposition. Actual executable-release-assessment.json computes blocked engineering evidence:1/9required predicates currently accepted;8capability receipts still point to November5monolithic implementation manifests with79changed files each. Do NOT call this8missing stack components or a product completion percentage. Next inspect those changed-file scopes and each existing requirement, attach current Nov6-8 connected workflow proofs, and qualify compatibility only where evidence supports it. Run only specifically missing/materially affected workflow checks; do not merely restamp hashes, weaken guards, repeat passing campaigns, unchanged Q20/Q21 source/coverage votes or Q19 verifier probes. Keep old-policy answers inspectable and blocked for new work; preserve every attempt/partial. Finish applicability/consolidation before any final config-bound archive refresh; retain the new5aca0a3a archive as a known-good recovery point and avoid rebuilding128GBafter routine metadata changes. Q03 ordinary chat/source/current consumer and Q22/Q25 current scoped workflows are demonstrated; machine uncertainty remains explicit. Q23 exact diabetes/BP definitions, service/capacity inputs, Q24 browser visual QA without bypass, G5/clinical/model/scientific/actuarial/customer prerequisites remain. All25fixedcases/all10areas/current principal/October11baseline retained. Verifier candidates OFF; year-anchor/validate_window resolved. No optional research/models, new agents/chats/services/caps, architecture rewrite or routine approval gate; quiet continuation ACTIVE. Next bounded action: qualify the existing adapter_conformance check using current raw-adapter/semantic-layer change scopes and latest public-source conformance/workflow evidence. The portable_local_operations candidate already has current startup/interface/restart/transaction/scope evidence (57current recovery checks plus actual archive/HTTP), but remains UNASSESSED and OFF until adapter conformance is supported. Candidate receipt: artifacts/agere-release-compatibility-2026-11-08/current-capability-candidates/portable_local_operations.json; validation: artifacts/agere-release-compatibility-2026-11-08/current-capability-candidates/portable-candidate-validation.json. No config mapping or runtime default was changed; retain the sealed5aca0a3a archive. Then reconcile the other existing capability receipts within the same frozen finite contract, with no broad model reruns."
   },
   "decisions": [
     {
@@ -5661,15 +5668,42 @@
         "artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json"
       ],
       "scope_impact": "No case or area removed; no new provider vote, model promotion, public deliverable or spending/workflow cap."
+    },
+    {
+      "at": "2026-11-08T17:14:39.745766+00:00",
+      "decision": "Exclusive checkpoint sealed in586.703s; owned job has advanced to verifying/archiving the immutable checkpoint. Restore the stopped owned app now while the archive continues, to limit product downtime. No provider request or product edit is needed for restart.",
+      "evidence": [
+        "artifacts/agere-release-compatibility-2026-11-08/package-v2/checkpoint/complete.json",
+        "artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json"
+      ],
+      "scope_impact": "Only startup is moved earlier after the exclusive snapshot lock is released. Archive remains frozen; current source/ledger are never restored."
+    },
+    {
+      "at": "2026-11-08T17:23:29.890673+00:00",
+      "decision": "Seal actual scoped current archive/install/HTTP delivery and restore the main app. Executable release assessment correctly blocks stale capability manifests; resolve their current applicability within the existing finite contract, not by declaring new components or setting model uncertainty to pass.",
+      "evidence": [
+        "artifacts/agere-release-compatibility-2026-11-08/delivery-receipt.json",
+        "artifacts/agere-release-compatibility-2026-11-08/executable-release-assessment.json"
+      ],
+      "scope_impact": "All25cases/10areas and independent dependencies retained; no product source changes or new provider work this turn. Archive refresh waits for final applicability/config consolidation."
+    },
+    {
+      "at": "2026-11-08T17:26:51.629303+00:00",
+      "decision": "Current portable operations evidence reconciled for5existingchecks using actual current archive/HTTP and57affected recovery-contract checks. Adapter conformance remains unassessed; do not activate or restamp this incomplete candidate. All8stale receipts share a monolithic79file manifest; correct the finite evidence applicability rather than adding8components or revisiting uncertain model judgments.",
+      "evidence": [
+        "artifacts/agere-release-compatibility-2026-11-08/current-capability-candidates/portable-candidate-validation.json",
+        "artifacts/agere-release-compatibility-2026-11-08/current-recovery-contract-checks.log"
+      ],
+      "scope_impact": "No product/config/default change, new providers, area removal or finish-line expansion."
     }
   ],
   "unsealed_work": {
-    "status": "Q03_and_Q20_Q25_scoped_compatibility_complete_current_package_running",
+    "status": "scoped_current_package_sealed_whole_release_compatibility_pending",
     "product_commit": "9a8bcc8a1e0ec2929928ffdec9a3a545928c735e",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-    "source_frozen": true,
+    "source_frozen": false,
     "runtime_activation": true,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
@@ -7152,7 +7186,7 @@
     "Q19_known_api_equivalent_usd": 0,
     "Q19_qualified_predictor_attached": false,
     "full_Q19_acceptance": false,
-    "next_action": "G3/WP4: Inspect owned local release PID5336/session66394 and artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json FIRST. Current phase checkpoint; source frozen, owned app3518/session51360 was stopped to release the required exclusive checkpoint lock. Never duplicate the job or edit product source. The checkpoint has reached the large retained runtime databases (observed3339files/128195939400logical bytes); this is existing state preservation, not new source/model work. After terminal success, restart ONLY the owned app on8885 using the existing launcher with current9a8bcc8a and approved environment, retain previous app receipt, then verify actual current Q03 native save/reopen. Run isolated archived-server health/meta/Q03 inspection with hosted inference disabled, stop that temporary server, and verify all64569ledger rows/source unchanged; no ledger restore. If packaging fails, preserve partial output and diagnose the actual error before any retry. Q03 ordinary current entry/all92groups/1196cells now reconcile; Q20/Q21 inspection/invalidation guards, Q22 source-change workflow and Q25 portable core pass scoped current compatibility. Q23 exact diabetes/BP definitions and Q24 browser visual QA remain explicit dependencies; no policy bypass. Finish the EXISTING fixed25/tenarea current release disposition using latest completed proofs and only missing/materially affected checks; no unchanged source/coverage revotes, Q19 reruns, threshold changes, optional models/research or architecture rewrite. Verifier candidates OFF; year-anchor/validate_window already resolved. Preserve current principal/October11baseline and separate G5/clinical/model/scientific/actuarial/customer prerequisites. Quiet continuation ACTIVE; all ten areas/all25fixedcases remain.",
+    "next_action": "G3/WP4: Current9a8 same-platform archive/install/actual archived HTTP and live app restoration are SEALED in artifacts/agere-release-compatibility-2026-11-08/delivery-receipt.json. App5752/session82142 ready on8885; all64569ledger rows/source unchanged, all package/temporary-server jobs terminal, no source freeze. Continue the EXISTING finite25case/tenarea release disposition. Actual executable-release-assessment.json computes blocked engineering evidence:1/9required predicates currently accepted;8capability receipts still point to November5monolithic implementation manifests with79changed files each. Do NOT call this8missing stack components or a product completion percentage. Next inspect those changed-file scopes and each existing requirement, attach current Nov6-8 connected workflow proofs, and qualify compatibility only where evidence supports it. Run only specifically missing/materially affected workflow checks; do not merely restamp hashes, weaken guards, repeat passing campaigns, unchanged Q20/Q21 source/coverage votes or Q19 verifier probes. Keep old-policy answers inspectable and blocked for new work; preserve every attempt/partial. Finish applicability/consolidation before any final config-bound archive refresh; retain the new5aca0a3a archive as a known-good recovery point and avoid rebuilding128GBafter routine metadata changes. Q03 ordinary chat/source/current consumer and Q22/Q25 current scoped workflows are demonstrated; machine uncertainty remains explicit. Q23 exact diabetes/BP definitions, service/capacity inputs, Q24 browser visual QA without bypass, G5/clinical/model/scientific/actuarial/customer prerequisites remain. All25fixedcases/all10areas/current principal/October11baseline retained. Verifier candidates OFF; year-anchor/validate_window resolved. No optional research/models, new agents/chats/services/caps, architecture rewrite or routine approval gate; quiet continuation ACTIVE. Next bounded action: qualify the existing adapter_conformance check using current raw-adapter/semantic-layer change scopes and latest public-source conformance/workflow evidence. The portable_local_operations candidate already has current startup/interface/restart/transaction/scope evidence (57current recovery checks plus actual archive/HTTP), but remains UNASSESSED and OFF until adapter conformance is supported. Candidate receipt: artifacts/agere-release-compatibility-2026-11-08/current-capability-candidates/portable_local_operations.json; validation: artifacts/agere-release-compatibility-2026-11-08/current-capability-candidates/portable-candidate-validation.json. No config mapping or runtime default was changed; retain the sealed5aca0a3a archive. Then reconcile the other existing capability receipts within the same frozen finite contract, with no broad model reruns.",
     "Q19_ordinary_native_routing": {
       "receipt": "artifacts/agere-Q19-retained-2026-11-08/ordinary-routing-workflow-completion.json",
       "product_commit": "9a8bcc8a1e0ec2929928ffdec9a3a545928c735e",
@@ -7173,7 +7207,13 @@
     "Q03_all92groups_1196cells_exact": true,
     "Q20_Q25_current_compatibility": "artifacts/agere-release-compatibility-2026-11-08/scoped-compatibility-proof.json",
     "current_package_receipt": "artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json",
-    "current_package_exec_session": 66394
+    "current_package_exec_session": 66394,
+    "current_app_restoration_proof": "artifacts/agere-release-compatibility-2026-11-08/restored-current-app-proof.json",
+    "current_package_delivery": "artifacts/agere-release-compatibility-2026-11-08/delivery-receipt.json",
+    "current_archived_HTTP": "artifacts/agere-release-compatibility-2026-11-08/archived-http-v1/receipt.json",
+    "executable_release_assessment": "artifacts/agere-release-compatibility-2026-11-08/executable-release-assessment.json",
+    "current_portable_capability_candidate": "artifacts/agere-release-compatibility-2026-11-08/current-capability-candidates/portable_local_operations.json",
+    "current_portable_capability_validation": "artifacts/agere-release-compatibility-2026-11-08/current-capability-candidates/portable-candidate-validation.json"
   },
   "current_visual_request": {
     "status": "completed",
@@ -7208,17 +7248,8 @@
       }
     }
   },
-  "active_jobs": [
-    {
-      "pid": 5336,
-      "kind": "current_local_release_package",
-      "receipt": "artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json",
-      "source_frozen": true,
-      "provider_work": false,
-      "session_id": 66394
-    }
-  ],
-  "next_action": "G3/WP4: Inspect owned local release PID5336/session66394 and artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json FIRST. Current phase checkpoint; source frozen, owned app3518/session51360 was stopped to release the required exclusive checkpoint lock. Never duplicate the job or edit product source. The checkpoint has reached the large retained runtime databases (observed3339files/128195939400logical bytes); this is existing state preservation, not new source/model work. After terminal success, restart ONLY the owned app on8885 using the existing launcher with current9a8bcc8a and approved environment, retain previous app receipt, then verify actual current Q03 native save/reopen. Run isolated archived-server health/meta/Q03 inspection with hosted inference disabled, stop that temporary server, and verify all64569ledger rows/source unchanged; no ledger restore. If packaging fails, preserve partial output and diagnose the actual error before any retry. Q03 ordinary current entry/all92groups/1196cells now reconcile; Q20/Q21 inspection/invalidation guards, Q22 source-change workflow and Q25 portable core pass scoped current compatibility. Q23 exact diabetes/BP definitions and Q24 browser visual QA remain explicit dependencies; no policy bypass. Finish the EXISTING fixed25/tenarea current release disposition using latest completed proofs and only missing/materially affected checks; no unchanged source/coverage revotes, Q19 reruns, threshold changes, optional models/research or architecture rewrite. Verifier candidates OFF; year-anchor/validate_window already resolved. Preserve current principal/October11baseline and separate G5/clinical/model/scientific/actuarial/customer prerequisites. Quiet continuation ACTIVE; all ten areas/all25fixedcases remain.",
+  "active_jobs": [],
+  "next_action": "G3/WP4: Current9a8 same-platform archive/install/actual archived HTTP and live app restoration are SEALED in artifacts/agere-release-compatibility-2026-11-08/delivery-receipt.json. App5752/session82142 ready on8885; all64569ledger rows/source unchanged, all package/temporary-server jobs terminal, no source freeze. Continue the EXISTING finite25case/tenarea release disposition. Actual executable-release-assessment.json computes blocked engineering evidence:1/9required predicates currently accepted;8capability receipts still point to November5monolithic implementation manifests with79changed files each. Do NOT call this8missing stack components or a product completion percentage. Next inspect those changed-file scopes and each existing requirement, attach current Nov6-8 connected workflow proofs, and qualify compatibility only where evidence supports it. Run only specifically missing/materially affected workflow checks; do not merely restamp hashes, weaken guards, repeat passing campaigns, unchanged Q20/Q21 source/coverage votes or Q19 verifier probes. Keep old-policy answers inspectable and blocked for new work; preserve every attempt/partial. Finish applicability/consolidation before any final config-bound archive refresh; retain the new5aca0a3a archive as a known-good recovery point and avoid rebuilding128GBafter routine metadata changes. Q03 ordinary chat/source/current consumer and Q22/Q25 current scoped workflows are demonstrated; machine uncertainty remains explicit. Q23 exact diabetes/BP definitions, service/capacity inputs, Q24 browser visual QA without bypass, G5/clinical/model/scientific/actuarial/customer prerequisites remain. All25fixedcases/all10areas/current principal/October11baseline retained. Verifier candidates OFF; year-anchor/validate_window resolved. No optional research/models, new agents/chats/services/caps, architecture rewrite or routine approval gate; quiet continuation ACTIVE. Next bounded action: qualify the existing adapter_conformance check using current raw-adapter/semantic-layer change scopes and latest public-source conformance/workflow evidence. The portable_local_operations candidate already has current startup/interface/restart/transaction/scope evidence (57current recovery checks plus actual archive/HTTP), but remains UNASSESSED and OFF until adapter conformance is supported. Candidate receipt: artifacts/agere-release-compatibility-2026-11-08/current-capability-candidates/portable_local_operations.json; validation: artifacts/agere-release-compatibility-2026-11-08/current-capability-candidates/portable-candidate-validation.json. No config mapping or runtime default was changed; retain the sealed5aca0a3a archive. Then reconcile the other existing capability receipts within the same frozen finite contract, with no broad model reruns.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -7307,8 +7338,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 3518,
-  "owned_server_session": 51360,
+  "owned_server_pid": 5752,
+  "owned_server_session": 82142,
   "last_run_observation": {
     "at": "2026-11-07T20:07:46.544952+00:00",
     "status": "native_storage_repair_qualified_Q06_retained_partial",
@@ -7482,5 +7513,6 @@
       "reviewed_at": "2026-11-06T15:19:10.401807+00:00",
       "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json"
     }
-  }
+  },
+  "server_status": "owned app ready on8885; currentQ03 exact native consumer and archived HTTP passed"
 }
