@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T16:05:02.243666+00:00",
+  "updated_at": "2026-11-08T16:45:58.097648+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -661,29 +661,24 @@
     }
   ],
   "checkpoint": {
-    "kind": "Q19_ordinary_native_routing_current_source_evidence_with_verification_dependency",
+    "kind": "Q03_current_entry_and_scoped_Q20_Q25_compatibility_package_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The ordinary planner now binds validated native operator semantics and ranks literal-complete candidates before advisory route scores. An unrelated calibration proposal can no longer hide the exact no-fit target/origin/day-window plan. Planner policy identity now includes the actual proposer, local compiler, economical ladder and route arbiter. Original source computations and all no-fit/source/entity/date/quantity guards remain unchanged.",
+    "user_behavior_delta": "Original discharge completeness/LOS question now demonstrably completes through ordinary chat, saves and reopens under current source/policy. No owner plan/expected values sent.",
     "measured_failure_reduction": {
-      "native_plan_false_literal_gaps": {
-        "before": 3,
-        "after": 0
-      },
-      "unrelated_incomplete_candidate_can_hide_complete_native_plan": false,
-      "original_normal_question_current_save_reopen_and_all238rows_exact": true,
-      "native_only_automatic_acceptance": false
+      "missing_current_ordinary_evidence_before": true,
+      "missing_current_ordinary_evidence_after": false,
+      "organization_groups_reconciled": 92,
+      "native_cells_reconciled": 1196
     },
     "evidence": [
-      "artifacts/agere-Q19-retained-2026-11-08/ordinary-routing-workflow-completion.json",
-      "artifacts/agere-Q19-retained-2026-11-08/ordinary-entry-v4/receipt.json",
-      "artifacts/agere-Q19-retained-2026-11-08/actual-ladder-plan-preflight.json",
-      "artifacts/agere-Q19-retained-2026-11-08/candidate-coverage-checks-v1.log",
-      "artifacts/agere-ordinary-comparison-2026-11-05/current-assessment-2026-11-07/assessment.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/current-assessment-2026-11-07/Q20-Q21-policy-compatibility-20261108.json"
+      "artifacts/agere-Q03-current-2026-11-08/source-reconciliation.json",
+      "artifacts/agere-Q03-current-2026-11-08/ordinary-v1/receipt.json",
+      "artifacts/agere-release-compatibility-2026-11-08/scoped-compatibility-proof.json",
+      "artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json"
     ],
-    "remaining_gap": "Native-only automatic acceptance remains open: small-model compact summary check weak and complete-state check exceeds provider context; do not repeat unchanged calls or bypass confirmation.; Observed initial native tier OperationalError needs retained-trace disposition; subsequent native execution and cached output conserve every source row.; Reconcile current saved-context compatibility after final code freeze; Q20/Q21 historical outputs remain preserved and source unchanged, but current policy blocks new work until scoped revalidation.; Fixed25/tenarea release remains unaccepted. Exact program/capacity inputs, requested report visual QA, known requested-year-anchor baseline regression, G5, independent clinical/model/scientific/actuarial and customer prerequisites remain explicit.",
-    "next_action": "G3/WP4: Q19 ordinary original question returns current238row native evidence and saves/reopens exactly on9a8bcc8a/app3518/session51360; contextANS-345933b7e6e34a0fdd6181e0. No active provider/build/training job or freeze. Two routing defects repaired (validated operator semantics and literal-complete candidate screening);90focused checks and actual profile/encoder/Ladder preflight pass, all source computations/guards retained. Current native-only automatic acceptance still open: native confirmation weak and full-state Jev/PPLX payload exceeds provider context (430985tokens vs262144); final output is cached backstop fallback, not native-only success. Inspect retained v4 native result, exact check/render inputs, probabilities and initial native OperationalError before any new provider request. Repair only demonstrated role-input construction while preserving complete native evidence and source/quantity/entity/date guards; do not bypass confirmation, add new caps, rewrite unchanged answers or rerun the whole question on unchanged inputs. Then finish scoped current-context compatibility and existing fixed25/tenarea release disposition after final code freeze; Q20/Q21 old outputs preserved but policy reuse requires scoped revalidation, no unchanged votes. Keep exact program/capacity dependencies, blocked report visual QA without file-policy bypass, baseline requested-year regression, current principal/October11baseline and separate G5/clinical/model/scientific/actuarial/customer prerequisites. All attempts,2unknown-priced context failures and cached receipts retained; no matched savings/clinical/fullMVP claim. Quiet continuation ACTIVE."
+    "remaining_gap": "Current archive/install and archived HTTP verification in progress. Full finite release disposition and qualification/input/visual/customer dependencies remain.",
+    "next_action": "G3/WP4: Inspect owned local release PID5336/session66394 and artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json FIRST. Current phase checkpoint; source frozen, owned app3518/session51360 was stopped to release the required exclusive checkpoint lock. Never duplicate the job or edit product source. The checkpoint has reached the large retained runtime databases (observed3339files/128195939400logical bytes); this is existing state preservation, not new source/model work. After terminal success, restart ONLY the owned app on8885 using the existing launcher with current9a8bcc8a and approved environment, retain previous app receipt, then verify actual current Q03 native save/reopen. Run isolated archived-server health/meta/Q03 inspection with hosted inference disabled, stop that temporary server, and verify all64569ledger rows/source unchanged; no ledger restore. If packaging fails, preserve partial output and diagnose the actual error before any retry. Q03 ordinary current entry/all92groups/1196cells now reconcile; Q20/Q21 inspection/invalidation guards, Q22 source-change workflow and Q25 portable core pass scoped current compatibility. Q23 exact diabetes/BP definitions and Q24 browser visual QA remain explicit dependencies; no policy bypass. Finish the EXISTING fixed25/tenarea current release disposition using latest completed proofs and only missing/materially affected checks; no unchanged source/coverage revotes, Q19 reruns, threshold changes, optional models/research or architecture rewrite. Verifier candidates OFF; year-anchor/validate_window already resolved. Preserve current principal/October11baseline and separate G5/clinical/model/scientific/actuarial/customer prerequisites. Quiet continuation ACTIVE; all ten areas/all25fixedcases remain."
   },
   "decisions": [
     {
@@ -5637,15 +5632,44 @@
       "reason": "Bare native compilation had not established normal entry. Actual normal traces rejected the unrelated calibration selection; after repairs all238native values return exactly but native confirmation is weak/oversized. Repeated whole workflows or threshold bypass would not resolve this input failure.",
       "evidence": "artifacts/agere-Q19-retained-2026-11-08/ordinary-routing-workflow-completion.json",
       "scope_impact": "Existing Q19 and shared planner/verification contracts only; full25/tenareas retained. No model catalog, new service/agent/chat, new cap, architecture rewrite or clinical qualification."
+    },
+    {
+      "at": "2026-11-08T16:45:58.097648+00:00",
+      "decision": "Stop native-only confirmation chasing and resume finite whole-stack release work; preserve failed verifier candidates and guards",
+      "reason": "Complete native evidence still did not clear unchanged small-model thresholds, and a standalone frontier control exposed a date-binding limitation caught by code. Do not turn optional zero-LLM optimization into a new finish line. Latest assessment also proves the carried year-anchor blocker was already resolved.",
+      "evidence": [
+        "artifacts/agere-Q19-retained-2026-11-08/verification-role-assessment.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/current-assessment-2026-11-07/assessment.json"
+      ],
+      "scope_impact": "All25fixedcases/tenareas retained; no qualification threshold relaxed, no source row dropped, no additional clinical authority or new component required."
+    },
+    {
+      "at": "2026-11-08T16:57:14.381708+00:00",
+      "decision": "Complete missing current Q03 ordinary engineering evidence without repeating historical study. All92groups/1196cells exact; retain publicpartial/unverified. Continue finite current release compatibility rather than rerun uncertain votes.",
+      "scope_impact": "No area/case removed; no source/default/model change. Historical paired aggregate unchanged.",
+      "evidence": [
+        "artifacts/agere-Q03-current-2026-11-08/source-reconciliation.json",
+        "artifacts/agere-Q03-current-2026-11-08/ordinary-v1/receipt.json"
+      ]
+    },
+    {
+      "at": "2026-11-08T17:11:54.186574+00:00",
+      "decision": "Q20-Q25 scoped compatibility completed; preserve old-policy answers exactly and reject their new work. Current archive uses existing same-platform checkpoint/install. First attempt correctly refused because owned app held a build lock; failed/partial attempt retained, idle owned app stopped, one new attempt running. No checkpoint lock bypass or source rewrite.",
+      "evidence": [
+        "artifacts/agere-release-compatibility-2026-11-08/scoped-compatibility-proof.json",
+        "artifacts/agere-release-compatibility-2026-11-08/package/receipt.json",
+        "artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json"
+      ],
+      "scope_impact": "No case or area removed; no new provider vote, model promotion, public deliverable or spending/workflow cap."
     }
   ],
   "unsealed_work": {
-    "status": "Q19_ordinary_evidence_current_native_verification_input_dependency_explicit",
-    "product_commit": "6df36263b54136ae6e853b2e927c2b1b21dac4e6",
+    "status": "Q03_and_Q20_Q25_scoped_compatibility_complete_current_package_running",
+    "product_commit": "9a8bcc8a1e0ec2929928ffdec9a3a545928c735e",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-    "source_frozen": false,
+    "source_frozen": true,
     "runtime_activation": true,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
@@ -5673,7 +5697,7 @@
     "new_provider_attempts": 185,
     "known_api_equivalent_usd": 4.933035236,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 64387,
+    "all_attempt_rows_retained": 64569,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
@@ -7128,7 +7152,7 @@
     "Q19_known_api_equivalent_usd": 0,
     "Q19_qualified_predictor_attached": false,
     "full_Q19_acceptance": false,
-    "next_action": "G3/WP4: Q19 ordinary original question returns current238row native evidence and saves/reopens exactly on9a8bcc8a/app3518/session51360; contextANS-345933b7e6e34a0fdd6181e0. No active provider/build/training job or freeze. Two routing defects repaired (validated operator semantics and literal-complete candidate screening);90focused checks and actual profile/encoder/Ladder preflight pass, all source computations/guards retained. Current native-only automatic acceptance still open: native confirmation weak and full-state Jev/PPLX payload exceeds provider context (430985tokens vs262144); final output is cached backstop fallback, not native-only success. Inspect retained v4 native result, exact check/render inputs, probabilities and initial native OperationalError before any new provider request. Repair only demonstrated role-input construction while preserving complete native evidence and source/quantity/entity/date guards; do not bypass confirmation, add new caps, rewrite unchanged answers or rerun the whole question on unchanged inputs. Then finish scoped current-context compatibility and existing fixed25/tenarea release disposition after final code freeze; Q20/Q21 old outputs preserved but policy reuse requires scoped revalidation, no unchanged votes. Keep exact program/capacity dependencies, blocked report visual QA without file-policy bypass, baseline requested-year regression, current principal/October11baseline and separate G5/clinical/model/scientific/actuarial/customer prerequisites. All attempts,2unknown-priced context failures and cached receipts retained; no matched savings/clinical/fullMVP claim. Quiet continuation ACTIVE.",
+    "next_action": "G3/WP4: Inspect owned local release PID5336/session66394 and artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json FIRST. Current phase checkpoint; source frozen, owned app3518/session51360 was stopped to release the required exclusive checkpoint lock. Never duplicate the job or edit product source. The checkpoint has reached the large retained runtime databases (observed3339files/128195939400logical bytes); this is existing state preservation, not new source/model work. After terminal success, restart ONLY the owned app on8885 using the existing launcher with current9a8bcc8a and approved environment, retain previous app receipt, then verify actual current Q03 native save/reopen. Run isolated archived-server health/meta/Q03 inspection with hosted inference disabled, stop that temporary server, and verify all64569ledger rows/source unchanged; no ledger restore. If packaging fails, preserve partial output and diagnose the actual error before any retry. Q03 ordinary current entry/all92groups/1196cells now reconcile; Q20/Q21 inspection/invalidation guards, Q22 source-change workflow and Q25 portable core pass scoped current compatibility. Q23 exact diabetes/BP definitions and Q24 browser visual QA remain explicit dependencies; no policy bypass. Finish the EXISTING fixed25/tenarea current release disposition using latest completed proofs and only missing/materially affected checks; no unchanged source/coverage revotes, Q19 reruns, threshold changes, optional models/research or architecture rewrite. Verifier candidates OFF; year-anchor/validate_window already resolved. Preserve current principal/October11baseline and separate G5/clinical/model/scientific/actuarial/customer prerequisites. Quiet continuation ACTIVE; all ten areas/all25fixedcases remain.",
     "Q19_ordinary_native_routing": {
       "receipt": "artifacts/agere-Q19-retained-2026-11-08/ordinary-routing-workflow-completion.json",
       "product_commit": "9a8bcc8a1e0ec2929928ffdec9a3a545928c735e",
@@ -7136,7 +7160,20 @@
       "native_only_automatic_acceptance": false,
       "provider_attempts_latest": 4,
       "total_cost_known": false
-    }
+    },
+    "Q19_verifier_role_attempts": {
+      "receipt": "artifacts/agere-Q19-retained-2026-11-08/verification-role-assessment.json",
+      "candidate_default_activation": false,
+      "source_code_restored_to_known_good": true,
+      "new_provider_attempts": 8
+    },
+    "Q03_current_workflow": "artifacts/agere-Q03-current-2026-11-08/source-reconciliation.json",
+    "Q03_current_context": "ANS-a9df138f98042bf6b229e983",
+    "Q03_original_ordinary_entry_evidenced": true,
+    "Q03_all92groups_1196cells_exact": true,
+    "Q20_Q25_current_compatibility": "artifacts/agere-release-compatibility-2026-11-08/scoped-compatibility-proof.json",
+    "current_package_receipt": "artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json",
+    "current_package_exec_session": 66394
   },
   "current_visual_request": {
     "status": "completed",
@@ -7171,8 +7208,17 @@
       }
     }
   },
-  "active_jobs": [],
-  "next_action": "G3/WP4: Q19 ordinary original question returns current238row native evidence and saves/reopens exactly on9a8bcc8a/app3518/session51360; contextANS-345933b7e6e34a0fdd6181e0. No active provider/build/training job or freeze. Two routing defects repaired (validated operator semantics and literal-complete candidate screening);90focused checks and actual profile/encoder/Ladder preflight pass, all source computations/guards retained. Current native-only automatic acceptance still open: native confirmation weak and full-state Jev/PPLX payload exceeds provider context (430985tokens vs262144); final output is cached backstop fallback, not native-only success. Inspect retained v4 native result, exact check/render inputs, probabilities and initial native OperationalError before any new provider request. Repair only demonstrated role-input construction while preserving complete native evidence and source/quantity/entity/date guards; do not bypass confirmation, add new caps, rewrite unchanged answers or rerun the whole question on unchanged inputs. Then finish scoped current-context compatibility and existing fixed25/tenarea release disposition after final code freeze; Q20/Q21 old outputs preserved but policy reuse requires scoped revalidation, no unchanged votes. Keep exact program/capacity dependencies, blocked report visual QA without file-policy bypass, baseline requested-year regression, current principal/October11baseline and separate G5/clinical/model/scientific/actuarial/customer prerequisites. All attempts,2unknown-priced context failures and cached receipts retained; no matched savings/clinical/fullMVP claim. Quiet continuation ACTIVE.",
+  "active_jobs": [
+    {
+      "pid": 5336,
+      "kind": "current_local_release_package",
+      "receipt": "artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json",
+      "source_frozen": true,
+      "provider_work": false,
+      "session_id": 66394
+    }
+  ],
+  "next_action": "G3/WP4: Inspect owned local release PID5336/session66394 and artifacts/agere-release-compatibility-2026-11-08/package-v2/receipt.json FIRST. Current phase checkpoint; source frozen, owned app3518/session51360 was stopped to release the required exclusive checkpoint lock. Never duplicate the job or edit product source. The checkpoint has reached the large retained runtime databases (observed3339files/128195939400logical bytes); this is existing state preservation, not new source/model work. After terminal success, restart ONLY the owned app on8885 using the existing launcher with current9a8bcc8a and approved environment, retain previous app receipt, then verify actual current Q03 native save/reopen. Run isolated archived-server health/meta/Q03 inspection with hosted inference disabled, stop that temporary server, and verify all64569ledger rows/source unchanged; no ledger restore. If packaging fails, preserve partial output and diagnose the actual error before any retry. Q03 ordinary current entry/all92groups/1196cells now reconcile; Q20/Q21 inspection/invalidation guards, Q22 source-change workflow and Q25 portable core pass scoped current compatibility. Q23 exact diabetes/BP definitions and Q24 browser visual QA remain explicit dependencies; no policy bypass. Finish the EXISTING fixed25/tenarea current release disposition using latest completed proofs and only missing/materially affected checks; no unchanged source/coverage revotes, Q19 reruns, threshold changes, optional models/research or architecture rewrite. Verifier candidates OFF; year-anchor/validate_window already resolved. Preserve current principal/October11baseline and separate G5/clinical/model/scientific/actuarial/customer prerequisites. Quiet continuation ACTIVE; all ten areas/all25fixedcases remain.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
