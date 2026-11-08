@@ -232,6 +232,22 @@ class EvidenceOnly(unittest.TestCase):
         self.assertEqual(r['summary']['recorded_target_event_rows'], 4)
         self.assertNotIn('unassigned', {row['source'] for row in r['rows'][1:]})
 
+    def test_existing_native_route_extracts_literal_evidence_contract_without_fitting(self):
+        g, info = engine_suite.compile_route(self.question, {}, AS_OF)
+        self.assertEqual(g['nodes'][-1]['operation'], 'scorecard_risk')
+        self.assertEqual(g['nodes'][-1]['parameters'], self.params())
+        for outcome, wording in [('ed_visit', 'an emergency visit'), ('death', 'death')]:
+            q = self.question.replace('inpatient admission', wording)
+            routed = S.route(q, {}, AS_OF)
+            self.assertEqual(routed[0]['nodes'][0]['parameters'], self.params(outcome=outcome))
+
+    def test_ambiguous_or_incomplete_no_fit_request_never_falls_through_to_fit(self):
+        for q in (self.question.replace('next 90 days', 'next 90 days and next 30 days'),
+                  self.question.replace('2029-01-01', 'an unspecified date'),
+                  self.question.replace('inpatient admission', 'inpatient admission and death'),
+                  'Review the points scorecard evidence without fitting. Do not fit a new scorecard.'):
+            self.assertIsNone(S.route(q, {}, AS_OF), q)
+
 
 if __name__ == '__main__':
     unittest.main()

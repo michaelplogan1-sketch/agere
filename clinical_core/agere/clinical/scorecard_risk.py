@@ -59,6 +59,8 @@ SCALES = ('pdo', 'integer')
 VIEWS = ('scorecard', 'patients')
 MODES = ('fit', 'evidence')
 NO_FIT = re.compile(r"\b(?:do\s+not|don't|must\s+not|without)\s+(?:fit|train|retrain)\b", re.I)
+EVIDENCE_ORIGIN = re.compile(r'\b(?:inputs?|information|data)\s+(?:(?:that\s+)?were\s+)?available\s+(?:at|by|as\s+of)\s+(\d{4}-\d{2}-\d{2})\b', re.I)
+EVIDENCE_DAYS = re.compile(r'\bnext\s+(\d+)\s+days?\b', re.I)
 ED_TYPES = ('emergency', 'emergency (ADT)', 'emergency (claim)')
 
 PRODUCT = {'population': 'optional', 'view': 'table',
@@ -130,8 +132,8 @@ def validate_request(question, parameters):
     if NO_FIT.search(question or '') and parameters.get('mode', 'fit') != 'evidence':
         raise ValueError('This request explicitly forbids fitting. Use scorecard_risk mode=evidence with the original origin_date and exact horizon_days; do not fit a new model.')
     if parameters.get('mode') == 'evidence':
-        origins = set(re.findall(r'\b(?:inputs?|information|data)\s+(?:(?:that\s+)?were\s+)?available\s+(?:at|by|as\s+of)\s+(\d{4}-\d{2}-\d{2})\b', question or '', re.I))
-        days = set(re.findall(r'\bnext\s+(\d+)\s+days?\b', question or '', re.I))
+        origins = set(EVIDENCE_ORIGIN.findall(question or ''))
+        days = set(EVIDENCE_DAYS.findall(question or ''))
         if len(origins) == 1 and parameters.get('origin_date') != next(iter(origins)):
             raise ValueError('Evidence origin_date contradicts the explicit input-availability cutoff in the original question')
         if len(days) == 1 and parameters.get('horizon_days') != int(next(iter(days))):
@@ -628,6 +630,16 @@ OUTCOME_RX = [('readmission', r'\breadmi\w*'), ('ed_visit', r'\bed visits?\b|\be
 def route(question, profile, as_of):
     from .engine_suite import plan
     q = rc.low(question)
+    if NO_FIT.search(q):
+        origins, days = set(EVIDENCE_ORIGIN.findall(q)), set(EVIDENCE_DAYS.findall(q))
+        outcomes = {k for k, rx in OUTCOME_RX if re.search(rx, q)}
+        if re.search(r'\b(?:evidence|readiness|qualification)\b', q) and len(origins) == len(days) == len(outcomes) == 1:
+            params = {'mode': 'evidence', 'outcome': next(iter(outcomes)), 'origin_date': next(iter(origins)), 'horizon_days': int(next(iter(days)))}
+            try: validate(params)
+            except ValueError: return None
+            return plan(OP, params, 'Inspect exact recorded-target, origin-clock and qualification dependencies without fitting', question,
+                        ['explicit no-fit request', 'input availability origin', 'exact day horizon', 'evidence-only target'])
+        return None  # Do not silently fall through to constructing a scorecard.
     if not re.search(SCORECARD_RX, q): return None
     if re.search(r'\b(?:star|hedis|quality|balanced|mips|vendor|supplier|cahps|bsc)\b.{0,20}\bscore ?cards?\b|\bscore ?cards?\b.{0,20}\b(?:stars?|hedis|quality measures?|mips|kpis?)\b', q):
         return None  # performance / quality scorecards are other engines
