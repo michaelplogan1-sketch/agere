@@ -379,6 +379,70 @@ class SelectedJSONInput(unittest.TestCase):
 
 
 class NativeIntegrityModelView(unittest.TestCase):
+    def global_table_packet(self):
+        rows=[{'provider':'Clinic '+str(i),'observed':i,'unknown':None,
+               'source_statement':'Preference unknown; no cause established.'}for i in range(40)]
+        answer={'headline':'Observed values.','facts':{'range':'Unverified range claim.'}}
+        claims=[{'id':'headline','field':'headline','path':['answer','headline']},
+                {'id':'fact_0','field':'facts.range','path':['answer','facts','range']}]
+        for i,row in enumerate(rows):
+            for key in row:
+                claims.append({'id':'table_'+str(len(claims)),'field':'table.'+str(i)+'.'+key,
+                               'path':['all_final_rows',i,key]})
+        return {'id':'summary','answer':answer,'all_final_rows':rows,
+                'claim_manifest':claims,'shared_evidence':[{'text':'Received source statement.'}],
+                'native_calculation_contracts':[{'input':{'sql':'SELECT * FROM received'}}]}
+
+    def test_complete_global_address_manifest_is_native_while_every_value_remains_visible(self):
+        from clinical_core.agere.deliverables.receipts import readable_json
+        original=self.global_table_packet();before=copy.deepcopy(original)
+        wire=E.native_integrity_model_view(json.dumps(readable_json(original)),support_dependencies=True)
+        model=uncompact_json(json.loads(wire['text']))
+        self.assertTrue(wire['projected']);self.assertTrue(wire['native_projection']['roundtrip_exact'])
+        for key in ('answer','all_final_rows','shared_evidence','native_calculation_contracts'):
+            self.assertEqual(model[key],original[key])
+        reference=model['claim_manifest']['native_receipt_reference']
+        self.assertEqual(wire['native_projection']['proofs'][reference],original['claim_manifest'])
+        summary=model['native_integrity_projection']['claim_manifest']
+        self.assertEqual(summary['global_claims'],original['claim_manifest'][:2])
+        self.assertEqual(summary['table_cells'],160)
+        self.assertEqual(original,before)
+
+    def test_incomplete_changed_extra_or_reordered_manifest_never_gets_projection(self):
+        from clinical_core.agere.deliverables.receipts import readable_json
+        for mutation in ('missing','changed','extra','reordered','patient'):
+            state=self.global_table_packet()
+            if mutation=='missing':state['claim_manifest'].pop()
+            if mutation=='changed':state['claim_manifest'][-1]['path'][-1]='wrong'
+            if mutation=='extra':state['claim_manifest'].append(copy.deepcopy(state['claim_manifest'][-1]))
+            if mutation=='reordered':state['claim_manifest'].reverse()
+            if mutation=='patient':state['all_final_rows'][0]['patient_id']='P1'
+            text=json.dumps(readable_json(state))
+            with self.subTest(mutation=mutation):
+                wire=E.native_integrity_model_view(text,support_dependencies=True)
+                self.assertFalse(wire['projected']);self.assertEqual(wire['text'],text)
+
+    def test_global_manifest_projection_requires_support_summary_context(self):
+        from clinical_core.agere.deliverables.receipts import readable_json
+        text=json.dumps(readable_json(self.global_table_packet()))
+        self.assertFalse(E.native_integrity_model_view(text)['projected'])
+        self.assertFalse(E.native_integrity_model_view(text,coverage_dependencies=True)['projected'])
+
+    def test_repair_packet_deduplicates_manifest_without_mutating_bound_producer(self):
+        from clinical_core.agere.deliverables.receipts import readable_json
+        from clinical_core.contracts import digest
+        state=self.global_table_packet()
+        packet={'id':'summary','text':json.dumps(readable_json(state)),
+                'claim_manifest':state['claim_manifest'],'source_context_complete':True,'dependency_complete':True}
+        before=copy.deepcopy(packet);model=E.source_packet_model_view(packet)
+        self.assertEqual(packet,before);self.assertIsInstance(model['claim_manifest'],dict)
+        self.assertEqual(model['original_packet_text_digest'],digest(packet['text']))
+        projected=uncompact_json(json.loads(model['text']))
+        self.assertEqual(projected['all_final_rows'],state['all_final_rows'])
+        self.assertEqual(projected['shared_evidence'],state['shared_evidence'])
+        packet['claim_manifest']=packet['claim_manifest'][:-1]
+        self.assertEqual(E.source_packet_model_view(packet),packet)
+
     def test_support_dependency_addresses_restore_every_cell_without_source_rewriting(self):
         from clinical_core.agere.deliverables.receipts import readable_json,uncompact_json
         table=[{'patient_id':str(i),'statement':[finding(str(i),'Dated source, preference unknown.')],

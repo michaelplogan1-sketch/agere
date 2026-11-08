@@ -1109,10 +1109,12 @@ def focused_prose_state(candidate,feedback,calls):
         row_prose=candidate.get('row_prose')
         if feedback['prose_repair'].get('intent')=='source_meaning_review':
             receipt=feedback['prose_repair']
+            from .evidence_projection import source_packet_model_view
             return {'schema':'focused-native-prose-repair/1','scope':'answer','intent':'source_meaning_review',
                 'draft_digest':digest(candidate),'keys':[],'targets':[],
                 'answer_targets':[{**t,'value':editable[t['path'][0]]if len(t['path'])==1 else editable['facts'][t['path'][1]]}for t in answer_targets],
-                'source_packets':receipt['source_packets'],'unchecked_packet_ids':receipt.get('unchecked_packet_ids',[]),
+                'source_packets':[source_packet_model_view(p)for p in receipt['source_packets']],
+                'unchecked_packet_ids':receipt.get('unchecked_packet_ids',[]),
                 'native_answer_rows':len(candidate.get('table')or[]),'coverage_still_required':True,
                 'patch_contract':{'draft_digest':digest(candidate),'fields':[{'path':'exact located path array','value':'source-supported text or computed template'}]},
                 'instruction':'Inspect the named prose against the complete retained source packet. Unknown is not a finding of error. Change only a justified source meaning using repair_draft.fields with path and value. Keep all unrelated statements and native values unchanged. Every quantitative literal needs a binding to actual executed evidence; all existing basis rows are retained. Empty fields means no justified edit, not source acceptance. Complete compilation, coverage and source review still follow.'}

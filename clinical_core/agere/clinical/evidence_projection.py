@@ -365,6 +365,31 @@ def native_integrity_model_view(text,*,coverage_dependencies=False,support_depen
         reference='native_proof_'+str(len(proofs));proofs[reference]=value;proof_paths.append(list(path))
         return {'native_receipt_reference':reference,
             'scope':'Complete mechanical validation certificate retained and checked by code. Original clinical/source values and executable selection contracts remain supplied; this reference establishes no clinical support.'}
+    manifest_summary=None
+    if support_dependencies and original.get('id')=='summary':
+        # The manifest repeats addresses, never evidence values. Only the exact
+        # code-generated enumeration of a complete nonpatient table qualifies.
+        # Keep its global claim addresses visible and every table/source value
+        # literal; the full manifest round-trips with the other native proofs.
+        answer=original.get('answer');rows=original.get('all_final_rows')
+        if (isinstance(answer,dict)and isinstance(rows,list)and rows
+            and all(isinstance(row,dict)and 'patient_id'not in row for row in rows)):
+            expected=[]
+            if 'headline'in answer:expected.append({'id':'headline','field':'headline','path':['answer','headline']})
+            facts=answer.get('facts')or{}
+            if isinstance(facts,dict):
+                for i,key in enumerate(facts):
+                    expected.append({'id':'fact_'+str(i),'field':'facts.'+str(key),'path':['answer','facts',key]})
+                global_claims=list(expected)
+                for i,row in enumerate(rows):
+                    for key in row:
+                        expected.append({'id':'table_'+str(len(expected)),'field':'table.'+str(i)+'.'+str(key),
+                            'path':['all_final_rows',i,key]})
+                if original.get('claim_manifest')==expected:
+                    state['claim_manifest']=retain_proof(expected,('claim_manifest',))
+                    manifest_summary={'global_claims':global_claims,'table_rows':len(rows),
+                        'table_cells':len(expected)-len(global_claims),
+                        'meaning':'The complete manifest enumerates every global claim and every field of every all_final_rows row in order. All those values and all source evidence remain literal. Only repeated code-owned addresses are referenced; no claim is accepted or source-review obligation removed.'}
     dependency_groups=[]
     if coverage_dependencies:
         result=original.get('result')
@@ -451,6 +476,8 @@ def native_integrity_model_view(text,*,coverage_dependencies=False,support_depen
     if not paths and not proof_paths:return {'text':text,'bytes':len(text.encode()),'projected':False}
     state['native_integrity_projection']={'schema':'native-integrity-addresses/1','complete_native_packet_digest':digest(original),
         'meaning':'@N strings are opaque addresses for cryptographic metadata checked by code and retained in the complete native packet. Equal addresses denote equal original hashes. native_proof_N references bind complete mechanical certificates retained by code. Neither is clinical evidence, a measurement or model-verified support. All clinical values, source text, native inputs and executed SQL remain literal.'}
+    if manifest_summary is not None:
+        state['native_integrity_projection']['claim_manifest']=manifest_summary
     if coverage_count:
         state['native_integrity_projection']['coverage_dependencies']={
             'cells':coverage_count,'meaning':'Each integer clinical_evidence_dependency names the source cell at this exact output row/column. '
@@ -465,6 +492,23 @@ def native_integrity_model_view(text,*,coverage_dependencies=False,support_depen
         'native_projection':{'schema':'native-integrity-addresses/1','complete_native_packet_digest':digest(original),
             'model_state_digest':digest(state),'values':values,'paths':paths,'proofs':proofs,
             'proof_paths':proof_paths,'roundtrip_exact':True}}
+
+
+def source_packet_model_view(packet):
+    """Project only model-facing metadata; the bound producer stays unchanged."""
+    from ..deliverables.receipts import uncompact_json
+    wire=native_integrity_model_view(packet['text'],support_dependencies=packet.get('id')=='summary')
+    if not wire['projected']:return packet
+    original=uncompact_json(json.loads(packet['text']))
+    if original.get('claim_manifest')!=packet.get('claim_manifest'):return packet
+    projection=wire['native_projection']
+    return {**packet,'text':wire['text'],
+        'claim_manifest':{'native_manifest_digest':digest(packet['claim_manifest']),
+            'claims':len(packet['claim_manifest']),
+            'meaning':'Complete code-owned addresses remain in the original producer packet. All claimed values remain in the model text; this reference grants no support.'},
+        'native_model_projection':{k:projection[k]for k in
+            ('schema','complete_native_packet_digest','model_state_digest','roundtrip_exact')},
+        'original_packet_text_digest':digest(packet['text'])}
 
 
 def native_json_paths(query, view, column):
