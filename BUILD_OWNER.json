@@ -30,7 +30,7 @@
   "last_observed_server_session": 51360,
   "server_status": "Owned local current6f5f0f26; Q15native/browser/askHTTP200; no startup providerwork.",
   "unsealed_work": {
-    "status": "adapter_conformance_current_supported_full_roster_changed_evidence_workflow_running",
+    "status": "owned_Q14_ordinary_entry_running_after_sealed_Q15_delivery",
     "product_commit": "abcddf6d55fa57aa8886cf337917ed1291e79251",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
@@ -1634,7 +1634,27 @@
       "machine_coverage_undecided": true,
       "full_case_accepted": false
     },
-    "Q15_current_source_repair_delivery": "artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json"
+    "Q15_current_source_repair_delivery": "artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json",
+    "owned_Q14_final_ordinary_entry": {
+      "pid": 12096,
+      "session": 73887,
+      "receipt": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json",
+      "status": "running",
+      "provider_work": true,
+      "source_frozen": true,
+      "request_progress_key": "97c0436f70b641888ad78ee57b38216f",
+      "observed_at": "2026-11-08T20:56:42.249342+00:00",
+      "note": "One original public question. Native financial computation and bulk source judgments retained; actor continuing narrow registered-definition/binding queries. No whole-question restart or owner answer supplied."
+    },
+    "pending_release_producers": {
+      "source_receipt_compatibility_proof": "artifacts/agere-final-ordinary-entry-2026-11-08/native-compatibility-v1/proof.json",
+      "guarded_mapping_producer_not_yet_executed": "artifacts/agere-final-ordinary-entry-2026-11-08/apply_qualified_evidence_mapping.py",
+      "current25case_disposition": "artifacts/agere-ordinary-comparison-2026-11-05/current-assessment-2026-11-07/assessment.json",
+      "package_producer_not_started": "artifacts/agere-final-ordinary-entry-2026-11-08/package-v1/build_package.py",
+      "archived_HTTP_producer_not_started": "artifacts/agere-final-ordinary-entry-2026-11-08/check_installed_current.py",
+      "archived_HTTP_expected_current_context": "artifacts/agere-final-ordinary-entry-2026-11-08/restored-current-Q15-native.json.gz",
+      "guard": "Inspect terminal Q14 and its actual complete output first; no product/config edits or package job during frozen Q14. Mapping native code compatibility is proved but not activated. Q15actual current context is used for archived HTTP, not historical invalidated Q03."
+    }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
@@ -2059,7 +2079,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-08T20:42:12.395058+00:00",
+  "updated_at": "2026-11-08T20:56:42.249342+00:00",
   "last_commit": "81f8bbf5192b10a98cd28f4e1877cfda474bfa51",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -2105,11 +2125,12 @@
     "image_tool": "built-in image_gen"
   },
   "last_run_observation": {
-    "at": "2026-11-07T20:07:46.544952+00:00",
-    "status": "native_storage_repair_qualified_Q06_retained_partial",
-    "receipt": "artifacts/agere-Q06-current-original-2026-11-07/resource-repair-receipt.json",
-    "pid": null,
-    "session": null
+    "at": "2026-11-08T20:56:42.249342+00:00",
+    "Q14_status": "running",
+    "Q14_receipt": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json",
+    "no_duplicate_job": true,
+    "source_frozen": true,
+    "last_sealed_delivery": "artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json"
   },
   "current_review_prompt": {
     "at": "2026-11-05T12:45:50.567972+00:00",

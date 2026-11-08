@@ -8,6 +8,8 @@ Evidence: artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json;
 
 Measured:1646rows exact/onefield corrected;1retained-monthly-viewquery/0rawappointmentreplays.59checks, completeinput1.86MB→507KB. Ordinary15attempts and localized10attempts separately retained,25unique/64594ledger rows; source support confirmed/coverageundecided/publicpartial. V1/v2context failures retained; no actual subscription usage limit. No pooled savings/qualification/fullacceptance claim.
 
+Owned-run observation 2026-11-08T20:56:42.249342+00:00: Q14PID12096/session73887 still active; source/config frozen. Native financial computation and bulk source judgments retained; actor continuing narrow definition/binding queries. Package producer/package-v1 and archived HTTP producer are PREPARED ONLY, not started; guarded evidence mapping remains unexecuted. Inspect terminal Q14 first; never duplicate it.
+
 Remaining gap: Owned Q14ordinary entry running/sourcefrozen; current scoped receipt compatibility/final25case disposition/exactpackage; named independent/input/visual dependencies retained. Last sealed delivery is above.
 
 ## Superseded checkpoint
