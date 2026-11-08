@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T13:48:34.609409+00:00",
+  "updated_at": "2026-11-08T14:16:24.649846+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -580,9 +580,9 @@
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Fresh ordinary-entry/current whole25case and ten-area release evidence remain incomplete; this is a retained owner-directed source-input increment.; Recorded member-months establish monthly exposure, not eligibility on the exact event date.; Registered chart baseline spans36months; separate requested-window SQL sensitivity does not reproduce full Phase-I/EWMA/gap handling. No change-point detector qualifies under the existing joint rule.; Feed flags reused from an earlier present-survivor cohort remain exploratory; event-grain source completeness and a care-causal effect are not established.; Independent scientific/model/clinical qualification and customer deployment prerequisites remain separate. Next Q18 latest evidence and index/risk-set/censoring preflight.",
-      "engineering_current_status": "Q17 retained monthly answer corrected, source/coverage confirmed and current app exact; no fresh-entry or independent scientific/clinical qualification.",
-      "next_action": "G3/WP4: Q17 historical-exposure/monthly comparison increment delivered on1f906e96, currentANS-32d28c66647cbe5ebc4c64c4, app93118/session33631. All24months reconcile2884eligible ED events/86298recorded member-months;82unmatched events retained. Source/coverageconfirmed; registered charts diagnostic only, requested-window SQL sensitivity distinct, source flags exploratory. Do not repeat Q17 engines, original campaign or unchanged votes. Next inspect latest completed Q18 survival/time-to-event receipts and current saved contexts first, then offline original-question index-event/eligibility/risk-set/censoring/source preflight. Use exact retained producer/native state only for located missing wiring or changed inputs. Keep competing events, event-free time and unsupported confounding/clinical conclusions explicit; no invented index definitions or new model/architecture/cap. Full25fixedcases/tenareas/current principal/October11baseline, fresh automatic-entry parameter selection and G5/scientific/clinical/model/actuarial/customer prerequisites remain. No active provider/native/build/training job or freeze; quiet continuationACTIVE.",
+      "remaining_acceptance": "Fresh ordinary question entry/automatic selection of these declared index/source/coverage parameters and current whole25case/tenarea release evidence remain unfinished.; First-recorded is restricted to received dated history, not a clinically first-ever admission. Unknown origin/coverage/day order remains represented rather than imputed.; Enrollment is an explicit followup observation proxy; complete event capture and unobserved care absence are not established.; Absolute competing-risk cumulative incidence and predictive bounds under source censoring are not qualified; observed output fits no model.; Independent clinical/model/scientific qualification and customer deployment prerequisites remain separate. Next Q19 latest evidence and target/window/source/qualification preflight.",
+      "engineering_current_status": "Q18 native observed followup source construction and complete current account consumer delivered; partial/unverified/no model, not ordinary automatic or independent clinical acceptance.",
+      "next_action": "G3/WP4: Q18 native observed-followup increment delivered on58a1d4e5 withcurrentANS-68a3e012fb538fff01adb710, app93779/session41747. All243selectedindexaccounts match independent SQL:215timed units/66recorded admissions/149right-censored/28unresolved (19origin,8coverage,1nonpositivefollowup). Received185death rows now bound, contiguous eligibility/source kind/first-recorded scope explicit, no model fit/unaskedhorizon/providercalls. Current partial/unverified table/save/native/browser exact; do not replay Q18 engines or unchanged campaigns. Next inspect latest completed Q19 predictive-analysis receipts/current saved contexts, then offline original-question target/feature/source-clock/label/qualification preflight. Use current registered predictor/simple baselines only where their exact target/window/source role is supported; otherwise name missing label/validation/wiring separately and preserve unknowns. No optional model catalog, new services, protected keys, untargeted training, disease handler, new caps or architecture rewrite. Full25fixedcases/tenareas/current principal/October11baseline and ordinary automatic-entry/G5/clinical/model/scientific/actuarial/customer prerequisites remain. No active provider/build/training/native job or source freeze; quiet continuationACTIVE.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -661,34 +661,35 @@
     }
   ],
   "checkpoint": {
-    "kind": "Q17_historical_exposure_monthly_method_and_current_consumer",
+    "kind": "Q18_received_index_censoring_observed_units_and_current_consumer",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Monthly ED trend analysis now retains historical subjects, uses canonical all-source events with explicit recorded member-month exposure, and exposes every report-month count/exposure/unknown plus baseline windows and multiplicity semantics. The corrected comparison saves and reopens as24rows; unmatched events remain visible. Statistical wording distinguishes non-significance, diagnostic registered charts, separate SQL sensitivity and exploratory source flags.",
+    "user_behavior_delta": "Registered survival now declares first-across-received-history versus first-in-window and inpatient versus merged-hospital index sources, binds received death dates and optional contiguous enrollment at discharge, and exposes complete observed-unit accounts without fitting a risk model or inventing a horizon. Unknown origins/eligibility/date order remain visible. Saved observed accounts retain their exact selected patient scope. Death-censored Kaplan-Meier net failure is distinct from unavailable absolute competing-risk incidence.",
     "measured_failure_reduction": {
-      "historical_survival_filter_removed": true,
-      "canonical_ED_event_source_applied": true,
-      "same_month_exposure_and_numerator_reconciled": true,
-      "all_report_month_inputs_queryable": true,
-      "registered_and_SQL_sensitivity_distinguished": true,
-      "statistical_overstatement_removed": true,
-      "current_native_browser_consumer": true,
+      "first_across_history_vs_first_in_year_explicit": true,
+      "known_death_not_ignored": true,
+      "lifetime_open_enrollment_substitution_removed": true,
+      "ambiguous_origin_and_coverage_unknowns_retained": true,
+      "risk_time_stops_at_event": true,
+      "NULL_ID_next_event_loss_prevented": true,
+      "observed_only_complete_rows_and_scope_saved": true,
+      "net_KM_not_absolute_competing_risk": true,
       "fresh_automatic_entry_qualified": false
     },
     "evidence": [
-      "artifacts/agere-Q17-retained-2026-11-08/workflow-completion.json",
-      "artifacts/agere-Q17-retained-2026-11-08/source-preflight.json",
-      "artifacts/agere-Q17-retained-2026-11-08/historical-basis-checks-v1.log",
-      "artifacts/agere-Q17-retained-2026-11-08/monitor-integration-checks-v1.log",
-      "artifacts/agere-Q17-retained-2026-11-08/native-monthly-proof/receipt.json",
-      "artifacts/agere-Q17-retained-2026-11-08/native-monthly-reconciliation.json",
-      "artifacts/agere-Q17-retained-2026-11-08/corrected-composition/receipt.json",
-      "artifacts/agere-Q17-retained-2026-11-08/method-scope-finalization/receipt.json",
-      "artifacts/agere-Q17-retained-2026-11-08/http-consumer-v1-preserved.log",
-      "artifacts/agere-Q17-retained-2026-11-08/http-consumer-proof.json"
+      "artifacts/agere-Q18-retained-2026-11-08/workflow-completion.json",
+      "artifacts/agere-Q18-retained-2026-11-08/source-preflight-v1-preserved.log",
+      "artifacts/agere-Q18-retained-2026-11-08/source-preflight.json",
+      "artifacts/agere-Q18-retained-2026-11-08/existing-survival-checks-v1.log",
+      "artifacts/agere-Q18-retained-2026-11-08/received-followup-checks-v5.log",
+      "artifacts/agere-Q18-retained-2026-11-08/estimand-label-final-check.log",
+      "artifacts/agere-Q18-retained-2026-11-08/native-followup-proof/receipt.json",
+      "artifacts/agere-Q18-retained-2026-11-08/native-followup-proof-v2/receipt.json",
+      "artifacts/agere-Q18-retained-2026-11-08/native-current-publication/receipt.json",
+      "artifacts/agere-Q18-retained-2026-11-08/http-consumer-proof.json"
     ],
-    "remaining_gap": "Fresh ordinary-entry/current whole25case and ten-area release evidence remain incomplete; this is a retained owner-directed source-input increment.; Recorded member-months establish monthly exposure, not eligibility on the exact event date.; Registered chart baseline spans36months; separate requested-window SQL sensitivity does not reproduce full Phase-I/EWMA/gap handling. No change-point detector qualifies under the existing joint rule.; Feed flags reused from an earlier present-survivor cohort remain exploratory; event-grain source completeness and a care-causal effect are not established.; Independent scientific/model/clinical qualification and customer deployment prerequisites remain separate. Next Q18 latest evidence and index/risk-set/censoring preflight.",
-    "next_action": "G3/WP4: Q17 historical-exposure/monthly comparison increment delivered on1f906e96, currentANS-32d28c66647cbe5ebc4c64c4, app93118/session33631. All24months reconcile2884eligible ED events/86298recorded member-months;82unmatched events retained. Source/coverageconfirmed; registered charts diagnostic only, requested-window SQL sensitivity distinct, source flags exploratory. Do not repeat Q17 engines, original campaign or unchanged votes. Next inspect latest completed Q18 survival/time-to-event receipts and current saved contexts first, then offline original-question index-event/eligibility/risk-set/censoring/source preflight. Use exact retained producer/native state only for located missing wiring or changed inputs. Keep competing events, event-free time and unsupported confounding/clinical conclusions explicit; no invented index definitions or new model/architecture/cap. Full25fixedcases/tenareas/current principal/October11baseline, fresh automatic-entry parameter selection and G5/scientific/clinical/model/actuarial/customer prerequisites remain. No active provider/native/build/training job or freeze; quiet continuationACTIVE."
+    "remaining_gap": "Fresh ordinary question entry/automatic selection of these declared index/source/coverage parameters and current whole25case/tenarea release evidence remain unfinished.; First-recorded is restricted to received dated history, not a clinically first-ever admission. Unknown origin/coverage/day order remains represented rather than imputed.; Enrollment is an explicit followup observation proxy; complete event capture and unobserved care absence are not established.; Absolute competing-risk cumulative incidence and predictive bounds under source censoring are not qualified; observed output fits no model.; Independent clinical/model/scientific qualification and customer deployment prerequisites remain separate. Next Q19 latest evidence and target/window/source/qualification preflight.",
+    "next_action": "G3/WP4: Q18 native observed-followup increment delivered on58a1d4e5 withcurrentANS-68a3e012fb538fff01adb710, app93779/session41747. All243selectedindexaccounts match independent SQL:215timed units/66recorded admissions/149right-censored/28unresolved (19origin,8coverage,1nonpositivefollowup). Received185death rows now bound, contiguous eligibility/source kind/first-recorded scope explicit, no model fit/unaskedhorizon/providercalls. Current partial/unverified table/save/native/browser exact; do not replay Q18 engines or unchanged campaigns. Next inspect latest completed Q19 predictive-analysis receipts/current saved contexts, then offline original-question target/feature/source-clock/label/qualification preflight. Use current registered predictor/simple baselines only where their exact target/window/source role is supported; otherwise name missing label/validation/wiring separately and preserve unknowns. No optional model catalog, new services, protected keys, untargeted training, disease handler, new caps or architecture rewrite. Full25fixedcases/tenareas/current principal/October11baseline and ordinary automatic-entry/G5/clinical/model/scientific/actuarial/customer prerequisites remain. No active provider/build/training/native job or source freeze; quiet continuationACTIVE."
   },
   "decisions": [
     {
@@ -5570,10 +5571,39 @@
         "artifacts/agere-Q17-retained-2026-11-08/http-consumer-proof.json"
       ],
       "scope_impact": "Shared historical intent and explicit exposure/output parameters; no disease handler, new qualified model, source rewrite or narrowed charter. Existing G5 qualification must cover scientific scope and summary-versus-point claims; all25/tenareas remain."
+    },
+    {
+      "at": "2026-11-08T13:57:00.845999+00:00",
+      "gate": "G3",
+      "reason": "Current Q18 source preflight distinguishes first-across-history from first-in-year, identifies ambiguous origin and lifetime-coverage substitution; registered survival ignores185received death rows and falsely says none received.",
+      "correction": "Fix existing registered source/index/censor construction and expose complete observed units before any new provider continuation. Preserve original attempts and unknowns; no protected reference used. First guard correctly stopped an environment/policy mismatch; restored approved runtime flags without rebuilding semantic cache.",
+      "evidence": [
+        "artifacts/agere-Q18-retained-2026-11-08/source-preflight.json"
+      ],
+      "scope_impact": "Named Q18 workflow failure inside canonical areas7/8/10; no new disease handler/model/catalog/cap or charter change."
+    },
+    {
+      "at": "2026-11-08T14:16:24.649846+00:00",
+      "gate": "G3",
+      "reason": "Registered survival omitted existing death data and claimed none received. Original Q18 SQL selected first within-year and used lifetime any-open/latest enrollment. Native source confirmation additionally caught a death observation omitted for an unknown index origin. Death-censored1-KM must not be labeled an absolute competing-risk incidence.",
+      "correction": "Registered survival now declares first-across-received-history versus first-in-window and inpatient versus merged-hospital index sources, binds received death dates and optional contiguous enrollment at discharge, and exposes complete observed-unit accounts without fitting a risk model or inventing a horizon. Unknown origins/eligibility/date order remain visible. Saved observed accounts retain their exact selected patient scope. Death-censored Kaplan-Meier net failure is distinct from unavailable absolute competing-risk incidence.32distinct focused checks pass; all243rows reconcile to independent source SQL and actual app native/browser/askHTTP200 in1.694s/0providers. Used native generated answer/save rather than another frontier prose repair campaign; original7nativecalls plus4changed-stage calls retained. Source-policy environment mismatch halted before cache rebuild; restored only approved runtime flags. Original failed receipts and all source/ledger rows retained.",
+      "evidence": [
+        "artifacts/agere-Q18-retained-2026-11-08/workflow-completion.json",
+        "artifacts/agere-Q18-retained-2026-11-08/source-preflight-v1-preserved.log",
+        "artifacts/agere-Q18-retained-2026-11-08/source-preflight.json",
+        "artifacts/agere-Q18-retained-2026-11-08/existing-survival-checks-v1.log",
+        "artifacts/agere-Q18-retained-2026-11-08/received-followup-checks-v5.log",
+        "artifacts/agere-Q18-retained-2026-11-08/estimand-label-final-check.log",
+        "artifacts/agere-Q18-retained-2026-11-08/native-followup-proof/receipt.json",
+        "artifacts/agere-Q18-retained-2026-11-08/native-followup-proof-v2/receipt.json",
+        "artifacts/agere-Q18-retained-2026-11-08/native-current-publication/receipt.json",
+        "artifacts/agere-Q18-retained-2026-11-08/http-consumer-proof.json"
+      ],
+      "scope_impact": "Generic existing survival/source/censoring and graph consumer, no disease handler/model catalog/architecture rewrite/new cap or new qualified predictor. Native arithmetic evidence does not qualify natural-language parameter selection or clinical/scientific assumptions. All25/tenareas and existing G5/customer dependencies retained."
     }
   ],
   "unsealed_work": {
-    "status": "Q17_current_historical_exposure_monthly_workflow_delivered",
+    "status": "Q18_native_observed_followup_current_source_and_censoring_reconciled",
     "product_commit": "6df36263b54136ae6e853b2e927c2b1b21dac4e6",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
@@ -7036,7 +7066,19 @@
     "Q17_coverage": "answers_fully",
     "Q17_provider_attempts_this_increment": 33,
     "Q17_known_api_equivalent_usd": 20.148816749999998,
-    "full_Q17_acceptance": false
+    "full_Q17_acceptance": false,
+    "Q18_source_preflight": "artifacts/agere-Q18-retained-2026-11-08/source-preflight.json",
+    "Q18_workflow_completion": "artifacts/agere-Q18-retained-2026-11-08/workflow-completion.json",
+    "Q18_current_context": "ANS-68a3e012fb538fff01adb710",
+    "Q18_current_consumer": "artifacts/agere-Q18-retained-2026-11-08/http-consumer-proof.json",
+    "Q18_product_commit": "58a1d4e55c775ddca97c86fa65d999234a26360a",
+    "Q18_native_observed_candidate_app_activation": true,
+    "Q18_fresh_automatic_entry_qualified": false,
+    "Q18_source_math_reconciled": true,
+    "Q18_machine_source_vote_claimed": false,
+    "Q18_provider_attempts_this_increment": 0,
+    "Q18_known_api_equivalent_usd": 0,
+    "full_Q18_acceptance": false
   },
   "current_visual_request": {
     "status": "completed",
@@ -7070,7 +7112,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3/WP4: Q17 historical-exposure/monthly comparison increment delivered on1f906e96, currentANS-32d28c66647cbe5ebc4c64c4, app93118/session33631. All24months reconcile2884eligible ED events/86298recorded member-months;82unmatched events retained. Source/coverageconfirmed; registered charts diagnostic only, requested-window SQL sensitivity distinct, source flags exploratory. Do not repeat Q17 engines, original campaign or unchanged votes. Next inspect latest completed Q18 survival/time-to-event receipts and current saved contexts first, then offline original-question index-event/eligibility/risk-set/censoring/source preflight. Use exact retained producer/native state only for located missing wiring or changed inputs. Keep competing events, event-free time and unsupported confounding/clinical conclusions explicit; no invented index definitions or new model/architecture/cap. Full25fixedcases/tenareas/current principal/October11baseline, fresh automatic-entry parameter selection and G5/scientific/clinical/model/actuarial/customer prerequisites remain. No active provider/native/build/training job or freeze; quiet continuationACTIVE.",
+  "next_action": "G3/WP4: Q18 native observed-followup increment delivered on58a1d4e5 withcurrentANS-68a3e012fb538fff01adb710, app93779/session41747. All243selectedindexaccounts match independent SQL:215timed units/66recorded admissions/149right-censored/28unresolved (19origin,8coverage,1nonpositivefollowup). Received185death rows now bound, contiguous eligibility/source kind/first-recorded scope explicit, no model fit/unaskedhorizon/providercalls. Current partial/unverified table/save/native/browser exact; do not replay Q18 engines or unchanged campaigns. Next inspect latest completed Q19 predictive-analysis receipts/current saved contexts, then offline original-question target/feature/source-clock/label/qualification preflight. Use current registered predictor/simple baselines only where their exact target/window/source role is supported; otherwise name missing label/validation/wiring separately and preserve unknowns. No optional model catalog, new services, protected keys, untargeted training, disease handler, new caps or architecture rewrite. Full25fixedcases/tenareas/current principal/October11baseline and ordinary automatic-entry/G5/clinical/model/scientific/actuarial/customer prerequisites remain. No active provider/build/training/native job or source freeze; quiet continuationACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -7159,8 +7201,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 93118,
-  "owned_server_session": 33631,
+  "owned_server_pid": 93779,
+  "owned_server_session": 41747,
   "last_run_observation": {
     "at": "2026-11-07T20:07:46.544952+00:00",
     "status": "native_storage_repair_qualified_Q06_retained_partial",
