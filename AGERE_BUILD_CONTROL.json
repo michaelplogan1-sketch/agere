@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T07:23:41.950012+00:00",
+  "updated_at": "2026-11-08T08:12:05.900850+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -661,30 +661,28 @@
     }
   ],
   "checkpoint": {
-    "kind": "native_storage_recovery_qualified_Q06_retained_completion_next",
+    "kind": "Q06_provider_overflow_repaired_retained_finalization_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The exact83row/120call partial now saves, reopens and renders through current native/browser HTTP using lossless native-history storage; source observations remain attached and public unverified status is unchanged.",
+    "user_behavior_delta": "Largest complete source verification requests now return from both configured providers, while source/coverage acceptance stays gated. Current saved partial needs freshness revalidation after activation.",
     "measured_failure_reduction": {
-      "save_failures_before": "ENOSPC",
-      "save_failures_after": 0,
-      "source_references_unresolved_before": 16,
-      "source_references_unresolved_after": 0,
-      "plain_bytes": 50593067,
-      "stored_bytes": 3721144,
-      "new_provider_attempts": 0
+      "targeted_context_errors_before": 2,
+      "targeted_context_errors_after": 0,
+      "targeted_returned_requests": 6,
+      "known_api_equivalent_usd": 0.03404126,
+      "provider_summary_tokens_Perplexity": 236441,
+      "provider_summary_tokens_Jev": 232823,
+      "original_model_packet_bytes": 106504271,
+      "current_model_packet_bytes": 19402585
     },
     "evidence": [
-      "artifacts/agere-Q06-current-original-2026-11-07/context-storage-qualification-v2/receipt.json",
-      "artifacts/agere-Q06-current-original-2026-11-07/source-storage-transfer-preflight.json",
-      "artifacts/agere-Q06-current-original-2026-11-07/context-runtime-publication-v2/receipt.json",
-      "artifacts/agere-Q06-current-original-2026-11-07/storage-http-consumer-proof.json",
-      "artifacts/agere-Q06-current-original-2026-11-07/packed-context-final-checks.json",
-      "artifacts/agere-Q06-current-original-2026-11-07/packed-procedural-consumer-checks.log",
-      "artifacts/agere-Q06-current-original-2026-11-07/baseline-catalog-fixture-check.log"
+      "artifacts/agere-Q06-current-original-2026-11-07/source-packet-qualification-v2/receipt.json",
+      "artifacts/agere-Q06-current-original-2026-11-07/native-integrity-qualification/receipt.json",
+      "artifacts/agere-Q06-current-original-2026-11-07/source-packet-native-metadata-probe/receipt.json",
+      "artifacts/agere-Q06-current-original-2026-11-07/source-packet-diagnosis/native-integrity-regressions-v2.log"
     ],
-    "remaining_gap": "All83subjects have returned typed intention/taking source pages under their exact submitted scope, but those pages still need native composition and source-bound interpretation. Complete source/question coverage, current persistence and normal unknown handling remain. Full25case/tenarea and independent prerequisites unchanged.",
-    "next_action": "G3/WP4: Inspect owned retained-source finalization PID83460/session85697 first: artifacts/agere-Q06-current-original-2026-11-07/retained-source-finalization/receipt.json. Source frozen: no product edits or duplicate provider work. All typed source pages already returned; source work for63prior subjects plus last20 is preserved in121nativecalls. Source finalizer starts from actual rejected draft/recorded source manifests and current native views97/98/99/100, using normal Sonnet-entry composition, bindings, source/coverage review and persistence; no supplied expected values/answerplan or prior acceptance. Do not re-read completed pages or rerun the whole question. On terminal return inspect every attempt, actual full-scope coverage, native/source conservation, genuine unknowns and current saved consumer before activation. NativeIO guard1e378543 is qualified (12checks, exact114prefix/83rows,0post-errorcallbacks/0frontier/0providers); current app82682/session28352 remains6df36263 pending the next current activation. Storage6df qualified105checks/83rows120calls/50.59->3.72MB and exact source-observation transfer/current HTTP. All25cases/tenareas and independentG5/clinical/model/customer dependencies remain; quiet continuationACTIVE.",
+    "remaining_gap": "Normal retained source/question finalization running. Current partial freshness/consumer acceptance requires revalidation. Full25cases/tenareas and independent model/clinical/customer qualification/deployment remain.",
+    "next_action": "G3/WP4: Inspect owned retained transport finalization PID84595/session52659 first: artifacts/agere-Q06-current-original-2026-11-07/retained-transport-finalization/receipt.json. Product source frozen while running; no source edits or duplicate providers. Continue exact current83row/122call producer through normal source/question gates with current transport, no wholequestion/completed-source model reread or owner expectedvalues. Candidateae567ca6 now serves8885 (PID84569/session4022); current native API conserved old partial but freshness assertion failed and requires inspected reason/current revalidation before consumer acceptance. Prior runtime6df36263 remains rollback.158checks and offline84packet/source/metadata conservation passed. Largest provider summary now236441Perplexity/232823Jev tokens;6targeted calls returned34.494s/$0.03404126API-equivalent/0errors or unpriced. Actual correct-packet votes remain below.8 and wrong-entity controls uncertain; no source/clinical acceptance inferred. Preserve prior2failed probes/unpriced costs. On terminal return inspect allattempts, actual named-field/source/coverage failures, genuineunknowns, native persistence and current consumer. Full25cases/tenareas and independentG5/clinical/model/customer/deployment prerequisites retained; quiet continuationACTIVE.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
@@ -7486,10 +7484,31 @@
         "artifacts/agere-Q06-current-original-2026-11-07/baseline-catalog-fixture-check.log"
       ],
       "scope_impact": "Existing save/load/listing and consumer paths; fixed acceptance scope unchanged."
+    },
+    {
+      "at": "2026-11-08T07:43:24.878977+00:00",
+      "gate": "G3",
+      "decision": "Stop unchanged source-verification retries; inspect and repair the actual serialized evidence boundary offline.",
+      "evidence": "artifacts/agere-Q06-current-original-2026-11-07/retained-source-finalization/receipt.json",
+      "reason": "170 of185 requests failed unpriceably at provider input/context limits. Native result remains exact83rows; repeated semantic votes cannot fix transport."
+    },
+    {
+      "at": "2026-11-08T07:56:11.884340+00:00",
+      "gate": "G3",
+      "decision": "Stop first failed targeted transport request; inspect exact final provider serialization before any retry.",
+      "evidence": "artifacts/agere-Q06-current-original-2026-11-07/source-packet-transport-probe/receipt.json",
+      "reason": "Largest packet remained too large for Jev despite native input factoring; one failed request retained, cost unknown."
+    },
+    {
+      "at": "2026-11-08T08:12:05.900850+00:00",
+      "gate": "G3",
+      "decision": "Use code for cryptographic integrity and native assembly fidelity; pass unchanged clinical values, source text and SQL to semantic readers. Resume exact retained draft only after successful targeted request-fit checks.",
+      "evidence": "artifacts/agere-Q06-current-original-2026-11-07/source-packet-native-metadata-probe/receipt.json",
+      "scope_impact": "No source/coverage thresholds, population, disease, document or fixed-case scope changed; integrity projection round-trips exact natively. Below-threshold model votes do not confer acceptance."
     }
   ],
   "unsealed_work": {
-    "status": "Q06_retained_source_finalization_running",
+    "status": "Q06_retained_transport_finalization",
     "product_commit": "6df36263b54136ae6e853b2e927c2b1b21dac4e6",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
@@ -7519,10 +7538,10 @@
       "new_provider_attempts": 21,
       "offline_proof_provider_calls": 0
     },
-    "new_provider_attempts": null,
-    "known_api_equivalent_usd": null,
+    "new_provider_attempts": 185,
+    "known_api_equivalent_usd": 4.933035236,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 62892,
+    "all_attempt_rows_retained": 63077,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
@@ -7601,7 +7620,7 @@
     "clock_role_commit": "3f895bc5",
     "full_Q04_acceptance": false,
     "known_partial_api_equivalent_usd": 1.44628118,
-    "unpriced_attempts": 0,
+    "unpriced_attempts": 170,
     "pending_rows_total": 44,
     "population_routing_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/routing-replay-proof.json",
     "native_clinical_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/native-composition-proof.json",
@@ -8541,12 +8560,61 @@
       "pid": 83460,
       "session_id": 85697,
       "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-source-finalization/receipt.json",
-      "status": "running",
-      "source_frozen": true,
+      "status": "returned_partial_transport_failure",
+      "source_frozen": false,
       "started_at": "2026-11-08T07:20:52.472387+00:00",
       "product_commit": "1e378543",
-      "retained_native_calls": 121
-    }
+      "retained_native_calls": 121,
+      "finished_at": "2026-11-08T07:30:54.650277+00:00"
+    },
+    "owned_Q06_packet_transport": {
+      "kind": "Q06_source_packet_transport_probe",
+      "pid": 84285,
+      "session_id": 92846,
+      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/source-packet-transport-probe/receipt.json",
+      "status": "failed_preserved",
+      "source_frozen": false,
+      "product_commit": "5aea7712",
+      "started_at": "2026-11-08T07:56:10.945565+00:00",
+      "finished_at": "2026-11-08T07:56:11.884340+00:00"
+    },
+    "source_packet_projection_commit": "5aea7712",
+    "source_packet_projection_proof": "artifacts/agere-Q06-current-original-2026-11-07/source-packet-qualification-v2/receipt.json",
+    "owned_Q06_packet_fallback": {
+      "kind": "Q06_Perplexity_fallback_transport_probe",
+      "pid": 84378,
+      "session_id": 77921,
+      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/source-packet-perplexity-fallback/receipt.json",
+      "status": "failed_preserved",
+      "source_frozen": false,
+      "product_commit": "5aea7712",
+      "started_at": "2026-11-08T07:59:50.711371+00:00"
+    },
+    "owned_Q06_native_metadata_probe": {
+      "kind": "Q06_native_metadata_transport_probe",
+      "pid": 84515,
+      "session_id": 42664,
+      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/source-packet-native-metadata-probe/receipt.json",
+      "status": "returned",
+      "source_frozen": false,
+      "product_commit": "ae567ca6",
+      "started_at": "2026-11-08T08:07:08.585967+00:00"
+    },
+    "native_integrity_commit": "ae567ca6",
+    "native_integrity_proof": "artifacts/agere-Q06-current-original-2026-11-07/native-integrity-qualification/receipt.json",
+    "owned_Q06_transport_finalization": {
+      "kind": "Q06_retained_transport_finalization",
+      "pid": 84595,
+      "session_id": 52659,
+      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-transport-finalization/receipt.json",
+      "status": "running",
+      "source_frozen": true,
+      "product_commit": "ae567ca6",
+      "started_at": "2026-11-08T08:10:44.518493+00:00",
+      "retained_native_calls": 122
+    },
+    "source_transport_runtime_activation": true,
+    "current_consumer_acceptance": false
   },
   "current_visual_request": {
     "status": "completed",
@@ -8581,18 +8649,18 @@
   },
   "active_jobs": [
     {
-      "kind": "Q06_retained_source_composition_finalization",
-      "pid": 83460,
-      "session_id": 85697,
-      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-source-finalization/receipt.json",
+      "kind": "Q06_retained_transport_finalization",
+      "pid": 84595,
+      "session_id": 52659,
+      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-transport-finalization/receipt.json",
       "status": "running",
       "source_frozen": true,
-      "started_at": "2026-11-08T07:20:52.472387+00:00",
-      "product_commit": "1e378543",
-      "retained_native_calls": 121
+      "product_commit": "ae567ca6",
+      "started_at": "2026-11-08T08:10:44.518493+00:00",
+      "retained_native_calls": 122
     }
   ],
-  "next_action": "G3/WP4: Inspect owned retained-source finalization PID83460/session85697 first: artifacts/agere-Q06-current-original-2026-11-07/retained-source-finalization/receipt.json. Source frozen: no product edits or duplicate provider work. All typed source pages already returned; source work for63prior subjects plus last20 is preserved in121nativecalls. Source finalizer starts from actual rejected draft/recorded source manifests and current native views97/98/99/100, using normal Sonnet-entry composition, bindings, source/coverage review and persistence; no supplied expected values/answerplan or prior acceptance. Do not re-read completed pages or rerun the whole question. On terminal return inspect every attempt, actual full-scope coverage, native/source conservation, genuine unknowns and current saved consumer before activation. NativeIO guard1e378543 is qualified (12checks, exact114prefix/83rows,0post-errorcallbacks/0frontier/0providers); current app82682/session28352 remains6df36263 pending the next current activation. Storage6df qualified105checks/83rows120calls/50.59->3.72MB and exact source-observation transfer/current HTTP. All25cases/tenareas and independentG5/clinical/model/customer dependencies remain; quiet continuationACTIVE.",
+  "next_action": "G3/WP4: Inspect owned retained transport finalization PID84595/session52659 first: artifacts/agere-Q06-current-original-2026-11-07/retained-transport-finalization/receipt.json. Product source frozen while running; no source edits or duplicate providers. Continue exact current83row/122call producer through normal source/question gates with current transport, no wholequestion/completed-source model reread or owner expectedvalues. Candidateae567ca6 now serves8885 (PID84569/session4022); current native API conserved old partial but freshness assertion failed and requires inspected reason/current revalidation before consumer acceptance. Prior runtime6df36263 remains rollback.158checks and offline84packet/source/metadata conservation passed. Largest provider summary now236441Perplexity/232823Jev tokens;6targeted calls returned34.494s/$0.03404126API-equivalent/0errors or unpriced. Actual correct-packet votes remain below.8 and wrong-entity controls uncertain; no source/clinical acceptance inferred. Preserve prior2failed probes/unpriced costs. On terminal return inspect allattempts, actual named-field/source/coverage failures, genuineunknowns, native persistence and current consumer. Full25cases/tenareas and independentG5/clinical/model/customer/deployment prerequisites retained; quiet continuationACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -8681,8 +8749,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 82682,
-  "owned_server_session": 28352,
+  "owned_server_pid": 84569,
+  "owned_server_session": 4022,
   "last_run_observation": {
     "at": "2026-11-07T20:07:46.544952+00:00",
     "status": "native_storage_repair_qualified_Q06_retained_partial",
