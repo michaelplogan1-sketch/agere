@@ -5,9 +5,9 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3/WP4 connected full-population program/work/followups running; source frozen",
-  "latest_delivery": "artifacts/agere-evidence-change-current-2026-11-08/delivery-receipt.json",
-  "latest_receipt": "artifacts/agere-evidence-change-current-2026-11-08/delivery-receipt.json",
+  "active_work": "G3/WP4 two existing ordinary-entry checks then final current release",
+  "latest_delivery": "artifacts/agere-release-current-2026-11-08/connected-delivery-receipt.json",
+  "latest_receipt": "artifacts/agere-release-current-2026-11-08/connected-delivery-receipt.json",
   "owned_server_pid": 7824,
   "owned_server_session": 64521,
   "full_queue_acceptance": false,
@@ -15,14 +15,14 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3/WP4: Inspect owned current connected population workflow PID8019/session55513 FIRST: artifacts/agere-population-current-2026-11-08/connected-v1/run-receipt.json. Source frozen; no product edits or duplicate job. Current phase prepare_current_program/respiratory; scripted scope is two original full4115member documentary program questions, current payer/participation routes, complete internal handoffs/idempotent replay, and connected financial/outcome, prediction-limit and discovery save/reopen through normal current guards. Existing copied runtime is reused; no new clone, providers, model fit or external actions. The exact original dated software-review declarations are recovered from Nov4saved programs into this copy only; buyer had0existing portfolios/tasks, so no existing work is reset. All6original follow-up reports exist for measured output comparison; prior independent raw-source/exhaustive-partition audits are retained because their native algorithms and source stores remain unchanged. Do not repeatedly scan unchanged raw sources or repeat model votes. Require actual current program/replay/member-open/full-denominator results and all-attempt/source/code conservation; do not claim a pass before terminal receipt. Summary/source-change delivery315b772e is SEALED and ACTIVE locally:3mutations each1changed/4114unchanged;43616account rows exact;member585MB->2.18MB/acquisition273MB->69KB;36checks;0providers;64569rows retained. Sealed receipt artifacts/agere-evidence-change-current-2026-11-08/delivery-receipt.json; private branch verified385f92d6. Mainapp7824/session64521 on8885 serves315b772e;Q03full92rowpartial/unverifiedanswer exact/current-policy,0startupcalls. After this native program job, qualify only current-supported existing population/longitudinal/discovery/outcome-financial checks using AST/source compatibility plus actualflow; then current economical-role accounting/guards and one consolidated exactcode/config archive/install/recovery. No repeated128GBpackage permetadata. Active capability mapping unchanged pendingconsolidation. Preserve all25cases/tenareas/principal/October11baseline, missingexactQ09/Q23definitions/Q16capacity/Q19qualification/Q24browserQA(no bypass), independent source-family/model/clinical/scientific/actuarial and customer dependencies. No agents/chats/services/caps;quiet continuationACTIVE; no gating.",
+  "resume_priority": "G3/WP4: Current two-program/routing/evidence-mapping delivery SEALED in artifacts/agere-release-current-2026-11-08/connected-delivery-receipt.json. All active native/storage jobs terminal; no source freeze. Product-config586e328a; serving code315b772e/app7824/session64521 on8885. Both4115member programs pass with112+129internal handoffs, exact work replay, finance/prediction-limit/discovery links and member-open,0providers/all64569rows preserved. Live /api/stack/workflow-evaluation HTTP200validates8/9declared engineering predicates; current package pending, not product-completion percentage. Before final snapshot exercise the two PREEXISTING current ordinary-entry gaps Q15thenQ14 from the retained public25case questions, one normal interactive request each, no owner plan/answer/expectedvalues. The existing current matrix labels these automatic_entry_unqualified; these are targeted missing behavior checks, not a new campaign or scope. Preserve all outputs/attempts and partial/unverified statuses; do not force fully-answered votes or repeat unchanged Q20/Q21/Q19/model/source campaigns. On actual subscription limit stop provider work and continue final independent offline consolidation/packaging. After those results update current25case/tenarea disposition, then one exactcode/config archive/install/startup/recovery using existing cold APFS-clone path; all actual main data/source/ledger intact. Do not assume137GiBlogical snapshot size requires another137GiBphysical copy; activebuildcurrently has no nonempty journals. Storage scan9390stopped obsolete with byte-exact completed replacements/partials preserved; no sourcecode/active data changes. Current seven capability receipts are wired under artifacts/agere-release-current-2026-11-08/acceptance; only the receipt-registry JSON changed, native/workflow code/contexts untouched. Final portable checks remain unassessed until actual current install. All25cases/tenareas/principal/October11baseline and exact Q09/Q23definitions/Q16capacity/Q19qualification/Q24visual(no bypass), independent clinical/model/scientific/actuarial/customer dependencies retained. No agents/chats/services/newcaps/gating;quiet continuationACTIVE.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-05T13:04:20.746654+00:00",
   "heartbeat_status": "ACTIVE",
   "resumed_at": "2026-11-05T14:48:08.592513+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "artifacts/agere-evidence-change-current-2026-11-08/delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-release-current-2026-11-08/connected-delivery-receipt.json",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
@@ -35,7 +35,7 @@
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-    "source_frozen": true,
+    "source_frozen": false,
     "runtime_activation": true,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
@@ -1570,17 +1570,48 @@
     },
     "current_evidence_change_capability": "artifacts/agere-evidence-change-current-2026-11-08/capability-candidates/evidence_change_reassessment.json",
     "owned_current_population_workflow": {
-      "pid": 8019,
-      "session": 55513,
-      "receipt": "artifacts/agere-population-current-2026-11-08/connected-v1/run-receipt.json",
-      "source_frozen": true,
-      "status": "running",
+      "pid": 8542,
+      "session": 26107,
+      "receipt": "artifacts/agere-population-current-2026-11-08/connected-v2/run-receipt.json",
+      "source_frozen": false,
       "provider_work": false,
+      "status": "passed_both_programs_current_connected_followups",
       "current_phase": "prepare_member_payer_and_participation_routes",
-      "full_roster": 4115,
-      "new_source_copy": false,
-      "clinical_model_qualification": false
-    }
+      "prior_attempt": "artifacts/agere-population-current-2026-11-08/connected-v1/run-receipt.json",
+      "retained_handoffs": 112,
+      "no_repeated_routes_or_financial_execution": true,
+      "active_program": "behavioral",
+      "routed_members": 60,
+      "programs_passed": [
+        "respiratory"
+      ],
+      "observed_at": "2026-11-08T19:37:12.321462+00:00"
+    },
+    "current_native_followup_compatibility": {
+      "proof": "artifacts/agere-population-current-2026-11-08/native-followup-compatibility.json",
+      "status": "passed_scoped_algorithm_and_source_compatibility_current_workflow_pending",
+      "current_workflow_still_required": true,
+      "provider_calls": 0
+    },
+    "current_economical_role_routing": {
+      "status": "qualified_scoped_engineering_candidate",
+      "receipt": "artifacts/agere-routing-current-2026-11-08/capability-candidates/economical_role_routing.json",
+      "validation": "artifacts/agere-routing-current-2026-11-08/capability-candidates/validation.json",
+      "checks_passed": 54,
+      "provider_calls": 0,
+      "active_mapping_changed": false,
+      "clinical_model_or_savings_qualification": false
+    },
+    "owned_storage_sharing": {
+      "pid": 9390,
+      "session": 37848,
+      "receipt": "artifacts/agere-release-current-2026-11-08/storage-sharing-v1/receipt.json",
+      "status": "stopped_obsolete_scan_contents_preserved",
+      "exact_contents_and_independent_inodes_required": true,
+      "free_bytes_before": 6973227008,
+      "reconciliation": "artifacts/agere-release-current-2026-11-08/storage-sharing-v1/maintenance-reconciliation.json"
+    },
+    "current_capability_consolidation": "artifacts/agere-release-current-2026-11-08/capability-consolidation.json"
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
@@ -1853,16 +1884,7 @@
     "until": "2026-10-29T14:00:00Z",
     "no_readiness_guarantee": true
   },
-  "active_jobs": [
-    {
-      "pid": 8019,
-      "kind": "current_connected_population_program_workflow",
-      "receipt": "artifacts/agere-population-current-2026-11-08/connected-v1/run-receipt.json",
-      "source_frozen": true,
-      "provider_work": false,
-      "session": 55513
-    }
-  ],
+  "active_jobs": [],
   "overnight_completed_jobs": {
     "local_adapter_qualification": {
       "session": 96934,
