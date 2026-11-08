@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T09:22:58.720861+00:00",
+  "updated_at": "2026-11-08T09:51:37.484877+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -661,27 +661,30 @@
     }
   ],
   "checkpoint": {
-    "kind": "requested_year_active_storage_recovered_next_Q07",
+    "kind": "Q08_catalog_guard_active_current_partial_next_Q09",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Requested-year guard active; retained 83-patient/122-call partial saves and reopens current. Durable native storage recovered without discarding source or attempt bytes. Q07 provider continuation not yet started.",
+    "user_behavior_delta": "A valid source-schema exploration no longer invalidates its saved home-health analysis. Current19-row/12-call partial reopens and is consumed exact in native/browser views; prior Q07 clinical fields remain current/exact.",
     "measured_failure_reduction": {
-      "focused_checks_passed": 135,
-      "native_Q01_Q06_recompilation_provider_calls": 0,
-      "failed_temporary_bytes_preserved": 1343692800,
-      "lossless_delta_archive_bytes": 16778660,
-      "full_byte_comparison": true,
-      "free_bytes_after_compaction": 1476280320,
-      "provider_calls_storage_recovery": 0
+      "false_missing_engine_catalog_faults_before": 1,
+      "false_missing_engine_catalog_faults_after": 0,
+      "targeted_tests_passed": 22,
+      "current_source_packets_deciding_supported": 20,
+      "current_source_packets": 20,
+      "new_native_calls": 0,
+      "document_rereads": 0,
+      "new_provider_attempts": 25,
+      "known_api_equivalent_usd": 0.010789344
     },
     "evidence": [
-      "artifacts/agere-Q06-current-original-2026-11-07/requested-year-activation/receipt.json",
-      "artifacts/agere-Q06-current-original-2026-11-07/requested-year-activation/consumer-proof.json",
-      "artifacts/agere-Q06-current-original-2026-11-07/failed-temporal-cache-archive/receipt.json",
-      "artifacts/agere-Q06-current-original-2026-11-07/failed-temporal-cache-archive/project-bytecode-recovery.json"
+      "artifacts/agere-Q08-retained-2026-11-08/workflow-completion.json",
+      "artifacts/agere-Q08-retained-2026-11-08/catalog-regressions.log",
+      "artifacts/agere-Q08-retained-2026-11-08/current-continuation/receipt.json",
+      "artifacts/agere-Q08-retained-2026-11-08/http-consumer-proof.json",
+      "artifacts/agere-Q08-retained-2026-11-08/app-activation/previous-Q07-current.json"
     ],
-    "remaining_gap": "Q07 current historical care-relationship completion; source-cache validity and compact input preflight next. Q06 genuine uncertainty and independent qualifications remain.",
-    "next_action": "G3/WP4: Continue fixed Q07 dated care relationships from the original retained stack answer/history. Storage is now writable: the failed 1,343,692,800-byte test cache is preserved losslessly in a 16,778,660-byte page archive with an independent APFS basis clone and full original-byte comparison; only its redundant raw temporary representation was compacted. Source warehouse, complete caches, journals and every partial attempt remain. Inspect Q07 original receipt/result and current source-cache disposition offline, restore exact 13 native calls and full recorded document reviews, and verify compact actor input plus current historical-population feedback. Then use ordinary Sonnet/Opus continuation to repair only actual missing/changed dependencies; no owner answer/expected counts, original-question replay, unchanged uncertainty voting, or completed-document rereading. Date guard e9c6c393 remains ACTIVE in app85391/session21728 (release6ee4d35c), current83-patient/122-call context ANS-3233ac7cd33d6f74f4644ff0 exact in native/browser views. Q06 four undecided source packets/coverage remain explicit. Full 25 cases, ten acceptance areas, October11 baseline, current principal review and independent G5/clinical/model/customer/deployment dependencies retained. No provider/build/training job or source freeze; quiet continuation ACTIVE."
+    "remaining_gap": "Q08 coverage/same-request stage interpretation remain unestablished; do not repeat unchanged votes. Fixed Q09 retained current definition availability and comparison next. Full25/tenareas and independent qualifications remain.",
+    "next_action": "G3/WP4: Inspect fixed Q09 original retained run first (artifacts/agere-ordinary-comparison-2026-11-05/Q09/stack/receipt.json and result.json.gz): installed versioned diabetes/BP program definitions compared at2029-06-30 and2029-12-31, eligibility evidence, unresolved inputs and overlap; keep clinical nominations, payer eligibility and consent separate. Check current installed rule/version availability OFFLINE before any provider request. Genuine missing definitions remain supported unknowns with explicit dependencies, not invented rules or a new disease handler. Continue only actual missing wiring/source/citation work from retained native history; no original-question replay or unchanged uncertainty votes. Q08 catalog guard c91fba2b is now ACTIVE in app86934/session15368; actual normal continuation8.066s/25 attempts/$0.010789344 API-equivalent,0 errors/pending/new native calls/document rereads,19 rows/12 calls exact/current in native+browser. All20 source packets deciding supported; coverage undecided and public partial/unverified. Old planner-receipt invalidation remains intact. Q07 current65-subject/75-referral/122-role partial remains current/exact after activation;34/66 source packets deciding supported,32 undecided, no located fault for another vote. Source/storage/date guards and every attempt/partial retained. Ledger63637 includes1 new interrupted unpriced pending from Q07; no actual subscription limit. No provider/build/training job or source freeze. Full25/tenareas/current principal/Oct11baseline and independentG5/clinical/model/customer/deployment prerequisites remain; quiet continuation ACTIVE."
   },
   "decisions": [
     {
@@ -5310,10 +5313,36 @@
         "artifacts/agere-Q06-current-original-2026-11-07/failed-temporal-cache-archive/project-bytecode-recovery.json"
       ],
       "scope_impact": "No acceptance area, provider threshold or product scope changed."
+    },
+    {
+      "at": "2026-11-08T09:33:35.855235+00:00",
+      "gate": "G3",
+      "reason": "Analyst requested avoidable whole-cohort source review with changed contracts instead of retaining completed rows after historical population expansion.",
+      "correction": "Stopped run; preserved complete new native/source results and all attempts, recovered the exact latest producer from its validated ledger response, and finalize that state without rerunning source work. Input continuation now requires native set differences before any missing-source request.",
+      "evidence": [
+        "artifacts/agere-Q07-retained-2026-11-08/current-continuation/receipt.json",
+        "artifacts/agere-Q07-retained-2026-11-08/recovered-producer.json.gz",
+        "artifacts/agere-Q07-retained-2026-11-08/native-conservation-preflight.json"
+      ],
+      "scope_impact": "No new feature scope, model acceptance, clinical qualification or workflow cap."
+    },
+    {
+      "at": "2026-11-08T09:51:37.484877+00:00",
+      "gate": "G3",
+      "reason": "Actual Q08 native history includes successful SQLite catalog inspection; catalog self-enumeration omitted the built-in relation, creating a false missing-source premise. Old planner receipt separately and correctly remained invalidated.",
+      "correction": "Register only real SQLite catalog aliases with their actual engine column contracts; keep missing source/column and native provenance checks strict.22 regressions pass, current normal retained review/save/reopen and actual app native/browser proof pass. Historical invalid receipt is retained; no source/model acceptance is restamped.",
+      "evidence": [
+        "artifacts/agere-Q08-retained-2026-11-08/native-preflight.json",
+        "artifacts/agere-Q08-retained-2026-11-08/catalog-workflow-proof.json",
+        "artifacts/agere-Q08-retained-2026-11-08/workflow-completion.json"
+      ],
+      "scope_impact": "Small existing-module guard fix, no architecture/scope rewrite or new qualification claim.",
+      "product_commit": "c91fba2b08ca5008a234f05dfc2b14ddece979d8",
+      "rollback_commit": "f3eeb4c14cdf6d41980298cad9b151bb8c0bc3f1"
     }
   ],
   "unsealed_work": {
-    "status": "requested_year_active_storage_recovered_Q07_preflight_next",
+    "status": "Q08_catalog_guard_active_current_partial_Q09_next",
     "product_commit": "6df36263b54136ae6e853b2e927c2b1b21dac4e6",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
@@ -5346,12 +5375,12 @@
     "new_provider_attempts": 185,
     "known_api_equivalent_usd": 4.933035236,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 63267,
+    "all_attempt_rows_retained": 63637,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 182,
+    "latest_increment_provider_attempts": 25,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -6259,7 +6288,7 @@
       "terminal_receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-continuation/receipt.json"
     },
     "Q06_retained_running_observation": "artifacts/agere-Q06-current-original-2026-11-07/retained-running-observation.json",
-    "current_run_accounting_pending": true,
+    "current_run_accounting_pending": false,
     "Q06_retained_completion_receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-continuation/receipt.json",
     "Q06_context_storage_delivery": {
       "schema": "Q06-native-context-storage-delivery/1",
@@ -6436,7 +6465,44 @@
     "requested_year_current_context": "ANS-3233ac7cd33d6f74f4644ff0",
     "requested_year_activation_proof": "artifacts/agere-Q06-current-original-2026-11-07/requested-year-activation/consumer-proof.json",
     "owned_bytecode_space_recovery": "artifacts/agere-Q06-current-original-2026-11-07/storage-probe-20261108T083340.json",
-    "owned_project_bytecode_space_recovery": "artifacts/agere-Q06-current-original-2026-11-07/failed-temporal-cache-archive/project-bytecode-recovery.json"
+    "owned_project_bytecode_space_recovery": "artifacts/agere-Q06-current-original-2026-11-07/failed-temporal-cache-archive/project-bytecode-recovery.json",
+    "owned_Q07_current_continuation": {
+      "kind": "Q07_retained_source_finalization",
+      "pid": 86610,
+      "session_id": 89035,
+      "receipt": "artifacts/agere-Q07-retained-2026-11-08/retained-finalization/receipt.json",
+      "status": "returned_unresolved_verification",
+      "source_frozen": false,
+      "finished_at": "2026-11-08T09:34:21.924899+00:00"
+    },
+    "Q07_native_preflight": "artifacts/agere-Q07-retained-2026-11-08/native-preflight/receipt.json",
+    "Q07_exact_source_publication": "artifacts/agere-Q07-retained-2026-11-08/source-publication/receipt.json",
+    "Q07_stopped_continuation_receipt": "artifacts/agere-Q07-retained-2026-11-08/current-continuation/receipt.json",
+    "Q07_recovered_producer": "artifacts/agere-Q07-retained-2026-11-08/recovered-producer.json.gz",
+    "Q07_native_conservation": "artifacts/agere-Q07-retained-2026-11-08/native-conservation-preflight.json",
+    "Q07_workflow_completion": "artifacts/agere-Q07-retained-2026-11-08/workflow-completion.json",
+    "Q07_current_context": "ANS-04774b056b51f830c1b59b31",
+    "Q07_current_consumer": "artifacts/agere-Q07-retained-2026-11-08/http-consumer-proof.json",
+    "Q08_native_preflight": "artifacts/agere-Q08-retained-2026-11-08/native-preflight.json",
+    "Q08_catalog_guard_candidate_active": true,
+    "owned_Q08_current_continuation": {
+      "kind": "Q08_retained_home_health_chain_continuation",
+      "pid": 86901,
+      "session_id": 21993,
+      "receipt": "artifacts/agere-Q08-retained-2026-11-08/current-continuation/receipt.json",
+      "status": "returned_unresolved_coverage",
+      "source_frozen": false,
+      "finished_at": "2026-11-08T09:46:50.516004+00:00"
+    },
+    "Q08_catalog_guard_candidate_commit": "c91fba2b",
+    "Q08_catalog_proof": "artifacts/agere-Q08-retained-2026-11-08/catalog-workflow-proof.json",
+    "Q08_catalog_regressions": "artifacts/agere-Q08-retained-2026-11-08/catalog-regressions.log",
+    "Q08_workflow_completion": "artifacts/agere-Q08-retained-2026-11-08/workflow-completion.json",
+    "Q08_current_context": "ANS-d85d4090d0be996109027540",
+    "Q08_current_consumer": "artifacts/agere-Q08-retained-2026-11-08/http-consumer-proof.json",
+    "Q08_catalog_guard_rollback_commit": "f3eeb4c14cdf6d41980298cad9b151bb8c0bc3f1",
+    "full_Q08_acceptance": false,
+    "full_Q07_acceptance": false
   },
   "current_visual_request": {
     "status": "completed",
@@ -6471,16 +6537,16 @@
   },
   "active_jobs": [
     {
-      "kind": "Q06_retained_transport_finalization",
-      "pid": 84595,
-      "session_id": 52659,
-      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-transport-finalization/receipt.json",
-      "status": "returned_unresolved_verification",
+      "kind": "Q08_retained_home_health_chain_continuation",
+      "pid": 86901,
+      "session_id": 21993,
+      "receipt": "artifacts/agere-Q08-retained-2026-11-08/current-continuation/receipt.json",
+      "status": "returned_unresolved_coverage",
       "source_frozen": false,
-      "finished_at": "2026-11-08T08:13:22.347179+00:00"
+      "finished_at": "2026-11-08T09:46:50.516004+00:00"
     }
   ],
-  "next_action": "G3/WP4: Continue fixed Q07 dated care relationships from the original retained stack answer/history. Storage is now writable: the failed 1,343,692,800-byte test cache is preserved losslessly in a 16,778,660-byte page archive with an independent APFS basis clone and full original-byte comparison; only its redundant raw temporary representation was compacted. Source warehouse, complete caches, journals and every partial attempt remain. Inspect Q07 original receipt/result and current source-cache disposition offline, restore exact 13 native calls and full recorded document reviews, and verify compact actor input plus current historical-population feedback. Then use ordinary Sonnet/Opus continuation to repair only actual missing/changed dependencies; no owner answer/expected counts, original-question replay, unchanged uncertainty voting, or completed-document rereading. Date guard e9c6c393 remains ACTIVE in app85391/session21728 (release6ee4d35c), current83-patient/122-call context ANS-3233ac7cd33d6f74f4644ff0 exact in native/browser views. Q06 four undecided source packets/coverage remain explicit. Full 25 cases, ten acceptance areas, October11 baseline, current principal review and independent G5/clinical/model/customer/deployment dependencies retained. No provider/build/training job or source freeze; quiet continuation ACTIVE.",
+  "next_action": "G3/WP4: Inspect fixed Q09 original retained run first (artifacts/agere-ordinary-comparison-2026-11-05/Q09/stack/receipt.json and result.json.gz): installed versioned diabetes/BP program definitions compared at2029-06-30 and2029-12-31, eligibility evidence, unresolved inputs and overlap; keep clinical nominations, payer eligibility and consent separate. Check current installed rule/version availability OFFLINE before any provider request. Genuine missing definitions remain supported unknowns with explicit dependencies, not invented rules or a new disease handler. Continue only actual missing wiring/source/citation work from retained native history; no original-question replay or unchanged uncertainty votes. Q08 catalog guard c91fba2b is now ACTIVE in app86934/session15368; actual normal continuation8.066s/25 attempts/$0.010789344 API-equivalent,0 errors/pending/new native calls/document rereads,19 rows/12 calls exact/current in native+browser. All20 source packets deciding supported; coverage undecided and public partial/unverified. Old planner-receipt invalidation remains intact. Q07 current65-subject/75-referral/122-role partial remains current/exact after activation;34/66 source packets deciding supported,32 undecided, no located fault for another vote. Source/storage/date guards and every attempt/partial retained. Ledger63637 includes1 new interrupted unpriced pending from Q07; no actual subscription limit. No provider/build/training job or source freeze. Full25/tenareas/current principal/Oct11baseline and independentG5/clinical/model/customer/deployment prerequisites remain; quiet continuation ACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6569,8 +6635,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 85391,
-  "owned_server_session": 21728,
+  "owned_server_pid": 86934,
+  "owned_server_session": 15368,
   "last_run_observation": {
     "at": "2026-11-07T20:07:46.544952+00:00",
     "status": "native_storage_repair_qualified_Q06_retained_partial",
