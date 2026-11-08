@@ -43,6 +43,7 @@ def financial_input_contract():
         'meaning':'Each identity residual is the signed sum of ALL listed integer-cent snapshot fields. A missing or noninteger term is unresolved, not zero. These reported stocks are separate from period cash flows. Refund and credit terms must not be dropped.',
         'native_execution':'execute_analysis financial_accounts returns complete patient receipts and native_projections for account snapshots, identity results, cash comparisons and unresolved sources. query_sql can consume those projections without model arithmetic.',
         'selection':'The native operator selects one unambiguous received account snapshot through available_by using source dates/timestamps. Declare that selection separately from a historical year-end alternative or a transaction posting period.',
+        'population':'Recorded accounts can remain outside a living care cohort. Inherit the original source or saved population; use living_patient only for an explicit living-only request or proven identical membership. Do not infer hardship, preference or care eligibility from a balance.',
         'limits':LIMITS}
 
 
@@ -653,6 +654,12 @@ def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None,s
         from .decision_context import validate_receipt_window
         validate_receipt_window(getattr(tools,'question',''),parameters,tools.as_of)
     ids=population(tools,patient_ids,patient_query_sql)
+    if operation=='financial_accounts'and patient_query_sql is not None:
+        from .source_scope import financial_population_problem
+        available=[r[0]for r in tools.db.execute('SELECT patient_id FROM patient')]
+        issue=financial_population_problem(getattr(tools,'question',''),patient_query_sql,
+            getattr(tools,'native_calls',()),selected_ids=ids,inherited_ids=tools.cohort,available_ids=available)
+        if issue:raise ValueError(issue)
     snapshot=tools.stack.retriever.meta['snapshot']['as_of']
     if str(snapshot)[:10]!=tools.as_of:raise ValueError('Analytical snapshot differs from request date')
     if G.input_contract(operation)['count'][1]<1:raise ValueError('This operation cannot inherit a patient population')

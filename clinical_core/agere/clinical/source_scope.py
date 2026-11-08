@@ -18,6 +18,50 @@ TEMPORAL_ATTRIBUTE=re.compile(r'\b(?:eligib\w*|coverage|enroll\w*|membership|pay
 MONTH_DIMENSIONS=frozenset({'payer_id','product','line_of_business','plan_id','attribution_practice_id','attribution_npi'})
 
 
+def financial_population_problem(question,sql,calls=(),*,selected_ids=None,inherited_ids=None,available_ids=None):
+    """A care-liveness view cannot silently shrink recorded financial scope.
+
+    This checks the known living_patient source, including its retained-view
+    lineage. It does not prove general SQL/request equivalence. An exact saved
+    cohort or complete source population remains valid regardless of its ages
+    or vital statuses; explicit requests for living subjects remain available.
+    """
+    if not isinstance(sql,str):return None
+    selected=set(selected_ids)if selected_ids is not None else None
+    if selected is not None and any(scope is not None and selected==set(scope)
+                                    for scope in (inherited_ids,available_ids)):return None
+    text=question or''
+    subjects=r'(?:patients?|members?|people|subjects?|beneficiaries)'
+    explicit=re.search(r'\b(?:living|alive|surviving|non[- ]deceased)\s+'+subjects+r'\b|\b'+subjects+r'\s+(?:who\s+are\s+|who\s+were\s+|are\s+)?(?:still\s+)?(?:alive|living)\b',text,re.I)
+    wider=re.search(r'\b(?:not\s+(?:only\s+|just\s+)?living|living\s+and\s+deceased|including\s+(?:the\s+)?deceased|regardless\s+of\s+(?:death|vital|living))\b',text,re.I)
+    if explicit and not wider:return None
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.optimizer.scope import traverse_scope
+    by={c['result']['result_view']:c for c in calls
+        if isinstance(c.get('result'),dict)and c['result'].get('result_view')}
+    seen=set()
+    def uses_living(query):
+        if not isinstance(query,str)or query in seen:return False
+        seen.add(query)
+        try:tree=sqlglot.parse_one(query,read='sqlite')
+        except (sqlglot.errors.ParseError,sqlglot.errors.TokenError):return False
+        if tree is None:return False
+        for scope in traverse_scope(tree):
+            for _,source in scope.selected_sources.values():
+                if not isinstance(source,exp.Table):continue  # CTE shadowing is resolved by sqlglot.
+                name=source.name.lower()
+                if name=='living_patient':return True
+                call=by.get(name)
+                if call and uses_living((call.get('input')or{}).get('sql')or
+                                        (call.get('input')or{}).get('patient_query_sql')):return True
+        return False
+    if not uses_living(sql):return None
+    return ('The financial population uses living_patient without a requested living-only restriction. '
+            'Recorded balances can remain outside a living care cohort. Preserve the original or exact inherited '
+            'financial population; do not silently exclude those source subjects or infer hardship from amounts.')
+
+
 def point_event_grain_problem(question,sql):
     """Reject a monthly attribute used as event-date membership without proof.
 
