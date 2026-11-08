@@ -470,14 +470,18 @@ def build_answer_core(plan, results, memberships, question):
         from .survival import summary
         report = results[-1]['result']
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or report.get('status') == 'partial'
-        answer.update(status='partial' if partial else ('answered' if report['units'] else 'unsupported'),
-                      answer_type='table' if report['units'] else 'unsupported', table=report['table'], method=report['method'],
-                      value=summary(report), count=report['units'],
+        displayed = len(report['table']) if report['parameters'].get('output') == 'observed_units' else report['units']
+        answer.update(status='partial' if partial else ('answered' if displayed else 'unsupported'),
+                      answer_type='table' if displayed else 'unsupported', table=report['table'], method=report['method'],
+                      value=summary(report), count=displayed,
                       overall={k: report[k] for k in ('event_label', 'time_zero', 'units', 'patients', 'events', 'excluded',
                                                       'included_without_baseline_result', 'groups', 'logrank', 'cox', 'curves')})
         answer['missing'].extend(report.get('missing') or [])
         answer['overall']['unresolved_units'] = report.get('unresolved_units', [])
         answer['overall']['unsupported_horizons'] = report.get('unsupported_horizons', [])
+        answer['overall'].update({k: report[k] for k in ('parameters', 'death_source', 'selected_index_accounts', 'observed_status_counts', 'estimand') if k in report})
+        if report['parameters'].get('output') == 'observed_units':
+            answer['patient_ids'] = sorted({row['patient_id'] for row in report['table']})
         if not report['units']:
             answer['missing'].append(summary(report))
         return answer

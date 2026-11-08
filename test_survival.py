@@ -1,5 +1,6 @@
 """Time-to-event operator: estimators against worked examples, censoring rules on fixtures, compiler routing."""
-import json, math, unittest
+import json, math, sqlite3, tempfile, unittest
+from unittest.mock import patch
 from pathlib import Path
 
 import numpy as np
@@ -253,6 +254,133 @@ class RealRelease(unittest.TestCase):
             semantic_layer.ensure = original
         self.assertGreater(r['units'], 0)
         self.assertTrue(all(0 <= row['cumulative_incidence'] <= 1 for row in r['table']))
+
+
+class ReceivedFollowup(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
+        self.path = Path(self.tmp.name); self.target = self.path/'semantic.sqlite3'
+        (self.path/'run.json').write_text(json.dumps({'snapshot': {'as_of': '2028-01-31'}}))
+        db = sqlite3.connect(self.target)
+        db.executescript('CREATE TABLE patient(patient_id TEXT); CREATE TABLE death(patient_id TEXT,death_date TEXT,sources_disagree INTEGER);'
+                         'CREATE TABLE utilization_event(patient_id TEXT,kind TEXT,event_date TEXT,end_date TEXT,discharge_known INTEGER,record_id TEXT,sources TEXT);'
+                         'CREATE TABLE stay(patient_id TEXT,admit_date TEXT,discharge_date TEXT,discharge_known INTEGER);'
+                         'CREATE TABLE enrollment_span(patient_id TEXT,coverage_start TEXT,coverage_end TEXT,open_ended INTEGER);')
+        pids = ['normal', 'prior', 'death', 'gap', 'adjacent', 'uncovered', 'tie', 'same_tie', 'missing', 'death_tie', 'end_tie', 'undated']
+        for pid in pids:
+            db.execute('INSERT INTO patient VALUES(?)', (pid,))
+            end = None if pid == 'missing' else '2028-01-03'
+            db.execute('INSERT INTO utilization_event VALUES(?,?,?,?,?,NULL,?)', (pid, 'inpatient', '2028-01-01', end, int(end is not None), 'claims,adt'))
+            db.execute('INSERT INTO utilization_event VALUES(?,?,?,?,1,NULL,?)', (pid, 'inpatient', '2028-01-08', '2028-01-09', 'claims'))
+            if pid != 'uncovered': db.execute('INSERT INTO enrollment_span VALUES(?,?,NULL,1)', (pid, '2027-01-01'))
+        db.execute("INSERT INTO utilization_event VALUES('prior','inpatient','2027-12-01','2027-12-03',1,NULL,'claims')")
+        db.execute("INSERT INTO utilization_event VALUES('tie','inpatient','2028-01-01','2028-01-04',1,NULL,'adt')")
+        db.execute("INSERT INTO utilization_event VALUES('same_tie','inpatient','2028-01-01','2028-01-03',1,NULL,'adt')")
+        db.execute("INSERT INTO utilization_event VALUES('undated','inpatient',NULL,'2027-12-03',1,NULL,'claims')")
+        db.execute("INSERT INTO death VALUES('death','2028-01-05',0),('death_tie','2028-01-08',1)")
+        db.execute("DELETE FROM enrollment_span WHERE patient_id IN ('gap','adjacent','end_tie')")
+        db.execute("INSERT INTO enrollment_span VALUES('gap','2028-01-01','2028-01-06',0),('gap','2028-01-10',NULL,1),"
+                   "('adjacent','2028-01-01','2028-01-05',0),('adjacent','2028-01-06','2028-01-20',0),"
+                   "('uncovered','2028-01-10',NULL,1),('end_tie','2028-01-01','2028-01-08',0)")
+        db.commit(); db.close()
+
+    def params(self, **changes):
+        p = {'index': {'type': 'discharge', 'selection': 'first_recorded', 'window_basis': 'admission', 'stay_kind': 'inpatient',
+                       'window': {'start': '2028-01-01', 'end': '2028-12-31'}},
+             'event': {'type': 'readmission'}, 'output': 'observed_units', 'coverage': 'contiguous_enrollment'}
+        p.update(changes); return p
+
+    def report(self, **changes):
+        with patch.object(survival.semantic_layer, 'ensure', return_value=self.target):
+            return survival.execute(self.path, None, self.params(**changes))
+
+    def test_first_across_received_history_and_first_in_window_are_distinct(self):
+        report = self.report(); by = {r['patient_id']: r for r in report['table']}
+        self.assertNotIn('prior', by)
+        ix = self.params()['index']; ix['selection'] = 'first_in_window'
+        alternate = self.report(index=ix)
+        self.assertIn('prior', {r['patient_id'] for r in alternate['table']})
+        self.assertEqual(len(alternate['table']), len(report['table'])+1)
+
+    def test_null_ids_do_not_remove_next_admission_and_risk_time_stops_at_event(self):
+        row = next(r for r in self.report()['table'] if r['patient_id'] == 'normal')
+        self.assertEqual(row['next_recorded_admission_date'], '2028-01-08')
+        self.assertEqual((row['event_observed'], row['time_at_risk_days']), (1, 5))
+        self.assertEqual(row['followup_boundary_days'], 28)
+
+    def test_received_death_stops_risk_but_keeps_the_later_source_event(self):
+        r = self.report(); row = next(r for r in r['table'] if r['patient_id'] == 'death')
+        self.assertEqual((row['event_observed'], row['time_at_risk_days'], row['censor_reason']), (0, 2, 'death'))
+        self.assertEqual(row['next_recorded_admission_date'], '2028-01-08')
+        self.assertEqual(r['death_source']['received_rows'], 2)
+        self.assertNotIn('No death records', r['method'])
+
+    def test_later_open_span_does_not_bridge_an_enrollment_gap(self):
+        row = next(r for r in self.report()['table'] if r['patient_id'] == 'gap')
+        self.assertEqual((row['event_observed'], row['time_at_risk_days'], row['censor_reason']), (0, 3, 'enrollment_boundary'))
+        self.assertEqual(row['contiguous_coverage_end'], '2028-01-06')
+
+    def test_adjacent_spans_merge_and_inclusive_enrollment_end_keeps_that_day_event(self):
+        by = {r['patient_id']: r for r in self.report()['table']}
+        self.assertEqual(by['adjacent']['contiguous_coverage_end'], '2028-01-20')
+        self.assertEqual(by['adjacent']['event_observed'], 1)
+        self.assertEqual(by['end_tie']['event_observed'], 1)
+
+    def test_missing_index_coverage_is_unknown_and_lifetime_open_does_not_establish_it(self):
+        row = next(r for r in self.report()['table'] if r['patient_id'] == 'uncovered')
+        self.assertEqual(row['status'], 'coverage_at_index_not_established')
+        self.assertIsNone(row['time_at_risk_days']); self.assertIsNone(row['event_observed'])
+        self.assertEqual(row['next_recorded_admission_date'], '2028-01-08')
+
+    def test_origin_ties_missing_dates_and_death_day_order_remain_unresolved(self):
+        by = {r['patient_id']: r for r in self.report()['table']}
+        self.assertEqual(by['tie']['index_candidates'], 2)
+        self.assertEqual(by['tie']['status'], 'index_discharge_unknown_or_ambiguous')
+        self.assertEqual(by['same_tie']['index_candidates'], 2)
+        self.assertEqual(by['same_tie']['time_at_risk_days'], 5)
+        self.assertEqual(by['missing']['status'], 'index_discharge_unknown_or_ambiguous')
+        self.assertEqual(by['undated']['status'], 'undated_admission_prevents_first_recorded_order')
+        self.assertEqual(by['death_tie']['status'], 'event_censor_same_day_order_unknown')
+        self.assertIsNone(by['death_tie']['event_observed'])
+
+    def test_observed_output_keeps_all_accounts_without_models_or_an_unasked_horizon(self):
+        r = self.report()
+        self.assertIsNone(r['parameters']['horizon_days'])
+        self.assertEqual(r['selected_index_accounts'], 11)
+        self.assertEqual(len(r['table']), 11)
+        self.assertEqual(r['curves'], {}); self.assertIsNone(r['cox']); self.assertIsNone(r['conformal_lower_bounds'])
+        self.assertEqual(r['status'], 'partial')
+        self.assertTrue(all('parameters_json' in row for row in r['table']))
+        self.assertIn('no modeled risk', survival.summary(r))
+        for changes in ({'cox': True}, {'lower_bound': True}, {'coverage': 'invented'}):
+            with self.assertRaises(ValueError): survival.validate(self.params(**changes))
+
+    def test_unknown_only_followup_remains_a_table_and_retains_its_patient_scope(self):
+        with patch.object(survival.semantic_layer, 'ensure', return_value=self.target):
+            report = survival.execute(self.path, ['tie', 'uncovered'], self.params())
+        self.assertEqual(report['units'], 0)
+        self.assertEqual(len(report['table']), 2)
+        self.assertTrue(all(r['event_observed'] is None for r in report['table']))
+        node = {'operation': 'survival'}
+        plan = {'nodes': [node], 'coverage': 'supported_observation', 'unmet_requirements': []}
+        answer = analysis_graph.build_answer(plan, [{'node': node, 'result': report}], {}, 'observed followup')
+        self.assertEqual((answer['status'], answer['answer_type'], answer['count']), ('partial', 'table', 2))
+        self.assertEqual(answer['patient_ids'], ['tie', 'uncovered'])
+
+    def test_null_end_without_asserted_open_flag_does_not_invent_coverage(self):
+        with sqlite3.connect(self.target) as db:
+            db.execute("UPDATE enrollment_span SET coverage_end=NULL,open_ended=0 WHERE patient_id='normal'")
+        row = next(r for r in self.report()['table'] if r['patient_id'] == 'normal')
+        self.assertEqual(row['status'], 'coverage_at_index_not_established')
+        self.assertIsNone(row['event_observed'])
+
+    def test_unknown_origin_still_exposes_received_death_without_timing_it(self):
+        with sqlite3.connect(self.target) as db:
+            db.execute("INSERT INTO death VALUES('tie','2028-01-20',0)")
+        row = next(r for r in self.report()['table'] if r['patient_id'] == 'tie')
+        self.assertEqual(row['death_date'], '2028-01-20')
+        self.assertEqual(row['status'], 'index_discharge_unknown_or_ambiguous')
+        self.assertIsNone(row['time_at_risk_days'])
 
 
 if __name__ == '__main__':

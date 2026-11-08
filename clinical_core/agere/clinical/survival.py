@@ -27,7 +27,7 @@ censoring), and L = min(q(x) - eta, c0) with eta the weighted (1 - alpha) quanti
 reported on the held-out split.
 """
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 import json, math, sqlite3
 
@@ -36,8 +36,12 @@ from scipy.stats import chi2, norm
 
 from . import aggregate, concepts, semantic_layer
 
-VERSION = 'survival/3'
+VERSION = 'survival/4'
 INDEX_TYPES = ('discharge', 'condition_first_record', 'date')
+INDEX_SELECTIONS = ('all', 'first_recorded', 'first_in_window')
+STAY_KINDS = ('hospital', 'inpatient')
+FOLLOWUP_COVERAGE = ('received_records', 'contiguous_enrollment')
+OUTPUTS = ('estimates', 'observed_units')
 EVENT_TYPES = ('readmission', 'followup', 'encounter', 'measurement')
 GROUP_BY = ('none', 'coverage_type', 'practice', 'pcp', 'sex', 'age_band', 'condition')
 COVARIATES = ('age_band', 'sex', 'coverage_type')
@@ -190,12 +194,19 @@ def cox(times, events, X, names, max_iter=50, tol=1e-9):
 
 # ---- parameters ----------------------------------------------------------------------
 def validate(p):
-    allowed = {'index', 'event', 'horizon_days', 'time_points', 'group_by', 'group_concept', 'cox', 'covariates', 'top', 'alpha', 'lower_bound'}
+    allowed = {'index', 'event', 'horizon_days', 'time_points', 'group_by', 'group_concept', 'cox', 'covariates', 'top', 'alpha', 'lower_bound', 'coverage', 'output'}
     if not isinstance(p, dict) or set(p) - allowed: raise ValueError(f'survival parameters: {sorted(allowed)}')
     index = p.get('index')
-    if not isinstance(index, dict) or index.get('type') not in INDEX_TYPES or set(index) - {'type', 'concept', 'date', 'window'}:
+    if not isinstance(index, dict) or index.get('type') not in INDEX_TYPES or set(index) - {'type', 'concept', 'date', 'window', 'selection', 'window_basis', 'stay_kind'}:
         raise ValueError(f'index.type must be one of {INDEX_TYPES}')
     ix = {'type': index['type']}
+    if ix['type'] == 'discharge':
+        for name, choices in (('selection', INDEX_SELECTIONS), ('window_basis', ('discharge', 'admission')), ('stay_kind', STAY_KINDS)):
+            value = index.get(name, choices[0])
+            if value not in choices: raise ValueError(f'survival index.{name} must be one of {choices}')
+            if name in index: ix[name] = value
+    elif set(index) & {'selection', 'window_basis', 'stay_kind'}:
+        raise ValueError('survival stay selection, window basis and kind require a discharge index')
     if ix['type'] == 'condition_first_record':
         if index.get('concept') not in concepts.CONDITIONS: raise ValueError('condition_first_record index needs a library condition concept')
         ix['concept'] = index['concept']
@@ -224,15 +235,20 @@ def validate(p):
         if type(event.get('value')) not in (int, float) or not math.isfinite(event['value']): raise ValueError('measurement events need a numeric threshold')
         ev.update(concept=event['concept'], op=event['op'], value=float(event['value']))
     discharge = ix['type'] == 'discharge'
-    horizon = p.get('horizon_days', 90 if discharge else 730)
-    if type(horizon) is not int or not 1 <= horizon <= 3650: raise ValueError('horizon_days 1..3650')
-    points = p.get('time_points') or [x for x in ((7, 14, 30, 60, 90) if discharge else (30, 90, 180, 365, 730)) if x <= horizon] or [horizon]
-    if not isinstance(points, list) or not 1 <= len(points) <= 12 or any(type(x) is not int or not 1 <= x <= horizon for x in points):
+    output = p.get('output', 'estimates')
+    coverage = p.get('coverage', 'received_records')
+    if output not in OUTPUTS or coverage not in FOLLOWUP_COVERAGE: raise ValueError('Invalid survival output or coverage policy')
+    observed = output == 'observed_units'
+    if observed and (p.get('cox') or p.get('lower_bound')): raise ValueError('observed_units does not fit Cox or predictive bounds')
+    horizon = p.get('horizon_days', None if observed else 90 if discharge else 730)
+    if not (observed and horizon is None) and (type(horizon) is not int or not 1 <= horizon <= 3650): raise ValueError('horizon_days 1..3650, or null for observed_units through the snapshot')
+    points = [] if observed else p.get('time_points') or [x for x in ((7, 14, 30, 60, 90) if discharge else (30, 90, 180, 365, 730)) if x <= horizon] or [horizon]
+    if not isinstance(points, list) or not observed and not 1 <= len(points) <= 12 or any(type(x) is not int or not 1 <= x <= horizon for x in points):
         raise ValueError('time_points: 1..12 integer days within the horizon')
     group_by = p.get('group_by', 'none')
     if group_by not in GROUP_BY: raise ValueError(f'group_by must be one of {GROUP_BY}')
     out = {'index': ix, 'event': ev, 'horizon_days': horizon, 'time_points': sorted(set(points)), 'group_by': group_by,
-           'cox': bool(p.get('cox', False)), 'top': p.get('top', 25)}
+           'cox': bool(p.get('cox', False)), 'top': p.get('top', 25), 'coverage': coverage, 'output': output}
     if group_by == 'condition':
         if p.get('group_concept') not in concepts.CONDITIONS: raise ValueError('condition groups need group_concept')
         out['group_concept'] = p['group_concept']
@@ -248,7 +264,7 @@ def validate(p):
     alpha = p.get('alpha', 0.1)
     if isinstance(alpha, bool) or not isinstance(alpha, (int, float)) or not 0.01 <= alpha <= 0.5: raise ValueError('alpha 0.01..0.5')
     out['alpha'] = float(alpha)
-    out['lower_bound'] = bool(p.get('lower_bound', True))  # conformal lower bounds default on
+    out['lower_bound'] = False if observed else bool(p.get('lower_bound', True))
     return out
 
 
@@ -355,24 +371,89 @@ def describe_event(p):
     return what, zero
 
 
-def units(db, patient_ids, p, as_of, *, uncertainties=None):
+def _has_relation(db, name):
+    return db.execute("SELECT 1 FROM sqlite_master WHERE name=? AND type IN ('table','view')", (name,)).fetchone() is not None
+
+
+def _discharge_starts(db, members, ix, excluded, accounts):
+    """Select received index episodes before timing; never break a date tie with a nullable record ID."""
+    by_patient = defaultdict(list)
+    inpatient = ix.get('stay_kind', 'hospital') == 'inpatient'
+    query = ("SELECT patient_id,event_date,end_date,discharge_known,record_id,sources FROM utilization_event WHERE kind='inpatient'"
+             if inpatient else 'SELECT patient_id,admit_date,discharge_date,discharge_known,NULL,NULL FROM stay')
+    for pid, admit, discharge, known, rid, sources in db.execute(query):
+        if pid in members:
+            by_patient[pid].append({'admission_date': admit, 'discharge_date': discharge if known else None,
+                                   'discharge_known': known, 'record_id': rid, 'sources': sources})
+    starts, stays = [], defaultdict(list)
+    w, basis, selection = ix.get('window') or {}, ix.get('window_basis', 'discharge'), ix.get('selection', 'all')
+    def in_window(row):
+        if not any(w.values()): return True
+        d = row['admission_date' if basis == 'admission' else 'discharge_date']
+        return bool(d and (not w.get('start') or d >= w['start']) and (not w.get('end') or d <= w['end']))
+    for pid, received in sorted(by_patient.items()):
+        dated = sorted((r for r in received if r['admission_date']), key=lambda r: r['admission_date'])
+        stays[pid] = [(r['admission_date'], r['discharge_date']) for r in dated]
+        candidates = [r for r in dated if in_window(r)] if selection == 'first_in_window' else dated
+        if selection != 'all' and candidates:
+            candidates = [r for r in candidates if r['admission_date'] == candidates[0]['admission_date']]
+            # Membership is checked after selecting first across history.
+            if selection == 'first_recorded' and not any(in_window(r) for r in candidates): continue
+            groups = [candidates]
+        else:
+            groups = [[r] for r in candidates if in_window(r)]
+        for group in groups:
+            known = [r['discharge_date'] for r in group if r['discharge_date']]
+            detail = {'patient_id': pid, 'index_admission_date': group[0]['admission_date'],
+                      'index_candidates': len(group), 'index_source_rows_json': json.dumps(group, sort_keys=True),
+                      'index_discharge_min': min(known) if known else None, 'index_discharge_max': max(known) if known else None,
+                      'index_selection': selection, 'index_window_basis': basis, 'index_stay_kind': ix.get('stay_kind', 'hospital')}
+            if selection == 'first_recorded' and len(dated) != len(received):
+                detail.update(index_date=None, status='undated_admission_prevents_first_recorded_order')
+                detail['undated_admission_source_rows_json'] = json.dumps([r for r in received if not r['admission_date']], sort_keys=True)
+                excluded[detail['status']] += 1; accounts.append(detail); continue
+            if len(known) != len(group) or len(set(known)) != 1:
+                detail.update(index_date=None, status='index_discharge_unknown_or_ambiguous')
+                excluded['stay_without_received_discharge' if selection == 'all' else detail['status']] += 1
+                accounts.append(detail); continue
+            starts.append((pid, known[0], detail))
+    return starts, stays
+
+
+def _coverage_windows(db, members, as_of):
+    """Union overlapping/adjacent received spans. A later open span cannot bridge a recorded gap."""
+    if not _has_relation(db, 'enrollment_span'): return {}
+    cols = {r[1] for r in db.execute('PRAGMA table_info(enrollment_span)')}
+    open_flag = 'open_ended' if 'open_ended' in cols else 'NULL'
+    raw = defaultdict(list)
+    for pid, start, end, opened in db.execute(f'SELECT patient_id,coverage_start,coverage_end,{open_flag} FROM enrollment_span'):
+        if pid not in members or not start: continue
+        if end is None:
+            if opened != 1: continue  # unknown end is not an asserted open interval
+            end = as_of
+        if start <= min(end, as_of): raw[pid].append((start, min(end, as_of)))
+    merged = {}
+    for pid, spans in raw.items():
+        blocks = []
+        for start, end in sorted(set(spans)):
+            if blocks and date.fromisoformat(start) <= date.fromisoformat(blocks[-1][1]) + timedelta(days=1):
+                blocks[-1] = (blocks[-1][0], max(end, blocks[-1][1]))
+            else: blocks.append((start, end))
+        merged[pid] = blocks
+    return merged
+
+
+def units(db, patient_ids, p, as_of, *, uncertainties=None, accounts=None):
     """One row per analysed unit: (patient_id, index_date, time_days, event 0/1, censor_reason); plus exclusion counts."""
     ix, ev, horizon = p['index'], p['event'], p['horizon_days']
     members = set(patient_ids) if patient_ids is not None else {r[0] for r in db.execute('SELECT patient_id FROM patient')}
     excluded = Counter()
+    accounts = accounts if accounts is not None else []
     # time zero
     starts = []
     stays = defaultdict(list)
-    if ix['type'] == 'discharge' or ev['type'] in ('readmission', 'followup'):
-        for pid, admit, dis, known in db.execute('SELECT patient_id, admit_date, discharge_date, discharge_known FROM stay ORDER BY patient_id, admit_date'):
-            if pid in members: stays[pid].append((admit, dis if known else None))
     if ix['type'] == 'discharge':
-        w = ix.get('window') or {}
-        for pid, rows in stays.items():
-            for admit, dis in rows:
-                if not dis: excluded['stay_without_received_discharge'] += 1; continue
-                if (w.get('start') and dis < w['start']) or (w.get('end') and dis > w['end']): continue
-                starts.append((pid, dis))
+        starts, stays = _discharge_starts(db, members, ix, excluded, accounts)
     elif ix['type'] == 'condition_first_record':
         # Documentation date (event date, else recorded date); reported onset is often only a year and predates observation.
         first = {pid: d for pid, d in db.execute("SELECT patient_id, min(coalesce(substr(event_date, 1, 10), substr(recorded_date, 1, 10))) "
@@ -380,9 +461,19 @@ def units(db, patient_ids, p, as_of, *, uncertainties=None):
         for pid in members:
             if pid not in first: excluded['no_index_condition_record'] += 1
             elif not first[pid]: excluded['index_condition_undated'] += 1
-            else: starts.append((pid, first[pid][:10]))
+            else: starts.append((pid, first[pid][:10], {'patient_id': pid, 'index_selection': 'condition_first_record'}))
     else:
-        starts = [(pid, ix['date']) for pid in members]
+        starts = [(pid, ix['date'], {'patient_id': pid, 'index_selection': 'fixed_date'}) for pid in sorted(members)]
+    deaths = {}
+    if _has_relation(db, 'death'):
+        cols = {r[1] for r in db.execute('PRAGMA table_info(death)')}
+        disagreement = 'sources_disagree' if 'sources_disagree' in cols else 'NULL'
+        deaths = {pid: (d, conflict) for pid, d, conflict in db.execute(f'SELECT patient_id,death_date,{disagreement} FROM death') if pid in members}
+    for detail in accounts:  # An unknown index origin must not hide a received death observation.
+        detail.update(snapshot_date=as_of, death_date=deaths.get(detail['patient_id'], (None, None))[0],
+                      death_sources_disagree=deaths.get(detail['patient_id'], (None, None))[1],
+                      coverage_policy=p.get('coverage', 'received_records'))
+    coverage = _coverage_windows(db, members, as_of) if p.get('coverage') == 'contiguous_enrollment' else {}
     # event sources
     dated = defaultdict(list)
     threshold_evidence = defaultdict(list)
@@ -415,12 +506,33 @@ def units(db, patient_ids, p, as_of, *, uncertainties=None):
                                              'comparator': comparator, 'received_value': str(received), 'threshold_result': truth})
     for v in dated.values(): v.sort(key=lambda item:item[0])
     out = []
-    for pid, zero in starts:
-        if zero > as_of: excluded['time_zero_after_snapshot'] += 1; continue
-        limit = min(horizon, _days(zero, as_of))  # administrative censoring: snapshot or horizon
-        reason = 'snapshot' if _days(zero, as_of) < horizon else 'horizon'
-        if limit <= 0: excluded['no_follow_up_time'] += 1; continue
-        nxt = next((a for a, _ in stays.get(pid, []) if a > zero), None) if ev['type'] in ('readmission', 'followup') else None
+    for pid, zero, detail in starts:
+        detail.update(index_date=zero, snapshot_date=as_of, death_date=deaths.get(pid, (None, None))[0],
+                      death_sources_disagree=deaths.get(pid, (None, None))[1], coverage_policy=p.get('coverage', 'received_records'))
+        nxt = next((a for a, _ in stays.get(pid, []) if zero < a <= as_of), None) if ev['type'] in ('readmission', 'followup') else None
+        detail['next_recorded_admission_date'] = nxt
+        accounts.append(detail)
+        if zero > as_of:
+            excluded['time_zero_after_snapshot'] += 1; detail['status'] = 'time_zero_after_snapshot'; continue
+        limit = min(horizon, _days(zero, as_of)) if horizon is not None else _days(zero, as_of)
+        reason = 'snapshot' if horizon is None or _days(zero, as_of) < horizon else 'horizon'
+        death_date = detail['death_date']
+        if death_date and death_date <= as_of and _days(zero, death_date) <= limit:
+            limit, reason = _days(zero, death_date), 'death'
+        if p.get('coverage') == 'contiguous_enrollment':
+            block = next(((a, b) for a, b in coverage.get(pid, []) if a <= zero <= b), None)
+            detail.update(coverage_at_index='recorded_covering_span' if block else 'no_recorded_covering_span',
+                          contiguous_coverage_start=block[0] if block else None, contiguous_coverage_end=block[1] if block else None)
+            if block is None:
+                excluded['coverage_at_index_not_established'] += 1; detail['status'] = 'coverage_at_index_not_established'; continue
+            if _days(zero, block[1]) < limit: limit, reason = _days(zero, block[1]), 'enrollment_boundary'
+        detail.update(followup_boundary_date=(date.fromisoformat(zero) + timedelta(days=limit)).isoformat(),
+                      followup_boundary_days=limit, followup_boundary_reason=reason)
+        if limit <= 0:
+            excluded['no_follow_up_time'] += 1; detail['status'] = 'no_follow_up_time'; continue
+        if nxt and reason == 'death' and _days(zero, nxt) == limit:
+            excluded['event_censor_same_day_order_unknown'] += 1; detail['status'] = 'event_censor_same_day_order_unknown'; continue
+        out_before = len(out)
         if ev['type'] == 'readmission':
             gap = _days(zero, nxt) if nxt else None
             out.append((pid, zero, gap, 1, None) if gap is not None and gap <= limit else (pid, zero, limit, 0, reason))
@@ -460,6 +572,11 @@ def units(db, patient_ids, p, as_of, *, uncertainties=None):
             if hit: out.append((pid, zero, _days(zero, hit), 1, None))
             else: out.append((pid, zero, _days(zero, after[-1][0]), 0, 'last_result'))
             if not before: excluded['included_without_baseline_result'] += 1
+        if len(out) > out_before:
+            timed = out[-1]
+            detail.update(time_at_risk_days=timed[2], event_observed=timed[3], censor_reason=timed[4],
+                          status='next_event_observed' if timed[3] else 'right_censored',
+                          timed_endpoint_date=(date.fromisoformat(zero) + timedelta(days=timed[2])).isoformat())
     return out, excluded
 
 
@@ -514,8 +631,39 @@ def execute(path, patient_ids, params):
     as_of = json.loads((path / 'run.json').read_text())['snapshot']['as_of']
     db = sqlite3.connect(f'file:{semantic_layer.ensure(path)}?mode=ro', uri=True)
     try:
-        uncertainties = []
-        rows, excluded = units(db, patient_ids, p, as_of, uncertainties=uncertainties)
+        uncertainties, accounts = [], []
+        rows, excluded = units(db, patient_ids, p, as_of, uncertainties=uncertainties, accounts=accounts)
+        death_source = {'received_relation': _has_relation(db, 'death')}
+        death_source['received_rows'] = db.execute('SELECT COUNT(*) FROM death').fetchone()[0] if death_source['received_relation'] else None
+        if p['output'] == 'observed_units':
+            for account in accounts:
+                account.setdefault('status', 'unresolved_event_definition')
+                for field in ('index_date', 'next_recorded_admission_date', 'time_at_risk_days', 'event_observed', 'censor_reason',
+                              'followup_boundary_date', 'followup_boundary_days', 'death_date', 'coverage_at_index'):
+                    account.setdefault(field, None)
+                account['parameters_json'] = json.dumps(p, sort_keys=True)
+            fields = sorted(set().union(*(a.keys() for a in accounts))) if accounts else []
+            complete_accounts = [{k: a.get(k) for k in fields} for a in accounts]
+            unresolved = [a for a in complete_accounts if a.get('status') not in ('next_event_observed', 'right_censored')]
+            method = ('Observed received-source follow-up only; no Kaplan-Meier, Cox, log-rank or predictive bound is fitted. '
+                      'Index selection, event kind, window basis and coverage policy are declared in parameters. '
+                      'First-recorded means first across dated received history, not a clinically first-ever admission. '
+                      'Ambiguous/unknown index origins remain visible and are not timed. Later recorded admissions are selected by date, '
+                      'without a record-ID inequality; same-day/overlapping admissions do not establish a later-day event. '
+                      'Received death dates and, when requested, the end of the contiguous received enrollment block at time zero bound follow-up. '
+                      'A later reenrollment does not bridge a recorded gap; missing coverage does not establish ineligibility. '
+                      'Event/death date ties have unknown within-day order and are not timed as resolved events; enrollment end dates are inclusive. '
+                      'Time at risk ends at the first recorded event or censoring boundary, while raw later admissions remain visible. '
+                      'Right censoring and absent records do not establish that unobserved care did not occur. Enrollment is a declared observation proxy, '
+                      'not proof of complete event capture. No care-causal, population-risk or clinical qualification follows.')
+            return {'schema': VERSION, 'parameters': p, 'event_label': describe_event(p)[0], 'time_zero': describe_event(p)[1], 'as_of': as_of,
+                    'status': 'partial' if unresolved or uncertainties else 'complete', 'unresolved_units': unresolved + uncertainties,
+                    'unsupported_horizons': [], 'missing': ['Some index, eligibility or date-order units remain unresolved; complete accounts are retained.'] if unresolved or uncertainties else [],
+                    'units': len(rows), 'patients': len({r[0] for r in rows}), 'events': sum(r[3] for r in rows),
+                    'selected_index_accounts': len(accounts), 'excluded': dict(excluded), 'included_without_baseline_result': excluded.get('included_without_baseline_result', 0),
+                    'groups': [], 'groups_total': 0, 'table': complete_accounts, 'curves': {}, 'logrank': None, 'cox': None,
+                    'notes': [], 'method': method, 'conformal_lower_bounds': None, 'death_source': death_source,
+                    'observed_status_counts': dict(Counter(a.get('status', 'unresolved') for a in accounts))}
         attrs = attributes(db, {r[0] for r in rows}, p)
     finally:
         db.close()
@@ -523,7 +671,10 @@ def execute(path, patient_ids, params):
     groups = defaultdict(list)
     for r in rows: groups[_group(attrs[r[0]], p)].append(r)
     bounds = None
-    if p.get('lower_bound', True) and rows:
+    source_censoring = any(r[4] in ('death', 'enrollment_boundary') for r in rows)
+    if p.get('lower_bound', True) and source_censoring:
+        bounds = {'status': 'insufficient', 'reason': 'Received death/enrollment censoring is not qualified for this predictive-bound contract; no bound fitted.'}
+    elif p.get('lower_bound', True) and rows:
         try:
             bounds = conformal_lower_bounds(rows, lambda r: _group(attrs[r[0]], p),
                                             lambda r: min(p['horizon_days'], _days(r[1], as_of)), p.get('alpha', 0.1))
@@ -588,8 +739,13 @@ def execute(path, patient_ids, params):
     if p['index']['type'] == 'condition_first_record':
         method += (f"Time zero = first documented record of {p['index']['concept'].replace('_', ' ')} (event date, else recorded date: cohort entry, "
                    f"not clinical onset); patients without a dated record are excluded. ")
-    method += (f"Censoring: snapshot date {as_of} or {p['horizon_days']} days, whichever is first. No death records are received, so death "
-               f"cannot be a competing or censoring event. ")
+    method += (f"Censoring: snapshot date {as_of} or {p['horizon_days']} days, whichever is first; known received death dates also end observation. "
+               f"Death source availability: {death_source}. Missing/undated death records do not establish survival. ")
+    if p['coverage'] == 'contiguous_enrollment':
+        method += 'Eligibility at time zero requires a recorded covering enrollment block; follow-up stops at its first end, without bridging later reenrollment gaps. '
+    if source_censoring:
+        method += ('The legacy cumulative_incidence field is 1 minus Kaplan-Meier survival with deaths/enrollment boundaries censored: '
+                   'a net failure estimate under censoring assumptions, not an absolute competing-risk cumulative incidence. ')
     if multi: method += 'A patient can contribute several index stays; intervals and tests treat stays as independent. '
     if test: method += f"Groups compared with the {len(groups)}-group log-rank test. "
     if model: method += ('Cox proportional hazards (Efron ties, Newton-Raphson; reference = most common level; levels with under 5 units or '
@@ -610,12 +766,17 @@ def execute(path, patient_ids, params):
             'units': len(rows), 'patients': len({r[0] for r in rows}), 'events': sum(r[3] for r in rows),
             'excluded': {k: v for k, v in excluded.items() if k != 'included_without_baseline_result'},
             'included_without_baseline_result': excluded.get('included_without_baseline_result', 0), 'groups': summaries, 'groups_total': len(summaries), 'table': table, 'curves': curves,
-            'logrank': test, 'cox': model, 'notes': [cox_note] if cox_note else [], 'method': method, 'conformal_lower_bounds': bounds}
+            'logrank': test, 'cox': model, 'notes': [cox_note] if cox_note else [], 'method': method, 'conformal_lower_bounds': bounds,
+            'death_source': death_source, 'estimand': 'net_failure_under_censoring' if source_censoring else 'product_limit_failure_under_censoring'}
 
 
 def summary(report):
     """One-sentence answer: incidence at the key day per group, log-rank and hazard ratios."""
     p = report['parameters']
+    if p.get('output') == 'observed_units':
+        return (f"Observed follow-up: {report['selected_index_accounts']} selected index accounts, {report['units']} timed units, "
+                f"{report['events']} next events recorded before censoring; {len(report['unresolved_units'])} unresolved units. "
+                'Complete unit accounts are shown; no modeled risk or unobserved-event absence is established.')
     key = 30 if 30 in p['time_points'] and p['index']['type'] == 'discharge' else p['time_points'][-1]
     unit = 'index discharges' if p['index']['type'] == 'discharge' else 'patients'
     parts = []
