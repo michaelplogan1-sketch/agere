@@ -3084,6 +3084,12 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             if projection:
                 rows=projection['rows'];columns=projection['columns']
                 origin={**origin,'native_column_projection':{k:v for k,v in projection.items()if k!='rows'}}
+                if projection.get('json_path_contract')=='native-replayed-json-selection/1':
+                    # JSON values belong once in the global input projection
+                    # or the required patient inputs, not again in each row's
+                    # mechanical provenance certificate.
+                    origin['native_column_projection'].pop('json_path_observations',None)
+                    origin['native_column_projection']['json_input_values_digest']=digest(projection['json_path_observations'])
             else:columns=observed.get('columns')or[]
             for row in rows:add(dict(zip(columns,row))if isinstance(row,list)else row,view,origin)
         else:
@@ -3297,6 +3303,12 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     for projection in packets[0].get('native_column_projections',[]):
         if projection.get('schema')!='native-column-projection/1':
             global_projections.append(projection);continue
+        from .evidence_projection import patient_selected_json_inputs
+        selected_inputs=patient_selected_json_inputs(projection,set(patient_packets))
+        if selected_inputs is not None:
+            contract,inputs=selected_inputs
+            for pid,value in inputs.items():patient_packets[pid].setdefault('native_column_inputs',[]).append(value)
+            global_projections.append(contract);continue
         columns=projection['columns'];rows=projection['rows']
         if (projection['producer']['tool']!='review_documents'or columns.count('patient_id')!=1 or not rows
             or any(row[columns.index('patient_id')]not in patient_packets for row in rows)):
@@ -4004,7 +4016,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
                     'reason':'Named global statements require located repair or retain unresolved verification; no favorable joint vote overrides them.',
                     'claim_feedback':localized['feedback'],'field_review':global_review},steps
         from .evidence_projection import native_integrity_model_view
-        wire=native_integrity_model_view(packet['text'])if packet['bytes']>230000 else {'text':packet['text'],'projected':False}
+        wire=native_integrity_model_view(packet['text'],support_dependencies=packet['id']=='summary')if packet['bytes']>230000 else {'text':packet['text'],'projected':False}
         result=selected('Does this COMPLETE dependency packet support each answer claim as actually stated in its scope? Resolve the lossless layout. Check entity/domain, source kind, time, negation, role and quantity meaning. A structured fill-policy observation is checked against the pharmacy evidence/definition; missing note corroboration alone does not contradict it. A count of machine-extracted observations is arithmetic and does not establish their clinical validity. A dated role object does not imply current responsibility, but a primary-care object cannot establish a cardiology role. Interpretations require supporting source meaning; matching a proposed output value is insufficient. Preserve supported unknowns and the distinction between source observations and clinical acceptance.',
             SUPPORT_OPTIONS,[{'id':packet['id'],'date':packet['date'],'text':wire['text']}],as_of=as_of,
             task_key='agere_investigation_support_dependency_long_context' if oversized else 'agere_investigation_support_dependency',
@@ -4246,7 +4258,7 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None):
     readable=json.dumps(state,ensure_ascii=False,separators=(',',':'),default=str)
     source_text=readable if len(readable.encode())<=230000 else packet['text']
     from .evidence_projection import native_integrity_model_view
-    wire=native_integrity_model_view(source_text)if len(source_text.encode())>230000 else {'text':source_text,'projected':False}
+    wire=native_integrity_model_view(source_text,support_dependencies=packet['id']=='summary')if len(source_text.encode())>230000 else {'text':source_text,'projected':False}
     source_text=wire['text']
     compatibility=packet.get('native_timing_compatibility')if not wire['projected']else None
     if compatibility:

@@ -294,7 +294,111 @@ class NativeObservationTransport(unittest.TestCase):
                 E.restore_native_observations(bad)
 
 
+class SelectedJSONInput(unittest.TestCase):
+    def fixture(self):
+        import sqlite3
+        from clinical_core.agere.clinical.sql_query import native_result_source
+        data=[['A',{'lines':[{'amount':10,'currency':'USD','unused':'raw1'},
+            {'amount':0,'currency':'USD'},{'amount':10,'currency':'USD','unused':'raw2'}]}],
+            ['B',{}],['C',{'lines':[{'amount':5,'currency':None}]}],['D',{'lines':None}]]
+        profiles=[['A','Received A'],['B','Received B']]
+        query="SELECT f.patient_id,p.name,json_extract(a.value,'$.amount') AS amount,json_extract(a.value,'$.currency') AS currency FROM agere_result_1 f JOIN json_each(f.payload,'$.lines') a LEFT JOIN agere_result_2 p ON p.patient_id=f.patient_id WHERE typeof(json_extract(a.value,'$.amount'))='integer' AND json_extract(a.value,'$.amount')>0 ORDER BY f.patient_id,amount"
+        with sqlite3.connect(':memory:')as db:
+            db.execute('CREATE TEMP TABLE agere_result_1 AS '+native_result_source(['patient_id','payload'],data))
+            db.execute('CREATE TEMP TABLE agere_result_2 AS '+native_result_source(['patient_id','name'],profiles))
+            cursor=db.execute(query);columns=[x[0]for x in cursor.description];rows=[list(r)for r in cursor]
+        by={'agere_result_1':{'result':{'columns':['patient_id','payload'],'rows':data,'result_view':'agere_result_1'}},
+            'agere_result_2':{'result':{'columns':['patient_id','name'],'rows':profiles,'result_view':'agere_result_2'}},
+            'agere_result_3':{'result':{'columns':columns,'rows':rows,'result_view':'agere_result_3'}}}
+        return by,{'result_view':'agere_result_3','query':query}
+
+    def test_selected_elements_preserve_duplicates_nulls_missing_branches_and_inputs(self):
+        by,consumer=self.fixture();old=copy.deepcopy(by)
+        proof=E.selected_json_input('agere_result_1','payload',[consumer],by)
+        self.assertIsNotNone(proof);self.assertEqual(by,old)
+        self.assertEqual(proof['selected_element_indices'],[[0,[0,2]],[2,[0]]])
+        self.assertEqual(json.loads(proof['row_values'][0][1]),[{'amount':10,'currency':'USD'},{'amount':10,'currency':'USD'}])
+        self.assertEqual(proof['row_values'][1],[False,None])
+        self.assertEqual(proof['row_values'][3],[True,'null'])
+        self.assertEqual(json.loads(proof['row_values'][2][1]),[{'amount':5,'currency':None}])
+        self.assertTrue(proof['checks'][0]['complete_original_output_exact'])
+
+    def test_changed_output_cannot_be_qualified_by_a_matching_field_or_count(self):
+        by,consumer=self.fixture();by['agere_result_3']['result']['rows'][0][2]=11
+        self.assertIsNone(E.selected_json_input('agere_result_1','payload',[consumer],by))
+
+    def test_whole_elements_positions_dynamic_paths_and_aggregates_keep_full_input(self):
+        by,consumer=self.fixture()
+        for text in ("a.value","a.key","json_extract(a.value,p.name)","COUNT(*)"):
+            altered={**consumer,'query':consumer['query'].replace("json_extract(a.value,'$.amount') AS amount",text+' AS amount',1)}
+            with self.subTest(text=text):self.assertIsNone(E.selected_json_input('agere_result_1','payload',[altered],by))
+
+    def test_union_of_actual_consumers_retains_each_predicate_output(self):
+        import sqlite3
+        from clinical_core.agere.clinical.sql_query import native_result_source
+        by,consumer=self.fixture();query=consumer['query'].replace("'$.amount')>0","'$.amount')>=0")
+        with sqlite3.connect(':memory:')as db:
+            for name in ('agere_result_1','agere_result_2'):
+                result=by[name]['result'];db.execute('CREATE TEMP TABLE '+name+' AS '+native_result_source(result['columns'],result['rows']))
+            cursor=db.execute(query);by['agere_result_4']={'result':{'columns':[x[0]for x in cursor.description],'rows':[list(r)for r in cursor]}}
+        proof=E.selected_json_input('agere_result_1','payload',[consumer,{'result_view':'agere_result_4','query':query}],by)
+        self.assertEqual(proof['selected_element_indices'],[[0,[0,1,2]],[2,[0]]])
+        self.assertEqual([c['output_rows']for c in proof['checks']],[3,4])
+
+    def patient_projection(self):
+        from clinical_core.contracts import digest
+        by,consumer=self.fixture();selection=E.selected_json_input('agere_result_1','payload',[consumer],by)
+        rows=[[r[0]]for r in by['agere_result_1']['result']['rows']]
+        return {'schema':'native-column-projection/1','result_view':'agere_result_1',
+            'columns':['patient_id'],'rows':rows,'row_count':len(rows),'projected_rows_digest':digest(rows),
+            'complete_receipt_digest':selection['complete_receipt_digest'],
+            'json_path_contract':'native-replayed-json-selection/1',
+            'json_path_observations':[{k:selection[k]for k in ('column','path','value_encoding','row_values','scope')}],
+            'json_selection_proofs':[{k:v for k,v in selection.items()if k!='row_values'}]}
+
+    def test_required_patient_inputs_keep_every_selected_value_and_unknown(self):
+        projection=self.patient_projection();old=copy.deepcopy(projection)
+        summary,patients=E.patient_selected_json_inputs(projection,{'A','C'})
+        self.assertEqual(projection,old);self.assertEqual(set(patients),{'A','C'})
+        self.assertEqual(summary['unused_native_input_rows'],2)
+        self.assertEqual(patients['A']['indexed_rows'],[[0,['A']]])
+        self.assertEqual(json.loads(patients['A']['indexed_json_values'][0]['indexed_values'][0][1][1]),
+            [{'amount':10,'currency':'USD'},{'amount':10,'currency':'USD'}])
+        self.assertEqual(json.loads(patients['C']['indexed_json_values'][0]['indexed_values'][0][1][1]),
+            [{'amount':5,'currency':None}])
+        self.assertIsNone(E.patient_selected_json_inputs(projection,{'A'}))
+
+    def test_unwitnessed_values_or_missing_selected_elements_cannot_disappear(self):
+        for change in ('unused','selected','source'):
+            projection=self.patient_projection()
+            if change=='unused':projection['json_path_observations'][0]['row_values'][1]=[True,'[{"amount":100}]']
+            elif change=='selected':projection['json_path_observations'][0]['row_values'][0]=[True,'[]']
+            else:projection['json_selection_proofs'][0]['complete_receipt_digest']='changed'
+            with self.subTest(change=change),self.assertRaises(ValueError):
+                E.patient_selected_json_inputs(projection,{'A','C'})
+
+
 class NativeIntegrityModelView(unittest.TestCase):
+    def test_support_dependency_addresses_restore_every_cell_without_source_rewriting(self):
+        from clinical_core.agere.deliverables.receipts import readable_json,uncompact_json
+        table=[{'patient_id':str(i),'statement':[finding(str(i),'Dated source, preference unknown.')],
+            'amount_cents':None if i%2 else 0}for i in range(60)]
+        view,edges=E.table_view(table,defer_native_cells=True,index_dependencies=True)
+        original={'id':'summary','all_final_rows':view,'required_clinical_dependencies':edges,
+            'native_column_inputs':[{'indexed_json_values':[{'digest':'a'*64,'quote':'Unknown source response.'}]}]}
+        wire=E.native_integrity_model_view(json.dumps(readable_json(original)),support_dependencies=True)
+        self.assertTrue(wire['projected']);model=uncompact_json(json.loads(wire['text']))
+        self.assertEqual(model['all_final_rows'],view)
+        self.assertEqual(model['native_column_inputs'],original['native_column_inputs'])
+        proof=wire['native_projection'];model.pop('native_integrity_projection')
+        for path in reversed(proof['proof_paths']):
+            parent=model
+            for key in path[:-1]:parent=parent[key]
+            parent[path[-1]]=proof['proofs'][parent[path[-1]]['native_receipt_reference']]
+        self.assertEqual(model,original)
+        bad=copy.deepcopy(original);bad['required_clinical_dependencies'][0]['packet']='patient_59'
+        with self.assertRaises(ValueError):E.native_integrity_model_view(json.dumps(readable_json(bad)),support_dependencies=True)
+
     def test_coverage_coordinates_roundtrip_without_hiding_visible_values(self):
         from clinical_core.agere.deliverables.receipts import readable_json,uncompact_json
         table=[{'patient_id':pid,'account_id':f'{pid}-{i}','balance_cents':0 if i==0 else None,

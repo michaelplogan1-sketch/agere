@@ -339,7 +339,7 @@ def restore_native_observations(view):
     return groups
 
 
-def native_integrity_model_view(text,*,coverage_dependencies=False):
+def native_integrity_model_view(text,*,coverage_dependencies=False,support_dependencies=False):
     """Use short addresses for opaque integrity hashes in model metadata.
 
     Cryptographic validation belongs to code. Keep the complete original packet
@@ -359,44 +359,51 @@ def native_integrity_model_view(text,*,coverage_dependencies=False):
         'native_column_inputs','native_document_judgment_contracts','unbound_review_receipts'}
     # These containers carry executable or source values, even when a source
     # happens to name a clinical field "digest". Never rewrite their contents.
-    literal={'input','parameters','assembly_specification','rows','indexed_rows','query','document','sources'}
+    literal={'input','parameters','assembly_specification','rows','indexed_rows','indexed_json_values','query','document','sources'}
     aliases={};values={};paths=[];proofs={};proof_paths=[];coverage_count=0
     def retain_proof(value,path):
         reference='native_proof_'+str(len(proofs));proofs[reference]=value;proof_paths.append(list(path))
         return {'native_receipt_reference':reference,
             'scope':'Complete mechanical validation certificate retained and checked by code. Original clinical/source values and executable selection contracts remain supplied; this reference establishes no clinical support.'}
+    dependency_groups=[]
     if coverage_dependencies:
-        # Coverage reads the full visible output; the separate patient packets
-        # still receive every complete source cell. These edges contain only
-        # duplicated coordinates, identities and hashes, never source meaning.
         result=original.get('result')
         answer=result.get('answer')if isinstance(result,dict)else None
         contract=answer.get('coverage_contract')if isinstance(answer,dict)else None
         if isinstance(contract,dict)and contract.get('schema')==VERSION:
-            edges=contract.get('dependency_edges');rows=answer.get('table')
-            if not isinstance(edges,list)or not isinstance(rows,list):raise ValueError('Complete coverage dependencies required')
-            positions={};ordinals={}
-            for i,row in enumerate(rows):
-                if not isinstance(row,dict):continue
-                pid=row.get('patient_id');local=ordinals.get(pid,0);ordinals[pid]=local+1
-                for field,value in row.items():
-                    if not isinstance(value,dict)or set(value)!={'clinical_evidence_dependency'}:continue
-                    index=value['clinical_evidence_dependency']
-                    if type(index)is not int or index in positions or not 0<=index<len(edges):
-                        raise ValueError('Coverage dependency index changed')
-                    positions[index]=(i,field,pid,local)
-            if len(positions)!=len(edges):raise ValueError('Coverage dependency is missing its cell')
-            for index,edge in enumerate(edges):
-                i,field,pid,local=positions[index]
-                if (not isinstance(edge,dict)or set(edge)!={'at','packet','patient_id','answer_row','field','source_cell_digest'}
-                    or not isinstance(pid,str)or edge['at']!=[i,field]or edge['patient_id']!=pid
-                    or edge['packet']!='patient_'+pid or edge['answer_row']!=local or edge['field']!=field
-                    or not isinstance(edge['source_cell_digest'],str)or not re.fullmatch('[0-9a-f]{64}',edge['source_cell_digest'])):
-                    raise ValueError('Coverage source-cell binding changed')
-            if edges:
-                path=('result','answer','coverage_contract','dependency_edges')
-                state['result']['answer']['coverage_contract']['dependency_edges']=retain_proof(edges,path)
-                coverage_count=len(edges)
+            dependency_groups.append((answer.get('table'),contract.get('dependency_edges'),
+                ('result','answer','coverage_contract','dependency_edges'),True))
+    if support_dependencies and original.get('id')=='summary'and 'required_clinical_dependencies'in original:
+        dependency_groups.append((original.get('all_final_rows'),original.get('required_clinical_dependencies'),
+            ('required_clinical_dependencies',),False))
+    # These code-owned edges contain only coordinates, identities and hashes.
+    # Every actual source cell still belongs to its required patient packet.
+    for rows,edges,path,full_edge in dependency_groups:
+        if not isinstance(edges,list)or not isinstance(rows,list):raise ValueError('Complete source dependencies required')
+        positions={};ordinals={}
+        for i,row in enumerate(rows):
+            if not isinstance(row,dict):continue
+            pid=row.get('patient_id');local=ordinals.get(pid,0);ordinals[pid]=local+1
+            for field,value in row.items():
+                if not isinstance(value,dict)or set(value)!={'clinical_evidence_dependency'}:continue
+                index=value['clinical_evidence_dependency']
+                if type(index)is not int or index in positions or not 0<=index<len(edges):
+                    raise ValueError('Coverage dependency index changed')
+                positions[index]=(i,field,pid,local)
+        if len(positions)!=len(edges):raise ValueError('Coverage dependency is missing its cell')
+        for index,edge in enumerate(edges):
+            i,field,pid,local=positions[index]
+            fields={'at','packet','answer_row','source_cell_digest'}|({'patient_id','field'}if full_edge else set())
+            if (not isinstance(edge,dict)or set(edge)!=fields
+                or not isinstance(pid,str)or edge['at']!=[i,field]
+                or full_edge and (edge['patient_id']!=pid or edge['field']!=field)
+                or edge['packet']!='patient_'+pid or type(edge['answer_row'])is not int or edge['answer_row']!=local
+                or not isinstance(edge['source_cell_digest'],str)or not re.fullmatch('[0-9a-f]{64}',edge['source_cell_digest'])):
+                raise ValueError('Coverage source-cell binding changed')
+        if edges:
+            parent=state
+            for key in path[:-1]:parent=parent[key]
+            parent[path[-1]]=retain_proof(edges,path);coverage_count+=len(edges)
     def detach(value,path):
         if isinstance(value,dict):
             return {k:retain_proof(v,path+(k,))if k in ('native_column_projection','derived_read_proof')else
@@ -529,6 +536,169 @@ def native_json_paths(query, view, column):
     return list(dict.fromkeys(paths))
 
 
+def selected_json_input(view,column,consumers,by):
+    """Prove the exact JSON elements/fields used by flat native consumers.
+
+    This is a candidate input representation, never a new execution result.
+    Every consumer is replayed at full element scope with its statically read
+    fields, then at witnessed element scope, against the complete original
+    recorded output. Clauses, joins, NULLs and output order stay exact.
+    Unrecognized JSON uses retain the original input.
+    """
+    import sqlite3
+    import sqlglot
+    from sqlglot import exp
+    from .backstop_agent import output_table
+    from .semantic_analyst import SemanticWarehouse
+    patterns=[];paths=set();root_path=None;selected={};sources=set()
+    def path_keys(node):
+        text=node.sql(dialect='sqlite')
+        if len(text)<2 or text[0]!="'"or text[-1]!="'":return None
+        text=text[1:-1]
+        return text[2:].split('.')if re.fullmatch(r'\$\.[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*',text)else None
+    for consumer in consumers:
+        query=consumer.get('query')
+        if not isinstance(query,str):return None
+        try:tree=sqlglot.parse_one(query,read='sqlite')
+        except (sqlglot.errors.SqlglotError,ValueError,TypeError):return None
+        if (not isinstance(tree,exp.Select)or any(v for k,v in tree.args.items()
+                if k not in ('expressions','from_','joins','where','order'))
+            or any(tree.find(t)for t in (exp.Star,exp.Subquery,exp.AggFunc,exp.Window))):return None
+        physical=[t for t in tree.find_all(exp.Table)if isinstance(t.this,exp.Identifier)]
+        own=[t for t in physical if t.name==view]
+        if len(own)!=1 or any(t.name not in by or t.db not in ('','temp')for t in physical):return None
+        sources.update(t.name for t in physical);table=own[0]
+        refs=[c for c in tree.find_all(exp.Column)if c.table==table.alias_or_name and c.name==column]
+        if len(refs)!=1:return None
+        fn=refs[0].parent
+        if (not isinstance(fn,exp.Anonymous)or fn.name.lower()!='json_each'
+            or len(fn.expressions)!=2 or fn.expressions[0]is not refs[0]):return None
+        keys=path_keys(fn.expressions[1]);owner=fn.parent
+        if not keys or not isinstance(owner,exp.Table)or not owner.alias:return None
+        if root_path is not None and keys!=root_path:return None
+        root_path=keys
+        outputs={x.alias_or_name for x in tree.selects}
+        for ref in tree.find_all(exp.Column):
+            if not ref.table:
+                if not(ref.name in outputs and isinstance(ref.parent,exp.Ordered)):return None
+            if ref.name.casefold()in ('rowid','_rowid_','oid'):return None
+            if ref.table!=owner.alias:continue
+            extract=ref.parent
+            if(ref.name!='value'or not isinstance(extract,(exp.JSONExtract,exp.JSONExtractScalar))
+                or extract.this is not ref):return None
+            fields=path_keys(extract.expression)
+            if not fields:return None
+            paths.add(tuple(fields))
+        patterns.append((consumer,tree,table.alias_or_name,owner.alias))
+    if not patterns or not paths:return None
+    columns,rows=output_table(by[view]['result'])
+    if column not in columns:return None
+    values=[];branches=[]
+    for row in rows:
+        value=row[columns.index(column)]
+        if isinstance(value,str):
+            try:value=json.loads(value)
+            except ValueError:return None
+        if not isinstance(value,dict):return None
+        values.append(value);current=value;present=True
+        for key in root_path:
+            if not isinstance(current,dict)or key not in current:present=False;break
+            current=current[key]
+        if present and current is not None and not isinstance(current,list):return None
+        if present and isinstance(current,list)and any(not isinstance(v,dict)for v in current):return None
+        branches.append((present,current if present else None))
+    def element_view(item):
+        target={}
+        for fields in sorted(paths):
+            value=item
+            for field in fields:
+                if not isinstance(value,dict)or field not in value:break
+                value=value[field]
+            else:
+                dst=target
+                for field in fields[:-1]:dst=dst.setdefault(field,{})
+                dst[fields[-1]]=copy.deepcopy(value)
+        return target
+    def branch_payload(present,branch):
+        target={};dst=target
+        if present:
+            for key in root_path[:-1]:dst=dst.setdefault(key,{})
+            dst[root_path[-1]]=branch
+        return target
+    # The parser admitted exactly one static expansion and only these static
+    # element fields. Replay their FULL original element scope first. Loading
+    # unused account histories into SQLite adds no proof or source meaning.
+    field_inputs=[branch_payload(present,[element_view(item)for item in branch]
+        if isinstance(branch,list)else branch)for present,branch in branches]
+    quote=lambda name:'"'+name.replace('"','""')+'"'
+    ordinal='__agere_projection_row'
+    existing={c.name for _,tree,_,_ in patterns for c in tree.find_all(exp.Column)}|set(columns)
+    while ordinal in existing:ordinal+='_'
+    checks=[]
+    try:
+        with sqlite3.connect(':memory:')as db:
+            for name in sorted(sources):
+                cols,data=output_table(by[name]['result'])
+                if not cols or len(set(cols))!=len(cols):return None
+                if name==view:
+                    data=[[*row[:cols.index(column)],field_inputs[i],*row[cols.index(column)+1:]]for i,row in enumerate(data)]
+                db.execute('CREATE TEMP TABLE '+quote(name)+' ('+','.join(map(quote,cols))+')')
+                # SQLite performs the same json_extract conversion as native
+                # row materialization, without one enormous literal SQL string.
+                insert='INSERT INTO '+quote(name)+' VALUES ('+','.join("json_extract(?1,'$["+str(i)+"]')"for i in range(len(cols)))+')'
+                db.executemany(insert,((json.dumps(row,default=str,allow_nan=False),)for row in data))
+                for col in cols:
+                    if col=='id'or col.endswith('_id'):
+                        db.execute('CREATE INDEX '+quote(name+'_projection_'+str(cols.index(col)))+' ON '+quote(name)+' ('+quote(col)+')')
+            db.execute('ALTER TABLE '+quote(view)+' ADD COLUMN '+quote(ordinal)+' INTEGER')
+            db.execute('UPDATE '+quote(view)+' SET '+quote(ordinal)+'=rowid-1')
+            db.execute("SELECT * FROM json_each('[]')").fetchall();db.enable_load_extension(False)
+            db.commit()
+            db.execute('PRAGMA query_only=ON');db.set_authorizer(SemanticWarehouse._authorize)
+            for consumer,tree,alias,element in patterns:
+                expected_cols,expected=output_table(by[consumer['result_view']]['result'])
+                cursor=db.execute(consumer['query']);actual=[list(r)for r in cursor]
+                if [c[0]for c in cursor.description]!=expected_cols or digest(actual)!=digest(expected):return None
+                witness=tree.copy();witness.set('expressions',list(witness.expressions)+[
+                    exp.column(ordinal,table=alias),exp.column('key',table=element)])
+                observed=db.execute(witness.sql(dialect='sqlite')).fetchall()
+                if digest([list(r[:-2])for r in observed])!=digest(expected):return None
+                for row in observed:
+                    source,index=row[-2:]
+                    if(type(source)is not int or not 0<=source<len(rows)or type(index)is not int
+                        or not branches[source][0]or not isinstance(branches[source][1],list)
+                        or not 0<=index<len(branches[source][1])):return None
+                    selected.setdefault(source,set()).add(index)
+                checks.append({'result_view':consumer['result_view'],'query_digest':digest(consumer['query']),
+                    'witness_query':witness.sql(dialect='sqlite'),'output_columns':expected_cols,
+                    'output_digest':digest(expected),'output_rows':len(expected),'complete_original_output_exact':True})
+            projected=[];observations=[]
+            for row_index,(present,branch)in enumerate(branches):
+                narrowed=branch
+                if present and isinstance(branch,list):
+                    narrowed=[]
+                    for index,item in enumerate(branch):
+                        if index not in selected.get(row_index,set()):continue
+                        narrowed.append(element_view(item))
+                observations.append([present,json.dumps(narrowed,ensure_ascii=False,separators=(',',':'),allow_nan=False)if present else None])
+                projected.append(branch_payload(present,narrowed))
+            db.set_authorizer(None);db.execute('PRAGMA query_only=OFF')
+            db.executemany('UPDATE '+quote(view)+' SET '+quote(column)+'=? WHERE '+quote(ordinal)+'=?',
+                ((json.dumps(value,separators=(',',':')),i)for i,value in enumerate(projected)))
+            db.commit()
+            db.execute('PRAGMA query_only=ON');db.set_authorizer(SemanticWarehouse._authorize)
+            for consumer,_,_,_ in patterns:
+                cols,expected=output_table(by[consumer['result_view']]['result']);cursor=db.execute(consumer['query'])
+                if [c[0]for c in cursor.description]!=cols or digest([list(r)for r in cursor])!=digest(expected):return None
+    except (sqlite3.Error,ValueError,TypeError,KeyError,AttributeError):return None
+    return {'schema':'native-replayed-json-selection/1','column':column,'path':'$.'+'.'.join(root_path),
+        'value_encoding':'canonical-json','row_values':observations,'selected_row_indices':sorted(selected),
+        'selected_element_indices':[[i,sorted(v)]for i,v in sorted(selected.items())],
+        'element_field_paths':['$.'+'.'.join(p)for p in sorted(paths)],'checks':checks,
+        'complete_receipt_digest':digest({k:v for k,v in by[view]['result'].items()if k!='result_view'}),
+        'scope':'Complete original recorded SQL outputs, types, order, duplicates and NULLs reproduced at full element scope and selected element scope from every statically read field. Only witnessed elements/fields are shown; all original rows, unselected elements and source receipts remain native. An empty selection is not absence of data or a clinical finding. No source meaning is certified.'}
+
+
 def native_json_projection(view, columns, rows, consumers, by):
     """Keep exact used JSON branches and reexecute every consuming program.
 
@@ -545,6 +715,15 @@ def native_json_projection(view, columns, rows, consumers, by):
     for column in columns:
         uses=[c for c in consumers if column in c['columns_read']]
         if not uses:continue
+        selected=selected_json_input(view,column,uses,by)
+        if selected is not None:
+            return {'columns':{column},'observations':[{k:selected[k]for k in
+                    ('column','path','value_encoding','row_values','scope')}],
+                'checks':[{'result_view':c['result_view'],'query_digest':c['query_digest'],
+                    'columns':c['output_columns'],'row_count':c['output_rows'],'output_digest':c['output_digest'],
+                    'full_output_cells_types_order_duplicates_nulls_exact':True}for c in selected['checks']],
+                'selection_proofs':[{k:v for k,v in selected.items()if k!='row_values'}],
+                'contract':'native-replayed-json-selection/1'}
         paths=[]
         for consumer in uses:
             read=native_json_paths(consumer['query'],view,column)
@@ -926,9 +1105,72 @@ def native_column_projections(calls, roots, dependencies):
             'columns':selected,'rows':projected,'row_count':len(rows),
             'projected_rows_digest':digest(projected),'consumers':consumers,
             **({'json_path_observations':json_paths['observations'],'json_path_output_checks':json_paths['checks'],
-                'json_path_contract':'native-static-json-paths/1'}if json_paths else{}),
+                'json_path_contract':json_paths.get('contract','native-static-json-paths/1'),
+                **({'json_selection_proofs':json_paths['selection_proofs']}if json_paths.get('selection_proofs')else{})}if json_paths else{}),
             'scope':'Every native row, duplicate and NULL in the columns actually read by the executed SQL is retained in original order. JSON path observations, when present, retain every original row index and complete selected branch, with missing distinct from JSON null; complete downstream outputs were reexecuted exactly. Complete producer receipts remain native evidence. This proves dependency-copy fidelity only; omitted documentary fields provide no support for clinical interpretation. Counted machine statuses do not establish eligibility, current need, treatment or causal effects.'}
     return projections
+
+
+def patient_selected_json_inputs(projection,patient_ids):
+    """Put every witnessed JSON input in its own required patient packet.
+
+    Unconsumed rows stay in native receipts under the full replay proof. They
+    cannot establish absence, a negative financial state or clinical support.
+    A selected input outside the final patients keeps the full global view.
+    """
+    if projection.get('json_path_contract')!='native-replayed-json-selection/1':return None
+    columns=projection.get('columns');rows=projection.get('rows');branches=projection.get('json_path_observations')
+    proofs=projection.get('json_selection_proofs');receipt=projection.get('complete_receipt_digest')
+    if(not isinstance(columns,list)or columns.count('patient_id')!=1 or not isinstance(rows,list)
+       or any(not isinstance(row,list)or len(row)!=len(columns)for row in rows)
+       or projection.get('row_count')!=len(rows)or projection.get('projected_rows_digest')!=digest(rows)
+       or not isinstance(branches,list)or not branches or not isinstance(proofs,list)
+       or len(branches)!=len(proofs)):raise ValueError('Selected JSON input projection changed')
+    pid_at=columns.index('patient_id');selected=set();decoded=[]
+    for branch,proof in zip(branches,proofs):
+        values=branch.get('row_values');indices=proof.get('selected_row_indices');elements=proof.get('selected_element_indices')
+        if(proof.get('schema')!='native-replayed-json-selection/1'or proof.get('complete_receipt_digest')!=receipt
+           or any(branch.get(k)!=proof.get(k)for k in ('column','path','value_encoding'))
+           or not isinstance(values,list)or len(values)!=len(rows)or not isinstance(indices,list)
+           or any(type(i)is not int or not 0<=i<len(rows)for i in indices)or indices!=sorted(set(indices))
+           or not isinstance(elements,list)or [e[0]for e in elements]!=indices):raise ValueError('Selected JSON witness changed')
+        lengths={}
+        for item in elements:
+            if(not isinstance(item,list)or len(item)!=2 or not isinstance(item[1],list)or not item[1]
+               or any(type(i)is not int or i<0 for i in item[1])or item[1]!=sorted(set(item[1]))):
+                raise ValueError('Selected JSON element coordinates changed')
+            lengths[item[0]]=len(item[1])
+        for i,value in enumerate(values):
+            if(not isinstance(value,list)or len(value)!=2 or type(value[0])is not bool
+               or not value[0]and value[1]is not None):raise ValueError('Selected JSON presence changed')
+            try:actual=json.loads(value[1])if value[0]else None
+            except (ValueError,TypeError):raise ValueError('Selected JSON value changed')from None
+            if i in lengths:
+                if not value[0]or not isinstance(actual,list)or len(actual)!=lengths[i]:raise ValueError('Selected JSON elements missing')
+            elif actual not in (None,[]):raise ValueError('Unwitnessed JSON input cannot be excluded')
+        selected.update(indices);decoded.append((branch,values))
+    if any(not isinstance(row[pid_at],str)for row in rows):raise ValueError('Selected JSON input patient changed')
+    if any(rows[i][pid_at]not in patient_ids for i in selected):return None
+    groups={}
+    for i in sorted(selected):groups.setdefault(rows[i][pid_at],[]).append(i)
+    inputs={};edges=[]
+    for pid,indices in groups.items():
+        item={'result_view':projection['result_view'],'columns':columns,'indexed_rows':[[i,rows[i]]for i in indices],
+            'indexed_json_values':[{'column':branch['column'],'path':branch['path'],'value_encoding':branch['value_encoding'],
+                'indexed_values':[[i,values[i]]for i in indices]}for branch,values in decoded],
+            'complete_receipt_digest':receipt,'native_projection_digest':digest(projection),
+            'scope':'All exact witnessed source-field values for this patient, with original native row positions and presence/NULL distinctions. These are query inputs, not clinical findings; all source/meaning checks still apply.'}
+        inputs[pid]=item;edges.append({'packet':'patient_'+pid,'native_inputs_digest':digest(item)})
+    supplied={i for item in inputs.values()for i,_ in item['indexed_rows']}
+    if supplied!=selected:raise ValueError('Selected JSON input schedule lost an original row')
+    unselected=[[i,rows[i],[values[i]for _,values in decoded]]for i in range(len(rows))if i not in selected]
+    summary={'schema':'patient-native-selected-json-dependencies/1','result_view':projection['result_view'],
+        'projection_contract':{k:v for k,v in projection.items()if k not in ('rows','json_path_observations')},
+        'required_patient_inputs':edges,'selected_input_rows':len(selected),
+        'unused_native_input_rows':len(unselected),'unused_native_inputs_digest':digest(unselected),
+        'complete_projection_digest':digest(projection),
+        'scope':'Every witnessed source input is present in its required patient packet. All original input rows remain native. Unselected rows had no witnessed JSON element in any complete replayed consumer; they establish neither no accounts nor negative/absent clinical facts. This contract proves dependency transport only; all patient/source and global meaning checks must pass.'}
+    return summary,inputs
 
 
 def native_calculation_input_view(projection, producer, calls):
