@@ -108,6 +108,13 @@ def _schema(path):
     try:
         names = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')")]
         schema = {n.lower(): [r[1].lower() for r in db.execute('PRAGMA table_info("'+n.replace('"','""')+'")')] for n in names}
+        # SQLite's own catalogs do not enumerate themselves. Successful native
+        # schema exploration still depends on these real engine relations;
+        # retain their actual columns rather than waiving schema validation.
+        for name in ('sqlite_master','sqlite_schema','sqlite_temp_master','sqlite_temp_schema'):
+            columns = [r[1].lower() for r in db.execute('PRAGMA table_info("'+name+'")')]
+            if columns:
+                schema[name] = columns
         # The investigator creates this registered documentation view per
         # connection. Its absence from persistent storage is not source drift;
         # exact columns remain a versioned application contract. Arbitrary
