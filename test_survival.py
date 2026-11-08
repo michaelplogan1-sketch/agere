@@ -382,6 +382,18 @@ class ReceivedFollowup(unittest.TestCase):
         self.assertEqual(row['status'], 'index_discharge_unknown_or_ambiguous')
         self.assertIsNone(row['time_at_risk_days'])
 
+    def test_death_censored_KM_is_not_labeled_absolute_competing_risk_incidence(self):
+        params = self.params(output='estimates', horizon_days=30, time_points=[3, 5], lower_bound=True)
+        ids = ['normal', 'death', 'gap']
+        with patch.object(survival.semantic_layer, 'ensure', return_value=self.target), \
+                patch.object(survival, 'attributes', return_value={pid: {} for pid in ids}):
+            report = survival.execute(self.path, ids, params)
+        self.assertEqual(report['estimand'], 'net_failure_under_censoring')
+        self.assertEqual(report['conformal_lower_bounds']['status'], 'insufficient')
+        self.assertTrue(all(r['cumulative_incidence'] is None and 'net_failure_probability' in r for r in report['table']))
+        self.assertIn('net failure probability under censoring', survival.summary(report))
+        self.assertIn('not an absolute competing-risk', report['method'])
+
 
 if __name__ == '__main__':
     unittest.main()

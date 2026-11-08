@@ -703,6 +703,10 @@ def execute(path, patient_ids, params):
                           'ci95_low': round(1 - hi, 4) if hi is not None else None,
                           'ci95_high': round(1 - lo, 4) if lo is not None else None,
                           'support': support, 'small_group': s['small_group']})
+            if source_censoring:
+                # 1-KM with deaths censored is not a competing-risk cumulative incidence.
+                table[-1]['net_failure_probability'] = table[-1]['cumulative_incidence']
+                table[-1]['cumulative_incidence'] = None
     curves = {str(s['group']): [{'day': int(r['time']), 'at_risk': r['at_risk'], 'events': r['events'], 'censored': r['censored'],
                                  'survival': round(r['survival'], 4)} for r in s['_km']][:400] for s in shown}
     for s in summaries:
@@ -724,7 +728,8 @@ def execute(path, patient_ids, params):
     elif p['cox']:
         cox_note = 'Fewer than 5 events: Cox model not fitted.'
     multi = p['index']['type'] == 'discharge'
-    method = (f"Kaplan-Meier (product-limit) estimate of time from {zero} (day 0) to {what}; cumulative incidence = 1 - S(t). "
+    probability_label = 'net failure probability = 1 - S(t)' if source_censoring else 'cumulative incidence = 1 - S(t)'
+    method = (f"Kaplan-Meier (product-limit) estimate of time from {zero} (day 0) to {what}; {probability_label}. "
               f"95% intervals from Greenwood's variance on the log(-log) scale; at risk = units still observed at the day shown. ")
     method += {'readmission': 'Index units = hospital stays (inpatient/observation encounters collapsed by admit day and overlap) of population patients '
                               'with a received discharge date; event = the next stay admitted after that discharge. Stays without a received discharge '
@@ -744,8 +749,9 @@ def execute(path, patient_ids, params):
     if p['coverage'] == 'contiguous_enrollment':
         method += 'Eligibility at time zero requires a recorded covering enrollment block; follow-up stops at its first end, without bridging later reenrollment gaps. '
     if source_censoring:
-        method += ('The legacy cumulative_incidence field is 1 minus Kaplan-Meier survival with deaths/enrollment boundaries censored: '
-                   'a net failure estimate under censoring assumptions, not an absolute competing-risk cumulative incidence. ')
+        method += ('With deaths/enrollment boundaries censored, 1 minus Kaplan-Meier survival is shown only as net_failure_probability; '
+                   'cumulative_incidence remains unavailable. This is a net failure estimate under censoring assumptions, '
+                   'not an absolute competing-risk cumulative incidence. ')
     if multi: method += 'A patient can contribute several index stays; intervals and tests treat stays as independent. '
     if test: method += f"Groups compared with the {len(groups)}-group log-rank test. "
     if model: method += ('Cox proportional hazards (Efron ties, Newton-Raphson; reference = most common level; levels with under 5 units or '
@@ -782,15 +788,17 @@ def summary(report):
     parts = []
     for row in [r for r in report['table'] if r['day'] == key][:6]:
         g = next(s for s in report['groups'] if s['group'] == row['group'])
-        if row['cumulative_incidence'] is None:
+        failure = row.get('net_failure_probability', row['cumulative_incidence'])
+        if failure is None:
             support = row.get('support') or {}
             parts.append(f"{row['group']} risk unknown (last follow-up {support.get('last_followup_days')} days; {row['at_risk']} at risk at day {key})")
             continue
         med = f", median {g['median_days']:g} days" if g['median_days'] is not None else ''
-        parts.append(f"{row['group']} {row['cumulative_incidence']:.1%} (95% CI {row['ci95_low']:.1%}-{row['ci95_high']:.1%}; "
+        parts.append(f"{row['group']} {failure:.1%} (95% CI {row['ci95_low']:.1%}-{row['ci95_high']:.1%}; "
                      f"{g['units']} {unit}, {g['events']} events{med})")
     if not parts: return f"No analysable {unit}: " + ', '.join(f'{k} {v}' for k, v in report['excluded'].items()) + '.'
-    text = ('Resolvable subset only. ' if report.get('unresolved_units') else '') + f"Kaplan-Meier cumulative incidence of {report['event_label']} by day {key} after {report['time_zero']}: " + '; '.join(parts)
+    quantity = 'net failure probability under censoring' if report.get('estimand') == 'net_failure_under_censoring' else 'cumulative incidence'
+    text = ('Resolvable subset only. ' if report.get('unresolved_units') else '') + f"Kaplan-Meier {quantity} of {report['event_label']} by day {key} after {report['time_zero']}: " + '; '.join(parts)
     if report['groups_total'] > 6: text += f" (+{report['groups_total'] - 6} more groups)"
     text += '.'
     if report['logrank']:
