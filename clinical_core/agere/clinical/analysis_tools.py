@@ -638,6 +638,9 @@ def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None,s
     from . import analysis_graph as A,graph_contracts as G,cohorts
     if operation not in ANALYTICAL:raise ValueError('Choose an analytical operation from list_analyses')
     if not isinstance(parameters,dict):raise ValueError('Supply typed analytical parameters')
+    if operation == 'scorecard_risk':
+        from .scorecard_risk import validate_request
+        validate_request(getattr(tools, 'question', ''), parameters)
     guard=digest(tools.continuation_identity())
     if output not in ('operator_default','qualifier_accounts')or output=='qualifier_accounts'and operation!='assertion_review':
         raise ValueError('Qualifier account output requires assertion_review')

@@ -6,8 +6,10 @@ import random
 import sqlite3
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
-from clinical_core.agere.clinical import scorecard_risk as S, engine_suite
+from clinical_core.agere.clinical import scorecard_risk as S, engine_suite, decision_context as D, analysis_tools
 
 AS_OF = '2030-05-27'
 
@@ -115,6 +117,120 @@ class Scorecard(unittest.TestCase):
         self.assertIsNone(S.route('What is our Star rating scorecard?', {}, AS_OF))
         self.assertIsNone(S.route('Which patients are at highest risk of admission?', {}, AS_OF))
         self.assertIsNone(S.route('Show the HEDIS quality scorecard', {}, AS_OF))
+
+
+class EvidenceOnly(unittest.TestCase):
+    question = ('What existing evidence supports predicting inpatient admission over the next 90 days using only inputs available at 2029-01-01? '
+                'Do not fit or claim a model on this request.')
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup); self.path = Path(self.tmp.name)
+        with sqlite3.connect(self.path/'semantic.sqlite3') as db:
+            db.executescript("""CREATE TABLE patient(patient_id TEXT);
+              INSERT INTO patient VALUES('A'),('B'),('C'),('D'),('E'),('F');
+              CREATE TABLE record(patient_id TEXT,stream TEXT,event_date TEXT,available_date TEXT);
+              INSERT INTO record VALUES('A','encounters','2028-10-01','2028-10-02'),
+               ('A','labs','2029-01-01T14:00:00','2029-01-01T15:00:00'),
+               ('B','encounters','2028-10-01','2030-01-01'),('C','notes',NULL,'2028-12-01'),
+               ('D','encounters','2028-12-01','2028-12-02'),('E','encounters','2028-12-01','2028-12-02'),
+               ('F','pharmacy','2028-12-01',NULL);
+              CREATE TABLE utilization_event(patient_id TEXT,kind TEXT,event_date TEXT);
+              INSERT INTO utilization_event VALUES('A','inpatient','2029-02-01'),('A','inpatient','2029-04-01'),
+               ('A','inpatient','2029-04-02'),('B','inpatient','2029-02-01'),('D','inpatient','2029-02-02'),
+               ('F','inpatient',NULL),('A','observation','2029-02-05'),('C','observation','2029-02-01');
+              CREATE TABLE death(patient_id TEXT,death_date TEXT,first_reported_date TEXT);
+              INSERT INTO death VALUES('D','2028-12-20','2028-12-30'),('E','2028-12-20','2029-02-01');""")
+
+    def params(self, **changes):
+        p = {'mode': 'evidence', 'outcome': 'admission', 'origin_date': '2029-01-01', 'horizon_days': 90}
+        p.update(changes); return p
+
+    def report(self, ids=None, as_of=AS_OF, **changes):
+        with patch.object(S, 'fit', side_effect=AssertionError('evidence must not fit')), \
+                patch.object(S, 'Data', side_effect=AssertionError('evidence must not construct a scoring feature frame')):
+            return S.execute(self.path, ids, self.params(**changes), as_of)
+
+    def test_inpatient_target_excludes_observation_and_respects_exact_day_endpoint(self):
+        r = self.report(); s = r['summary']
+        self.assertEqual((s['recorded_target_event_rows'], s['recorded_positive_subjects_all_received']), (4, 3))
+        self.assertEqual((s['observation_event_rows_excluded_from_admission'], s['observation_only_subjects_excluded_from_admission']), (2, 1))
+        self.assertEqual(s['unknown_target_dates_all_received'], 1)
+        self.assertEqual(r['rows'][0]['requested_target_end'], '2029-04-01')
+
+    def test_both_input_clocks_and_origin_known_death_are_distinct_from_retrospective_knowledge(self):
+        r = self.report(); s = r['summary']; inv = {x['source']: x for x in r['rows'][1:]}
+        self.assertEqual((s['subjects_with_both_clock_inputs'], s['known_dead_by_origin_excluded'], s['origin_input_candidates']), (3, 1, 2))
+        self.assertEqual(s['retrospective_preorigin_deaths_not_known_by_origin'], 1)
+        self.assertEqual(s['recorded_positive_origin_candidates'], 1)
+        self.assertEqual(inv['encounters']['past_event_arrived_later'], 1)
+        self.assertEqual(inv['notes']['source_event_time_unknown'], 1)
+        self.assertEqual(inv['pharmacy']['availability_unknown'], 1)
+        self.assertEqual(inv['labs']['both_clocks_by_origin'], 1)
+        self.assertFalse(s['feature_frame_origin_state_qualified'])
+
+    def test_absent_positives_do_not_become_negative_labels_or_zero_calibration_errors(self):
+        s = self.report()['summary']
+        self.assertEqual(s['no_recorded_positive_origin_candidates_capture_unknown'], 1)
+        self.assertFalse(s['negative_labels_established']); self.assertFalse(s['source_capture_established'])
+        self.assertIsNone(s['calibration_brier']); self.assertIsNone(s['calibration_ece']); self.assertIsNone(s['model_vs_simple_baseline'])
+        self.assertFalse(s['qualified_predictor_available'])
+        self.assertEqual((s['model_fits'], s['model_scores_produced'], s['private_partition_or_weight_reads']), (0, 0, 0))
+
+    def test_attachment_presence_never_certifies_a_model_or_opens_private_partition_rows(self):
+        (self.path/'prediction-qualification-link.json').write_text('{"reports":[{"path":"protected/private-targets.jsonl"}]}')
+        with patch.object(Path, 'read_text', side_effect=AssertionError('no pointer traversal or private data reads')):
+            r = self.report()
+        self.assertIsNone(r['summary']['qualified_predictor_available'])
+        self.assertEqual(r['summary']['qualification_status'], 'attached_contract_unverified')
+
+    def test_subset_and_empty_scope_preserve_observed_support_without_fabricating_candidates(self):
+        r = self.report(['B']); self.assertEqual(r['summary']['recorded_target_event_rows'], 1)
+        self.assertEqual(r['summary']['origin_input_candidates'], 0)
+        empty = self.report([]); self.assertEqual(empty['summary']['received_subjects'], 0)
+        self.assertEqual(len(empty['rows']), 1)
+        self.assertFalse(empty['summary']['negative_labels_established'])
+
+    def test_unmatured_window_keeps_requested_endpoint_and_reports_only_received_time(self):
+        r = self.report(as_of='2029-03-15')
+        self.assertFalse(r['summary']['calendar_window_mature'])
+        self.assertEqual(r['rows'][0]['requested_target_end'], '2029-04-01')
+        self.assertEqual(r['rows'][0]['observed_target_through'], '2029-03-15')
+        self.assertEqual(r['summary']['recorded_target_event_rows'], 3)
+
+    def test_no_fit_and_wrong_origin_or_horizon_fail_before_source_open_or_dispatch(self):
+        for params in ({'outcome': 'admission'}, self.params(origin_date='2028-01-01'), self.params(horizon_days=30)):
+            with self.subTest(params=params), D.scope(self.question, AS_OF), patch.object(S.rc, 'connect') as connect:
+                with self.assertRaises(ValueError): S.execute(self.path, None, params, AS_OF)
+                connect.assert_not_called()
+            tools = SimpleNamespace(question=self.question)
+            with self.assertRaises(ValueError): analysis_tools.execute(tools, 'scorecard_risk', params)
+
+    def test_observed_source_inventory_has_no_model_presentation_row_limit(self):
+        with sqlite3.connect(self.path/'semantic.sqlite3') as db:
+            db.executemany('INSERT INTO record VALUES(?,?,?,?)', [('A', f'source_{i}', '2028-12-01', '2028-12-02') for i in range(40)])
+        r = self.report()
+        self.assertEqual(len(r['rows']), 45)
+        self.assertTrue(all('parameters_json' in row for row in r['rows']))
+        answer = S.answer(r, {'coverage': 'supported_observation', 'unmet_requirements': []}, self.question)
+        self.assertEqual(answer['table'], r['rows'])
+        self.assertEqual(answer['status'], 'partial')
+        self.assertFalse(answer['overall']['model_fitting_performed'])
+
+    def test_fixed_origin_readmission_without_episode_index_is_unknown_not_zero(self):
+        r = self.report(outcome='readmission')
+        self.assertEqual(r['target_status'], 'episode_index_contract_required_not_a_fixed_population_origin')
+        self.assertIsNone(r['summary']['recorded_target_event_rows'])
+        self.assertNotIn('None recorded', S.headline(r))
+
+    def test_unattributed_records_are_not_fabricated_patient_inputs_or_labels(self):
+        with sqlite3.connect(self.path/'semantic.sqlite3') as db:
+            db.execute("INSERT INTO record VALUES('not_on_roster','unassigned','2028-12-01','2028-12-02')")
+            db.execute("INSERT INTO utilization_event VALUES('not_on_roster','inpatient','2029-02-01')")
+        r = self.report()
+        self.assertEqual(r['summary']['received_subjects'], 6)
+        self.assertEqual(r['summary']['origin_input_candidates'], 2)
+        self.assertEqual(r['summary']['recorded_target_event_rows'], 4)
+        self.assertNotIn('unassigned', {row['source'] for row in r['rows'][1:]})
 
 
 if __name__ == '__main__':
