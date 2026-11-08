@@ -239,6 +239,9 @@ def check(question, graph, result, *, stack, ledger=None, as_of_date=None):
     encoded=compact_json(original)
     if uncompact_json(encoded)!=original:raise ValueError('Coverage evidence did not round-trip')
     summary=json.dumps(encoded,default=str,separators=(',',':'))
+    from .evidence_projection import native_integrity_model_view
+    wire=native_integrity_model_view(summary,coverage_dependencies=True)
+    summary=wire['text']
     when = as_of_date or as_of(stack)
     instruction=('Native code checked every financial row, its scope and current source receipts. The full table remains in the saved answer; '
         'this state contains complete field/role contracts, native identities, selection and all uncertainty categories. '
@@ -260,7 +263,8 @@ def check(question, graph, result, *, stack, ledger=None, as_of_date=None):
     return {'addresses_question': round(float(probs.get('answers_fully', 0.0)) + float(probs.get('answers_partially', 0.0)), 4),
             'label': label, 'p': round(p, 4), 'probabilities': probs, 'reasons': reasons, 'reject': reject,
             'cost_usd': usd, 'calls': calls, 'provider': provider, 'decided_by': out.get('decided_by'),
-            'cache_hit': bool(out.get('cache_hit')), 'version': VERSION}
+            'cache_hit': bool(out.get('cache_hit')), 'version': VERSION,
+            **({'native_integrity_projection':wire['native_projection']}if wire['projected']else{})}
 
 
 def check_composition(question, answer, *, ledger=None, as_of_date):

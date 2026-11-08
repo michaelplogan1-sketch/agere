@@ -295,6 +295,58 @@ class NativeObservationTransport(unittest.TestCase):
 
 
 class NativeIntegrityModelView(unittest.TestCase):
+    def test_coverage_coordinates_roundtrip_without_hiding_visible_values(self):
+        from clinical_core.agere.deliverables.receipts import readable_json,uncompact_json
+        table=[{'patient_id':pid,'account_id':f'{pid}-{i}','balance_cents':0 if i==0 else None,
+            'explanation':'Current hardship remains unknown.',
+            'source':json.dumps([finding(f'{pid}-{i}','No preference established. '+str(i))])}
+            for pid in ('A','B')for i in range(40)]
+        answer=E.coverage_answer({'status':'partial','table':table,'missing':['Current preference unknown']})
+        original={'question':'Recorded balances and source statements','result':{'answer':answer}}
+        text=json.dumps(readable_json(original));wire=E.native_integrity_model_view(text,coverage_dependencies=True)
+        self.assertTrue(wire['projected']);self.assertLess(wire['bytes'],len(text.encode()))
+        model=uncompact_json(json.loads(wire['text']))
+        self.assertEqual(model['result']['answer']['table'],answer['table'])
+        self.assertEqual(model['result']['answer']['missing'],answer['missing'])
+        model.pop('native_integrity_projection')
+        proof=wire['native_projection']
+        for path in reversed(proof['proof_paths']):
+            parent=model
+            for key in path[:-1]:parent=parent[key]
+            parent[path[-1]]=proof['proofs'][parent[path[-1]]['native_receipt_reference']]
+        self.assertEqual(model,original)
+        self.assertEqual(E.restore_table(answer['table'],answer['coverage_contract']['dependency_edges'],
+            {'patient_A':table[:40],'patient_B':table[40:]}),table)
+
+    def test_coverage_missing_changed_or_repeated_coordinates_fail_before_dispatch(self):
+        from clinical_core.agere.deliverables.receipts import readable_json
+        base={'result':{'answer':E.coverage_answer({'table':[
+            {'patient_id':'A','source':[finding('rA','Unknown preference.')]},
+            {'patient_id':'B','source':[finding('rB','Dated statement.')]}
+        ]})}}
+        for change in ('patient','field','ordinal','digest','missing','duplicate','bool'):
+            state=copy.deepcopy(base);a=state['result']['answer'];edges=a['coverage_contract']['dependency_edges']
+            if change=='patient':edges[0]['patient_id']='B'
+            elif change=='field':edges[0]['field']='another_field'
+            elif change=='ordinal':edges[1]['answer_row']=1
+            elif change=='digest':edges[0]['source_cell_digest']='not-a-hash'
+            elif change=='missing':a['table'][0].pop('source')
+            elif change=='duplicate':a['table'][1]['source']['clinical_evidence_dependency']=0
+            else:a['table'][0]['source']['clinical_evidence_dependency']=False
+            with self.subTest(change=change),self.assertRaises(ValueError):
+                E.native_integrity_model_view(json.dumps(readable_json(state)),coverage_dependencies=True)
+
+    def test_coverage_projection_is_explicit_and_does_not_rewrite_source_fields(self):
+        from clinical_core.agere.deliverables.receipts import readable_json,uncompact_json
+        value='a'*64
+        original={'question':value,'result':{'answer':E.coverage_answer({'table':[
+            {'patient_id':'A','digest':value,'source':[finding('r',value)]}]})}}
+        text=json.dumps(readable_json(original));wire=E.native_integrity_model_view(text)
+        self.assertFalse(wire['projected'])
+        model=uncompact_json(json.loads(E.native_integrity_model_view(text,coverage_dependencies=True)['text']))
+        self.assertEqual(model['question'],value)
+        self.assertEqual(model['result']['answer']['table'][0]['digest'],value)
+
     def test_native_hashes_are_addresses_while_source_sql_and_clinical_values_stay_literal(self):
         from clinical_core.agere.clinical.evidence_projection import native_integrity_model_view
         from clinical_core.agere.deliverables.receipts import readable_json,uncompact_json

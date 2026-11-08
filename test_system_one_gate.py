@@ -84,6 +84,24 @@ class Render(unittest.TestCase):
 
 
 class Checker(unittest.TestCase):
+    def test_coverage_dispatch_keeps_values_and_unsettled_authority_after_integrity_projection(self):
+        import copy,json
+        from clinical_core.agere.clinical.evidence_projection import coverage_answer
+        from clinical_core.agere.deliverables.receipts import uncompact_json
+        result={'answer':coverage_answer({'table':[{'patient_id':str(i),'amount':None,
+            'statement':[{'record_id':str(i),'quote':'Preference remains unknown.'}]}for i in range(20)]})}
+        original=copy.deepcopy(result);fake=FakeS1('unknown',.9,by=None)
+        with clean_env(),use(fake):out=G.check('Recorded values and preferences',GRAPH,result,stack=LIVE)
+        self.assertIsNone(out['decided_by']);self.assertEqual(result,original)
+        state=uncompact_json(json.loads(fake.calls[0]['evidence'][0]['text']))
+        self.assertEqual(state['result']['answer']['table'],result['answer']['table'])
+        proof=out['native_integrity_projection'];state.pop('native_integrity_projection')
+        for path in reversed(proof['proof_paths']):
+            parent=state
+            for key in path[:-1]:parent=parent[key]
+            parent[path[-1]]=proof['proofs'][parent[path[-1]]['native_receipt_reference']]
+        self.assertEqual(state,{'question':'Recorded values and preferences','executed_plan':GRAPH,'result':result})
+
     def test_confident_different_question_rejects(self):
         fake = FakeS1('answers_a_different_question', 0.9)
         with clean_env(), use(fake):

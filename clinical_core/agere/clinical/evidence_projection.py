@@ -268,7 +268,15 @@ def coverage_answer(answer, *, native_table=None, native_audit=None, native_inte
             'scope':'Expanded SQL provenance retained natively; the declared executed queries remain in the plan.'}
     prior=out.pop('investigation_review',None)
     if prior is not None:out['prior_review_native_digest']=digest(prior)
+    # The index and its edge already name the same source cell. Repeating the
+    # complete edge inside every marker multiplies opaque integrity metadata.
+    # Reindex after visible prose/row interpretation removed its dependencies.
+    for index,edge in enumerate(edges):
+        row,field=edge['at']
+        view[row][field]={'clinical_evidence_dependency':index}
     out['coverage_contract']={'schema':VERSION,'dependency_edges':edges,
+        'dependency_encoding':'Each integer clinical_evidence_dependency indexes dependency_edges in order. '
+            'Its row and column locate the exact source cell in the corresponding patient support packet.',
         'scope':'Check requested scope, computation, fields and explicit unknowns. Source-finding cells are references to separate required full clinical-support packets. Do not infer clinical truth from a reference or a finding count. Clinical support is confirmed only if every dependency is supported.'}
     return out
 
@@ -331,7 +339,7 @@ def restore_native_observations(view):
     return groups
 
 
-def native_integrity_model_view(text):
+def native_integrity_model_view(text,*,coverage_dependencies=False):
     """Use short addresses for opaque integrity hashes in model metadata.
 
     Cryptographic validation belongs to code. Keep the complete original packet
@@ -352,11 +360,43 @@ def native_integrity_model_view(text):
     # These containers carry executable or source values, even when a source
     # happens to name a clinical field "digest". Never rewrite their contents.
     literal={'input','parameters','assembly_specification','rows','indexed_rows','query','document','sources'}
-    aliases={};values={};paths=[];proofs={};proof_paths=[]
+    aliases={};values={};paths=[];proofs={};proof_paths=[];coverage_count=0
     def retain_proof(value,path):
         reference='native_proof_'+str(len(proofs));proofs[reference]=value;proof_paths.append(list(path))
         return {'native_receipt_reference':reference,
             'scope':'Complete mechanical validation certificate retained and checked by code. Original clinical/source values and executable selection contracts remain supplied; this reference establishes no clinical support.'}
+    if coverage_dependencies:
+        # Coverage reads the full visible output; the separate patient packets
+        # still receive every complete source cell. These edges contain only
+        # duplicated coordinates, identities and hashes, never source meaning.
+        result=original.get('result')
+        answer=result.get('answer')if isinstance(result,dict)else None
+        contract=answer.get('coverage_contract')if isinstance(answer,dict)else None
+        if isinstance(contract,dict)and contract.get('schema')==VERSION:
+            edges=contract.get('dependency_edges');rows=answer.get('table')
+            if not isinstance(edges,list)or not isinstance(rows,list):raise ValueError('Complete coverage dependencies required')
+            positions={};ordinals={}
+            for i,row in enumerate(rows):
+                if not isinstance(row,dict):continue
+                pid=row.get('patient_id');local=ordinals.get(pid,0);ordinals[pid]=local+1
+                for field,value in row.items():
+                    if not isinstance(value,dict)or set(value)!={'clinical_evidence_dependency'}:continue
+                    index=value['clinical_evidence_dependency']
+                    if type(index)is not int or index in positions or not 0<=index<len(edges):
+                        raise ValueError('Coverage dependency index changed')
+                    positions[index]=(i,field,pid,local)
+            if len(positions)!=len(edges):raise ValueError('Coverage dependency is missing its cell')
+            for index,edge in enumerate(edges):
+                i,field,pid,local=positions[index]
+                if (not isinstance(edge,dict)or set(edge)!={'at','packet','patient_id','answer_row','field','source_cell_digest'}
+                    or not isinstance(pid,str)or edge['at']!=[i,field]or edge['patient_id']!=pid
+                    or edge['packet']!='patient_'+pid or edge['answer_row']!=local or edge['field']!=field
+                    or not isinstance(edge['source_cell_digest'],str)or not re.fullmatch('[0-9a-f]{64}',edge['source_cell_digest'])):
+                    raise ValueError('Coverage source-cell binding changed')
+            if edges:
+                path=('result','answer','coverage_contract','dependency_edges')
+                state['result']['answer']['coverage_contract']['dependency_edges']=retain_proof(edges,path)
+                coverage_count=len(edges)
     def detach(value,path):
         if isinstance(value,dict):
             return {k:retain_proof(v,path+(k,))if k in ('native_column_projection','derived_read_proof')else
@@ -404,6 +444,12 @@ def native_integrity_model_view(text):
     if not paths and not proof_paths:return {'text':text,'bytes':len(text.encode()),'projected':False}
     state['native_integrity_projection']={'schema':'native-integrity-addresses/1','complete_native_packet_digest':digest(original),
         'meaning':'@N strings are opaque addresses for cryptographic metadata checked by code and retained in the complete native packet. Equal addresses denote equal original hashes. native_proof_N references bind complete mechanical certificates retained by code. Neither is clinical evidence, a measurement or model-verified support. All clinical values, source text, native inputs and executed SQL remain literal.'}
+    if coverage_count:
+        state['native_integrity_projection']['coverage_dependencies']={
+            'cells':coverage_count,'meaning':'Each integer clinical_evidence_dependency names the source cell at this exact output row/column. '
+            'Its required support packet is patient_ + patient_id; answer_row is its row ordinal among that patient\'s output rows. '
+            'The complete ordered coordinate/hash manifest is checked and retained by code under the native receipt reference. '
+            'No source support, absence, clinical meaning or completed review is certified by this mapping.'}
     readable=json.dumps(readable_json(state),ensure_ascii=False,separators=(',',':'))
     packed=json.dumps(compact_json(state,expand_json_strings=True),ensure_ascii=False,separators=(',',':'))
     model_text=min((readable,packed),key=lambda x:len(x.encode()))
