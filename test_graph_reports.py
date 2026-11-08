@@ -1,11 +1,27 @@
 """Analytical handoff integrity and report/membership boundary regressions."""
-import json,sqlite3,tempfile,unittest,zlib
+import copy,json,sqlite3,tempfile,unittest,zlib
 from pathlib import Path
 from unittest.mock import patch
 from clinical_core.contracts import digest
 from clinical_core.agere.clinical import graph_reports as R,graph_decision as G,graph_contracts as C
 
 class Reports(unittest.TestCase):
+ def test_summary_keeps_complete_financial_delivery_on_parent_result(self):
+  result={'patients_evaluated':3,'status_counts':{'reconciled_received_records':2,'review_required':1},
+          'totals_by_currency':{'USD':{'received_cents':0,'balance_cents':None}},
+          'account_output':{'columns':['patient_id','received_cents'],
+                            'rows':[{'patient_id':'p1','received_cents':0},
+                                    {'patient_id':'p2','received_cents':4000},
+                                    {'patient_id':'p3','received_cents':None}],
+                            'scope':{'received_subjects':3,'unresolved_selected_sources':[]}}}
+  original=copy.deepcopy(result)
+  summary=R.summary('financial_accounts',result)
+  self.assertNotIn('account_output',summary)
+  self.assertEqual(summary['patients_evaluated'],3)
+  self.assertEqual(summary['status_counts'],result['status_counts'])
+  self.assertEqual(summary['totals_by_currency'],result['totals_by_currency'])
+  self.assertEqual(result,original)
+  self.assertEqual(len(result['account_output']['rows']),3)
  def test_typed_outcome_uses_compact_and_full_catalogs(self):
   for contracts in ([{'id':'exact'}],{'columns':['id','title'],'rows':[['exact','title']]}):
    schema=C.parameter_schema('outcome',{'cohort_fields':{'record_fields':{}},'evidence_catalog':{'outcome_contracts':contracts}})

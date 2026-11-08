@@ -69,7 +69,9 @@ def dependencies(path,graph):
 
 
 def summary(op,result):
-    omitted={'review_members','patients','input_membership','processing_counts','financial_processing_counts','elapsed_seconds','input_fingerprints','cache_hit'}
+    # Complete financial delivery stays on the saved graph result. Member
+    # findings use their own patient receipts alongside this population summary.
+    omitted={'review_members','patients','input_membership','processing_counts','financial_processing_counts','elapsed_seconds','input_fingerprints','cache_hit','account_output'}
     return {'title':TITLES[op],**{k:v for k,v in result.items() if k not in omitted}}
 
 
