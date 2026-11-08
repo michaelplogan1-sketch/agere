@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T08:12:05.900850+00:00",
+  "updated_at": "2026-11-08T08:32:04.835707+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -661,10 +661,10 @@
     }
   ],
   "checkpoint": {
-    "kind": "Q06_provider_overflow_repaired_retained_finalization_running",
+    "kind": "requested_year_guard_qualified_offline_storage_dependency",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Largest complete source verification requests now return from both configured providers, while source/coverage acceptance stays gated. Current saved partial needs freshness revalidation after activation.",
+    "user_behavior_delta": "Literal calendar-year intervals cannot borrow a prior request scope; native-bound historical clocks and comparison baselines remain supported. Candidate not yet active. Prior Q06 source transport and current consumer increment remains verified.",
     "measured_failure_reduction": {
       "targeted_context_errors_before": 2,
       "targeted_context_errors_after": 0,
@@ -676,19 +676,18 @@
       "current_model_packet_bytes": 19402585
     },
     "evidence": [
-      "artifacts/agere-Q06-current-original-2026-11-07/source-packet-qualification-v2/receipt.json",
-      "artifacts/agere-Q06-current-original-2026-11-07/native-integrity-qualification/receipt.json",
-      "artifacts/agere-Q06-current-original-2026-11-07/source-packet-native-metadata-probe/receipt.json",
-      "artifacts/agere-Q06-current-original-2026-11-07/source-packet-diagnosis/native-integrity-regressions-v2.log"
+      "artifacts/agere-Q06-current-original-2026-11-07/source-transport-completion.json",
+      "artifacts/agere-Q06-current-original-2026-11-07/retained-transport-finalization/receipt.json",
+      "artifacts/agere-Q06-current-original-2026-11-07/source-transport-app/consumer-proof.json"
     ],
-    "remaining_gap": "Normal retained source/question finalization running. Current partial freshness/consumer acceptance requires revalidation. Full25cases/tenareas and independent model/clinical/customer qualification/deployment remain.",
-    "next_action": "G3/WP4: Inspect owned retained transport finalization PID84595/session52659 first: artifacts/agere-Q06-current-original-2026-11-07/retained-transport-finalization/receipt.json. Product source frozen while running; no source edits or duplicate providers. Continue exact current83row/122call producer through normal source/question gates with current transport, no wholequestion/completed-source model reread or owner expectedvalues. Candidateae567ca6 now serves8885 (PID84569/session4022); current native API conserved old partial but freshness assertion failed and requires inspected reason/current revalidation before consumer acceptance. Prior runtime6df36263 remains rollback.158checks and offline84packet/source/metadata conservation passed. Largest provider summary now236441Perplexity/232823Jev tokens;6targeted calls returned34.494s/$0.03404126API-equivalent/0errors or unpriced. Actual correct-packet votes remain below.8 and wrong-entity controls uncertain; no source/clinical acceptance inferred. Preserve prior2failed probes/unpriced costs. On terminal return inspect allattempts, actual named-field/source/coverage failures, genuineunknowns, native persistence and current consumer. Full25cases/tenareas and independentG5/clinical/model/customer/deployment prerequisites retained; quiet continuationACTIVE.",
+    "remaining_gap": "Filesystem ENOSPC prevents durable archival/new work; preserve failed temporary cache and all originals. Activate qualified year guard after capacity returns, then next remaining fixed-case engineering gap. All25/tenareas and independent qualifications retained.",
+    "next_action": "G3/WP4: Native date-guard candidatee9c6c393 fixes the recorded requested-year regression;135focused checks passed, one broader test_temporal_composition fixture failed during derived-cache rebuild on actual SQLITE_FULL. Native Q01(36rows/10calls) andQ06(83rows/122calls) recompile allfields exact in0.237s/0providers/0sourcequeries. Candidate is committed but NOT activated; app84569/session4022 remainsae567ca6, Q06currentpartial ANS-b6e0594efb196b1568afd656. Actual filesystem now rejects new archive/script files with ENOSPC despite reported remaining capacity. Inspect artifacts/agere-Q06-current-original-2026-11-07/failed-temporal-cache-retention.json, requested-year-regressions-v2.log and failed-temporal-cache-archive/ first; keep the1.343GB failed test temporarycache, journal and incomplete5.827MBgzip intact. No source/complete-cache deletion. Lossless archive attempt could not complete; no data replaced. Resume durable work after filesystem capacity recovers; do not start another large rebuild or paid provider job while receipts cannot be persisted. Existing approvals remain; this is a storage dependency, not a new approval gate. Then verify/activate date candidate through current unverified native save/reopen/HTTP without restamping model acceptance, and inspect retained Q07 own receipts/history for the next named engineering gap in the fixed25case sequence. Q06 four sourcepackets/coverage remain undecided; do not revote unchanged evidence. All25cases/tenareas/current principal review/Oct11baseline and independentG5/clinical/model/customer/deployment prerequisites retained. No running provider/build/training job/source freeze; quiet continuationACTIVE.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly authorized the parallel research chat. Its backend candidates are isolated at /private/tmp/agere-research-20261106 on codex/research-voi-20261106 based on d18bf791; no activation or edits to the active runtime. Main G3 next action and all ten areas retained.",
     "remaining_blockers": [
       "Q05 verification packets exceed provider context and some semantic dependencies remain undecided; no repeated vote can establish support. Fix field/source transport while preserving complete evidence. Current25case/tenarea acceptance and matched correctness/cost metrics remain unfinished. The existing requested-year-anchor regression, Q04 taxonomy/clock uncertainties, Q02 unlabeled cash currency, Q01 cheap verifier false acceptance, Q12 estimator fit, Q20/Q21 uncertainty, exact diabetes/BP definitions, Q24visualQA and independentG5/clinical/model/actuarial/customer prerequisites remain. Prior native contexts retain their historical evidence; revalidate under current rules before follow-up rather than force old policy stamps."
     ],
-    "latest_progress": "The shared quantity compiler now clarifies a located noun reference using an exact earlier phrase while retaining every actual numerical binding and native value. It no longer forces a made-up number for a missing fill is not treated as one. The actual clinical draft advanced through its source work and now exposes the complete37patient fill/statement comparison and targeted findings in the current local app, with partial/unverified status and unresolved source dependencies preserved.",
+    "latest_progress": "Complete source verification now reaches both configured providers and the exact83patient partial survives normal finalization, current save/reopen and actual native/browser consumption.",
     "results_report": "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -7505,15 +7504,35 @@
       "decision": "Use code for cryptographic integrity and native assembly fidelity; pass unchanged clinical values, source text and SQL to semantic readers. Resume exact retained draft only after successful targeted request-fit checks.",
       "evidence": "artifacts/agere-Q06-current-original-2026-11-07/source-packet-native-metadata-probe/receipt.json",
       "scope_impact": "No source/coverage thresholds, population, disease, document or fixed-case scope changed; integrity projection round-trips exact natively. Below-threshold model votes do not confer acceptance."
+    },
+    {
+      "at": "2026-11-08T08:16:31.657388+00:00",
+      "gate": "G3",
+      "decision": "Close the measured Q06 transport/storage/population defects; preserve machine uncertainty and move to the existing date-role regression.",
+      "reason": "Current normal check182attempts/157.773s/0provider errors checked all84packets and identified no deciding source fault. No unchanged vote or rewrite is warranted. Native consumer preserves partial/unverified exact83rows/122calls.",
+      "evidence": "artifacts/agere-Q06-current-original-2026-11-07/source-transport-completion.json",
+      "scope_impact": "All25fixedcases/tenareas retained; Q06 full acceptance false; independent qualification not waived."
+    },
+    {
+      "at": "2026-11-08T08:32:04.835707+00:00",
+      "gate": "G3",
+      "decision": "Keep the date fix identifiable as an offline-qualified candidate; stop storage-consuming rebuild/provider launches while actual ENOSPC prevents receipts. Preserve failed derived cache and incomplete archive.",
+      "reason": "135checks and both retained native workflows passed; broad fixture failed in semantic_layer.build at INSERT because disk full. Gzip wrote5.827MB then failed; native XZ could not create file. No source data, complete cache, failed temporary cache or attempt removed.",
+      "evidence": [
+        "artifacts/agere-Q06-current-original-2026-11-07/requested-year-workflow-proof.json",
+        "artifacts/agere-Q06-current-original-2026-11-07/requested-year-regressions-v2.log",
+        "artifacts/agere-Q06-current-original-2026-11-07/failed-temporal-cache-retention.json"
+      ],
+      "scope_impact": "No new budget/population/document/workflow/output cap, user approval or scope narrowing; resume when writes are possible."
     }
   ],
   "unsealed_work": {
-    "status": "Q06_retained_transport_finalization",
+    "status": "Q06_transport_verified_year_guard_candidate_storage_dependency",
     "product_commit": "6df36263b54136ae6e853b2e927c2b1b21dac4e6",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-    "source_frozen": true,
+    "source_frozen": false,
     "runtime_activation": true,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
@@ -7541,12 +7560,12 @@
     "new_provider_attempts": 185,
     "known_api_equivalent_usd": 4.933035236,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 63077,
+    "all_attempt_rows_retained": 63267,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": null,
+    "latest_increment_provider_attempts": 182,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -7657,8 +7676,8 @@
     "fixed_sequence_status": "stopped_on_material_failure_or_dependency",
     "native_copy_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/native-proof.json",
     "native_copy_source_check": "artifacts/agere-ordinary-comparison-2026-11-05/Q13/native-copy-qualification-4/run-receipt.json",
-    "latest_increment_known_api_equivalent_usd": 3.745063532,
-    "latest_increment_unpriced_attempts": 6,
+    "latest_increment_known_api_equivalent_usd": 0.595543586,
+    "latest_increment_unpriced_attempts": 0,
     "all_attempt_rows_before_Q15": 56228,
     "pending_rows_before_Q15": 42,
     "native_copy_calendar_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q15/native-copy-qualification/native-proof.json",
@@ -8607,14 +8626,21 @@
       "pid": 84595,
       "session_id": 52659,
       "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-transport-finalization/receipt.json",
-      "status": "running",
-      "source_frozen": true,
-      "product_commit": "ae567ca6",
-      "started_at": "2026-11-08T08:10:44.518493+00:00",
-      "retained_native_calls": 122
+      "status": "returned_unresolved_verification",
+      "source_frozen": false,
+      "finished_at": "2026-11-08T08:13:22.347179+00:00"
     },
     "source_transport_runtime_activation": true,
-    "current_consumer_acceptance": false
+    "current_consumer_acceptance": true,
+    "current_Q06_context": "ANS-b6e0594efb196b1568afd656",
+    "source_transport_completion": "artifacts/agere-Q06-current-original-2026-11-07/source-transport-completion.json",
+    "requested_year_candidate_commit": "e9c6c393",
+    "requested_year_candidate_active": false,
+    "requested_year_workflow_proof": "artifacts/agere-Q06-current-original-2026-11-07/requested-year-workflow-proof.json",
+    "requested_year_checks": "artifacts/agere-Q06-current-original-2026-11-07/requested-year-regressions-v2.log",
+    "requested_year_focused_checks_passed": 135,
+    "requested_year_large_fixture_error": "Actual SQLITE_FULL while rebuilding a derived sample cache; failed partial preserved. Not a date-guard assertion failure.",
+    "storage_dependency": "artifacts/agere-Q06-current-original-2026-11-07/failed-temporal-cache-retention.json"
   },
   "current_visual_request": {
     "status": "completed",
@@ -8653,14 +8679,12 @@
       "pid": 84595,
       "session_id": 52659,
       "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-transport-finalization/receipt.json",
-      "status": "running",
-      "source_frozen": true,
-      "product_commit": "ae567ca6",
-      "started_at": "2026-11-08T08:10:44.518493+00:00",
-      "retained_native_calls": 122
+      "status": "returned_unresolved_verification",
+      "source_frozen": false,
+      "finished_at": "2026-11-08T08:13:22.347179+00:00"
     }
   ],
-  "next_action": "G3/WP4: Inspect owned retained transport finalization PID84595/session52659 first: artifacts/agere-Q06-current-original-2026-11-07/retained-transport-finalization/receipt.json. Product source frozen while running; no source edits or duplicate providers. Continue exact current83row/122call producer through normal source/question gates with current transport, no wholequestion/completed-source model reread or owner expectedvalues. Candidateae567ca6 now serves8885 (PID84569/session4022); current native API conserved old partial but freshness assertion failed and requires inspected reason/current revalidation before consumer acceptance. Prior runtime6df36263 remains rollback.158checks and offline84packet/source/metadata conservation passed. Largest provider summary now236441Perplexity/232823Jev tokens;6targeted calls returned34.494s/$0.03404126API-equivalent/0errors or unpriced. Actual correct-packet votes remain below.8 and wrong-entity controls uncertain; no source/clinical acceptance inferred. Preserve prior2failed probes/unpriced costs. On terminal return inspect allattempts, actual named-field/source/coverage failures, genuineunknowns, native persistence and current consumer. Full25cases/tenareas and independentG5/clinical/model/customer/deployment prerequisites retained; quiet continuationACTIVE.",
+  "next_action": "G3/WP4: Native date-guard candidatee9c6c393 fixes the recorded requested-year regression;135focused checks passed, one broader test_temporal_composition fixture failed during derived-cache rebuild on actual SQLITE_FULL. Native Q01(36rows/10calls) andQ06(83rows/122calls) recompile allfields exact in0.237s/0providers/0sourcequeries. Candidate is committed but NOT activated; app84569/session4022 remainsae567ca6, Q06currentpartial ANS-b6e0594efb196b1568afd656. Actual filesystem now rejects new archive/script files with ENOSPC despite reported remaining capacity. Inspect artifacts/agere-Q06-current-original-2026-11-07/failed-temporal-cache-retention.json, requested-year-regressions-v2.log and failed-temporal-cache-archive/ first; keep the1.343GB failed test temporarycache, journal and incomplete5.827MBgzip intact. No source/complete-cache deletion. Lossless archive attempt could not complete; no data replaced. Resume durable work after filesystem capacity recovers; do not start another large rebuild or paid provider job while receipts cannot be persisted. Existing approvals remain; this is a storage dependency, not a new approval gate. Then verify/activate date candidate through current unverified native save/reopen/HTTP without restamping model acceptance, and inspect retained Q07 own receipts/history for the next named engineering gap in the fixed25case sequence. Q06 four sourcepackets/coverage remain undecided; do not revote unchanged evidence. All25cases/tenareas/current principal review/Oct11baseline and independentG5/clinical/model/customer/deployment prerequisites retained. No running provider/build/training job/source freeze; quiet continuationACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
