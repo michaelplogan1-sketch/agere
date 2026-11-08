@@ -381,9 +381,10 @@ def native_runtime_failure(error):
     """Classify native storage failures, never text supplied by a document."""
     import errno
     code = getattr(error, 'sqlite_errorcode', None)
-    full = isinstance(error, sqlite3.Error) and isinstance(code, int) and (code & 255) == sqlite3.SQLITE_FULL
+    storage = (isinstance(error, sqlite3.Error) and isinstance(code, int)
+               and (code & 255) in (sqlite3.SQLITE_FULL, sqlite3.SQLITE_IOERR))
     no_space = isinstance(error, OSError) and error.errno == errno.ENOSPC
-    if not (full or no_space):
+    if not (storage or no_space):
         return None
     return {'schema': 'native-runtime-failure/1', 'kind': 'storage_unavailable',
             'error_type': type(error).__name__, 'message': str(error),

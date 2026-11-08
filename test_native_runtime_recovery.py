@@ -19,6 +19,25 @@ def tool(ident,name,**args):
 
 
 class NativeRuntimeRecovery(unittest.TestCase):
+    def test_sqlite_io_failures_preserve_prefix_and_stop_before_sibling_or_frontier(self):
+        prefix=[{'name':'query_sql','input':{'sql':'SELECT retained'},'result':{
+            'columns':['patient_id','observed','unknown'],'rows':[{'patient_id':'A','observed':0,'unknown':None}]}}]
+        for code in (sqlite3.SQLITE_IOERR,sqlite3.SQLITE_IOERR_WRITE):
+            error=sqlite3.OperationalError('disk I/O error');error.sqlite_errorcode=code
+            error.sqlite_errorname='SQLITE_IOERR'if code==sqlite3.SQLITE_IOERR else'SQLITE_IOERR_WRITE'
+            failed=tool('a','review_documents',patient_ids=['A']);sibling=tool('b','read_document',record_id='R')
+            send=Mock(return_value=response([failed,sibling]));execute=Mock(side_effect=error)
+            out=S.tool_loop('q','',TOOLS,execute,send=send,model='entry',escalation_model='frontier',
+                            initial_calls=copy.deepcopy(prefix),initial_readings=False,max_tools=None)
+            self.assertEqual(out['tool_calls'][:1],prefix)
+            self.assertEqual(out['runtime_dependency']['sqlite_errorcode'],code)
+            self.assertEqual(out['runtime_pause']['unexecuted_actions'],[sibling])
+            self.assertEqual(out['review_stopped'],'native_runtime_unavailable')
+            self.assertFalse(out.get('model_escalations'));self.assertEqual(out['model'],'entry')
+            self.assertEqual(send.call_count,1);self.assertEqual(execute.call_count,1)
+            self.assertFalse(out['answer']['data_absence_established'])
+            self.assertEqual(out['answer']['verification'],'unverified')
+
     def test_storage_error_stops_siblings_and_provider_continuation(self):
         actions=[tool('a','query_sql',sql='SELECT all_received_rows'),
                  tool('b','review_documents',patient_ids=['A','B']),tool('c','query_sql',sql='SELECT more_work')]
@@ -58,7 +77,7 @@ class NativeRuntimeRecovery(unittest.TestCase):
         self.assertEqual(old['status'],'partial');self.assertNotIn('investigation_review',old)
 
     def test_bad_sql_and_source_text_are_not_storage_exceptions(self):
-        for error in [ValueError('database or disk is full'),sqlite3.OperationalError('no such column: missing'),
+        for error in [ValueError('database or disk is full'),ValueError('disk I/O error'),sqlite3.OperationalError('no such column: missing'),
                       OSError(errno.ENOENT,'missing optional path')]:
             with self.subTest(error=error):self.assertIsNone(S.native_runtime_failure(error))
         replies=[response([tool('a','query_sql',sql='SELECT missing')]),
