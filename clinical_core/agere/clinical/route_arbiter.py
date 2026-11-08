@@ -19,7 +19,7 @@ import re
 from collections import Counter
 from pathlib import Path
 
-VERSION = 'route-arbiter/2'
+VERSION = 'route-arbiter/3'
 SWITCH_MARGIN = 0.1  # a later candidate must beat the previous order's winner by this much to take the question
 IDF_OP = 0.5          # weight of operation-level IDF (vs example-level) in the token weights
 CENTROID = 0.5        # weight of the operation-centroid cosine (vs the best single example)
@@ -224,9 +224,22 @@ def arbitrate(question, profile, as_of, native=True, held_out=None):
     """-> (graph, info) of the winning claim, or None when nothing claims the question (engine routes only: native decides on its own)."""
     cands = candidates(question, profile, as_of, native=native)
     if not cands: return None
+    # Rank candidates that preserve the request before applying advisory scores.
+    # Otherwise a high-scoring partial match can hide a complete native plan;
+    # the outer proposer rejects it and starts an unnecessary hosted fallback.
+    from .literal_check import graph_evidence_text
+    from .requirement_ledger import gaps
+    coverage = [{'operation': c['op'], 'source': c['source'],
+                 'missing': gaps(question, graph_evidence_text(c['plan'][0]))} for c in cands]
+    eligible = [c for c, check in zip(cands, coverage) if not check['missing']]
+    if eligible:
+        cands = eligible
+    # With no complete literal match, retain the prior choice and its ordinary
+    # downstream rejection. This screen never certifies execution or meaning.
+    screening = {'candidate_literal_coverage': coverage, 'complete_literal_candidates': len(eligible)}
     if len(cands) == 1 and cands[0]['source'] != 'native': return cands[0]['plan'][0], {**cands[0]['plan'][1], 'arbitration': {
         'arbiter': VERSION, 'candidates': [{'operation': cands[0]['op'], 'source': cands[0]['source']}], 'winner': {
-            'operation': cands[0]['op'], 'source': cands[0]['source']}, 'tie_break': 'sole claim'}}
+            'operation': cands[0]['op'], 'source': cands[0]['source']}, 'tie_break': 'sole literal-complete claim' if eligible else 'sole claim', **screening}}
     winner, receipt = decide(question, cands, held_out)
     graph, info = winner['plan']
-    return graph, {**info, 'arbitration': receipt}
+    return graph, {**info, 'arbitration': {**receipt, **screening}}

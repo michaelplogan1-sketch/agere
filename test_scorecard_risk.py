@@ -169,6 +169,32 @@ class EvidenceOnly(unittest.TestCase):
         graph['nodes'][0]['parameters']['outcome'] = 'ed_visit'
         self.assertEqual(cascade.free_first(order), order)
 
+    def test_incomplete_high_scoring_route_cannot_hide_complete_evidence_candidate(self):
+        from clinical_core.agere.clinical import route_arbiter as R
+        question = ('Report inpatient positive-label support over the next 90 days using inputs '
+                    'available at 2029-01-01. Do not fit a model.')
+        graph = {'nodes': [{'operation': S.OP, 'parameters': {
+            'mode': 'evidence', 'outcome': 'admission', 'origin_date': '2029-01-01', 'horizon_days': 90}}]}
+        wrong = {'nodes': [{'operation': 'calibration', 'parameters': {'prediction': 'all'}}]}
+        choices = [{'op': 'calibration', 'source': 'native', 'plan': (wrong, {})},
+                   {'op': S.OP, 'source': 'engine:' + S.OP, 'plan': (graph, {})}]
+        with patch.object(R, 'candidates', return_value=choices), patch.object(R, 'decide') as decide:
+            selected, info = R.arbitrate(question, {}, AS_OF)
+        self.assertEqual(selected, graph)
+        self.assertEqual(info['arbitration']['complete_literal_candidates'], 1)
+        self.assertTrue(info['arbitration']['candidate_literal_coverage'][0]['missing'])
+        decide.assert_not_called()
+
+    def test_no_complete_candidate_retains_downstream_rejection(self):
+        from clinical_core.agere.clinical import route_arbiter as R, literal_check as L, requirement_ledger
+        question = 'Report inpatient positive-label support at 2029-01-01. Do not fit a model.'
+        wrong = {'nodes': [{'operation': 'calibration', 'parameters': {'prediction': 'all'}}]}
+        choice = {'op': 'calibration', 'source': 'native', 'plan': (wrong, {})}
+        with patch.object(R, 'candidates', return_value=[choice]), patch.object(R, 'decide', return_value=(choice, {})):
+            selected, info = R.arbitrate(question, {}, AS_OF)
+        self.assertEqual(info['arbitration']['complete_literal_candidates'], 0)
+        self.assertTrue(requirement_ledger.gaps(question, L.graph_evidence_text(selected)))
+
     question = ('What existing evidence supports predicting inpatient admission over the next 90 days using only inputs available at 2029-01-01? '
                 'Do not fit or claim a model on this request.')
 
