@@ -74,6 +74,44 @@ class QueueingScope(unittest.TestCase):
                 self.assertEqual(r['answer']['inputs']['arrivals_used'], 1)
                 self.assertEqual(r['answer']['inputs']['mean_service_minutes'], minutes)
 
+    def test_missing_service_keeps_exact_arrival_scope_without_staffing_or_proxy(self):
+        r = self.run_engine(['A'], source='appointment', arrival_scale=1.1,
+                            window={'start':'2026-01-01','end':'2026-01-31'})
+        self.assertEqual(r['inference_status'], 'insufficient_data')
+        row = q.table(r)[0]
+        self.assertEqual(row['source'], 'appointment')
+        self.assertEqual(row['arrivals_used'], 1)
+        self.assertEqual(row['weekly_arrivals_base'], .25)
+        self.assertEqual(row['weekly_arrivals_scaled'], .275)
+        self.assertEqual(row['first_arrival_date'], '2026-01-05')
+        self.assertEqual(row['rate_window_start_date'], '2026-01-01')
+        self.assertEqual(row['window_end'], '2026-01-31')
+        self.assertIsNone(row['mean_service_minutes'])
+        self.assertIsNone(row['required_servers'])
+        self.assertIsNone(row['capacity_gap_servers'])
+        self.assertFalse(row['staffing_established'])
+        self.assertNotIn('staffing', r['answer'])
+
+    def test_date_only_missing_service_keeps_precision_unknown_and_empty_scope_empty(self):
+        self.db.execute("UPDATE appointment SET scheduled_date='2026-01-05' WHERE patient_id='A' AND kept=1")
+        r = self.run_engine(['A'], source='appointment')
+        row = q.table(r)[0]
+        self.assertEqual(row['timed_arrivals'], 0)
+        self.assertEqual(row['date_only_arrivals'], 2)
+        self.assertFalse(row['all_arrivals_timed'])
+        self.assertTrue(any('hour-of-day pattern is unknown' in x for x in r['warnings']))
+        self.assertEqual(q.table(self.run_engine([], source='appointment')), [])
+
+    def test_manual_rate_without_service_does_not_invent_observed_patient_arrivals(self):
+        r = self.run_engine(None, hourly_rates=[2]*24, arrival_scale=1.1)
+        row = q.table(r)[0]
+        self.assertEqual(r['input_scope']['basis'], 'user_supplied_scenario')
+        self.assertIsNone(row['arrivals_used'])
+        self.assertIsNone(row['all_arrivals_timed'])
+        self.assertEqual(row['weekly_arrivals_base'], 336)
+        self.assertEqual(row['weekly_arrivals_scaled'], 369.6)
+        self.assertIsNone(row['required_servers'])
+
     def test_service_completion_after_snapshot_cannot_leak_into_estimate(self):
         self.db.execute("UPDATE visit SET end_date='2026-02-01', end_time='09:00' WHERE patient_id='A' AND event_date='2026-01-05'")
         r = self.run_engine(['A'])
@@ -173,6 +211,23 @@ class QueueingSharedExecution(unittest.TestCase):
         self.assertEqual(self.run_shared(['p0'])['answer'], result['answer'])
         other = self.run_shared(['p1'])['results'][-1]['result']
         self.assertEqual(other['answer']['inputs']['mean_service_minutes'], 120)
+        self.assertEqual(result['new_paid_api_calls'], 0)
+
+    def test_missing_service_observations_reach_shared_table_without_staffing_acceptance(self):
+        from clinical_core.agere.clinical import semantic_layer
+        with sqlite3.connect(semantic_layer.ensure(self.stack.path)) as db:
+            db.execute("UPDATE visit SET end_time=NULL WHERE patient_id='p0'")
+        result = self.run_shared(['p0'], arrival_scale=1.1)
+        self.assertEqual(result['answer']['status'], 'partial')
+        self.assertEqual(result['answer']['answer_type'], 'table')
+        self.assertIsNone(result['answer']['count'])
+        row = result['answer']['table'][0]
+        self.assertEqual(row['arrivals_used'], 1)
+        self.assertEqual(row['arrival_scale_applied'], 1.1)
+        self.assertIsNone(row['mean_service_minutes'])
+        self.assertIsNone(row['required_servers'])
+        self.assertFalse(row['staffing_established'])
+        self.assertTrue(any('no service times observed' in text for text in result['answer']['missing']))
         self.assertEqual(result['new_paid_api_calls'], 0)
 
     def test_shared_empty_cohort_is_unsupported_not_expanded(self):

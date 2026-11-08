@@ -451,7 +451,8 @@ def build_answer_core(plan, results, memberships, question):
     if last['operation'] == 'queueing':
         from .queueing import summary, table
         report = results[-1]['result']
-        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or report.get('unmet_requirements')
+        unavailable = report.get('inference_status') == 'insufficient_data'
+        partial = unavailable or plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or report.get('unmet_requirements')
         rows = table(report)
         ok = bool(rows)
         answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
@@ -463,7 +464,7 @@ def build_answer_core(plan, results, memberships, question):
                                'input_scope': report.get('input_scope'), 'input_membership': report.get('input_membership'),
                                'inference_status': report['inference_status'], 'assumptions': report['assumptions']})
         answer['missing'].extend(report.get('unmet_requirements', []))
-        if not ok: answer['missing'].append(summary(report))
+        if not ok or unavailable: answer['missing'].append(summary(report))
         return answer
     if last['operation'] == 'survival':
         from .survival import summary
