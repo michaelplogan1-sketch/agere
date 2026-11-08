@@ -29,7 +29,7 @@ import re
 import threading
 from pathlib import Path
 
-VERSION = 'decision-context/8'  # 8: financial record heads retain their subjects
+VERSION = 'decision-context/9'  # 9: historical exposure retains its received subjects
 # 3 (2026-10-25, Mike): event counts include everyone (the living rule is for counts / lists of patients); observation stays are hospital
 # stays and admissions; pharmacy spend = net of reversals over all pharmacy claim transactions; medical spend = paid on counted claims
 DECIDED_BY = 'Mike (clinical owner), 2026-10-23 / 2026-10-25'
@@ -39,6 +39,9 @@ DECEASED_ASK = re.compile(
     r"\b(?:deceased|died|dead|death|deaths|dying|die|dies|mortality|passed away|fatal(?:ity|ities)?|survival|survivors?|vital status|"
     r"all patients ever|ever[- ]enrolled|everyone ever|including (?:the )?(?:deceased|dead|death))\b", re.I)
 LIVING_ASK = re.compile(r'\b(?:living|alive)\b', re.I)
+HISTORICAL_EXPOSURE = re.compile(
+    r'\bhistorical\s+(?:(?:eligible|enrolled|recorded)\s+)?'
+    r'(?:exposure|eligibility|enrollment|member[- ]months?)\b', re.I)
 ALL_RECEIVED_ROWS = re.compile(
     r'\b(?:all|every)\s+(?:the\s+)?received\s+(?:[a-z_]+[ -]+){0,5}'
     r'(?:rows?|records?|events?|claims?|stays?|appointments?|encounters?|observations?)\b', re.I)
@@ -240,6 +243,9 @@ def population(question):
     if event_selected_cohort(q) and not LIVING_ASK.search(q):
         return {'living_only': False, 'event_selected_cohort': True,
                 'reason': 'dated event-selected cohort retains every subject; present survival does not remove historical records'}
+    if HISTORICAL_EXPOSURE.search(q) and not LIVING_ASK.search(q):
+        return {'living_only': False, 'historical_exposure': True,
+                'reason': 'historical exposure retains its subjects regardless of present survival; eligibility remains month-specific'}
     if counts_events(q) and not LIVING_ASK.search(q):
         return {'living_only': False, 'reason': 'a count of events, not of patients: the events of every patient count (Mike 2026-10-25)'}
     if asks_deceased(q):

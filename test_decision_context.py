@@ -79,6 +79,13 @@ class Fixture(unittest.TestCase):
 
 
 class Definitions(Fixture):
+    def test_historical_exposure_retains_subjects_but_explicit_living_wins(self):
+        for wording in ('historical eligible exposure', 'historical eligibility', 'historical member-months'):
+            question = 'Compare monthly visit rates in 2028 and 2029 using ' + wording
+            self.assertFalse(DC.population(question)['living_only'])
+            self.assertTrue(DC.population(question + ' for living patients')['living_only'])
+        self.assertTrue(DC.population('How many patients have active coverage?')['living_only'])
+
     def test_receipt_year_requires_record_subjects_and_one_explicit_year(self):
         for question,year in [
             ('Identify received 2029 clinical accounts whose interpretation changes.','2029'),

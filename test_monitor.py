@@ -1,5 +1,7 @@
 """Statistical process control, feed anomalies and claims review flags (monitor operation)."""
 import json, math, os, random, sqlite3, unittest
+from copy import deepcopy
+from unittest.mock import patch
 from pathlib import Path
 
 from clinical_core.agere.clinical import monitor, semantic_layer, local_compiler, source_profile, briefing
@@ -376,6 +378,85 @@ class RealRelease(unittest.TestCase):
         self.assertTrue(any(f['series'] == 'ed_rate' and f['category'] == 'volume_spike' and f['months'][0] == '2026-09'
                             for f in heads))                                                              # D4
         self.assertFalse(any(f['kind'] == 'rate' and f['series'] == 'ed_rate' and f['group'] == 'all' and f['salient'] for f in r['rows']))
+
+
+class HistoricalExposure(unittest.TestCase):
+    """Authored sources: later death, claims-only events, absent exposure and current fallback."""
+    def source(self):
+        db = sqlite3.connect(':memory:')
+        db.executescript('CREATE TABLE member_month(patient_id TEXT,month TEXT);'
+                         'CREATE TABLE utilization_event(patient_id TEXT,kind TEXT,event_date TEXT,organization_id TEXT);')
+        months = [f'2029-{i:02d}' for i in range(1, 13)]
+        people = {pid: {'months': months[:], 'coverage_type': 'commercial'} for pid in ('alive', 'later_dead', 'current_only')}
+        for month in months:
+            for pid in ('alive', 'later_dead'):
+                if month != '2029-03': db.execute('INSERT INTO member_month VALUES(?,?)', (pid, month))
+            # Duplicate exposure rows do not create additional member-months.
+            if month != '2029-03': db.execute('INSERT INTO member_month VALUES(?,?)', ('alive', month))
+            for pid in people:
+                db.execute('INSERT INTO utilization_event VALUES(?,?,?,?)', (pid, 'ed_visit', month+'-12', 'claims_or_adt'))
+        return db, months, people
+
+    def test_strict_months_do_not_inherit_active_current_coverage(self):
+        db, months, people = self.source(); self.addCleanup(db.close)
+        with patch.object(monitor.vbc, 'eligibility', side_effect=lambda *a: deepcopy(people)), \
+                patch.object(monitor.vbc, 'attribution', return_value={}):
+            registered = monitor.Population(db, months, None)
+            historical = monitor.Population(db, months, None, 'historical_member_months')
+        self.assertEqual(len(registered.months['current_only']), 12)
+        self.assertNotIn('current_only', historical.months)
+        self.assertEqual(historical.months['later_dead'], set(months)-{'2029-03'})
+        self.assertEqual(historical.exposure('none')['all']['2029-01'], 2)
+        self.assertNotIn('2029-03', historical.exposure('none')['all'])
+        inputs = monitor._rate_chart_inputs(db, 'ed_rate', 'none', months, historical, None)['all']
+        self.assertEqual(sum(inputs[0]), 22)
+        self.assertEqual(sum(inputs[1]), 22)
+        # The fixture has no encounter table: claims/ADT canonical events must work.
+        self.assertEqual(inputs[0][2], 0)
+
+    def test_monthly_output_retains_calendar_counts_source_unknowns_and_method_windows(self):
+        db, months, people = self.source()
+        params = {'check': 'control_chart', 'series': ['ed_rate'], 'group_by': 'none',
+                  'period': {'start': '2029-01-01', 'end': '2029-12-31'},
+                  'exposure_basis': 'historical_member_months', 'output': 'monthly_points'}
+        with patch.object(monitor, '_connect', return_value=db), \
+                patch.object(monitor.vbc, 'eligibility', return_value=deepcopy(people)), \
+                patch.object(monitor.vbc, 'attribution', return_value={}), \
+                patch.object(monitor, 'event_type_gaps', return_value={}), \
+                patch('clinical_core.agere.clinical.changepoint_qualification.note', return_value=None):
+            report = monitor.execute('.', None, params, as_of='2030-01-01')
+        text, rows = monitor.summarize(report)
+        self.assertEqual([r['month'] for r in rows], months)
+        observed = rows[0]; missing = rows[2]
+        self.assertEqual((observed['numerator'], observed['exposure'], observed['rate']), (2, 2, 1000))
+        self.assertEqual((observed['recorded_events'], observed['events_without_recorded_exposure']), (3, 1))
+        self.assertIsNone(missing['rate'])
+        self.assertEqual(missing['month_status'], 'no_recorded_exposure_rate_unknown')
+        self.assertEqual(missing['events_without_recorded_exposure'], 3)
+        self.assertEqual((observed['baseline_start'], observed['report_start']), ('2027-01', '2029-01'))
+        self.assertIn('not FWER/FDR', observed['multiplicity_handling'])
+        self.assertEqual(json.loads(observed['parameters_json'])['exposure_basis'], 'historical_member_months')
+        self.assertIn('unknown', text)
+
+    def test_no_exposure_still_has_complete_unknown_month_rows(self):
+        db, months, people = self.source(); self.addCleanup(db.close)
+        with patch.object(monitor.vbc, 'eligibility', return_value=deepcopy(people)), \
+                patch.object(monitor.vbc, 'attribution', return_value={}):
+            pop = monitor.Population(db, months, {'current_only'}, 'historical_member_months')
+        inputs = monitor._rate_chart_inputs(db, 'ed_rate', 'none', months, pop, {'current_only'})
+        self.assertEqual(list(inputs), ['all'])
+        rows = monitor._monthly_rows('ed_rate', 'none', 'all', inputs['all'], months, set(range(12)), None,
+                                     monitor.validate({'exposure_basis': 'historical_member_months'}))
+        self.assertEqual(len(rows), 12)
+        self.assertTrue(all(r['rate'] is None and r['exposure'] == 0 for r in rows))
+        self.assertTrue(all(r['chart_status'] == 'insufficient_chart_data' for r in rows))
+
+    def test_typed_options_and_legacy_default_are_explicit(self):
+        self.assertEqual(monitor.validate({})['exposure_basis'], 'registered_coverage')
+        self.assertEqual(monitor.validate({})['output'], 'summary')
+        for params in ({'exposure_basis': 'invented'}, {'output': 'monthly_points'},
+                       {'check': 'ra_cusum', 'exposure_basis': 'historical_member_months'}):
+            with self.assertRaises(ValueError): monitor.validate(params)
 
 
 if __name__ == '__main__':

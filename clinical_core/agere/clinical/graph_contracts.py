@@ -485,6 +485,8 @@ def parameter_schema(op, catalog):
                     'series': array(string(monitor.SERIES), '[] = the defaults for the check'),
                     'group_by': string(monitor.GROUP_BY, 'auto = overall plus each series\' natural grouping'),
                     'method': string(monitor.METHODS), 'amount': string(monitor.AMOUNTS),
+                    'exposure_basis': string(monitor.EXPOSURE_BASES, 'registered_coverage = existing enrollment plus coverage fallback; historical_member_months = recorded patient/month exposure only, no current-coverage fallback'),
+                    'output': string(monitor.OUTPUTS, 'summary or complete monthly_points for check=control_chart; raw counts/exposure, unknown months, baseline/report windows and method metadata'),
                     'stream': {'type': 'string', 'description': 'One source stream for feed checks, or empty'},
                     'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}}),
                     'chart': string(monitor.CHART_OPTIONS, 'control = SPC charts (default); ra_cusum = risk-adjusted CUSUM; vlad = variable life-adjusted display of observed minus expected outcomes'),

@@ -26,21 +26,23 @@ affected, so findings can be ranked by information x impact.
 """
 from collections import defaultdict
 from datetime import date
-import math, re, sqlite3
+import json, math, re, sqlite3
 
 import numpy as np
 from scipy.stats import chi2, norm
 
 from . import semantic_layer, vbc
 
-VERSION = 'monitor/1'
+VERSION = 'monitor/2'
 CHECKS = ('all', 'control_chart', 'feed', 'claims', 'claims_integrity', 'benford', 'peer_outliers', 'duplicates', 'ra_cusum', 'vlad')
 SERIES = ('ed_rate', 'admit_rate', 'pmpm', 'lab_volume', 'denial_rate', 'arrival_lag')
 CLAIM_SERIES = ('pmpm', 'denial_rate', 'arrival_lag')
 GROUP_BY = ('auto', 'none', 'practice', 'payer', 'facility', 'source_system')
 METHODS = ('both', 'shewhart', 'ewma')
 AMOUNTS = ('billed', 'allowed', 'both')
-FIELDS = {'check', 'series', 'group_by', 'method', 'amount', 'stream', 'period'} | {'chart', 'outcome', 'unit', 'or_shift', 'or_improve', 'arl0',
+EXPOSURE_BASES = ('registered_coverage', 'historical_member_months')
+OUTPUTS = ('summary', 'monthly_points')
+FIELDS = {'check', 'series', 'group_by', 'method', 'amount', 'stream', 'period', 'exposure_basis', 'output'} | {'chart', 'outcome', 'unit', 'or_shift', 'or_improve', 'arl0',
                                                                                     'window_days', 'adjust', 'min_cases', 'include_observation'}
 NATURAL_GROUP = {'ed_rate': 'practice', 'admit_rate': 'practice', 'pmpm': 'practice', 'lab_volume': 'source_system',
                  'denial_rate': 'payer', 'arrival_lag': 'payer'}
@@ -93,9 +95,17 @@ def validate(p):
         raise ValueError('monitor period needs YYYY-MM-DD start/end')
     out = {'check': check, 'series': series, 'group_by': group_by, 'method': method, 'amount': amount, 'stream': stream,
            'period': {k: v for k, v in period.items() if v}}
+    for name, choices in (('exposure_basis', EXPOSURE_BASES), ('output', OUTPUTS)):
+        value = p.get(name, choices[0])
+        if value not in choices: raise ValueError(f'monitor {name} must be one of {choices}')
+        out[name] = value
+    if out['output'] == 'monthly_points' and (check != 'control_chart' or p.get('chart', 'control') != 'control'):
+        raise ValueError('monitor monthly_points output requires check=control_chart and chart=control')
     chart = p.get('chart') or (check if check in ('ra_cusum', 'vlad') else None)
     if chart is not None:
         if chart not in CHART_OPTIONS: raise ValueError(f'monitor chart must be one of {CHART_OPTIONS}')
+        if chart != 'control' and out['exposure_basis'] != 'registered_coverage':
+            raise ValueError('monitor historical_member_months exposure applies to monthly control charts, not risk-adjusted case charts')
         if chart != 'control': out.update(_validate_ra(p, chart, group_by))
         else: out['chart'] = 'control'
     return out
@@ -371,10 +381,18 @@ def windows(p, as_of):
 
 class Population:
     """Members, enrolled months, attribution and group keys shared by all member-based series."""
-    def __init__(self, db, months, keep):
+    def __init__(self, db, months, keep, exposure_basis='registered_coverage'):
         start, end = f'{months[0]}-01', _month_end(months[-1])
         self.people = vbc.eligibility(db, end, start, end)
         if keep is not None: self.people = {k: v for k, v in self.people.items() if k in keep}
+        if exposure_basis == 'historical_member_months':
+            recorded = defaultdict(set)
+            for pid, month in db.execute('SELECT DISTINCT patient_id, substr(month,1,7) FROM member_month '
+                                        'WHERE substr(month,1,7) BETWEEN ? AND ?', (months[0], months[-1])):
+                recorded[pid].add(month)
+            for pid, info in self.people.items():
+                info['months'] = sorted(recorded.get(pid, ()))
+                info['enrollment_basis'] = 'recorded_member_month'
         self.attr = vbc.attribution(db, self.people, start, end)
         self.months = {pid: set(i['months']) for pid, i in self.people.items() if i['months']}
 
@@ -402,10 +420,9 @@ def _series_events(db, series, months, pop, keep):
     """(pid, month, organization, value) rows for one series. value = 1 for count series."""
     lo, hi = f'{months[0]}-01', _month_end(months[-1])
     if series == 'ed_rate':
-        rows = db.execute("SELECT patient_id, event_date, max(CASE WHEN source_table = 'encounters' THEN organization_id END), "
-                          "max(organization_id) FROM encounter WHERE type_concept = 'emergency_visit' AND event_date BETWEEN ? AND ? "
-                          "GROUP BY 1, 2", (lo, hi))
-        return [(pid, d[:7], o1 or o2, 1.0) for pid, d, o1, o2 in rows if d[:7] in pop.months.get(pid, ())]
+        rows = db.execute("SELECT patient_id, event_date, organization_id FROM utilization_event "
+                          "WHERE kind = 'ed_visit' AND event_date BETWEEN ? AND ?", (lo, hi))
+        return [(pid, d[:7], org, 1.0) for pid, d, org in rows if d[:7] in pop.months.get(pid, ())]
     if series == 'admit_rate':
         return [(pid, d[:7], org, 1.0) for pid, d, org in
                 db.execute('SELECT patient_id, admit_date, organization_id FROM stay WHERE admit_date BETWEEN ? AND ?', (lo, hi))
@@ -427,11 +444,40 @@ def _rate_chart_inputs(db, series, group_by, months, pop, keep):
         g = pop.key(group_by, pid) if group_by in ('none', 'practice', 'payer') else (org or 'unknown')
         counts[g][m] += v
     groups = sorted(set(counts) | (set(exposure) if group_by in ('none', 'practice', 'payer') else set()))
+    if group_by == 'none' and 'all' not in groups: groups.append('all')
     out = {}
     for g in groups:
         ex = exposure[g if group_by in ('none', 'practice', 'payer') else 'all']
         out[g] = ([counts[g].get(m, 0.0) for m in months], [ex.get(m, 0.0) for m in months])
     return out
+
+
+def _monthly_rows(series, group_by, group, spec, months, report_idx, status, params):
+    """Complete, unrounded report-window inputs, even when a chart cannot be fitted."""
+    points = {x['month']: x for x in (status or {}).get('chart', [])}
+    rows = []
+    for i, month in enumerate(months):
+        if i not in report_idx: continue
+        value, n = spec[0][i], spec[1][i]
+        point = points.get(month, {})
+        count_series = series not in ('pmpm', 'arrival_lag')
+        rate = (value / n if count_series else value) * SCALE[series] if n and n > 0 and value is not None else None
+        rows.append({'series': series, 'group_by': group_by, 'group': group, 'month': month,
+                     'input_value': value, 'numerator': value if count_series else None, 'exposure': n,
+                     'rate': rate, 'unit': LABELS[series],
+                     'exposure_basis': params['exposure_basis'],
+                     'numerator_basis': "utilization_event WHERE kind='ed_visit' matched to the same patient's eligible month"
+                        if series == 'ed_rate' else 'registered ' + series + ' input',
+                     'month_status': 'observed_exposure' if n and n > 0 else 'no_recorded_exposure_rate_unknown',
+                     'chart_status': (status or {}).get('status', 'insufficient_chart_data'),
+                     'center': (status or {}).get('center_exact'), 'laney_phi': (status or {}).get('laney_phi'),
+                     'lcl': point.get('lcl_exact'), 'ucl': point.get('ucl_exact'), 'z': point.get('z_exact'),
+                     'baseline_start': months[0], 'baseline_end': months[-1],
+                     'report_start': months[min(report_idx)], 'report_end': months[max(report_idx)],
+                     'rate_rules_json': json.dumps((status or {}).get('rate_rules', [])),
+                     'data_rules_json': json.dumps((status or {}).get('data_rules', [])),
+                     'parameters_json': json.dumps(params, sort_keys=True)})
+    return rows
 
 
 def _claims_rows(db, months, keep, as_of):
@@ -640,6 +686,8 @@ def event_type_gaps(db, months, series, keep=None):
     chart = control_chart(num, den, kind='p')
     runs = [g for g in chart['gaps'] if g['end'] - g['start'] >= 2]
     return {'concept': concept, 'months': months, 'events': num, 'stream_records': den, 'share_center': chart['center'],
+            'source_basis': 'EHR visit type share; does not establish all-source utilization completeness',
+            'applies_to_rate_baseline': series != 'ed_rate',
             'gaps': runs, 'chart': chart}
 
 
@@ -1247,7 +1295,7 @@ def _chart_findings(s, gb, g, spec, months, report_idx, method, inherited, sourc
         e['months'] = _fmt_month_range(months, e['start'], e['end'])
         if e['rule'] == 'zero_run' or span & (gap_months - leading) or span & source_flags:
             e['cause'] = 'gap'
-            e['reason'] = 'the series is empty or missing while its source stream keeps flowing (feed or coding gap)'
+            e['reason'] = 'an improbable empty run under the pooled-rate model; a possible feed or coding gap, not established completeness or care change'
         elif span & leading:
             e['cause'] = 'gap'
             e['reason'] = 'the source had not started sending in the first months of the window (onboarding, not care)'
@@ -1267,7 +1315,8 @@ def _chart_findings(s, gb, g, spec, months, report_idx, method, inherited, sourc
         data.append(e)
     last = next((x for x in reversed(chart['points']) if x['value'] is not None), None)
     status = {'series': s, 'group_by': gb, 'group': g, 'status': 'rate_signal' if rate else 'data_feed_anomaly' if data else 'in_control',
-              'center': _r(chart['center'] * SCALE[s]), 'latest_month': months[last['index']] if last else None,
+              'center': _r(chart['center'] * SCALE[s]), 'center_exact': chart['center'] * SCALE[s],
+              'latest_month': months[last['index']] if last else None,
               'latest_value': _r(last['value'] * SCALE[s]) if last else None, 'laney_phi': chart['phi'],
               'rate_rules': sorted({e['rule'] for e in rate}), 'data_rules': sorted({e['rule'] for e in data}),
               'rate_signal_months': [e['months'] for e in sorted(rate, key=lambda e: e['start'])][:8],
@@ -1275,7 +1324,10 @@ def _chart_findings(s, gb, g, spec, months, report_idx, method, inherited, sourc
               'surprise_bits': max([e['bits'] for e in rate + data], default=0.0),
               'chart': [{'month': months[x['index']], 'value': _r(x['value'] * SCALE[s]) if x['value'] is not None else None,
                          'n': _r(x['n']), 'lcl': _r(x['lcl'] * SCALE[s]) if x['value'] is not None else None,
-                         'ucl': _r(x['ucl'] * SCALE[s]) if x['value'] is not None else None, 'z': _r(x['z'])} for x in chart['points']]}
+                         'ucl': _r(x['ucl'] * SCALE[s]) if x['value'] is not None else None, 'z': _r(x['z']),
+                         'lcl_exact': x.get('lcl') * SCALE[s] if x.get('lcl') is not None else None,
+                         'ucl_exact': x.get('ucl') * SCALE[s] if x.get('ucl') is not None else None,
+                         'z_exact': x['z']} for x in chart['points']]}
     found = []
     where = 'overall' if g == 'all' else f'{gb} {g}'
     causes = defaultdict(list)
@@ -1314,10 +1366,18 @@ def execute(path, patient_ids, params, as_of=None):
         keep = set(patient_ids) if patient_ids is not None else None
         report_idx = {i for i, m in enumerate(months) if m in report}
         charts_on, series, claims_checks, feeds_on = _plan(p)
-        pop = Population(db, months, keep)
+        pop = Population(db, months, keep, p['exposure_basis'])
         claims = _claims_rows(db, months, keep, as_of) if claims_checks or any(s in CLAIM_SERIES for s in series) else []
         annual = None  # average annual allowed spend per member, to express dollars as member-equivalents
-        findings, chart_status, tests = [], [], 0
+        findings, chart_status, monthly_points, tests = [], [], [], 0
+        event_exposure_audit = {}
+        if 'ed_rate' in series:
+            for pid, d in db.execute("SELECT patient_id, event_date FROM utilization_event WHERE kind='ed_visit' "
+                                     "AND event_date BETWEEN ? AND ?", (months[0]+'-01', _month_end(months[-1]))):
+                if keep is not None and pid not in keep: continue
+                audit = event_exposure_audit.setdefault(d[:7], {'recorded_events': 0, 'events_without_recorded_exposure': 0})
+                audit['recorded_events'] += 1
+                if d[:7] not in pop.months.get(pid, ()): audit['events_without_recorded_exposure'] += 1
         feed_stream = p['stream'] or ('medical_claims' if p['check'] == 'claims' else None)
         feed_reports, evaluated = feed_checks(db, months, feed_stream, keep) if feeds_on else ([], set())
         tests += len(evaluated) * len(months)
@@ -1333,7 +1393,9 @@ def execute(path, patient_ids, params, as_of=None):
                     type_gaps[s] = event_type_gaps(db, months, s, keep)
             series_data = {}   # series -> month indices that the overall chart attributes to data, not care
             for s in series:
-                gap_idx = {i for g in (type_gaps.get(s) or {}).get('gaps', []) for i in range(g['start'], g['end'] + 1)}
+                gap_report = type_gaps.get(s) or {}
+                gap_idx = {i for g in gap_report.get('gaps', []) for i in range(g['start'], g['end'] + 1)} \
+                    if gap_report.get('applies_to_rate_baseline', True) else set()
                 wanted = _groupings(p, s)
                 plan = ['none'] + [g for g in wanted if g != 'none']
                 for gb in plan:
@@ -1352,6 +1414,8 @@ def execute(path, patient_ids, params, as_of=None):
                                               gap_idx | series_data.get(s, set()),
                                               feed_months.get((FEED_STREAM[s], g), set()) if gb in ('facility', 'source_system') else set(),
                                               feed_months.get((FEED_STREAM[s], 'all'), set()))
+                        if p['output'] == 'monthly_points' and not silent:
+                            monthly_points += _monthly_rows(s, gb, g, spec, months, report_idx, res[0] if res else None, p)
                         if res is None: continue
                         status, found, data_idx, n_tests = res
                         if gb == 'none': series_data[s] = data_idx
@@ -1512,7 +1576,14 @@ def execute(path, patient_ids, params, as_of=None):
         chart_status.sort(key=lambda c: ({'rate_signal': 0, 'data_feed_anomaly': 1, 'in_control': 2}[c['status']], -c['surprise_bits']))
     finally:
         db.close()
+    for row in monthly_points:
+        row.update({'tests_examined': tests, 'look_elsewhere_bits': round(math.log2(max(tests, 1)), 2),
+                    'multiplicity_handling': 'look-elsewhere ranking penalty; not FWER/FDR control',
+                    'source_anomaly_status': 'heuristic flags require source investigation; completeness is not established'})
+        if row['series'] == 'ed_rate' and row['group_by'] == 'none':
+            row.update(event_exposure_audit.get(row['month'], {'recorded_events': 0, 'events_without_recorded_exposure': 0}))
     out = {'schema': VERSION, 'check': p['check'], 'parameters': p, 'period': {'chart_months': [months[0], months[-1]], 'report_months': [report[0], report[-1]]},
+            'monthly_points': monthly_points, 'event_exposure_audit': event_exposure_audit,
             'rows': findings, 'chart_status': chart_status, 'feeds': feed_reports, 'event_type_gaps': {k: {kk: vv for kk, vv in v.items() if kk != 'chart'}
                                                                                                        for k, v in type_gaps.items() if v},
             'integrity': integrity, 'tests_examined': tests, 'look_elsewhere_bits': round(math.log2(max(tests, 1)), 2),
@@ -1601,6 +1672,9 @@ def summarize(report, limit=5):
                 + (f"; {len(ok)} in control" if ok else '') + '.')
         feed = next((f for f in lead if f['kind'] == 'data_feed'), None)
         if feed: text += ' Largest data issue: ' + feed['headline'] + '.'
+        if report['parameters'].get('output') == 'monthly_points':
+            table = report['monthly_points']
+            text += ' Complete report-window monthly inputs are shown, including months without exposure; those rates are unknown.'
         return text, table
     table = [{k: f.get(k) for k in ('kind', 'category', 'series', 'stream', 'group_by', 'group', 'months', 'rules', 'surprise_bits',
                                     'excess_bits', 'salient', 'patients', 'dollars', 'score', 'echo', 'headline', 'follow_up')} for f in rows]
