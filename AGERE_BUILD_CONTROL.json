@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T20:56:42.249342+00:00",
+  "updated_at": "2026-11-08T22:32:01.280588+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -598,7 +598,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Current full conversational-handler/ordinary-entry and whole25case/tenarea acceptance remain open; native original-question compilation/execution is now demonstrated.; No qualified90dayinpatient predictor attached; origin-state feature reconstruction, complete outcome capture, calibration and model-versus-baseline evidence are not established. No fitting was authorized by this request.; Other fixed cases retain exact program-definition/capacity inputs, source semantic uncertainty, requested report visual QA, independent clinical/model/scientific qualification and customer deployment prerequisites.",
       "engineering_current_status": "Current summary/source-change delivery active and sealed; respiratory full-roster program/work/financial/prediction-limit/discovery workflow passed in retained continuation. Behavioral second-program work running. Current source/adapter, evidence-change and economical-role candidates qualified within scoped engineering evidence; current25/tenarea disposition, remaining currentcaps and final consolidated package still pending.",
-      "next_action": "G3/WP4: Inspect owned Q14current ordinary-entry PID12096/session73887 FIRST: artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json. Product source/config frozen while it runs; no duplicate provider/native/build job. Original public question only, no owner plan/expectedvalues. Preserve full source-supported affordability versus recorded-balance distinction and unknown hardship, every partial/attempt; do not force coverage or restart wholequestion. Actual subscription usage limit stops provider work. Q15delivery is SEALED: artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json, product6f5f0f26/app12061/session64670; one rangefield corrected/all1646rows exact/59checks/native+browserHTTP/source supported/coverage undecided. All25/tenareas/principal/October11baseline retained. After terminal Q14reconcile source/quantity/scope/current-save evidence, apply already-proved scoped receipt metadata compatibility(no native reruns), final25case disposition, then one exactcurrent archive/install/recovery using existing coldAPFSclone. Prior5aca0a3a recovery and named definition/capacity/model/clinical/customer/Q24visual dependencies remain. No agents/chats/services/newcaps/gating; quiet continuationACTIVE.",
+      "next_action": "G3/WP4: NO provider/build/native job is running. Q14interrupted stage is TERMINAL exit137, all2605attempts reconciled/69169ledgerrows, original467rows intact. Native cached recovery now SUCCEEDS: artifacts/agere-final-ordinary-entry-2026-11-08/Q14/cached-recovery-validation-v1/receipt.json; all6recorded actions/lastactorcandidate restored0newproviders/0financialengine reruns,6071financial fields unchanged. Failed comparator receipt(v1 assumed old public-column name) preserved; no duplicate native replay needed. Actual current source-scope check artifacts/agere-final-ordinary-entry-2026-11-08/Q14/financial-population-check-v1/receipt.json proves an IMPLEMENTATION DEFECT: actor financial_accounts input selected SELECT patient_id FROM living_patient, original request did not restrict living. Full4115currentfinancial cache(same available_by2030-05-27/identity4ebc5293) includes46additional positive-balance patients outside living, while all467existingfinancialrows match. Do not publish467 as the complete requested population or call omission a clinical/input dependency. NEXT: correct generic financial population boundary(analysis_tools.execute/source_scope existing contracts; preserve explicit user/saved cohorts and requested living scopes), then restore ONLY missing financial/source context using existing current cached receipts; no rerun original question/financialengine/74535doc review or source-vote campaign. Keep old467financialvalues and actual documentary judgments, extra unreviewed hardship/preferences unknown. Check exact original-question full-source native scope/current save/browser consumer; source semantic qualification stays unverified. Grammar candidate54422de5/60checks/exact9f77d820draft proven, not active/sealed; mainapp12061/session64670 still6f5f0f26. LastsealedownerQ15delivery unchanged. Extend scoped code compatibility after scopefix, current-policy contexts/final25case-tenarea disposition/one exact package; prepared mapping-v1/oldQ15archive reference remain stale, no blind execution. Preserve every attempt/failed-key/unknowncost, all25/tenareas/principal/October11baseline and independent/model/clinical/input/Q24visual/customer dependencies. No agents/chats/services/caps/gating; quietcontinuationACTIVE.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -677,26 +677,24 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_Q15_source_meaning_repair_and_HTTP",
+    "kind": "Q14_cached_native_recovery_complete_financial_scope_defect",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Ordinary Q15 saves all1646provider-month rows; one false range corrected, complete current output consumed natively and in browser view.",
+    "user_behavior_delta": "Recorded interrupted work is recovered without new model calls; a full-source native financial check locates46omittedpatients. Original-question financial scope must be corrected before current acceptance.",
     "measured_failure_reduction": {
-      "located_prose_faults_removed": 1,
-      "native_rows_preserved": 1646,
-      "complete_model_packet_bytes_before": 1860765,
-      "complete_model_packet_bytes_after": 507212,
-      "current_HTTP_verified": true,
-      "relevant_checks_passed": 59
+      "all6interrupted_native_actions_recovered": true,
+      "financial_values_preserved": 6071,
+      "new_provider_calls_during_recovery": 0,
+      "actual_population_omission_located": 46,
+      "population_omission_removed": false
     },
     "evidence": [
-      "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/ordinary-v1/receipt.json",
-      "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/localized-repair-v3/receipt.json",
-      "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/http-consumer-proof.json",
-      "artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json"
+      "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/cached-recovery-validation-v1/receipt.json",
+      "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/financial-population-check-v1/receipt.json",
+      "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/retained-finalization-v1/receipt.json"
     ],
-    "remaining_gap": "Owned Q14ordinary entry running/sourcefrozen; current receipt compatibility/disposition/final package, independent/input/visual dependencies.",
-    "next_action": "G3/WP4: Inspect owned Q14current ordinary-entry PID12096/session73887 FIRST: artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json. Product source/config frozen while it runs; no duplicate provider/native/build job. Original public question only, no owner plan/expectedvalues. Preserve full source-supported affordability versus recorded-balance distinction and unknown hardship, every partial/attempt; do not force coverage or restart wholequestion. Actual subscription usage limit stops provider work. Q15delivery is SEALED: artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json, product6f5f0f26/app12061/session64670; one rangefield corrected/all1646rows exact/59checks/native+browserHTTP/source supported/coverage undecided. All25/tenareas/principal/October11baseline retained. After terminal Q14reconcile source/quantity/scope/current-save evidence, apply already-proved scoped receipt metadata compatibility(no native reruns), final25case disposition, then one exactcurrent archive/install/recovery using existing coldAPFSclone. Prior5aca0a3a recovery and named definition/capacity/model/clinical/customer/Q24visual dependencies remain. No agents/chats/services/newcaps/gating; quiet continuationACTIVE."
+    "remaining_gap": "Correct unasked financial living filter/restore46recorded balance patients using current native caches, preserve unknown clinical/source roles; then current consumer/scoped compatibility/final disposition/package and named independent dependencies.",
+    "next_action": "G3/WP4: NO provider/build/native job is running. Q14interrupted stage is TERMINAL exit137, all2605attempts reconciled/69169ledgerrows, original467rows intact. Native cached recovery now SUCCEEDS: artifacts/agere-final-ordinary-entry-2026-11-08/Q14/cached-recovery-validation-v1/receipt.json; all6recorded actions/lastactorcandidate restored0newproviders/0financialengine reruns,6071financial fields unchanged. Failed comparator receipt(v1 assumed old public-column name) preserved; no duplicate native replay needed. Actual current source-scope check artifacts/agere-final-ordinary-entry-2026-11-08/Q14/financial-population-check-v1/receipt.json proves an IMPLEMENTATION DEFECT: actor financial_accounts input selected SELECT patient_id FROM living_patient, original request did not restrict living. Full4115currentfinancial cache(same available_by2030-05-27/identity4ebc5293) includes46additional positive-balance patients outside living, while all467existingfinancialrows match. Do not publish467 as the complete requested population or call omission a clinical/input dependency. NEXT: correct generic financial population boundary(analysis_tools.execute/source_scope existing contracts; preserve explicit user/saved cohorts and requested living scopes), then restore ONLY missing financial/source context using existing current cached receipts; no rerun original question/financialengine/74535doc review or source-vote campaign. Keep old467financialvalues and actual documentary judgments, extra unreviewed hardship/preferences unknown. Check exact original-question full-source native scope/current save/browser consumer; source semantic qualification stays unverified. Grammar candidate54422de5/60checks/exact9f77d820draft proven, not active/sealed; mainapp12061/session64670 still6f5f0f26. LastsealedownerQ15delivery unchanged. Extend scoped code compatibility after scopefix, current-policy contexts/final25case-tenarea disposition/one exact package; prepared mapping-v1/oldQ15archive reference remain stale, no blind execution. Preserve every attempt/failed-key/unknowncost, all25/tenareas/principal/October11baseline and independent/model/clinical/input/Q24visual/customer dependencies. No agents/chats/services/caps/gating; quietcontinuationACTIVE."
   },
   "decisions": [
     {
@@ -5753,15 +5751,50 @@
       "evidence": "artifacts/agere-final-ordinary-entry-2026-11-08/Q15/localized-repair-v1/receipt.json",
       "reason": "Complete packet exceeds1Mtoken subscription context after transport overhead; not a subscription usage limit.18113mechanical claim addresses dominate payload while every actual source/output value is separately present. Reuse existing reversible integrity projection for a strictly code-generated complete manifest; preserve allvalues/queries/definitions, exact native manifest and independent source judgment. No new model/threshold, no fullquestion/SQL replay.",
       "scope_impact": "Only verifier metadata representation for complete nonpatient global tables; all25cases/tenareas retained."
+    },
+    {
+      "at": "2026-11-08T21:41:15.887794+00:00",
+      "gate": "G3",
+      "reason": "Original ordinary Q14 completed source calculations and1970model attempts but a distributive every one phrase was incorrectly demanded as measured1. Repeating the large question or inventing scalar1 would be wrong.",
+      "correction": "Existing numeric lexer now recognizes only every one of these/those/the grammatical occurrence, keeps originalprose, leavesactual counts/doses/amounts bound and all universal source meaning independently reviewed.60checks and exact original9f77d820draft reproduction/compile proof pass. Running retained-only finalization; sourceunknowns unpromoted. Largefallback wire payload remains observed, not asserted solved.",
+      "evidence": [
+        "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json",
+        "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/retained-preparation-v2/receipt.json",
+        "artifacts/agere-final-ordinary-entry-2026-11-08/Q14-distributive-checks-v2.log"
+      ],
+      "scope_impact": "One general grammar correction to an existing compiler; no diseasehandler, thresholdchange, sourcequantitywaiver or expandedacceptancecurriculum. All25cases/tenareas retained."
+    },
+    {
+      "at": "2026-11-08T22:12:20.017562+00:00",
+      "gate": "G3",
+      "reason": "Retained source finalization exited137 without finally/output seal after2605attempts; no process remains. Repeating this source-vote path would waste completed work and leave the same recovery/memory exposure.",
+      "correction": "Allattempts/actualactorrequests/producers/source caches/trace preserved. Stop provider retries. Native cached-only recovery will load one canonical history, avoid duplicate deepcopies, write every recovered new result atomically and record RSS. Exact source scopes and original financial/source calculations stay preserved. Exit cause remains unestablished; observed original-metadata parse peak6.49GB supports investigating duplicate harness memory first.",
+      "evidence": [
+        "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/retained-finalization-v1/receipt.json",
+        "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/recovery-inventory-v1/receipt.json",
+        "artifacts/agere-final-ordinary-entry-2026-11-08/Q14-recovery-metadata-v1.log"
+      ],
+      "scope_impact": "Recovery of recorded work only; no newquestion/modelqualification campaign, sourcehandler rewrite or narrowed acceptance."
+    },
+    {
+      "at": "2026-11-08T22:32:01.280588+00:00",
+      "gate": "G3",
+      "reason": "Cached reconstruction restored completed work, but actual financial source scope was narrower than the original request. This is a source/population implementation defect, not missing clinical qualification.",
+      "correction": "Reuse same current full4115financial receipts: every existing467financialrow matches,46more positive-balance subjects were excluded. Fix generic financial scope boundary and restore missing native context; do not repeat large original/doc or source-vote work. Preserve allsourceunknowns and all25cases.",
+      "evidence": [
+        "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/cached-recovery-validation-v1/receipt.json",
+        "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/financial-population-check-v1/receipt.json"
+      ],
+      "scope_impact": "Existing Q14original-population acceptance only; no new question, disease handler, research/catalog or finish-line expansion."
     }
   ],
   "unsealed_work": {
-    "status": "owned_Q14_ordinary_entry_running_after_sealed_Q15_delivery",
+    "status": "Q14_cached_work_recovered_actual_financial_population_defect_located",
     "product_commit": "abcddf6d55fa57aa8886cf337917ed1291e79251",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-    "source_frozen": true,
+    "source_frozen": false,
     "runtime_activation": true,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
@@ -7364,12 +7397,13 @@
       "pid": 12096,
       "session": 73887,
       "receipt": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json",
-      "status": "running",
-      "provider_work": true,
-      "source_frozen": true,
+      "status": "terminal_current_partial_compiler_unresolved",
+      "provider_work": false,
+      "source_frozen": false,
       "request_progress_key": "97c0436f70b641888ad78ee57b38216f",
-      "observed_at": "2026-11-08T20:56:42.249342+00:00",
-      "note": "One original public question. Native financial computation and bulk source judgments retained; actor continuing narrow registered-definition/binding queries. No whole-question restart or owner answer supplied."
+      "observed_at": "2026-11-08T20:58:36.246823+00:00",
+      "note": "One original public question. Native financial computation and bulk source judgments retained; actor continuing narrow registered-definition/binding queries. No whole-question restart or owner answer supplied.",
+      "finished_at": "2026-11-08T21:13:22.947740+00:00"
     },
     "pending_release_producers": {
       "source_receipt_compatibility_proof": "artifacts/agere-final-ordinary-entry-2026-11-08/native-compatibility-v1/proof.json",
@@ -7378,7 +7412,48 @@
       "package_producer_not_started": "artifacts/agere-final-ordinary-entry-2026-11-08/package-v1/build_package.py",
       "archived_HTTP_producer_not_started": "artifacts/agere-final-ordinary-entry-2026-11-08/check_installed_current.py",
       "archived_HTTP_expected_current_context": "artifacts/agere-final-ordinary-entry-2026-11-08/restored-current-Q15-native.json.gz",
-      "guard": "Inspect terminal Q14 and its actual complete output first; no product/config edits or package job during frozen Q14. Mapping native code compatibility is proved but not activated. Q15actual current context is used for archived HTTP, not historical invalidated Q03."
+      "guard": "Inspect terminal Q14 and its actual complete output first; no product/config edits or package job during frozen Q14. Mapping native code compatibility is proved but not activated. Q15actual current context is used for archived HTTP, not historical invalidated Q03.",
+      "mapping_producer_requires_new_grammar_compatibility": true,
+      "archived_Q15_reference_requires_current_policy_check_after_grammar_fix": true
+    },
+    "all_attempt_rows_at_last_closed_Q14_stage": 66564,
+    "Q14_ordinary_entry_receipt": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json",
+    "Q14_exact_retained_preparation": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/retained-preparation-v2/receipt.json",
+    "Q14_candidate_grammar_checks": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14-distributive-checks-v2.log",
+    "owned_Q14_retained_finalization": {
+      "pid": 14217,
+      "session": 51107,
+      "receipt": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/retained-finalization-v1/receipt.json",
+      "status": "failed_preserved_terminal_exit137",
+      "source_frozen": false,
+      "provider_work": false,
+      "original34nativecalls_retained": true,
+      "source_engines_not_replayed_by_harness": true,
+      "observed_at": "2026-11-08T21:44:20.390774+00:00",
+      "reconciled_at": "2026-11-08T22:00:07.084472+00:00"
+    },
+    "candidate_grammar_commit_disposition": {
+      "status": "committed_after_previous_frozen_run_terminal",
+      "commit": "54422de5",
+      "runtime_activation": false,
+      "source_qualification": false
+    },
+    "Q14_killed_stage_reconciliation": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/retained-finalization-v1/receipt.json",
+    "Q14_owned_partial_inventory": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/recovery-inventory-v1/receipt.json",
+    "Q14_candidate_grammar_commit": "54422de5",
+    "current_provider_work_authorized_for_next_step": false,
+    "Q14_cached_recovery_validation": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/cached-recovery-validation-v1/receipt.json",
+    "Q14_financial_scope_proof": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/financial-population-check-v1/receipt.json",
+    "Q14_missing_positive_balance_patients": 46,
+    "Q14_next_work_native_scope_correction_no_provider_replay": true,
+    "owned_Q14_cached_recovery": {
+      "pid": 17852,
+      "session": 68283,
+      "receipt": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/cached-native-recovery-v1/receipt.json",
+      "status": "all6native_steps_durable_posthoc_comparator_failed_then_separate_validation_passed",
+      "source_frozen": false,
+      "provider_work": false,
+      "validation": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/cached-recovery-validation-v1/receipt.json"
     }
   },
   "current_visual_request": {
@@ -7414,16 +7489,8 @@
       }
     }
   },
-  "active_jobs": [
-    {
-      "pid": 12096,
-      "receipt": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json",
-      "kind": "Q14_current_final_ordinary_engineering_entry",
-      "source_frozen": true,
-      "provider_work": true
-    }
-  ],
-  "next_action": "G3/WP4: Inspect owned Q14current ordinary-entry PID12096/session73887 FIRST: artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json. Product source/config frozen while it runs; no duplicate provider/native/build job. Original public question only, no owner plan/expectedvalues. Preserve full source-supported affordability versus recorded-balance distinction and unknown hardship, every partial/attempt; do not force coverage or restart wholequestion. Actual subscription usage limit stops provider work. Q15delivery is SEALED: artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json, product6f5f0f26/app12061/session64670; one rangefield corrected/all1646rows exact/59checks/native+browserHTTP/source supported/coverage undecided. All25/tenareas/principal/October11baseline retained. After terminal Q14reconcile source/quantity/scope/current-save evidence, apply already-proved scoped receipt metadata compatibility(no native reruns), final25case disposition, then one exactcurrent archive/install/recovery using existing coldAPFSclone. Prior5aca0a3a recovery and named definition/capacity/model/clinical/customer/Q24visual dependencies remain. No agents/chats/services/newcaps/gating; quiet continuationACTIVE.",
+  "active_jobs": [],
+  "next_action": "G3/WP4: NO provider/build/native job is running. Q14interrupted stage is TERMINAL exit137, all2605attempts reconciled/69169ledgerrows, original467rows intact. Native cached recovery now SUCCEEDS: artifacts/agere-final-ordinary-entry-2026-11-08/Q14/cached-recovery-validation-v1/receipt.json; all6recorded actions/lastactorcandidate restored0newproviders/0financialengine reruns,6071financial fields unchanged. Failed comparator receipt(v1 assumed old public-column name) preserved; no duplicate native replay needed. Actual current source-scope check artifacts/agere-final-ordinary-entry-2026-11-08/Q14/financial-population-check-v1/receipt.json proves an IMPLEMENTATION DEFECT: actor financial_accounts input selected SELECT patient_id FROM living_patient, original request did not restrict living. Full4115currentfinancial cache(same available_by2030-05-27/identity4ebc5293) includes46additional positive-balance patients outside living, while all467existingfinancialrows match. Do not publish467 as the complete requested population or call omission a clinical/input dependency. NEXT: correct generic financial population boundary(analysis_tools.execute/source_scope existing contracts; preserve explicit user/saved cohorts and requested living scopes), then restore ONLY missing financial/source context using existing current cached receipts; no rerun original question/financialengine/74535doc review or source-vote campaign. Keep old467financialvalues and actual documentary judgments, extra unreviewed hardship/preferences unknown. Check exact original-question full-source native scope/current save/browser consumer; source semantic qualification stays unverified. Grammar candidate54422de5/60checks/exact9f77d820draft proven, not active/sealed; mainapp12061/session64670 still6f5f0f26. LastsealedownerQ15delivery unchanged. Extend scoped code compatibility after scopefix, current-policy contexts/final25case-tenarea disposition/one exact package; prepared mapping-v1/oldQ15archive reference remain stale, no blind execution. Preserve every attempt/failed-key/unknowncost, all25/tenareas/principal/October11baseline and independent/model/clinical/input/Q24visual/customer dependencies. No agents/chats/services/caps/gating; quietcontinuationACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -7515,12 +7582,12 @@
   "owned_server_pid": 12061,
   "owned_server_session": 64670,
   "last_run_observation": {
-    "at": "2026-11-08T20:56:42.249342+00:00",
-    "Q14_status": "running",
-    "Q14_receipt": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/ordinary-v1/receipt.json",
-    "no_duplicate_job": true,
-    "source_frozen": true,
-    "last_sealed_delivery": "artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json"
+    "at": "2026-11-08T22:32:01.280588+00:00",
+    "Q14_original_and_interrupted_stages": "terminal_preserved",
+    "Q14_cached_recovery": "all6actions_and_lastproducer_reconstructed_0providers",
+    "Q14_scope_defect": "46positive-balance patients omitted by unaskedlivingfilter",
+    "no_active_jobs": true,
+    "last_sealed_receipt": "artifacts/agere-final-ordinary-entry-2026-11-08/delivery-receipt.json"
   },
   "ordinary_curriculum_progress": {
     "total_fixed_cases": 25,
