@@ -331,6 +331,89 @@ def restore_native_observations(view):
     return groups
 
 
+def native_integrity_model_view(text):
+    """Use short addresses for opaque integrity hashes in model metadata.
+
+    Cryptographic validation belongs to code. Keep the complete original packet
+    and an exact reversible map natively; bind the model view to that packet by
+    one hash. Clinical fields, source text, SQL and native input values never
+    change. This conveys no source support or clinical acceptance.
+    """
+    from ..deliverables.receipts import uncompact_json,compact_json,readable_json
+    unchanged={'text':text,'bytes':len(text.encode()),'projected':False}
+    try:encoded=json.loads(text)
+    except ValueError:return unchanged
+    if not isinstance(encoded,dict)or encoded.get('encoding')not in ('agere-readable-native-json/1','agere-lossless-compact-json/1'):
+        return unchanged
+    original=uncompact_json(encoded);state=copy.deepcopy(original)
+    metadata={'native_bindings','shared_evidence_provenance','evidence_provenance',
+        'native_calculation_contracts','executed_source_definitions','native_column_projections',
+        'native_column_inputs','native_document_judgment_contracts','unbound_review_receipts'}
+    # These containers carry executable or source values, even when a source
+    # happens to name a clinical field "digest". Never rewrite their contents.
+    literal={'input','parameters','assembly_specification','rows','indexed_rows','query','document','sources'}
+    aliases={};values={};paths=[];proofs={};proof_paths=[]
+    def retain_proof(value,path):
+        reference='native_proof_'+str(len(proofs));proofs[reference]=value;proof_paths.append(list(path))
+        return {'native_receipt_reference':reference,
+            'scope':'Complete mechanical validation certificate retained and checked by code. Original clinical/source values and executable selection contracts remain supplied; this reference establishes no clinical support.'}
+    def detach(value,path):
+        if isinstance(value,dict):
+            return {k:retain_proof(v,path+(k,))if k in ('native_column_projection','derived_read_proof')else
+                    detach(v,path+(k,))if k not in literal else v for k,v in value.items()}
+        if isinstance(value,list):return[detach(v,path+(i,))for i,v in enumerate(value)]
+        return value
+    for field in sorted(metadata):
+        if field in state:state[field]=detach(state[field],(field,))
+    if 'native_bindings'in state:
+        state['native_bindings']=retain_proof(original['native_bindings'],('native_bindings',))
+    def address(value,path):
+        if not isinstance(value,str)or not re.fullmatch('[0-9a-f]{64}',value):return value
+        alias=aliases.setdefault(value,'@'+str(len(aliases)))
+        values[alias]=value;paths.append(list(path));return alias
+    def walk(value,path,hash_value=False):
+        if isinstance(value,dict):
+            out={}
+            for key,v in value.items():
+                key_address=path+('$key',key)
+                replacement=address(key,key_address)if path==('executed_source_definitions',)else key
+                out[replacement]=(v if key in literal else walk(v,path+(replacement,),
+                    key.endswith(('_digest','_fingerprint'))or key in ('source_definition_keys','original_fingerprint')))
+            return out
+        if isinstance(value,list):return[walk(v,path+(i,),hash_value)for i,v in enumerate(value)]
+        return address(value,path)if hash_value else value
+    for field in sorted(metadata):
+        if field in state:state[field]=walk(state[field],(field,))
+    # Reconstruct each addressed scalar/key, then demand exact whole-packet
+    # equality. References are path-qualified; marker-like source data is literal.
+    restored=copy.deepcopy(state)
+    for path in reversed(paths):
+        if '$key'in path:
+            parent=restored
+            for key in path[:-2]:parent=parent[key]
+            old=path[-1];alias=aliases[old];parent[old]=parent.pop(alias)
+        else:
+            parent=restored
+            for key in path[:-1]:parent=parent[key]
+            parent[path[-1]]=values[parent[path[-1]]]
+    for path in reversed(proof_paths):
+        parent=restored
+        for key in path[:-1]:parent=parent[key]
+        parent[path[-1]]=proofs[parent[path[-1]]['native_receipt_reference']]
+    if digest(restored)!=digest(original):raise ValueError('Native integrity addresses did not restore the exact packet')
+    if not paths and not proof_paths:return {'text':text,'bytes':len(text.encode()),'projected':False}
+    state['native_integrity_projection']={'schema':'native-integrity-addresses/1','complete_native_packet_digest':digest(original),
+        'meaning':'@N strings are opaque addresses for cryptographic metadata checked by code and retained in the complete native packet. Equal addresses denote equal original hashes. native_proof_N references bind complete mechanical certificates retained by code. Neither is clinical evidence, a measurement or model-verified support. All clinical values, source text, native inputs and executed SQL remain literal.'}
+    readable=json.dumps(readable_json(state),ensure_ascii=False,separators=(',',':'))
+    packed=json.dumps(compact_json(state,expand_json_strings=True),ensure_ascii=False,separators=(',',':'))
+    model_text=min((readable,packed),key=lambda x:len(x.encode()))
+    if len(model_text.encode())>=len(text.encode()):return {'text':text,'bytes':len(text.encode()),'projected':False}
+    return {'text':model_text,'bytes':len(model_text.encode()),'projected':True,
+        'native_projection':{'schema':'native-integrity-addresses/1','complete_native_packet_digest':digest(original),
+            'model_state_digest':digest(state),'values':values,'paths':paths,'proofs':proofs,
+            'proof_paths':proof_paths,'roundtrip_exact':True}}
+
+
 def native_json_paths(query, view, column):
     """Recognize complete static JSON branches read by table-valued expansion.
 

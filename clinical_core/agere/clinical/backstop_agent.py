@@ -4003,13 +4003,18 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
                     'status':'global_narrative_fields_unsettled',
                     'reason':'Named global statements require located repair or retain unresolved verification; no favorable joint vote overrides them.',
                     'claim_feedback':localized['feedback'],'field_review':global_review},steps
+        from .evidence_projection import native_integrity_model_view
+        wire=native_integrity_model_view(packet['text'])if packet['bytes']>230000 else {'text':packet['text'],'projected':False}
         result=selected('Does this COMPLETE dependency packet support each answer claim as actually stated in its scope? Resolve the lossless layout. Check entity/domain, source kind, time, negation, role and quantity meaning. A structured fill-policy observation is checked against the pharmacy evidence/definition; missing note corroboration alone does not contradict it. A count of machine-extracted observations is arithmetic and does not establish their clinical validity. A dated role object does not imply current responsibility, but a primary-care object cannot establish a cardiology role. Interpretations require supporting source meaning; matching a proposed output value is insufficient. Preserve supported unknowns and the distinction between source observations and clinical acceptance.',
-            SUPPORT_OPTIONS,[{k:packet[k]for k in ('id','date','text')}],as_of=as_of,
+            SUPPORT_OPTIONS,[{'id':packet['id'],'date':packet['date'],'text':wire['text']}],as_of=as_of,
             task_key='agere_investigation_support_dependency_long_context' if oversized else 'agere_investigation_support_dependency',
             ledger=worker_ledger,allow_live=True,select_source=False,
             long_context=packet['bytes']>32768,**({'order':long_order} if oversized else {}),
-            **({'cache_evidence':packet['native_timing_compatibility']}if packet.get('native_timing_compatibility')else{}))
+            **({'cache_evidence':packet['native_timing_compatibility']}if packet.get('native_timing_compatibility')and not wire['projected']else{}))
         checked={**identity,**{k:result.get(k)for k in ('label','decided_by','probabilities')}}
+        if wire['projected']:
+            proof=wire['native_projection'];checked['provider_native_integrity_projection']={k:proof[k]for k in
+                ('schema','complete_native_packet_digest','model_state_digest','roundtrip_exact')}
         if global_review:checked['global_narrative_review']=global_review
         if oversized:
             route={'requested_providers':list(long_order),'mode':'documented_long_context',
@@ -4240,7 +4245,10 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None):
     state=uncompact_json(json.loads(packet['text']))
     readable=json.dumps(state,ensure_ascii=False,separators=(',',':'),default=str)
     source_text=readable if len(readable.encode())<=230000 else packet['text']
-    compatibility=packet.get('native_timing_compatibility')
+    from .evidence_projection import native_integrity_model_view
+    wire=native_integrity_model_view(source_text)if len(source_text.encode())>230000 else {'text':source_text,'projected':False}
+    source_text=wire['text']
+    compatibility=packet.get('native_timing_compatibility')if not wire['projected']else None
     if compatibility:
         from .evidence_projection import native_timing_legacy_evidence
         if native_timing_legacy_evidence([{'id':packet['id'],'date':packet['date'],'text':packet['text']}],compatibility):

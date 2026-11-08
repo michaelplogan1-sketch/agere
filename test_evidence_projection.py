@@ -294,4 +294,37 @@ class NativeObservationTransport(unittest.TestCase):
                 E.restore_native_observations(bad)
 
 
+class NativeIntegrityModelView(unittest.TestCase):
+    def test_native_hashes_are_addresses_while_source_sql_and_clinical_values_stay_literal(self):
+        from clinical_core.agere.clinical.evidence_projection import native_integrity_model_view
+        from clinical_core.agere.deliverables.receipts import readable_json,uncompact_json
+        from clinical_core.contracts import digest
+        value='a'*64;sql="SELECT * FROM records WHERE exact_value='"+value+"'"
+        state={'answer_rows':[{'patient_id':'A','digest':value,'quote':'Denies taking it.'}],
+            'source_contexts':[{'patient_id':'A','text':'Denies taking it. '+value}],
+            'native_bindings':[{'result_digest':str(i).zfill(64),'result_view':'r'+str(i)}for i in range(100)],
+            'native_calculation_contracts':[{'input':{'sql':sql},'source_definition_keys':[value]}],
+            'executed_source_definitions':{value:{'query':sql,'source_digest':value}},
+            'evidence_provenance':[{'row_digest':value,'origins':[{'native_column_projection':{
+                'schema':'authored-validation-proof','complete_receipt_digest':value,'rows':[value]*50}}]}]}
+        text=json.dumps(readable_json(state));result=native_integrity_model_view(text)
+        self.assertTrue(result['projected']);model=uncompact_json(json.loads(result['text']))
+        self.assertEqual(model['answer_rows'],state['answer_rows']);self.assertEqual(model['source_contexts'],state['source_contexts'])
+        self.assertEqual(model['native_calculation_contracts'][0]['input']['sql'],sql)
+        key=model['native_calculation_contracts'][0]['source_definition_keys'][0]
+        self.assertEqual(model['executed_source_definitions'][key]['query'],sql)
+        self.assertEqual(model['native_integrity_projection']['complete_native_packet_digest'],digest(state))
+        self.assertTrue(result['native_projection']['roundtrip_exact'])
+        self.assertEqual(native_integrity_model_view(text),result)
+        changed=copy.deepcopy(state);changed['native_bindings'][0]['result_digest']='b'*64
+        self.assertNotEqual(native_integrity_model_view(json.dumps(readable_json(changed)))['text'],result['text'])
+        self.assertEqual(state['evidence_provenance'][0]['row_digest'],value)
+
+    def test_plain_source_with_digest_named_fields_is_unchanged(self):
+        from clinical_core.agere.clinical.evidence_projection import native_integrity_model_view
+        from clinical_core.agere.deliverables.receipts import readable_json
+        text=json.dumps(readable_json({'answer_rows':[{'digest':'a'*64,'native_column_projection':{'quote':'No use reported.'}}]}))
+        self.assertEqual(native_integrity_model_view(text),{'text':text,'bytes':len(text.encode()),'projected':False})
+
+
 if __name__=='__main__':unittest.main()
