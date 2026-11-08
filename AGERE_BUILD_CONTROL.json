@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T09:51:37.484877+00:00",
+  "updated_at": "2026-11-08T10:27:18.414070+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -661,30 +661,28 @@
     }
   ],
   "checkpoint": {
-    "kind": "Q08_catalog_guard_active_current_partial_next_Q09",
+    "kind": "current_Q09_Q10_Q11_validated_Q12_repeat_reconciled_latest_evidence_first",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "A valid source-schema exploration no longer invalidates its saved home-health analysis. Current19-row/12-call partial reopens and is consumed exact in native/browser views; prior Q07 clinical fields remain current/exact.",
+    "user_behavior_delta": "Current app contexts preserve missing program criteria and allergy/interview role distinctions; the original practice-utilization quantitative explanation is restored. Q12 is a repeated compatibility validation of an already completed capability and receives no new capability credit.",
     "measured_failure_reduction": {
-      "false_missing_engine_catalog_faults_before": 1,
-      "false_missing_engine_catalog_faults_after": 0,
-      "targeted_tests_passed": 22,
-      "current_source_packets_deciding_supported": 20,
-      "current_source_packets": 20,
-      "new_native_calls": 0,
-      "document_rereads": 0,
-      "new_provider_attempts": 25,
-      "known_api_equivalent_usd": 0.010789344
+      "Q11_original_explanation_fields_restored": 8,
+      "Q11_rows_retained": 128,
+      "Q10_review_pairs_retained": 523,
+      "Q09_missing_definition_inputs_not_invented": true,
+      "Q12_net_new_capability": false,
+      "Q12_current_native_browser_exact": true,
+      "Q12_current_source_and_coverage_machine_confirmed": true
     },
     "evidence": [
-      "artifacts/agere-Q08-retained-2026-11-08/workflow-completion.json",
-      "artifacts/agere-Q08-retained-2026-11-08/catalog-regressions.log",
-      "artifacts/agere-Q08-retained-2026-11-08/current-continuation/receipt.json",
-      "artifacts/agere-Q08-retained-2026-11-08/http-consumer-proof.json",
-      "artifacts/agere-Q08-retained-2026-11-08/app-activation/previous-Q07-current.json"
+      "artifacts/agere-Q09-retained-2026-11-08/workflow-completion.json",
+      "artifacts/agere-Q10-retained-2026-11-08/workflow-completion.json",
+      "artifacts/agere-Q11-retained-2026-11-08/workflow-completion.json",
+      "artifacts/agere-Q12-retained-2026-11-08/workflow-completion.json",
+      "artifacts/agere-Q12-retained-2026-11-08/latest-existing-context-check.json"
     ],
-    "remaining_gap": "Q08 coverage/same-request stage interpretation remain unestablished; do not repeat unchanged votes. Fixed Q09 retained current definition availability and comparison next. Full25/tenareas and independent qualifications remain.",
-    "next_action": "G3/WP4: Inspect fixed Q09 original retained run first (artifacts/agere-ordinary-comparison-2026-11-05/Q09/stack/receipt.json and result.json.gz): installed versioned diabetes/BP program definitions compared at2029-06-30 and2029-12-31, eligibility evidence, unresolved inputs and overlap; keep clinical nominations, payer eligibility and consent separate. Check current installed rule/version availability OFFLINE before any provider request. Genuine missing definitions remain supported unknowns with explicit dependencies, not invented rules or a new disease handler. Continue only actual missing wiring/source/citation work from retained native history; no original-question replay or unchanged uncertainty votes. Q08 catalog guard c91fba2b is now ACTIVE in app86934/session15368; actual normal continuation8.066s/25 attempts/$0.010789344 API-equivalent,0 errors/pending/new native calls/document rereads,19 rows/12 calls exact/current in native+browser. All20 source packets deciding supported; coverage undecided and public partial/unverified. Old planner-receipt invalidation remains intact. Q07 current65-subject/75-referral/122-role partial remains current/exact after activation;34/66 source packets deciding supported,32 undecided, no located fault for another vote. Source/storage/date guards and every attempt/partial retained. Ledger63637 includes1 new interrupted unpriced pending from Q07; no actual subscription limit. No provider/build/training job or source freeze. Full25/tenareas/current principal/Oct11baseline and independentG5/clinical/model/customer/deployment prerequisites remain; quiet continuation ACTIVE."
+    "remaining_gap": "Start from latest completed Q13 evidence and revalidate only actual current dependency failures; skip passing work. Source semantics/coverage, absent criteria and independent clinical/model/actuarial/customer/deployment qualifications remain explicit.",
+    "next_action": "G3/WP4: Corrected sequencing: for every remaining fixed case read its latest current assessment/linked completed receipts BEFORE the Nov5 original bank result. Do not re-run a passing source/math/ordinary campaign to recreate existing work. Next Q13 is already implemented: inspect artifacts/agere-Q13-native-conservation-2026-11-07/connected-workflow-assessment.json, completed-local-answer.json, financial-completion-app-proof.json and artifacts/agere-native-workspace-2026-11-07/retained-proof/receipt.json plus http-proof.json/browser-proof.json. Preserve exact13243 active-2029 accounts/1258 subjects, integer identities, unknown currency/date/attribution links and account-level scope; do not reprocess2684 historical attempts or widen to41656 patient-associated accounts. Inspect latest saved context current dependencies OFFLINE. If still current, reuse it and advance to the next actual open fixed-case behavior. If only derivation/policy changed, localize native revalidation from that latest completed state, preserving its public status and source decisions; no new provider/source run without a named current failure. Q12new Nov8 run resumed an older failed draft despite later Nov7 completion: preserve it as current compatibility validation, not a new capability.16attempts/$1.713764482API-equivalent/173.528s,8 native calls(1SQL error retained), original13-call prefix exact,24 month output/current native+browser, source+coverage machine-confirmed. History/current-state bases remain distinct (30013696cents difference), no net-cash/restatement-increment or actuarial qualification. Old latest Q12 contexts fail current derivation only while observation/evidence/premises remain current. Q09missingcriteria/Q10clinicalrelation/Q11case-mix and other independent qualifications remain. App86934/session15368/c91fba2b; no live provider/build/training job or source freeze; ledger63677/45 existing pending unchanged. Full25/tenareas/current principal/October11baseline retained; quiet continuation ACTIVE."
   },
   "decisions": [
     {
@@ -5339,10 +5337,33 @@
       "scope_impact": "Small existing-module guard fix, no architecture/scope rewrite or new qualification claim.",
       "product_commit": "c91fba2b08ca5008a234f05dfc2b14ddece979d8",
       "rollback_commit": "f3eeb4c14cdf6d41980298cad9b151bb8c0bc3f1"
+    },
+    {
+      "at": "2026-11-08T10:27:18.414070+00:00",
+      "gate": "G3",
+      "reason": "Q12 was resumed from its Nov5 failed producer before checking the current case assessment, which already pointed to a Nov7 completed signed-development workflow. Current policy revalidation was needed, but reconstructing the older failed state repeated completed work.",
+      "correction": "Preserve and account the16-attempt/$1.713764482 run as compatibility validation only; no new capability credit. Every remaining case now starts with latest linked completion/context receipts and offline dependency checks. Use latest retained observations for localized revalidation; provider work needs an actual current failure, not an old bank score.",
+      "evidence": [
+        "artifacts/agere-Q12-retained-2026-11-08/workflow-completion.json",
+        "artifacts/agere-Q12-retained-2026-11-08/latest-existing-context-check.json",
+        "artifacts/agere-Q12-signed-development-2026-11-07/live-native-revalidation/receipt.json"
+      ],
+      "scope_impact": "Sequencing correction only. Full25 cases/ten areas and all source/quantity/domain/date guards retained; no new feature or qualification claim."
+    },
+    {
+      "at": "2026-11-08T10:27:18.414070+00:00",
+      "gate": "G3",
+      "reason": "Repeated Q12 producer changed the earliest bank answer from current-version amounts to full received signed adjudication-row history, consistent with the later completed history-based workflow. These financial source roles are not equivalent.",
+      "correction": "Retain both bases and original receipts.96 native month/value/role checks match the signed-history audit and original current-state figures separately. Do not claim net cash, independently qualified restatement increments or validated actuarial ultimate.",
+      "evidence": [
+        "artifacts/agere-Q12-retained-2026-11-08/native-basis-conservation.json",
+        "artifacts/agere-Q12-retained-2026-11-08/http-consumer-proof.json"
+      ],
+      "scope_impact": "No new payment model or financial definition activated; declared row basis and unqualified assumptions remain explicit."
     }
   ],
   "unsealed_work": {
-    "status": "Q08_catalog_guard_active_current_partial_Q09_next",
+    "status": "latest_evidence_first_Q13_native_only_next_Q12_repeat_reconciled",
     "product_commit": "6df36263b54136ae6e853b2e927c2b1b21dac4e6",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
@@ -5375,12 +5396,12 @@
     "new_provider_attempts": 185,
     "known_api_equivalent_usd": 4.933035236,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 63637,
+    "all_attempt_rows_retained": 63677,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 25,
+    "latest_increment_provider_attempts": 16,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -6502,7 +6523,62 @@
     "Q08_current_consumer": "artifacts/agere-Q08-retained-2026-11-08/http-consumer-proof.json",
     "Q08_catalog_guard_rollback_commit": "f3eeb4c14cdf6d41980298cad9b151bb8c0bc3f1",
     "full_Q08_acceptance": false,
-    "full_Q07_acceptance": false
+    "full_Q07_acceptance": false,
+    "owned_Q09_current_continuation": {
+      "kind": "Q09_retained_definition_comparison",
+      "pid": 87218,
+      "session_id": 28051,
+      "receipt": "artifacts/agere-Q09-retained-2026-11-08/current-continuation/receipt.json",
+      "status": "returned",
+      "source_frozen": false
+    },
+    "Q09_native_definition_availability": "artifacts/agere-Q09-retained-2026-11-08/definition-availability-proof.json",
+    "owned_Q10_current_continuation": {
+      "kind": "Q10_retained_allergy_interview_comparison",
+      "pid": 87298,
+      "session_id": 5431,
+      "receipt": "artifacts/agere-Q10-retained-2026-11-08/current-continuation/receipt.json",
+      "status": "running",
+      "source_frozen": true
+    },
+    "Q09_workflow_completion": "artifacts/agere-Q09-retained-2026-11-08/workflow-completion.json",
+    "Q09_current_context": "ANS-f3e01470c7cdff5f03108769",
+    "Q09_current_consumer": "artifacts/agere-Q09-retained-2026-11-08/http-consumer-proof.json",
+    "Q10_native_preflight": "artifacts/agere-Q10-retained-2026-11-08/native-preflight.json",
+    "full_Q09_acceptance": false,
+    "owned_Q11_current_continuation": {
+      "kind": "Q11_exact_producer_utilization_finalization",
+      "pid": 87368,
+      "session_id": 10262,
+      "receipt": "artifacts/agere-Q11-retained-2026-11-08/retained-finalization/receipt.json",
+      "status": "returned",
+      "source_frozen": false
+    },
+    "Q10_workflow_completion": "artifacts/agere-Q10-retained-2026-11-08/workflow-completion.json",
+    "Q10_current_context": "ANS-c41efb982dbcaa08d914b1de",
+    "Q10_current_consumer": "artifacts/agere-Q10-retained-2026-11-08/http-consumer-proof.json",
+    "Q11_native_preflight": "artifacts/agere-Q11-retained-2026-11-08/native-preflight.json",
+    "full_Q10_acceptance": false,
+    "owned_Q12_current_continuation": {
+      "kind": "Q12_current_compatibility_validation_avoidable_older_draft_repeat",
+      "pid": 87440,
+      "session_id": 7513,
+      "receipt": "artifacts/agere-Q12-retained-2026-11-08/retained-finalization/receipt.json",
+      "status": "returned_confirmed_not_new_capability",
+      "source_frozen": false,
+      "finished_at": "2026-11-08T10:12:58.125841+00:00"
+    },
+    "Q11_workflow_completion": "artifacts/agere-Q11-retained-2026-11-08/workflow-completion.json",
+    "Q11_current_context": "ANS-cebf071c2129b90d13290860",
+    "Q11_current_consumer": "artifacts/agere-Q11-retained-2026-11-08/http-consumer-proof.json",
+    "Q12_native_preflight": "artifacts/agere-Q12-retained-2026-11-08/native-preflight.json",
+    "full_Q11_acceptance": false,
+    "Q12_current_validation": "artifacts/agere-Q12-retained-2026-11-08/workflow-completion.json",
+    "Q12_current_context": "ANS-6395d028c449c256c8b722e3",
+    "Q12_current_consumer": "artifacts/agere-Q12-retained-2026-11-08/http-consumer-proof.json",
+    "Q12_latest_existing_context_check": "artifacts/agere-Q12-retained-2026-11-08/latest-existing-context-check.json",
+    "Q12_new_capability_credit": false,
+    "full_Q12_acceptance": false
   },
   "current_visual_request": {
     "status": "completed",
@@ -6537,16 +6613,16 @@
   },
   "active_jobs": [
     {
-      "kind": "Q08_retained_home_health_chain_continuation",
-      "pid": 86901,
-      "session_id": 21993,
-      "receipt": "artifacts/agere-Q08-retained-2026-11-08/current-continuation/receipt.json",
-      "status": "returned_unresolved_coverage",
+      "kind": "Q12_current_compatibility_validation_avoidable_older_draft_repeat",
+      "pid": 87440,
+      "session_id": 7513,
+      "receipt": "artifacts/agere-Q12-retained-2026-11-08/retained-finalization/receipt.json",
+      "status": "returned_confirmed_not_new_capability",
       "source_frozen": false,
-      "finished_at": "2026-11-08T09:46:50.516004+00:00"
+      "finished_at": "2026-11-08T10:12:58.125841+00:00"
     }
   ],
-  "next_action": "G3/WP4: Inspect fixed Q09 original retained run first (artifacts/agere-ordinary-comparison-2026-11-05/Q09/stack/receipt.json and result.json.gz): installed versioned diabetes/BP program definitions compared at2029-06-30 and2029-12-31, eligibility evidence, unresolved inputs and overlap; keep clinical nominations, payer eligibility and consent separate. Check current installed rule/version availability OFFLINE before any provider request. Genuine missing definitions remain supported unknowns with explicit dependencies, not invented rules or a new disease handler. Continue only actual missing wiring/source/citation work from retained native history; no original-question replay or unchanged uncertainty votes. Q08 catalog guard c91fba2b is now ACTIVE in app86934/session15368; actual normal continuation8.066s/25 attempts/$0.010789344 API-equivalent,0 errors/pending/new native calls/document rereads,19 rows/12 calls exact/current in native+browser. All20 source packets deciding supported; coverage undecided and public partial/unverified. Old planner-receipt invalidation remains intact. Q07 current65-subject/75-referral/122-role partial remains current/exact after activation;34/66 source packets deciding supported,32 undecided, no located fault for another vote. Source/storage/date guards and every attempt/partial retained. Ledger63637 includes1 new interrupted unpriced pending from Q07; no actual subscription limit. No provider/build/training job or source freeze. Full25/tenareas/current principal/Oct11baseline and independentG5/clinical/model/customer/deployment prerequisites remain; quiet continuation ACTIVE.",
+  "next_action": "G3/WP4: Corrected sequencing: for every remaining fixed case read its latest current assessment/linked completed receipts BEFORE the Nov5 original bank result. Do not re-run a passing source/math/ordinary campaign to recreate existing work. Next Q13 is already implemented: inspect artifacts/agere-Q13-native-conservation-2026-11-07/connected-workflow-assessment.json, completed-local-answer.json, financial-completion-app-proof.json and artifacts/agere-native-workspace-2026-11-07/retained-proof/receipt.json plus http-proof.json/browser-proof.json. Preserve exact13243 active-2029 accounts/1258 subjects, integer identities, unknown currency/date/attribution links and account-level scope; do not reprocess2684 historical attempts or widen to41656 patient-associated accounts. Inspect latest saved context current dependencies OFFLINE. If still current, reuse it and advance to the next actual open fixed-case behavior. If only derivation/policy changed, localize native revalidation from that latest completed state, preserving its public status and source decisions; no new provider/source run without a named current failure. Q12new Nov8 run resumed an older failed draft despite later Nov7 completion: preserve it as current compatibility validation, not a new capability.16attempts/$1.713764482API-equivalent/173.528s,8 native calls(1SQL error retained), original13-call prefix exact,24 month output/current native+browser, source+coverage machine-confirmed. History/current-state bases remain distinct (30013696cents difference), no net-cash/restatement-increment or actuarial qualification. Old latest Q12 contexts fail current derivation only while observation/evidence/premises remain current. Q09missingcriteria/Q10clinicalrelation/Q11case-mix and other independent qualifications remain. App86934/session15368/c91fba2b; no live provider/build/training job or source freeze; ledger63677/45 existing pending unchanged. Full25/tenareas/current principal/October11baseline retained; quiet continuation ACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
