@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T18:52:25.972975+00:00",
+  "updated_at": "2026-11-08T18:58:06.482687+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -5739,7 +5739,7 @@
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-    "source_frozen": false,
+    "source_frozen": true,
     "runtime_activation": true,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
@@ -7272,7 +7272,18 @@
       "scenarios_passed": 3
     },
     "current_evidence_change_capability": "artifacts/agere-evidence-change-current-2026-11-08/capability-candidates/evidence_change_reassessment.json",
-    "active_jobs": []
+    "owned_current_population_workflow": {
+      "pid": 8019,
+      "session": 55513,
+      "receipt": "artifacts/agere-population-current-2026-11-08/connected-v1/run-receipt.json",
+      "source_frozen": true,
+      "status": "running",
+      "provider_work": false,
+      "current_phase": "prepare_member_payer_and_participation_routes",
+      "full_roster": 4115,
+      "new_source_copy": false,
+      "clinical_model_qualification": false
+    }
   },
   "current_visual_request": {
     "status": "completed",
@@ -7307,8 +7318,17 @@
       }
     }
   },
-  "active_jobs": [],
-  "next_action": "G3/WP4: Summary/source-change delivery SEALED on315b772e; local app7824/session64521 is active on8885. Next close current population/program and connected prediction/discovery/financial applicability using retained full received-data copy and two original declared respiratory/behavioral program questions. Original saved program inputs are artifacts/agere-current-release-finish-2026-11-04/population/{respiratory,behavioral}-saved-program.json; legacy population-v2 decision.json paths are absent, so do not search/reclone or invent inputs. Native program/prediction/discovery engines are unchanged; care_capabilities adds only read-only declared_context, program_documents only discovery; financial_accounts only ordinary cash-binding helpers changed; program_accountability adds member references. Verify these scopes againstc0ea6324/Nov5manifest and exact current data/source proof. Old whole-module service identities may correctly reject saved work; use normal current prepare/guards and preserve all old task ownership/IDs, never manually restamp or reset work. Measure only missing/currently affected connected behavior, retain112/129historical nominations as observations to reconcile, not supplied runtime answers. No repeat source/model votes, large clone, unchanged passing campaign or optional components. Then economical-role current accounting/guards and one final consolidated exact code/config package. Source/adapter and evidence-change current candidates are qualified; active capability mapping unchanged until consolidation. All25cases/tenareas/principal/October11baseline, Q09/Q23definitions/Q16capacity/Q19qualification/Q24visual and independent clinical/model/customer dependencies retained. No agents/chats/services/caps; quiet continuationACTIVE.",
+  "active_jobs": [
+    {
+      "pid": 8019,
+      "kind": "current_connected_population_program_workflow",
+      "receipt": "artifacts/agere-population-current-2026-11-08/connected-v1/run-receipt.json",
+      "source_frozen": true,
+      "provider_work": false,
+      "session": 55513
+    }
+  ],
+  "next_action": "G3/WP4: Inspect owned current connected population workflow PID8019/session55513 FIRST: artifacts/agere-population-current-2026-11-08/connected-v1/run-receipt.json. Source frozen; no product edits or duplicate job. Current phase prepare_current_program/respiratory; scripted scope is two original full4115member documentary program questions, current payer/participation routes, complete internal handoffs/idempotent replay, and connected financial/outcome, prediction-limit and discovery save/reopen through normal current guards. Existing copied runtime is reused; no new clone, providers, model fit or external actions. The exact original dated software-review declarations are recovered from Nov4saved programs into this copy only; buyer had0existing portfolios/tasks, so no existing work is reset. All6original follow-up reports exist for measured output comparison; prior independent raw-source/exhaustive-partition audits are retained because their native algorithms and source stores remain unchanged. Do not repeatedly scan unchanged raw sources or repeat model votes. Require actual current program/replay/member-open/full-denominator results and all-attempt/source/code conservation; do not claim a pass before terminal receipt. Summary/source-change delivery315b772e is SEALED and ACTIVE locally:3mutations each1changed/4114unchanged;43616account rows exact;member585MB->2.18MB/acquisition273MB->69KB;36checks;0providers;64569rows retained. Sealed receipt artifacts/agere-evidence-change-current-2026-11-08/delivery-receipt.json; private branch verified385f92d6. Mainapp7824/session64521 on8885 serves315b772e;Q03full92rowpartial/unverifiedanswer exact/current-policy,0startupcalls. After this native program job, qualify only current-supported existing population/longitudinal/discovery/outcome-financial checks using AST/source compatibility plus actualflow; then current economical-role accounting/guards and one consolidated exactcode/config archive/install/recovery. No repeated128GBpackage permetadata. Active capability mapping unchanged pendingconsolidation. Preserve all25cases/tenareas/principal/October11baseline, missingexactQ09/Q23definitions/Q16capacity/Q19qualification/Q24browserQA(no bypass), independent source-family/model/clinical/scientific/actuarial and customer dependencies. No agents/chats/services/caps;quiet continuationACTIVE; no gating.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
