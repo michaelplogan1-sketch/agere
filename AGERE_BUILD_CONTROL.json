@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T12:08:42.611746+00:00",
+  "updated_at": "2026-11-08T12:26:08.592717+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -580,9 +580,9 @@
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Q15 current original-question workflow next; Q14 fresh automatic entry and all25/tenarea release with independent clinical/model/actuarial/customer dependencies remain.",
-      "engineering_current_status": "Q14 complete retained machine source stage is current and app-consumed. No whole25case release, fresh entry or independent qualification acceptance.",
-      "next_action": "G3/WP4: Q14 retained source stage completed and current native/browser/follow-up exact on98d5289a, contextANS-680dd9dc88dc4220b84c3bb2. Next inspect latest-completed Q15 appointment original-question receipts/current contexts first, then offline native dependency preflight. Q15 recorded faults concern annual versus monthly bindings and latest status versus history-derived outcome; preserve received status policy and no causal inference. Continue only actual retained producer/native history for any concrete present failure; no whole-question replay, invented outcomes/staffing assumptions or unchanged passing/revote campaign. Preserve full25fixedcases/tenareas/principal/October11baseline, source/quantity/domain/date guards and independent qualification/customer prerequisites. Current app90161/session76008/98d5289a. No provider/build/training job or source freeze. Last sealed owner receipt unchanged; quiet continuationACTIVE.",
+      "remaining_acceptance": "Q16 current capacity workflow next; fresh automatic entry/current25case-tenarea release and independent clinical/model/actuarial/customer qualification remain.",
+      "engineering_current_status": "Q15 concrete scope and operational-origin defects removed; complete retained machine review/current native/browser consumer. Q14 scoped source-stage completion retained. No whole25case/fresh-entry or independent qualification acceptance.",
+      "next_action": "G3/WP4: Q15 scope/provenance repair now completes full1646provider-month rows and current native/browser/askHTTP200 atANS-1e000f5248a69490f4ad6c74 on app90721/session77564/a6941278. Next inspect latest-completed Q16 capacity receipts/current contexts before any provider work; offline native dependency preflight must distinguish recorded demand from actual service durations/staffing/capacity, preserve absent inputs and declared comparable-demand assumption. Continue only genuine missing work or concrete current failure on retained native state; no repeated completed campaigns, proxy defaults or whole-question replay. Q15 annual binding and booked-history errors are removed with actual calculations; owner-directed review is not fresh automatic-entry qualification. Q14 completed retained source stage evidence remains scoped98d5289a, without another unchanged campaign. Preserve all25fixedcases/tenareas/principal/October11baseline, source/quantity/domain/date guards and independent clinical/model/actuarial/customer prerequisites. No provider/build/training job or source freeze. Last sealed owner receipt unchanged; quiet continuationACTIVE.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -661,34 +661,36 @@
     }
   ],
   "checkpoint": {
-    "kind": "Q14_completed_source_current_consumer",
+    "kind": "Q15_native_scope_and_operational_origin_current_consumer",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Retained source-stage answer now completes every required machine source dependency and opens as answered in current normal app with exact account rows, source/date/quantity bindings and follow-up.",
+    "user_behavior_delta": "Original full provider-month table now has an annual quantity bound to an annual calculation, correct latest-status versus history-outcome distinctions, complete machine source/coverage review, and current native/browser consumption.",
     "measured_failure_reduction": {
-      "full_source_support_previously_not_run_now_complete": true,
-      "source_context_gaps": 0,
-      "source_packets_checked": 514,
-      "account_rows": 2173,
-      "patient_subjects": 513,
-      "native_and_browser_current": true,
+      "wrong_annual_binding_removed": true,
+      "unsupported_history_absence_removed": true,
+      "operational_feedback_origin_failure_removed": true,
+      "provider_month_rows": 1646,
+      "all_original_table_cells_and_order_exact": true,
+      "machine_source_and_coverage_confirmed": true,
+      "native_browser_current": true,
       "fresh_automatic_entry_qualified": false
     },
     "evidence": [
-      "artifacts/agere-Q14-retained-2026-11-08/completed-source-workflow-completion.json",
-      "artifacts/agere-Q14-retained-2026-11-08/selected-json-native-proof/receipt.json",
-      "artifacts/agere-Q14-retained-2026-11-08/selected-json-native-proof-v2/receipt.json",
-      "artifacts/agere-Q14-retained-2026-11-08/selected-json-native-proof-v3/receipt.json",
-      "artifacts/agere-Q14-retained-2026-11-08/connected-source-packet-proof/receipt.json",
-      "artifacts/agere-Q14-retained-2026-11-08/source-wire-proof/receipt.json",
-      "artifacts/agere-Q14-retained-2026-11-08/global-source-field-probe/receipt.json",
-      "artifacts/agere-Q14-retained-2026-11-08/source-packet-regressions.log",
-      "artifacts/agere-Q14-retained-2026-11-08/retained-source-finalization/receipt.json",
-      "artifacts/agere-Q14-retained-2026-11-08/completed-source-persistence/receipt.json",
-      "artifacts/agere-Q14-retained-2026-11-08/completed-source-http-consumer-proof.json"
+      "artifacts/agere-Q15-retained-2026-11-08/workflow-completion.json",
+      "artifacts/agere-Q15-retained-2026-11-08/preflight-receipt.json",
+      "artifacts/agere-Q15-retained-2026-11-08/retained-finalization/receipt.json",
+      "artifacts/agere-Q15-retained-2026-11-08/located-scope-feedback.json",
+      "artifacts/agere-Q15-retained-2026-11-08/located-scope-repair/receipt.json",
+      "artifacts/agere-Q15-retained-2026-11-08/located-scope-repair-v2/receipt.json",
+      "artifacts/agere-Q15-retained-2026-11-08/operational-binding-regressions.log",
+      "artifacts/agere-Q15-retained-2026-11-08/operational-origin-proof/receipt.json",
+      "artifacts/agere-Q15-retained-2026-11-08/operational-origin-proof-v2/receipt.json",
+      "artifacts/agere-Q15-retained-2026-11-08/operational-origin-finalization/receipt.json",
+      "artifacts/agere-Q15-retained-2026-11-08/native-scope-conservation.json",
+      "artifacts/agere-Q15-retained-2026-11-08/http-consumer-proof.json"
     ],
-    "remaining_gap": "Q15 current original-question workflow next; Q14 fresh automatic entry and all25/tenarea release with independent clinical/model/actuarial/customer dependencies remain.",
-    "next_action": "G3/WP4: Q14 retained source stage completed and current native/browser/follow-up exact on98d5289a, contextANS-680dd9dc88dc4220b84c3bb2. Next inspect latest-completed Q15 appointment original-question receipts/current contexts first, then offline native dependency preflight. Q15 recorded faults concern annual versus monthly bindings and latest status versus history-derived outcome; preserve received status policy and no causal inference. Continue only actual retained producer/native history for any concrete present failure; no whole-question replay, invented outcomes/staffing assumptions or unchanged passing/revote campaign. Preserve full25fixedcases/tenareas/principal/October11baseline, source/quantity/domain/date guards and independent qualification/customer prerequisites. Current app90161/session76008/98d5289a. No provider/build/training job or source freeze. Last sealed owner receipt unchanged; quiet continuationACTIVE."
+    "remaining_gap": "Q16 current capacity workflow next; fresh automatic entry/current25case-tenarea release and independent clinical/model/actuarial/customer qualification remain.",
+    "next_action": "G3/WP4: Q15 scope/provenance repair now completes full1646provider-month rows and current native/browser/askHTTP200 atANS-1e000f5248a69490f4ad6c74 on app90721/session77564/a6941278. Next inspect latest-completed Q16 capacity receipts/current contexts before any provider work; offline native dependency preflight must distinguish recorded demand from actual service durations/staffing/capacity, preserve absent inputs and declared comparable-demand assumption. Continue only genuine missing work or concrete current failure on retained native state; no repeated completed campaigns, proxy defaults or whole-question replay. Q15 annual binding and booked-history errors are removed with actual calculations; owner-directed review is not fresh automatic-entry qualification. Q14 completed retained source stage evidence remains scoped98d5289a, without another unchanged campaign. Preserve all25fixedcases/tenareas/principal/October11baseline, source/quantity/domain/date guards and independent clinical/model/actuarial/customer prerequisites. No provider/build/training job or source freeze. Last sealed owner receipt unchanged; quiet continuationACTIVE."
   },
   "decisions": [
     {
@@ -5473,10 +5475,44 @@
         "artifacts/agere-Q14-retained-2026-11-08/completed-source-http-consumer-proof.json"
       ],
       "scope_impact": "No source/threshold/population/document semantics changed. Projection app activation supported by exact native and complete review evidence, recoverybf395046 retained. Fresh automatic entry and independent qualification not claimed."
+    },
+    {
+      "at": "2026-11-08T12:14:14.547557+00:00",
+      "gate": "G3",
+      "reason": "Q15 complete native history copied exactly but cheap field reviewers left four named checks below unchanged threshold; an annual statement is concretely bound to one monthly row, and latest status does not establish missing history.",
+      "correction": "Preserve complete initial4-attempt review and partial. Frontier engineering inspection supplies only located field/native binding failures, no replacement counts. Continue existing producer for these actual defects; no unchanged reviewer campaign or original question restart.",
+      "evidence": [
+        "artifacts/agere-Q15-retained-2026-11-08/preflight-receipt.json",
+        "artifacts/agere-Q15-retained-2026-11-08/retained-finalization/receipt.json",
+        "artifacts/agere-Q15-retained-2026-11-08/located-scope-feedback.json",
+        "artifacts/agere-Q15-retained-2026-11-08/located-scope-repair/receipt.json"
+      ],
+      "scope_impact": "Owner-directed engineering repair; no small-model threshold changed or independent/automatic-entry acceptance claimed. Full25/tenarea charter retained."
+    },
+    {
+      "at": "2026-11-08T12:26:08.592717+00:00",
+      "gate": "G3",
+      "reason": "Actual operational feedback read was bound to a receipt outside clinical call history; strict guard rejected the unchanged analytical answer. Small-reviewer uncertainty alone did not locate the annual/month and latest/history contradictions.",
+      "correction": "Frontier engineering feedback named only concrete native scope failures, no expected counts. Analyst computed narrow missing dependencies. Existing portable SQL fallback retains exact registered operational roots and incomplete/non-source authority;42regressions and actual0.297s native proof passed. Initial native proof retained stale top-level SQL alias and failed; preserved receipt, corrected alias to ordinary executed_query without product guard change. Exact latest producer finalized7.848s/6calls/$0.004767702 and current app consumed all1646rows1.530s/0calls. Preserve all17provider attempts/$1.638122566, zero errors/unpriced/newpending and both earlier harness failures.",
+      "evidence": [
+        "artifacts/agere-Q15-retained-2026-11-08/workflow-completion.json",
+        "artifacts/agere-Q15-retained-2026-11-08/preflight-receipt.json",
+        "artifacts/agere-Q15-retained-2026-11-08/retained-finalization/receipt.json",
+        "artifacts/agere-Q15-retained-2026-11-08/located-scope-feedback.json",
+        "artifacts/agere-Q15-retained-2026-11-08/located-scope-repair/receipt.json",
+        "artifacts/agere-Q15-retained-2026-11-08/located-scope-repair-v2/receipt.json",
+        "artifacts/agere-Q15-retained-2026-11-08/operational-binding-regressions.log",
+        "artifacts/agere-Q15-retained-2026-11-08/operational-origin-proof/receipt.json",
+        "artifacts/agere-Q15-retained-2026-11-08/operational-origin-proof-v2/receipt.json",
+        "artifacts/agere-Q15-retained-2026-11-08/operational-origin-finalization/receipt.json",
+        "artifacts/agere-Q15-retained-2026-11-08/native-scope-conservation.json",
+        "artifacts/agere-Q15-retained-2026-11-08/http-consumer-proof.json"
+      ],
+      "scope_impact": "Small existing-module fix, no source/threshold/prefix bypass/architecture rewrite. Owner-directed repair not fresh-entry qualification; all25/tenarea/independent dependencies remain."
     }
   ],
   "unsealed_work": {
-    "status": "Q14_source_dependency_transport_and_current_consumer_completed",
+    "status": "Q15_scope_and_operational_origin_current_workflow_completed",
     "product_commit": "6df36263b54136ae6e853b2e927c2b1b21dac4e6",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
@@ -5509,7 +5545,7 @@
     "new_provider_attempts": 185,
     "known_api_equivalent_usd": 4.933035236,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 64284,
+    "all_attempt_rows_retained": 64301,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
@@ -6788,7 +6824,63 @@
     "Q14_source_finalization_known_api_equivalent_usd": 1.5006068060000002,
     "Q14_completed_source_workflow": "artifacts/agere-Q14-retained-2026-11-08/completed-source-workflow-completion.json",
     "Q14_source_transport_runtime_activation": true,
-    "Q14_fresh_automatic_entry_qualified": false
+    "Q14_fresh_automatic_entry_qualified": false,
+    "owned_Q15_retained_finalization": {
+      "kind": "Q15_retained_original_producer_finalization",
+      "pid": 90332,
+      "session_id": 89884,
+      "receipt": "artifacts/agere-Q15-retained-2026-11-08/retained-finalization/receipt.json",
+      "status": "returned_unresolved_verification",
+      "source_frozen": false,
+      "started_at": "2026-11-08T12:12:05.664421+00:00",
+      "product_commit": "98d5289aa19591f9347aa52c70897bd7220ff08c"
+    },
+    "Q15_native_preflight": "artifacts/agere-Q15-retained-2026-11-08/preflight-receipt.json",
+    "Q15_latest_context_check": "artifacts/agere-Q15-retained-2026-11-08/latest-context-check.json",
+    "owned_Q15_located_scope_repair": {
+      "kind": "Q15_located_frontier_scope_repair",
+      "pid": 90411,
+      "session_id": 24401,
+      "receipt": "artifacts/agere-Q15-retained-2026-11-08/located-scope-repair-v2/receipt.json",
+      "status": "returned",
+      "source_frozen": false,
+      "started_at": "2026-11-08T12:14:52.682916+00:00",
+      "finished_at": "2026-11-08T12:16:33.376113+00:00"
+    },
+    "Q15_located_scope_feedback": "artifacts/agere-Q15-retained-2026-11-08/located-scope-feedback.json",
+    "Q15_initial_current_context": "ANS-a426bd38282bfdd69884472d",
+    "owned_Q15_located_scope_repair_v1": {
+      "kind": "Q15_located_frontier_scope_repair",
+      "pid": 90364,
+      "session_id": 92572,
+      "receipt": "artifacts/agere-Q15-retained-2026-11-08/located-scope-repair/receipt.json",
+      "status": "failed_preserved",
+      "source_frozen": false,
+      "started_at": "2026-11-08T12:13:50.472826+00:00"
+    },
+    "owned_Q15_operational_origin_finalization": {
+      "kind": "Q15_retained_operational_origin_finalization",
+      "pid": 90700,
+      "session_id": 20111,
+      "receipt": "artifacts/agere-Q15-retained-2026-11-08/operational-origin-finalization/receipt.json",
+      "status": "returned",
+      "source_frozen": false,
+      "product_commit": "a6941278",
+      "started_at": "2026-11-08T12:22:57.795319+00:00",
+      "finished_at": "2026-11-08T12:23:05.692628+00:00"
+    },
+    "Q15_operational_origin_proof": "artifacts/agere-Q15-retained-2026-11-08/operational-origin-proof-v2/receipt.json",
+    "Q15_operational_origin_candidate_commit": "a6941278",
+    "Q15_operational_origin_tests_passed": 42,
+    "Q15_operational_origin_app_activation": true,
+    "Q15_workflow_completion": "artifacts/agere-Q15-retained-2026-11-08/workflow-completion.json",
+    "Q15_current_context": "ANS-1e000f5248a69490f4ad6c74",
+    "Q15_current_consumer": "artifacts/agere-Q15-retained-2026-11-08/http-consumer-proof.json",
+    "Q15_source_support_completed": true,
+    "Q15_annual_scope_fault_removed": true,
+    "Q15_history_status_fault_removed": true,
+    "Q15_fresh_automatic_entry_qualified": false,
+    "full_Q15_acceptance": false
   },
   "current_visual_request": {
     "status": "completed",
@@ -6822,7 +6914,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3/WP4: Q14 retained source stage completed and current native/browser/follow-up exact on98d5289a, contextANS-680dd9dc88dc4220b84c3bb2. Next inspect latest-completed Q15 appointment original-question receipts/current contexts first, then offline native dependency preflight. Q15 recorded faults concern annual versus monthly bindings and latest status versus history-derived outcome; preserve received status policy and no causal inference. Continue only actual retained producer/native history for any concrete present failure; no whole-question replay, invented outcomes/staffing assumptions or unchanged passing/revote campaign. Preserve full25fixedcases/tenareas/principal/October11baseline, source/quantity/domain/date guards and independent qualification/customer prerequisites. Current app90161/session76008/98d5289a. No provider/build/training job or source freeze. Last sealed owner receipt unchanged; quiet continuationACTIVE.",
+  "next_action": "G3/WP4: Q15 scope/provenance repair now completes full1646provider-month rows and current native/browser/askHTTP200 atANS-1e000f5248a69490f4ad6c74 on app90721/session77564/a6941278. Next inspect latest-completed Q16 capacity receipts/current contexts before any provider work; offline native dependency preflight must distinguish recorded demand from actual service durations/staffing/capacity, preserve absent inputs and declared comparable-demand assumption. Continue only genuine missing work or concrete current failure on retained native state; no repeated completed campaigns, proxy defaults or whole-question replay. Q15 annual binding and booked-history errors are removed with actual calculations; owner-directed review is not fresh automatic-entry qualification. Q14 completed retained source stage evidence remains scoped98d5289a, without another unchanged campaign. Preserve all25fixedcases/tenareas/principal/October11baseline, source/quantity/domain/date guards and independent clinical/model/actuarial/customer prerequisites. No provider/build/training job or source freeze. Last sealed owner receipt unchanged; quiet continuationACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6911,8 +7003,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 90161,
-  "owned_server_session": 76008,
+  "owned_server_pid": 90721,
+  "owned_server_session": 77564,
   "last_run_observation": {
     "at": "2026-11-07T20:07:46.544952+00:00",
     "status": "native_storage_repair_qualified_Q06_retained_partial",
