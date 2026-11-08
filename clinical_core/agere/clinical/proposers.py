@@ -26,7 +26,7 @@ from pathlib import Path
 
 from . import request_plan
 from .. import model_policy
-from .literal_check import VERSION as CHECK_VERSION, executable_text, missing, shape_misfit
+from .literal_check import VERSION as CHECK_VERSION, executable_text, graph_evidence_text, missing, shape_misfit
 from .question_input import QuestionNotUnderstood
 from .answer_checks import gate as answer_gate
 from .system_one_gate import CLAUDE_TIERS, outage
@@ -528,7 +528,7 @@ class Cascade:
         try:
             graph, _ = self.ladder.compiled()
             if not graph or not graph.get('nodes') or graph.get('coverage') == 'unsupported': return order
-            if self.gaps(executable_text([n.get('parameters') for n in graph['nodes']])): return order
+            if self.gaps(graph_evidence_text(graph)): return order
         except Exception:  # noqa: BLE001 - no profile / fixture stack: keep the order
             return order
         first = order[min(heavy)]
@@ -1068,7 +1068,7 @@ class Cascade:
         except Exception:  # noqa: BLE001 - extra evidence is optional: the check then reads the SQL alone, as for every other tier
             extra = ''
         plain = lambda: self.gaps(evidence_of(contract or {}) if contract else '\n'.join(
-            t for t in (executable_text([n.get('parameters') for n in graph.get('nodes', [])]), extra) if t))
+            t for t in (graph_evidence_text(graph), extra) if t))
         if AC.mode() == 'off': return plain()
         try:
             as_of = str((getattr(self.catalog, 'identity', None) or {}).get('as_of') or '')[:10] or None
@@ -1079,7 +1079,7 @@ class Cascade:
 
     def evidence(self, contract):
         if (contract or {}).get('kind') == 'checked_graph':
-            return executable_text([n.get('parameters') for n in contract['graph'].get('nodes', [])])
+            return graph_evidence_text(contract['graph'])
         return evidence_of(contract or {})
 
     def note(self, name, outcome, detail, started):
@@ -1378,7 +1378,7 @@ class Cascade:
         issue=output_contract_issue(self.question)
         if issue:return self.reject('atomic_system_one',[issue])
         def early(graph):  # System One is paid per patient: a plan the literal check will reject is declined before any call
-            gaps = self.gaps(executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
+            gaps = self.gaps(graph_evidence_text(graph))
             if gaps: raise QuestionNotUnderstood('literal pre-check before any System One call: the plan drops ' + '; '.join(gaps)[:300])
         def plan_review(graph,planner):
             try:

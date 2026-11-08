@@ -39,7 +39,7 @@ import numpy as np
 
 from . import revenue_common as rc
 
-VERSION = 'scorecard-risk/2'
+VERSION = 'scorecard-risk/3'
 OP = 'scorecard_risk'
 OUTCOMES = ('admission', 'ed_visit', 'death', 'readmission')
 OUTCOME_LABEL = {'admission': 'inpatient admission', 'ed_visit': 'emergency department visit', 'death': 'death',
@@ -78,6 +78,16 @@ CONTRACT = {'inputs': ['optional earlier_set'],
                        'beta / unit); trained at as_of - 2 x horizon, validated out of time at as_of - horizon (AUROC, bands); current '
                        'scores with each patient\'s points line by line.'}
 NATIVE = ('value',)
+
+
+def executable_evidence(parameters):
+    """Execution guarantees of a validated evidence mode, without model claims."""
+    p = validate(parameters)
+    if p.get('mode') != 'evidence':
+        return {}
+    return {'model_fitting_permitted': False,
+            'target_type': OUTCOME_LABEL[p['outcome']],
+            'label_support': 'recorded positive labels; unrecorded labels remain unknown'}
 
 
 def schema(obj, string, array):

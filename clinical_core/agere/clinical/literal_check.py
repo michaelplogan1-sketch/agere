@@ -15,7 +15,7 @@ import re
 
 from . import local_normalizer as N
 
-VERSION = 'literal-question-check/3'
+VERSION = 'literal-question-check/4'
 
 # Executable-side spellings of each qualifier/concept, in addition to the question-side pattern (local_normalizer).
 ALIASES = {
@@ -69,6 +69,35 @@ def executable_text(*parts):
             out.append(f'"{key}": {json.dumps(value)}' if key else json.dumps(value))
     for p in parts: walk(p)
     return '\n'.join(out)
+
+
+def graph_evidence_text(graph):
+    """Parameters plus registered, validated operator semantics; no question text.
+
+    An enum such as an engine's evidence mode can enforce no fitting without
+    spelling that restriction in its parameters. Only the implementing module
+    can declare those semantics. Unknown engines, invalid parameters and modes
+    without such a declaration add nothing to the ordinary literal checks.
+    """
+    nodes = (graph or {}).get('nodes') or []
+    parts = [executable_text([node.get('parameters') for node in nodes])]
+    from . import engine_suite
+    for node in nodes:
+        operation = node.get('operation')
+        if operation not in engine_suite.MODULES:
+            continue
+        module = engine_suite.module(operation)
+        describe = getattr(module, 'executable_evidence', None)
+        if not callable(describe):
+            continue
+        try:
+            bound = module.validate(node.get('parameters'))
+            semantics = describe(bound)
+        except (ValueError, TypeError, KeyError):
+            continue
+        if semantics:
+            parts.append(executable_text({'operator_semantics': semantics}))
+    return '\n'.join(part for part in parts if part)
 
 
 def _numbers(text):

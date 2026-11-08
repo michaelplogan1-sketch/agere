@@ -120,6 +120,55 @@ class Scorecard(unittest.TestCase):
 
 
 class EvidenceOnly(unittest.TestCase):
+    def test_registered_no_fit_semantics_satisfy_the_original_plan_gate(self):
+        from clinical_core.agere.clinical import literal_check as L, requirement_ledger as R, acceptance_contract as A
+        question = ('What existing evidence supports predicting an inpatient admission over the next 90 days '
+                    'using only inputs available at 2029-01-01? Report positive-label support. '
+                    'Do not fit a model on this request.')
+        graph = {'nodes': [{'operation': S.OP, 'parameters': {
+            'mode': 'evidence', 'outcome': 'admission', 'origin_date': '2029-01-01', 'horizon_days': 90}}]}
+        plain = L.executable_text([node['parameters'] for node in graph['nodes']])
+        self.assertEqual(len(R.gaps(question, plain)), 3)
+        text = L.graph_evidence_text(graph)
+        self.assertEqual(R.gaps(question, text), [])
+        self.assertEqual(A.evidence(graph=graph), text)
+        self.assertNotIn(question, text)
+
+    def test_registered_semantics_do_not_cover_a_wrong_outcome_date_or_window(self):
+        from clinical_core.agere.clinical import literal_check as L, requirement_ledger as R
+        question = ('Show inpatient positive-label evidence over the next 90 days using inputs '
+                    'available at 2029-01-01. Do not fit a model.')
+        parameters = {'mode': 'evidence', 'outcome': 'admission', 'origin_date': '2029-01-01', 'horizon_days': 90}
+        for changed in ({'outcome': 'ed_visit'}, {'origin_date': '2028-01-01'}, {'horizon_days': 30}):
+            graph = {'nodes': [{'operation': S.OP, 'parameters': {**parameters, **changed}}]}
+            with self.subTest(changed=changed):
+                self.assertTrue(R.gaps(question, L.graph_evidence_text(graph)))
+
+    def test_fit_invalid_and_unregistered_modes_cannot_claim_no_fit_semantics(self):
+        from clinical_core.agere.clinical import literal_check as L
+        for op, parameters in ((S.OP, {'outcome': 'admission'}),
+                               (S.OP, {'mode': 'evidence', 'origin_date': 'invalid', 'horizon_days': 90}),
+                               ('unregistered_engine', {'mode': 'evidence'})):
+            with self.subTest(operation=op, parameters=parameters):
+                text = L.graph_evidence_text({'nodes': [{'operation': op, 'parameters': parameters,
+                                                       'purpose': 'no fit inpatient positive labels'}]})
+                self.assertNotIn('operator_semantics', text)
+                self.assertNotIn('no fit inpatient positive labels', text)
+
+    def test_validated_evidence_plan_moves_before_heavy_fallback_without_bypassing_checks(self):
+        from clinical_core.agere.clinical.proposers import Cascade
+        question = ('Report inpatient positive-label support over the next 90 days using inputs '
+                    'available at 2029-01-01. Do not fit a model.')
+        graph = {'nodes': [{'operation': S.OP, 'parameters': {
+            'mode': 'evidence', 'outcome': 'admission', 'origin_date': '2029-01-01', 'horizon_days': 90}}]}
+        cascade = object.__new__(Cascade)
+        cascade.question = question
+        cascade._ladder = SimpleNamespace(compiled=lambda: (graph, {}))
+        order = ('evidence_retrieval', 'backstop_agent', 'local_compiler')
+        self.assertEqual(cascade.free_first(order), ('local_compiler', 'evidence_retrieval', 'backstop_agent'))
+        graph['nodes'][0]['parameters']['outcome'] = 'ed_visit'
+        self.assertEqual(cascade.free_first(order), order)
+
     question = ('What existing evidence supports predicting inpatient admission over the next 90 days using only inputs available at 2029-01-01? '
                 'Do not fit or claim a model on this request.')
 

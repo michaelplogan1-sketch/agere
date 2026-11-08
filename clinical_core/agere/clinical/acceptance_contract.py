@@ -32,7 +32,7 @@ import re
 
 from . import local_normalizer as N
 from . import requirement_ledger
-from .literal_check import ALIASES, executable_text, shape_misfit
+from .literal_check import ALIASES, executable_text, graph_evidence_text, shape_misfit
 
 VERSION = 'acceptance-contract/1'
 MET, UNMET, UNVERIFIED, NA = 'met', 'unmet', 'unverified', 'not_applicable'
@@ -103,7 +103,7 @@ def evidence(contract=None, graph=None):
         graph = graph or contract.get('graph')
         contract = {}
     if graph:
-        parts.append(executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
+        parts.append(graph_evidence_text(graph))
     if contract:
         parts.append(executable_text({k: v for k, v in contract.items() if k in TEXT_KEYS}))
         if kind == 'engine_form': parts.append(executable_text(contract.get('params')))
