@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3/WP4: Native context persistence repair6df36263 is qualified and active; do not repeat it or the whole Q06. Inspect retained source work in retained-population-continuation/investigation.json.gz. Successful intention/reported-taking reviews exist for63subjects in agere_result_97/98/99; compose them rather than re-read them. Only the last original page (patient_query_sql from call119, OFFSET63;20remaining subjects) still failed SQLite disk I/O. Preserve exact field contracts, all120calls, source observations/cache and every prior attempt. First extend the existing typed native-runtime failure halt to SQLite IOERR-family exceptions (not source text): the actual run repeated this infrastructure error four times and escalated instead of pausing. Qualify one-callback/prefix conservation offline, then resume only that exact failed source action with the current cache and finish native composition/bindings/full source and question-coverage review. No whole-question/document/uncertain-vote campaigns or invented acceptance. Keep the original question and explicit source date/drug scope in view; a selected subset is not automatically complete question coverage. The public83rowpartial is current ANS-b57b74c7e2ce43f63e6c00d6; all16active source assertions now resolve to actual recorded observations.105storage/consumer checks pass;50.59MB->3.72MB, exact native/current save+HTTP,0newproviders. App82682/session28352/8885. All25cases/tenareas and independentG5/clinical/model/customer dependencies unchanged; quiet continuationACTIVE.",
+  "active_work": "G3/WP4: Inspect owned retained-source finalization PID83460/session85697 first: artifacts/agere-Q06-current-original-2026-11-07/retained-source-finalization/receipt.json. Source frozen: no product edits or duplicate provider work. All typed source pages already returned; source work for63prior subjects plus last20 is preserved in121nativecalls. Source finalizer starts from actual rejected draft/recorded source manifests and current native views97/98/99/100, using normal Sonnet-entry composition, bindings, source/coverage review and persistence; no supplied expected values/answerplan or prior acceptance. Do not re-read completed pages or rerun the whole question. On terminal return inspect every attempt, actual full-scope coverage, native/source conservation, genuine unknowns and current saved consumer before activation. NativeIO guard1e378543 is qualified (12checks, exact114prefix/83rows,0post-errorcallbacks/0frontier/0providers); current app82682/session28352 remains6df36263 pending the next current activation. Storage6df qualified105checks/83rows120calls/50.59->3.72MB and exact source-observation transfer/current HTTP. All25cases/tenareas and independentG5/clinical/model/customer dependencies remain; quiet continuationACTIVE.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
   "owned_server_pid": 82682,
@@ -15,7 +15,7 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3/WP4: Native context persistence repair6df36263 is qualified and active; do not repeat it or the whole Q06. Inspect retained source work in retained-population-continuation/investigation.json.gz. Successful intention/reported-taking reviews exist for63subjects in agere_result_97/98/99; compose them rather than re-read them. Only the last original page (patient_query_sql from call119, OFFSET63;20remaining subjects) still failed SQLite disk I/O. Preserve exact field contracts, all120calls, source observations/cache and every prior attempt. First extend the existing typed native-runtime failure halt to SQLite IOERR-family exceptions (not source text): the actual run repeated this infrastructure error four times and escalated instead of pausing. Qualify one-callback/prefix conservation offline, then resume only that exact failed source action with the current cache and finish native composition/bindings/full source and question-coverage review. No whole-question/document/uncertain-vote campaigns or invented acceptance. Keep the original question and explicit source date/drug scope in view; a selected subset is not automatically complete question coverage. The public83rowpartial is current ANS-b57b74c7e2ce43f63e6c00d6; all16active source assertions now resolve to actual recorded observations.105storage/consumer checks pass;50.59MB->3.72MB, exact native/current save+HTTP,0newproviders. App82682/session28352/8885. All25cases/tenareas and independentG5/clinical/model/customer dependencies unchanged; quiet continuationACTIVE.",
+  "resume_priority": "G3/WP4: Inspect owned retained-source finalization PID83460/session85697 first: artifacts/agere-Q06-current-original-2026-11-07/retained-source-finalization/receipt.json. Source frozen: no product edits or duplicate provider work. All typed source pages already returned; source work for63prior subjects plus last20 is preserved in121nativecalls. Source finalizer starts from actual rejected draft/recorded source manifests and current native views97/98/99/100, using normal Sonnet-entry composition, bindings, source/coverage review and persistence; no supplied expected values/answerplan or prior acceptance. Do not re-read completed pages or rerun the whole question. On terminal return inspect every attempt, actual full-scope coverage, native/source conservation, genuine unknowns and current saved consumer before activation. NativeIO guard1e378543 is qualified (12checks, exact114prefix/83rows,0post-errorcallbacks/0frontier/0providers); current app82682/session28352 remains6df36263 pending the next current activation. Storage6df qualified105checks/83rows120calls/50.59->3.72MB and exact source-observation transfer/current HTTP. All25cases/tenareas and independentG5/clinical/model/customer dependencies remain; quiet continuationACTIVE.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-05T13:04:20.746654+00:00",
   "heartbeat_status": "ACTIVE",
@@ -30,17 +30,17 @@
   "last_observed_server_session": 83398,
   "server_status": "Owned app82682/session28352 serves6df36263 on8885; native/browser HTTP200/exact current partial. No provider job running.",
   "unsealed_work": {
-    "status": "qualified_active_unsealed",
+    "status": "Q06_retained_source_finalization_running",
     "product_commit": "6df36263b54136ae6e853b2e927c2b1b21dac4e6",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-    "source_frozen": false,
+    "source_frozen": true,
     "runtime_activation": true,
     "product_code_in_candidate_app": true,
     "answer_selected": false,
     "affected_tests_passed": 105,
-    "provider_calls_this_increment": 0,
+    "provider_calls_this_increment": null,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
       "status": "ordinary_check_returned_unsealed_paused_for_claude_review",
@@ -60,15 +60,15 @@
       "new_provider_attempts": 21,
       "offline_proof_provider_calls": 0
     },
-    "new_provider_attempts": 0,
-    "known_api_equivalent_usd": 0,
+    "new_provider_attempts": null,
+    "known_api_equivalent_usd": null,
     "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q21/comparison.json",
-    "all_attempt_rows_retained": 62753,
+    "all_attempt_rows_retained": 62892,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 0,
+    "latest_increment_provider_attempts": null,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -976,7 +976,7 @@
       "terminal_receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-continuation/receipt.json"
     },
     "Q06_retained_running_observation": "artifacts/agere-Q06-current-original-2026-11-07/retained-running-observation.json",
-    "current_run_accounting_pending": false,
+    "current_run_accounting_pending": true,
     "Q06_retained_completion_receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-population-continuation/receipt.json",
     "Q06_context_storage_delivery": {
       "schema": "Q06-native-context-storage-delivery/1",
@@ -1024,6 +1024,69 @@
         "artifacts/agere-Q06-current-original-2026-11-07/packed-procedural-consumer-checks.log",
         "artifacts/agere-Q06-current-original-2026-11-07/baseline-catalog-fixture-check.log"
       ]
+    },
+    "Q06_native_io_halt_candidate": {
+      "product_commit": "1e378543",
+      "proof": "artifacts/agere-Q06-current-original-2026-11-07/native-io-prefix-proof.json",
+      "checks": "artifacts/agere-Q06-current-original-2026-11-07/native-io-halt-checks.log",
+      "runtime_activation": false,
+      "new_provider_attempts": 0
+    },
+    "Q06_pending_source_page": {
+      "schema": "Q06-exact-pending-source-page/1",
+      "pid": 83096,
+      "status": "source_page_returned_for_composition",
+      "source_frozen": false,
+      "started_at": "2026-11-08T06:59:11.924640+00:00",
+      "original_failed_call_index": 119,
+      "original_action_digest": "0c7ca73f59815785714ee71a2322eeba91dcec91b07a5808bc2d6802a6c26f4a",
+      "retained_calls": 120,
+      "preflight": false,
+      "whole_question_reexecuted": false,
+      "successful_source_pages_reexecuted": false,
+      "clinical_or_model_qualification": false,
+      "whole_case_accepted": false,
+      "source": {
+        "source_digest": "de1e487344c2c5662c55cbe8302497f559bd7cff85d06572f78b1fb2fabedacd",
+        "as_of": "2030-05-27",
+        "semantic_version": "semantic-layer/20",
+        "size": 8780111872,
+        "mtime_ns": 1793188207994029872
+      },
+      "code_digest": "3aa91deabd0e2c1d0f2bba63ea38771247b688ce095813a23eb0b6c5ddc1812d",
+      "custom_spend_population_document_workflow_output_ceiling": null,
+      "completed_prior_subjects": 63,
+      "pending_subjects": 20,
+      "whole_native_cohort": 83,
+      "completed_and_pending_cover_exact_cohort": true,
+      "restored_source_reviews": 12,
+      "new_result_view": "agere_result_100",
+      "source_rows": 20,
+      "coverage_entries": 20,
+      "original_prefix_exact": true,
+      "new_native_calls": 1,
+      "prepared_source_records": 260,
+      "seconds": 52.16541654081084,
+      "source_unchanged": true,
+      "code_unchanged": true,
+      "all_prior_attempt_rows_exact": true,
+      "new_provider_attempts": 139,
+      "known_api_equivalent_usd": 0.439424208,
+      "unpriced_attempts": 0,
+      "new_pending_attempts": 0,
+      "provider_errors": [],
+      "finished_at": "2026-11-08T07:00:04.143362+00:00"
+    },
+    "owned_Q06_source_finalization": {
+      "kind": "Q06_retained_source_composition_finalization",
+      "pid": 83460,
+      "session_id": 85697,
+      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-source-finalization/receipt.json",
+      "status": "running",
+      "source_frozen": true,
+      "started_at": "2026-11-08T07:20:52.472387+00:00",
+      "product_commit": "1e378543",
+      "retained_native_calls": 121
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
@@ -1294,7 +1357,19 @@
     "until": "2026-10-29T14:00:00Z",
     "no_readiness_guarantee": true
   },
-  "active_jobs": [],
+  "active_jobs": [
+    {
+      "kind": "Q06_retained_source_composition_finalization",
+      "pid": 83460,
+      "session_id": 85697,
+      "receipt": "artifacts/agere-Q06-current-original-2026-11-07/retained-source-finalization/receipt.json",
+      "status": "running",
+      "source_frozen": true,
+      "started_at": "2026-11-08T07:20:52.472387+00:00",
+      "product_commit": "1e378543",
+      "retained_native_calls": 121
+    }
+  ],
   "overnight_completed_jobs": {
     "local_adapter_qualification": {
       "session": 96934,
@@ -1438,7 +1513,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-08T06:46:17.650680+00:00",
+  "updated_at": "2026-11-08T07:23:41.950012+00:00",
   "last_commit": "81f8bbf5192b10a98cd28f4e1877cfda474bfa51",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -1500,7 +1575,7 @@
     "review_received_at": "2026-11-05T14:36:45.159427+00:00",
     "review_path": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md"
   },
-  "last_candidate_product_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
+  "last_candidate_product_commit": "1e378543",
   "latest_independent_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
   "heartbeat_reactivation_reason": "Mike explicitly answered Restart quiet continuation on November6; earlier scheduler pause superseded. Notifications failed-runs-only.",
   "continuation_authorization": "Mike instructed continued build while away and explicitly approved Restart quiet continuation on2026-11-06; older human-turn/scheduler pauses superseded.",
