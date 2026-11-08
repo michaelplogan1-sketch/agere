@@ -772,7 +772,9 @@ def table(report):
     """Staffing blocks, or retained demand observations with staffing unknown."""
     answer = report.get('answer') or {}
     if answer.get('status') == 'insufficient_data' and answer.get('inputs'):
-        return [{**answer['inputs'], 'required_servers': None, 'capacity_gap_servers': None}]
+        return [{**answer['inputs'], 'required_servers': None, 'capacity_gap_servers': None,
+                 'configured_parameters_json': json.dumps(report['parameters'], sort_keys=True, allow_nan=False),
+                 'parameter_authority': 'Configured engine inputs, not approved service targets. No staffing objective was evaluated.'}]
     return list(((report.get('answer') or {}).get('staffing') or {}).get('by_hour_of_week') or [])
 
 

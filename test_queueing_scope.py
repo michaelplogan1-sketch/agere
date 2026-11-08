@@ -1,5 +1,6 @@
 """Ordinary authored fixtures: queueing scope and admission, no provider calls."""
 import sqlite3
+import json
 import unittest
 from unittest.mock import patch
 
@@ -91,6 +92,16 @@ class QueueingScope(unittest.TestCase):
         self.assertIsNone(row['capacity_gap_servers'])
         self.assertFalse(row['staffing_established'])
         self.assertNotIn('staffing', r['answer'])
+        params = json.loads(row['configured_parameters_json'])
+        self.assertEqual(params, r['parameters'])
+        self.assertIsNone(params['mean_service_minutes'])
+        self.assertIsNone(params['servers'])
+        with sqlite3.connect(':memory:') as db:
+            threshold, percent = db.execute("SELECT json_extract(?,'$.wait_threshold_minutes'), "
+                "json_extract(?,'$.target_wait_probability')*100", (row['configured_parameters_json'],)*2).fetchone()
+        self.assertEqual(threshold, r['parameters']['wait_threshold_minutes'])
+        self.assertEqual(percent, r['parameters']['target_wait_probability']*100)
+        self.assertIn('not approved', row['parameter_authority'])
 
     def test_date_only_missing_service_keeps_precision_unknown_and_empty_scope_empty(self):
         self.db.execute("UPDATE appointment SET scheduled_date='2026-01-05' WHERE patient_id='A' AND kept=1")
