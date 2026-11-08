@@ -83,6 +83,32 @@ class LocalReview(unittest.TestCase):
         self.assertNotIn('B has a documented account.',packets['patient_A']['text'])
         self.assertIn('B has a documented account.',packets['patient_B']['text'])
 
+    def test_legacy_document_judgments_partition_only_with_complete_native_identity(self):
+        rows=[{'patient_id':'A','finding':'Unknown'},{'patient_id':'B','finding':'Unknown'}]
+        judgments=[{'record_id':'a','date':'2029-01-01','label':'unknown','passage':'A denies current use.'},
+                   {'record_id':'b','date':'2029-01-02','label':'taking','passage':'B reports taking it.'}]
+        result={'result_view':'judged','question':'What use is reported?','documents':judgments,'latest':judgments[1],
+            'labels':['taking'],'unknown_documents':1}
+        calls=[{'name':'judge_documents','input':{},'result':result},
+            {'name':'query_sql','input':{'sql':'SELECT * FROM judged'},'result':{'result_view':'final','rows':rows}}]
+        answer={'table_binding':{'result_view':'final'},'table':rows}
+        docs={rid:{'patient_id':pid,'date':date,'text':text,'available':date}for rid,pid,date,text in (
+            ('a','A','2029-01-01','A denies current use.'),('b','B','2029-01-02','B reports taking it.'))}
+        original=copy.deepcopy(calls)
+        def packets(cache):return {p['id']:uncompact_json(json.loads(p['text']))for p in
+            B.support_packets('Inspect reported use.',answer,calls,[],'2030-05-27',source_documents=cache)}
+        got=packets(docs)
+        for pid,other in (('A','B'),('B','A')):
+            local=json.dumps(got['patient_'+pid]);self.assertIn(pid+' '+('denies'if pid=='A'else'reports'),local)
+            self.assertNotIn(other+' '+('denies'if other=='A'else'reports'),local)
+        self.assertEqual(got['summary']['native_document_judgment_contracts'][0]['global_metadata']['unknown_documents'],1)
+        self.assertEqual(calls,original)
+        for changed in ({}, {**docs,'b':{**docs['b'],'date':'2029-02-01'}},
+                        {**docs,'b':{**docs['b'],'available':'2031-01-01'}}):
+            with self.subTest(changed=changed):
+                conservative=packets(changed)
+                self.assertIn('B reports taking it.',json.dumps(conservative['patient_A']['shared_evidence']))
+
     def test_global_source_claim_receives_exact_cited_document_without_changing_patient_claims(self):
         answer,calls=self.fixture();calls.append({'name':'read_document','input':{'record_id':'n1'},
             'result':{'patient_id':'A','record_id':'n1','date':'2030-01-01','text':'Prior entry: MRA held for potassium.'}})

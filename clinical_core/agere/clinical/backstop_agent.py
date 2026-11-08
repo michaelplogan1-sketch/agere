@@ -2408,6 +2408,21 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             if hasattr(tools,'_doc'):tools._doc(source['record_id'])
             elif hasattr(tools,'read_document'):tools.read_document(source['record_id'])
         except (ValueError,KeyError):pass
+    # Legacy closed-choice readers return a cohort-wide documents array. Resolve
+    # its native record identities locally so patient checks do not receive the
+    # other patients' passages as supposedly shared evidence. No model reread.
+    roots=[(answer.get('table_binding')or{}).get('result_view')]
+    roots.extend(computed_prose_views(answer.get('computed_prose',[])))
+    active=native_result_dependencies(calls,[v for v in roots if v])
+    if active is not None and hasattr(tools,'_doc'):
+        for call in calls:
+            result=call.get('result')or{}
+            if (call.get('name')!='judge_documents'or not isinstance(result,dict)
+                or result.get('result_view')not in active):continue
+            for doc in result.get('documents')or[]:
+                if isinstance(doc,dict)and doc.get('record_id'):
+                    try:tools._doc(doc['record_id'])
+                    except (ValueError,KeyError):pass  # retain unknown identity conservatively
     shaped(answer)
     if not gate.ready(stack, 'AGERE_S1_CHECK'):
         return {**assessment, 'reason': 'System One answer review unavailable', 'feedback': ' '.join(feedback) or None}
@@ -2988,6 +3003,21 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     for root in claim_roots:known_dependencies.update(native_result_dependencies(calls,[root])or[])
     unsafe_operational=tainted_views & known_dependencies
     excluded_operational=operational_views-claim_dependencies if claim_dependencies is not None else set()
+    global_fields={'headline':answer['headline']}if 'headline'in answer else{}
+    global_fields.update({'facts.'+str(k):v for k,v in (answer.get('facts')or{}).items()})
+    bound_fields={p.get('field')for p in answer.get('computed_prose',[])
+                  if p.get('field')in global_fields and p.get('rendered')==global_fields[p['field']]
+                  and (p.get('bindings')or p.get('global_basis_contract')=='executed-global-basis/1'and p.get('basis'))}
+    closed_global=bool(global_fields)and set(global_fields)<=bound_fields and claim_dependencies is not None
+    from .evidence_projection import native_column_projections
+    column_projections=native_column_projections(calls,claim_roots,claim_dependencies)if closed_global else {}
+    final_patients={r['patient_id']for r in answer.get('table')or[]if isinstance(r,dict)and r.get('patient_id')}
+    document_contexts={rid:{**doc,'record_id':rid}for rid,doc in (source_documents or{}).items()if isinstance(doc,dict)}
+    for call in calls:
+        doc=call.get('result')or{}
+        if call.get('name')=='read_document'and isinstance(doc,dict)and not doc.get('truncated')and doc.get('record_id'):
+            document_contexts.setdefault(doc['record_id'],doc)
+    judgment_contracts=[]
     def decode(value):
         if isinstance(value,str)and value[:1]in ('{','['):
             try:return decode(json.loads(value))
@@ -3017,14 +3047,52 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
                 'rows':len(observed.get('rows')or[]),'excluded_from_clinical_evidence':True}
             legacy_native[-1]['operational_inputs']=dict(native[-1]['operational_inputs'])
             continue
+        if c.get('name')=='judge_documents'and isinstance(observed,dict)and view in (claim_dependencies or set()):
+            documents=observed.get('documents');bound=[]
+            if isinstance(documents,list)and documents:
+                for doc in documents:
+                    source=document_contexts.get(doc.get('record_id'))if isinstance(doc,dict)else None
+                    if (not source or source.get('patient_id')not in final_patients or not isinstance(source.get('text'),str)
+                        or source.get('truncated')is True
+                        or str(source.get('date')or'')[:10]!=doc.get('date')
+                        or any(str(source.get(k)or'')[:10]>as_of for k in ('date','available'))):break
+                    bound.append((doc,source))
+                else:
+                    # Every exact old judgment and complete source is supplied
+                    # to its own patient. Global labels/counts remain global;
+                    # these native references cannot establish clinical truth.
+                    bindings={}
+                    for index,(doc,source)in enumerate(bound):
+                        row={'patient_id':source['patient_id'],'native_document_judgment':{
+                            'question':observed.get('question'),'document':doc},'complete_source_document':source}
+                        add(row,view,origin)
+                        group=bindings.setdefault(source['patient_id'],{'indices':[],'documents':[],'sources':[]})
+                        group['indices'].append(index);group['documents'].append(doc);group['sources'].append(source)
+                    latest=observed.get('latest')
+                    if latest is None or any(latest==doc for doc,_ in bound):
+                        judgment_contracts.append({'result_view':view,'native_result_digest':digest(observed),
+                            'global_metadata':{k:v for k,v in observed.items()if k not in ('documents','latest')},
+                            'document_bindings':[{'patient_id':pid,'document_indices':group['indices'],
+                                'document_judgments_digest':digest(group['documents']),'sources_digest':digest(group['sources'])}
+                                for pid,group in bindings.items()],'latest_document_reference':None if latest is None else {
+                                'record_id':latest['record_id'],'document_judgment_digest':digest(latest)},
+                            'scope':'Every document judgment and complete source is checked in its required patient packet. Native grouping/counts establish no clinical support.'})
+                        continue
         rows=observed.get('rows')if isinstance(observed,dict)else None
         if isinstance(rows,list):
-            columns=observed.get('columns')or[]
+            projection=column_projections.get(view)
+            if projection:
+                rows=projection['rows'];columns=projection['columns']
+                origin={**origin,'native_column_projection':{k:v for k,v in projection.items()if k!='rows'}}
+            else:columns=observed.get('columns')or[]
             for row in rows:add(dict(zip(columns,row))if isinstance(row,list)else row,view,origin)
         else:
             add({'tool':c.get('name'),'result':observed,
                  **({'patient_id':observed['patient_id']} if isinstance(observed,dict) and observed.get('patient_id') else {})},
                 view,origin)
+    projected_review_rows={digest(decode(row))for c in calls if c.get('name')=='review_documents'
+        and isinstance(c.get('result'),dict)and c['result'].get('result_view')in column_projections
+        for row in c['result'].get('rows')or[]}
     review_manifests=[]
     for review in document_reviews:
         review_manifests.append({'questions':review['questions'],'manifest':review['manifest'],
@@ -3035,6 +3103,9 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             ident=digest(decode(row));pid=row.get('patient_id')
             views=sorted({o['result_view']for o in origins.get(pid,{}).get(ident,{}).values()
                           if o.get('tool')=='review_documents'and o.get('result_view')})
+            # Projected rows have a different shape. Match the complete native
+            # row exactly before using its already-validated column proof.
+            if ident in projected_review_rows:continue
             add(row,origin={'kind':'machine_document_observation','question_digest':digest(review['questions']),
                            **({'native_result_views':views}if views else{})})
     table=answer.get('table')or[]
@@ -3112,12 +3183,6 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
                         'record_hash':source['record_hash'],'source_table':source.get('source_table'),'reason':reason})
                     continue
                 contexts.setdefault(pid,{})['native_record:'+rid]=received_record_context(raw,source,as_of)
-    global_fields={'headline':answer['headline']}if 'headline'in answer else{}
-    global_fields.update({'facts.'+str(k):v for k,v in (answer.get('facts')or{}).items()})
-    bound_fields={p.get('field')for p in answer.get('computed_prose',[])
-                  if p.get('field')in global_fields and p.get('rendered')==global_fields[p['field']]
-                  and (p.get('bindings')or p.get('global_basis_contract')=='executed-global-basis/1'and p.get('basis'))}
-    closed_global=bool(global_fields)and set(global_fields)<=bound_fields and claim_dependencies is not None
     global_shared={ident:row for ident,row in shared.items()if not closed_global or
                    None in shared_views[ident]or bool(shared_views[ident]&claim_dependencies)}
     global_contracts=contracts_for(claim_dependencies if closed_global else
@@ -3135,6 +3200,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             **{k:p[k] for k in ('entity_key','basis','authority') if k in p},
             'sources':{k:{kk:v[kk] for kk in ('binding','value','measure','source_row') if kk in v} for k,v in p['sources'].items()}}
             for p in answer.get('computed_prose',[]) if not (p.get('entity_key')or{}).get('patient_id')]}]
+    if judgment_contracts:packets[0]['native_document_judgment_contracts']=judgment_contracts
     if closed_global:
         packets[0]['native_dependency_scope']={
             'required_result_views':sorted(claim_dependencies),
@@ -3145,8 +3211,6 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     # Global bindings/citations are checked in summary; explicit patient sets
     # retain their relevant native observations there, without empty local claims.
     global_patient_evidence=[]
-    from .evidence_projection import native_column_projections
-    column_projections=native_column_projections(calls,claim_roots,claim_dependencies)if closed_global else {}
     if column_projections:
         if not final_patients and not document_reviews and not any(p.get('entity_key')for p in answer.get('computed_prose',[])):
             from .evidence_projection import native_calculation_input_view
@@ -3224,6 +3288,35 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     leaves={p['id']:p['answer_rows']for p in packets if p['id'].startswith('patient_')}
     if restore_table(summary_rows,dependencies,leaves)!=table:
         raise ValueError('Clinical dependency representation did not restore the complete native table')
+    # A source-reader projection's complete finding rows already belong to
+    # required patient checks. Share those exact native input cells across
+    # packets instead of asking the global meaning reviewer to read them again.
+    # This is a checked transport edge, never a source-support certificate.
+    patient_packets={p['patient_id']:p for p in packets if p.get('patient_id')}
+    global_projections=[]
+    for projection in packets[0].get('native_column_projections',[]):
+        if projection.get('schema')!='native-column-projection/1':
+            global_projections.append(projection);continue
+        columns=projection['columns'];rows=projection['rows']
+        if (projection['producer']['tool']!='review_documents'or columns.count('patient_id')!=1 or not rows
+            or any(row[columns.index('patient_id')]not in patient_packets for row in rows)):
+            global_projections.append(projection);continue
+        grouped={};restored=[None]*len(rows);view=projection['result_view']
+        for index,row in enumerate(rows):
+            pid=row[columns.index('patient_id')];grouped.setdefault(pid,[]).append([index,row])
+        edges=[]
+        for pid,values in grouped.items():
+            patient_packets[pid].setdefault('native_column_inputs',[]).append({'result_view':view,
+                'columns':columns,'indexed_rows':values,'complete_receipt_digest':projection['complete_receipt_digest'],
+                'scope':'Exact selected input cells, including original row positions and unresolved review status. No chart-wide absence or clinical support follows from native copy fidelity.'})
+            for index,row in values:restored[index]=row
+            edges.append({'packet':'patient_'+pid,'indexed_rows_digest':digest(values)})
+        if digest(restored)!=digest(rows):raise ValueError('Patient native input dependencies changed rows')
+        global_projections.append({'schema':'patient-native-column-dependencies/1','result_view':view,
+            'projection_contract':{k:v for k,v in projection.items()if k!='rows'},
+            'required_patient_inputs':edges,'projected_rows_digest':digest(rows),
+            'scope':'Every original projected row is present intact in native_column_inputs of its required patient packet. All patient/source checks must pass independently; these references cannot establish clinical aggregates or support.'})
+    if global_projections:packets[0]['native_column_projections']=global_projections
     if native_audit is not None:
         # The ordinary review supplies this proof only after qualifying every
         # native account against its original receipt. Global meaning sees the

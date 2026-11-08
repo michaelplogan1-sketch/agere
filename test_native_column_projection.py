@@ -62,6 +62,40 @@ class NativeColumnProjection(unittest.TestCase):
         projection=self.project()['agere_result_1']
         self.assertEqual(projection['columns'],['patient_id']);self.assertEqual(projection['rows'],[['A'],['A'],['B']])
 
+    def assembly_fixture(self):
+        from clinical_core.agere.clinical.result_assembly import compose
+        source={'columns':['patient_id','review_status','documents_reviewed','source_findings_json','review_unresolved_json','domain'],
+            'rows':[['A','needs_review',3,'[{"quote":"Not taking it","date":"2029-01-01"}]','[{"reason":"entity unresolved"}]','selected'],
+                    ['A','needs_review',1,'[]','[{"reason":"different unresolved span"}]','selected'],
+                    ['B','reviewed',1,None,'[]','other']], 'truncated':False,'result_view':'review'}
+        base={'columns':['patient_id'],'rows':[['A'],['B']],'truncated':False,'result_view':'base'}
+        spec={'base':'base','keys':['patient_id'],'joins':[{'result':'review','as':'findings','on':{'patient_id':'patient_id'},
+            'mode':'collect','items_from':'source_findings_json','retain_in_final':True,'domain':{'column':'domain','values':['selected']}}]}
+        result={**compose({'base':base,'review':source},**spec),'result_view':'final'}
+        return [{'name':'read_patient_profiles','input':{},'result':base},
+            {'name':'review_documents','input':{'date_from':'2029-01-01'},'result':source},
+            {'name':'compose_table','input':spec,'result':result}]
+
+    def test_collection_projection_keeps_exact_read_fields_status_keys_and_domain(self):
+        calls=self.assembly_fixture();original=copy.deepcopy(calls)
+        projected=native_column_projections(calls,['final'],{'base','review','final'})['review']
+        self.assertEqual(projected['columns'],['patient_id','review_status','documents_reviewed','source_findings_json','domain'])
+        self.assertEqual(projected['rows'],[r[:4]+[r[5]]for r in calls[1]['result']['rows']])
+        self.assertEqual(projected['row_count'],3);self.assertEqual(calls,original)
+        proof=projected['consumers'][0]['derived_read_proof']
+        self.assertEqual(proof['schema'],'replayed-assembly-column-reads/1')
+        self.assertEqual(proof['assembly_specification'],calls[-1]['input'])
+
+    def test_changed_collection_source_output_or_specification_cannot_project(self):
+        for mutation in ('source','output','domain','hash'):
+            calls=self.assembly_fixture()
+            if mutation=='source':calls[1]['result']['rows'][0][3]='[]'
+            elif mutation=='output':calls[-1]['result']['rows'][0]['findings']=[]
+            elif mutation=='domain':calls[-1]['input']['joins'][0]['domain']['values']=['other']
+            else:calls[-1]['result']['assembly']['joins'][0]['source_result_digest']='changed'
+            with self.subTest(mutation=mutation):
+                self.assertNotIn('review',native_column_projections(calls,['final'],{'base','review','final'}))
+
     def test_independent_projection_sources_have_a_stable_packet_order(self):
         other=copy.deepcopy(self.producer);other['result']['result_view']='agere_result_4'
         other['result']['rows']=[['C','unresolved',{'quote':'A different received source.'}]]

@@ -527,6 +527,47 @@ def _native_column_consumers(view, columns, receipt_digest, by, dependencies, re
     return (needed,consumers)if consumers else None
 
 
+def assembly_column_dependencies(calls, dependencies, by):
+    """Recover exact reads only after reproducing a complete native assembly.
+
+    Collection joins read their key, domain and selected item column, not every
+    diagnostic field in a reader receipt. Changed input hashes, specifications
+    or output cells retain the conservative full-receipt path.
+    """
+    from .result_assembly import compose
+    from .backstop_agent import output_table
+    proofs={};prior={}
+    for call in calls:
+        result=call.get('result')or{}
+        if not isinstance(result,dict):continue
+        view=result.get('result_view');spec=call.get('input')or{}
+        if view in dependencies and call.get('name')=='compose_table':
+            assembly=result.get('assembly')or{}
+            try:
+                expected=compose(prior,**spec)
+                if (assembly!=expected['assembly']or output_table(result)!=output_table(expected)
+                    or result.get('truncated')is not False):raise ValueError('Assembly changed')
+                base=spec['base'];columns=output_table(prior[base])[0]
+                reads={base:set(spec.get('base_columns',columns))}
+                reads[base].update(spec['keys'])
+                for join in spec.get('joins')or[]:
+                    name=join['result'];fields=set(join['on'].values())
+                    reads[base].update(join['on'])
+                    fields.update([join['items_from']]if join.get('items_from')else
+                                  join.get('columns',output_table(prior[name])[0]))
+                    if join.get('domain'):fields.add(join['domain']['column'])
+                    reads.setdefault(name,set()).update(fields)
+                proofs[view]={'schema':'replayed-assembly-column-reads/1','query':None,
+                    'assembly_specification':copy.deepcopy(spec),'result_digest':digest(result),
+                    'sources':{name:{'columns':[c for c in output_table(prior[name])[0]if c in fields],
+                        'receipt_digest':digest({k:v for k,v in prior[name].items()if k!='result_view'})}
+                        for name,fields in reads.items()},
+                    'scope':'Exact original assembly, source hashes, output cells, types, order and multiplicity reproduced; no source meaning or clinical acceptance inferred.'}
+            except (ValueError,TypeError,KeyError,AttributeError):pass
+        if view and view in by:prior[view]=result
+    return proofs
+
+
 def replayed_column_dependencies(calls, roots, dependencies, by):
     """Recover legacy literal-query reads by replaying an output projection.
 
@@ -709,12 +750,13 @@ def native_column_projections(calls, roots, dependencies):
         if view:by[view]=call
     if dependencies is None or duplicates:return {}
     replays=replayed_column_dependencies(calls,roots,dependencies,by)
+    replays.update(assembly_column_dependencies(calls,dependencies,by))
     projections={}
     # A set's process-local order must not change an otherwise identical
     # source-review packet or its paid-request/cache identity after restart.
     for view in sorted(dependencies-set(roots)):
         producer=by.get(view)
-        if not producer or producer.get('name')not in ('execute_analysis','query_sql','read_patient_profiles'):continue
+        if not producer or producer.get('name')not in ('execute_analysis','query_sql','read_patient_profiles','review_documents'):continue
         result=producer['result']
         if result.get('error')or incomplete_reason(result):continue
         if producer['name']=='read_patient_profiles'and(result.get('kind')!='received_patient_profiles'
@@ -733,13 +775,19 @@ def native_column_projections(calls, roots, dependencies):
         used=_native_column_consumers(view,columns,receipt_digest,by,dependencies,replays)
         if not used:continue
         needed,consumers=used
+        if producer['name']=='review_documents'and any(
+                (c.get('derived_read_proof')or{}).get('schema')!='replayed-assembly-column-reads/1'for c in consumers):continue
         # Keep explicit entity identity even when only row cardinality was read.
         json_paths=native_json_projection(view,columns,rows,consumers,by)
         intrinsic_consumers={c['result_view']for c in consumers if c.get('intrinsic_rowid_reads')}
         if intrinsic_consumers and (not json_paths or not intrinsic_consumers<=
                 {check['result_view']for check in json_paths['checks']}):continue
         json_columns=json_paths['columns']if json_paths else set()
-        selected=[c for c in columns if (c in needed or c=='patient_id')and c not in json_columns]
+        # A focused reader can have unresolved candidate spans outside the
+        # collected finding column. Preserve its actual review status too;
+        # projecting unused diagnostics must never imply a complete review.
+        selected=[c for c in columns if (c in needed or c=='patient_id' or
+            producer['name']=='review_documents'and c in ('review_status','documents_reviewed'))and c not in json_columns]
         if set(selected)==set(columns):continue
         projected=[[row[columns.index(c)]for c in selected]for row in rows]
         if any(isinstance(value,(dict,list))for row in projected for value in row):continue
