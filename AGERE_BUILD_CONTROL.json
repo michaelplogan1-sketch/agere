@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T15:18:15.810489+00:00",
+  "updated_at": "2026-11-08T16:05:02.243666+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -661,36 +661,29 @@
     }
   ],
   "checkpoint": {
-    "kind": "Q19_native_no_fit_target_clock_evidence_and_current_consumer",
+    "kind": "Q19_ordinary_native_routing_current_source_evidence_with_verification_dependency",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Predictive evidence can now be inspected without fitting or scoring. The existing native compiler extracts the original no-fit question target/origin/day horizon; request guards reject fitting or contradictory dates/windows before dispatch. Canonical inpatient targets exclude observation stays, and complete patient-scoped two-clock inventories preserve late/unknown input records and unknown negative labels. Active-runtime attachment absence is explicit; calibration/comparator metrics remain null. No protected partition, prediction row or weight is read.",
+    "user_behavior_delta": "The ordinary planner now binds validated native operator semantics and ranks literal-complete candidates before advisory route scores. An unrelated calibration proposal can no longer hide the exact no-fit target/origin/day-window plan. Planner policy identity now includes the actual proposer, local compiler, economical ladder and route arbiter. Original source computations and all no-fit/source/entity/date/quantity guards remain unchanged.",
     "measured_failure_reduction": {
-      "inpatient_target_no_longer_broadened_to_observation": true,
-      "explicit_no_fit_enforced_before_dispatch": true,
-      "original_origin_and_day_window_bound": true,
-      "all_scoped_clock_labels_queryable": true,
-      "unknown_labels_metrics_not_zero": true,
-      "current_native_original_question_compile_execute_save": true,
-      "current_native_browser_consumer": true,
-      "full_conversational_handler_qualified": false
+      "native_plan_false_literal_gaps": {
+        "before": 3,
+        "after": 0
+      },
+      "unrelated_incomplete_candidate_can_hide_complete_native_plan": false,
+      "original_normal_question_current_save_reopen_and_all238rows_exact": true,
+      "native_only_automatic_acceptance": false
     },
     "evidence": [
-      "artifacts/agere-Q19-retained-2026-11-08/workflow-completion.json",
-      "artifacts/agere-Q19-retained-2026-11-08/source-preflight-v1-preserved.json",
-      "artifacts/agere-Q19-retained-2026-11-08/source-preflight.json",
-      "artifacts/agere-Q19-retained-2026-11-08/evidence-only-checks-v1.log",
-      "artifacts/agere-Q19-retained-2026-11-08/evidence-route-checks-v4.log",
-      "artifacts/agere-Q19-retained-2026-11-08/native-evidence-proof/receipt.json",
-      "artifacts/agere-Q19-retained-2026-11-08/native-current-publication/receipt.json",
-      "artifacts/agere-Q19-retained-2026-11-08/native-current-publication-v2/receipt.json",
-      "artifacts/agere-Q19-retained-2026-11-08/compiled-native-workflow/receipt.json",
-      "artifacts/agere-Q19-retained-2026-11-08/http-consumer-proof.json",
-      "artifacts/agere-user-return-review-2026-11-08/receipt.json"
+      "artifacts/agere-Q19-retained-2026-11-08/ordinary-routing-workflow-completion.json",
+      "artifacts/agere-Q19-retained-2026-11-08/ordinary-entry-v4/receipt.json",
+      "artifacts/agere-Q19-retained-2026-11-08/actual-ladder-plan-preflight.json",
+      "artifacts/agere-Q19-retained-2026-11-08/candidate-coverage-checks-v1.log",
+      "artifacts/agere-ordinary-comparison-2026-11-05/current-assessment-2026-11-07/assessment.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/current-assessment-2026-11-07/Q20-Q21-policy-compatibility-20261108.json"
     ],
-    "remaining_gap": "Current full conversational-handler/ordinary-entry and whole25case/tenarea acceptance remain open; native original-question compilation/execution is now demonstrated.; No qualified90dayinpatient predictor attached; origin-state feature reconstruction, complete outcome capture, calibration and model-versus-baseline evidence are not established. No fitting was authorized by this request.; Other fixed cases retain exact program-definition/capacity inputs, source semantic uncertainty, requested report visual QA, independent clinical/model/scientific qualification and customer deployment prerequisites.",
-    "next_action": "G3/WP4: User-requested two-day audit and current-stack/remaining-work visual completed; integrated local prototype, no claim of whole-product or clinical/model qualification. Q19 native no-fit evidence current on aedefa18/ANS-d6890c2f60b8ee1a0e325772, app94623/session15707. Next inspect latest Q20-Q25 delivery/current-context receipts for scoped compatibility and explicit remaining dependencies, without repeating unchanged Q20/Q21 votes or campaigns. Consolidate the existing fixed25/tenarea assessment into one current release disposition separating working paths, supported unknowns, actual wiring defects, qualification and customer prerequisites. Run only missing or materially changed ordinary-entry, clarification, UX and recovery checks. Retain current principal and October11baseline; no optional research/catalogs, new agents/chats/services, invented program criteria, new caps or architecture rewrite. Full conversational qualification, program/capacity inputs, G5 and clinical/model/scientific/actuarial/customer dependencies remain explicit. No active provider/build/training job or source freeze; quiet continuation ACTIVE.",
-    "latest_user_review": "artifacts/agere-user-return-review-2026-11-08/receipt.json"
+    "remaining_gap": "Native-only automatic acceptance remains open: small-model compact summary check weak and complete-state check exceeds provider context; do not repeat unchanged calls or bypass confirmation.; Observed initial native tier OperationalError needs retained-trace disposition; subsequent native execution and cached output conserve every source row.; Reconcile current saved-context compatibility after final code freeze; Q20/Q21 historical outputs remain preserved and source unchanged, but current policy blocks new work until scoped revalidation.; Fixed25/tenarea release remains unaccepted. Exact program/capacity inputs, requested report visual QA, known requested-year-anchor baseline regression, G5, independent clinical/model/scientific/actuarial and customer prerequisites remain explicit.",
+    "next_action": "G3/WP4: Q19 ordinary original question returns current238row native evidence and saves/reopens exactly on9a8bcc8a/app3518/session51360; contextANS-345933b7e6e34a0fdd6181e0. No active provider/build/training job or freeze. Two routing defects repaired (validated operator semantics and literal-complete candidate screening);90focused checks and actual profile/encoder/Ladder preflight pass, all source computations/guards retained. Current native-only automatic acceptance still open: native confirmation weak and full-state Jev/PPLX payload exceeds provider context (430985tokens vs262144); final output is cached backstop fallback, not native-only success. Inspect retained v4 native result, exact check/render inputs, probabilities and initial native OperationalError before any new provider request. Repair only demonstrated role-input construction while preserving complete native evidence and source/quantity/entity/date guards; do not bypass confirmation, add new caps, rewrite unchanged answers or rerun the whole question on unchanged inputs. Then finish scoped current-context compatibility and existing fixed25/tenarea release disposition after final code freeze; Q20/Q21 old outputs preserved but policy reuse requires scoped revalidation, no unchanged votes. Keep exact program/capacity dependencies, blocked report visual QA without file-policy bypass, baseline requested-year regression, current principal/October11baseline and separate G5/clinical/model/scientific/actuarial/customer prerequisites. All attempts,2unknown-priced context failures and cached receipts retained; no matched savings/clinical/fullMVP claim. Quiet continuation ACTIVE."
   },
   "decisions": [
     {
@@ -5637,10 +5630,17 @@
       "decision": "User-return review completed without product changes; keep finite release acceptance as next action",
       "evidence": "artifacts/agere-user-return-review-2026-11-08/receipt.json",
       "scope_impact": "No change to all25/tenareas; no new optional component or qualification claim"
+    },
+    {
+      "at": "2026-11-08T16:05:02.243666+00:00",
+      "decision": "Correct actual runtime candidate screening and cache fingerprint; now localize verification inputs before any repeat",
+      "reason": "Bare native compilation had not established normal entry. Actual normal traces rejected the unrelated calibration selection; after repairs all238native values return exactly but native confirmation is weak/oversized. Repeated whole workflows or threshold bypass would not resolve this input failure.",
+      "evidence": "artifacts/agere-Q19-retained-2026-11-08/ordinary-routing-workflow-completion.json",
+      "scope_impact": "Existing Q19 and shared planner/verification contracts only; full25/tenareas retained. No model catalog, new service/agent/chat, new cap, architecture rewrite or clinical qualification."
     }
   ],
   "unsealed_work": {
-    "status": "Q19_original_question_native_evidence_current_no_fit_model_dependency_explicit",
+    "status": "Q19_ordinary_evidence_current_native_verification_input_dependency_explicit",
     "product_commit": "6df36263b54136ae6e853b2e927c2b1b21dac4e6",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
@@ -7128,7 +7128,15 @@
     "Q19_known_api_equivalent_usd": 0,
     "Q19_qualified_predictor_attached": false,
     "full_Q19_acceptance": false,
-    "next_action": "G3/WP4: User-requested two-day audit and current-stack/remaining-work visual completed; integrated local prototype, no claim of whole-product or clinical/model qualification. Q19 native no-fit evidence current on aedefa18/ANS-d6890c2f60b8ee1a0e325772, app94623/session15707. Next inspect latest Q20-Q25 delivery/current-context receipts for scoped compatibility and explicit remaining dependencies, without repeating unchanged Q20/Q21 votes or campaigns. Consolidate the existing fixed25/tenarea assessment into one current release disposition separating working paths, supported unknowns, actual wiring defects, qualification and customer prerequisites. Run only missing or materially changed ordinary-entry, clarification, UX and recovery checks. Retain current principal and October11baseline; no optional research/catalogs, new agents/chats/services, invented program criteria, new caps or architecture rewrite. Full conversational qualification, program/capacity inputs, G5 and clinical/model/scientific/actuarial/customer dependencies remain explicit. No active provider/build/training job or source freeze; quiet continuation ACTIVE."
+    "next_action": "G3/WP4: Q19 ordinary original question returns current238row native evidence and saves/reopens exactly on9a8bcc8a/app3518/session51360; contextANS-345933b7e6e34a0fdd6181e0. No active provider/build/training job or freeze. Two routing defects repaired (validated operator semantics and literal-complete candidate screening);90focused checks and actual profile/encoder/Ladder preflight pass, all source computations/guards retained. Current native-only automatic acceptance still open: native confirmation weak and full-state Jev/PPLX payload exceeds provider context (430985tokens vs262144); final output is cached backstop fallback, not native-only success. Inspect retained v4 native result, exact check/render inputs, probabilities and initial native OperationalError before any new provider request. Repair only demonstrated role-input construction while preserving complete native evidence and source/quantity/entity/date guards; do not bypass confirmation, add new caps, rewrite unchanged answers or rerun the whole question on unchanged inputs. Then finish scoped current-context compatibility and existing fixed25/tenarea release disposition after final code freeze; Q20/Q21 old outputs preserved but policy reuse requires scoped revalidation, no unchanged votes. Keep exact program/capacity dependencies, blocked report visual QA without file-policy bypass, baseline requested-year regression, current principal/October11baseline and separate G5/clinical/model/scientific/actuarial/customer prerequisites. All attempts,2unknown-priced context failures and cached receipts retained; no matched savings/clinical/fullMVP claim. Quiet continuation ACTIVE.",
+    "Q19_ordinary_native_routing": {
+      "receipt": "artifacts/agere-Q19-retained-2026-11-08/ordinary-routing-workflow-completion.json",
+      "product_commit": "9a8bcc8a1e0ec2929928ffdec9a3a545928c735e",
+      "context_id": "ANS-345933b7e6e34a0fdd6181e0",
+      "native_only_automatic_acceptance": false,
+      "provider_attempts_latest": 4,
+      "total_cost_known": false
+    }
   },
   "current_visual_request": {
     "status": "completed",
@@ -7164,7 +7172,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3/WP4: User-requested two-day audit and current-stack/remaining-work visual completed; integrated local prototype, no claim of whole-product or clinical/model qualification. Q19 native no-fit evidence current on aedefa18/ANS-d6890c2f60b8ee1a0e325772, app94623/session15707. Next inspect latest Q20-Q25 delivery/current-context receipts for scoped compatibility and explicit remaining dependencies, without repeating unchanged Q20/Q21 votes or campaigns. Consolidate the existing fixed25/tenarea assessment into one current release disposition separating working paths, supported unknowns, actual wiring defects, qualification and customer prerequisites. Run only missing or materially changed ordinary-entry, clarification, UX and recovery checks. Retain current principal and October11baseline; no optional research/catalogs, new agents/chats/services, invented program criteria, new caps or architecture rewrite. Full conversational qualification, program/capacity inputs, G5 and clinical/model/scientific/actuarial/customer dependencies remain explicit. No active provider/build/training job or source freeze; quiet continuation ACTIVE.",
+  "next_action": "G3/WP4: Q19 ordinary original question returns current238row native evidence and saves/reopens exactly on9a8bcc8a/app3518/session51360; contextANS-345933b7e6e34a0fdd6181e0. No active provider/build/training job or freeze. Two routing defects repaired (validated operator semantics and literal-complete candidate screening);90focused checks and actual profile/encoder/Ladder preflight pass, all source computations/guards retained. Current native-only automatic acceptance still open: native confirmation weak and full-state Jev/PPLX payload exceeds provider context (430985tokens vs262144); final output is cached backstop fallback, not native-only success. Inspect retained v4 native result, exact check/render inputs, probabilities and initial native OperationalError before any new provider request. Repair only demonstrated role-input construction while preserving complete native evidence and source/quantity/entity/date guards; do not bypass confirmation, add new caps, rewrite unchanged answers or rerun the whole question on unchanged inputs. Then finish scoped current-context compatibility and existing fixed25/tenarea release disposition after final code freeze; Q20/Q21 old outputs preserved but policy reuse requires scoped revalidation, no unchanged votes. Keep exact program/capacity dependencies, blocked report visual QA without file-policy bypass, baseline requested-year regression, current principal/October11baseline and separate G5/clinical/model/scientific/actuarial/customer prerequisites. All attempts,2unknown-priced context failures and cached receipts retained; no matched savings/clinical/fullMVP claim. Quiet continuation ACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -7253,8 +7261,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 94623,
-  "owned_server_session": 15707,
+  "owned_server_pid": 3518,
+  "owned_server_session": 51360,
   "last_run_observation": {
     "at": "2026-11-07T20:07:46.544952+00:00",
     "status": "native_storage_repair_qualified_Q06_retained_partial",

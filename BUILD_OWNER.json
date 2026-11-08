@@ -5,11 +5,11 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3/WP4: Q19 no-fit predictive-evidence increment delivered on aedefa18/currentANS-d6890c2f60b8ee1a0e325772, app94623/session15707. Original question native compiler selects exact inpatient/origin2029-01-01/90day evidence mode without supplied plan; all238rows/237record-stream clock labels reconcile;131events/88subjects,85positive origin-inputcandidates of3944. No qualified predictor attached; metrics/negative labels remain unknown,0fits/0providers/private rows. User returned and requested a two-day work audit plus current-stack/remaining-work visual; complete that review now. Then inspect latest Q20-Q25 delivery/current-context receipts for scoped compatibility and remaining dependencies without re-running unchanged Q20/Q21 votes or campaigns. Produce one current fixed25/tenarea release disposition separating working paths, supported unknowns, actual wiring defects, qualification and customer prerequisites; run only missing or materially changed ordinary-entry/clarification/UX/recovery checks. No model catalog, optional research, new services/agents/chats, invented program criteria, new caps or architecture rewrite. Retain current principal/October11baseline. Full conversational qualification, program/capacity inputs, G5/clinical/model/scientific/actuarial/customer dependencies remain. No active job/freeze; quiet continuationACTIVE.",
+  "active_work": "G3/WP4 Q19 ordinary source values and saved context current; retained native verification input diagnosis next; no active job/freeze.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
-  "owned_server_pid": 94623,
-  "owned_server_session": 15707,
+  "owned_server_pid": 3518,
+  "owned_server_session": 51360,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
@@ -27,10 +27,10 @@
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
-  "last_observed_server_session": 15707,
-  "server_status": "Owned app94623/session15707/aedefa18 serves8885; Q19 original-question native evidence238rows exact, native/browser/askHTTP200; partial/unverified/no qualified predictor/0fit/providercalls. No active provider/native job/source freeze.",
+  "last_observed_server_session": 51360,
+  "server_status": "owned candidate app running, askHTTP200/current Q19 native context verified; native-only acceptance unqualified",
   "unsealed_work": {
-    "status": "Q19_original_question_native_evidence_current_no_fit_model_dependency_explicit",
+    "status": "Q19_ordinary_evidence_current_native_verification_input_dependency_explicit",
     "product_commit": "6df36263b54136ae6e853b2e927c2b1b21dac4e6",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
@@ -1519,7 +1519,15 @@
     "Q19_qualified_predictor_attached": false,
     "full_Q19_acceptance": false,
     "latest_user_return_review": "artifacts/agere-user-return-review-2026-11-08/receipt.json",
-    "next_action": "G3/WP4: User-requested two-day audit and current-stack/remaining-work visual completed; integrated local prototype, no claim of whole-product or clinical/model qualification. Q19 native no-fit evidence current on aedefa18/ANS-d6890c2f60b8ee1a0e325772, app94623/session15707. Next inspect latest Q20-Q25 delivery/current-context receipts for scoped compatibility and explicit remaining dependencies, without repeating unchanged Q20/Q21 votes or campaigns. Consolidate the existing fixed25/tenarea assessment into one current release disposition separating working paths, supported unknowns, actual wiring defects, qualification and customer prerequisites. Run only missing or materially changed ordinary-entry, clarification, UX and recovery checks. Retain current principal and October11baseline; no optional research/catalogs, new agents/chats/services, invented program criteria, new caps or architecture rewrite. Full conversational qualification, program/capacity inputs, G5 and clinical/model/scientific/actuarial/customer dependencies remain explicit. No active provider/build/training job or source freeze; quiet continuation ACTIVE."
+    "next_action": "G3/WP4: Q19 ordinary original question returns current238row native evidence and saves/reopens exactly on9a8bcc8a/app3518/session51360; contextANS-345933b7e6e34a0fdd6181e0. No active provider/build/training job or freeze. Two routing defects repaired (validated operator semantics and literal-complete candidate screening);90focused checks and actual profile/encoder/Ladder preflight pass, all source computations/guards retained. Current native-only automatic acceptance still open: native confirmation weak and full-state Jev/PPLX payload exceeds provider context (430985tokens vs262144); final output is cached backstop fallback, not native-only success. Inspect retained v4 native result, exact check/render inputs, probabilities and initial native OperationalError before any new provider request. Repair only demonstrated role-input construction while preserving complete native evidence and source/quantity/entity/date guards; do not bypass confirmation, add new caps, rewrite unchanged answers or rerun the whole question on unchanged inputs. Then finish scoped current-context compatibility and existing fixed25/tenarea release disposition after final code freeze; Q20/Q21 old outputs preserved but policy reuse requires scoped revalidation, no unchanged votes. Keep exact program/capacity dependencies, blocked report visual QA without file-policy bypass, baseline requested-year regression, current principal/October11baseline and separate G5/clinical/model/scientific/actuarial/customer prerequisites. All attempts,2unknown-priced context failures and cached receipts retained; no matched savings/clinical/fullMVP claim. Quiet continuation ACTIVE.",
+    "Q19_ordinary_native_routing": {
+      "receipt": "artifacts/agere-Q19-retained-2026-11-08/ordinary-routing-workflow-completion.json",
+      "product_commit": "9a8bcc8a1e0ec2929928ffdec9a3a545928c735e",
+      "context_id": "ANS-345933b7e6e34a0fdd6181e0",
+      "native_only_automatic_acceptance": false,
+      "provider_attempts_latest": 4,
+      "total_cost_known": false
+    }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
@@ -1936,7 +1944,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-08T15:18:15.810489+00:00",
+  "updated_at": "2026-11-08T16:05:02.243666+00:00",
   "last_commit": "81f8bbf5192b10a98cd28f4e1877cfda474bfa51",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -1998,7 +2006,7 @@
     "review_received_at": "2026-11-05T14:36:45.159427+00:00",
     "review_path": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md"
   },
-  "last_candidate_product_commit": "aedefa181913d68a303c70d7dd0590236ea671e1",
+  "last_candidate_product_commit": "9a8bcc8a1e0ec2929928ffdec9a3a545928c735e",
   "latest_independent_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
   "heartbeat_reactivation_reason": "Mike explicitly answered Restart quiet continuation on November6; earlier scheduler pause superseded. Notifications failed-runs-only.",
   "continuation_authorization": "Mike instructed continued build while away and explicitly approved Restart quiet continuation on2026-11-06; older human-turn/scheduler pauses superseded.",
