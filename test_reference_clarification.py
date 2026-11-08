@@ -68,6 +68,26 @@ class ReferenceClarification(unittest.TestCase):
             self.assertIsNone(after);self.assertEqual(receipt['edits'],[])
             with self.assertRaises(B.ComputedProseError):B.bind_computed_prose(self.answer,self.calls)
 
+    def test_distributive_every_one_preserves_text_and_universal_source_obligation(self):
+        for phrase in ('Every one of these accounts','every one of those invoices','Not every one of the accounts'):
+            answer=copy.deepcopy(self.answer)
+            answer['headline']={'template':'{n} invoices. '+phrase+' is recorded in USD.',
+                'bindings':copy.deepcopy(self.answer['headline']['bindings'])}
+            expected=answer['headline']['template'].replace('{n}','5')
+            B.bind_computed_prose(answer,self.calls)
+            self.assertEqual(answer['headline'],expected)
+            self.assertEqual(answer['table'],self.answer['table'])
+            self.assertTrue(any(p.get('kind')=='distributive_quantifier'for p in answer['computed_prose'][0].get('parameters',[])))
+
+    def test_distributive_grammar_never_hides_actual_quantities(self):
+        for text in ('Every one of these two accounts is open.',
+                     'Every one of the accounts holds one dollar.',
+                     'Every one of the accounts holds 12 dollars.',
+                     'One of these accounts is open.','Every one dollar is recorded.'):
+            answer=copy.deepcopy(self.answer);answer['headline']=text
+            with self.subTest(text=text),self.assertRaises(B.ComputedProseError):
+                B.bind_computed_prose(answer,self.calls)
+
     def test_other_unbound_quantities_still_fail_after_a_valid_expansion(self):
         answer=copy.deepcopy(self.answer);answer['facts']={'rate':'The rate was 12 percent.'}
         request=self.request(answer);after,_=E.apply_reference_clarification(answer,request,self.judgment(request))

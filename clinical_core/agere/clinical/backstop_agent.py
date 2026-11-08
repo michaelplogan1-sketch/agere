@@ -1627,6 +1627,16 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
     request_years=set(re.findall(r'\b(?:19|20|21)\d{2}\b',question or ''))
     def numeric(text):
         if not row_mode:text=mask_prose_parameters(text,parameters,parameter_proofs)
+        # Distributive "every one of these accounts" means every member,
+        # not a measured cardinality of one. Keep the original text for source
+        # review; only this grammatical occurrence leaves the quantity scan.
+        # Actual counts in "the two accounts" or a later "one dollar" remain.
+        def distributive(match):
+            parameter_proofs.append({'kind':'distributive_quantifier','literal':match.group(),
+                'scope':'Language grammar only; no observed count, universal source support or clinical meaning established.'})
+            return match.group('every')
+        text=re.sub(r'\b(?P<every>every\s+)one(?=\s+of\s+(?:these|those|the)\s+[A-Za-z])',
+                    distributive,text,flags=re.I)
         # Explicit multiline ordered-list markers are layout, not measures.
         # Require a complete consecutive sequence beginning at one; inline
         # parenthesized quantities, doses and numbers inside items still bind.
