@@ -569,6 +569,9 @@ class Tools:
                 sql = _expand(sql, Catalog.load(self.stack.path), set())
             from .general_analysis import scope_sql
             sql = scope_sql(self.semantic.db, sql, self.cohort)
+            from .source_scope import financial_query_population_problem
+            issue=financial_query_population_problem(self.question,sql,self.native_calls)
+            if issue:raise ValueError(issue)
             out = self.semantic.query(sql, as_of=self.as_of, max_rows=None, max_chars=None, inspect_incomplete=True)
             out['native_sql_contract'] = NATIVE_SQL_CONTRACT
             out['executed_query'] = sql

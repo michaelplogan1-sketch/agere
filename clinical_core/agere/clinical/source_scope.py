@@ -21,7 +21,8 @@ MONTH_DIMENSIONS=frozenset({'payer_id','product','line_of_business','plan_id','a
 def financial_population_problem(question,sql,calls=(),*,selected_ids=None,inherited_ids=None,available_ids=None):
     """A care-liveness view cannot silently shrink recorded financial scope.
 
-    This checks the known living_patient source, including its retained-view
+    This checks the known living_patient source and explicit death exclusions,
+    including their retained-view
     lineage. It does not prove general SQL/request equivalence. An exact saved
     cohort or complete source population remains valid regardless of its ages
     or vital statuses; explicit requests for living subjects remain available.
@@ -38,15 +39,27 @@ def financial_population_problem(question,sql,calls=(),*,selected_ids=None,inher
     import sqlglot
     from sqlglot import exp
     from sqlglot.optimizer.scope import traverse_scope
+    from .plan_fence import _dependency_sql
     by={c['result']['result_view']:c for c in calls
         if isinstance(c.get('result'),dict)and c['result'].get('result_view')}
     seen=set()
     def uses_living(query):
         if not isinstance(query,str)or query in seen:return False
         seen.add(query)
-        try:tree=sqlglot.parse_one(query,read='sqlite')
+        try:tree=sqlglot.parse_one(_dependency_sql(query),read='sqlite')
         except (sqlglot.errors.ParseError,sqlglot.errors.TokenError):return False
         if tree is None:return False
+        external={id(source):source for scope in traverse_scope(tree)
+                  for _,source in scope.selected_sources.values()if isinstance(source,exp.Table)}
+        # Recorded balances survive death. These are membership exclusions,
+        # unlike merely joining a death record to display a source attribute.
+        for node in tree.find_all(exp.Not):
+            if isinstance(node.this,(exp.In,exp.Exists))and any(
+                    id(t)in external and t.name.lower()=='death'for t in node.this.find_all(exp.Table)):
+                return True
+        for node in tree.find_all(exp.Except):
+            if any(id(t)in external and t.name.lower()=='death'for t in node.expression.find_all(exp.Table)):
+                return True
         for scope in traverse_scope(tree):
             for _,source in scope.selected_sources.values():
                 if not isinstance(source,exp.Table):continue  # CTE shadowing is resolved by sqlglot.
@@ -57,9 +70,46 @@ def financial_population_problem(question,sql,calls=(),*,selected_ids=None,inher
                                         (call.get('input')or{}).get('patient_query_sql')):return True
         return False
     if not uses_living(sql):return None
-    return ('The financial population uses living_patient without a requested living-only restriction. '
+    return ('The financial population uses a living-only source or death exclusion without a requested living-only restriction. '
             'Recorded balances can remain outside a living care cohort. Preserve the original or exact inherited '
             'financial population; do not silently exclude those source subjects or infer hardship from amounts.')
+
+
+def financial_query_population_problem(question,sql,calls):
+    """Keep the same financial scope guard after an operator's SQL projection.
+
+    Only actual financial result lineage opts into this check. A nonfinancial
+    exploration of death records, or a positive balance predicate, is unaffected.
+    """
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.optimizer.scope import traverse_scope
+    from .plan_fence import _dependency_sql
+    by={c['result']['result_view'].lower():c for c in calls
+        if isinstance(c.get('result'),dict)and c['result'].get('result_view')}
+    seen=set()
+    def financial(query):
+        if not isinstance(query,str)or query in seen:return False
+        seen.add(query)
+        try:tree=sqlglot.parse_one(_dependency_sql(query),read='sqlite')
+        except (sqlglot.errors.ParseError,sqlglot.errors.TokenError):return False
+        if tree is None:return False
+        for scope in traverse_scope(tree):
+            for _,source in scope.selected_sources.values():
+                if not isinstance(source,exp.Table):continue
+                call=by.get(source.name.lower())
+                if not call:continue
+                result=call['result'];args=call.get('input')or{}
+                if result.get('analysis')=='financial_accounts':return True
+                if financial(args.get('sql')):return True
+                base=args.get('base')or(result.get('assembly')or{}).get('base_result_view')
+                if isinstance(base,str)and financial('SELECT * FROM '+base):return True
+        return False
+    # The operator boundary has already checked an inherited population.
+    # Inspect only later SQL/assembly restrictions, without reinterpreting an
+    # approved financial operator's explicit saved-cohort input as a new filter.
+    projections=[c for c in calls if(c.get('result')or{}).get('analysis')!='financial_accounts']
+    return financial_population_problem(question,sql,projections)if financial(sql)else None
 
 
 def point_event_grain_problem(question,sql):

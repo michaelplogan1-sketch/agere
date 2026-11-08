@@ -41,6 +41,40 @@ class FinancialPopulationScope(unittest.TestCase):
         calls[0]['input']['sql']='SELECT patient_id FROM patient'
         self.assertIsNone(S.financial_population_problem(QUESTION,'SELECT patient_id FROM agere_result_1',calls))
 
+    def test_actual_later_sql_cannot_reintroduce_death_exclusion(self):
+        calls=[{'name':'execute_analysis','input':{'operation':'financial_accounts'},
+                'result':{'analysis':'financial_accounts','result_view':'agere_result_5'}},
+               {'name':'query_sql','input':{'sql':'SELECT * FROM agere_result_5'},
+                'result':{'result_view':'agere_result_6'}}]
+        failed='SELECT patient_id FROM agere_result_6 WHERE patient_id NOT IN (SELECT patient_id FROM death)'
+        self.assertIsNotNone(S.financial_query_population_problem(QUESTION,failed,calls))
+        self.assertIsNone(S.financial_query_population_problem('Show balances for living patients.',failed,calls))
+        self.assertIsNone(S.financial_query_population_problem(QUESTION,failed,[]))
+        self.assertIsNone(S.financial_query_population_problem(QUESTION,'SELECT * FROM agere_result_6 WHERE balance_cents>0',calls))
+        self.assertIsNone(S.financial_query_population_problem(QUESTION,'SELECT f.*,d.patient_id FROM agere_result_6 f LEFT JOIN death d USING(patient_id)',calls))
+        calls[0]['input']['patient_query_sql']='SELECT patient_id FROM living_patient'
+        self.assertIsNone(S.financial_query_population_problem(QUESTION,'SELECT * FROM agere_result_6',calls))
+
+    def test_death_negation_and_shadowing(self):
+        for query in ('SELECT patient_id FROM patient WHERE NOT EXISTS (SELECT 1 FROM death WHERE death.patient_id=patient.patient_id)',
+                      'SELECT patient_id FROM patient EXCEPT SELECT patient_id FROM death'):
+            self.assertIsNotNone(self.check(query))
+        self.assertIsNone(self.check('WITH death AS (SELECT patient_id FROM patient) SELECT patient_id FROM patient WHERE patient_id NOT IN (SELECT patient_id FROM death)'))
+
+    def test_sql_tool_rejects_financial_death_exclusion_before_dispatch(self):
+        from clinical_core.agere.clinical.backstop_agent import Tools
+        db=sqlite3.connect(':memory:')
+        tools=object.__new__(Tools)
+        tools.question=QUESTION;tools.cohort=None
+        tools.semantic=SimpleNamespace(db=db,query=lambda *a,**k:self.fail('Rejected financial SQL was dispatched'))
+        tools.native_calls=[{'name':'execute_analysis','input':{'operation':'financial_accounts'},
+            'result':{'analysis':'financial_accounts','result_view':'agere_result_5'}}]
+        sql='SELECT patient_id FROM agere_result_5 WHERE patient_id NOT IN (SELECT patient_id FROM death)'
+        try:
+            with self.assertRaisesRegex(ValueError,'financial population'):
+                tools._call({'name':'query_sql','input':{'sql':sql}})
+        finally:db.close()
+
     def test_execute_rejects_before_financial_engine_and_preserves_other_operations(self):
         db=sqlite3.connect(':memory:');db.execute('CREATE TABLE patient(patient_id TEXT)')
         db.executemany('INSERT INTO patient VALUES (?)',[('A',),('D',)])
