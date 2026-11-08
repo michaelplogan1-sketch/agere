@@ -104,6 +104,25 @@ class ComputedProse(unittest.TestCase):
             a={'table_binding':{'result_view':'table'},'headline':text}
             with self.subTest(text=text),self.assertRaises(ValueError):
                 B.bind_computed_prose(a,self.calls,question='Compare calendar years 2028 and 2029.')
+
+    def test_literal_year_intervals_cannot_launder_a_previous_request_scope(self):
+        for text in ('Across 2028-2029.', 'Between 2028 and 2029.', 'For calendar years 2028 and 2029.'):
+            answer={'table_binding':{'result_view':'table'},'headline':text}
+            B.bind_computed_prose(answer,self.calls,question='Compare calendar years 2028 and 2029.')
+            original=copy.deepcopy(answer)
+            with self.subTest(text=text),self.assertRaises(ValueError):
+                B.bind_computed_prose(answer,self.calls,question='Compare calendar year 2030.')
+            self.assertEqual(answer,original)
+
+    def test_source_dates_and_bound_historical_intervals_keep_their_temporal_role(self):
+        calls=self.calls+[{'name':'query_sql','result':{'result_view':'source_years','columns':['first_year','last_year'],
+            'rows':[['2028','2029']],'truncated':False}}]
+        answer={'table_binding':{'result_view':'table'},'headline':{
+            'template':'Historical source range from {start}-{end}; recorded on 2028-01-01.',
+            'bindings':{'start':{'result_view':'source_years','row':0,'column':'first_year'},
+                        'end':{'result_view':'source_years','row':0,'column':'last_year'}}}}
+        B.bind_computed_prose(answer,calls,question='Compare calendar year 2030.')
+        self.assertEqual(answer['headline'],'Historical source range from 2028-2029; recorded on 2028-01-01.')
     def test_template_failure_does_not_partially_rewrite_the_answer(self):
         a=self.answer();a['facts']['bad']='13 visits';original=copy.deepcopy(a)
         with self.assertRaises(ValueError):B.bind_computed_prose(a,self.calls)

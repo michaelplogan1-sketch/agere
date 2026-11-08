@@ -1638,7 +1638,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
                     text=text.replace(left+quote+right,'')
         from .execution_state import expand_date_pairs,prose_temporal_spans
         text=expand_date_pairs(text)
-        for start,end in reversed(prose_temporal_spans(text)):
+        for start,end in reversed(prose_temporal_spans(text,calendar_years=request_years or None)):
             text=text[:start]+text[end:]
         # A requested calendar year is a temporal anchor, not an inferred
         # patient count. Preserve the text for semantic review; only the
@@ -1700,7 +1700,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
         template=value['template'];bindings=value['bindings'];names=[];literals=[]
         parameters.update(current_template=template,current_bindings=bindings)
         from .execution_state import temporal_template_literals
-        temporal_literals=temporal_template_literals(template,bindings,native)
+        temporal_literals=temporal_template_literals(template,bindings,native,calendar_years=request_years or None)
         for index,(literal,name,spec,conversion) in enumerate(formatter.parse(template)):
             if name is not None:
                 if not re.fullmatch(r'[A-Za-z_]\w*',name) or spec or conversion:raise ProseIssue('invalid_placeholder',field,'Use plain named scalar placeholders at '+field)

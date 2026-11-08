@@ -657,7 +657,7 @@ def binding_repair_schema(focus):
     return obj({'repair_draft':obj({'draft_digest':{'enum':[focus['draft_digest']]},'rows':{'type':'array','items':row}})})
 
 
-def prose_temporal_spans(text):
+def prose_temporal_spans(text,*,calendar_years=None):
     """Exact valid ISO month/day/timestamp addresses, not measured quantities.
 
     Retain their literal precision and text. Source meaning and clock roles
@@ -680,11 +680,12 @@ def prose_temporal_spans(text):
     interval=r'\b(?:in|during|across|between|from|for|years?)\s+(?P<interval>\d{4}\s*(?:[-–]|to|through|and)\s*\d{4})(?=$|\s*[,.;:()]|\s+(?:and|with|while|but)\b)'
     for match in re.finditer(interval,text,re.I):
         years=re.findall(r'\d{4}',match['interval'])
-        if 1<=int(years[0])<=int(years[1])<=9999:spans.append(match.span('interval'))
+        if (1<=int(years[0])<=int(years[1])<=9999 and
+            (calendar_years is None or set(years)<=set(calendar_years))):spans.append(match.span('interval'))
     return sorted(set(spans))
 
 
-def temporal_template_literals(template,bindings,native):
+def temporal_template_literals(template,bindings,native,*,calendar_years=None):
     """Locate clock spans across actual scalar placeholders and literal text.
 
     Only literal portions of a valid rendered clock are masked. Placeholder
@@ -693,14 +694,23 @@ def temporal_template_literals(template,bindings,native):
     """
     import string
     parts=list(string.Formatter().parse(template));original=[p[0]for p in parts]
-    rendered='';segments=[]
+    rendered='';segments=[];bound_segments=[]
     for literal,name,spec,conversion in parts:
         start=len(rendered);rendered+=literal;segments.append((start,len(rendered)))
         if name is not None:
             if spec or conversion or name not in bindings:return original
-            try:rendered+=repair_rendered_value({'template':'{value}','bindings':{'value':bindings[name]}},native)
+            try:
+                start=len(rendered)
+                rendered+=repair_rendered_value({'template':'{value}','bindings':{'value':bindings[name]}},native)
+                bound_segments.append((start,len(rendered)))
             except (ValueError,KeyError,TypeError,IndexError):return original
-    spans=prose_temporal_spans(rendered);masked=[]
+    spans=prose_temporal_spans(rendered,calendar_years=calendar_years)
+    # Preserve actual source-bound clock rendering, including intervals that
+    # cross a scalar year placeholder. Pure literal intervals must match the
+    # request's explicit year anchors; a prior compiled answer is not authority.
+    spans=sorted(set(spans)|{(left,right)for left,right in prose_temporal_spans(rendered)
+        if any(max(left,start)<min(right,end)for start,end in bound_segments)})
+    masked=[]
     for literal,(start,end)in zip(original,segments):
         for left,right in reversed(spans):
             a,b=max(start,left),min(end,right)
