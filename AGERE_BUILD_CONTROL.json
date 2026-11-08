@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T14:16:24.649846+00:00",
+  "updated_at": "2026-11-08T15:18:15.810489+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -580,9 +580,9 @@
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Fresh ordinary question entry/automatic selection of these declared index/source/coverage parameters and current whole25case/tenarea release evidence remain unfinished.; First-recorded is restricted to received dated history, not a clinically first-ever admission. Unknown origin/coverage/day order remains represented rather than imputed.; Enrollment is an explicit followup observation proxy; complete event capture and unobserved care absence are not established.; Absolute competing-risk cumulative incidence and predictive bounds under source censoring are not qualified; observed output fits no model.; Independent clinical/model/scientific qualification and customer deployment prerequisites remain separate. Next Q19 latest evidence and target/window/source/qualification preflight.",
-      "engineering_current_status": "Q18 native observed followup source construction and complete current account consumer delivered; partial/unverified/no model, not ordinary automatic or independent clinical acceptance.",
-      "next_action": "G3/WP4: Q18 native observed-followup increment delivered on58a1d4e5 withcurrentANS-68a3e012fb538fff01adb710, app93779/session41747. All243selectedindexaccounts match independent SQL:215timed units/66recorded admissions/149right-censored/28unresolved (19origin,8coverage,1nonpositivefollowup). Received185death rows now bound, contiguous eligibility/source kind/first-recorded scope explicit, no model fit/unaskedhorizon/providercalls. Current partial/unverified table/save/native/browser exact; do not replay Q18 engines or unchanged campaigns. Next inspect latest completed Q19 predictive-analysis receipts/current saved contexts, then offline original-question target/feature/source-clock/label/qualification preflight. Use current registered predictor/simple baselines only where their exact target/window/source role is supported; otherwise name missing label/validation/wiring separately and preserve unknowns. No optional model catalog, new services, protected keys, untargeted training, disease handler, new caps or architecture rewrite. Full25fixedcases/tenareas/current principal/October11baseline and ordinary automatic-entry/G5/clinical/model/scientific/actuarial/customer prerequisites remain. No active provider/build/training/native job or source freeze; quiet continuationACTIVE.",
+      "remaining_acceptance": "Current full conversational-handler/ordinary-entry and whole25case/tenarea acceptance remain open; native original-question compilation/execution is now demonstrated.; No qualified90dayinpatient predictor attached; origin-state feature reconstruction, complete outcome capture, calibration and model-versus-baseline evidence are not established. No fitting was authorized by this request.; Other fixed cases retain exact program-definition/capacity inputs, source semantic uncertainty, requested report visual QA, independent clinical/model/scientific qualification and customer deployment prerequisites.",
+      "engineering_current_status": "Q19 native original-question evidence route, target/clock support and current API consumer delivered; no fit or qualified predictor. Current25/tenarea ordinary acceptance and independent qualification remain open.",
+      "next_action": "G3/WP4: Q19 no-fit predictive-evidence increment delivered on aedefa18/currentANS-d6890c2f60b8ee1a0e325772, app94623/session15707. Original question native compiler selects exact inpatient/origin2029-01-01/90day evidence mode without supplied plan; all238rows/237record-stream clock labels reconcile;131events/88subjects,85positive origin-inputcandidates of3944. No qualified predictor attached; metrics/negative labels remain unknown,0fits/0providers/private rows. User returned and requested a two-day work audit plus current-stack/remaining-work visual; complete that review now. Then inspect latest Q20-Q25 delivery/current-context receipts for scoped compatibility and remaining dependencies without re-running unchanged Q20/Q21 votes or campaigns. Produce one current fixed25/tenarea release disposition separating working paths, supported unknowns, actual wiring defects, qualification and customer prerequisites; run only missing or materially changed ordinary-entry/clarification/UX/recovery checks. No model catalog, optional research, new services/agents/chats, invented program criteria, new caps or architecture rewrite. Retain current principal/October11baseline. Full conversational qualification, program/capacity inputs, G5/clinical/model/scientific/actuarial/customer dependencies remain. No active job/freeze; quiet continuationACTIVE.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -661,35 +661,36 @@
     }
   ],
   "checkpoint": {
-    "kind": "Q18_received_index_censoring_observed_units_and_current_consumer",
+    "kind": "Q19_native_no_fit_target_clock_evidence_and_current_consumer",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Registered survival now declares first-across-received-history versus first-in-window and inpatient versus merged-hospital index sources, binds received death dates and optional contiguous enrollment at discharge, and exposes complete observed-unit accounts without fitting a risk model or inventing a horizon. Unknown origins/eligibility/date order remain visible. Saved observed accounts retain their exact selected patient scope. Death-censored Kaplan-Meier net failure is distinct from unavailable absolute competing-risk incidence.",
+    "user_behavior_delta": "Predictive evidence can now be inspected without fitting or scoring. The existing native compiler extracts the original no-fit question target/origin/day horizon; request guards reject fitting or contradictory dates/windows before dispatch. Canonical inpatient targets exclude observation stays, and complete patient-scoped two-clock inventories preserve late/unknown input records and unknown negative labels. Active-runtime attachment absence is explicit; calibration/comparator metrics remain null. No protected partition, prediction row or weight is read.",
     "measured_failure_reduction": {
-      "first_across_history_vs_first_in_year_explicit": true,
-      "known_death_not_ignored": true,
-      "lifetime_open_enrollment_substitution_removed": true,
-      "ambiguous_origin_and_coverage_unknowns_retained": true,
-      "risk_time_stops_at_event": true,
-      "NULL_ID_next_event_loss_prevented": true,
-      "observed_only_complete_rows_and_scope_saved": true,
-      "net_KM_not_absolute_competing_risk": true,
-      "fresh_automatic_entry_qualified": false
+      "inpatient_target_no_longer_broadened_to_observation": true,
+      "explicit_no_fit_enforced_before_dispatch": true,
+      "original_origin_and_day_window_bound": true,
+      "all_scoped_clock_labels_queryable": true,
+      "unknown_labels_metrics_not_zero": true,
+      "current_native_original_question_compile_execute_save": true,
+      "current_native_browser_consumer": true,
+      "full_conversational_handler_qualified": false
     },
     "evidence": [
-      "artifacts/agere-Q18-retained-2026-11-08/workflow-completion.json",
-      "artifacts/agere-Q18-retained-2026-11-08/source-preflight-v1-preserved.log",
-      "artifacts/agere-Q18-retained-2026-11-08/source-preflight.json",
-      "artifacts/agere-Q18-retained-2026-11-08/existing-survival-checks-v1.log",
-      "artifacts/agere-Q18-retained-2026-11-08/received-followup-checks-v5.log",
-      "artifacts/agere-Q18-retained-2026-11-08/estimand-label-final-check.log",
-      "artifacts/agere-Q18-retained-2026-11-08/native-followup-proof/receipt.json",
-      "artifacts/agere-Q18-retained-2026-11-08/native-followup-proof-v2/receipt.json",
-      "artifacts/agere-Q18-retained-2026-11-08/native-current-publication/receipt.json",
-      "artifacts/agere-Q18-retained-2026-11-08/http-consumer-proof.json"
+      "artifacts/agere-Q19-retained-2026-11-08/workflow-completion.json",
+      "artifacts/agere-Q19-retained-2026-11-08/source-preflight-v1-preserved.json",
+      "artifacts/agere-Q19-retained-2026-11-08/source-preflight.json",
+      "artifacts/agere-Q19-retained-2026-11-08/evidence-only-checks-v1.log",
+      "artifacts/agere-Q19-retained-2026-11-08/evidence-route-checks-v4.log",
+      "artifacts/agere-Q19-retained-2026-11-08/native-evidence-proof/receipt.json",
+      "artifacts/agere-Q19-retained-2026-11-08/native-current-publication/receipt.json",
+      "artifacts/agere-Q19-retained-2026-11-08/native-current-publication-v2/receipt.json",
+      "artifacts/agere-Q19-retained-2026-11-08/compiled-native-workflow/receipt.json",
+      "artifacts/agere-Q19-retained-2026-11-08/http-consumer-proof.json",
+      "artifacts/agere-user-return-review-2026-11-08/receipt.json"
     ],
-    "remaining_gap": "Fresh ordinary question entry/automatic selection of these declared index/source/coverage parameters and current whole25case/tenarea release evidence remain unfinished.; First-recorded is restricted to received dated history, not a clinically first-ever admission. Unknown origin/coverage/day order remains represented rather than imputed.; Enrollment is an explicit followup observation proxy; complete event capture and unobserved care absence are not established.; Absolute competing-risk cumulative incidence and predictive bounds under source censoring are not qualified; observed output fits no model.; Independent clinical/model/scientific qualification and customer deployment prerequisites remain separate. Next Q19 latest evidence and target/window/source/qualification preflight.",
-    "next_action": "G3/WP4: Q18 native observed-followup increment delivered on58a1d4e5 withcurrentANS-68a3e012fb538fff01adb710, app93779/session41747. All243selectedindexaccounts match independent SQL:215timed units/66recorded admissions/149right-censored/28unresolved (19origin,8coverage,1nonpositivefollowup). Received185death rows now bound, contiguous eligibility/source kind/first-recorded scope explicit, no model fit/unaskedhorizon/providercalls. Current partial/unverified table/save/native/browser exact; do not replay Q18 engines or unchanged campaigns. Next inspect latest completed Q19 predictive-analysis receipts/current saved contexts, then offline original-question target/feature/source-clock/label/qualification preflight. Use current registered predictor/simple baselines only where their exact target/window/source role is supported; otherwise name missing label/validation/wiring separately and preserve unknowns. No optional model catalog, new services, protected keys, untargeted training, disease handler, new caps or architecture rewrite. Full25fixedcases/tenareas/current principal/October11baseline and ordinary automatic-entry/G5/clinical/model/scientific/actuarial/customer prerequisites remain. No active provider/build/training/native job or source freeze; quiet continuationACTIVE."
+    "remaining_gap": "Current full conversational-handler/ordinary-entry and whole25case/tenarea acceptance remain open; native original-question compilation/execution is now demonstrated.; No qualified90dayinpatient predictor attached; origin-state feature reconstruction, complete outcome capture, calibration and model-versus-baseline evidence are not established. No fitting was authorized by this request.; Other fixed cases retain exact program-definition/capacity inputs, source semantic uncertainty, requested report visual QA, independent clinical/model/scientific qualification and customer deployment prerequisites.",
+    "next_action": "G3/WP4: User-requested two-day audit and current-stack/remaining-work visual completed; integrated local prototype, no claim of whole-product or clinical/model qualification. Q19 native no-fit evidence current on aedefa18/ANS-d6890c2f60b8ee1a0e325772, app94623/session15707. Next inspect latest Q20-Q25 delivery/current-context receipts for scoped compatibility and explicit remaining dependencies, without repeating unchanged Q20/Q21 votes or campaigns. Consolidate the existing fixed25/tenarea assessment into one current release disposition separating working paths, supported unknowns, actual wiring defects, qualification and customer prerequisites. Run only missing or materially changed ordinary-entry, clarification, UX and recovery checks. Retain current principal and October11baseline; no optional research/catalogs, new agents/chats/services, invented program criteria, new caps or architecture rewrite. Full conversational qualification, program/capacity inputs, G5 and clinical/model/scientific/actuarial/customer dependencies remain explicit. No active provider/build/training job or source freeze; quiet continuation ACTIVE.",
+    "latest_user_review": "artifacts/agere-user-return-review-2026-11-08/receipt.json"
   },
   "decisions": [
     {
@@ -5600,10 +5601,46 @@
         "artifacts/agere-Q18-retained-2026-11-08/http-consumer-proof.json"
       ],
       "scope_impact": "Generic existing survival/source/censoring and graph consumer, no disease handler/model catalog/architecture rewrite/new cap or new qualified predictor. Native arithmetic evidence does not qualify natural-language parameter selection or clinical/scientific assumptions. All25/tenareas and existing G5/customer dependencies retained."
+    },
+    {
+      "at": "2026-11-08T14:29:43.108848+00:00",
+      "gate": "G3",
+      "reason": "Original Q19 broadened inpatient to observation. Current scorecard always fits and cannot inspect existing evidence safely under explicit no-fit instruction. No attached qualification/forecast pointer in active runtime; origin-state feature proof/calibration/comparator absent.",
+      "correction": "Add read-only evidence mode and enforce no-fit before source/model dispatch; inspect only source clocks/target counts and runtime attachment metadata. Preserve all source/protected partitions. Actual population intent is already all received; earlier preflight prose alleging living-filter failure is corrected and preserved, with no population change.",
+      "evidence": [
+        "artifacts/agere-Q19-retained-2026-11-08/source-preflight.json",
+        "artifacts/agere-Q19-retained-2026-11-08/source-preflight-v1-preserved.json"
+      ],
+      "scope_impact": "Q19 current requirements withinareas5/7/10; no new model, training, component catalog or narrowed charter."
+    },
+    {
+      "at": "2026-11-08T15:10:57.607142+00:00",
+      "gate": "G3",
+      "reason": "No-fit evidence question was broadened to observation and had no read-only model-evidence inspection path. Native evidence/source-clock stage now works; user requested an honest two-day whole-stack audit and visual.",
+      "correction": "Predictive evidence can now be inspected without fitting or scoring. The existing native compiler extracts the original no-fit question target/origin/day horizon; request guards reject fitting or contradictory dates/windows before dispatch. Canonical inpatient targets exclude observation stays, and complete patient-scoped two-clock inventories preserve late/unknown input records and unknown negative labels. Active-runtime attachment absence is explicit; calibration/comparator metrics remain null. No protected partition, prediction row or weight is read.16distinct focused checks and full independent source reconciliation pass. Native original question compile/execute/save5.090s and actualnative/browser/ask2001.283s,0providers/0fits. No model fitting or favorable-vote campaign; complete existing histories preserved. Current source/patient scope alreadyallreceived, so no invented population fix. Corrected only copied provenance reference in a new immutable candidate.",
+      "evidence": [
+        "artifacts/agere-Q19-retained-2026-11-08/workflow-completion.json",
+        "artifacts/agere-Q19-retained-2026-11-08/source-preflight-v1-preserved.json",
+        "artifacts/agere-Q19-retained-2026-11-08/source-preflight.json",
+        "artifacts/agere-Q19-retained-2026-11-08/evidence-only-checks-v1.log",
+        "artifacts/agere-Q19-retained-2026-11-08/evidence-route-checks-v4.log",
+        "artifacts/agere-Q19-retained-2026-11-08/native-evidence-proof/receipt.json",
+        "artifacts/agere-Q19-retained-2026-11-08/native-current-publication/receipt.json",
+        "artifacts/agere-Q19-retained-2026-11-08/native-current-publication-v2/receipt.json",
+        "artifacts/agere-Q19-retained-2026-11-08/compiled-native-workflow/receipt.json",
+        "artifacts/agere-Q19-retained-2026-11-08/http-consumer-proof.json"
+      ],
+      "scope_impact": "Existing scorecard/tool/compiler path only; no disease handler, model catalog, training, architecture rewrite or new cap. Whole25/tenarea release decision now takes priority over optional component expansion; latest Q20-Q25 evidence and concrete missing original-entry/UX checks follow. Independent qualification/customer work remains separate."
+    },
+    {
+      "at": "2026-11-08T15:18:15.810489+00:00",
+      "decision": "User-return review completed without product changes; keep finite release acceptance as next action",
+      "evidence": "artifacts/agere-user-return-review-2026-11-08/receipt.json",
+      "scope_impact": "No change to all25/tenareas; no new optional component or qualification claim"
     }
   ],
   "unsealed_work": {
-    "status": "Q18_native_observed_followup_current_source_and_censoring_reconciled",
+    "status": "Q19_original_question_native_evidence_current_no_fit_model_dependency_explicit",
     "product_commit": "6df36263b54136ae6e853b2e927c2b1b21dac4e6",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
@@ -7078,13 +7115,28 @@
     "Q18_machine_source_vote_claimed": false,
     "Q18_provider_attempts_this_increment": 0,
     "Q18_known_api_equivalent_usd": 0,
-    "full_Q18_acceptance": false
+    "full_Q18_acceptance": false,
+    "Q19_source_preflight": "artifacts/agere-Q19-retained-2026-11-08/source-preflight.json",
+    "Q19_workflow_completion": "artifacts/agere-Q19-retained-2026-11-08/workflow-completion.json",
+    "Q19_current_context": "ANS-d6890c2f60b8ee1a0e325772",
+    "Q19_current_consumer": "artifacts/agere-Q19-retained-2026-11-08/http-consumer-proof.json",
+    "Q19_product_commit": "aedefa181913d68a303c70d7dd0590236ea671e1",
+    "Q19_candidate_app_activation": true,
+    "Q19_original_question_native_compiler_qualified": true,
+    "Q19_full_conversational_handler_qualified": false,
+    "Q19_provider_attempts_this_increment": 0,
+    "Q19_known_api_equivalent_usd": 0,
+    "Q19_qualified_predictor_attached": false,
+    "full_Q19_acceptance": false,
+    "next_action": "G3/WP4: User-requested two-day audit and current-stack/remaining-work visual completed; integrated local prototype, no claim of whole-product or clinical/model qualification. Q19 native no-fit evidence current on aedefa18/ANS-d6890c2f60b8ee1a0e325772, app94623/session15707. Next inspect latest Q20-Q25 delivery/current-context receipts for scoped compatibility and explicit remaining dependencies, without repeating unchanged Q20/Q21 votes or campaigns. Consolidate the existing fixed25/tenarea assessment into one current release disposition separating working paths, supported unknowns, actual wiring defects, qualification and customer prerequisites. Run only missing or materially changed ordinary-entry, clarification, UX and recovery checks. Retain current principal and October11baseline; no optional research/catalogs, new agents/chats/services, invented program criteria, new caps or architecture rewrite. Full conversational qualification, program/capacity inputs, G5 and clinical/model/scientific/actuarial/customer dependencies remain explicit. No active provider/build/training job or source freeze; quiet continuation ACTIVE."
   },
   "current_visual_request": {
     "status": "completed",
-    "path": "/Users/mikel/.codex/visualizations/2026/10/29/01a187c0-23ba-7d02-9368-5ff567327554/wollstonecraft-question-flow.html",
-    "scope": "Current question flow, native/typed/frontier roles, available local specialists, bottling and gated learning; no publication.",
-    "checked": "Four widths, route interaction, no JS errors or clipping."
+    "at": "2026-11-08T15:18:15.810489+00:00",
+    "path": "/Users/mikel/.codex/visualizations/2026/10/29/01a187c0-23ba-7d02-9368-5ff567327554/agere-current-stack.html",
+    "scope": "User-requested two-day audit, current question flow and remaining engineering/qualification/customer dependencies; no publication",
+    "evidence": "artifacts/agere-user-return-review-2026-11-08/receipt.json",
+    "checked": "Four local route interactions, state restore/fallback, markup references and script syntax. Browser rendering not inspected."
   },
   "full_stack_candidate_checkpoint": {
     "at": "2026-11-05T05:38:37.010800+00:00",
@@ -7112,7 +7164,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3/WP4: Q18 native observed-followup increment delivered on58a1d4e5 withcurrentANS-68a3e012fb538fff01adb710, app93779/session41747. All243selectedindexaccounts match independent SQL:215timed units/66recorded admissions/149right-censored/28unresolved (19origin,8coverage,1nonpositivefollowup). Received185death rows now bound, contiguous eligibility/source kind/first-recorded scope explicit, no model fit/unaskedhorizon/providercalls. Current partial/unverified table/save/native/browser exact; do not replay Q18 engines or unchanged campaigns. Next inspect latest completed Q19 predictive-analysis receipts/current saved contexts, then offline original-question target/feature/source-clock/label/qualification preflight. Use current registered predictor/simple baselines only where their exact target/window/source role is supported; otherwise name missing label/validation/wiring separately and preserve unknowns. No optional model catalog, new services, protected keys, untargeted training, disease handler, new caps or architecture rewrite. Full25fixedcases/tenareas/current principal/October11baseline and ordinary automatic-entry/G5/clinical/model/scientific/actuarial/customer prerequisites remain. No active provider/build/training/native job or source freeze; quiet continuationACTIVE.",
+  "next_action": "G3/WP4: User-requested two-day audit and current-stack/remaining-work visual completed; integrated local prototype, no claim of whole-product or clinical/model qualification. Q19 native no-fit evidence current on aedefa18/ANS-d6890c2f60b8ee1a0e325772, app94623/session15707. Next inspect latest Q20-Q25 delivery/current-context receipts for scoped compatibility and explicit remaining dependencies, without repeating unchanged Q20/Q21 votes or campaigns. Consolidate the existing fixed25/tenarea assessment into one current release disposition separating working paths, supported unknowns, actual wiring defects, qualification and customer prerequisites. Run only missing or materially changed ordinary-entry, clarification, UX and recovery checks. Retain current principal and October11baseline; no optional research/catalogs, new agents/chats/services, invented program criteria, new caps or architecture rewrite. Full conversational qualification, program/capacity inputs, G5 and clinical/model/scientific/actuarial/customer dependencies remain explicit. No active provider/build/training job or source freeze; quiet continuation ACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -7201,8 +7253,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 93779,
-  "owned_server_session": 41747,
+  "owned_server_pid": 94623,
+  "owned_server_session": 15707,
   "last_run_observation": {
     "at": "2026-11-07T20:07:46.544952+00:00",
     "status": "native_storage_repair_qualified_Q06_retained_partial",
