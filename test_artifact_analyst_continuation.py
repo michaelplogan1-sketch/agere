@@ -151,7 +151,7 @@ class Continuation(unittest.TestCase):
   SP.remember_observation(self.path,'span-fixture',{'label':'finding'},['authored-request'],assertion_id='suspended-fixture')
   key=A.capture(self.path,self.question,original)['id'];test=self
   SP.quarantine_assertions(self.path,['suspended-fixture'],'Authored unadjudicated source objection')
-  saved=(A.root(self.path)/key/'answer.json').read_bytes()
+  snapshot=A.snapshot_path(A.root(self.path)/key/'answer.json');saved=snapshot.read_bytes()
   with self.assertRaisesRegex(ValueError,'suspended source reading'):
    A.load(self.path,key,current=True)
   class Cascade:
@@ -176,7 +176,7 @@ class Continuation(unittest.TestCase):
    result=P.continue_from_artifact(self.stack,key)
   self.assertEqual(result['answer']['status'],'partial');self.assertEqual(result['answer']['verification'],'unverified')
   self.assertEqual(result['request_contract']['population'],[])
-  self.assertEqual((A.root(self.path)/key/'answer.json').read_bytes(),saved)
+  self.assertEqual(snapshot.read_bytes(),saved)
   self.assertEqual(A.load(self.path,key,current=True,source_review=True)['source_disposition']['status'],'suspended')
   with self.assertRaisesRegex(ValueError,'suspended source reading'):
    A.create_work(self.path,{'context_id':key,'program':'custom','patient_ids':['A'],'owner':'Fixture review team','note':'Synthetic only'})

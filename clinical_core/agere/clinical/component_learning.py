@@ -360,7 +360,7 @@ def handle_feedback(stack,body):
     if key is not None:
         import re
         if not isinstance(key,str) or not re.fullmatch(r'ANS-[0-9a-f]{24}',key):raise ValueError('Exact saved answer context required')
-        data=json.loads((answer_context.root(stack.path)/key/'answer.json').read_text())
+        data=answer_context.read_snapshot(answer_context.root(stack.path)/key/'answer.json')
         if question and question not in (data['question'],data.get('original_question')):raise ValueError('Feedback question differs from saved execution')
         question=data['question'];result=data
         if accepted:

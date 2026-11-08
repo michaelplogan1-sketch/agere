@@ -8,10 +8,14 @@ Frontier composition receives the frozen bundle, not a new cohort.
 from collections import Counter
 from datetime import datetime, timezone
 import json
+import fcntl
+import gzip
+import io
 import os
 from pathlib import Path
 import re
 import sqlite3
+import shutil
 import tempfile
 from types import SimpleNamespace
 
@@ -41,6 +45,19 @@ def now():
 def root(path):
     from ..clinical import evaluation  # evaluation mode: saved cohorts live in the evaluation scratch directory, outside the stack
     return (evaluation.scratch_dir(path) if evaluation.active() else Path(path)) / 'answer-workspaces'
+
+
+def snapshot_path(target):
+    """Resolve the immutable native snapshot, including lossless packed storage."""
+    target=Path(target)
+    if target.is_file():return target
+    return target.with_name(target.name+'.gz')
+
+
+def read_snapshot(target):
+    target=snapshot_path(target)
+    opener=gzip.open if target.suffix=='.gz'else open
+    with opener(target,'rt',encoding='utf-8')as stream:return json.load(stream)
 
 
 def source_identity(path):
@@ -169,25 +186,37 @@ def capture(path, question, result, *, original_question=None, _population_scope
                                'observation_dependencies': data['dependencies']['observation']})[:24]
     d = root(path) / key
     d.mkdir(parents=True, exist_ok=True)
-    target = d / 'answer.json'
-    if not target.exists():
-        # Publish only complete snapshots, without replacing a concurrent writer.
-        # Keep an interrupted write under its partial name for recovery/accounting.
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=d,
-                                         prefix='.answer-', suffix='.partial', delete=False) as f:
-            partial = Path(f.name)
-            created = now()
-            json.dump({**data, 'id': key, 'created_at': created}, f, default=str)
-            f.flush()
-            os.fsync(f.fileno())
-        published=False
-        try:
-            os.link(partial, target)
-            published=True
-        except FileExistsError:
-            pass
-        partial.unlink()
-        if published:publish_listing(target, {**data, 'id': key, 'created_at': created})
+    # Stream native histories as lossless gzip. Other snapshots use gzip when
+    # plain storage would not fit. Encoding never limits evidence. A shared
+    # publication lock preserves first-writer identity across both encodings.
+    with (d/'.capture.lock').open('a+b')as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        target=snapshot_path(d/'answer.json')
+        if not target.exists():
+            created=now();payload={**data,'id':key,'created_at':created}
+            investigation=data.get('investigation')
+            packed=isinstance(investigation,dict)and bool(investigation.get('tool_calls'))
+            if not packed:
+                required=sum(len(chunk.encode('utf-8'))for chunk in json.JSONEncoder(default=str).iterencode(payload))
+                packed=required>shutil.disk_usage(d).free
+            target=d/('answer.json.gz'if packed else'answer.json')
+            # Publish only complete snapshots, without replacing a concurrent writer.
+            # Keep an interrupted write under its partial name for recovery/accounting.
+            options={}if packed else{'encoding':'utf-8'}
+            with tempfile.NamedTemporaryFile(mode='wb'if packed else'w',dir=d,
+                    prefix='.answer-',suffix='.partial',delete=False,**options)as f:
+                partial=Path(f.name)
+                if packed:
+                    with gzip.GzipFile(filename='',fileobj=f,mode='wb',mtime=0)as encoded:
+                        with io.TextIOWrapper(encoded,encoding='utf-8')as stream:json.dump(payload,stream,default=str)
+                else:json.dump(payload,f,default=str)
+                f.flush();os.fsync(f.fileno())
+            published=False
+            try:
+                os.link(partial,target);published=True
+            except FileExistsError:pass
+            partial.unlink()
+            if published:publish_listing(target,payload)
     return {'id': key, 'patients': len(rows), 'url': '/action-center?context=' + key, **scope_options(data)}
 
 
@@ -200,10 +229,10 @@ def load(path, key, *, current=False, follow_up=False, source_review=False, loca
     rechecked independently while the parent answer remains visibly stale."""
     if not isinstance(key, str) or not re.fullmatch(r'ANS-[0-9a-f]{24}', key):
         raise ValueError('A saved answer context is required')
-    f = root(path) / key / 'answer.json'
+    f = snapshot_path(root(path) / key / 'answer.json')
     if not f.is_file():
         raise ValueError('Saved answer not found in this warehouse')
-    data = json.loads(f.read_text())
+    data = read_snapshot(f)
     stale = data['source'] != source_identity(path)
     if data.get('patient_profiles') is not None:
         from .patient_evidence import capture_profiles
@@ -250,11 +279,11 @@ def load(path, key, *, current=False, follow_up=False, source_review=False, loca
             invalidated = True
             break
         visited.add(parent_key)
-        parent_file = root(path)/parent_key/'answer.json'
+        parent_file = snapshot_path(root(path)/parent_key/'answer.json')
         if not parent_file.is_file():
             invalidated = True
             break
-        ancestor = json.loads(parent_file.read_text())
+        ancestor = read_snapshot(parent_file)
     else:
         invalidated = True
     dispositions = [check['source_disposition'] for check in dependency_checks]
@@ -318,11 +347,13 @@ def legacy_listing(target):
     loads its complete immutable context and runs the existing scope checks.
     """
     stamp=listing_stamp(target)
-    if stamp[0]<=65536:
-        data=json.loads(target.read_text())
+    packed=target.suffix=='.gz'
+    if not packed and stamp[0]<=65536:
+        data=read_snapshot(target)
         return listing_row(data)
     decoder=json.JSONDecoder();question=None
-    with target.open()as stream:
+    opener=gzip.open if packed else open
+    with opener(target,'rt',encoding='utf-8')as stream:
         text=stream.read(4096);pos=1
         while True:
             begin=pos
@@ -350,7 +381,7 @@ def legacy_listing(target):
     created=None
     with target.open('rb')as stream:
         stream.seek(max(0,stamp[0]-4096));tail=stream.read().decode('utf-8',errors='replace')
-    marker=tail.rfind(', "id":')
+    marker=-1 if packed else tail.rfind(', "id":')
     if marker>=0:
         try:
             suffix=json.loads('{'+tail[marker+2:])
@@ -366,7 +397,9 @@ def listing(path):
     out=[]
     # The API already returns the 100 newest entries. Select them BEFORE any
     # payload read; the former code decoded every historical investigation.
-    files=sorted(root(path).glob('ANS-*/answer.json'),key=lambda p:p.stat().st_mtime,reverse=True)[:100]
+    files={target.parent:snapshot_path(target.parent/'answer.json')
+           for pattern in ('ANS-*/answer.json','ANS-*/answer.json.gz')for target in root(path).glob(pattern)}
+    files=sorted(files.values(),key=lambda p:p.stat().st_mtime,reverse=True)[:100]
     for target in files:
         index=target.with_name('listing.json');row=None
         if index.is_file():

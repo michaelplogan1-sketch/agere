@@ -29,7 +29,8 @@ class PopulationContext(unittest.TestCase):
 
     def test_prepare_reopen_and_follow_exact_selected_group_without_model(self):
         saved=self.capture_summary();self.assertFalse(saved['result_scope_available'])
-        before=Path(A.root(self.path)/saved['id']/'answer.json').read_bytes()
+        snapshot=A.snapshot_path(A.root(self.path)/saved['id']/'answer.json')
+        before=snapshot.read_bytes()
         out=A.prepare_population_scopes(self.path,{'context_id':saved['id']})
         self.assertEqual(out['new_paid_api_calls'],0);self.assertEqual(len(out['population_scopes']),2)
         new=out['action_context'];context=A.load(self.path,new['id'],current=True)
@@ -41,7 +42,7 @@ class PopulationContext(unittest.TestCase):
         child=A.capture(self.path,follow['question'],follow,original_question=context['original_question'])
         loaded=A.load(self.path,child['id'],current=True)
         self.assertEqual(loaded['input_patient_ids'],['A'])
-        self.assertEqual(Path(A.root(self.path)/saved['id']/'answer.json').read_bytes(),before)
+        self.assertEqual(snapshot.read_bytes(),before)
 
     def test_summary_capture_already_exposes_complete_count_populations(self):
         saved=self.capture_summary()

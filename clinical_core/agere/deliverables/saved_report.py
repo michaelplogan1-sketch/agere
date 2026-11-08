@@ -117,7 +117,7 @@ def read_format(path, context_id, deliverable_id, format_name):
     from .compose import load
     if not isinstance(context_id,str) or not re.fullmatch(r'ANS-[0-9a-f]{24}',context_id):
         raise ValueError('A saved answer context is required')
-    if not(A.root(path)/context_id/'answer.json').is_file():
+    if not A.snapshot_path(A.root(path)/context_id/'answer.json').is_file():
         raise ValueError('Saved answer not found in this warehouse')
     ws=SimpleNamespace(dir=A.root(path)/context_id,slug=context_id)
     spec, bundle, _, _ = load(ws, deliverable_id, documents=False)

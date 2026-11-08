@@ -68,7 +68,7 @@ def monitors(path):
             continue
         if record.get('program_links'): continue  # links are refreshed in their producing workspace
         question = None
-        try: question = json.loads((f.parent / 'answer.json').read_text()).get('question')
+        try: question = A.read_snapshot(f.parent / 'answer.json').get('question')
         except (OSError, ValueError): pass
         for i, s in enumerate(record.get('steps') or []):
             if s.get('kind') == 'monitor': out.append((f.parent.name, i, s, question))

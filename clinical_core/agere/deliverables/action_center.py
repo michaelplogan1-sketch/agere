@@ -181,7 +181,7 @@ def compose_view(path, result):
     if not isinstance(key, str) or not re.fullmatch(r'ANS-[0-9a-f]{24}', key):
         return result
     try:
-        context = json.loads((answer_context.root(path) / key / 'answer.json').read_text())
+        context = answer_context.read_snapshot(answer_context.root(path) / key / 'answer.json')
     except (OSError, ValueError):
         return result
     if (not isinstance(context, dict) or context.get('id') != key

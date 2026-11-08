@@ -56,7 +56,7 @@ def _source_readings_current(path, lesson):
     if not isinstance(key, str) or not re.fullmatch(r'ANS-[0-9a-f]{24}', key):
         return False
     try:
-        context = json.loads((A.root(path) / key / 'answer.json').read_text())
+        context = A.read_snapshot(A.root(path) / key / 'answer.json')
         if context.get('dependencies', {}).get('derivation') != lesson.get('trajectory'):
             return False
         seen = {key}
@@ -70,7 +70,7 @@ def _source_readings_current(path, lesson):
             if not isinstance(parent, str) or parent in seen or not re.fullmatch(r'ANS-[0-9a-f]{24}', parent):
                 return False
             seen.add(parent)
-            context = json.loads((A.root(path) / parent / 'answer.json').read_text())
+            context = A.read_snapshot(A.root(path) / parent / 'answer.json')
         return False
     except (OSError, ValueError, TypeError, KeyError):
         return False

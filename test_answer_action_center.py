@@ -16,6 +16,49 @@ from clinical_core.agere import ask_view
 USER_QUESTION = "Find every patient with heartfailure and reduced EF, flag which patients aren't on defect free GDMT or not on max dose, who their PCP is, and who their cardiologist is"
 
 class Workflow(unittest.TestCase):
+    def test_capture_packs_complete_evidence_when_plain_snapshot_cannot_fit(self):
+        self.result['answer']['headline']='Packed source context'
+        self.result['investigation']={'unverified_history':['dated evidence',{'missing':None,'observed':0}]}
+        with mock.patch.object(A.shutil,'disk_usage',return_value=SimpleNamespace(free=0)):
+            captured=A.capture(self.path,self.question,self.result)
+        target=A.root(self.path)/captured['id']/'answer.json'
+        packed=A.snapshot_path(target)
+        self.assertEqual(packed.name,'answer.json.gz');self.assertFalse(target.exists())
+        data=A.read_snapshot(target);self.assertEqual(data['answer'],self.result['answer'])
+        self.assertEqual(data['investigation'],self.result['investigation'])
+        self.assertEqual(A.load(self.path,captured['id'])['patient_ids'],['A','B','C'])
+        before=packed.read_bytes()
+        with mock.patch.object(A.json,'dump',side_effect=AssertionError('Do not replace first complete snapshot')):
+            self.assertEqual(A.capture(self.path,self.question,self.result)['id'],captured['id'])
+        self.assertEqual(packed.read_bytes(),before)
+        self.assertFalse(target.exists())
+        with mock.patch.object(A,'read_snapshot',side_effect=AssertionError('Catalog must use its small index')):
+            row=next(r for r in A.listing(self.path)if r['id']==captured['id'])
+        self.assertEqual(row['patients'],3)
+
+    def test_packed_catalog_without_index_reads_header_without_claiming_population(self):
+        self.result['answer']['headline']='Packed catalog fallback'
+        with mock.patch.object(A.shutil,'disk_usage',return_value=SimpleNamespace(free=0)):
+            captured=A.capture(self.path,self.question,self.result)
+        target=A.snapshot_path(A.root(self.path)/captured['id']/'answer.json')
+        target.with_name('listing.json').unlink()
+        before=target.read_bytes()
+        with mock.patch.object(A,'read_snapshot',side_effect=AssertionError('No complete native evidence decode for catalog')):
+            row=next(r for r in A.listing(self.path)if r['id']==captured['id'])
+        self.assertEqual(row['question'],self.question);self.assertIsNone(row['patients'])
+        self.assertEqual(target.read_bytes(),before)
+
+    def test_packed_sync_failure_retains_partial_without_publishing(self):
+        import gzip
+        self.result['answer']['headline']='Packed interrupted context'
+        with mock.patch.object(A.shutil,'disk_usage',return_value=SimpleNamespace(free=0)),mock.patch.object(A.os,'fsync',side_effect=OSError(28,'No space left on device')):
+            with self.assertRaises(OSError):A.capture(self.path,self.question,self.result)
+        partial,=A.root(self.path).glob('*/.answer-*.partial')
+        with gzip.open(partial,'rt')as stream:data=json.load(stream)
+        self.assertEqual(data['answer'],self.result['answer'])
+        self.assertFalse((partial.parent/'answer.json').exists())
+        self.assertFalse((partial.parent/'answer.json.gz').exists())
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
