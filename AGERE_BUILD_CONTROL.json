@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T16:45:58.097648+00:00",
+  "updated_at": "2026-11-08T18:52:25.972975+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -582,6 +582,10 @@
         {
           "path": "artifacts/agere-release-compatibility-2026-11-08/delivery-receipt.json",
           "sha256": "7f9d030d8281676d564dca4c72f26762ec907036967f915f04c8d42a74c2f9a6"
+        },
+        {
+          "path": "artifacts/agere-evidence-change-current-2026-11-08/delivery-receipt.json",
+          "sha256": "77c06f42dd7acbc97138279da2538ab12c31d34738983adde3a0592646c9f831"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -669,24 +673,23 @@
     }
   ],
   "checkpoint": {
-    "kind": "source_activation_unlimited_policy_guard_repaired_adapter_conformance_pending",
+    "kind": "current_adapter_conformance_supported_changed_evidence_workflow_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Synthetic source qualification no longer crashes on valid measured receipts under the existing unlimited request policy; malformed measurements and source/code/coverage mismatch still reject. No active warehouse migration or cap was introduced.",
+    "user_behavior_delta": "Independent renamed-source API workflow preserves4members and3unaffected results; missing mapping, source comparison, dates and source activation guards remain explicit. Source conformance is qualified by exact data/code applicability rather than another model/source scan. Current full-roster changed-evidence workflow is running, not yet accepted.",
     "measured_failure_reduction": {
-      "actual_validator_TypeErrors_before": 2,
-      "actual_validator_TypeErrors_after": 0,
-      "obsolete_test_None_arithmetic_error_corrected": 1,
-      "focused_adapter_checks_passed": 32
+      "stale_source_adapter_evidence_requirement_now_supported_in_candidate": true,
+      "candidate_required_engineering_predicates_supported": 2,
+      "candidate_required_engineering_predicates_total": 9,
+      "not_a_product_completion_percentage": true
     },
     "evidence": [
-      "artifacts/agere-release-compatibility-2026-11-08/delivery-receipt.json",
-      "artifacts/agere-release-compatibility-2026-11-08/executable-release-assessment.json",
-      "artifacts/agere-release-compatibility-2026-11-08/current-capability-candidates/portable-candidate-validation.json",
-      "artifacts/agere-release-compatibility-2026-11-08/activation-bound-repair-proof.json"
+      "artifacts/agere-adapter-conformance-2026-11-08/source-compatibility-proof.json",
+      "artifacts/agere-adapter-conformance-2026-11-08/capability-candidates/validation.json",
+      "artifacts/agere-evidence-change-current-2026-11-08/dependencies-current-v2/run-receipt.json"
     ],
-    "remaining_gap": "Complete the existing current adapter/semantic-postprocessing compatibility check before activating the portable operations evidence candidate. Whole finite release compatibility and named qualification/input/visual/customer dependencies remain.",
-    "next_action": "G3/WP4: Current same-platform9a8 archive/install/archived HTTP and live app restoration are sealed in artifacts/agere-release-compatibility-2026-11-08/delivery-receipt.json. App5752/session82142 remains ready on8885; all64569ledger rows and source preserved; no active provider/build/training job or source freeze. Unsealed source-qualification repair abcddf6d now honors the EXISTING unlimited REQUEST_MAX_BYTES=None policy instead of TypeError;32current adapter/activation checks pass, no cap added, no real warehouse activated. Before logs had2actual validator TypeErrors plus1obsolete test error; all retained. Continue the EXISTING finite25case/tenarea evidence applicability work: next reconcile current raw-adapter and semantic-postprocessing scopes against the adapter_conformance requirement, using current public-source proofs and only specifically missing/materially affected checks. The portable_local_operations candidate has current startup/interface/restart/transaction/scope evidence (actual archive/HTTP plus57recovery checks), remains UNASSESSED/OFF pending adapter conformance, and config mapping is unchanged. The existing release scorecard still blocks8monolithic November5capability manifests/79changedfiles each; this is not8missing stack components or a completion percentage. Qualify compatibility from connected evidence, never merely restamp hashes; no broad source/coverage revotes, repeated passing campaigns, Q19probes or optional model/research expansion. Preserve old-policy answer inspection/new-work rejection. Complete applicability and any real fixes before one final config-bound archive refresh; keep5aca0a3a as known-good9a8 recovery, do not repackage128GBafter routine metadata changes. Current app/archive are9a8; activation repair is tested source code, not a claimed runtime or warehouse migration. Keep all25cases/10areas, current principal/October11baseline, exact program/capacity inputs, blocked Q24visualQA without bypass and G5/clinical/model/scientific/actuarial/customer dependencies. Verifier candidates OFF; year-anchor/validate_window resolved. Quiet continuation ACTIVE; no routine approval gating."
+    "remaining_gap": "Current3scenario/4115member graph compatibility is running. Remaining existing receipt applicability and final consolidated package are pending; named independent/input/visual dependencies retained.",
+    "next_action": "G3/WP4: Inspect owned current full-roster changed-evidence native workflow PID6745/session78399 FIRST: artifacts/agere-evidence-change-current-2026-11-08/dependencies-current-v2/run-receipt.json. Source frozen; do not duplicate or edit product source. Current phase execute_full_roster_native_graph, all4115received members,3authored source mutations,0provider dispatch expected. First attempt6504ended before graph execution because a historical buyer fixture path was missing; preserve its383.996s partial receipt/data copy. V2 reuses the verified complete copy after source/code/size/mtime/roster/count checks, recovers only the existing authored navigation-review declaration from the retained graph fixture, and does not repeat the large clone. On terminal result require corrected-balance/late-receipt/conflicting-snapshot scenarios to update1member while preserving4114others, exact original question/graph/population, blocking acquisition dependency and work ownership; preserve every partial/error and do not claim pass before results. If successful, qualify the EXISTING evidence_change_reassessment receipt with this current workflow. Adapter conformance is NOW SUPPORTED: artifacts/agere-adapter-conformance-2026-11-08/source-compatibility-proof.json and capability-candidates/validation.json verify exact received/semantic DB hashes versus the historical validated snapshot, unchanged materialization AST except precision documentation,4115IDs/2396490rows/237record labels,32activation/source tests, and a fresh4member renamed-schema live API workflow. Candidate preview accepts2/9engineering predicates (not product completion); runtime config mapping is unchanged. Portable operations adapter check is resolved, but final exact consolidated code/config archive/startup/restore remains pending after source fixabcddf6d; keep5aca0a3a as known-good9a8 recovery, no repeated128GB packaging after metadata. App5752/session82142 on8885 remains9a8; activation guard fix tested but no real warehouse migration. After this workflow reconcile remaining EXISTING population/program, longitudinal, discovery, outcome/financial and economical-role receipt scopes with current connected proofs, only missing/materially affected checks; do not merely restamp79file monolithic hashes, repeat source/coverage votes, Q19probes or optional models/research. Keep all25cases/10areas, current principal/October11baseline, exact program/capacity inputs, Q24browserQA without bypass, G5/clinical/model/scientific/actuarial/customer dependencies, every attempt/unknown cost and old-policy new-work rejection. No additional agents/chats/services/caps; quiet continuation ACTIVE; no gating questions. Mike reaffirmed product completion/north star; do not revisit model-choice discussion."
   },
   "decisions": [
     {
@@ -5706,10 +5709,32 @@
         "artifacts/agere-release-compatibility-2026-11-08/current-adapter-contract-checks-v2.log"
       ],
       "scope_impact": "Current serving app and sealed9a8archive remain identified separately from this tested source candidate. Keep final packaging after evidence consolidation, not after every source or metadata increment."
+    },
+    {
+      "at": "2026-11-08T18:06:25.887528+00:00",
+      "decision": "Current source adapter conformance supported without repeating the immutable full source scan: both store hashes match historical verified bytes and materialization AST only differs in precision documentation. Fresh renamed-schema API fixture passed. The graph financial attachment changed since old dependency proof, so one current native full-roster/3mutation workflow is justified. A missing legacy buyer fixture was an owner harness path error; retain and reuse the completed coherent copy instead of recopying.",
+      "evidence": [
+        "artifacts/agere-adapter-conformance-2026-11-08/source-compatibility-proof.json",
+        "artifacts/agere-evidence-change-current-2026-11-08/dependencies-current/run-receipt.json",
+        "artifacts/agere-evidence-change-current-2026-11-08/dependencies-current-v2/run-receipt.json"
+      ],
+      "scope_impact": "No source or provider campaign, warehouse activation, new model/component/area or runtime mapping promotion. Original declared engineering graph/fixture is not counted as ordinary automatic planning."
+    },
+    {
+      "at": "2026-11-08T18:41:04.415390+00:00",
+      "gate": "G3",
+      "decision": "Stop located global financial delivery duplication and repair only the shared summary before finishing changed-evidence workflow.",
+      "evidence": [
+        "artifacts/agere-evidence-change-current-2026-11-08/summary-payload-diagnosis.json",
+        "artifacts/agere-evidence-change-current-2026-11-08/dependencies-current-v3/run-receipt.json",
+        "artifacts/agere-evidence-change-current-2026-11-08/summary-guard-checks-v1.log"
+      ],
+      "reason": "Measured member584873070bytes/acquisition272705345bytes inherited complete population account tables. V3 corrected_balance passed; late_receipt interrupted. Reuse copied source/native receipts through normal current guards; no new clone, caps or provider campaign.",
+      "scope_impact": "No acceptance area removed; parent delivery and patient source receipts retained in full."
     }
   ],
   "unsealed_work": {
-    "status": "current_source_activation_guard_repaired_adapter_conformance_pending",
+    "status": "adapter_conformance_current_supported_full_roster_changed_evidence_workflow_running",
     "product_commit": "abcddf6d55fa57aa8886cf337917ed1291e79251",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
@@ -7197,7 +7222,7 @@
     "Q19_known_api_equivalent_usd": 0,
     "Q19_qualified_predictor_attached": false,
     "full_Q19_acceptance": false,
-    "next_action": "G3/WP4: Current same-platform9a8 archive/install/archived HTTP and live app restoration are sealed in artifacts/agere-release-compatibility-2026-11-08/delivery-receipt.json. App5752/session82142 remains ready on8885; all64569ledger rows and source preserved; no active provider/build/training job or source freeze. Unsealed source-qualification repair abcddf6d now honors the EXISTING unlimited REQUEST_MAX_BYTES=None policy instead of TypeError;32current adapter/activation checks pass, no cap added, no real warehouse activated. Before logs had2actual validator TypeErrors plus1obsolete test error; all retained. Continue the EXISTING finite25case/tenarea evidence applicability work: next reconcile current raw-adapter and semantic-postprocessing scopes against the adapter_conformance requirement, using current public-source proofs and only specifically missing/materially affected checks. The portable_local_operations candidate has current startup/interface/restart/transaction/scope evidence (actual archive/HTTP plus57recovery checks), remains UNASSESSED/OFF pending adapter conformance, and config mapping is unchanged. The existing release scorecard still blocks8monolithic November5capability manifests/79changedfiles each; this is not8missing stack components or a completion percentage. Qualify compatibility from connected evidence, never merely restamp hashes; no broad source/coverage revotes, repeated passing campaigns, Q19probes or optional model/research expansion. Preserve old-policy answer inspection/new-work rejection. Complete applicability and any real fixes before one final config-bound archive refresh; keep5aca0a3a as known-good9a8 recovery, do not repackage128GBafter routine metadata changes. Current app/archive are9a8; activation repair is tested source code, not a claimed runtime or warehouse migration. Keep all25cases/10areas, current principal/October11baseline, exact program/capacity inputs, blocked Q24visualQA without bypass and G5/clinical/model/scientific/actuarial/customer dependencies. Verifier candidates OFF; year-anchor/validate_window resolved. Quiet continuation ACTIVE; no routine approval gating.",
+    "next_action": "G3/WP4: Inspect owned current full-roster changed-evidence native workflow PID6745/session78399 FIRST: artifacts/agere-evidence-change-current-2026-11-08/dependencies-current-v2/run-receipt.json. Source frozen; do not duplicate or edit product source. Current phase execute_full_roster_native_graph, all4115received members,3authored source mutations,0provider dispatch expected. First attempt6504ended before graph execution because a historical buyer fixture path was missing; preserve its383.996s partial receipt/data copy. V2 reuses the verified complete copy after source/code/size/mtime/roster/count checks, recovers only the existing authored navigation-review declaration from the retained graph fixture, and does not repeat the large clone. On terminal result require corrected-balance/late-receipt/conflicting-snapshot scenarios to update1member while preserving4114others, exact original question/graph/population, blocking acquisition dependency and work ownership; preserve every partial/error and do not claim pass before results. If successful, qualify the EXISTING evidence_change_reassessment receipt with this current workflow. Adapter conformance is NOW SUPPORTED: artifacts/agere-adapter-conformance-2026-11-08/source-compatibility-proof.json and capability-candidates/validation.json verify exact received/semantic DB hashes versus the historical validated snapshot, unchanged materialization AST except precision documentation,4115IDs/2396490rows/237record labels,32activation/source tests, and a fresh4member renamed-schema live API workflow. Candidate preview accepts2/9engineering predicates (not product completion); runtime config mapping is unchanged. Portable operations adapter check is resolved, but final exact consolidated code/config archive/startup/restore remains pending after source fixabcddf6d; keep5aca0a3a as known-good9a8 recovery, no repeated128GB packaging after metadata. App5752/session82142 on8885 remains9a8; activation guard fix tested but no real warehouse migration. After this workflow reconcile remaining EXISTING population/program, longitudinal, discovery, outcome/financial and economical-role receipt scopes with current connected proofs, only missing/materially affected checks; do not merely restamp79file monolithic hashes, repeat source/coverage votes, Q19probes or optional models/research. Keep all25cases/10areas, current principal/October11baseline, exact program/capacity inputs, Q24browserQA without bypass, G5/clinical/model/scientific/actuarial/customer dependencies, every attempt/unknown cost and old-policy new-work rejection. No additional agents/chats/services/caps; quiet continuation ACTIVE; no gating questions. Mike reaffirmed product completion/north star; do not revisit model-choice discussion.",
     "Q19_ordinary_native_routing": {
       "receipt": "artifacts/agere-Q19-retained-2026-11-08/ordinary-routing-workflow-completion.json",
       "product_commit": "9a8bcc8a1e0ec2929928ffdec9a3a545928c735e",
@@ -7230,7 +7255,24 @@
     "source_activation_guard_checks_passed": 32,
     "real_warehouse_activated": false,
     "current_archive_product_code": "9a8bcc8a1e0ec2929928ffdec9a3a545928c735e",
-    "current_serving_product_code": "9a8bcc8a1e0ec2929928ffdec9a3a545928c735e"
+    "current_serving_product_code": "9a8bcc8a1e0ec2929928ffdec9a3a545928c735e",
+    "current_source_adapter_compatibility": "artifacts/agere-adapter-conformance-2026-11-08/source-compatibility-proof.json",
+    "current_capability_candidate_validation": "artifacts/agere-adapter-conformance-2026-11-08/capability-candidates/validation.json",
+    "current_changed_evidence_receipt": "artifacts/agere-evidence-change-current-2026-11-08/dependencies-current-v2/run-receipt.json",
+    "current_changed_evidence_exec_session": 78399,
+    "current_summary_repair": {
+      "status": "sealed_current_native_workflow_and_local_app_active",
+      "product_commit": "315b772eb37fb5412cbd8bbd41f0a77b6d2d21ba",
+      "receipt": "artifacts/agere-evidence-change-current-2026-11-08/delivery-receipt.json",
+      "provider_calls": 0,
+      "complete_financial_rows": 43616,
+      "member_bytes": 2180454,
+      "acquisition_preview_bytes": 69023,
+      "checks": 36,
+      "scenarios_passed": 3
+    },
+    "current_evidence_change_capability": "artifacts/agere-evidence-change-current-2026-11-08/capability-candidates/evidence_change_reassessment.json",
+    "active_jobs": []
   },
   "current_visual_request": {
     "status": "completed",
@@ -7266,7 +7308,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3/WP4: Current same-platform9a8 archive/install/archived HTTP and live app restoration are sealed in artifacts/agere-release-compatibility-2026-11-08/delivery-receipt.json. App5752/session82142 remains ready on8885; all64569ledger rows and source preserved; no active provider/build/training job or source freeze. Unsealed source-qualification repair abcddf6d now honors the EXISTING unlimited REQUEST_MAX_BYTES=None policy instead of TypeError;32current adapter/activation checks pass, no cap added, no real warehouse activated. Before logs had2actual validator TypeErrors plus1obsolete test error; all retained. Continue the EXISTING finite25case/tenarea evidence applicability work: next reconcile current raw-adapter and semantic-postprocessing scopes against the adapter_conformance requirement, using current public-source proofs and only specifically missing/materially affected checks. The portable_local_operations candidate has current startup/interface/restart/transaction/scope evidence (actual archive/HTTP plus57recovery checks), remains UNASSESSED/OFF pending adapter conformance, and config mapping is unchanged. The existing release scorecard still blocks8monolithic November5capability manifests/79changedfiles each; this is not8missing stack components or a completion percentage. Qualify compatibility from connected evidence, never merely restamp hashes; no broad source/coverage revotes, repeated passing campaigns, Q19probes or optional model/research expansion. Preserve old-policy answer inspection/new-work rejection. Complete applicability and any real fixes before one final config-bound archive refresh; keep5aca0a3a as known-good9a8 recovery, do not repackage128GBafter routine metadata changes. Current app/archive are9a8; activation repair is tested source code, not a claimed runtime or warehouse migration. Keep all25cases/10areas, current principal/October11baseline, exact program/capacity inputs, blocked Q24visualQA without bypass and G5/clinical/model/scientific/actuarial/customer dependencies. Verifier candidates OFF; year-anchor/validate_window resolved. Quiet continuation ACTIVE; no routine approval gating.",
+  "next_action": "G3/WP4: Summary/source-change delivery SEALED on315b772e; local app7824/session64521 is active on8885. Next close current population/program and connected prediction/discovery/financial applicability using retained full received-data copy and two original declared respiratory/behavioral program questions. Original saved program inputs are artifacts/agere-current-release-finish-2026-11-04/population/{respiratory,behavioral}-saved-program.json; legacy population-v2 decision.json paths are absent, so do not search/reclone or invent inputs. Native program/prediction/discovery engines are unchanged; care_capabilities adds only read-only declared_context, program_documents only discovery; financial_accounts only ordinary cash-binding helpers changed; program_accountability adds member references. Verify these scopes againstc0ea6324/Nov5manifest and exact current data/source proof. Old whole-module service identities may correctly reject saved work; use normal current prepare/guards and preserve all old task ownership/IDs, never manually restamp or reset work. Measure only missing/currently affected connected behavior, retain112/129historical nominations as observations to reconcile, not supplied runtime answers. No repeat source/model votes, large clone, unchanged passing campaign or optional components. Then economical-role current accounting/guards and one final consolidated exact code/config package. Source/adapter and evidence-change current candidates are qualified; active capability mapping unchanged until consolidation. All25cases/tenareas/principal/October11baseline, Q09/Q23definitions/Q16capacity/Q19qualification/Q24visual and independent clinical/model/customer dependencies retained. No agents/chats/services/caps; quiet continuationACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
