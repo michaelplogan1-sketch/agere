@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-09T14:53:45.519182+00:00",
+  "updated_at": "2026-11-09T15:17:24.544850+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -614,6 +614,10 @@
         {
           "path": "artifacts/agere-core-completion-2026-11-09/native-decline-delivery-receipt.json",
           "sha256": "500a9f27ce472aedf5bfd4d832a0d72e3428022d96a869116cfc070537e5efed"
+        },
+        {
+          "path": "artifacts/agere-core-completion-2026-11-09/light-workspace-delivery-receipt.json",
+          "sha256": "b70e99b57200bcae3ce7a40bfe1dcc45a1bce58c5af6c4339d5c5541928a0274"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -621,8 +625,8 @@
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Final finite G3 ordinary-entry decision remains: separate concrete demonstrated wiring failures from current source/model uncertainty, independent qualification and missing inputs. Q14native scope corrected and current saved followup works, but fresh original-question automatic entry and46restored subjects documentary interpretation are not claimed. Full25case/MVP/model/clinical/customer acceptance remains false; do not substitute test counts or repeat successful campaigns.",
-      "engineering_current_status": "Workspace hydration and native supported-unknown/API clarification behavior are evidenced. Light conversational UI remains open. G3 still active; no whole-product/clinical qualification claim.",
-      "next_action": "G3/WP4: native missing-input delivery is sealed at artifacts/agere-core-completion-2026-11-09/native-decline-delivery-receipt.json. Two actual failures removed: empty unsupported graphs no longer crash, and Workspace.ask no longer replaces an original scope/meaning clarification with an unrelated live-model fallback. Explicit native forecast unknowns, unchanged30person native scope and10person ordinary offline API count are evidenced; no source/model question or native passing campaign needs repeating. NEXT complete the existing user-requested light, familiar conversational UI in the actual shared surfaces: ask_view.py serves clinical_core/agere/assets/explore.html with answer.css/explore.css and explore.js/experience.js; confirm these asset paths before editing. The action workspace shared workspace_skin.css explicitly overrides the light base with dark #0c0f11/#151c1b. Keep the working modular conversation, original question, pending clarification, source/partial/clinical guards, exact513people/46review tasks, lazy detail hydration and native values. Make the conversation entry and answer hierarchy clear, and display only real stack progress/events; no fabricated stage completion or cost. Use existing design/research where available and the requested primary GitHub/design references for focused inspiration, without installing a new UI framework/service or adding a catalog. Verify the ordinary saved-answer/clarification/loading and workspace paths in a normal desktop viewport, keyboard and narrow layout; requests for new questions are user-triggered only, not automatic source/model reruns. Preserve all25fixedcases and ten acceptance areas and original healthcare/population/VBC/OAP scope. Qualification and customer deployment remain separate. Do not repackage each component; preserve8662e88b/b4daadc recovery archives for later final connected candidate packaging. Perplexity quota blocked/no probe; apps/models off, no frozen jobs, quiet continuation active.",
+      "engineering_current_status": "Native unknown/API clarification and light desktop/narrow saved-workspace increments delivered. Current whole-candidate engineering decision still required; broader qualification remains unestablished.",
+      "next_action": "G3/WP4: light conversation/review workspace delivery is sealed at artifacts/agere-core-completion-2026-11-09/light-workspace-delivery-receipt.json. Native missing-input/API clarification and workspace lazy evidence loading are also sealed; preserve their scope and exact proofs. NEXT compute the current finite whole-candidate engineering decision using the EXISTING config/agere/capability_acceptance.json, current25case assessment at artifacts/agere-core-completion-2026-11-09/current-25case-assessment.json and ten-area backlog, plus these newer receipts. Do not create another roadmap, component catalog or model/research campaign. Identify only remaining actual promised user behaviors that are unwired or fail; distinguish those from documented source uncertainty, unavailable inputs, failed optional-model qualification and independent clinical/customer prerequisites. Verify compatibility at the current code/source/config identity and rerun only materially affected failed checks, with no unchanged source/model votes or already-passed Q14/native-count campaign. Do not count tests/modules as a product completion percentage or call all25 source/model questions accepted. If a concrete wiring failure remains, implement its connected workflow next; if finite engineering promises are evidenced with named remaining dependencies, package the coherent changed candidate once and make its exact release decision. The current exact b4daadc archive predates newer native/UI code; preserve it and8662e88b for rollback. Phone visual acceptance remains unestablished due IAB minimum727px; desktop1278px/narrow727px and keyboard behavior passed. The marketing site was not redesigned. Retain all25fixedcases, full ten areas, healthcare/population/VBC/OAP and industry-portable architecture; qualification is separate. Perplexity quota blocked/no probe; apps/models off, no frozen jobs, quiet continuation active.",
       "latest_current_release_decision": "artifacts/agere-core-completion-2026-11-09/current-release-delivery-receipt.json",
       "preceding_current_release_decision": "artifacts/agere-final-ordinary-entry-2026-11-08/G3-exit-decision-v1.json"
     },
@@ -702,23 +706,24 @@
     }
   ],
   "checkpoint": {
-    "kind": "native_missing_input_and_API_clarification_delivered_light_UI_next",
+    "kind": "light_app_surfaces_delivered_finite_candidate_engineering_decision_next",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "An explicit native forecast without a fitted artifact now returns unsupported with its exact missing-input explanation and no fabricated prediction. Workspace.ask preserves scope/meaning clarification instead of attempting unrelated hybrid fallback; the existing question API returns that guard.",
+    "user_behavior_delta": "The saved action/review workspace now uses the existing conversation app light surfaces, readable summary text and vertical navigation. Desktop and narrow-tablet navigation preserve exact saved scope, patient details and current source/partial/clinical restrictions. Main conversation composer, pending clarifications and recorded progress wiring were retained unchanged.",
     "measured_failure_reduction": {
-      "native_unsupported_graph_IndexError": true,
-      "workspace_API_clarification_replaced_by_live_model_error": true,
-      "true_product_failures_removed": 2,
-      "legacy_route_expectations_realigned": 3
+      "dark_workspace_override_removed": true,
+      "navigation_layout_and_contrast_fixed": true,
+      "saved_scope": 513,
+      "source_review_tasks": 46,
+      "new_provider_calls": 0
     },
     "evidence": [
-      "artifacts/agere-core-completion-2026-11-09/native-decline-delivery-receipt.json",
-      "artifacts/agere-core-completion-2026-11-09/native-decline-api-v2/receipt.json",
-      "artifacts/agere-core-completion-2026-11-09/native-decline-v1/final-tests.log"
+      "artifacts/agere-core-completion-2026-11-09/light-workspace-delivery-receipt.json",
+      "artifacts/agere-core-completion-2026-11-09/light-workspace-v4/receipt.json",
+      "artifacts/agere-core-completion-2026-11-09/light-workspace-v4/browser-check.json"
     ],
-    "remaining_gap": "Explicitly requested light conversational UI remains dark. Full ordinary/source/model/clinical/customer qualification remains separate.",
-    "next_action": "G3/WP4: native missing-input delivery is sealed at artifacts/agere-core-completion-2026-11-09/native-decline-delivery-receipt.json. Two actual failures removed: empty unsupported graphs no longer crash, and Workspace.ask no longer replaces an original scope/meaning clarification with an unrelated live-model fallback. Explicit native forecast unknowns, unchanged30person native scope and10person ordinary offline API count are evidenced; no source/model question or native passing campaign needs repeating. NEXT complete the existing user-requested light, familiar conversational UI in the actual shared surfaces: ask_view.py serves clinical_core/agere/assets/explore.html with answer.css/explore.css and explore.js/experience.js; confirm these asset paths before editing. The action workspace shared workspace_skin.css explicitly overrides the light base with dark #0c0f11/#151c1b. Keep the working modular conversation, original question, pending clarification, source/partial/clinical guards, exact513people/46review tasks, lazy detail hydration and native values. Make the conversation entry and answer hierarchy clear, and display only real stack progress/events; no fabricated stage completion or cost. Use existing design/research where available and the requested primary GitHub/design references for focused inspiration, without installing a new UI framework/service or adding a catalog. Verify the ordinary saved-answer/clarification/loading and workspace paths in a normal desktop viewport, keyboard and narrow layout; requests for new questions are user-triggered only, not automatic source/model reruns. Preserve all25fixedcases and ten acceptance areas and original healthcare/population/VBC/OAP scope. Qualification and customer deployment remain separate. Do not repackage each component; preserve8662e88b/b4daadc recovery archives for later final connected candidate packaging. Perplexity quota blocked/no probe; apps/models off, no frozen jobs, quiet continuation active."
+    "remaining_gap": "Current finite engineering release decision and exact changed-code package remain; full25/model/clinical/customer qualification is not established. Phone visual acceptance and marketing-site redesign are outside this demonstrated scope.",
+    "next_action": "G3/WP4: light conversation/review workspace delivery is sealed at artifacts/agere-core-completion-2026-11-09/light-workspace-delivery-receipt.json. Native missing-input/API clarification and workspace lazy evidence loading are also sealed; preserve their scope and exact proofs. NEXT compute the current finite whole-candidate engineering decision using the EXISTING config/agere/capability_acceptance.json, current25case assessment at artifacts/agere-core-completion-2026-11-09/current-25case-assessment.json and ten-area backlog, plus these newer receipts. Do not create another roadmap, component catalog or model/research campaign. Identify only remaining actual promised user behaviors that are unwired or fail; distinguish those from documented source uncertainty, unavailable inputs, failed optional-model qualification and independent clinical/customer prerequisites. Verify compatibility at the current code/source/config identity and rerun only materially affected failed checks, with no unchanged source/model votes or already-passed Q14/native-count campaign. Do not count tests/modules as a product completion percentage or call all25 source/model questions accepted. If a concrete wiring failure remains, implement its connected workflow next; if finite engineering promises are evidenced with named remaining dependencies, package the coherent changed candidate once and make its exact release decision. The current exact b4daadc archive predates newer native/UI code; preserve it and8662e88b for rollback. Phone visual acceptance remains unestablished due IAB minimum727px; desktop1278px/narrow727px and keyboard behavior passed. The marketing site was not redesigned. Retain all25fixedcases, full ten areas, healthcare/population/VBC/OAP and industry-portable architecture; qualification is separate. Perplexity quota blocked/no probe; apps/models off, no frozen jobs, quiet continuation active."
   },
   "decisions": [
     {
@@ -5934,10 +5939,17 @@
       "evidence": "artifacts/agere-core-completion-2026-11-09/native-decline-delivery-receipt.json",
       "reason": "Two observed product failures are resolved with native/API evidence and35affected checks. Three outdated legacy route/model expectations were reconciled with the existing shared-planner contract, not counted as new product capabilities.",
       "scope_impact": "No planner/model/source guard weakening; no fitted forecast or clinical authority. All25/tenareas and October11baseline/principal retained."
+    },
+    {
+      "at": "2026-11-09T15:17:24.544850+00:00",
+      "decision": "Close the measured light app-surface increment; return to the finite existing candidate acceptance contract.",
+      "evidence": "artifacts/agere-core-completion-2026-11-09/light-workspace-delivery-receipt.json",
+      "reason": "Actual desktop/narrow browser checks and44affected checks pass with unchanged513identities/46tasks and source guards. Successive visual defects were localized, all partial attempts retained, no source/model question replayed. Phone viewport was clamped; no phone or marketing-site redesign claim.",
+      "scope_impact": "No new research/models/services or optional finish line. All25/tenareas and independent qualification/deployment distinctions retained. Next decision must use current executable contracts and evidence, not another stack catalog."
     }
   ],
   "unsealed_work": {
-    "status": "native_missing_input_delivery_sealed_light_UI_next",
+    "status": "light_app_surface_delivery_sealed_finite_candidate_decision_next",
     "product_commit": "abcddf6d55fa57aa8886cf337917ed1291e79251",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
@@ -7653,7 +7665,8 @@
       "final_receipt": "artifacts/agere-core-completion-2026-11-09/package-v3/receipt.json"
     },
     "workspace_evidence_delivery": "artifacts/agere-core-completion-2026-11-09/workspace-evidence-delivery-receipt.json",
-    "native_decline_delivery": "artifacts/agere-core-completion-2026-11-09/native-decline-delivery-receipt.json"
+    "native_decline_delivery": "artifacts/agere-core-completion-2026-11-09/native-decline-delivery-receipt.json",
+    "light_workspace_delivery": "artifacts/agere-core-completion-2026-11-09/light-workspace-delivery-receipt.json"
   },
   "current_visual_request": {
     "status": "completed",
@@ -7689,7 +7702,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3/WP4: native missing-input delivery is sealed at artifacts/agere-core-completion-2026-11-09/native-decline-delivery-receipt.json. Two actual failures removed: empty unsupported graphs no longer crash, and Workspace.ask no longer replaces an original scope/meaning clarification with an unrelated live-model fallback. Explicit native forecast unknowns, unchanged30person native scope and10person ordinary offline API count are evidenced; no source/model question or native passing campaign needs repeating. NEXT complete the existing user-requested light, familiar conversational UI in the actual shared surfaces: ask_view.py serves clinical_core/agere/assets/explore.html with answer.css/explore.css and explore.js/experience.js; confirm these asset paths before editing. The action workspace shared workspace_skin.css explicitly overrides the light base with dark #0c0f11/#151c1b. Keep the working modular conversation, original question, pending clarification, source/partial/clinical guards, exact513people/46review tasks, lazy detail hydration and native values. Make the conversation entry and answer hierarchy clear, and display only real stack progress/events; no fabricated stage completion or cost. Use existing design/research where available and the requested primary GitHub/design references for focused inspiration, without installing a new UI framework/service or adding a catalog. Verify the ordinary saved-answer/clarification/loading and workspace paths in a normal desktop viewport, keyboard and narrow layout; requests for new questions are user-triggered only, not automatic source/model reruns. Preserve all25fixedcases and ten acceptance areas and original healthcare/population/VBC/OAP scope. Qualification and customer deployment remain separate. Do not repackage each component; preserve8662e88b/b4daadc recovery archives for later final connected candidate packaging. Perplexity quota blocked/no probe; apps/models off, no frozen jobs, quiet continuation active.",
+  "next_action": "G3/WP4: light conversation/review workspace delivery is sealed at artifacts/agere-core-completion-2026-11-09/light-workspace-delivery-receipt.json. Native missing-input/API clarification and workspace lazy evidence loading are also sealed; preserve their scope and exact proofs. NEXT compute the current finite whole-candidate engineering decision using the EXISTING config/agere/capability_acceptance.json, current25case assessment at artifacts/agere-core-completion-2026-11-09/current-25case-assessment.json and ten-area backlog, plus these newer receipts. Do not create another roadmap, component catalog or model/research campaign. Identify only remaining actual promised user behaviors that are unwired or fail; distinguish those from documented source uncertainty, unavailable inputs, failed optional-model qualification and independent clinical/customer prerequisites. Verify compatibility at the current code/source/config identity and rerun only materially affected failed checks, with no unchanged source/model votes or already-passed Q14/native-count campaign. Do not count tests/modules as a product completion percentage or call all25 source/model questions accepted. If a concrete wiring failure remains, implement its connected workflow next; if finite engineering promises are evidenced with named remaining dependencies, package the coherent changed candidate once and make its exact release decision. The current exact b4daadc archive predates newer native/UI code; preserve it and8662e88b for rollback. Phone visual acceptance remains unestablished due IAB minimum727px; desktop1278px/narrow727px and keyboard behavior passed. The marketing site was not redesigned. Retain all25fixedcases, full ten areas, healthcare/population/VBC/OAP and industry-portable architecture; qualification is separate. Perplexity quota blocked/no probe; apps/models off, no frozen jobs, quiet continuation active.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -7698,7 +7711,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-core-completion-2026-11-09/native-decline-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-core-completion-2026-11-09/light-workspace-delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
