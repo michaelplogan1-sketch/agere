@@ -5,35 +5,63 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3/WP4: light conversation/review workspace delivery is sealed at artifacts/agere-core-completion-2026-11-09/light-workspace-delivery-receipt.json. Native missing-input/API clarification and workspace lazy evidence loading are also sealed; preserve their scope and exact proofs. NEXT compute the current finite whole-candidate engineering decision using the EXISTING config/agere/capability_acceptance.json, current25case assessment at artifacts/agere-core-completion-2026-11-09/current-25case-assessment.json and ten-area backlog, plus these newer receipts. Do not create another roadmap, component catalog or model/research campaign. Identify only remaining actual promised user behaviors that are unwired or fail; distinguish those from documented source uncertainty, unavailable inputs, failed optional-model qualification and independent clinical/customer prerequisites. Verify compatibility at the current code/source/config identity and rerun only materially affected failed checks, with no unchanged source/model votes or already-passed Q14/native-count campaign. Do not count tests/modules as a product completion percentage or call all25 source/model questions accepted. If a concrete wiring failure remains, implement its connected workflow next; if finite engineering promises are evidenced with named remaining dependencies, package the coherent changed candidate once and make its exact release decision. The current exact b4daadc archive predates newer native/UI code; preserve it and8662e88b for rollback. Phone visual acceptance remains unestablished due IAB minimum727px; desktop1278px/narrow727px and keyboard behavior passed. The marketing site was not redesigned. Retain all25fixedcases, full ten areas, healthcare/population/VBC/OAP and industry-portable architecture; qualification is separate. Perplexity quota blocked/no probe; apps/models off, no frozen jobs, quiet continuation active.",
-  "latest_delivery": "artifacts/agere-core-completion-2026-11-09/light-workspace-delivery-receipt.json",
-  "latest_receipt": "artifacts/agere-core-completion-2026-11-09/light-workspace-delivery-receipt.json",
+  "active_work": "G3: Q02 shared financial correction/recovery is sealed at artifacts/agere-financial-source-path-2026-11-09/delivery-receipt.json (f02e9f0e). Current20rows/260cells reconcile across16payers/23169countedclaims/23853cashallocations, save/reopen current; partial/unverified is genuine machine uncertainty, not remaining compiler/source-definition failure. Do not rerun Q02 or passing Q01 to chase model votes. NEXT fix Q17 requested historical-period propagation in existing analytical operators. Original Q17 asks monthly ED rates during2028and2029 with historical eligible exposure, stable-rate comparison, registered change detection, multiplicity, missing months and source availability. Its retained change_attribution call has window_months3/baseline_months12 with no requested period; feed monitor has period2028-01-01..2029-12-31 but must prove it consumes that period rather than latest snapshot months. Inspect actual Q17 native-context and those operator contracts, reproduce the wrong-window behavior natively, wire the shared period through the existing handlers/contracts and verify full requested calendar coverage/missing months/exposure/available-source clocks before one changed-workflow check. No disease-specific route, new research/models, blanket numeric waiver or repeated passing campaign. Preserve all25/tenareas, serialization candidate and large Q13/Q21 ordinary recovery, Q08/Q22 review dependencies/Q23exactdefinitions/Q24requestedvisualQA and G5/clinical/model/actuarial/customer dependencies. Source/reporting clocks without physical-arrival history stay unknown. No active provider/build/training job/freeze; UI test server closed. ManualbuildACTIVE; schedulerPAUSED; noGitpush.",
+  "latest_delivery": "Scoped shared financial correction, sealed-draft current review and saved workspace with independently reconciled quantities; machine uncertainty retained",
+  "latest_receipt": "artifacts/agere-financial-source-path-2026-11-09/delivery-receipt.json",
   "owned_server_pid": null,
   "owned_server_session": null,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
-  "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
+  "preceding_delivery": {
+    "description": "Scoped shared symbolic-prose roles plus current original Q01 persistence and complete native accounting",
+    "receipt": "artifacts/agere-shared-path-2026-11-09/delivery-receipt.json"
+  },
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3/WP4: light conversation/review workspace delivery is sealed at artifacts/agere-core-completion-2026-11-09/light-workspace-delivery-receipt.json. Native missing-input/API clarification and workspace lazy evidence loading are also sealed; preserve their scope and exact proofs. NEXT compute the current finite whole-candidate engineering decision using the EXISTING config/agere/capability_acceptance.json, current25case assessment at artifacts/agere-core-completion-2026-11-09/current-25case-assessment.json and ten-area backlog, plus these newer receipts. Do not create another roadmap, component catalog or model/research campaign. Identify only remaining actual promised user behaviors that are unwired or fail; distinguish those from documented source uncertainty, unavailable inputs, failed optional-model qualification and independent clinical/customer prerequisites. Verify compatibility at the current code/source/config identity and rerun only materially affected failed checks, with no unchanged source/model votes or already-passed Q14/native-count campaign. Do not count tests/modules as a product completion percentage or call all25 source/model questions accepted. If a concrete wiring failure remains, implement its connected workflow next; if finite engineering promises are evidenced with named remaining dependencies, package the coherent changed candidate once and make its exact release decision. The current exact b4daadc archive predates newer native/UI code; preserve it and8662e88b for rollback. Phone visual acceptance remains unestablished due IAB minimum727px; desktop1278px/narrow727px and keyboard behavior passed. The marketing site was not redesigned. Retain all25fixedcases, full ten areas, healthcare/population/VBC/OAP and industry-portable architecture; qualification is separate. Perplexity quota blocked/no probe; apps/models off, no frozen jobs, quiet continuation active.",
+  "resume_priority": "G3: Current25 frozen baseline is terminal and retained (19partial ordinary, Q13/Q21 diagnosed serialization interruptions, Q22/Q23blocked, Q24HTMLrendered, Q25authoredcorepass). Native serialization candidate now edits only clinical_core/contracts.py and clinical_core/agere/deliverables/receipts.py, with6new and32existingdistinctaffectedchecks passed; exactlegacyfingerprints/value/roundtrip/quantity/identityguards remain. Run and inspect artifacts/agere-current-25case-2026-11-09/Q13-encoding-v1/receipt.json through check_q13_encoding.py before any further edits. It is one actual changed Q13 ordinary request, not another whole25campaign. Candidate source must be frozen while it runs; never duplicate it. Exact root Python stall site was not established by native sampling; app launcher now supports diagnostic SIGUSR1 stacks if needed. Do not infer source/clinical qualification or all25 acceptance from faster serialization. After actual result, preserve every attempt, current source/support/coverage statuses and native quantities, and qualify delivery or retain/repair candidate as evidence warrants. No Gitpush; tenareas and remaining G3/nativefinancial/datewindow/reviewbinding/verifier/input/independentqualification gaps retained.",
   "build_status": "ACTIVE",
-  "paused_at": "2026-11-05T13:04:20.746654+00:00",
-  "heartbeat_status": "ACTIVE",
-  "resumed_at": "2026-11-05T14:48:08.592513+00:00",
+  "paused_at": "2026-11-09T18:35:52.790981+00:00",
+  "heartbeat_status": "PAUSED",
+  "resumed_at": "2026-11-09T19:10:06.211706+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-11-09T15:17:24.544850+00:00",
+  "latest_checkpoint": {
+    "kind": "financial_recovery_delivery_sealed_next_historical_window",
+    "gate_id": "G3",
+    "last_delivered_gate": "G3",
+    "product_commit": "f02e9f0e",
+    "user_behavior_delta": "The original financial question correction traverses shared native prose/source-role checks, current saved-context persistence and actual desktop review UI. Continue analysis can re-investigate a sealed unfinished proposal across implementation changes without accepting a rejected answer. Missingness contrasts, source-key reconciliation and Boolean allocation classifications no longer force unneeded quantity repairs; provider financial quantities and standalone provider claim counts remain guarded.",
+    "measured_failure_reduction": {
+      "retained_corrected_draft_compiler_failed_fields_before": 2,
+      "after": 0,
+      "compiled_source_role_failed_fields_before": 2,
+      "after_source_roles": 0,
+      "current_rows_source_exact": 20,
+      "current_cells_source_exact": 260,
+      "saved_current": true,
+      "current_answer_status": "partial/unverified",
+      "remaining_review": "unresolved machine verification; no identified rewrite target"
+    },
+    "evidence": [
+      "artifacts/agere-financial-source-path-2026-11-09/delivery-receipt.json",
+      "artifacts/agere-financial-source-path-2026-11-09/current-financial-workflow-proof.json",
+      "artifacts/agere-financial-source-path-2026-11-09/Q02-resume-v2/receipt.json",
+      "artifacts/agere-financial-source-path-2026-11-09/workspace-ui-check/receipt.json"
+    ],
+    "remaining_gap": "Q17 historical-period propagation; broader G3/tenareas and independent qualification/customer requirements. Current Q02 machine uncertainty remains explicit.",
+    "next_action": "G3: Q02 shared financial correction/recovery is sealed at artifacts/agere-financial-source-path-2026-11-09/delivery-receipt.json (f02e9f0e). Current20rows/260cells reconcile across16payers/23169countedclaims/23853cashallocations, save/reopen current; partial/unverified is genuine machine uncertainty, not remaining compiler/source-definition failure. Do not rerun Q02 or passing Q01 to chase model votes. NEXT fix Q17 requested historical-period propagation in existing analytical operators. Original Q17 asks monthly ED rates during2028and2029 with historical eligible exposure, stable-rate comparison, registered change detection, multiplicity, missing months and source availability. Its retained change_attribution call has window_months3/baseline_months12 with no requested period; feed monitor has period2028-01-01..2029-12-31 but must prove it consumes that period rather than latest snapshot months. Inspect actual Q17 native-context and those operator contracts, reproduce the wrong-window behavior natively, wire the shared period through the existing handlers/contracts and verify full requested calendar coverage/missing months/exposure/available-source clocks before one changed-workflow check. No disease-specific route, new research/models, blanket numeric waiver or repeated passing campaign. Preserve all25/tenareas, serialization candidate and large Q13/Q21 ordinary recovery, Q08/Q22 review dependencies/Q23exactdefinitions/Q24requestedvisualQA and G5/clinical/model/actuarial/customer dependencies. Source/reporting clocks without physical-arrival history stay unknown. No active provider/build/training job/freeze; UI test server closed. ManualbuildACTIVE; schedulerPAUSED; noGitpush."
+  },
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
   "last_observed_server_session": 51360,
-  "server_status": "all_owned_release_and_HTTP_jobs_terminal_apps_models_off",
+  "server_status": "current25_owned_application_terminal",
   "unsealed_work": {
-    "status": "source_review_handoff_delivered_workspace_eager_evidence_payload_located",
-    "product_commit": "abcddf6d55fa57aa8886cf337917ed1291e79251",
+    "status": "financial_recovery_sealed_next_Q17_historical_window",
+    "product_commit": "f02e9f0e",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
-    "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
+    "receipt": "artifacts/agere-financial-source-path-2026-11-09/delivery-receipt.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
     "source_frozen": false,
     "runtime_activation": true,
@@ -1745,12 +1773,66 @@
       "scope": "Registry-only code change with exact frozen data reuse; no runtime/model qualification transfer.",
       "status": "terminal_current_exact_package_delivered",
       "final_receipt": "artifacts/agere-core-completion-2026-11-09/package-v3/receipt.json"
+    },
+    "current25_run": {
+      "status": "terminal_current25_observed_results_with_dependencies",
+      "receipt": "artifacts/agere-current-25case-2026-11-09/receipt.json",
+      "pid": 52426,
+      "session": 82756,
+      "app_pid": 52428,
+      "source_frozen": false,
+      "first_returned_case": "Q01",
+      "first_result": "partial/unverified; quantitative prose needs repair;16rows;206.447s;15newattempts;3.373584knownAPIequivalentUSD; no source acceptance inferred",
+      "connected_watcher": {
+        "pid": 52535,
+        "session": 44236,
+        "receipt": "artifacts/agere-current-25case-2026-11-09/connected-scenarios.json",
+        "status": "waiting_for_owned_ordinary_run"
+      },
+      "current_case": "Q17",
+      "completed_cases": 25,
+      "completed_outcomes": {
+        "Q01": "partial",
+        "Q02": "partial",
+        "Q03": "partial",
+        "Q04": "partial"
+      },
+      "latest_observation": "artifacts/agere-current-25case-2026-11-09/latest-observation.json",
+      "interrupted_case": "Q13",
+      "diagnosis": "artifacts/agere-current-25case-2026-11-09/Q13/stall-diagnosis.json",
+      "offline_serialization_candidate": {
+        "receipt": "artifacts/agere-current-25case-2026-11-09/Q13/serialization-scaling-candidate.json",
+        "activated": false,
+        "scope": "Authored repeated-evidence object graph; exact original fingerprint and complete roundtrip; not the whole failedQ13 path."
+      },
+      "summary": "artifacts/agere-current-25case-2026-11-09/summary.json",
+      "ordinary_partial": 19,
+      "ordinary_interrupted": [
+        "Q13",
+        "Q21"
+      ],
+      "new_provider_attempts": 2158
+    },
+    "native_serialization_candidate": {
+      "status": "running",
+      "receipt": "artifacts/agere-current-25case-2026-11-09/Q13/native-serialization-candidate-checks.json",
+      "product_files": [
+        "clinical_core/agere/deliverables/receipts.py",
+        "clinical_core/contracts.py"
+      ],
+      "targeted_receipt": "artifacts/agere-current-25case-2026-11-09/Q13-encoding-v1/receipt.json",
+      "runtime_activation": "candidate_test_only",
+      "source_frozen": true,
+      "recovery_product_commit": "6e6522d5401a153022375fb095b7ce693f1b970d",
+      "pid": 57483,
+      "session": 78469,
+      "app_pid": 57489
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
+  "latest_continuity_checkpoint": "artifacts/agere-financial-source-path-2026-11-09/delivery-receipt.json",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
-  "continuation_mode": "autonomous_until_finite_mvp_acceptance_or_explicit_pause",
+  "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
   "mvp_server": {
     "pid": null,
     "port": 8890,
@@ -1860,7 +1942,7 @@
   "coordinated_learning_candidate": {
     "thread_id": "01a15b40-8c5e-7263-b8eb-88dc5a24a707",
     "title": "Review AI stack techniques",
-    "authorization": "Direct human answer Yes—coordinate and integrate in that chat, verified by the owner through read_thread.",
+    "authorization": "Direct human answer Yes\u2014coordinate and integrate in that chat, verified by the owner through read_thread.",
     "workspace": "/Users/mikel/agere-question-qualification",
     "status": "temporal_candidate_integrated_with_owner_decimal_concentration_fix_local_evidence_only",
     "boundary": "Isolated candidate implementation and evidence only. This chat remains sole integration/control/runtime owner. No protected evaluation or generator/research edits.",
@@ -2107,7 +2189,7 @@
       "known_api_equivalent_usd": 2.7182970680000005
     }
   },
-  "automatic_pushes": "verified_private_branch_updates_authorized_by_user_2026-10-29",
+  "automatic_pushes": "disabled_by_explicit_user_2026-11-09",
   "pause_exception": null,
   "handoff_pending": {
     "at": "2026-10-29T13:02:00.881321+00:00",
@@ -2121,7 +2203,7 @@
     "heartbeat_target_verified": true,
     "automatic_git_pushes_basis": "Latest explicit Mike direction2026-10-29 permits verified private integration-branch pushes; no main merge or public publication."
   },
-  "push_authorization": "Mike: you dont need to turn off Git pushes if that helps you, im not sure if it does but i gave you no such instructions",
+  "push_authorization": "Revoked November9: do not git push without a new explicit Mike request.",
   "current_candidate_commits": [
     "9854202",
     "f548631"
@@ -2135,7 +2217,7 @@
     "scope": "Current synthetic warehouse required notes/facts/source observations for the original HFrEF workflow and remaining MVP work, using existing Claude subscription, Jev/TypeSafe and Perplexity integrations. Existing private integration-branch pushes authorized.",
     "repeated_approval_requests": "Do not ask again for already authorized work within this scope."
   },
-  "heartbeat_pause_reason": null,
+  "heartbeat_pause_reason": "Actual saved scheduler status is PAUSED after Mike returned/stopped automatic pushes; user-requested current25 continues in this chat.",
   "integrated_runtime": {
     "pid": null,
     "session": null,
@@ -2151,17 +2233,17 @@
     "primary_modified": false,
     "last_known_pid": 36215
   },
-  "previous_sealed_receipt": "artifacts/agere-release-current-2026-11-08/connected-delivery-receipt.json",
+  "previous_sealed_receipt": "artifacts/agere-core-completion-2026-11-09/light-workspace-delivery-receipt.json",
   "review_followthrough_authorization": "Mike: okay i am stepping away, please take your time on this, it is critical we get this MVP correct, you know our north star, work with claude to figure out it. I wont be here to approve anything so do not ask me for anything just do it",
-  "last_product_commit": "591595d39cf9755df14b931032b23cd2a553ca5b",
-  "current_delivery_scope": "The saved action/review workspace now uses the existing conversation app light surfaces, readable summary text and vertical navigation. Desktop and narrow-tablet navigation preserve exact saved scope, patient details and current source/partial/clinical restrictions. Main conversation composer, pending clarifications and recorded progress wiring were retained unchanged. Demonstrated local desktop/narrow engineering behavior; wider qualification remains open.",
+  "last_product_commit": "f02e9f0e",
+  "current_delivery_scope": "The original financial question correction traverses shared native prose/source-role checks, current saved-context persistence and actual desktop review UI. Continue analysis can re-investigate a sealed unfinished proposal across implementation changes without accepting a rejected answer. Missingness contrasts, source-key reconciliation and Boolean allocation classifications no longer force unneeded quantity repairs; provider financial quantities and standalone provider claim counts remain guarded.",
   "current_financial_delivery": {
     "context_id": "ANS-8d56378ee795fc4226dc4828",
     "deliverable_id": "DLV-83D2EF62FF1A",
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-09T15:17:24.544850+00:00",
+  "updated_at": "2026-11-09T20:23:07.764832+00:00",
   "last_commit": "81f8bbf5192b10a98cd28f4e1877cfda474bfa51",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -2227,7 +2309,7 @@
     "review_received_at": "2026-11-05T14:36:45.159427+00:00",
     "review_path": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md"
   },
-  "last_candidate_product_commit": "591595d39cf9755df14b931032b23cd2a553ca5b",
+  "last_candidate_product_commit": "02dc871b",
   "latest_independent_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
   "heartbeat_reactivation_reason": "Mike explicitly answered Restart quiet continuation on November6; earlier scheduler pause superseded. Notifications failed-runs-only.",
   "continuation_authorization": "Mike instructed continued build while away and explicitly approved Restart quiet continuation on2026-11-06; older human-turn/scheduler pauses superseded.",
@@ -2252,5 +2334,44 @@
       "reason": "Stale owner entry; actual terminal receipt and absent process confirmed before Q09."
     }
   ],
-  "preceding_scoped_delivery": "artifacts/agere-core-completion-2026-11-09/native-decline-delivery-receipt.json"
+  "preceding_scoped_delivery": "artifacts/agere-core-completion-2026-11-09/native-decline-delivery-receipt.json",
+  "next_action": "G3: Q02 shared financial correction/recovery is sealed at artifacts/agere-financial-source-path-2026-11-09/delivery-receipt.json (f02e9f0e). Current20rows/260cells reconcile across16payers/23169countedclaims/23853cashallocations, save/reopen current; partial/unverified is genuine machine uncertainty, not remaining compiler/source-definition failure. Do not rerun Q02 or passing Q01 to chase model votes. NEXT fix Q17 requested historical-period propagation in existing analytical operators. Original Q17 asks monthly ED rates during2028and2029 with historical eligible exposure, stable-rate comparison, registered change detection, multiplicity, missing months and source availability. Its retained change_attribution call has window_months3/baseline_months12 with no requested period; feed monitor has period2028-01-01..2029-12-31 but must prove it consumes that period rather than latest snapshot months. Inspect actual Q17 native-context and those operator contracts, reproduce the wrong-window behavior natively, wire the shared period through the existing handlers/contracts and verify full requested calendar coverage/missing months/exposure/available-source clocks before one changed-workflow check. No disease-specific route, new research/models, blanket numeric waiver or repeated passing campaign. Preserve all25/tenareas, serialization candidate and large Q13/Q21 ordinary recovery, Q08/Q22 review dependencies/Q23exactdefinitions/Q24requestedvisualQA and G5/clinical/model/actuarial/customer dependencies. Source/reporting clocks without physical-arrival history stay unknown. No active provider/build/training job/freeze; UI test server closed. ManualbuildACTIVE; schedulerPAUSED; noGitpush.",
+  "product_market_audit": {
+    "as_of": "2026-11-09T18:42:05.848258+00:00",
+    "scope": "Owner product/architecture/market audit against saved receipts and selected current public primary sources. Not independent clinical/model qualification, patent/FTO search, full research review or customer discovery.",
+    "engineering_assessment": "Substantial synthetic/local implementation with scoped native and workflow evidence; ordinary whole-product acceptance remains incomplete.",
+    "current25_dispositions": {
+      "ordinary_partial": 19,
+      "ordinary_owner_interrupted_no_return": 2,
+      "linked_scenarios_blocked": 2,
+      "html_rendered_visual_unassessed": 1,
+      "authored_portability_scenario_passed": 1
+    },
+    "remaining_engineering": [
+      "Typed scope/definition and measurement roles in prose compilation; year/category literal false repairs",
+      "Correct payer/provider financial source basis and preserve requested historical/date windows",
+      "Complete large ordinary question return, persistence and pause/recovery behavior",
+      "Connect unresolved current source dependencies into corresponding review work; Q22 did not exercise generic workflow API",
+      "Requested deliverable visual acceptance and complete user journey"
+    ],
+    "separate_dependencies": [
+      "Versioned clinical/program/contract definitions and real operational inputs",
+      "Independent statistical/clinical/model qualification for intended claims",
+      "Current comparable all-attempt unit economics and production inference costs",
+      "Customer data integration, authentication/isolation, provider/data rights and deployment review",
+      "Buyer discovery, willingness to pay and first repeatable commercial workflow"
+    ],
+    "novelty_assessment": "Hybrid computation/AI, semantic layers, model cascades and question-to-action products have public prior art. Specific integration/differentiation remains a testable hypothesis; no first-ever or superiority claim established.",
+    "market_assessment": "Buyer hypotheses span provider/health-system operations and finance, payer analytics, population health/VBC and healthcare analytics service firms. Existing rivals validate an active category; demand for this candidate and pricing remain unvalidated. Whole-healthcare and industry-portable charter retained.",
+    "primary_sources": [
+      "https://www.palantir.com/docs/foundry/architecture-center/ontology-system",
+      "https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-analyst-evaluations",
+      "https://www.databricks.com/company/newsroom/press-releases/databricks-launches-genie-one-all-new-agentic-coworker-every-team",
+      "https://arcadia.io/resources/arcadia-healthcare-performance-platform-ai/",
+      "https://innovaccer.com/sara",
+      "https://www.textql.com/products/ana",
+      "https://arxiv.org/abs/2305.05176",
+      "https://www.cms.gov/data-research/statistics-trends-and-reports/national-health-expenditure-data/nhe-fact-sheet"
+    ]
+  }
 }
