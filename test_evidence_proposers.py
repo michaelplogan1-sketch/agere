@@ -176,11 +176,39 @@ class Retrieval(unittest.TestCase):
         stack = fake_stack(hits=[passage('P-1001', 'Myalgia on atorvastatin.')])
         q = 'Does the chart support statin intolerance for P-1001?'
         self.assertIsNone(E.retrieval_tier(stack, q))
-        self.assertIsNotNone(E.review_tier(stack, q))
+        with patch.dict(os.environ, {'AGERE_DOCUMENT_LOCAL_READERS': 'student_lexical'}):
+            self.assertIsNotNone(E.review_tier(stack, q))
 
 
 class Review(unittest.TestCase):
     Q = 'Does the chart support statin intolerance for P-1001?'
+
+    def setUp(self):
+        # These historical reader-cascade controls explicitly opt into their
+        # fixture roles; mere model availability is no longer normal activation.
+        import os
+        opt_in = patch.dict(os.environ, {'AGERE_DOCUMENT_LOCAL_READERS': ','.join(E.LOCAL_READERS)})
+        opt_in.start(); self.addCleanup(opt_in.stop)
+
+    def test_unconfigured_research_readers_are_not_loaded_on_ordinary_path(self):
+        import os
+        with patch.dict(os.environ, {'AGERE_DOCUMENT_LOCAL_READERS': ''}):
+            stack = fake_stack(hits=[passage('P-1001', 'Statin intolerance discussed.')], allow_live=True)
+            with patch.object(E, 'read_locally', side_effect=AssertionError('No unconfigured local reader')):
+                graph, receipt = E.review_tier(stack, self.Q)
+            self.assertEqual(graph['nodes'][-1]['parameters']['providers'], list(E.PAID_READERS))
+            self.assertNotIn('kev_reader', receipt['components'])
+            self.assertNotIn('d1_reader', receipt['components'])
+            self.assertNotIn('bioclinical_modernbert_student', receipt['components'])
+            self.assertIsNone(E.review_tier(fake_stack(hits=stack.retriever.search(self.Q)['evidence']), self.Q))
+
+    def test_local_configuration_is_shared_without_changing_explicit_diagnostics(self):
+        import os
+        with patch.dict(os.environ, {'AGERE_DOCUMENT_LOCAL_READERS': 'student_minilm, student_minilm'}):
+            self.assertEqual(E.active_review_order(), ('student_minilm', *E.PAID_READERS))
+        with patch.dict(os.environ, {'AGERE_DOCUMENT_LOCAL_READERS': 'unknown_reader'}):
+            with self.assertRaisesRegex(ValueError, 'Unknown configured'):
+                E.active_review_order()
 
     def test_free_readers_decide_without_live(self):
         stack = fake_stack(hits=[passage('P-1001', 'Statin intolerance: myalgia on atorvastatin.')])

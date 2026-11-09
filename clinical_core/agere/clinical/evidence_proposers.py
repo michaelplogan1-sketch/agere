@@ -14,29 +14,46 @@ executes it read-only and checks the output shape, so a proposal here never answ
     reader_comparison roles (cohort lexical, windowed MiniLM, Kev, d1) or the semantic statement reader's native Kev/d1;
     only an undecided question escalates, and only with stack.allow_live, to Jev/TypeSafe (Stack.review), a matching
     context-pass bundle, Perplexity Decisions, and last the Jev -> Claude gateway cascade.
+    Ordinary planning enables local readers only through AGERE_DOCUMENT_LOCAL_READERS;
+    the installed-reader list below also serves explicit diagnostic comparisons.
 Both return None at once (no I/O) when the question is not of their kind, or asks for a count/value/table/patient list
 (ranked passages are examples, never a denominator, so the output check would reject them anyway).
 """
 import json
+import os
 import re
 import sqlite3
 import time
 from datetime import date, timedelta
 from pathlib import Path
 
-VERSION = 'evidence-proposers/1'
+VERSION = 'evidence-proposers/2'
 ROOT = Path(__file__).resolve().parents[3]
 
 # free, cheapest first. student_bioclinical = frozen BioClinical ModernBERT head on the same curriculum as the MiniLM student
 # (tools/train_semantic_students_v2.py; its validation accuracy beside lexical/MiniLM is in comparison.json), read after them.
 LOCAL_READERS = ('student_lexical', 'student_minilm', 'student_bioclinical', 'cohort_windowed_minilm', 'kev', 'd1', 'medgemma')
 PAID_READERS = ('jev', 'perplexity')
-REVIEW_ORDER = LOCAL_READERS + PAID_READERS
+REVIEW_ORDER = LOCAL_READERS + PAID_READERS  # supported explicit diagnostic order, not ordinary defaults
 RETRIEVAL_COMPONENTS = ('warehouse_retriever', 'fts5_index', 'minilm_encoder', 'bge_reranker')
 READER_COMPONENTS = {'student_lexical': 'semantic_student_heads', 'student_minilm': 'semantic_student_heads',
                      'student_bioclinical': 'bioclinical_modernbert_student',
                      'cohort_windowed_minilm': 'windowed_student', 'kev': 'kev_reader', 'd1': 'd1_reader',
                      'jev': 'jev_typesafe_review', 'perplexity': 'perplexity_decisions_review', 'medgemma': 'medgemma_reader'}
+
+
+def active_review_order():
+    """Share the ordinary document reader's explicit local-role configuration.
+
+    Installed research weights are availability, not permission or qualification
+    to load them for every source question. Explicit diagnostic provider lists
+    remain inspectable and do not change the frozen experiments.
+    """
+    local = list(dict.fromkeys(p.strip() for p in os.environ.get('AGERE_DOCUMENT_LOCAL_READERS', '').split(',')
+                               if p.strip()))
+    if any(p not in LOCAL_READERS for p in local):
+        raise ValueError('Unknown configured local document reader')
+    return tuple(local) + PAID_READERS
 
 NARRATIVE = re.compile(
     r"\b(?:notes?|documents?|documented|documentation|charts?|charted|charting|narratives?|free[- ]?text|passages?|"
@@ -315,8 +332,9 @@ def _comparison_cohort(stack):
     return next((c['cohort_id'] for c in listed if c['status'] == 'available'), None)
 
 
-def read_locally(stack, question, patient, evidence, providers=LOCAL_READERS):
+def read_locally(stack, question, patient, evidence, providers=None):
     """Free readers in order; stop at the first provider whose readings decide. -> {'verdict','readings','components'}"""
+    providers = tuple(p for p in active_review_order() if p in LOCAL_READERS) if providers is None else providers
     readings, used = [], []
     goal = targets(question, evidence)
     if not goal: return {'verdict': 'unknown', 'readings': [], 'components': [], 'reason': 'no retrieved passages'}
@@ -427,9 +445,10 @@ def gateway_cascade(stack, question, patient, evidence):
         ledger.close()
 
 
-def review_patient(stack, question, patient, providers=REVIEW_ORDER):
+def review_patient(stack, question, patient, providers=None):
     """Free readers first; escalate an undecided question to paid readers only with stack.allow_live. Never raises for a
     single reader failing; paid providers are skipped (and say so) without allow_live."""
+    providers = active_review_order() if providers is None else providers
     started = time.perf_counter()
     try:  # bounded subject-anchored packet with learned category selection: the SAME evidence for every reader
         from . import evidence_packets
@@ -519,17 +538,21 @@ def review_tier(stack, question, population=None):
     if not ids or len(ids) > 3: return None  # patient-scoped review reads one to three named charts
     started, cutoff = time.perf_counter(), as_of(stack)
     live = bool(getattr(stack, 'allow_live', False))
-    providers = [p for p in REVIEW_ORDER if live or p in LOCAL_READERS]
+    providers = [p for p in active_review_order() if live or p in LOCAL_READERS]
+    if not providers:
+        return None  # no configured reader can execute; continue the existing cascade
     scope = f'patient {ids[0]}' if len(ids) == 1 else f'patients {", ".join(ids)}'
     nodes = [cohort_node(ids, f'The chart of {scope}'),
              retrieve_node(question, window(question, cutoff), 'Ranked source passages bearing on the asked assertion')]
     extra, components = {}, ['engine_review', 'warehouse_retriever', 'fts5_index', 'bge_reranker']
     review = {'id': 'review', 'operation': 'review', 'inputs': ['population'], 'purpose':
-              'Read the passages free first (students, windowed MiniLM, Kev, d1); escalate undecided charts to Jev, then Perplexity',
+              'Read with the explicitly configured local roles; escalate undecided charts to the existing System One routes',
               'parameters': {'providers': providers, 'question': question[:1000], 'maximum_patients': len(ids)}}
     if review_node_accepts(providers, cutoff):
         nodes.append(review)  # the engine op runs the whole reader cascade (review_patient)
-        components += [READER_COMPONENTS[p] for p in providers] + ['reader_comparison', 'semantic_statement_reader']
+        components += [READER_COMPONENTS[p] for p in providers]
+        if any(p in providers for p in ('cohort_windowed_minilm', 'kev', 'd1')):
+            components += ['reader_comparison', 'semantic_statement_reader']
     else:
         # Today's 'review' op takes only jev/perplexity and needs allow_live: read free here, put the readings in the
         # receipt, and add the paid review node only for charts the free readers left undecided.

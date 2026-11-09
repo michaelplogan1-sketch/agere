@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-09T00:25:31.831618+00:00",
+  "updated_at": "2026-11-09T11:31:52.251695+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -681,7 +681,7 @@
     }
   ],
   "checkpoint": {
-    "kind": "native_evidence_navigation_candidate_ready_for_ordinary_check",
+    "kind": "native_navigation_reader_role_policy_corrected",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Candidate normal tools now offer additive typed-reference source expansion and existing-reader continuation; prior findings and new uncertainties retained. Main app not activated.",
@@ -697,10 +697,15 @@
       "artifacts/agere-core-completion-2026-11-09/claude-review-v1/review-run.json",
       "artifacts/agere-core-completion-2026-11-09/claude-code-review-v1/review-run.json",
       "artifacts/agere-core-completion-2026-11-09/native-wiring-v1/receipt.json",
-      "artifacts/agere-core-completion-2026-11-09/navigation-regressions-v3.log"
+      "artifacts/agere-core-completion-2026-11-09/navigation-regressions-v3.log",
+      "artifacts/agere-core-completion-2026-11-09/ordinary-v1/receipt.json",
+      "artifacts/agere-core-completion-2026-11-09/ordinary-http-v1/receipt.json",
+      "artifacts/agere-core-completion-2026-11-09/ordinary-http-v2/receipt.json",
+      "artifacts/agere-core-completion-2026-11-09/host-resource-observation-v1.json",
+      "artifacts/agere-core-completion-2026-11-09/reader-policy-receipt.json"
     ],
-    "remaining_gap": "Ordinary controller/real model invocation and source fidelity not yet established. Candidate not sealed/activated. Full25 ordinary acceptance and independent/input/customer dependencies unchanged.",
-    "next_action": "G3/WP4 connected native evidence expansion candidate implemented. Claude architecture/code reviews completed; true new-failure status propagation fixed; unproven input-shape concerns verified by actual Tools/reader source preparation.76targeted checks pass. Actual currentP5002 source wiring (abstaining reader fixture, no semantic qualification) retains1baseline document, adds3typed-linked documents, reports8linked structured records separately across149source documents, reopens and rejects changed question, preserves all69169workflow attempts/source. Existing document_review/span_repair/model_policy producer files byte-exact. NEXT one new ordinary compose-handler question for this source-linked behavior in a fresh process, no injected source selections/answers/actions; mainapp19428 remains known-good59a447af pending acceptance. Inspect owned ordinary-v1receipt before any duplicate run; never edit source during it. Then assess actual trace/cost/fidelity, fix located integration failures only and activate with workflow proof. No originalQ14/full-chart or unchanged source-vote campaign; all25/tenareas remain. UI payload optimization deferred; G5/input/Q24/customer dependencies separate."
+    "remaining_gap": "Actual ordinary source-navigation HTTP workflow and activation remain; source-reader policy correction tested only. No running process. Full25/qualification/customer dependencies unchanged.",
+    "next_action": "G3/WP4 reader-role policy correction implemented;98targeted controls (97pass/1optionalskip) and exact unchanged source cache producers verified. Ordinary evidence_review now honors existing AGERE_DOCUMENT_LOCAL_READERS instead of autoloading every research role; explicit diagnostic lists and native computation/retrieval/SystemOne student policy preserved. NEXT commit candidate, restore ONE owned app and execute one ordinary HTTP source-navigation check after this located correction, retaining all previous failed/cancelled attempts. No running job/app; host86%memoryfree/3.3GiBdisk. No unchanged retry or new cap. Last source-navigation native proof:1baseline+3linked docs/8structured records across149docs; semantics unassessed. Full25/tenareas/principal/October11baseline and known-good8662e88b intact. Qualification/input/Q24/customer dependencies separate. QuietcontinuationACTIVE; no routine gates."
   },
   "decisions": [
     {
@@ -5823,6 +5828,22 @@
       "decision": "Adopt native residual evidence navigation; defer learned navigation until an actual marginal-value failure justifies it.",
       "basis": "Bounded independent Claude critique plus actual ordinary path inspection: focused_documents lexical selector, whole-source field screen, exact record_ids reader already exist. No new category plan API required. Explicit references provide a native baseline for missing intermediate escalation.",
       "scope_impact": "Tenareas/all25 retained; new connected evidence acquisition increment. Scores cannot establish truth/absence. Old source reader producer files left unchanged; new integration remains candidate until real workflow proof. Research files absent from recovered checkout were located read-only under original repository research, never Documents."
+    },
+    {
+      "at": "2026-11-09T00:35:09.908731+00:00",
+      "decision": "Replace duplicated fresh-process model check with normal single-app HTTP check after observed host resource failure.",
+      "evidence": [
+        "artifacts/agere-core-completion-2026-11-09/host-resource-observation-v1.json",
+        "artifacts/agere-core-completion-2026-11-09/ordinary-v1/receipt.json",
+        "artifacts/agere-core-completion-2026-11-09/ordinary-http-v1/receipt.json"
+      ],
+      "scope_impact": "No source loss, data deletion, new caps, reduced population or changed model policy. First3attempts and failed HTTP request retained. Corrected only oversized harness conversation ID. Source freeze applies to new active request."
+    },
+    {
+      "at": "2026-11-09T00:39:34.968916+00:00",
+      "decision": "Repair concrete legacy reader-policy mismatch blocking current connected acquisition workflow.",
+      "basis": "Actual request journal entered evidence_review; app log loaded707weight tensors before exit137. Cause of kill unestablished. Independently verified evidence_proposers.LOCAL_READERS contains every installed research role and review_tier/review_patient use them by default, while existing typed_document_review honors AGERE_DOCUMENT_LOCAL_READERS.",
+      "scope_impact": "No new service/model/cap or source/clinical promotion. Same connected increment; configured role selection, qualified SystemOne/encoders/native methods and explicit diagnostic paths retained."
     }
   ],
   "unsealed_work": {
@@ -7512,11 +7533,11 @@
     "current_G3_exit_decision": "artifacts/agere-final-ordinary-entry-2026-11-08/G3-exit-decision-v1.json",
     "workspace_payload_diagnosis": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/workspace-payload-diagnosis-v1/receipt.json",
     "native_navigation_candidate": {
-      "status": "implemented_not_activated",
+      "status": "reader_policy_corrected_waiting_actual_workflow",
       "native_wiring_receipt": "artifacts/agere-core-completion-2026-11-09/native-wiring-v1/receipt.json",
-      "checks": 76,
-      "ordinary_check": "not_started",
-      "main_app_product": "59a447af"
+      "checks": 98,
+      "ordinary_check": "artifacts/agere-core-completion-2026-11-09/ordinary-http-v2/receipt.json",
+      "main_app_product": "292c3e7c"
     }
   },
   "current_visual_request": {
@@ -7553,7 +7574,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3/WP4 connected native evidence expansion candidate implemented. Claude architecture/code reviews completed; true new-failure status propagation fixed; unproven input-shape concerns verified by actual Tools/reader source preparation.76targeted checks pass. Actual currentP5002 source wiring (abstaining reader fixture, no semantic qualification) retains1baseline document, adds3typed-linked documents, reports8linked structured records separately across149source documents, reopens and rejects changed question, preserves all69169workflow attempts/source. Existing document_review/span_repair/model_policy producer files byte-exact. NEXT one new ordinary compose-handler question for this source-linked behavior in a fresh process, no injected source selections/answers/actions; mainapp19428 remains known-good59a447af pending acceptance. Inspect owned ordinary-v1receipt before any duplicate run; never edit source during it. Then assess actual trace/cost/fidelity, fix located integration failures only and activate with workflow proof. No originalQ14/full-chart or unchanged source-vote campaign; all25/tenareas remain. UI payload optimization deferred; G5/input/Q24/customer dependencies separate.",
+  "next_action": "G3/WP4 reader-role policy correction implemented;98targeted controls (97pass/1optionalskip) and exact unchanged source cache producers verified. Ordinary evidence_review now honors existing AGERE_DOCUMENT_LOCAL_READERS instead of autoloading every research role; explicit diagnostic lists and native computation/retrieval/SystemOne student policy preserved. NEXT commit candidate, restore ONE owned app and execute one ordinary HTTP source-navigation check after this located correction, retaining all previous failed/cancelled attempts. No running job/app; host86%memoryfree/3.3GiBdisk. No unchanged retry or new cap. Last source-navigation native proof:1baseline+3linked docs/8structured records across149docs; semantics unassessed. Full25/tenareas/principal/October11baseline and known-good8662e88b intact. Qualification/input/Q24/customer dependencies separate. QuietcontinuationACTIVE; no routine gates.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -7642,8 +7663,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 19428,
-  "owned_server_session": 18252,
+  "owned_server_pid": null,
+  "owned_server_session": null,
   "last_run_observation": {
     "at": "2026-11-08T23:35:47.474869+00:00",
     "no_active_jobs": true,
@@ -7822,5 +7843,5 @@
       "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json"
     }
   },
-  "server_status": "Owned local app active59a447af/code-config exact to release8662e88b; current Q15native and normal Q14saved-cohort count513 checked; no startup provider work."
+  "server_status": "exited137_during_legacy_evidence_reader_load_cause_unestablished"
 }
