@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-09T12:54:44.017393+00:00",
+  "updated_at": "2026-11-09T13:17:01.849055+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -598,6 +598,10 @@
         {
           "path": "artifacts/agere-core-completion-2026-11-09/navigation-delivery-receipt.json",
           "sha256": "63c738320cf3afec7fef293d87a13a03bc7c3ee06ff4aafbbfa68daa12495ab8"
+        },
+        {
+          "path": "artifacts/agere-core-completion-2026-11-09/runtime-profile-v1/delivery-receipt.json",
+          "sha256": "1672d88d4b664dd9ba44cb3dcee5058e126a34e793835f5f264302538544837e"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -605,8 +609,8 @@
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Final finite G3 ordinary-entry decision remains: separate concrete demonstrated wiring failures from current source/model uncertainty, independent qualification and missing inputs. Q14native scope corrected and current saved followup works, but fresh original-question automatic entry and46restored subjects documentary interpretation are not claimed. Full25case/MVP/model/clinical/customer acceptance remains false; do not substitute test counts or repeat successful campaigns.",
-      "engineering_current_status": "Historical9dedicated predicates and known-good8662e88bpackage retained. Current c57cf950 adds demonstrated normal source-navigation workflow with exact typed-link/quote evidence and partial/unverified support; whole25current-release applicability unestablished.",
-      "next_action": "G3/WP4: native linked-source navigation is now demonstrated by actual normal auto HTTP at c57cf950: focused review -> plan_evidence_expansion -> additive review ->4exact complete reads -> saved/reopened original context,75.931s,19typededgeschecked,partial/unverified retained. Do not repeat this source question or seek another unchanged vote. NEXT carry the successfully exercised economical runtime role profile into the existing normal launcher/current release configuration, rather than depending on artifact-only start_low_memory_app_v2.py. Keep native computation, qualified SystemOne/local roles, exact execution reuse, existing source/date/quantity guards and Sonnet/Opus subscription; installed experimental local generative/readers must not activate merely because installed. Keep optional roles available with explicit configuration; no new caps/services/model inventory. Validate cold normal-entry metadata/native behavior and configured-role parity against the exercised profile, then current release acceptance/compatibility and packaging, rerunning only materially affected boundaries. All25/tenareas/principal/October11baseline/recovery remain. Perplexity quota/billing blocked; no new probe without restored availability evidence. App/models OFF, no frozen job. Quiet continuation ACTIVE; full G3/MVP/clinical/customer readiness NOT established.",
+      "engineering_current_status": "Current executable assessment6/9scoped predicates,3current implementation compatibility gaps. Normal economical entry, cold native membership/reopen and prior ordinary source navigation delivered within declared scopes; full25ordinary/source qualification not established.",
+      "next_action": "G3/WP4 current release evidence closure after normal-entry economical profile delivery411daf3f. Normal CLI cold metadata and exact saved1patient count/reopen operate with retrieval weights unloaded, inherited partial/clinical guards intact,0newproviders/all69234rows exact;41distinct focused checks. Do not repeat prior source-navigation or native count question. Existing executable release assessment now yields6/9scoped engineering predicates;3are blocked by current implementation manifests, not newly proven product faults. NEXT qualify narrowly changed evidence_change_reassessment boundary (10files), economical_role_routing (model_policy/backstop_agent), and portable_local_operations (local_release) against their exact raw workflow receipts and actual new proofs. Reuse only demonstrated compatible native functions; do not merely refresh hashes or promote source interpretations. Preserve historical dates/qualification scopes and actual53attempt ordinary accounting; no new source votes, caps, components or training. Then package/install/restore current candidate with existing same-platform machinery, current ledger never restored, explicit external dependencies. All25/tenareas/principal/October11baseline and8662e88b recovery remain. Current ordinary source support remains partial/unverified; missing inputs, independent qualification, Q24boundary and customer prerequisites separate. Perplexity quota/billing blocked; no new availability probe. Apps/models OFF/no frozen job, quietcontinuationACTIVE.",
       "latest_current_release_decision": "artifacts/agere-final-ordinary-entry-2026-11-08/G3-exit-decision-v1.json"
     },
     {
@@ -685,32 +689,31 @@
     }
   ],
   "checkpoint": {
-    "kind": "connected_native_source_navigation_delivered_partial_support_retained",
+    "kind": "normal_runtime_profile_delivered_current_release_evidence_closure_next",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "An ordinary question now reaches focused document review, native typed-reference expansion, additive review and complete exact source reads, then saves/reopens the same original question with explicit unresolved support. The chart primitive no longer substitutes a latest appointment for a source-relationship request.",
+    "user_behavior_delta": "The normal serve_current_warehouse.py entry now uses an explicit economical profile from the selected warehouse configuration; it no longer depends on a run-specific artifact launcher. Native/System One and qualified resource bindings remain; optional local generative/readers require explicitly configured selection.",
     "measured_failure_reduction": {
-      "wrong_latest_appointment_substitution_before": true,
-      "wrong_chart_substitution_after": false,
-      "ordinary_native_source_navigation_executed": true,
-      "exact_source_quotes": 4,
-      "typed_edges_checked": 19,
-      "ordinary_seconds": 75.93138079089113,
-      "app_peak_process_rss_bytes": 859684864,
-      "distinct_chart_checks_passed": 91,
-      "lazy_runtime_and_integrity_checks_passed": 33,
-      "all_attempt_rows_preserved": 69234,
-      "new_provider_attempts_this_heartbeat": 60
+      "artifact_launcher_required_before": true,
+      "normal_entry_current_profile_verified_after": true,
+      "selected_configuration_semantic_preflight_verified": true,
+      "native_saved_membership_count": 1,
+      "inherited_partial_guard_retained": true,
+      "cold_native_peak_process_rss_bytes": 203374592,
+      "new_provider_calls": 0,
+      "all_ledger_rows_exact": 69234,
+      "distinct_focused_checks": 41,
+      "scoped_release_predicates_currently_passed": 6,
+      "release_predicates_total": 9
     },
     "evidence": [
-      "artifacts/agere-core-completion-2026-11-09/navigation-delivery-receipt.json",
-      "artifacts/agere-core-completion-2026-11-09/ordinary-http-v4/assessment.json",
-      "artifacts/agere-core-completion-2026-11-09/ordinary-http-v3/assessment.json",
-      "artifacts/agere-core-completion-2026-11-09/chart-capability-receipt.json",
-      "artifacts/agere-core-completion-2026-11-09/lazy-cpu-parity-v1/receipt.json"
+      "artifacts/agere-core-completion-2026-11-09/runtime-profile-v1/delivery-receipt.json",
+      "artifacts/agere-core-completion-2026-11-09/normal-runtime-reopen-v1/receipt.json",
+      "artifacts/agere-core-completion-2026-11-09/runtime-profile-v1/current-release-assessment.json",
+      "artifacts/agere-core-completion-2026-11-09/navigation-delivery-receipt.json"
     ],
-    "remaining_gap": "Normal launcher still needs the tested explicit economical runtime profile. Source interpretations remain partial/unverified; linked structured and other documentary evidence remain unexamined, with no full25/qualification/customer acceptance.",
-    "next_action": "G3/WP4: native linked-source navigation is now demonstrated by actual normal auto HTTP at c57cf950: focused review -> plan_evidence_expansion -> additive review ->4exact complete reads -> saved/reopened original context,75.931s,19typededgeschecked,partial/unverified retained. Do not repeat this source question or seek another unchanged vote. NEXT carry the successfully exercised economical runtime role profile into the existing normal launcher/current release configuration, rather than depending on artifact-only start_low_memory_app_v2.py. Keep native computation, qualified SystemOne/local roles, exact execution reuse, existing source/date/quantity guards and Sonnet/Opus subscription; installed experimental local generative/readers must not activate merely because installed. Keep optional roles available with explicit configuration; no new caps/services/model inventory. Validate cold normal-entry metadata/native behavior and configured-role parity against the exercised profile, then current release acceptance/compatibility and packaging, rerunning only materially affected boundaries. All25/tenareas/principal/October11baseline/recovery remain. Perplexity quota/billing blocked; no new probe without restored availability evidence. App/models OFF, no frozen job. Quiet continuation ACTIVE; full G3/MVP/clinical/customer readiness NOT established."
+    "remaining_gap": "Three release receipts need exact current applicability after changed implementation boundaries; current candidate packaging remains. Full25/source/model/clinical/customer acceptance unestablished.",
+    "next_action": "G3/WP4 current release evidence closure after normal-entry economical profile delivery411daf3f. Normal CLI cold metadata and exact saved1patient count/reopen operate with retrieval weights unloaded, inherited partial/clinical guards intact,0newproviders/all69234rows exact;41distinct focused checks. Do not repeat prior source-navigation or native count question. Existing executable release assessment now yields6/9scoped engineering predicates;3are blocked by current implementation manifests, not newly proven product faults. NEXT qualify narrowly changed evidence_change_reassessment boundary (10files), economical_role_routing (model_policy/backstop_agent), and portable_local_operations (local_release) against their exact raw workflow receipts and actual new proofs. Reuse only demonstrated compatible native functions; do not merely refresh hashes or promote source interpretations. Preserve historical dates/qualification scopes and actual53attempt ordinary accounting; no new source votes, caps, components or training. Then package/install/restore current candidate with existing same-platform machinery, current ledger never restored, explicit external dependencies. All25/tenareas/principal/October11baseline and8662e88b recovery remain. Current ordinary source support remains partial/unverified; missing inputs, independent qualification, Q24boundary and customer prerequisites separate. Perplexity quota/billing blocked; no new availability probe. Apps/models OFF/no frozen job, quietcontinuationACTIVE."
   },
   "decisions": [
     {
@@ -5879,6 +5882,12 @@
       "decision": "Seal the demonstrated connected navigation increment and move to reproducing its role policy in normal product startup; do not repeat its unchanged review.",
       "evidence": "artifacts/agere-core-completion-2026-11-09/navigation-delivery-receipt.json",
       "scope_impact": "Full25/tenareas retained. Engineering navigation evidence does not promote source interpretations, models, clinical claims or customer deployment. UI hydration remains deferred by user priority."
+    },
+    {
+      "at": "2026-11-09T13:17:01.849055+00:00",
+      "decision": "Move from delivered normal-entry profile to the three concrete current release evidence gaps and packaging.",
+      "evidence": "artifacts/agere-core-completion-2026-11-09/runtime-profile-v1/delivery-receipt.json",
+      "scope_impact": "All25/tenareas retained. Cold native success preserves partial source status; manifest mismatch is evidence applicability, not a clinical verdict or reason for new research/unchanged source campaigns."
     }
   ],
   "unsealed_work": {
@@ -7579,6 +7588,13 @@
       "native_receipt": "artifacts/agere-core-completion-2026-11-09/lazy-native-v1/receipt.json",
       "parity_receipt": "artifacts/agere-core-completion-2026-11-09/lazy-cpu-parity-v1/receipt.json",
       "profile_normal_entry": "pending"
+    },
+    "normal_runtime_profile": {
+      "status": "scoped_normal_entry_delivered",
+      "product_commit": "411daf3feaf4845f2dbfb757d7007113fb0690b5",
+      "receipt": "artifacts/agere-core-completion-2026-11-09/runtime-profile-v1/delivery-receipt.json",
+      "current_release_assessment": "artifacts/agere-core-completion-2026-11-09/runtime-profile-v1/current-release-assessment.json",
+      "full_queue_acceptance": false
     }
   },
   "current_visual_request": {
@@ -7615,7 +7631,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3/WP4: native linked-source navigation is now demonstrated by actual normal auto HTTP at c57cf950: focused review -> plan_evidence_expansion -> additive review ->4exact complete reads -> saved/reopened original context,75.931s,19typededgeschecked,partial/unverified retained. Do not repeat this source question or seek another unchanged vote. NEXT carry the successfully exercised economical runtime role profile into the existing normal launcher/current release configuration, rather than depending on artifact-only start_low_memory_app_v2.py. Keep native computation, qualified SystemOne/local roles, exact execution reuse, existing source/date/quantity guards and Sonnet/Opus subscription; installed experimental local generative/readers must not activate merely because installed. Keep optional roles available with explicit configuration; no new caps/services/model inventory. Validate cold normal-entry metadata/native behavior and configured-role parity against the exercised profile, then current release acceptance/compatibility and packaging, rerunning only materially affected boundaries. All25/tenareas/principal/October11baseline/recovery remain. Perplexity quota/billing blocked; no new probe without restored availability evidence. App/models OFF, no frozen job. Quiet continuation ACTIVE; full G3/MVP/clinical/customer readiness NOT established.",
+  "next_action": "G3/WP4 current release evidence closure after normal-entry economical profile delivery411daf3f. Normal CLI cold metadata and exact saved1patient count/reopen operate with retrieval weights unloaded, inherited partial/clinical guards intact,0newproviders/all69234rows exact;41distinct focused checks. Do not repeat prior source-navigation or native count question. Existing executable release assessment now yields6/9scoped engineering predicates;3are blocked by current implementation manifests, not newly proven product faults. NEXT qualify narrowly changed evidence_change_reassessment boundary (10files), economical_role_routing (model_policy/backstop_agent), and portable_local_operations (local_release) against their exact raw workflow receipts and actual new proofs. Reuse only demonstrated compatible native functions; do not merely refresh hashes or promote source interpretations. Preserve historical dates/qualification scopes and actual53attempt ordinary accounting; no new source votes, caps, components or training. Then package/install/restore current candidate with existing same-platform machinery, current ledger never restored, explicit external dependencies. All25/tenareas/principal/October11baseline and8662e88b recovery remain. Current ordinary source support remains partial/unverified; missing inputs, independent qualification, Q24boundary and customer prerequisites separate. Perplexity quota/billing blocked; no new availability probe. Apps/models OFF/no frozen job, quietcontinuationACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -7624,7 +7640,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-core-completion-2026-11-09/navigation-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-core-completion-2026-11-09/runtime-profile-v1/delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -7884,5 +7900,5 @@
       "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json"
     }
   },
-  "server_status": "owned_low_memory_app_stopped_after_completed_source_navigation"
+  "server_status": "normal_entry_native_checks_terminal_apps_off"
 }
