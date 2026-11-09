@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-09T11:31:52.251695+00:00",
+  "updated_at": "2026-11-09T12:00:32.198933+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -681,31 +681,26 @@
     }
   ],
   "checkpoint": {
-    "kind": "native_navigation_reader_role_policy_corrected",
+    "kind": "low_memory_native_index_integrity_verified",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Candidate normal tools now offer additive typed-reference source expansion and existing-reader continuation; prior findings and new uncertainties retained. Main app not activated.",
+    "user_behavior_delta": "Index integrity verification no longer materializes the full6.72GBfile; exact pinned values remain verified with models and server off.",
     "measured_failure_reduction": {
-      "native_baseline_documents": 1,
-      "linked_documents_added": 3,
-      "linked_structured_records_reported": 8,
-      "source_document_inventory": 149,
-      "provider_calls_native_wiring_fixture": 0,
-      "new_uncertainty_standard_status_guard": "passing"
+      "whole_file_copy_bytes_removed": 6724337792,
+      "actual_hash_peak_traced_python_bytes": 2102857,
+      "verification_process_peak_rss_bytes": 47726592,
+      "vector_digest_exact": true,
+      "new_provider_calls": 0,
+      "targeted_checks_passed": 9
     },
     "evidence": [
-      "artifacts/agere-core-completion-2026-11-09/claude-review-v1/review-run.json",
-      "artifacts/agere-core-completion-2026-11-09/claude-code-review-v1/review-run.json",
-      "artifacts/agere-core-completion-2026-11-09/native-wiring-v1/receipt.json",
-      "artifacts/agere-core-completion-2026-11-09/navigation-regressions-v3.log",
-      "artifacts/agere-core-completion-2026-11-09/ordinary-v1/receipt.json",
-      "artifacts/agere-core-completion-2026-11-09/ordinary-http-v1/receipt.json",
-      "artifacts/agere-core-completion-2026-11-09/ordinary-http-v2/receipt.json",
-      "artifacts/agere-core-completion-2026-11-09/host-resource-observation-v1.json",
-      "artifacts/agere-core-completion-2026-11-09/reader-policy-receipt.json"
+      "artifacts/agere-core-completion-2026-11-09/streamed-index-v1/receipt.json",
+      "artifacts/agere-core-completion-2026-11-09/streaming-integrity-tests-v1.log",
+      "artifacts/agere-core-completion-2026-11-09/reader-policy-receipt.json",
+      "artifacts/agere-core-completion-2026-11-09/native-wiring-v1/receipt.json"
     ],
-    "remaining_gap": "Actual ordinary source-navigation HTTP workflow and activation remain; source-reader policy correction tested only. No running process. Full25/qualification/customer dependencies unchanged.",
-    "next_action": "G3/WP4 reader-role policy correction implemented;98targeted controls (97pass/1optionalskip) and exact unchanged source cache producers verified. Ordinary evidence_review now honors existing AGERE_DOCUMENT_LOCAL_READERS instead of autoloading every research role; explicit diagnostic lists and native computation/retrieval/SystemOne student policy preserved. NEXT commit candidate, restore ONE owned app and execute one ordinary HTTP source-navigation check after this located correction, retaining all previous failed/cancelled attempts. No running job/app; host86%memoryfree/3.3GiBdisk. No unchanged retry or new cap. Last source-navigation native proof:1baseline+3linked docs/8structured records across149docs; semantics unassessed. Full25/tenareas/principal/October11baseline and known-good8662e88b intact. Qualification/input/Q24/customer dependencies separate. QuietcontinuationACTIVE; no routine gates."
+    "remaining_gap": "Lazy initialization/native lightweight app path and ordinary source-navigation workflow remain unverified. No full app/memory or clinical/model/MVP claim from isolated hashing.",
+    "next_action": "G3/WP4 low-memory native integrity increment verified with models/app off. Reused existing streamedSHA helper instead of full-file read_bytes in retrieval index construction/startup verification. Actual6724337792byte vector digest and dense mapping match unchanged pins in3.777s; peak traced Python hashing allocation2102857bytes, verification process peakRSS47726592bytes. No torch/transformers imported, no model/server/provider started, all69174workflow attempts exact.9targeted checks pass including real constructor with model fixtures, full vector retention, corruption and missing-pin rejection. No source sampling/caps/reindex or acceptance restamping. NEXT continue the same G3 runtime/ordinary gap with lazy local-model initialization in existing encoder/reranker boundaries: metadata, native SQL, source/evidence/work APIs should operate without loading weights; preserve exact model identities/cache keys and mandatory integrity checks, prove native/no-model behavior and relevant unchanged retrieval outputs before any heavy ordinary run. In parallel-independent work use disk-backed native analysis, evidence/decision/program contracts and approved hosted reasoning when needed. Existing193662fb ordinary source-navigation acceptance remains unestablished; do not restart all local models or repeat failed workflow unchanged. All25/tenareas/principal/October11baseline/known-good8662e88b intact; qualification/input/Q24/customer dependencies explicit. QuietcontinuationACTIVE."
   },
   "decisions": [
     {
@@ -5844,6 +5839,12 @@
       "decision": "Repair concrete legacy reader-policy mismatch blocking current connected acquisition workflow.",
       "basis": "Actual request journal entered evidence_review; app log loaded707weight tensors before exit137. Cause of kill unestablished. Independently verified evidence_proposers.LOCAL_READERS contains every installed research role and review_tier/review_patient use them by default, while existing typed_document_review honors AGERE_DOCUMENT_LOCAL_READERS.",
       "scope_impact": "No new service/model/cap or source/clinical promotion. Same connected increment; configured role selection, qualified SystemOne/encoders/native methods and explicit diagnostic paths retained."
+    },
+    {
+      "at": "2026-11-09T11:57:54.467081+00:00",
+      "decision": "Continue connected build without model startup; eliminate verified full-file hashing allocation first.",
+      "basis": "Mike asks how to build without memory pressure. Actual vectors.npy6724337792bytes; constructor memory maps then calls Path.read_bytes for SHA256. Existing local_encoders._sha256 streams1MiB chunks with identical digest semantics.",
+      "scope_impact": "Supporting current G3 ordinary/runtime gap; no architecture/model change, skipped source bytes, population/document/output/spend cap or new dependency. Model servers stay off; no completed ordinary acceptance inferred."
     }
   ],
   "unsealed_work": {
@@ -7533,11 +7534,21 @@
     "current_G3_exit_decision": "artifacts/agere-final-ordinary-entry-2026-11-08/G3-exit-decision-v1.json",
     "workspace_payload_diagnosis": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/workspace-payload-diagnosis-v1/receipt.json",
     "native_navigation_candidate": {
-      "status": "reader_policy_corrected_waiting_actual_workflow",
+      "status": "tested_candidate_not_live",
       "native_wiring_receipt": "artifacts/agere-core-completion-2026-11-09/native-wiring-v1/receipt.json",
       "checks": 98,
       "ordinary_check": "artifacts/agere-core-completion-2026-11-09/ordinary-http-v2/receipt.json",
-      "main_app_product": "292c3e7c"
+      "main_app_product": null,
+      "candidate_commit": "193662fb152bf8004fdac2ef9aec883b995cf599",
+      "checks_run": 98,
+      "checks_passed": 97,
+      "checks_skipped": 1
+    },
+    "low_memory_integrity": {
+      "status": "verified_native_integrity_candidate_app_not_started",
+      "receipt": "artifacts/agere-core-completion-2026-11-09/streamed-index-v1/receipt.json",
+      "checks": 9,
+      "model_weights_loaded": false
     }
   },
   "current_visual_request": {
@@ -7574,7 +7585,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3/WP4 reader-role policy correction implemented;98targeted controls (97pass/1optionalskip) and exact unchanged source cache producers verified. Ordinary evidence_review now honors existing AGERE_DOCUMENT_LOCAL_READERS instead of autoloading every research role; explicit diagnostic lists and native computation/retrieval/SystemOne student policy preserved. NEXT commit candidate, restore ONE owned app and execute one ordinary HTTP source-navigation check after this located correction, retaining all previous failed/cancelled attempts. No running job/app; host86%memoryfree/3.3GiBdisk. No unchanged retry or new cap. Last source-navigation native proof:1baseline+3linked docs/8structured records across149docs; semantics unassessed. Full25/tenareas/principal/October11baseline and known-good8662e88b intact. Qualification/input/Q24/customer dependencies separate. QuietcontinuationACTIVE; no routine gates.",
+  "next_action": "G3/WP4 low-memory native integrity increment verified with models/app off. Reused existing streamedSHA helper instead of full-file read_bytes in retrieval index construction/startup verification. Actual6724337792byte vector digest and dense mapping match unchanged pins in3.777s; peak traced Python hashing allocation2102857bytes, verification process peakRSS47726592bytes. No torch/transformers imported, no model/server/provider started, all69174workflow attempts exact.9targeted checks pass including real constructor with model fixtures, full vector retention, corruption and missing-pin rejection. No source sampling/caps/reindex or acceptance restamping. NEXT continue the same G3 runtime/ordinary gap with lazy local-model initialization in existing encoder/reranker boundaries: metadata, native SQL, source/evidence/work APIs should operate without loading weights; preserve exact model identities/cache keys and mandatory integrity checks, prove native/no-model behavior and relevant unchanged retrieval outputs before any heavy ordinary run. In parallel-independent work use disk-backed native analysis, evidence/decision/program contracts and approved hosted reasoning when needed. Existing193662fb ordinary source-navigation acceptance remains unestablished; do not restart all local models or repeat failed workflow unchanged. All25/tenareas/principal/October11baseline/known-good8662e88b intact; qualification/input/Q24/customer dependencies explicit. QuietcontinuationACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",

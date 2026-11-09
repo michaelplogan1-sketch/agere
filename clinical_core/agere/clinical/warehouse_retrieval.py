@@ -9,7 +9,7 @@ from pathlib import Path
 import hashlib, json, re, sqlite3, time
 import numpy as np
 from ...contracts import digest
-from ...local_encoders import LocalEncoder, LocalReranker
+from ...local_encoders import LocalEncoder, LocalReranker, _sha256 as file_sha256
 from ..warehouse import Warehouse
 from ..narrative_sources import text_fields, FORBIDDEN
 
@@ -158,12 +158,12 @@ def build(warehouse, clinical_run, output, *, document_extractions=None, encoder
         report = {'schema':VERSION,'synthetic':True,'snapshot':snapshot,'source_run':meta['cache_key_digest'],
           'source_digest':source_digest.hexdigest(),'patients':len(patients),'visible_records':snapshot['visible_records'],
           'passages':sum(counts.values()),'unique_passage_texts':len(contents),'passages_by_kind':dict(counts),
-          'dense_passage_texts':len(eligible),'dense_indices_sha256':hashlib.sha256((output/'dense-content-indices.npy').read_bytes()).hexdigest(),
+          'dense_passage_texts':len(eligible),'dense_indices_sha256':file_sha256(output/'dense-content-indices.npy'),
           'retrieval_policy':'All transported source fields use lexical indexing; original-cohort narrative fields additionally use dense vectors. Structured-only rows are excluded from dense ranking.',
           'encoder_identity':encoder.identity,'encoder_path':str(encoder.path.resolve()),'encoder_stats':encoder.stats,
           'embedding_role':'Pinned MiniLM mean-pooled retrieval vectors; not a clinical interpretation model',
           'window_tokens':160,'overlap_tokens':24,'elapsed_seconds':time.perf_counter()-started,
-          'vector_file_sha256':hashlib.sha256((output/'vectors.npy').read_bytes()).hexdigest(),
+          'vector_file_sha256':file_sha256(output/'vectors.npy'),
           'new_paid_api_calls':0,'complete_evidence_guarantee':False,
           'code_hashes':{'warehouse_retrieval.py':hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}}
         write(output/'run.json',report); return report
@@ -182,10 +182,12 @@ class Retriever:
         self.dense_indices=None
         if self.meta.get('dense_indices_sha256'):
             p=self.path/'dense-content-indices.npy'
-            if hashlib.sha256(p.read_bytes()).hexdigest()!=self.meta['dense_indices_sha256']:raise ValueError('Dense content mapping changed')
+            if file_sha256(p)!=self.meta['dense_indices_sha256']:raise ValueError('Dense content mapping changed')
             self.dense_indices=np.load(p)
         if self.vectors.shape[0]!=self.meta['unique_passage_texts']:raise ValueError('Vector index mismatch')
-        if not self.meta.get('vector_file_sha256') or hashlib.sha256((self.path/'vectors.npy').read_bytes()).hexdigest()!=self.meta['vector_file_sha256']:
+        # Verify every byte without materializing the memory-mapped index as a
+        # second multi-gigabyte object. The pinned SHA256 identity is unchanged.
+        if not self.meta.get('vector_file_sha256') or file_sha256(self.path/'vectors.npy')!=self.meta['vector_file_sha256']:
             raise ValueError('Vector file content changed')
         self.reranker=LocalReranker(ROOT/'models/bge-reranker-v2-m3',cache=self.path/'model-cache.sqlite3') if rerank else None
         self._installed_reranker=self.reranker
