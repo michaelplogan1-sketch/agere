@@ -18,6 +18,7 @@ import hashlib
 import json
 import math
 import re
+from ...contracts import json_fingerprint
 
 SCHEMA = 'agere-deliverable-bundle/1'
 PATH_RE = re.compile(r'^(R-[0-9a-f]{10})(?::(.*))?$')
@@ -28,7 +29,7 @@ def _now():
 
 
 def fingerprint(obj):
-    return hashlib.sha256(json.dumps(obj, sort_keys=True, default=str).encode()).hexdigest()
+    return json_fingerprint(obj, default=str)
 
 
 def sql_fingerprint(sql):
@@ -354,17 +355,73 @@ def digest(bundle, max_list=6, max_str=300, max_chars=60000, *, shared=False):
     return text[:max_chars * 2]
 
 
+class _JsonStructureIndex:
+    """Index complete values without expanding their shared descendants.
+
+    Canonical length and structural hashes locate repeated values. The existing
+    decoder still verifies the original complete-value fingerprint, so an index
+    or reference error cannot establish an accepted evidence roundtrip.
+    """
+    def __init__(self, *, sort_keys=False, ensure_ascii=False, allow_nan=False):
+        self.options = dict(sort_keys=sort_keys, ensure_ascii=ensure_ascii,
+                            allow_nan=allow_nan, default=str, separators=(',', ':'))
+        self.memo = {}
+        self.active = set()
+
+    def describe(self, value):
+        memoized = isinstance(value, (dict, list, str))
+        identity = id(value)
+        if identity in self.active:
+            raise ValueError('Circular reference detected')
+        if memoized and identity in self.memo:
+            return self.memo[identity]
+        self.active.add(identity)
+        try:
+            h = hashlib.sha256()
+            if isinstance(value, dict):
+                size = 2 + max(0, len(value)-1)
+                h.update(b'object')
+                items = sorted(value.items()) if self.options['sort_keys'] else value.items()
+                for key, child in items:
+                    encoded = json.dumps({key: None}, **self.options)
+                    name = encoded[1:encoded.rfind(':')]
+                    length, child_hash = self.describe(child)
+                    size += len(name) + 1 + length
+                    h.update(len(name.encode()).to_bytes(8, 'big'))
+                    h.update(name.encode())
+                    h.update(child_hash)
+            elif isinstance(value, list):
+                size = 2 + max(0, len(value)-1)
+                h.update(b'array')
+                for child in value:
+                    length, child_hash = self.describe(child)
+                    size += length
+                    h.update(child_hash)
+            else:
+                encoded = json.dumps(value, **self.options)
+                size = len(encoded)
+                h.update(b'literal')
+                h.update(encoded.encode())
+            result = (size, h.digest())
+            if memoized:
+                self.memo[identity] = result
+            return result
+        finally:
+            self.active.remove(identity)
+
+
 def share_json(value, min_chars=256):
     """Lossless JSON sharing for model context; native bundle and binding paths are unchanged.
 
     Only complete identical subtrees/strings are interned. No sampling,
     clipping, paraphrase, field dropping or semantic deduplication occurs.
     """
+    index=_JsonStructureIndex(sort_keys=True,ensure_ascii=True,allow_nan=True)
     seen={};references=[]
     def walk(v,path):
         if isinstance(v,(dict,list,str)):
-            key=json.dumps(v,sort_keys=True,default=str,separators=(',',':'))
-            if len(key)>=min_chars:
+            key=index.describe(v)
+            if key[0]>=min_chars:
                 if key in seen:
                     target=list(seen[key]);references.append({'at':list(path),'from':target})
                     return {'$agere_shared':target}
@@ -412,14 +469,18 @@ def dictionary_json(value):
     Unlike path sharing, references do not repeat long source paths twice.
     """
     from collections import Counter
-    def key(v):return json.dumps(v,ensure_ascii=False,separators=(',',':'),allow_nan=False,default=str)
-    counts=Counter()
+    index=_JsonStructureIndex()
+    def key(v):return index.describe(v)
+    counts=Counter();visited=set()
     def count(v):
         if isinstance(v,(dict,list,str)):counts[key(v)]+=1
+        if isinstance(v,(dict,list)):
+            if id(v)in visited:return
+            visited.add(id(v))
         for child in v.values() if isinstance(v,dict) else v if isinstance(v,list) else ():
             count(child)
     count(value)
-    selected={k for k,n in counts.items() if n>1 and len(k)>=12 and (n-1)*len(k)>n*9+12}
+    selected={k for k,n in counts.items() if n>1 and k[0]>=12 and (n-1)*k[0]>n*9+12}
     pool=[];ids={}
     def walk(v,definition=False):
         k=key(v) if isinstance(v,(dict,list,str)) else None
