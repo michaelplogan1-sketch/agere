@@ -222,6 +222,7 @@ def native_claim_lookup_only(calls, answer, schema):
     from .sql_query import portable_native_query,validate_bound_native_query,native_query_binding_errors
     if not isinstance(answer,dict)or not calls or native_query_binding_errors(calls):return False
     root=(answer.get('table_binding')or{}).get('result_view')or answer.get('table_from_tool')
+    answer_root=root
     roots=list(dict.fromkeys([*([root]if root else[]),*B.computed_prose_views(answer.get('computed_prose')or[])]))
     selected={root:None}
     def address(binding):
@@ -302,9 +303,20 @@ def native_claim_lookup_only(calls, answer, schema):
             mandatory=atoms(base.expression.args.get('where'))+[a for j in base.expression.args.get('joins')or[]for a in atoms(j.args.get('on'))]
             return any(isinstance(n,exp.EQ)and any(column(a,payload.table,'stream')and isinstance(b,exp.Literal)
                 and b.is_string and b.this in cash_streams for a,b in[(n.this,n.expression),(n.expression,n.this)])for n in mandatory)
-        def classification_count(column):
+        def classification_count(column,metadata_only=False):
             aggregate=column.find_ancestor(exp.AggFunc)
             if aggregate is None:return True
+            if metadata_only and isinstance(aggregate,(exp.Min,exp.Max)):
+                # Cardinality of explicitly named Boolean classifications per
+                # cash record, not a count of provider claims or their amounts.
+                def indicators(node):
+                    node=bare(node)
+                    if isinstance(node,exp.Add):return indicators(node.this)and indicators(node.expression)
+                    if not isinstance(node,exp.Case):return False
+                    labels=[c.args.get('true')for c in node.args.get('ifs')or[]]+[node.args.get('default')]
+                    return bool(labels)and all(isinstance(v,exp.Literal)and not v.is_string
+                        and v.this in ('0','1')for v in labels)
+                return indicators(aggregate.this)
             if not isinstance(aggregate,exp.Count):return False
             value=aggregate.this
             if isinstance(value,exp.Distinct):
@@ -314,6 +326,7 @@ def native_claim_lookup_only(calls, answer, schema):
             labels=[c.args.get('true')for c in value.args.get('ifs')or[]]+[value.args.get('default')]
             return bool(labels)and all(isinstance(v,exp.Literal)and v.is_string for v in labels)
         for root in roots:
+            metadata_only=root!=answer_root and bool(selected.get(root))
             query=sqlglot.parse_one(resolved[root],read='sqlite')
             if selected.get(root):
                 # This is only a definition probe over actual compiled scalar
@@ -331,10 +344,17 @@ def native_claim_lookup_only(calls, answer, schema):
                 mandatory=atoms(select.args.get('where'))+[a for j in select.args.get('joins')or[]for a in atoms(j.args.get('on'))]
                 for alias in claim_aliases:
                     used=[c for c in scope.columns if c.table.casefold()==alias.casefold()]
-                    if not used or any(c.name.casefold()not in fields for c in used):return False
+                    def identity_namespace(c):
+                        # A fixed source namespace may disambiguate an ID; it
+                        # cannot become a selected fact or financial predicate.
+                        return(metadata_only and c.name.casefold()=='claim_source'and any(
+                            isinstance(n,exp.EQ)and any(a is c and isinstance(b,exp.Literal)
+                                and b.is_string and b.this=='medical_claims'
+                                for a,b in[(n.this,n.expression),(n.expression,n.this)])for n in mandatory))
+                    if not used or any(c.name.casefold()not in fields and not identity_namespace(c)for c in used):return False
                     # A provider claim count is a financial denominator, not
                     # an identity lookup, even beside an unrelated cash read.
-                    if not all(classification_count(c)for c in used):return False
+                    if not all(classification_count(c,metadata_only)for c in used):return False
                     linked=any(isinstance(n,exp.EQ)and any(column(a,alias,'claim_id')and payload_claim(scope,b)
                         for a,b in[(n.this,n.expression),(n.expression,n.this)])for n in mandatory)
                     # A payer-key dimension may enumerate received labels. It
@@ -342,7 +362,21 @@ def native_claim_lookup_only(calls, answer, schema):
                     attribute_only=(len(scope.selected_sources)==1 and all(
                         isinstance(e.unalias(),exp.Column)and e.unalias().table.casefold()==alias.casefold()
                         for e in select.selects))
-                    if not linked and not attribute_only:return False
+                    # Compiled explanation scalars may reconcile identity
+                    # overlap with the payer feed or actual cash payload IDs.
+                    # The same queries cannot define the main financial table.
+                    payer_link=(metadata_only and all(c.name.casefold()in('claim_id','claim_source')for c in used)
+                        and any(isinstance(n,exp.EQ)and any(column(a,alias,'claim_id')
+                            and isinstance(b,exp.Column)and b.name.casefold()=='payer_claim_id'
+                            and isinstance(scope.sources.get(b.table),exp.Table)
+                            and scope.sources[b.table].name.casefold()=='payer_claim'
+                            for a,b in[(n.this,n.expression),(n.expression,n.this)])for n in mandatory))
+                    owner=select.parent
+                    membership=owner.parent if isinstance(owner,exp.Subquery)else None
+                    cash_membership=(metadata_only and isinstance(membership,exp.In)
+                        and len(select.selects)==1 and column(select.selects[0].unalias(),alias,'claim_id')
+                        and scope.parent is not None and payload_claim(scope.parent,membership.this))
+                    if not linked and not attribute_only and not payer_link and not cash_membership:return False
         return True
     except (ValueError,KeyError,TypeError,AttributeError,RecursionError,sqlglot.errors.SqlglotError):return False
 

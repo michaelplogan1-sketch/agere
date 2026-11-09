@@ -411,7 +411,7 @@ function render() {
 }
 async function refresh() {
   const prior=data, next=await api('/api/stack/action-context?context='+encodeURIComponent(key));
-  if (prior?.context.workspace_evidence?.binding===next.context.workspace_evidence?.binding) {
+  if (prior && prior.context.workspace_evidence?.binding===next.context.workspace_evidence?.binding) {
     if (prior.context.workspace_evidence?.complete) next.context={...next.context,answer:{...next.context.answer,table:prior.context.answer.table},
       patient_rows:prior.context.patient_rows,workspace_evidence:{...next.context.workspace_evidence,complete:true}};
   } else patientEvidence.clear();

@@ -114,4 +114,48 @@ class NativeClaimLookupRoles(unittest.TestCase):
   plan={'query':'SELECT SUM(allowed_cents) FROM claim WHERE allowed_cents>0','provider_lookup_only':True}
   self.assertTrue(superseded(QUESTION,plan,F._schema(self.fixture.path)))
 
+ def test_bound_explanation_can_reconcile_cash_identity_membership_and_payer_key_overlap(self):
+  db=sqlite3.connect(self.fixture.path/'semantic.sqlite3')
+  if 'claim_source'not in [r[1]for r in db.execute('PRAGMA table_info(claim)')]:
+   db.execute('ALTER TABLE claim ADD COLUMN claim_source')
+  db.execute("UPDATE claim SET claim_source='medical_claims'");db.commit();db.close()
+  cash=self.sql(self.cash_sql());a=self.answer(cash)
+  query="""WITH a AS(SELECT json_extract(payload,'$.claim_id')cid FROM record WHERE stream='payer_cash_allocations')
+   SELECT (SELECT COUNT(*)FROM a WHERE cid IN(SELECT claim_id FROM claim WHERE claim_source='medical_claims'))linked,
+   (SELECT COUNT(*)FROM payer_claim p JOIN claim c ON c.claim_id=p.payer_claim_id AND c.claim_source='medical_claims')shared"""
+  metadata=self.sql(query)
+  a['facts']={'identity_check':{'template':'Cash identity matches: {linked}; shared source keys: {shared}.',
+   'bindings':{k:{'result_view':metadata['result_view'],'row':0,'column':k}for k in ('linked','shared')}}}
+  B.bind_computed_prose(a,self.calls,question=QUESTION)
+  self.assertEqual(self.issues(a),[])
+  self.assertTrue(self.issues(self.answer(metadata)),'An identity reconciliation cannot replace the requested financial table')
+
+ def test_bound_explanation_can_count_boolean_cash_classifications_without_provider_amounts(self):
+  cash=self.sql(self.cash_sql());a=self.answer(cash)
+  query="""SELECT MAX(categories)maximum FROM(SELECT
+   CASE WHEN c.claim_id IS NULL THEN 1 ELSE 0 END+
+   CASE WHEN c.patient_id=r.patient_id THEN 1 ELSE 0 END categories
+   FROM record r LEFT JOIN claim c ON c.claim_id=json_extract(r.payload,'$.claim_id')
+   WHERE r.stream='payer_cash_allocations')"""
+  metadata=self.sql(query)
+  a['facts']={'classification':{'template':'Maximum classifications per allocation: {v}.',
+   'bindings':{'v':{'result_view':metadata['result_view'],'row':0,'column':'maximum'}}}}
+  B.bind_computed_prose(a,self.calls,question=QUESTION);self.assertEqual(self.issues(a),[])
+  for changed in (query.replace('THEN 1','THEN c.allowed_cents'),
+                  query.replace("stream='payer_cash_allocations'","stream='patient_payments'")):
+   result=self.sql(changed);bad=self.answer(cash)
+   bad['computed_prose']=[{'field':'facts.classification','sources':{'v':{'binding':{
+    'result_view':result['result_view'],'row':0,'column':'maximum'}}}}]
+   with self.subTest(query=changed):self.assertTrue(self.issues(bad))
+
+ def test_explanation_identity_role_never_waives_provider_amounts_or_standalone_claim_counts(self):
+  cash=self.sql(self.cash_sql())
+  for query in ('SELECT COUNT(*)value FROM claim',
+                'SELECT SUM(c.allowed_cents)value FROM payer_claim p JOIN claim c ON c.claim_id=p.payer_claim_id',
+                'SELECT COUNT(c.claim_id)value FROM payer_claim p JOIN claim c ON c.patient_id=p.patient_id'):
+   result=self.sql(query);a=self.answer(cash)
+   a['computed_prose']=[{'field':'facts.metadata','sources':{'v':{'binding':{
+    'result_view':result['result_view'],'row':0,'column':'value'}}}}]
+   with self.subTest(query=query):self.assertTrue(self.issues(a))
+
 if __name__=='__main__':unittest.main()
