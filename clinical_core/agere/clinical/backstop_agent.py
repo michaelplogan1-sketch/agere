@@ -405,6 +405,9 @@ has already declined this question, so it is yours to answer completely and corr
   An exact string from an executed CASE output may remain quoted when explaining what label a conditional query branch
   would return. This does not establish that any
   observed row has that label. Observed counts, amounts, rates, durations and entity-specific values still require bindings.
+  NULL/unknown is distinct from a measured zero. Explicitly requested calendar halves/quarters describe periods, not counts.
+  A slash-abbreviated identity list may remain literal only when every expanded identifier exists in the same complete
+  executed identity column. These references do not establish an amount, source coverage, or a patient's observed state.
   In patient/entity row prose, a numeric quotation can stay literal only when the complete exact quote is in a typed
   documentary assertion in that entity's executed basis, and both record_id and source date are attributed in the same
   field. A matching sources entry alone is insufficient for row prose. Otherwise bind the full source quotation as a
@@ -1194,6 +1197,22 @@ def table_value_counts(rows):
     return {'rows':len(rows),'columns':out,'meaning':'Exact row counts by original column/value and arithmetic over numeric, non-null rows. Decimal strings preserve arithmetic precision. Sums are raw column sums, not inferred distinct patients, events, current use, clinical appropriateness or outcomes; interpret using the source column grain and units.'}
 
 
+def prose_calendar_periods(text):
+    """Explicit calendar references only; never infer the requested event clock."""
+    import calendar
+    words={'first':1,'second':2,'third':3,'fourth':4,'1st':1,'2nd':2,'3rd':3,'4th':4}
+    pattern=(r'\b(?P<ordinal>first|second|third|fourth|1st|2nd|3rd|4th)\s+(?P<unit>half|quarter)'
+             r'(?:\s+of)?\s+(?P<year>(?:19|20|21)\d{2})(?=$|\s*[,.;:()]|\s+(?:and|with|while|but|is|are|was|were|has|have|had|remains?)\b)')
+    periods=[]
+    for match in re.finditer(pattern,text or'',re.I):
+        unit=match['unit'].lower();index=words[match['ordinal'].lower()];parts=2 if unit=='half'else 4
+        if index>parts:continue
+        year=int(match['year']);months=12//parts;start=(index-1)*months+1;end=index*months
+        periods.append((match,{'period':unit,'index':index,'year':year,
+            'start':f'{year:04d}-{start:02d}-01','end':f'{year:04d}-{end:02d}-{calendar.monthrange(year,end)[1]:02d}'}))
+    return periods
+
+
 def prose_parameter_context(question,calls):
     """Native/request parameters may describe an analysis, never an entity value.
 
@@ -1209,7 +1228,7 @@ def prose_parameter_context(question,calls):
     for m in re.finditer(r'\b(\d+)\s*[- ]\s*(day|week|month|year)s?\b',question or '',re.I):
         durations[(m[1],m[2].lower())]={'kind':'request_duration','span':[m.start(),m.end()],
                                       'text':m.group(),'question_sha256':hashlib.sha256((question or '').encode()).hexdigest()}
-    predicates={};columns=set();docs=[];scales={};zero_rates=[];labels={};calendar_labels={}
+    predicates={};columns=set();docs=[];scales={};zero_rates=[];labels={};calendar_labels={};identifier_sources=[]
     requested_years=set(re.findall(r'\b(?:19|20|21)\d{2}\b',question or ''))
     for call in calls:
         result=call.get('result')
@@ -1223,6 +1242,7 @@ def prose_parameter_context(question,calls):
         except (sqlglot.errors.SqlglotError,ValueError,TypeError):continue
         origin={'result_view':result.get('result_view'),
                 'query_sha256':hashlib.sha256(sql.encode()).hexdigest()}
+        identifier_sources.append((origin,result))
         # Conditional string outputs define categories even when this source
         # snapshot contains no row taking that branch. A predicate/filter
         # literal or a proposed query is not an output-label definition.
@@ -1285,7 +1305,11 @@ def prose_parameter_context(question,calls):
             verified=loaded_documentation([call],loaded['identity'])
             if verified:docs.extend({**s,'identity':loaded['identity']}for s in verified['sections'])
     return {'durations':durations,'predicates':predicates,'columns':columns,'docs':docs,
-            'scales':scales,'zero_rates':zero_rates,'output_labels':labels,'calendar_labels':calendar_labels}
+            'scales':scales,'zero_rates':zero_rates,'output_labels':labels,'calendar_labels':calendar_labels,
+            'identifier_sources':identifier_sources,
+            'calendar_periods':[{**p,'source_clause':m.group(),
+                'question_sha256':hashlib.sha256((question or'').encode()).hexdigest()}
+                for m,p in prose_calendar_periods(question)]}
 
 
 def structural_prose_context(answer,calls,proof):
@@ -1489,6 +1513,35 @@ def mask_prose_parameters(text,context,proofs):
     """
     required=context.get('required_result_views')or set()
     def required_origin(values):return next((p for p in values if p['result_view']in required),None)
+    # Compact source identifiers are addresses, not divided measurements.
+    # Require every expanded value in the SAME complete native identity field.
+    def identifiers(match):
+        tail=text[match.end():]
+        if re.match(r'\s*(?:mg|mcg|µg|kg|g|ml|l|mEq|percent|dollars?|cents?)\b|\s*%',tail,re.I):return match.group()
+        values=[match['prefix']+part for part in match['parts'].split('/')]
+        for origin,result in context.get('identifier_sources',[]):
+            if origin['result_view']not in required:continue
+            cols=result.get('columns')or[]
+            for column in cols:
+                if not (column.endswith(('_id','_key'))or column in ('payer','provider','patient','account','claim','record','entity')):continue
+                index=cols.index(column)
+                observed={value for row in result.get('rows')or[]
+                          if isinstance(value:=(row.get(column)if isinstance(row,dict)else row[index]),str)}
+                if set(values)<=observed:
+                    proofs.append({**origin,'kind':'executed_identifier_group','column':column,
+                        'identifiers':values,'literal':match.group(),
+                        'scope':'Exact received identity references only; no amount or cross-entity scalar authority.'})
+                    return ''
+        return match.group()
+    text=re.sub(r'(?<![\w.-])(?P<prefix>[A-Za-z][A-Za-z0-9_.-]*[-_])(?P<parts>\d+(?:/\d+)+)(?![\w/-]|\.\w)',identifiers,text)
+    replacements=[]
+    for match,period in prose_calendar_periods(text):
+        origin=next((p for p in context.get('calendar_periods',[])if all(p[k]==v for k,v in period.items())),None)
+        if origin:
+            proofs.append({**origin,'kind':'requested_calendar_period','literal':match.group(),
+                           'scope':'Requested calendar reference; does not establish source capture, event-clock correctness or observed counts.'})
+            replacements.append(match.span())
+    for start,end in reversed(replacements):text=text[:start]+text[end:]
     # Keep the quoted text in the answer. Only an exact native CASE label in
     # a computation-definition sentence leaves the measurement scanner.
     label_intro=re.compile(
@@ -1628,6 +1681,8 @@ def mask_prose_parameters(text,context,proofs):
                        'meaning':'NULL denotes missingness, distinct from the numeric value zero; no observed count is established.'})
         return 'NULL'
     text=re.sub(r'\bNULL\s*\(\s*not\s+(?:zero|0)\s*\)',null_definition,text,flags=re.I)
+    text=re.sub(r'\bNULL\s*(?:\(\s*(?:unknown|missing|unavailable)\s*\))?\s*,?\s*(?:not|rather\s+than)\s+(?:zero|0)\b',
+                null_definition,text,flags=re.I)
     def duration(m):
         proof=context['durations'].get((m['number'],m['unit'].lower().rstrip('s')))
         if proof is None:return m.group()
