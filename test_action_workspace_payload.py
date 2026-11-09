@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
-from clinical_core.agere.deliverables.action_center import inspection_view, encode_inspection, compose_view
+from clinical_core.agere.deliverables.action_center import inspection_view, encode_inspection, compose_view, evidence_view
 
 
 class ComposePayload(unittest.TestCase):
@@ -158,6 +158,117 @@ class WorkspacePayload(unittest.TestCase):
         restored=[{**{k:v for k,v in p.items()if k!='evidence_row_indices'},
             'evidence_rows':[shown['answer']['table'][i]for i in p['evidence_row_indices']]}for p in shown['patient_rows']]
         self.assertEqual(restored,before['context']['patient_rows']);self.assertEqual(record,before)
+
+    def deferred_record(self):
+        record=self.native_record()
+        for index,row in enumerate(record['context']['answer']['table']):
+            row.update(documents=[{'quote':'Exact β </script> source','unknown':None,'denial':False}],
+                encoded=' [ { "amount_cents": 0, "currency": "USD", "date": "2030-05-27" } ] ',
+                empty={},scalar_json='false')
+        record['context'].update(source_review_required=True,clinical_eligibility_established=False,
+            source_disposition={'status':'suspended'},patient_profiles={'patients':{'A':{'patient_id':'A','display_name':'Exact A'}}})
+        return record
+
+    def test_deferred_transport_preserves_native_bytes_counts_scalar_values_and_review_work(self):
+        record=self.deferred_record();before=json.dumps(record,ensure_ascii=False)
+        shown=inspection_view(record,compact_rows=True);c=shown['context'];m=c['workspace_evidence']
+        self.assertEqual(m['table_rows'],3);self.assertEqual(m['deferred_cells'],9)
+        self.assertEqual(len(c['patient_rows']),3)
+        for old,row in zip(record['context']['answer']['table'],c['answer']['table']):
+            self.assertEqual(set(old),set(row))
+            for key in ('patient_id','account_id','amount_cents','source','scalar_json'):self.assertEqual(old[key],row[key])
+            for key in ('documents','encoded','empty'):self.assertIn('$agere_deferred',row[key])
+        for key in ('stale','invalidated','source_review_required','clinical_eligibility_established','source_disposition','patient_profiles'):
+            self.assertEqual(c[key],record['context'][key])
+        self.assertEqual(shown['items'],record['items']);self.assertEqual(shown['workflow'],record['workflow'])
+        self.assertEqual(evidence_view(record,binding=m['binding'],patient_id='A')['workspace_hydration']['patient'],record['context']['patient_rows'][0])
+        full=evidence_view(record,binding=m['binding'])['workspace_hydration']
+        self.assertEqual(full['table'],record['context']['answer']['table'])
+        self.assertEqual(inspection_view(record)['context']['answer'],record['context']['answer'])
+        self.assertEqual(json.dumps(record,ensure_ascii=False),before)
+
+    def test_hydration_rejects_changed_source_authority_or_evidence_and_unknown_patients(self):
+        record=self.deferred_record();binding=inspection_view(record,compact_rows=True)['context']['workspace_evidence']['binding']
+        for field,value in (('stale',False),('source_review_required',False),('supports_patient_work',True),
+                            ('source',{'source_digest':'different'}),('dependencies',{'derivation':'changed'})):
+            changed=copy.deepcopy(record);changed['context'][field]=value
+            with self.subTest(field=field),self.assertRaises(ValueError):evidence_view(changed,binding=binding)
+        changed=copy.deepcopy(record);changed['context']['answer']['table'][0]['amount_cents']=True
+        with self.assertRaises(ValueError):evidence_view(changed,binding=binding)
+        changed=copy.deepcopy(record);changed['context']['patient_rows'][0]['new_source_scope']='different'
+        with self.assertRaises(ValueError):evidence_view(changed,binding=binding)
+        with self.assertRaises(ValueError):evidence_view(record,binding=binding,patient_id='foreign')
+        with self.assertRaises(ValueError):evidence_view(record,binding='')
+
+    def test_agent_history_projection_uses_the_same_complete_saved_evidence_contract(self):
+        record=self.deferred_record()
+        record['context']['investigation']={'tool_calls':[{'name':'query_sql','input':{'sql':'select received'},
+            'result':{'columns':['patient_id'],'rows':[['A']]}}]}
+        shown=inspection_view(record,compact_rows=True)['context']
+        self.assertEqual(shown['workspace_evidence']['deferred_cells'],9)
+        self.assertEqual(shown['patient_rows'][0]['evidence_row_indices'],[0,1])
+        self.assertNotIn('tool_calls',shown['investigation'])
+        full=evidence_view(record,binding=shown['workspace_evidence']['binding'])['workspace_hydration']
+        self.assertEqual(full['table'],record['context']['answer']['table'])
+
+    @unittest.skipUnless(shutil.which('node'),'Node is required for browser evidence hydration checks')
+    def test_browser_complete_search_and_patient_hydration_are_bound_and_exact(self):
+        record=self.deferred_record();shown=inspection_view(record,compact_rows=True)
+        binding=shown['context']['workspace_evidence']['binding']
+        script=Path('clinical_core/agere/deliverables/action_center.js').read_text()
+        restore='function restoreWorkspaceRows(record) {'+script.split('function restoreWorkspaceRows(record) {',1)[1].split('\nasync function api(',1)[0]
+        functions='function deferredCell(value) {'+script.split('function deferredCell(value) {',1)[1].split('\nfunction searchNeedsEvidence()',1)[0]
+        renderer=next(line for line in script.splitlines()if line.startswith('const esc ='))+'\nfunction detailValue(value) {'+script.split('function detailValue(value) {',1)[1].split('\nfunction detailFields(',1)[0]
+        checks=r'''
+const assert=require('node:assert/strict');
+const input=JSON.parse(require('node:fs').readFileSync(0,'utf8'));
+const shown=restoreWorkspaceRows(input.shown), before=JSON.stringify(shown);
+const patient=mergeSavedEvidence(shown.context,input.patient,'A');
+assert.deepEqual(patient,input.native.context.patient_rows[0]);
+const full=mergeSavedEvidence(shown.context,input.full);
+assert.deepEqual(full.patient_rows,input.native.context.patient_rows);
+assert.deepEqual(full.answer.table,input.native.context.answer.table);
+assert.equal(full.workspace_evidence.complete,true);
+assert.equal(full.source_review_required,true);assert.equal(full.stale,true);assert.equal(full.invalidated,true);
+assert.equal(JSON.stringify(shown),before);
+const literal={'$agere_deferred':{schema:'saved-evidence-cell/1',row:0,column:'source',kind:'object',entries:1}};
+assert.ok(detailValue(literal).includes('<pre>'),'Complete literal source objects remain inspectable even if they resemble transport metadata');
+assert.ok(detailValue(literal).includes('saved-evidence-cell/1'));
+for(const kind of ['binding','context','derivation','scalar','null','wrong_domain','missing','membership','duplicate','container_count']) {
+  const bad=structuredClone(input.full);
+  if(kind==='binding')bad.binding='changed';
+  if(kind==='context')bad.native_context_id='foreign';
+  if(kind==='derivation')bad.context_derivation='changed';
+  if(kind==='scalar')bad.table[0].amount_cents=true;
+  if(kind==='null')bad.table[2].source=null;
+  if(kind==='wrong_domain')bad.table[0].account_id='foreign';
+  if(kind==='missing')delete bad.table[0].source;
+  if(kind==='membership')bad.patient_rows[0].patient_id='foreign';
+  if(kind==='duplicate')bad.patient_rows[0].evidence_row_indices=[0];
+  if(kind==='container_count')bad.table[0].documents=[];
+  assert.throws(()=>mergeSavedEvidence(shown.context,bad),Error,kind);
+}
+let data=shown,evidenceFlight=null,requests=0;
+const patientEvidence=new Map();let release;
+async function api() {requests++;return await new Promise(resolve=>{release=resolve;});}
+(async()=>{
+  const a=ensureEvidence(),b=ensureEvidence();
+  assert.equal(requests,1,'Concurrent search keystrokes share one full saved-evidence read');
+  release({workspace_hydration:input.full});await Promise.all([a,b]);
+  assert.deepEqual(data.context.answer.table,input.native.context.answer.table);
+  await ensureEvidence();assert.equal(requests,1,'Complete evidence is reused');
+  data=shown;
+  const old=ensureEvidence();data={...shown};
+  release({workspace_hydration:input.full});
+  await assert.rejects(old,/refreshed/);
+  assert.equal(data.context.workspace_evidence.complete,false);
+  console.log('Exact detail/search hydration, ten mismatch cases, deduplicated search and refresh race passed');
+})().catch(error=>{console.error(error);process.exitCode=1;});
+'''
+        payload={'native':record,'shown':shown,'full':evidence_view(record,binding=binding)['workspace_hydration'],
+                 'patient':evidence_view(record,binding=binding,patient_id='A')['workspace_hydration']}
+        result=subprocess.run(['node','-e',restore+'\n'+functions+'\n'+renderer+'\n'+checks],input=json.dumps(payload),text=True,capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
 
     def test_nonmatching_or_extra_patient_evidence_keeps_its_complete_original_rows(self):
         for row in ({'patient_id':'A','amount_cents':999},{'patient_id':'A','amount_cents':True}):

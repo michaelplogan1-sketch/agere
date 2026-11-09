@@ -96,6 +96,85 @@ def _patient_row_indices(context):
     return encoded
 
 
+def _evidence_binding(context, indices):
+    """Bind deferred values to the saved answer and its current authority guards."""
+    from ...contracts import digest
+    keys=('id','question','original_question','source','dependencies','answer',
+          'patient_ids','patient_profiles','synthetic','clinical_eligibility_established',
+          'stale','invalidated','source_disposition','source_review_required',
+          'dependency_validation','supports_patient_work','context_policy_identity')
+    return digest({**{key:context.get(key) for key in keys},'patient_evidence_indices':indices})
+
+
+def _workspace_rows(record, native, compact_rows):
+    """Defer containers, never identities, scalar values, rows or review gates.
+
+    This is an opt-in transport representation, not a smaller analytical cohort.
+    Every deferred cell has an explicit native location; detail/search fetches
+    read that same saved context without executing the analysis again.
+    """
+    import json
+    from urllib.parse import urlencode
+    if not compact_rows or not(native.get('dependencies')or{}).get('derivation'):return record
+    indices=_patient_row_indices(native)
+    if indices is None:return record
+    shown={**record['context'],'patient_rows':indices,'patient_row_encoding':{
+        'schema':'answer-row-indices/1','table':['answer','table'],
+        'native_context_id':native['id'],
+        'context_derivation':native['dependencies']['derivation']}}
+    table=(native.get('answer')or{}).get('table')
+    if not all(isinstance(row,dict)for row in table):return {**record,'context':shown}
+    pending=[]
+    for index,row in enumerate(table):
+        for column,value in row.items():
+            structured=value
+            if isinstance(value,str):
+                try:structured=json.loads(value)
+                except (ValueError,TypeError):continue
+            if isinstance(structured,(dict,list)):
+                kind=('json_'if isinstance(value,str)else '')+('array'if isinstance(structured,list)else 'object')
+                pending.append((index,column,kind,len(structured)))
+    if pending:
+        binding=_evidence_binding(native,indices)
+        projected=[dict(row)for row in table]
+        for index,column,kind,count in pending:
+            projected[index][column]={'$agere_deferred':{
+                'schema':'saved-evidence-cell/1','row':index,'column':column,
+                'kind':kind,'entries':count}}
+        query={'context':native['id'],'view':'evidence','binding':binding}
+        shown.update(answer={**shown['answer'],'table':projected},workspace_evidence={
+            'schema':'saved-workspace-evidence/1','binding':binding,
+            'native_context_id':native['id'],
+            'context_derivation':native['dependencies']['derivation'],
+            'table_rows':len(table),'deferred_cells':len(pending),
+            'complete':False,'url':'/api/stack/action-context?'+urlencode(query)})
+    return {**record,'context':shown}
+
+
+def evidence_view(record, *, binding, patient_id=None):
+    """Complete exact saved values for one patient or full-text search.
+
+    Source validation remains in the normal action-context inspection path.
+    Changed source dispositions/authority/answer bytes cannot be hydrated into
+    an older browser view, even if a caller reuses the same context identifier.
+    """
+    context=record['context']
+    indices=_patient_row_indices(context)
+    if indices is None:raise ValueError('Saved evidence references are unavailable. Inspect the native answer.')
+    if not binding or binding!=_evidence_binding(context,indices):
+        raise ValueError('Saved evidence or its source status changed. Refresh the workspace before loading details.')
+    result={'schema':'saved-workspace-hydration/1','binding':binding,
+            'native_context_id':context['id'],
+            'context_derivation':context['dependencies']['derivation']}
+    if patient_id is not None:
+        matches=[p for p in context['patient_rows']if p['patient_id']==patient_id]
+        if len(matches)!=1:raise ValueError('Patient is not uniquely present in this saved answer.')
+        result['patient']=matches[0]
+    else:
+        result.update(table=context['answer']['table'],patient_rows=indices)
+    return {'workspace_hydration':result}
+
+
 def inspection_view(record, *, compact_rows=False):
     """Present a saved investigation without transferring duplicate native history.
 
@@ -118,12 +197,7 @@ def inspection_view(record, *, compact_rows=False):
             'schema':'native-investigation-workspace-view/3','kind':'native_graph',
             'native_context_id':context['id'],'native_view_url':native_url,
             'complete_native_history_retained':True,'clinical_acceptance_changed':False}}
-        indices=_patient_row_indices(context)if compact_rows else None
-        if indices is not None:
-            shown.update(patient_rows=indices,patient_row_encoding={
-                'schema':'answer-row-indices/1','table':['answer','table'],
-                'native_context_id':context['id'],'context_derivation':context['dependencies']['derivation']})
-        return {**record,'context':shown}
+        return _workspace_rows({**record,'context':shown},context,compact_rows)
     from ..clinical.backstop_agent import execution_review_graph
     graph = execution_review_graph(calls, context.get('answer'))
     # The verifier's graph may contain inline SQL/JSON and full intermediate
@@ -145,7 +219,7 @@ def inspection_view(record, *, compact_rows=False):
     contract = receipt.get('request_contract')
     if isinstance(contract, dict) and contract.get('kind') == 'checked_graph':
         receipt['request_contract'] = {**contract, 'graph': graph}
-    return {**record, 'context': {**context,
+    return _workspace_rows({**record, 'context': {**context,
         'graph': graph, 'results': None, 'planner_receipt': receipt,'answer':answer,
         'native_population_scopes':None,
         'investigation': {
@@ -163,7 +237,7 @@ def inspection_view(record, *, compact_rows=False):
             'complete_native_history_retained': True,
             'clinical_acceptance_changed': False,
         },
-    }}
+    }},context,compact_rows)
 
 
 def compose_view(path, result):

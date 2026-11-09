@@ -31,6 +31,8 @@ const num = n => Number(n || 0).toLocaleString();
 const date = value => value ? new Date(value).toLocaleDateString(undefined, {month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}) : 'Date unavailable';
 const initials = owner => String(owner || '').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
 let data = null, selected = new Set(), busy = false, currentView = 'overview', pageIndex = 0, intent = null, toastTimer, lastDialogTrigger;
+let evidenceFlight = null, searchError = '', detailRequest = 0;
+const patientEvidence = new Map();
 const viewNames = {overview:'Overview',cohort:'Your cohort',work:'Work board',studio:'Creative studio'};
 
 function restoreWorkspaceRows(record) {
@@ -57,6 +59,77 @@ async function api(url, body) {
   try { result = await response.json(); } catch (_) { throw Error('Could not read the server response. Try again.'); }
   if (!response.ok || result.error) throw Error(result.error || 'The request could not be completed.');
   return restoreWorkspaceRows(result);
+}
+function deferredCell(value) { return value?.$agere_deferred?.schema === 'saved-evidence-cell/1'; }
+function sameSavedValue(a,b) {
+  if (Object.is(a,b)) return true;
+  if (!a || !b || typeof a!=='object' || typeof b!=='object' || Array.isArray(a)!==Array.isArray(b)) return false;
+  const keys=Object.keys(a);
+  return keys.length===Object.keys(b).length && keys.every(k=>Object.hasOwn(b,k) && sameSavedValue(a[k],b[k]));
+}
+function mergeSavedEvidence(context, hydration, patientId) {
+  const m=context.workspace_evidence, fail=()=>{throw Error('Saved evidence does not match this workspace. Refresh before continuing.');};
+  if (!m || m.schema!=='saved-workspace-evidence/1' || hydration?.schema!=='saved-workspace-hydration/1'
+      || hydration.binding!==m.binding || hydration.native_context_id!==context.id
+      || hydration.context_derivation!==context.dependencies?.derivation) fail();
+  function checkRows(oldRows,rows) {
+    if (!Array.isArray(rows) || rows.length!==oldRows.length) fail();
+    oldRows.forEach((old,index)=>{
+      const row=rows[index];
+      if (!row || Object.keys(old).length!==Object.keys(row).length) fail();
+      Object.entries(old).forEach(([column,value])=>{
+        if (!Object.hasOwn(row,column)) fail();
+        if (!deferredCell(value)) { if (!sameSavedValue(value,row[column])) fail(); return; }
+        const ref=value.$agere_deferred;
+        if (ref.column!==column || !Number.isInteger(ref.row) || ref.row<0 || ref.row>=m.table_rows) fail();
+        let full=row[column];
+        if (ref.kind.startsWith('json_')) { try { full=JSON.parse(full); } catch (_) { fail(); } }
+        if (!full || typeof full!=='object' || (Array.isArray(full)?'array':'object')!==ref.kind.replace('json_','')
+            || Object.keys(full).length!==ref.entries) fail();
+      });
+    });
+  }
+  function checkPatient(old,p) {
+    if (!p || !sameSavedValue({...old,evidence_rows:null},{...p,evidence_rows:null})) fail();
+    checkRows(old.evidence_rows,p.evidence_rows);
+  }
+  if (patientId!==undefined) {
+    const patient=context.patient_rows.find(p=>p.patient_id===patientId);
+    if (!patient || hydration.patient?.patient_id!==patientId) fail();
+    checkPatient(patient,hydration.patient);
+    return hydration.patient;
+  }
+  if (!Array.isArray(hydration.table) || hydration.table.length!==m.table_rows) fail();
+  checkRows(context.answer.table,hydration.table);
+  const decoded=restoreWorkspaceRows({context:{...context,answer:{...context.answer,table:hydration.table},
+    patient_rows:hydration.patient_rows}}).context;
+  if (decoded.patient_rows.length!==context.patient_rows.length) fail();
+  context.patient_rows.forEach((p,index)=>checkPatient(p,decoded.patient_rows[index]));
+  return {...decoded,workspace_evidence:{...m,complete:true}};
+}
+async function ensureEvidence(patientId) {
+  const current=data, c=current.context, m=c.workspace_evidence;
+  if (!m || m.complete) return patientId===undefined ? c : c.patient_rows.find(p=>p.patient_id===patientId);
+  if (patientId!==undefined && patientEvidence.has(patientId)) return patientEvidence.get(patientId);
+  if (patientId===undefined && evidenceFlight?.context===c) return evidenceFlight.promise;
+  const promise=(async()=>{
+    const result=await api(m.url+(patientId===undefined?'':'&patient='+encodeURIComponent(patientId)));
+    if (data!==current) throw Error('The workspace refreshed while evidence was loading. Try again.');
+    const restored=mergeSavedEvidence(c,result.workspace_hydration,patientId);
+    if (patientId===undefined) data={...data,context:restored}; else patientEvidence.set(patientId,restored);
+    return restored;
+  })();
+  if (patientId===undefined) evidenceFlight={context:c,promise};
+  try { return await promise; }
+  finally { if (evidenceFlight?.promise===promise) evidenceFlight=null; }
+}
+function searchNeedsEvidence() { return !!($('search').value.trim() && data?.context.workspace_evidence && !data.context.workspace_evidence.complete); }
+async function searchPatients() {
+  pageIndex=0; searchError=''; showPatients();
+  if (!searchNeedsEvidence()) return;
+  try { await ensureEvidence(); }
+  catch (error) { searchError=error.message; }
+  showPatients();
 }
 function notify(message, error=false) {
   clearTimeout(toastTimer);
@@ -184,6 +257,7 @@ function detailFields(entries) {
   return '<dl class="detail-fields">'+entries.map(([k,v])=>'<div><dt>'+esc(pretty(k))+'</dt><dd>'+detailValue(v)+'</dd></div>').join('')+'</dl>';
 }
 function filteredPatients() {
+  if (searchNeedsEvidence()) return [];
   const q = $('search').value.trim().toLowerCase(), filter = $('cohort-filter').value;
   const assigned = new Set(data.items.filter(i => i.state !== 'cancelled').map(i => i.patient_id));
   return data.context.patient_rows.filter(p => {
@@ -197,6 +271,13 @@ function filteredPatients() {
 }
 function showPatients() {
   if (!data) return;
+  if (searchNeedsEvidence()) {
+    $('patients').innerHTML='<tr><td colspan="5"><div class="empty-state" role="status"><h3>'+(searchError?'Search needs the complete saved evidence':'Loading complete saved evidence for search…')+'</h3><p>'+esc(searchError || 'Searching every returned value, including source details. The saved cohort and your selections are preserved.')+'</p>'+(searchError?'<button class="button" data-retry-search>Retry search</button>':'')+'</div></td></tr>';
+    $('cohort-results').textContent='Search '+(searchError?'unavailable':'loading')+' · '+num(data.context.patient_rows.length)+' in saved answer';
+    $('page-caption').textContent='Complete evidence required for search';
+    ['previous-page','next-page','select-page','select-all'].forEach(id=>$(id).disabled=true);
+    updateSelection(); return;
+  }
   const rows = filteredPatients(), pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   pageIndex = Math.min(pageIndex, pages-1);
   const visible = rows.slice(pageIndex*PAGE_SIZE,(pageIndex+1)*PAGE_SIZE);
@@ -322,8 +403,14 @@ function render() {
   renderOverview(); showPatients(); showWork(); showIntent();
 }
 async function refresh() {
-  data = await api('/api/stack/action-context?context='+encodeURIComponent(key));
+  const prior=data, next=await api('/api/stack/action-context?context='+encodeURIComponent(key));
+  if (prior?.context.workspace_evidence?.binding===next.context.workspace_evidence?.binding) {
+    if (prior.context.workspace_evidence?.complete) next.context={...next.context,answer:{...next.context.answer,table:prior.context.answer.table},
+      patient_rows:prior.context.patient_rows,workspace_evidence:{...next.context.workspace_evidence,complete:true}};
+  } else patientEvidence.clear();
+  data=next; searchError=''; detailRequest++;
   render();
+  if (searchNeedsEvidence()) await searchPatients();
 }
 function program() {
   const p = data.programs[$('program').value];
@@ -338,11 +425,20 @@ function openReview() {
   $('review-error').textContent = '';
   openDialog('review-dialog');
 }
-function patientDetails(pid) {
-  const patient = data.context.patient_rows.find(p => p.patient_id === pid);
+async function patientDetails(pid) {
+  const request=++detailRequest;
+  let patient = data.context.patient_rows.find(p => p.patient_id === pid);
   if (!patient) return;
   $('detail-kicker').textContent = 'PATIENT / SAVED ANSWER';
   $('detail-title').textContent = patientName(pid);
+  $('detail-content').innerHTML='<p role="status">Loading complete saved patient evidence…</p>';
+  if (!$('detail-dialog').open) openDialog('detail-dialog');
+  try { patient=await ensureEvidence(pid); }
+  catch (error) {
+    if (request===detailRequest && $('detail-dialog').open) $('detail-content').innerHTML='<p class="form-error" role="alert">'+esc(error.message)+'</p><button class="button" data-inspect="'+esc(pid)+'">Retry loading evidence</button>';
+    return;
+  }
+  if (request!==detailRequest || !$('detail-dialog').open) return;
   const evidenceRows = patient.evidence_rows || [];
   const interpreted = new Set(data.context.answer.table_binding?.interpreted_columns || []);
   const details = evidenceRows.length ? evidenceRows.map((row,index) => {
@@ -352,9 +448,9 @@ function patientDetails(pid) {
   }).join('') : '<div class="patient-empty">This answer returned a patient identifier only. Clinical details and program suitability have not been assessed.<br><br>Ask for those details before making a clinical decision.</div>';
   const tasks = data.items.filter(i=>i.patient_id===pid);
   $('detail-content').innerHTML = '<p class="muted">'+esc(pid)+' · Snapshot '+esc(date(data.context.source.as_of))+'</p><p class="muted">Answer status: '+esc(pretty(data.context.answer.status))+(data.context.answer.verification?' · '+esc(pretty(data.context.answer.verification)):'')+'</p>'+details+(tasks.length?'<h3 style="font-size:16px;margin-top:25px">Review work</h3>'+tasks.map(taskCard).join(''):'')+'<div class="sheet-actions"><button class="button primary" data-select-detail="'+esc(pid)+'">'+(selected.has(pid)?'Remove from selection':'Add to selection')+'</button></div>';
-  if (!$('detail-dialog').open) openDialog('detail-dialog');
 }
 function editWork(id) {
+  detailRequest++;
   const item = data.items.find(i=>i.id===id);
   if (!item) return;
   $('detail-kicker').textContent = 'REVIEW WORK / '+(programNames[item.program] || item.program).toUpperCase();
@@ -453,6 +549,7 @@ document.addEventListener('click', event => {
   const startButton = event.target.closest('[data-start]'); if (startButton) { start(startButton.dataset.start); return; }
   const state = event.target.closest('[data-state-view]'); if (state) { $('work-filter').value=state.dataset.stateView; go('work'); return; }
   const patient = event.target.closest('[data-inspect]'); if (patient) { patientDetails(patient.dataset.inspect); return; }
+  if (event.target.closest('[data-retry-search]')) { searchPatients(); return; }
   const task = event.target.closest('[data-task]'); if (task) { editWork(task.dataset.task); return; }
   const selectDetail = event.target.closest('[data-select-detail]'); if (selectDetail) {
     const pid=selectDetail.dataset.selectDetail; selected.has(pid)?selected.delete(pid):selected.add(pid);
@@ -469,7 +566,7 @@ document.addEventListener('click', event => {
 $('show-evidence').onclick = evidence;
 $('cohort-evidence').onclick = evidence;
 $('explore-cohort').onclick = () => go('cohort');
-$('search').oninput = () => { pageIndex=0; showPatients(); };
+$('search').oninput = searchPatients;
 $('cohort-filter').onchange = () => { pageIndex=0; showPatients(); };
 $('patients').onchange = event => { const pid=event.target.dataset.patient; if (!pid) return; event.target.checked?selected.add(pid):selected.delete(pid); showPatients(); };
 $('select-page').onchange = event => { const checked=event.target.checked; filteredPatients().slice(pageIndex*PAGE_SIZE,(pageIndex+1)*PAGE_SIZE).forEach(p=>checked?selected.add(p.patient_id):selected.delete(p.patient_id)); showPatients(); };

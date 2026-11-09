@@ -934,10 +934,13 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         result={**answer_context.inspect(connected_stack.path,key),'allow_frontier':bool(connected_stack.allow_live and not recovery)}
                         from .deliverables.compose import context_review
                         result['independent_review']=context_review(connected_stack.path,result['context'])
-                        from .deliverables.action_center import inspection_view
+                        from .deliverables.action_center import inspection_view,evidence_view
                         view=params.get('view',[''])[0]
-                        if view not in ('','native'):raise ValueError('Unknown saved evidence view')
-                        if view!='native':
+                        if view not in ('','native','evidence'):raise ValueError('Unknown saved evidence view')
+                        if view=='evidence':
+                            result=evidence_view(result,binding=params.get('binding',[''])[0],
+                                patient_id=params.get('patient',[None])[0])
+                        elif view!='native':
                             result=inspection_view(result,compact_rows=self.headers.get('X-Agere-Response-View')=='workspace')
                     else:
                         if parsed.path.endswith('/action-deliverable') and params.get('format'):
