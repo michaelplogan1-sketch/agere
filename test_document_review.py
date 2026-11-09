@@ -18,7 +18,7 @@ class Review(unittest.TestCase):
         self.docs=[('r1','clinical_note','notes','office','2030-01-01',text,''),
                    ('r2','clinical_note','notes','office','2030-01-01',text,''),
                    ('r3','hie_document','hie_documents','letter','2030-02-01','No current affordability concern.','')]
-        self.tools=SimpleNamespace(db=self.db,stack=SimpleNamespace(path=self.root,ledger_path=self.root/'cost.sqlite3',receipts=self.root/'receipts',allow_live=True),
+        self.tools=SimpleNamespace(question='',native_calls=[],db=self.db,stack=SimpleNamespace(path=self.root,ledger_path=self.root/'cost.sqlite3',receipts=self.root/'receipts',allow_live=True),
             as_of='2030-05-27',in_scope=lambda p:None,continuation_identity=lambda:{'version':1},
             _texts=lambda p:self.docs if p=='A' else [],document_reviews=[],subtool_accounting={'new_paid_api_calls':0,'estimated_cost_usd':0.0})
         self.bodies=[]

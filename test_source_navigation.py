@@ -1,0 +1,159 @@
+"""Source expansion is additive and cannot clear prior uncertainty or change scope."""
+import copy
+import json
+import tempfile
+import unittest
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from clinical_core.contracts import digest
+from clinical_core.agere.clinical import source_navigation as N, backstop_agent as B
+
+
+def record(key, stream, **fields):
+    return {'record_id': key, 'patient_id': 'p1', 'source_table': stream,
+            'event_date': '2030-01-01', 'available_date': '2030-01-02',
+            '_warehouse_fields': list(fields), **fields}
+
+
+class Navigation(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
+        self.records = [record('root', 'diagnostic_access_contacts', order_record_id='order'),
+                        record('order', 'diagnostic_orders', supporting_record_ids=['review']),
+                        record('review', 'diagnostic_review_interviews'),
+                        record('other', 'diagnostic_review_interviews')]
+        self.docs = [('root', '', '', '', '2030-01-01', 'Original question context.', ''),
+                     ('order', '', '', '', '2030-01-02', 'New linked source.', ''),
+                     ('review', '', '', '', '', 'Undated linked account.', ''),
+                     ('other', '', '', '', '2030-01-02', 'Unexamined unrelated source.', '')]
+        self.questions = {'basis': {'question': 'What source basis is documented?',
+                                   'entity': {'kind': 'concept', 'id': 'basis', 'aliases': ['basis']},
+                                   'relation': 'documented_basis', 'subject': 'patient'}}
+        self.old = {'patient_id': 'p1', 'review_status': 'needs_review',
+                    'documents_reviewed': 1, 'review_limitations': '["uncertain meaning"]',
+                    'review_json': json.dumps({'basis': [{'record_id': 'root', 'quote': 'Original question context.'}]}),
+                    'review_unresolved_json': '[{"field":"basis","record_id":"root"}]'}
+        self.call = {'name': 'review_documents',
+                     'input': {'patient_ids': ['p1'], 'questions': self.questions,
+                               'source_scope': 'focused', 'date_from': '2030-01-01'},
+                     'result': {'result_view': 'agere_result_1', 'source_scope': 'focused',
+                                'rows': [self.old], 'coverage': [{'patient_id': 'p1', 'source_selection': {
+                                    'complete_chart_review': False, 'sources': [
+                                        {'record_id': 'root', 'date': '2030-01-01',
+                                         'document_text_digest': digest(self.docs[0][5]), 'selected_fields': ['basis']}]}}]}}
+        self.tools = SimpleNamespace(question='Investigate the recorded source basis.', as_of='2030-05-27',
+                                     native_calls=[self.call], document_reviews=[], stack=SimpleNamespace(path=Path(self.tmp.name)),
+                                     in_scope=lambda p: self.assertEqual(p, 'p1'),
+                                     _texts=lambda p: self.docs, continuation_identity=lambda: {'source': 1})
+        self.source = patch.object(N.record_context, 'received', side_effect=lambda *a: (
+            self.records, {'snapshot': {'as_of': self.tools.as_of}}))
+        self.source.start(); self.addCleanup(self.source.stop)
+
+    def plan(self):
+        return B.Tools._call(self.tools, {'name': 'plan_evidence_expansion',
+                                         'input': {'review_result_view': 'agere_result_1'}})
+
+    def test_real_tool_dispatch_expands_exact_links_and_keeps_unexamined_unknown(self):
+        before = copy.deepcopy(self.call)
+        plan = self.plan()
+        self.assertEqual(plan['additional_documents'], [
+            {'patient_id': 'p1', 'record_id': 'order'}, {'patient_id': 'p1', 'record_id': 'review'}])
+        units = {u['record_id']: u for u in plan['inventory'][0]['fields']['basis']['units']}
+        self.assertEqual(units['review']['stratum'], 'unknown_date')
+        self.assertEqual(units['other']['interpretation'], 'unexamined')
+        self.assertFalse(plan['absence_established'])
+        self.assertEqual(self.call, before)
+        self.assertEqual(N.load(self.tools, plan['id'])[0]['id'], plan['id'])
+        self.assertEqual(self.plan()['id'], plan['id'])
+
+    def test_source_text_and_link_changes_reject_reopen(self):
+        for kind in ('text', 'link'):
+            with self.subTest(kind=kind):
+                plan = self.plan(); old_docs, old_records = copy.deepcopy(self.docs), copy.deepcopy(self.records)
+                if kind == 'text': self.docs[1] = (*self.docs[1][:5], 'Changed source.', '')
+                else: self.records[0]['order_record_id'] = 'other'
+                with self.assertRaisesRegex(ValueError, 'changed'): N.load(self.tools, plan['id'])
+                self.docs, self.records = old_docs, old_records
+
+    def test_changed_question_or_field_contract_cannot_reuse_plan(self):
+        plan = self.plan(); self.tools.question = 'A different question'
+        with self.assertRaisesRegex(ValueError, 'scope'): N.load(self.tools, plan['id'])
+        self.tools.question = 'Investigate the recorded source basis.'
+        self.questions['basis']['subject'] = 'family_member'
+        with self.assertRaisesRegex(ValueError, 'changed'): N.load(self.tools, plan['id'])
+
+    def test_outside_window_and_future_reference_are_not_selected(self):
+        self.docs[1] = (*self.docs[1][:4], '2029-01-01', *self.docs[1][5:])
+        self.records[2]['available_date'] = '2031-01-01'
+        plan = self.plan()
+        self.assertEqual(plan['additional_documents'], [])
+        field = plan['inventory'][0]['fields']['basis']
+        self.assertIn('not_received_by_cutoff', {r['reason'] for r in field['reference_issues']})
+        self.assertFalse(field['absence_established'])
+
+    def test_bad_reference_does_not_imply_source_absence(self):
+        self.records[0]['order_record_id'] = 'missing'
+        plan = self.plan()
+        self.assertIsNone(plan['review_next'])
+        self.assertEqual(plan['inventory'][0]['fields']['basis']['reference_issues'][0]['reason'],
+                         'not_received_for_patient')
+        self.assertFalse(plan['absence_established'])
+
+    def test_reader_receives_only_new_sources_and_conserves_original_values(self):
+        plan = self.plan(); before = copy.deepcopy(self.call); seen = []
+        self.call['input']['field_patient_queries'] = {'basis': "SELECT patient_id FROM patient WHERE patient_id='p1'"}
+        plan = self.plan()
+        def reader(use):
+            seen.append(use)
+            return {'rows': [{'patient_id': 'p1', 'review_status': 'reviewed', 'documents_reviewed': 2,
+                              'review_limitations': '[]', 'review_json': json.dumps({'basis': [
+                                  {'record_id': 'review', 'quote': 'Undated linked account.'}]})}],
+                    'coverage': [{'patient_id': 'p1', 'unique_whole_documents': 2}],
+                    'accounting': {'new_paid_api_calls': 0}}
+        self.tools._call = reader
+        result = B.Tools._call(self.tools, {'name': 'review_documents', 'input': {'navigation_id': plan['id']}})
+        self.assertEqual(seen[0]['input']['record_ids'], ['order', 'review'])
+        self.assertEqual(seen[0]['input']['questions'], self.questions)
+        self.assertEqual(seen[0]['input']['field_patient_queries'], self.call['input']['field_patient_queries'])
+        self.assertNotIn('date_from', seen[0]['input'])  # undated source stays eligible, explicit IDs bind scope
+        row = result['rows'][0]
+        self.assertEqual(row['review_status'], 'needs_review')
+        self.assertEqual(row['review_limitations'], self.old['review_limitations'])
+        self.assertEqual(json.loads(row['review_unresolved_json']), json.loads(self.old['review_unresolved_json']))
+        self.assertEqual(json.loads(row['review_json'])['basis'][0], json.loads(self.old['review_json'])['basis'][0])
+        self.assertEqual(len(json.loads(row['review_json'])['basis']), 2)
+        self.assertEqual(len(result['coverage']), 2)
+        self.assertEqual(before['result'], self.call['result'])
+
+    def test_new_failure_reaches_standard_status_and_evidence_views(self):
+        self.old.update(review_status='reviewed', review_limitations='[]', review_unresolved_json='[]')
+        plan = self.plan()
+        self.tools._call = lambda use: {'rows': [{
+            'patient_id': 'p1', 'review_status': 'needs_review', 'documents_reviewed': 2,
+            'review_limitations': '["new source undecided"]',
+            'review_unresolved_json': '[{"field":"basis","record_id":"review"}]',
+            'review_json': '{"basis":[]}'}], 'coverage': []}
+        out = N.review(self.tools, plan['id']); row = out['rows'][0]
+        self.assertEqual(row['review_status'], 'needs_review')
+        self.assertIn('new source undecided', json.loads(row['review_limitations']))
+        self.assertEqual(json.loads(row['review_unresolved_json'])[0]['record_id'], 'review')
+        self.assertEqual(json.loads(row['source_findings_json'])[0]['record_id'], 'root')
+        self.assertEqual(self.tools.document_reviews[-1]['rows'], out['rows'])
+        self.assertEqual(self.tools.document_reviews[-1]['provider_receipts'], [])
+
+    def test_scope_override_and_partial_review_rejected_before_reader(self):
+        plan = self.plan()
+        with self.assertRaisesRegex(ValueError, 'only navigation_id'):
+            B.Tools._call(self.tools, {'name': 'review_documents',
+                                     'input': {'navigation_id': plan['id'], 'patient_ids': ['foreign']}})
+        self.call['result']['preview_only'] = True
+        with self.assertRaisesRegex(ValueError, 'Complete native'): self.plan()
+
+    def test_cross_patient_graph_rejected_before_new_reading(self):
+        self.records[1]['patient_id'] = 'foreign'
+        with self.assertRaisesRegex(ValueError, 'same-patient'): self.plan()
+
+
+if __name__ == '__main__': unittest.main()

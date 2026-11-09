@@ -103,6 +103,9 @@ TOOLS = [
      "earlier results and compute comparisons/deltas without repeating source scans. Keep dated source references intact: select date, record_id and quote from the same row, using ROW_NUMBER with explicit tie handling or retaining all tied rows; independent MAX(date)/MAX(record_id) cannot select a latest source. NULL dates remain unknown. Every executed SQL result is stored completely; the actor receives a reading preview. Incomplete input dependencies remain explicit and cannot support accepted calculations. drug_group_member(medicine_text, registered_group) selects registered medication groups, not an observed-key list; unclassifiable names return NULL. For normalized drug_key values use replace(drug_key,'_',' ').",
      'input_schema': {'type': 'object', 'properties': {'sql': {'type': 'string'},'complete':{'type':'boolean','description':'Compatibility option. SQL storage is always complete; only the actor reading projection is previewed.'},
         'read_all_rows':{'type':'boolean','description':'Read every returned row in model context, retaining the exact reading across investigation turns. Use when interpreting individual entities: select the relevant native values and dated findings rather than only counts. This changes the reading projection, never native storage, population or source completeness. Keep the final native evidence intact. If an actual service context boundary is reached, read explicit ordered partitions and account for every entity.'}}, 'required': ['sql'], 'additionalProperties': False}},
+    {'name': 'plan_evidence_expansion', 'description': 'Inspect a completed focused review before an exhaustive reread. Code preserves its exact question, population, fields and source versions, follows typed same-patient record references, and saves an additive plan for newly linked documents. Unexamined and unknown-date sources remain explicit; selection never establishes absence or clinical truth. Use review_next to read only new documents and retain every prior finding.',
+     'input_schema': {'type': 'object', 'properties': {'review_result_view': {'type': 'string'}},
+                      'required': ['review_result_view'], 'additionalProperties': False}},
     {'name': 'review_documents', 'description': 'Retrieve source candidates for each requested entity/relation, then review their whole document contexts. '
      'Use for population note review, open clinical reasons, medication reconciliation or other multi-field narrative questions. '
      'Supply the complete received patient IDs and a map of field names to precise questions. No patient or document sampling. '
@@ -120,6 +123,7 @@ TOOLS = [
      'Query the result_view to compose the final patient table; use json_extract/json_each for findings. All findings retain exact source quotes. source_clinicians_json retains literal signed correspondence roles. Unchanged fields reuse exact-source observations in explicit continuation; ask only missing/changed fields. Use record_ids for a source-specific repair. Use candidate_result_view to recheck every retained observation in a native review_json result against explicit entity/relation questions and complete original source contexts. This reviews candidate spans only and cannot establish whole-document absence or recall; retain the original result separately for audit.',
      'input_schema': {'type':'object','properties':{'patient_ids':{'type':'array','items':{'type':'string'}},
           'assertion_result_view':{'type':'string','description':'Use alone. A complete native qualifier-account result_view first checks every source-bound tuple. Its assertion_source_review result interprets rejected categorical proposals; its assertion_source_interpretation result continues only new unresolved work. Code binds every original account/patient/source; no scope overrides. The interpreted result or a complete one-parent literal/JSON SQL projection can supply table_from_tool.'},
+          'navigation_id':{'type':'string','description':'Use only this argument to consume a saved plan_evidence_expansion result. Code reads newly linked documents, retaining the exact prior findings, population, field contracts and unresolved states.'},
           'patient_query_sql':{'type':'string','description':'Preferred for a population: a read-only SELECT returning every patient_id, e.g. SELECT patient_id FROM a governed phenotype or cohort view. Avoid transcribing IDs.'},
           'record_ids':{'type':'array','items':{'type':'string'},'description':'Optional exact received source IDs for targeted repair. Reviews only these records, never a complete-patient absence claim.'},
           'candidate_result_view':{'type':'string','description':'Existing complete result_view with patient_id and review_json. Recheck all observations for the requested bound fields against their complete source documents; no whole-document absence or recall claim. Incompatible with record/date filters.'},
@@ -127,7 +131,8 @@ TOOLS = [
           'source_scope':{'enum':['focused','all'],'default':'focused'},
           'exhaustive_reason':{'type':'string','description':'Required for source_scope=all: identify the unresolved requirement and why focused retrieval or exact-source expansion cannot settle it.'},
           'field_patient_queries':{'type':'object','additionalProperties':{'type':'string'},'description':'Requested field to read-only patient query over native results. A conditional narrative field is reviewed only for those patients; every patient remains in the final population.'}},
-          'oneOf':[{'required':['assertion_result_view'],'maxProperties':1},
+          'oneOf':[{'required':['navigation_id'],'maxProperties':1},
+                   {'required':['assertion_result_view'],'maxProperties':1},
                    {'required':['questions','patient_ids'],'not':{'anyOf':[{'required':['assertion_result_view']},{'required':['patient_query_sql']}]}},
                    {'required':['questions','patient_query_sql'],'not':{'anyOf':[{'required':['assertion_result_view']},{'required':['patient_ids']}]}}],
           'additionalProperties':False}},
@@ -201,6 +206,7 @@ has already declined this question, so it is yours to answer completely and corr
   For patient names and demographic profile fields, use read_patient_profiles and join its result_view by exact patient_id.
   The semantic patient table does not contain every received profile field. Do not report names unavailable based only on its schema.
   For narrative gaps, call review_documents with the complete population, precise entity/relation bindings and focused source scope.
+  Before expanding a focused review to the whole chart, use plan_evidence_expansion on its result_view. Its saved review_next reads newly linked sources while preserving earlier findings. Unexamined sources remain unknown; a plan or an empty expansion never proves absence.
   Supply field_patient_queries for conditional requirements, using executed native eligibility predicates. Review only relevant
   fields for each patient. Read whole matching source contexts; keep searched and unreviewed coverage distinct. An empty retrieval
   is not chart-wide absence: expand the exact field's aliases/source records or explicitly request exhaustive coverage when needed.
@@ -534,7 +540,7 @@ class Tools:
                 'patient_profile_reader':hashlib.sha256((Path(__file__).resolve().parents[1]/'deliverables'/'patient_evidence.py').read_bytes()).hexdigest(),
                 'explicit_tool_quota':MAX_TOOLS, 'native_sql_contract':NATIVE_SQL_CONTRACT,
                 'executor_code':{name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-                                 for name in ('backstop_agent.py','clarification.py','analyst_context.py','semantic_docs.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','drug_classes.py','note_evidence.py')},
+                                 for name in ('backstop_agent.py','clarification.py','analyst_context.py','semantic_docs.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','drug_classes.py','note_evidence.py','source_navigation.py')},
                 'analytical_code':analysis_graph.code_identity(),'component_releases':component_learning.active_identity()}
 
     def _call(self, use):
@@ -600,7 +606,15 @@ class Tools:
                 out['actor_reading']={'mode':'complete_rows','rows_digest':digest(out['rows']),
                                       'columns_digest':digest(out.get('columns'))}
             return out
+        if name == 'plan_evidence_expansion':
+            from .source_navigation import prepare
+            return prepare(self, **args)
         if name == 'review_documents':
+            if 'navigation_id' in args:
+                if set(args) != {'navigation_id'}:
+                    raise ValueError('Navigation binds the original source/population/fields; supply only navigation_id')
+                from .source_navigation import review as review_navigation
+                return review_navigation(self, args['navigation_id'])
             if 'assertion_result_view' in args:
                 if set(args)!={'assertion_result_view'}:
                     raise ValueError('Assertion review binds its complete native source/population; supply only assertion_result_view')

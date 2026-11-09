@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-08T23:35:47.474869+00:00",
+  "updated_at": "2026-11-09T00:25:31.831618+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -602,8 +602,8 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Final finite G3 ordinary-entry decision remains: separate concrete demonstrated wiring failures from current source/model uncertainty, independent qualification and missing inputs. Q14native scope corrected and current saved followup works, but fresh original-question automatic entry and46restored subjects documentary interpretation are not claimed. Full25case/MVP/model/clinical/customer acceptance remains false; do not substitute test counts or repeat successful campaigns.",
       "engineering_current_status": "Exact current package/archive/install/nativeHTTP/ordinary saved-cohort followup delivered.9dedicated engineering predicates pass. Full25ordinary semantic/automatic-entry acceptance is not established; partial/unknown cases retained.",
-      "next_action": "G3/WP4 final finite ordinary-entry disposition. Exact current local release8662e88b is SEALED: package-v1 passed checkpoint/archive/install/check(890.33s), archived-http-v2 reopens Q15(1646rows) and corrected Q14(513rows) exactly/providersdisabled(50.30s), and restored-main-v2 normal POSTcompose saved-cohort count returns513/partial with original source unknowns/0providers(10.57s). MainappPID19428/session18252 active59a447af, code/config exactly equal to package. All9 dedicated engineering predicates pass; this is NOT full25case/MVP/model/clinical/customer qualification. All25fixedcases/tenareas and162hashed case evidence refs retained; fullqueue/ordinary-all25 answer-rate/cost-per-accepted remain unestablished. Q14scope omission fixed/operator+SQL guards/46restored/original467rows exact; native repair and saved followup are disclosed, not a fresh original-Q14 automatic-entry pass. NO provider/build/training job or source freeze. NEXT make ONE bounded G3 exit decision from the sealed current assessment and case-specific receipts: identify any concrete remaining ordinary/conversational-handler implementation failure separately from runtime source/model uncertainty, independent qualification and missing source inputs. Do not rerun passed campaigns, source votes, package or evidence scans, or restamp old answers. Only a located measured wiring defect justifies another product increment; otherwise record the finite engineering candidate boundary and exact qualification/input dependencies rather than inventing more components or research. Keep G3active/fullqueuefalse until that decision is supported; prior remaining_acceptance text is superseded by current scoped delivery. Preserve Q09/Q23exact definitions, Q16staffing/service duration, Q19qualified predictor/negative capture/calibration, Q14unreviewed restored sources/interrupted verdict, Q20/Q21uncertain semantics without located fault, Q24blocked visual QA, independent clinical/actuarial/source/model/comparator and customer identity/rights/deployment dependencies. No new caps/agents/chats/services/whole-question replays/research/gating. Quiet continuation ACTIVE.",
-      "latest_current_release_decision": "artifacts/agere-final-ordinary-entry-2026-11-08/current-release-delivery-receipt.json"
+      "next_action": "G3/WP4 workspace delivery construction: bounded exit decision artifacts/agere-final-ordinary-entry-2026-11-08/G3-exit-decision-v1.json withholds full25ordinary/MVP/clinical acceptance. New actual behavior:46internal source-only review tasks queued/reopened for restored Q14subjects; UI513cohort/46tasks, incomplete-answer care gate visible,0providers/no external care. Normal workspace packet eagerly contains61.22MBanswer JSON, including57.25MBin two documentary-receipt columns; retained gzip32.41MB. This is a concrete overview delivery construction bottleneck, not a new analytical/clinical fault. NEXT modify existing deliverables/action_center.py projection and action_center.js hydration (service.py only if view negotiation needs it): initial overview/workboard must carry all513identities/counts/46tasks/partial+source guards and exact detail counts while bulk source details load from the existing saved context only when needed. Full-text search/selected patient detail must hydrate complete exact values before use; deferred data must never look absent. Keep default/native inspection backward compatible, original context immutable, source/value/domain/date/clinical gates intact, no new population/document/output caps or source/model campaign. Verify retained actual513row packet and ordinary browser overview/selected detail against unchanged complete native values, task ownership, source status and all69169attempt rows. Preserve release8662e88b as known-good recovery; mark changes candidate until real API/browser proof. One isolated connected metadata delivery increment; do not expand research or perform unchanged campaigns. G3active/fullqueuefalse; qualification/input/Q24/customer dependencies remain explicit. Mainapp19428/session18252 active59a447af; NO frozen job. QuietcontinuationACTIVE.",
+      "latest_current_release_decision": "artifacts/agere-final-ordinary-entry-2026-11-08/G3-exit-decision-v1.json"
     },
     {
       "id": "G5",
@@ -681,29 +681,26 @@
     }
   ],
   "checkpoint": {
-    "kind": "exact_current_package_restore_and_native_followup_delivered",
+    "kind": "native_evidence_navigation_candidate_ready_for_ordinary_check",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Corrected financial scope persists through exact archive/installation/current API and the normal conversational saved-cohort count. All original data and partial/unverified meanings survive restore.",
+    "user_behavior_delta": "Candidate normal tools now offer additive typed-reference source expansion and existing-reader continuation; prior findings and new uncertainties retained. Main app not activated.",
     "measured_failure_reduction": {
-      "financial_omitted_patients_before": 46,
-      "after": 9,
-      "original467rows_exact": true,
-      "current513row_scope_and1646appointment_rows_archived_exact": true,
-      "dedicated_engineering_predicates_supported_before": 8,
-      "not_a_product_completion_percentage": true,
-      "new_provider_calls": 0
+      "native_baseline_documents": 1,
+      "linked_documents_added": 3,
+      "linked_structured_records_reported": 8,
+      "source_document_inventory": 149,
+      "provider_calls_native_wiring_fixture": 0,
+      "new_uncertainty_standard_status_guard": "passing"
     },
     "evidence": [
-      "artifacts/agere-final-ordinary-entry-2026-11-08/current-release-delivery-receipt.json",
-      "artifacts/agere-final-ordinary-entry-2026-11-08/package-v1/receipt.json",
-      "artifacts/agere-final-ordinary-entry-2026-11-08/archived-http-v2/receipt.json",
-      "artifacts/agere-final-ordinary-entry-2026-11-08/restored-main-v2/receipt.json",
-      "artifacts/agere-final-ordinary-entry-2026-11-08/executable-release-assessment-v2.json",
-      "artifacts/agere-final-ordinary-entry-2026-11-08/fixed-case-current-disposition-check.json"
+      "artifacts/agere-core-completion-2026-11-09/claude-review-v1/review-run.json",
+      "artifacts/agere-core-completion-2026-11-09/claude-code-review-v1/review-run.json",
+      "artifacts/agere-core-completion-2026-11-09/native-wiring-v1/receipt.json",
+      "artifacts/agere-core-completion-2026-11-09/navigation-regressions-v3.log"
     ],
-    "remaining_gap": "One bounded final G3 ordinary-entry exit decision and explicit source/input/qualification/customer dependencies; no full25/MVP acceptance inferred.",
-    "next_action": "G3/WP4 final finite ordinary-entry disposition. Exact current local release8662e88b is SEALED: package-v1 passed checkpoint/archive/install/check(890.33s), archived-http-v2 reopens Q15(1646rows) and corrected Q14(513rows) exactly/providersdisabled(50.30s), and restored-main-v2 normal POSTcompose saved-cohort count returns513/partial with original source unknowns/0providers(10.57s). MainappPID19428/session18252 active59a447af, code/config exactly equal to package. All9 dedicated engineering predicates pass; this is NOT full25case/MVP/model/clinical/customer qualification. All25fixedcases/tenareas and162hashed case evidence refs retained; fullqueue/ordinary-all25 answer-rate/cost-per-accepted remain unestablished. Q14scope omission fixed/operator+SQL guards/46restored/original467rows exact; native repair and saved followup are disclosed, not a fresh original-Q14 automatic-entry pass. NO provider/build/training job or source freeze. NEXT make ONE bounded G3 exit decision from the sealed current assessment and case-specific receipts: identify any concrete remaining ordinary/conversational-handler implementation failure separately from runtime source/model uncertainty, independent qualification and missing source inputs. Do not rerun passed campaigns, source votes, package or evidence scans, or restamp old answers. Only a located measured wiring defect justifies another product increment; otherwise record the finite engineering candidate boundary and exact qualification/input dependencies rather than inventing more components or research. Keep G3active/fullqueuefalse until that decision is supported; prior remaining_acceptance text is superseded by current scoped delivery. Preserve Q09/Q23exact definitions, Q16staffing/service duration, Q19qualified predictor/negative capture/calibration, Q14unreviewed restored sources/interrupted verdict, Q20/Q21uncertain semantics without located fault, Q24blocked visual QA, independent clinical/actuarial/source/model/comparator and customer identity/rights/deployment dependencies. No new caps/agents/chats/services/whole-question replays/research/gating. Quiet continuation ACTIVE."
+    "remaining_gap": "Ordinary controller/real model invocation and source fidelity not yet established. Candidate not sealed/activated. Full25 ordinary acceptance and independent/input/customer dependencies unchanged.",
+    "next_action": "G3/WP4 connected native evidence expansion candidate implemented. Claude architecture/code reviews completed; true new-failure status propagation fixed; unproven input-shape concerns verified by actual Tools/reader source preparation.76targeted checks pass. Actual currentP5002 source wiring (abstaining reader fixture, no semantic qualification) retains1baseline document, adds3typed-linked documents, reports8linked structured records separately across149source documents, reopens and rejects changed question, preserves all69169workflow attempts/source. Existing document_review/span_repair/model_policy producer files byte-exact. NEXT one new ordinary compose-handler question for this source-linked behavior in a fresh process, no injected source selections/answers/actions; mainapp19428 remains known-good59a447af pending acceptance. Inspect owned ordinary-v1receipt before any duplicate run; never edit source during it. Then assess actual trace/cost/fidelity, fix located integration failures only and activate with workflow proof. No originalQ14/full-chart or unchanged source-vote campaign; all25/tenareas remain. UI payload optimization deferred; G5/input/Q24/customer dependencies separate."
   },
   "decisions": [
     {
@@ -5808,10 +5805,28 @@
       "decision": "Seal one exact current package and native saved-scope followup; preserve full25case/tenarea partial dispositions and qualification boundaries. Do not equate9dedicated mechanical predicates with fullproduct readiness.",
       "evidence": "artifacts/agere-final-ordinary-entry-2026-11-08/current-release-delivery-receipt.json",
       "scope_impact": "No acceptance area removed, no provider/source campaign repeated, no clinical/model/customer claim. Final G3ordinary-entry exit judgment remains explicitly active."
+    },
+    {
+      "at": "2026-11-08T23:56:29.962445+00:00",
+      "decision": "Do not invent new analytics components or rerun source votes. Current source-review handoff works; continue independent engineering on measured unnecessary eager workspace delivery of bulk source JSON.",
+      "evidence": "artifacts/agere-final-ordinary-entry-2026-11-08/G3-exit-decision-v1.json",
+      "scope_impact": "Existing requested product usability/delivery scope only; no acceptance area removed or qualification promoted. Correct duplicate generic after checkpoint key into named independent measurements; financial omission is0, supported engineering predicates9."
+    },
+    {
+      "at": "2026-11-09T00:08:16.177749+00:00",
+      "decision": "Prioritize connected core intelligence over unstarted workspace hydration after explicit user correction; obtain bounded Claude feedback, then build.",
+      "reason": "Mike explicitly warns of small-fix focus and requests completion using existing research/mathematics/classical code and qualified models. Latest instruction authorizes Claude consultation without routine gating.",
+      "scope_impact": "All ten areas and25fixedcases retained; no rewrite/new finish criterion. Measured UI payload defect preserved for later. No product source edit or gate acceptance from this decision."
+    },
+    {
+      "at": "2026-11-09T00:14:13.977498+00:00",
+      "decision": "Adopt native residual evidence navigation; defer learned navigation until an actual marginal-value failure justifies it.",
+      "basis": "Bounded independent Claude critique plus actual ordinary path inspection: focused_documents lexical selector, whole-source field screen, exact record_ids reader already exist. No new category plan API required. Explicit references provide a native baseline for missing intermediate escalation.",
+      "scope_impact": "Tenareas/all25 retained; new connected evidence acquisition increment. Scores cannot establish truth/absence. Old source reader producer files left unchanged; new integration remains candidate until real workflow proof. Research files absent from recovered checkout were located read-only under original repository research, never Documents."
     }
   ],
   "unsealed_work": {
-    "status": "exact_current_engineering_candidate_delivered_final_G3_case_disposition_remaining",
+    "status": "source_review_handoff_delivered_workspace_eager_evidence_payload_located",
     "product_commit": "abcddf6d55fa57aa8886cf337917ed1291e79251",
     "product_fix_commit": "5ae7e2b4f2e524be373b81474ee56fd0695fd3e3",
     "receipt": "artifacts/agere-Q06-current-original-2026-11-07/context-storage-delivery-receipt.json",
@@ -7492,7 +7507,17 @@
     "current_executable_acceptance": "artifacts/agere-final-ordinary-entry-2026-11-08/executable-release-assessment-v2.json",
     "current_release_id": "8662e88b1acdb539fa682ff2555f6c9ee9989789f1d29c72fb71983aca530c3b",
     "dedicated_engineering_predicates_passed": 9,
-    "full25ordinary_acceptance": false
+    "full25ordinary_acceptance": false,
+    "Q14_source_review_handoff": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/source-review-handoff-v1/receipt.json",
+    "current_G3_exit_decision": "artifacts/agere-final-ordinary-entry-2026-11-08/G3-exit-decision-v1.json",
+    "workspace_payload_diagnosis": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/workspace-payload-diagnosis-v1/receipt.json",
+    "native_navigation_candidate": {
+      "status": "implemented_not_activated",
+      "native_wiring_receipt": "artifacts/agere-core-completion-2026-11-09/native-wiring-v1/receipt.json",
+      "checks": 76,
+      "ordinary_check": "not_started",
+      "main_app_product": "59a447af"
+    }
   },
   "current_visual_request": {
     "status": "completed",
@@ -7528,7 +7553,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3/WP4 final finite ordinary-entry disposition. Exact current local release8662e88b is SEALED: package-v1 passed checkpoint/archive/install/check(890.33s), archived-http-v2 reopens Q15(1646rows) and corrected Q14(513rows) exactly/providersdisabled(50.30s), and restored-main-v2 normal POSTcompose saved-cohort count returns513/partial with original source unknowns/0providers(10.57s). MainappPID19428/session18252 active59a447af, code/config exactly equal to package. All9 dedicated engineering predicates pass; this is NOT full25case/MVP/model/clinical/customer qualification. All25fixedcases/tenareas and162hashed case evidence refs retained; fullqueue/ordinary-all25 answer-rate/cost-per-accepted remain unestablished. Q14scope omission fixed/operator+SQL guards/46restored/original467rows exact; native repair and saved followup are disclosed, not a fresh original-Q14 automatic-entry pass. NO provider/build/training job or source freeze. NEXT make ONE bounded G3 exit decision from the sealed current assessment and case-specific receipts: identify any concrete remaining ordinary/conversational-handler implementation failure separately from runtime source/model uncertainty, independent qualification and missing source inputs. Do not rerun passed campaigns, source votes, package or evidence scans, or restamp old answers. Only a located measured wiring defect justifies another product increment; otherwise record the finite engineering candidate boundary and exact qualification/input dependencies rather than inventing more components or research. Keep G3active/fullqueuefalse until that decision is supported; prior remaining_acceptance text is superseded by current scoped delivery. Preserve Q09/Q23exact definitions, Q16staffing/service duration, Q19qualified predictor/negative capture/calibration, Q14unreviewed restored sources/interrupted verdict, Q20/Q21uncertain semantics without located fault, Q24blocked visual QA, independent clinical/actuarial/source/model/comparator and customer identity/rights/deployment dependencies. No new caps/agents/chats/services/whole-question replays/research/gating. Quiet continuation ACTIVE.",
+  "next_action": "G3/WP4 connected native evidence expansion candidate implemented. Claude architecture/code reviews completed; true new-failure status propagation fixed; unproven input-shape concerns verified by actual Tools/reader source preparation.76targeted checks pass. Actual currentP5002 source wiring (abstaining reader fixture, no semantic qualification) retains1baseline document, adds3typed-linked documents, reports8linked structured records separately across149source documents, reopens and rejects changed question, preserves all69169workflow attempts/source. Existing document_review/span_repair/model_policy producer files byte-exact. NEXT one new ordinary compose-handler question for this source-linked behavior in a fresh process, no injected source selections/answers/actions; mainapp19428 remains known-good59a447af pending acceptance. Inspect owned ordinary-v1receipt before any duplicate run; never edit source during it. Then assess actual trace/cost/fidelity, fix located integration failures only and activate with workflow proof. No originalQ14/full-chart or unchanged source-vote campaign; all25/tenareas remain. UI payload optimization deferred; G5/input/Q24/customer dependencies separate.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
