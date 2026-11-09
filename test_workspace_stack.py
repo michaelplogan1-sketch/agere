@@ -189,8 +189,19 @@ class WorkspaceStackTests(unittest.TestCase):
         self.assertEqual(result['workspace_decline']['operation'], 'forecast')
         self.assertIn('Missing input for forecast', result['workspace_decline']['missing'])
         self.assertEqual(result['answer']['status'], 'unsupported')
+        self.assertEqual(result['question'],'Forecast next year')
+        self.assertIsNone(result['answer']['count'])
+        self.assertIsNone(result['answer']['patient_ids'])
+        self.assertIsNone(result['answer']['value'])
+        self.assertFalse(result['clinical_execution_authorized'])
+        self.assertEqual(result['new_paid_api_calls'],0)
+        self.assertEqual(result['answer']['missing'],[result['workspace_decline']['missing']])
+        again=stack.run_graph(graph,question='Forecast next year')
+        self.assertEqual(again['answer'],result['answer'])
+        self.assertEqual(again['source_digest'],result['source_digest'])
+        self.assertEqual(again['workspace_decline'],result['workspace_decline'])
 
-    def test_offline_full_pipeline_answers_with_an_engine_and_no_hosted_call(self):
+    def test_offline_full_pipeline_preserves_the_shared_native_definition_without_hosted_work(self):
         from clinical_core.agere.clinical import together
         stack = workspace_stack.stack_for(self.ws, encoder=False)
         sent = []
@@ -203,11 +214,13 @@ class WorkspaceStackTests(unittest.TestCase):
         with patch.object(together, '_run_analyst', watch):
             out = together.compose_together(stack, 'How many patients have diabetes?')
         self.assertEqual(out['new_paid_api_calls'], 0)
-        self.assertIn(out['planner_receipt']['route'], ('local_compiler', 'exact_question_cache'))
+        self.assertEqual(out['question'],'How many patients have diabetes?')
         self.assertEqual(out['answer']['count'], 10)
         self.assertTrue(all(s['new_paid_api_calls'] == 0 for s in sent))  # the offline sender refused; nothing was sent
+        self.assertTrue(out['graph']['nodes'])
+        self.assertFalse(out['clinical_execution_authorized'])
 
-    def test_ask_full_pipeline_reconciles_engine_path_and_hybrid_core(self):
+    def test_current_shared_plan_keeps_the_same_native_scope_under_legacy_specialist_settings(self):
         calls = []
 
         def fake_send(body):
@@ -218,25 +231,28 @@ class WorkspaceStackTests(unittest.TestCase):
         def factory():
             yield fake_send
         env = {'AGERE_HOSTED_SQL': 'off', 'AGERE_ROUTER': 'off', 'AGERE_METRIC_ROUTER': 'off'}
-        # specialists first (default): the compiler claims the question, so no language-model call is made
+        # The current public entry delegates to shared_planner. The old hybrid
+        # preference cannot bypass its native definition and scope checks.
         with patch.dict(os.environ, env):
             out = self.ws.ask('How many patients have diabetes?', answer_type='count', send_factory=factory, live=False)
-        self.assertEqual((out['answer'], out['decision']), ({'count': 10}, 'fast_unchanged'))
-        self.assertIn('local_compiler', out['interpretation'])
+        self.assertEqual(out['answer'], {'count': 10})
+        self.assertEqual(out['pipeline'],'full')
+        self.assertEqual(out['new_paid_api_calls'],0)
         self.assertEqual(calls, [])
-        # with AGERE_SPECIALISTS_FIRST=off both paths run and must agree
+        # This legacy setting no longer requests an unnecessary second reading
+        # from a model for a complete shared native count.
         with patch.dict(os.environ, {**env, 'AGERE_SPECIALISTS_FIRST': 'off'}):
             out = self.ws.ask('How many patients have diabetes?', answer_type='count', send_factory=factory, live=False)
         self.assertEqual(out['pipeline'], 'full')
         self.assertEqual(out['answer'], {'count': 10})
-        self.assertIn('local_compiler', out['interpretation'])
-        self.assertTrue(calls)  # the hybrid core ran inside together with the workspace's sender
-        self.assertEqual(out['decision'], 'agree')  # two independent paths (engine graph, hybrid core) give 10
+        self.assertEqual(out['new_paid_api_calls'],0)
+        self.assertEqual(calls, [])
         last = json.loads((self.ws.dir / 'questions.jsonl').read_text().splitlines()[-1])
         self.assertEqual(last['pipeline'], 'full')
 
-    def test_unclaimed_question_uses_frontier_sql_and_reports_actual_model(self):
+    def test_ambiguous_population_requires_clarification_before_hosted_work(self):
         from clinical_core.agere.clinical import together
+        from clinical_core.agere.clinical.question_input import QuestionNotUnderstood,failure
         calls = []
         @contextmanager
         def factory():
@@ -244,16 +260,24 @@ class WorkspaceStackTests(unittest.TestCase):
                 calls.append(body['model'])
                 return count_reply(AS_OF)
             yield send
-        deferred = {'route': 'deferred_to_analyst', 'answer': None}
         stack = workspace_stack.stack_for(self.ws, encoder=False, send_factory=factory)
-        with patch.dict(os.environ, {'AGERE_HYBRID_MODEL': '', 'AGERE_HYBRID_ESCALATION_MODEL': ''}), \
-                patch.object(stack, '_compose', return_value=deferred), \
-                patch.object(together, '_compiled_engine', return_value=[]):
-            result = together.compose_together(stack, 'Count the delivered fixture population.', answer_type='count')
-        self.assertEqual(result['answer']['count'], 30)
-        self.assertEqual(calls, ['claude-opus-5-5'] * 3)
-        self.assertEqual(result['together']['analyst']['model'], 'claude-opus-5-5')
-        self.assertEqual(result['together']['hybrid']['models']['analyst'], 'claude-opus-5-5')
+        with self.assertRaises(QuestionNotUnderstood)as raised:
+            together.compose_together(stack, 'Count the delivered fixture population.', answer_type='count')
+        self.assertIn('original question was preserved',str(raised.exception))
+        self.assertFalse(failure(raised.exception)['data_absence_established'])
+        with self.assertRaises(QuestionNotUnderstood):
+            self.ws.ask('Count the delivered fixture population.',send_factory=factory,live=False)
+        from clinical_core.agere import intent_router,workspace_api
+        original=intent_router.handle
+        def offline(ws,text,**kwargs):return original(ws,text,**{**kwargs,'live':False})
+        with patch.object(intent_router,'handle',offline):
+            status,response=workspace_api.handle('POST','/api/workspaces/'+self.ws.slug+'/ask',
+                {'question':'Count the delivered fixture population.'},root=self.root)
+        self.assertEqual(status,400)
+        self.assertIn('QuestionNotUnderstood',response['error'])
+        self.assertIn('original question was preserved',response['error'])
+        self.assertNotIn('hybrid core needs live models',response['error'])
+        self.assertEqual(calls, [])
 
     def test_ask_falls_back_to_the_hybrid_core(self):
         @contextmanager

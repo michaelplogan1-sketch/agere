@@ -637,8 +637,13 @@ class Workspace:
             if not ok and pipeline == 'full':
                 raise ValueError(f'Full pipeline unavailable on {self.slug}: {reason}')
             if ok:
+                from ..clinical.question_input import QuestionNotUnderstood
                 try:
                     out = self._ask_full(question, answer_type=answer_type, send_factory=send_factory, live=live)
+                except QuestionNotUnderstood:
+                    # A scope/meaning guard is a request for clarification, not
+                    # an engine outage that another model may reinterpret.
+                    raise
                 except Exception as exc:  # noqa: BLE001 - heal, don't block: the hybrid core still answers
                     if pipeline == 'full':
                         raise

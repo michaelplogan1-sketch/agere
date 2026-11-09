@@ -2134,7 +2134,7 @@ def execute(stack, plan, *, question=None):
         result['question']=question
         result['answer']=build_answer(plan, results, memberships, question)
         if fusion['fused']: result['plan_optimizer'] = fusion
-        if plan['nodes'][0]['operation'] == 'query_population':
+        if plan['nodes'] and plan['nodes'][0]['operation'] == 'query_population':
             result['answer']['computed_as'] = {**result['answer'].get('computed_as', {}),
                 'source_request_id': plan['nodes'][0]['parameters']['contract']['id'],
                 'operation': plan['nodes'][-1]['operation'], 'layer': 'shared_request_engine',
@@ -2147,7 +2147,7 @@ def execute(stack, plan, *, question=None):
         result['answer']['benchmark']=benchmark_references(result['answer'], question, plan['nodes'][-1]['operation'] if plan.get('nodes') else None)
         # Shared requests may ask for several independent analytical outputs.
         # Retain each answer instead of silently showing only the final engine.
-        if plan['nodes'][0]['operation'] == 'query_population' and len(plan['nodes']) > 2:
+        if len(plan['nodes']) > 2 and plan['nodes'][0]['operation'] == 'query_population':
             result['answers_by_node'] = {}
             for item in results[1:]:
                 subplan = {**plan, 'nodes': [plan['nodes'][0], item['node']]}
