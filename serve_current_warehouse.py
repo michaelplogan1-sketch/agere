@@ -1,11 +1,37 @@
 """Start a verified local connection, or inspect a separately restored checkpoint."""
 import argparse
+from contextlib import contextmanager
 import json
 import os
 import sqlite3
 from pathlib import Path
 from clinical_core.agere.local_release import ROOT, build_lock, validate_config
-from clinical_core.agere.service import serve
+from clinical_core.agere.model_policy import application_runtime
+
+
+def serve(*args, **kwargs):
+    # Apply role configuration before importing modules with runtime defaults.
+    from clinical_core.agere.service import serve as application_serve
+    return application_serve(*args, **kwargs)
+
+
+@contextmanager
+def runtime_preflight(environment):
+    """Check the selected policy before starting threads, then restore the caller.
+
+    In particular --check must evaluate the intended note-enrichment settings
+    without leaving those settings in the inspection process.
+    """
+    previous = {key: os.environ.get(key) for key in environment}
+    os.environ.update(environment)
+    try:
+        yield
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
 
 def validate_semantic_policy(stack):
     """Refuse an implicit enrichment rebuild in a connected live application."""
@@ -26,19 +52,29 @@ def main(argv=None):
     p.add_argument('--check', action='store_true', help='Validate configuration and identities without loading models')
     p.add_argument('--allow-live-stack', action='store_true')
     p.add_argument('--ledger', type=Path, help='Explicit provider ledger for this application; exact cache and usage share this store')
+    p.add_argument('--runtime-profile', choices=('economical', 'configured'),
+                   help='Default economical uses native/System One and hosted frontier roles; configured honors explicitly selected optional roles')
     a = p.parse_args(argv)
     config = validate_config(a.config)
+    runtime = application_runtime(config, profile=a.runtime_profile)
     output = Path(config['build'])
     recovery = config.get('recovery')
     if recovery and a.allow_live_stack:
         p.error('Restored checkpoints permit inspection only; live stack is unavailable')
     if a.allow_live_stack:
-        validate_semantic_policy(output / 'stack')
+        with runtime_preflight(runtime['environment']):
+            validate_semantic_policy(output / 'stack')
     # A configuration check must not alter request ownership, caches or usage.
     if a.check:
         print(json.dumps({'status': 'validated', 'build': str(output), 'recovery': recovery,
+                          'runtime': runtime,
                           'scope': 'Startup identity checks; not clinical/model qualification'}))
         return
+    if a.allow_live_stack and os.environ.get('AGERE_CLAUDE_TRANSPORT', 'subscription').strip().lower() != 'subscription':
+        raise ValueError('Live application requires Claude subscription transport; external Anthropic API is disabled')
+    if not recovery:
+        os.environ.update(runtime['environment'])
+        os.environ['AGERE_RUNTIME_PROFILE'] = runtime['profile']
     if a.ledger is not None:
         os.environ['AGERE_LEDGER_PATH'] = str(a.ledger.resolve())
     with build_lock(output):

@@ -1,6 +1,7 @@
 """Application startup must preserve request ownership and subscription routing."""
 import contextlib
 import io
+import json
 import os
 from pathlib import Path
 import sqlite3
@@ -23,7 +24,9 @@ class AppStartup(unittest.TestCase):
         stack=self.build/'stack';stack.mkdir()
         with sqlite3.connect(stack/'semantic.sqlite3') as db:
             db.execute('CREATE TABLE meta(key TEXT PRIMARY KEY,value TEXT)')
-            db.execute('INSERT INTO meta VALUES (?,?)',('postprocessing_identity',policy_identity()))
+            with S.runtime_preflight(S.application_runtime({})['environment']):
+                policy=policy_identity()
+            db.execute('INSERT INTO meta VALUES (?,?)',('postprocessing_identity',policy))
         self.selected=self.root/'selected.sqlite3';self.other=self.root/'other.sqlite3'
         for p in (self.selected,self.other):
             with contextlib.closing(BudgetLedger(p)) as ledger:ledger.reserve('in-flight','claude','model')
@@ -72,6 +75,65 @@ class AppStartup(unittest.TestCase):
     def test_recovery_cannot_enable_inference(self):
         self.config['recovery']={'mode':'inspection_only'}
         with contextlib.redirect_stderr(io.StringIO()),self.assertRaises(SystemExit):S.main(['--allow-live-stack'])
+        self.keys.assert_not_called();self.install.assert_not_called();self.serve.assert_not_called();self.unchanged()
+
+    def test_normal_entry_uses_economical_roles_despite_stale_inherited_experiments(self):
+        os.environ.update(AGERE_LOCAL_TYPED='on', AGERE_BOTTLED='on', AGERE_DOCUMENT_LOCAL_READERS='kev,d1')
+        resource=str(self.root/'qualified-students')
+        self.config['runtime']={'environment':{'AGERE_SYSTEM_ONE_STUDENTS':resource}}
+        def ready(*args, **kwargs):
+            self.assertEqual(os.environ['AGERE_RUNTIME_PROFILE'],'economical')
+            self.assertEqual(os.environ['AGERE_LOCAL_TYPED'],'off')
+            self.assertEqual(os.environ['AGERE_BOTTLED'],'off')
+            self.assertEqual(os.environ['AGERE_DOCUMENT_LOCAL_READERS'],'')
+            self.assertEqual(os.environ['AGERE_SYSTEM_ONE_STUDENT'],'on')
+            self.assertEqual(os.environ['AGERE_SYSTEM_ONE_STUDENTS'],resource)
+        self.serve.side_effect=ready
+        S.main(['--allow-live-stack','--ledger',str(self.selected)])
+        self.serve.assert_called_once();self.unchanged()
+
+    def test_configured_profile_preserves_explicit_optional_role_selection(self):
+        os.environ['AGERE_LOCAL_TYPED']='on'
+        self.config['runtime']={'environment':{'AGERE_DOCUMENT_LOCAL_READERS':'kev,d1'}}
+        S.main(['--runtime-profile','configured'])
+        self.assertEqual(os.environ['AGERE_RUNTIME_PROFILE'],'configured')
+        self.assertEqual(os.environ['AGERE_LOCAL_TYPED'],'on')
+        self.assertEqual(os.environ['AGERE_DOCUMENT_LOCAL_READERS'],'kev,d1')
+        self.keys.assert_not_called();self.install.assert_not_called();self.unchanged()
+
+    def test_check_reports_profile_without_mutating_environment(self):
+        self.config['runtime']={'environment':{'AGERE_LOCAL_TYPED':'on'}}
+        before=dict(os.environ);text=io.StringIO()
+        with contextlib.redirect_stdout(text):S.main(['--check'])
+        self.assertEqual(dict(os.environ),before)
+        self.assertEqual(json.loads(text.getvalue())['runtime']['environment']['AGERE_LOCAL_TYPED'],'off')
+        self.serve.assert_not_called();self.keys.assert_not_called();self.unchanged()
+
+    def test_recovery_inspection_does_not_apply_live_runtime_settings(self):
+        self.config['recovery']={'mode':'inspection_only'}
+        self.config['runtime']={'environment':{'AGERE_SYSTEM_ONE_STUDENTS':str(self.root/'different')}}
+        before=dict(os.environ)
+        S.main([])
+        self.assertEqual(dict(os.environ),before)
+        self.keys.assert_not_called();self.install.assert_not_called();self.unchanged()
+
+    def test_invalid_runtime_configuration_stops_before_credentials_or_service(self):
+        for runtime in [{'environment':{'ANTHROPIC_API_KEY':'must-not-be-accepted'}},
+                        {'profile':'invented'}, {'environment':{'AGERE_LOCAL_TYPED':True}},
+                        {'environment':{'AGERE_LOCAL_TYPED':'on\x00off'}}]:
+            with self.subTest(runtime=runtime):
+                self.config['runtime']=runtime;before=dict(os.environ)
+                with self.assertRaises(ValueError):S.main(['--allow-live-stack'])
+                self.assertEqual(dict(os.environ),before)
+                self.keys.assert_not_called();self.install.assert_not_called();self.serve.assert_not_called();self.unchanged()
+
+    def test_failed_semantic_preflight_restores_environment_and_keeps_guard(self):
+        os.environ['AGERE_NOTE_NER']='on';before=dict(os.environ)
+        with sqlite3.connect(self.build/'stack/semantic.sqlite3') as db:
+            db.execute("UPDATE meta SET value='changed' WHERE key='postprocessing_identity'")
+        with self.assertRaisesRegex(ValueError,'Semantic enrichment policy differs'):
+            S.main(['--check','--allow-live-stack'])
+        self.assertEqual(dict(os.environ),before)
         self.keys.assert_not_called();self.install.assert_not_called();self.serve.assert_not_called();self.unchanged()
 
 

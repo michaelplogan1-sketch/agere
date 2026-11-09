@@ -22,6 +22,61 @@ FAMILY = (HAIKU, SONNET, OPUS)
 ROLES = ('planner', 'writer', 'reviewer', 'judge', 'reconcile', 'analyst', 'interpreter')
 LADDER = (SONNET, OPUS)
 
+# Normal application entry uses the role selection exercised by the ordinary
+# source-navigation workflow. Availability of installed experimental weights is
+# separate from permission to load them. Exact execution reuse is unaffected.
+ECONOMICAL_RUNTIME = {
+    'AGERE_DOCUMENT_LOCAL_READERS': '',
+    'AGERE_LOCAL_TYPED': 'off', 'AGERE_LOCAL_TYPED_FALLBACK': 'off',
+    'AGERE_LOCAL_QWEN': 'off', 'AGERE_LOCAL_MODEL': 'off',
+    'AGERE_LOCAL_SQL': 'off', 'AGERE_LOCAL_NORMALIZER': 'off',
+    'AGERE_BOTTLED': 'off', 'AGERE_PROPOSER_ON': '',
+    'AGERE_DOCUMENT_REVIEW': 'typed_spans', 'AGERE_DOCUMENT_RANKING': 'off',
+    'AGERE_NOTE_NER': 'off', 'AGERE_THERAPY_BARRIERS_LLM': 'off',
+    'AGERE_SYSTEM_ONE_STUDENT': 'on', 'AGERE_NONFRONTIER_FIRST': 'on',
+    'AGERE_ANSWER_BUDGET_SECONDS': 'off', 'AGERE_BACKSTOP_SECONDS': 'off',
+}
+APPLICATION_RUNTIME_KEYS = frozenset(ECONOMICAL_RUNTIME) | {
+    'AGERE_CLAUDE', 'AGERE_ADAPTER_CANDIDATES', 'AGERE_SECOND_ENCODER',
+    'AGERE_SECOND_ENCODER_CACHE', 'AGERE_LEARNED_ROUTER',
+    'AGERE_RECURSIVE_IMPROVEMENT', 'AGERE_COMPONENT_LEARNING',
+    'AGERE_COMPONENT_RELEASE_ROOT', 'AGERE_SYSTEM_ONE_DISTILL',
+    'AGERE_SYSTEM_ONE_STUDENTS', 'AGERE_TRAINING_DIR',
+    'AGERE_EXECUTION_TRACE', 'AGERE_EXECUTION_SQL_TRACE',
+    'AGERE_LOCAL_INTERPRET_SECONDS', 'AGERE_QUANTITATIVE_ROLE_CHECK',
+    'HF_HUB_OFFLINE', 'TRANSFORMERS_OFFLINE', 'HF_HUB_DISABLE_TELEMETRY',
+    'TOKENIZERS_PARALLELISM', 'AGERE_COMPONENT_LEARNING_PLAN',
+    'AGERE_ANALYST_STATE', 'AGERE_DOCUMENT_CROSS_BATCH',
+    'AGERE_DOCUMENT_FRONTIER', 'AGERE_DOCUMENT_TYPED_ORDER',
+    'AGERE_BASE_MODEL', 'AGERE_ATOMIC_HOSTED_PLANNER',
+    'AGERE_ATOMIC_MAX_PATIENTS', 'AGERE_ANALYST_CONTEXT', 'AGERE_SYSTEM_ONE_WORKERS',
+}
+
+
+def application_runtime(config, *, profile=None):
+    """Pure, inspectable startup settings; credentials and process controls stay outside.
+
+    The configured profile preserves explicit operator choices. Selecting it is
+    required to opt into local generative/readers excluded by economical startup.
+    Resource paths remain explicit configuration, rather than inferred from an
+    installation layout or copied into another model/result store.
+    """
+    runtime = config.get('runtime', {})
+    if not isinstance(runtime, dict) or set(runtime) - {'profile', 'environment'}:
+        raise ValueError('runtime requires profile and an optional environment mapping')
+    name = profile or runtime.get('profile', 'economical')
+    if name not in ('economical', 'configured'):
+        raise ValueError('runtime profile must be economical or configured')
+    environment = runtime.get('environment', {})
+    if not isinstance(environment, dict) or set(environment) - APPLICATION_RUNTIME_KEYS:
+        raise ValueError('Unsupported runtime environment key; credentials and process controls are not runtime configuration')
+    if any(not isinstance(v, str) or '\x00' in v for v in environment.values()):
+        raise ValueError('Runtime environment values must be strings without null bytes')
+    environment = dict(environment)
+    if name == 'economical':
+        environment.update(ECONOMICAL_RUNTIME)
+    return {'profile': name, 'environment': environment}
+
 _DELIVERABLE = contextvars.ContextVar('agere_deliverable', default=False)
 _QUESTION = contextvars.ContextVar('agere_question_path', default=False)
 _RUNG = contextvars.ContextVar('agere_ladder_rung', default=0)

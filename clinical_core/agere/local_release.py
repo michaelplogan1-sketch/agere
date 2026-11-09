@@ -144,6 +144,8 @@ def validate_config(path, *, build_override=None):
     c = read(path)
     if c.get('schema') != 'active-healthcare-warehouse/1' or c.get('synthetic') is not True:
         raise ValueError('Supported synthetic warehouse configuration required')
+    from .model_policy import application_runtime
+    application_runtime(c)  # validate without changing the process environment
     configured_build = Path(c['build']).resolve()
     build = Path(build_override).resolve() if build_override is not None else configured_build
     if not build.is_dir():

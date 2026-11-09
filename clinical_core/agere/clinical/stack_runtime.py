@@ -24,6 +24,7 @@ class Stack:
     def metadata(self):
         from .analysis_graph import catalog
         return {'schema':VERSION,'synthetic':True,'retrieval':self.retriever.meta,
+                'runtime_profile':os.environ.get('AGERE_RUNTIME_PROFILE','configured'),
                 'local_retrieval_runtime':{
                     'encoder_weights_loaded':getattr(self.retriever.encoder,'weights_loaded',None),
                     'reranker_weights_loaded':getattr(self.retriever.reranker,'weights_loaded',None) if self.retriever.reranker else False,
