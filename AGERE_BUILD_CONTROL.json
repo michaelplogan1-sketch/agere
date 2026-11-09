@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-09T12:00:32.198933+00:00",
+  "updated_at": "2026-11-09T12:15:45.149664+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -681,26 +681,32 @@
     }
   ],
   "checkpoint": {
-    "kind": "low_memory_native_index_integrity_verified",
+    "kind": "low_memory_native_backend_verified",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Index integrity verification no longer materializes the full6.72GBfile; exact pinned values remain verified with models and server off.",
+    "user_behavior_delta": "Current snapshot metadata and guarded native SQL operate without loading retrieval encoder/reranker weights; exact cache hits also avoid tensor initialization.",
     "measured_failure_reduction": {
-      "whole_file_copy_bytes_removed": 6724337792,
-      "actual_hash_peak_traced_python_bytes": 2102857,
-      "verification_process_peak_rss_bytes": 47726592,
-      "vector_digest_exact": true,
+      "native_received_people": 4115,
+      "retrieval_encoder_weights_loaded": false,
+      "reranker_weights_loaded": false,
+      "torch_imported": false,
+      "transformers_imported": false,
+      "native_check_peak_rss_bytes": 193413120,
+      "native_check_seconds": 7.366276999935508,
       "new_provider_calls": 0,
-      "targeted_checks_passed": 9
+      "lazy_and_integrity_checks_passed": 27,
+      "app_startup_checks_passed": 6,
+      "total_distinct_focused_checks_passed": 33
     },
     "evidence": [
+      "artifacts/agere-core-completion-2026-11-09/lazy-native-v1/receipt.json",
+      "artifacts/agere-core-completion-2026-11-09/lazy-runtime-tests-final.log",
+      "artifacts/agere-core-completion-2026-11-09/lazy-app-startup-tests.log",
       "artifacts/agere-core-completion-2026-11-09/streamed-index-v1/receipt.json",
-      "artifacts/agere-core-completion-2026-11-09/streaming-integrity-tests-v1.log",
-      "artifacts/agere-core-completion-2026-11-09/reader-policy-receipt.json",
-      "artifacts/agere-core-completion-2026-11-09/native-wiring-v1/receipt.json"
+      "artifacts/agere-core-completion-2026-11-09/lazy-native-assessment.json"
     ],
-    "remaining_gap": "Lazy initialization/native lightweight app path and ordinary source-navigation workflow remain unverified. No full app/memory or clinical/model/MVP claim from isolated hashing.",
-    "next_action": "G3/WP4 low-memory native integrity increment verified with models/app off. Reused existing streamedSHA helper instead of full-file read_bytes in retrieval index construction/startup verification. Actual6724337792byte vector digest and dense mapping match unchanged pins in3.777s; peak traced Python hashing allocation2102857bytes, verification process peakRSS47726592bytes. No torch/transformers imported, no model/server/provider started, all69174workflow attempts exact.9targeted checks pass including real constructor with model fixtures, full vector retention, corruption and missing-pin rejection. No source sampling/caps/reindex or acceptance restamping. NEXT continue the same G3 runtime/ordinary gap with lazy local-model initialization in existing encoder/reranker boundaries: metadata, native SQL, source/evidence/work APIs should operate without loading weights; preserve exact model identities/cache keys and mandatory integrity checks, prove native/no-model behavior and relevant unchanged retrieval outputs before any heavy ordinary run. In parallel-independent work use disk-backed native analysis, evidence/decision/program contracts and approved hosted reasoning when needed. Existing193662fb ordinary source-navigation acceptance remains unestablished; do not restart all local models or repeat failed workflow unchanged. All25/tenareas/principal/October11baseline/known-good8662e88b intact; qualification/input/Q24/customer dependencies explicit. QuietcontinuationACTIVE."
+    "remaining_gap": "Native backend metadata/SQL and cache-only model paths demonstrated with zero loaded retrieval weights. Full HTTP/ordinary source-navigation and uncached production model parity remain unassessed. One old startup test fixture required its semantic-policy precondition; guard unchanged and6tests now pass. App/model servers remain off; full25 and G5/input/customer dependencies retained.",
+    "next_action": "G3/WP4 low-memory native backend now demonstrated. LocalEncoder/LocalReranker defer tensor/tokenizer/weight initialization; pinned identity formulas and cache keys preserved, delayed weight access rechecks full source pins, and cached vectors/scores/empty inputs need no tensor runtime. Existing Stack metadata reports retrieval weight state without triggering load. Actual current4115person snapshot metadata plus guarded native SQL completed7.366s at193413120byteprocesspeak, neither torch nor transformers imported, both model weights unloaded, source and all69174attempts exact.27lazy/cache/source-integrity/schema checks plus6startup transport/ownership checks pass. App/model servers remain off. NEXT complete same G3 source-navigation consumer through existing normal low-memory/hosted reasoning path: inspect shared_planner.compose planning=frontier and conversation public request support before invoking; retain all normal scope/source/quantity/final verification guards and all-attempt accounting. Do not add a bypass, inject source selections/answers or repeat the failed legacy all-reader route. Actual uncached production model parity remains unassessed; run a narrowly justified CPU comparison when that branch is needed, not broad training. Existing193662fb full ordinary navigation acceptance remains unestablished; low-memory native proof does not qualify it. All25/tenareas/principal/October11baseline/known-good8662e88b retained; qualification/input/Q24/customer dependencies separate. QuietcontinuationACTIVE; no new caps or routine gates."
   },
   "decisions": [
     {
@@ -5845,6 +5851,12 @@
       "decision": "Continue connected build without model startup; eliminate verified full-file hashing allocation first.",
       "basis": "Mike asks how to build without memory pressure. Actual vectors.npy6724337792bytes; constructor memory maps then calls Path.read_bytes for SHA256. Existing local_encoders._sha256 streams1MiB chunks with identical digest semantics.",
       "scope_impact": "Supporting current G3 ordinary/runtime gap; no architecture/model change, skipped source bytes, population/document/output/spend cap or new dependency. Model servers stay off; no completed ordinary acceptance inferred."
+    },
+    {
+      "at": "2026-11-09T12:15:45.149664+00:00",
+      "decision": "Continue source-navigation integration using the now-proven model-free native backend and existing hosted planning option where supported.",
+      "basis": "Real snapshot metadata plus native query returned4115with193MBprocesspeak; no torch/transformers imported.27checks preserve cache identity/source corruption guards; no inference/clinical quality inferred.",
+      "scope_impact": "Same G3 connected workflow; alltenareas/all25 retained. App not restarted. Untracked AGERE_STORAGE_PLAN.md preserved unmodified; no new capacity caps or instructions imported from that document."
     }
   ],
   "unsealed_work": {
@@ -7545,10 +7557,13 @@
       "checks_skipped": 1
     },
     "low_memory_integrity": {
-      "status": "verified_native_integrity_candidate_app_not_started",
+      "status": "native_backend_lazy_models_verified_candidate",
       "receipt": "artifacts/agere-core-completion-2026-11-09/streamed-index-v1/receipt.json",
       "checks": 9,
-      "model_weights_loaded": false
+      "model_weights_loaded": false,
+      "lazy_runtime_receipt": "artifacts/agere-core-completion-2026-11-09/lazy-native-v1/receipt.json",
+      "uncached_model_parity": "unassessed",
+      "assessment": "artifacts/agere-core-completion-2026-11-09/lazy-native-assessment.json"
     }
   },
   "current_visual_request": {
@@ -7585,7 +7600,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3/WP4 low-memory native integrity increment verified with models/app off. Reused existing streamedSHA helper instead of full-file read_bytes in retrieval index construction/startup verification. Actual6724337792byte vector digest and dense mapping match unchanged pins in3.777s; peak traced Python hashing allocation2102857bytes, verification process peakRSS47726592bytes. No torch/transformers imported, no model/server/provider started, all69174workflow attempts exact.9targeted checks pass including real constructor with model fixtures, full vector retention, corruption and missing-pin rejection. No source sampling/caps/reindex or acceptance restamping. NEXT continue the same G3 runtime/ordinary gap with lazy local-model initialization in existing encoder/reranker boundaries: metadata, native SQL, source/evidence/work APIs should operate without loading weights; preserve exact model identities/cache keys and mandatory integrity checks, prove native/no-model behavior and relevant unchanged retrieval outputs before any heavy ordinary run. In parallel-independent work use disk-backed native analysis, evidence/decision/program contracts and approved hosted reasoning when needed. Existing193662fb ordinary source-navigation acceptance remains unestablished; do not restart all local models or repeat failed workflow unchanged. All25/tenareas/principal/October11baseline/known-good8662e88b intact; qualification/input/Q24/customer dependencies explicit. QuietcontinuationACTIVE.",
+  "next_action": "G3/WP4 low-memory native backend now demonstrated. LocalEncoder/LocalReranker defer tensor/tokenizer/weight initialization; pinned identity formulas and cache keys preserved, delayed weight access rechecks full source pins, and cached vectors/scores/empty inputs need no tensor runtime. Existing Stack metadata reports retrieval weight state without triggering load. Actual current4115person snapshot metadata plus guarded native SQL completed7.366s at193413120byteprocesspeak, neither torch nor transformers imported, both model weights unloaded, source and all69174attempts exact.27lazy/cache/source-integrity/schema checks plus6startup transport/ownership checks pass. App/model servers remain off. NEXT complete same G3 source-navigation consumer through existing normal low-memory/hosted reasoning path: inspect shared_planner.compose planning=frontier and conversation public request support before invoking; retain all normal scope/source/quantity/final verification guards and all-attempt accounting. Do not add a bypass, inject source selections/answers or repeat the failed legacy all-reader route. Actual uncached production model parity remains unassessed; run a narrowly justified CPU comparison when that branch is needed, not broad training. Existing193662fb full ordinary navigation acceptance remains unestablished; low-memory native proof does not qualify it. All25/tenareas/principal/October11baseline/known-good8662e88b retained; qualification/input/Q24/customer dependencies separate. QuietcontinuationACTIVE; no new caps or routine gates.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",

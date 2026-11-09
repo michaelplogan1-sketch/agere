@@ -24,6 +24,10 @@ class Stack:
     def metadata(self):
         from .analysis_graph import catalog
         return {'schema':VERSION,'synthetic':True,'retrieval':self.retriever.meta,
+                'local_retrieval_runtime':{
+                    'encoder_weights_loaded':getattr(self.retriever.encoder,'weights_loaded',None),
+                    'reranker_weights_loaded':getattr(self.retriever.reranker,'weights_loaded',None) if self.retriever.reranker else False,
+                    'scope':'Retrieval encoder/reranker only; configured availability is separate from loaded weights.'},
                 'database_concurrency':self.database_concurrency,
                 'model_roles':self.model_roles(),
                 'operators':json.loads((self.path/'operators.json').read_text()),'allow_live':self.allow_live,

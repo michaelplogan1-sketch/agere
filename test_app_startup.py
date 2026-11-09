@@ -16,6 +16,14 @@ class AppStartup(unittest.TestCase):
     def setUp(self):
         t=tempfile.TemporaryDirectory();self.addCleanup(t.cleanup)
         self.root=Path(t.name).resolve();self.build=self.root/'build';self.build.mkdir()
+        # Live startup already requires a pinned materialized semantic policy.
+        # Supply that prerequisite so these transport/ownership controls reach
+        # their intended boundary; the production integrity guard stays intact.
+        from clinical_core.agere.clinical.semantic_layer import policy_identity
+        stack=self.build/'stack';stack.mkdir()
+        with sqlite3.connect(stack/'semantic.sqlite3') as db:
+            db.execute('CREATE TABLE meta(key TEXT PRIMARY KEY,value TEXT)')
+            db.execute('INSERT INTO meta VALUES (?,?)',('postprocessing_identity',policy_identity()))
         self.selected=self.root/'selected.sqlite3';self.other=self.root/'other.sqlite3'
         for p in (self.selected,self.other):
             with contextlib.closing(BudgetLedger(p)) as ledger:ledger.reserve('in-flight','claude','model')

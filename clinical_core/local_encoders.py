@@ -5,6 +5,7 @@ from contextlib import contextmanager
 import hashlib
 import json
 import sqlite3
+import threading
 import time
 from pathlib import Path
 
@@ -40,24 +41,91 @@ def verified_manifest(path):
     return manifest
 
 
-class LocalEncoder:
+class _LazyPinnedRuntime:
+    """Keep pinned metadata/cache access separate from loading model weights."""
+    def _runtime(self, path, *, encoder, threads=None):
+        self.path = Path(path)
+        self._encoder_runtime, self._threads = encoder, threads
+        self._model = self._tokenizer = self._torch = None
+        self._load_lock = threading.RLock()
+        config = json.loads((self.path / 'config.json').read_text())
+        if all(type(config.get(k)) is int and config[k] > 0
+               for k in ('hidden_size', 'max_position_embeddings')):
+            self.dimensions = config['hidden_size']
+            self._positions = config['max_position_embeddings']
+        else:
+            # Preserve support for configs whose AutoConfig supplies defaults.
+            # The current pinned BERT/Roberta models need no tensor imports here.
+            from transformers import AutoConfig
+            config = AutoConfig.from_pretrained(self.path, local_files_only=True, trust_remote_code=False)
+            self.dimensions = int(config.hidden_size)
+            self._positions = int(config.max_position_embeddings)
+
+    def _check_pinned_runtime(self):
+        if verified_manifest(self.path) != self.manifest:
+            raise ValueError('Pinned model changed since initialization')
+
+    @property
+    def weights_loaded(self):
+        return self._model is not None
+
+    @property
+    def torch(self):
+        with self._load_lock:
+            if self._torch is None:
+                import torch
+                if self._threads is not None:
+                    torch.set_num_threads(self._threads)
+                self._torch = torch
+            return self._torch
+
+    @property
+    def tokenizer(self):
+        with self._load_lock:
+            if self._tokenizer is None:
+                self._check_pinned_runtime()
+                self.torch  # retain the encoder's thread setup before tensor work
+                from transformers import AutoTokenizer
+                self._tokenizer = AutoTokenizer.from_pretrained(
+                    self.path, local_files_only=True, trust_remote_code=False)
+            return self._tokenizer
+
+    def _load_model(self):
+        from transformers import AutoModel, AutoModelForSequenceClassification
+        kwargs = {'local_files_only': True, 'trust_remote_code': False, 'dtype': self.torch.float32}
+        if self._encoder_runtime:
+            model = AutoModel.from_pretrained(self.path, attn_implementation='eager', **kwargs).eval()
+            model.to(self.device)
+        else:
+            model = AutoModelForSequenceClassification.from_pretrained(self.path, **kwargs).eval()
+        return model
+
+    @property
+    def model(self):
+        with self._load_lock:
+            if self._model is None:
+                # A delayed load must not consume changed on-disk weights under
+                # the identity verified when this object was constructed.
+                self._check_pinned_runtime()
+                model = self._load_model()
+                if (int(model.config.hidden_size) != self.dimensions or
+                        int(model.config.max_position_embeddings) != self._positions):
+                    raise ValueError('Loaded model configuration differs from pinned metadata')
+                self._model = model
+            return self._model
+
+
+class LocalEncoder(_LazyPinnedRuntime):
     def __init__(self, path, *, pooling, cache, threads=4):
-        import torch
-        from transformers import AutoModel, AutoTokenizer
         self.path = Path(path)
         self.manifest = verified_manifest(self.path)
         if pooling not in {"cls", "mean"}:
             raise ValueError("Unknown pooling")
         self.identity = digest({"manifest": self.manifest, "pooling": pooling, "version": 1})
         self.pooling = pooling
-        self.torch = torch
-        torch.set_num_threads(threads)
-        self.tokenizer = AutoTokenizer.from_pretrained(self.path, local_files_only=True, trust_remote_code=False)
-        self.model = AutoModel.from_pretrained(self.path, local_files_only=True,
-            trust_remote_code=False, attn_implementation="eager", dtype=torch.float32).eval()
+        self._runtime(self.path, encoder=True, threads=threads)
         self.device = "cpu"
-        self.model.to(self.device)
-        self.limit = int(self.model.config.max_position_embeddings)
+        self.limit = self._positions
         Path(cache).parent.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(cache)
         self.db.execute("CREATE TABLE IF NOT EXISTS encoder_vectors (key TEXT PRIMARY KEY, dimensions INTEGER NOT NULL, vector BLOB NOT NULL)")
@@ -94,7 +162,7 @@ class LocalEncoder:
 
     def _encode(self, texts, *, batch_size=4):
         if not texts:
-            return np.empty((0, self.model.config.hidden_size), dtype=np.float32)
+            return np.empty((0, self.dimensions), dtype=np.float32)
         keys = [digest([self.identity, text]) for text in texts]
         found, pending = {}, {}
         for key, text in zip(keys, texts):
@@ -104,7 +172,7 @@ class LocalEncoder:
             row = self.db.execute("SELECT dimensions,vector FROM encoder_vectors WHERE key=?", (key,)).fetchone()
             if row:
                 vector = np.frombuffer(row[1], dtype=np.float32).copy()
-                if vector.shape != (row[0],) or row[0] != self.model.config.hidden_size or not np.isfinite(vector).all():
+                if vector.shape != (row[0],) or row[0] != self.dimensions or not np.isfinite(vector).all():
                     raise ValueError("Invalid cached vector")
                 found[key] = vector
                 self.stats["cache_hits"] += 1
@@ -116,9 +184,10 @@ class LocalEncoder:
             tokenized = self.tokenizer([t for _, t in batch], padding=True, truncation=False, return_tensors="pt")
             if tokenized["input_ids"].shape[1] > self.limit:
                 raise ValueError("Overlength input; use explicit windows rather than truncation")
+            model = self.model  # materialize outside inference_mode, as before
             started = time.perf_counter()
             with self.torch.inference_mode():
-                hidden = self.model(**tokenized).last_hidden_state
+                hidden = model(**tokenized).last_hidden_state
                 if self.pooling == "cls":
                     vectors = hidden[:, 0]
                 else:
@@ -138,17 +207,12 @@ class LocalEncoder:
         return np.stack([found[key] for key in keys])
 
 
-class LocalReranker:
+class LocalReranker(_LazyPinnedRuntime):
     def __init__(self, path, *, cache):
-        import torch
-        from transformers import AutoModelForSequenceClassification, AutoTokenizer
         self.manifest = verified_manifest(path)
         self.identity = digest({"manifest": self.manifest, "runtime": "raw-logit-no-truncation/1"})
-        self.torch = torch
-        self.tokenizer = AutoTokenizer.from_pretrained(path, local_files_only=True, trust_remote_code=False)
-        self.model = AutoModelForSequenceClassification.from_pretrained(path, local_files_only=True,
-                         trust_remote_code=False, dtype=torch.float32).eval()
-        self.limit = min(2048, self.model.config.max_position_embeddings - 2)
+        self._runtime(path, encoder=False)
+        self.limit = min(2048, self._positions - 2)
         self.db = sqlite3.connect(cache)
         self.db.execute("CREATE TABLE IF NOT EXISTS reranker_scores (key TEXT PRIMARY KEY, score REAL NOT NULL)")
         self.db.commit()
@@ -173,9 +237,10 @@ class LocalReranker:
                 tokens = self.tokenizer(query, item["text"], return_tensors="pt", truncation=False)
                 if tokens["input_ids"].shape[1] > self.limit:
                     raise ValueError("Reranker input exceeds explicit compute/context bound; no truncation performed")
+                model = self.model
                 started = time.perf_counter()
                 with self.torch.inference_mode():
-                    score = float(self.model(**tokens).logits.reshape(-1)[0])
+                    score = float(model(**tokens).logits.reshape(-1)[0])
                 if not np.isfinite(score):
                     raise ValueError("Nonfinite reranking score")
                 self.stats["pairs_scored"] += 1
