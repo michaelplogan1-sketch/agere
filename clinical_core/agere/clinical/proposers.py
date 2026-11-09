@@ -1544,7 +1544,8 @@ def continue_from_artifact(stack, context_id, feedback=None):
     # This path re-investigates source objections; it does not authorize work.
     # Keep current source/policy checks while allowing the existing read-only
     # review mode to inspect the very assertion that needs repair.
-    context=A.load(stack.path,context_id,current=True,source_review=True)
+    context=(A.load_unfinished_for_review(stack.path,context_id)if feedback is None else
+             A.load(stack.path,context_id,current=True,source_review=True))
     question=context['question'];population=context['input_patient_ids']
     actions=[]
     for call in (context.get('investigation') or {}).get('tool_calls') or []:

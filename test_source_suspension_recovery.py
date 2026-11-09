@@ -64,7 +64,9 @@ class SourceSuspensionRecovery(unittest.TestCase):
    return {'status':'repair','repair_kind':'unresolved_verification','feedback':feedback,'retry_disposition':'retain_partial_until_new_evidence'}
   def forbidden(*a,**k):self.fail('No provider dispatch in this guard check')
   result=S.tool_loop('q','',[],forbidden,send=forbidden,model='fixture',max_tools=None,initial_calls=out['calls'],initial_answer=out['resume_draft'],review=review)
-  self.assertIn(feedback,result['answer']['limitations']);self.assertEqual(result['answer']['status'],'partial')
+  self.assertNotIn(feedback,result['answer']['limitations']);self.assertEqual(result['answer']['status'],'partial')
+  self.assertEqual(result['answer_reviews'][-1]['feedback'],feedback)
+  self.assertEqual(result['review_stopped'],'unresolved_coverage')
  def test_unrelated_reading_source_population_or_limitation_changes_cannot_refresh(self):
   for kind in ('reading','source','population','limitation','unavailable','unsuspended','new_assertion'):
    calls,outputs,cp,disposition=self.fixture();row=outputs[0]['rows'][0]

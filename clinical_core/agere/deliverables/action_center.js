@@ -157,6 +157,13 @@ function canChangeWork(program, item=null) {
   return (!data.context.stale || localReview) && !data.context.invalidated && data.context.source_disposition?.status !== 'unavailable'
     && (!data.context.source_review_required || program === 'evidence_review');
 }
+function canResumeInvestigation() {
+  const c=data.context;
+  // Read-only re-investigation has its own server guard; an invalidated answer
+  // remains blocked from work while its retained correction is reviewed.
+  return Boolean(c.investigation?.draft_resume_available && data.allow_frontier
+    && !c.stale && c.source_disposition?.status !== 'unavailable');
+}
 function generationLabel(d) {
   if (d.generation === 'saved_report') return 'Saved evidence report';
   return d.mockup || d.mode === 'reference_example' ? 'Local template' : d.generation === 'frontier' || d.mode === 'composed' ? 'Frontier generated' : 'Generation not recorded';
@@ -359,7 +366,7 @@ function render() {
     resume = document.createElement('button'); resume.id = 'resume-investigation'; resume.className = 'btn';
     $('back-to-analysis').parentElement.append(resume);
   }
-  resume.hidden = !c.investigation?.draft_resume_available || !data.allow_frontier || !canChangeWork('custom');
+  resume.hidden = !canResumeInvestigation();
   resume.textContent = 'Continue analysis';
   resume.onclick = () => run(async () => {
     resume.disabled = true; resume.textContent = 'Reviewing saved work…';

@@ -1683,6 +1683,11 @@ def mask_prose_parameters(text,context,proofs):
     text=re.sub(r'\bNULL\s*\(\s*not\s+(?:zero|0)\s*\)',null_definition,text,flags=re.I)
     text=re.sub(r'\bNULL\s*(?:\(\s*(?:unknown|missing|unavailable)\s*\))?\s*,?\s*(?:not|rather\s+than)\s+(?:zero|0)\b',
                 null_definition,text,flags=re.I)
+    # An explicit missingness/value contrast does not assert an observed zero.
+    # The original claim still needs source review; nearby quantities do not
+    # inherit this typing, and entity prose never uses this global mask.
+    text=re.sub(r'\b(?:unknown|missing|unavailable|unrecorded)\s*(?:,\s*not|rather\s+than)\s+(?:zero|0)\b',
+                null_definition,text,flags=re.I)
     def duration(m):
         proof=context['durations'].get((m['number'],m['unit'].lower().rstrip('s')))
         if proof is None:return m.group()

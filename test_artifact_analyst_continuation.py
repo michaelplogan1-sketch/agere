@@ -135,11 +135,14 @@ class Continuation(unittest.TestCase):
  def test_saved_draft_resume_preserves_scope_and_reexecutes_before_review(self):
   from clinical_core.agere.gateway import BudgetLedger
   from clinical_core.agere.clinical import decision_context as D
-  original=copy.deepcopy(self.result);original['workflow']=[]
+  original=copy.deepcopy(self.result);original['workflow']=[];original['graph']={'nodes':[]}
   original['planner_receipt']={'request_contract':{'population':[]}}
   call=original['investigation']['tool_calls'][0]
   call.update(actor_callback_id='actual-callback')
   call['result']['result_view']='agere_result_1'
+  from clinical_core.agere.clinical.backstop_agent import NATIVE_SQL_CONTRACT
+  call['result'].update(native_sql_contract=NATIVE_SQL_CONTRACT,executed_query=call['input']['sql'],
+                        columns=['patient_id','events'],truncated=False)
   draft={'status':'partial','answer_type':'table','table_from_tool':'agere_result_1','headline':'Still under review'}
   ctx={'question':self.question,'patient_scope':[]}
   checkpoint={'source':A.source_identity(self.path),'context':ctx,'draft':draft,'draft_digest':H.digest(draft),'review_contexts':[]}
@@ -187,5 +190,64 @@ class Continuation(unittest.TestCase):
   with patch.object(P,'Cascade') as cascade,self.assertRaisesRegex(ValueError,'no current unfinished draft'):
    P.continue_from_artifact(self.stack,key)
   cascade.assert_not_called()
+
+ def draft_with_rejected_returned_answer(self,mutation=None):
+  original=copy.deepcopy(self.result);original['workflow']=[]
+  self.draft_fixture_sequence=getattr(self,'draft_fixture_sequence',0)+1
+  original['answer']['fixture_case']=self.draft_fixture_sequence
+  original['graph']={'nodes':[]}
+  draft={'status':'partial','headline':'Corrected source basis','table':[]}
+  checkpoint={'source':A.source_identity(self.path),'context':{'question':self.question},
+              'draft':draft,'draft_digest':H.digest(draft),'review_contexts':[]}
+  original['investigation']['recovery_checkpoint']=checkpoint
+  if mutation:mutation(original,checkpoint)
+  return A.capture(self.path,self.question,original)['id']
+
+ def test_corrected_draft_can_be_reinvestigated_without_accepting_invalid_returned_answer(self):
+  from clinical_core.agere.clinical import plan_fence as F
+  key=self.draft_with_rejected_returned_answer()
+  snapshot=A.snapshot_path(A.root(self.path)/key/'answer.json');before=snapshot.read_bytes()
+  def premises(*args,answer=None,**kwargs):
+   return []if answer.get('headline')=='Corrected source basis'else['definitions: old basis']
+  with patch.object(F,'premise_issues',side_effect=premises):
+   with self.assertRaisesRegex(ValueError,'invalidated'):A.load(self.path,key,current=True,source_review=True)
+   reviewed=A.load_unfinished_for_review(self.path,key)
+   self.assertTrue(reviewed['invalidated'])
+   self.assertEqual(reviewed['answer']['headline'],'Unverified source findings')
+   self.assertEqual(reviewed['draft_review_basis']['authority'],'unfinished_investigation_only')
+   self.assertFalse(reviewed['dependency_validation'][0]['premises_current'])
+   with self.assertRaisesRegex(ValueError,'invalidated'):
+    A.create_work(self.path,{'context_id':key,'program':'custom','patient_ids':['A'],'owner':'Fixture','note':''})
+  self.assertEqual(snapshot.read_bytes(),before)
+
+ def test_draft_review_does_not_waive_other_invalidation_or_bad_checkpoint(self):
+  from clinical_core.agere.clinical import plan_fence as F
+  from clinical_core.agere.clinical import shared_planner as S
+  changes={
+   'wrong_digest':lambda o,c:c.update(draft_digest='wrong'),
+   'foreign_question':lambda o,c:c['context'].update(question='Another question'),
+   'foreign_source':lambda o,c:c.update(source={'source_digest':'foreign'}),
+   'nonpartial_draft':lambda o,c:c['draft'].update(status='answered'),
+   'existing_workflow':lambda o,c:o.update(workflow=[self.step]),
+   'incomplete_evidence':lambda o,c:o['answer'].update(evidence_completeness={'status':'incomplete'})}
+  for name,mutation in changes.items():
+   with self.subTest(name=name):
+    key=self.draft_with_rejected_returned_answer(mutation)
+    with patch.object(F,'premise_issues',return_value=['definitions: old basis']),self.assertRaisesRegex(ValueError,'unfinished|integrity|invalidated'):
+     A.load_unfinished_for_review(self.path,key)
+  key=self.draft_with_rejected_returned_answer()
+  def premises(*args,answer=None,**kwargs):return []if answer.get('headline')=='Corrected source basis'else['old basis']
+  with patch.object(F,'premise_issues',side_effect=premises),patch.object(S,'policy_identity',return_value='changed'):
+   # An old policy can seed read-only re-investigation, never accepted reuse.
+   reviewed=A.load_unfinished_for_review(self.path,key)
+   self.assertTrue(reviewed['invalidated'])
+   with self.assertRaisesRegex(ValueError,'invalidated'):A.load(self.path,key,current=True,source_review=True)
+  snapshot=A.snapshot_path(A.root(self.path)/key/'answer.json');data=A.read_snapshot(snapshot)
+  data['investigation']['recovery_checkpoint']['draft']['headline']='tampered'
+  # Deliberately corrupt the immutable file without resealing it.
+  import gzip
+  with gzip.open(snapshot,'wt')if snapshot.suffix=='.gz'else open(snapshot,'w')as stream:json.dump(data,stream)
+  with patch.object(F,'premise_issues',return_value=[]),self.assertRaisesRegex(ValueError,'unfinished|integrity'):
+   A.load_unfinished_for_review(self.path,key)
 
 if __name__=='__main__':unittest.main()

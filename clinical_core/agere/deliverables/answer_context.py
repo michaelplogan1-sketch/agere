@@ -89,6 +89,52 @@ def patient_rows(answer):
     return list(rows.values())
 
 
+def load_unfinished_for_review(path,key):
+    """Read a sealed proposal for current re-investigation, never accepted reuse.
+
+    A compiler repair changes the implementation policy, and the last returned
+    answer may have been rejected before the retained draft corrected its basis.
+    Keep that answer invalidated. The analyst must re-execute/check every native
+    receipt and perform full current review before capturing a new result.
+    """
+    from ...contracts import digest
+    from ..clinical import answer_dependencies as AD,plan_fence as F,learning
+    from ..clinical.request_plan import fingerprint as derivation_fingerprint
+    context=load(path,key,source_review=True)
+    checkpoint=(context.get('investigation')or{}).get('recovery_checkpoint')or{}
+    draft=checkpoint.get('draft');source=source_identity(path)
+    if (not isinstance(draft,dict)or draft.get('status')!='partial'
+            or checkpoint.get('draft_digest')!=digest(draft)
+            or checkpoint.get('source')!=source
+            or (checkpoint.get('context')or{}).get('question')!=context.get('question')
+            or context.get('workflow')):
+        raise ValueError('This investigation has no current unfinished draft available to resume')
+    # Validate original integrity independently of compatibility with today's
+    # implementation. Old policy is provenance for this proposal, not authority.
+    saved=context.get('dependencies')or{}
+    if (saved.get('schema')!=AD.VERSION or not context.get('context_policy_identity')
+            or saved.get('derivation')!=derivation_fingerprint({k:context.get(k)for k in AD.FIELDS})
+            or saved.get('observation')!={'source':source,'wal':AD.wal_identity(path)}
+            or context.get('stale')or not context.get('graph')
+            or (context.get('answer',{}).get('evidence_completeness')or{}).get('status')=='incomplete'):
+        raise ValueError('Saved investigation integrity or observations changed; no draft resumed')
+    if (context.get('cohort_transform')or{}).get('parent_context_id'):
+        # Inherited scopes still require their normal current parent checks.
+        load(path,(context['cohort_transform']['parent_context_id']),current=True,source_review=True)
+    if (learning.correction_context(path,context['question'])
+            and (context.get('planner_receipt')or{}).get('feedback_identity')!=learning.feedback_identity(path,context['question'])):
+        raise ValueError('The original question has new corrections; re-investigate with that feedback')
+    if context['source_disposition']['status']=='unavailable':
+        raise ValueError('Source-reading status is unavailable; no draft resumed')
+    issues=F.premise_issues(path,context['question'],context['graph'],
+        native_calls=(context.get('investigation')or{}).get('tool_calls'),answer=draft)
+    if issues:raise ValueError('Unfinished draft premises remain invalidated: '+str(issues))
+    return {**context,'draft_review_basis':{'draft_digest':checkpoint['draft_digest'],
+        'premises_current':True,'returned_answer_invalidated':context['invalidated'],
+        'authority':'unfinished_investigation_only',
+        'scope':'Recheck native receipts and full current answer; no accepted reuse, work authority or historical status change.'}}
+
+
 def investigation_evidence(investigation):
     """Stable evidence identity; retain business amounts inside returned rows."""
     source=investigation or {}

@@ -29,6 +29,17 @@ class ProseReferenceDomains(unittest.TestCase):
                      'NULL (unknown), not zero; 100 payments were received.'):
             with self.subTest(text=text),self.assertRaises(B.ComputedProseError):self.compile(text)
 
+    def test_missingness_contrast_does_not_bind_observed_amounts_or_nearby_counts(self):
+        for text in ('Their cash is unknown, not zero.','The amount is unrecorded rather than 0.',
+                     'The balance is unavailable, not zero.'):
+            with self.subTest(text=text):
+                a=self.compile(text);self.assertEqual(a['headline'],text)
+                self.assertEqual(a['computed_prose'][0]['parameters'][0]['kind'],'null_zero_distinction')
+        for text in ('Cash is unknown, not zero; 100 dollars were received.',
+                     'The unknown amount is zero.','The unknown balance is not zero.',
+                     'There are zero unknown payments.'):
+            with self.subTest(text=text),self.assertRaises(B.ComputedProseError):self.compile(text)
+
     def test_abbreviated_native_identity_group_preserves_exact_source_namespace(self):
         text='Received cash is shown for ENTITY-PAYER-0/1/2.'
         a=self.compile(text);self.assertEqual(a['headline'],text)
@@ -85,7 +96,7 @@ class ProseReferenceDomains(unittest.TestCase):
     def test_entity_prose_does_not_inherit_global_reference_authority(self):
         calls=copy.deepcopy(self.calls);r=calls[0]['result'];r['columns'].insert(0,'patient_id')
         for i,row in enumerate(r['rows']):row.insert(0,'A'+str(i))
-        for text in ('Cash is NULL (unknown), not zero.','Received cash for ENTITY-PAYER-0/1/2.',
+        for text in ('Cash is NULL (unknown), not zero.','Cash is unknown, not zero.','Received cash for ENTITY-PAYER-0/1/2.',
                      'Services in the first half of 2029.'):
             a={'table_from_tool':'result','row_prose':{'keys':['patient_id'],'rows':[{
                 'key':{'patient_id':'A'+str(i)},'basis':[{'result_view':'result','row':i}],
