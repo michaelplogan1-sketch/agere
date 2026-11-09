@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-09T12:15:45.149664+00:00",
+  "updated_at": "2026-11-09T12:54:44.017393+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -594,15 +594,19 @@
           "path": "artifacts/agere-release-current-2026-11-08/connected-delivery-receipt.json",
           "sha256": "5cd9b9e2e82c3f37ab41b6791dcc6fe80a8ee17e93a6538242c1a419c501f993"
         },
-        "artifacts/agere-final-ordinary-entry-2026-11-08/current-release-delivery-receipt.json"
+        "artifacts/agere-final-ordinary-entry-2026-11-08/current-release-delivery-receipt.json",
+        {
+          "path": "artifacts/agere-core-completion-2026-11-09/navigation-delivery-receipt.json",
+          "sha256": "63c738320cf3afec7fef293d87a13a03bc7c3ee06ff4aafbbfa68daa12495ab8"
+        }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Final finite G3 ordinary-entry decision remains: separate concrete demonstrated wiring failures from current source/model uncertainty, independent qualification and missing inputs. Q14native scope corrected and current saved followup works, but fresh original-question automatic entry and46restored subjects documentary interpretation are not claimed. Full25case/MVP/model/clinical/customer acceptance remains false; do not substitute test counts or repeat successful campaigns.",
-      "engineering_current_status": "Exact current package/archive/install/nativeHTTP/ordinary saved-cohort followup delivered.9dedicated engineering predicates pass. Full25ordinary semantic/automatic-entry acceptance is not established; partial/unknown cases retained.",
-      "next_action": "G3/WP4 workspace delivery construction: bounded exit decision artifacts/agere-final-ordinary-entry-2026-11-08/G3-exit-decision-v1.json withholds full25ordinary/MVP/clinical acceptance. New actual behavior:46internal source-only review tasks queued/reopened for restored Q14subjects; UI513cohort/46tasks, incomplete-answer care gate visible,0providers/no external care. Normal workspace packet eagerly contains61.22MBanswer JSON, including57.25MBin two documentary-receipt columns; retained gzip32.41MB. This is a concrete overview delivery construction bottleneck, not a new analytical/clinical fault. NEXT modify existing deliverables/action_center.py projection and action_center.js hydration (service.py only if view negotiation needs it): initial overview/workboard must carry all513identities/counts/46tasks/partial+source guards and exact detail counts while bulk source details load from the existing saved context only when needed. Full-text search/selected patient detail must hydrate complete exact values before use; deferred data must never look absent. Keep default/native inspection backward compatible, original context immutable, source/value/domain/date/clinical gates intact, no new population/document/output caps or source/model campaign. Verify retained actual513row packet and ordinary browser overview/selected detail against unchanged complete native values, task ownership, source status and all69169attempt rows. Preserve release8662e88b as known-good recovery; mark changes candidate until real API/browser proof. One isolated connected metadata delivery increment; do not expand research or perform unchanged campaigns. G3active/fullqueuefalse; qualification/input/Q24/customer dependencies remain explicit. Mainapp19428/session18252 active59a447af; NO frozen job. QuietcontinuationACTIVE.",
+      "engineering_current_status": "Historical9dedicated predicates and known-good8662e88bpackage retained. Current c57cf950 adds demonstrated normal source-navigation workflow with exact typed-link/quote evidence and partial/unverified support; whole25current-release applicability unestablished.",
+      "next_action": "G3/WP4: native linked-source navigation is now demonstrated by actual normal auto HTTP at c57cf950: focused review -> plan_evidence_expansion -> additive review ->4exact complete reads -> saved/reopened original context,75.931s,19typededgeschecked,partial/unverified retained. Do not repeat this source question or seek another unchanged vote. NEXT carry the successfully exercised economical runtime role profile into the existing normal launcher/current release configuration, rather than depending on artifact-only start_low_memory_app_v2.py. Keep native computation, qualified SystemOne/local roles, exact execution reuse, existing source/date/quantity guards and Sonnet/Opus subscription; installed experimental local generative/readers must not activate merely because installed. Keep optional roles available with explicit configuration; no new caps/services/model inventory. Validate cold normal-entry metadata/native behavior and configured-role parity against the exercised profile, then current release acceptance/compatibility and packaging, rerunning only materially affected boundaries. All25/tenareas/principal/October11baseline/recovery remain. Perplexity quota/billing blocked; no new probe without restored availability evidence. App/models OFF, no frozen job. Quiet continuation ACTIVE; full G3/MVP/clinical/customer readiness NOT established.",
       "latest_current_release_decision": "artifacts/agere-final-ordinary-entry-2026-11-08/G3-exit-decision-v1.json"
     },
     {
@@ -681,32 +685,32 @@
     }
   ],
   "checkpoint": {
-    "kind": "low_memory_native_backend_verified",
+    "kind": "connected_native_source_navigation_delivered_partial_support_retained",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Current snapshot metadata and guarded native SQL operate without loading retrieval encoder/reranker weights; exact cache hits also avoid tensor initialization.",
+    "user_behavior_delta": "An ordinary question now reaches focused document review, native typed-reference expansion, additive review and complete exact source reads, then saves/reopens the same original question with explicit unresolved support. The chart primitive no longer substitutes a latest appointment for a source-relationship request.",
     "measured_failure_reduction": {
-      "native_received_people": 4115,
-      "retrieval_encoder_weights_loaded": false,
-      "reranker_weights_loaded": false,
-      "torch_imported": false,
-      "transformers_imported": false,
-      "native_check_peak_rss_bytes": 193413120,
-      "native_check_seconds": 7.366276999935508,
-      "new_provider_calls": 0,
-      "lazy_and_integrity_checks_passed": 27,
-      "app_startup_checks_passed": 6,
-      "total_distinct_focused_checks_passed": 33
+      "wrong_latest_appointment_substitution_before": true,
+      "wrong_chart_substitution_after": false,
+      "ordinary_native_source_navigation_executed": true,
+      "exact_source_quotes": 4,
+      "typed_edges_checked": 19,
+      "ordinary_seconds": 75.93138079089113,
+      "app_peak_process_rss_bytes": 859684864,
+      "distinct_chart_checks_passed": 91,
+      "lazy_runtime_and_integrity_checks_passed": 33,
+      "all_attempt_rows_preserved": 69234,
+      "new_provider_attempts_this_heartbeat": 60
     },
     "evidence": [
-      "artifacts/agere-core-completion-2026-11-09/lazy-native-v1/receipt.json",
-      "artifacts/agere-core-completion-2026-11-09/lazy-runtime-tests-final.log",
-      "artifacts/agere-core-completion-2026-11-09/lazy-app-startup-tests.log",
-      "artifacts/agere-core-completion-2026-11-09/streamed-index-v1/receipt.json",
-      "artifacts/agere-core-completion-2026-11-09/lazy-native-assessment.json"
+      "artifacts/agere-core-completion-2026-11-09/navigation-delivery-receipt.json",
+      "artifacts/agere-core-completion-2026-11-09/ordinary-http-v4/assessment.json",
+      "artifacts/agere-core-completion-2026-11-09/ordinary-http-v3/assessment.json",
+      "artifacts/agere-core-completion-2026-11-09/chart-capability-receipt.json",
+      "artifacts/agere-core-completion-2026-11-09/lazy-cpu-parity-v1/receipt.json"
     ],
-    "remaining_gap": "Native backend metadata/SQL and cache-only model paths demonstrated with zero loaded retrieval weights. Full HTTP/ordinary source-navigation and uncached production model parity remain unassessed. One old startup test fixture required its semantic-policy precondition; guard unchanged and6tests now pass. App/model servers remain off; full25 and G5/input/customer dependencies retained.",
-    "next_action": "G3/WP4 low-memory native backend now demonstrated. LocalEncoder/LocalReranker defer tensor/tokenizer/weight initialization; pinned identity formulas and cache keys preserved, delayed weight access rechecks full source pins, and cached vectors/scores/empty inputs need no tensor runtime. Existing Stack metadata reports retrieval weight state without triggering load. Actual current4115person snapshot metadata plus guarded native SQL completed7.366s at193413120byteprocesspeak, neither torch nor transformers imported, both model weights unloaded, source and all69174attempts exact.27lazy/cache/source-integrity/schema checks plus6startup transport/ownership checks pass. App/model servers remain off. NEXT complete same G3 source-navigation consumer through existing normal low-memory/hosted reasoning path: inspect shared_planner.compose planning=frontier and conversation public request support before invoking; retain all normal scope/source/quantity/final verification guards and all-attempt accounting. Do not add a bypass, inject source selections/answers or repeat the failed legacy all-reader route. Actual uncached production model parity remains unassessed; run a narrowly justified CPU comparison when that branch is needed, not broad training. Existing193662fb full ordinary navigation acceptance remains unestablished; low-memory native proof does not qualify it. All25/tenareas/principal/October11baseline/known-good8662e88b retained; qualification/input/Q24/customer dependencies separate. QuietcontinuationACTIVE; no new caps or routine gates."
+    "remaining_gap": "Normal launcher still needs the tested explicit economical runtime profile. Source interpretations remain partial/unverified; linked structured and other documentary evidence remain unexamined, with no full25/qualification/customer acceptance.",
+    "next_action": "G3/WP4: native linked-source navigation is now demonstrated by actual normal auto HTTP at c57cf950: focused review -> plan_evidence_expansion -> additive review ->4exact complete reads -> saved/reopened original context,75.931s,19typededgeschecked,partial/unverified retained. Do not repeat this source question or seek another unchanged vote. NEXT carry the successfully exercised economical runtime role profile into the existing normal launcher/current release configuration, rather than depending on artifact-only start_low_memory_app_v2.py. Keep native computation, qualified SystemOne/local roles, exact execution reuse, existing source/date/quantity guards and Sonnet/Opus subscription; installed experimental local generative/readers must not activate merely because installed. Keep optional roles available with explicit configuration; no new caps/services/model inventory. Validate cold normal-entry metadata/native behavior and configured-role parity against the exercised profile, then current release acceptance/compatibility and packaging, rerunning only materially affected boundaries. All25/tenareas/principal/October11baseline/recovery remain. Perplexity quota/billing blocked; no new probe without restored availability evidence. App/models OFF, no frozen job. Quiet continuation ACTIVE; full G3/MVP/clinical/customer readiness NOT established."
   },
   "decisions": [
     {
@@ -5857,6 +5861,24 @@
       "decision": "Continue source-navigation integration using the now-proven model-free native backend and existing hosted planning option where supported.",
       "basis": "Real snapshot metadata plus native query returned4115with193MBprocesspeak; no torch/transformers imported.27checks preserve cache identity/source corruption guards; no inference/clinical quality inferred.",
       "scope_impact": "Same G3 connected workflow; alltenareas/all25 retained. App not restarted. Untracked AGERE_STORAGE_PLAN.md preserved unmodified; no new capacity caps or instructions imported from that document."
+    },
+    {
+      "at": "2026-11-09T12:32:00.265495+00:00",
+      "decision": "Synchronize the current gate nested next_action with the canonical top-level next_action.",
+      "basis": "Status review found obsolete workspace payload/PID text retained in the nested G3 field after the explicit core-stack and low-memory user direction.",
+      "scope_impact": "Continuity repair only; no product change, new scope or accepted gate. Deferred UI evidence remains preserved in history."
+    },
+    {
+      "at": "2026-11-09T12:44:54.493484+00:00",
+      "decision": "Use real completed ordinary output to correct a generic capability admission error before another model/component increment.",
+      "evidence": "artifacts/agere-core-completion-2026-11-09/ordinary-http-v3/assessment.json",
+      "scope_impact": "No charter area removed; full question-to-evidence workflow remains G3/WP4."
+    },
+    {
+      "at": "2026-11-09T12:54:44.017393+00:00",
+      "decision": "Seal the demonstrated connected navigation increment and move to reproducing its role policy in normal product startup; do not repeat its unchanged review.",
+      "evidence": "artifacts/agere-core-completion-2026-11-09/navigation-delivery-receipt.json",
+      "scope_impact": "Full25/tenareas retained. Engineering navigation evidence does not promote source interpretations, models, clinical claims or customer deployment. UI hydration remains deferred by user priority."
     }
   ],
   "unsealed_work": {
@@ -7546,24 +7568,17 @@
     "current_G3_exit_decision": "artifacts/agere-final-ordinary-entry-2026-11-08/G3-exit-decision-v1.json",
     "workspace_payload_diagnosis": "artifacts/agere-final-ordinary-entry-2026-11-08/Q14/workspace-payload-diagnosis-v1/receipt.json",
     "native_navigation_candidate": {
-      "status": "tested_candidate_not_live",
-      "native_wiring_receipt": "artifacts/agere-core-completion-2026-11-09/native-wiring-v1/receipt.json",
-      "checks": 98,
-      "ordinary_check": "artifacts/agere-core-completion-2026-11-09/ordinary-http-v2/receipt.json",
-      "main_app_product": null,
-      "candidate_commit": "193662fb152bf8004fdac2ef9aec883b995cf599",
-      "checks_run": 98,
-      "checks_passed": 97,
-      "checks_skipped": 1
+      "status": "scoped_ordinary_workflow_delivered",
+      "product_commit": "c57cf950aab702ebed14da98caaa107721b8b803",
+      "receipt": "artifacts/agere-core-completion-2026-11-09/navigation-delivery-receipt.json",
+      "ordinary_context": "ANS-b2ecbc4b0b4d8d1a1c9db52a",
+      "source_support_accepted": false
     },
     "low_memory_integrity": {
-      "status": "native_backend_lazy_models_verified_candidate",
-      "receipt": "artifacts/agere-core-completion-2026-11-09/streamed-index-v1/receipt.json",
-      "checks": 9,
-      "model_weights_loaded": false,
-      "lazy_runtime_receipt": "artifacts/agere-core-completion-2026-11-09/lazy-native-v1/receipt.json",
-      "uncached_model_parity": "unassessed",
-      "assessment": "artifacts/agere-core-completion-2026-11-09/lazy-native-assessment.json"
+      "status": "native_unloaded_and_exact_cpu_parity_demonstrated",
+      "native_receipt": "artifacts/agere-core-completion-2026-11-09/lazy-native-v1/receipt.json",
+      "parity_receipt": "artifacts/agere-core-completion-2026-11-09/lazy-cpu-parity-v1/receipt.json",
+      "profile_normal_entry": "pending"
     }
   },
   "current_visual_request": {
@@ -7600,7 +7615,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3/WP4 low-memory native backend now demonstrated. LocalEncoder/LocalReranker defer tensor/tokenizer/weight initialization; pinned identity formulas and cache keys preserved, delayed weight access rechecks full source pins, and cached vectors/scores/empty inputs need no tensor runtime. Existing Stack metadata reports retrieval weight state without triggering load. Actual current4115person snapshot metadata plus guarded native SQL completed7.366s at193413120byteprocesspeak, neither torch nor transformers imported, both model weights unloaded, source and all69174attempts exact.27lazy/cache/source-integrity/schema checks plus6startup transport/ownership checks pass. App/model servers remain off. NEXT complete same G3 source-navigation consumer through existing normal low-memory/hosted reasoning path: inspect shared_planner.compose planning=frontier and conversation public request support before invoking; retain all normal scope/source/quantity/final verification guards and all-attempt accounting. Do not add a bypass, inject source selections/answers or repeat the failed legacy all-reader route. Actual uncached production model parity remains unassessed; run a narrowly justified CPU comparison when that branch is needed, not broad training. Existing193662fb full ordinary navigation acceptance remains unestablished; low-memory native proof does not qualify it. All25/tenareas/principal/October11baseline/known-good8662e88b retained; qualification/input/Q24/customer dependencies separate. QuietcontinuationACTIVE; no new caps or routine gates.",
+  "next_action": "G3/WP4: native linked-source navigation is now demonstrated by actual normal auto HTTP at c57cf950: focused review -> plan_evidence_expansion -> additive review ->4exact complete reads -> saved/reopened original context,75.931s,19typededgeschecked,partial/unverified retained. Do not repeat this source question or seek another unchanged vote. NEXT carry the successfully exercised economical runtime role profile into the existing normal launcher/current release configuration, rather than depending on artifact-only start_low_memory_app_v2.py. Keep native computation, qualified SystemOne/local roles, exact execution reuse, existing source/date/quantity guards and Sonnet/Opus subscription; installed experimental local generative/readers must not activate merely because installed. Keep optional roles available with explicit configuration; no new caps/services/model inventory. Validate cold normal-entry metadata/native behavior and configured-role parity against the exercised profile, then current release acceptance/compatibility and packaging, rerunning only materially affected boundaries. All25/tenareas/principal/October11baseline/recovery remain. Perplexity quota/billing blocked; no new probe without restored availability evidence. App/models OFF, no frozen job. Quiet continuation ACTIVE; full G3/MVP/clinical/customer readiness NOT established.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -7609,7 +7624,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-final-ordinary-entry-2026-11-08/current-release-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-core-completion-2026-11-09/navigation-delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -7869,5 +7884,5 @@
       "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json"
     }
   },
-  "server_status": "exited137_during_legacy_evidence_reader_load_cause_unestablished"
+  "server_status": "owned_low_memory_app_stopped_after_completed_source_navigation"
 }
