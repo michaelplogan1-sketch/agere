@@ -35,7 +35,7 @@ from . import decision_context as DC
 from . import patient_ids as PI
 from .question_input import QuestionNotUnderstood
 
-VERSION = 'chart-reader/1'
+VERSION = 'chart-reader/2'
 OP = 'chart_reader'
 SO_PROVIDERS = ('jev', 'perplexity')
 NOTE_DOMAIN = 'notes'
@@ -314,6 +314,9 @@ def answer(stack, spec, *, as_of=None, ledger=None, decide=None, question=None, 
     allow_live = bool(getattr(stack, 'allow_live', False)) if allow_live is None else allow_live
     if not pid:
         return unsupported('A single-patient answer needs a subject patient_id.', question, started, spend)
+    if CN.source_traversal_requested(question):
+        return unsupported('This request needs source-reference traversal and document review; a chart value or note frame cannot answer it.',
+                           question, started, spend, pid=pid, missing=['source_reference_traversal'])
     db = connect(stack)
     try:
         as_of = str(as_of or as_of_of(stack, db))[:10]
@@ -514,6 +517,10 @@ def tier(stack, question, population=None, *, ledger=None, decide=None):
     clarification (QuestionNotUnderstood). Not a rung for a saved cohort (population) or a question that names no patient."""
     started = time.perf_counter()
     if population is not None:
+        return None
+    if CN.source_traversal_requested(question):
+        # Let the existing analyst inspect exact references and use the focused
+        # document-review/navigation tools. Do not offer a reduced chart answer.
         return None
     sub = subject_status(stack, question)
     if sub['status'] in ('ambiguous', 'unknown', 'multiple'):
