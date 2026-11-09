@@ -401,6 +401,10 @@ has already declined this question, so it is yours to answer completely and corr
   number into SELECT (even with a literal patient ID) does not establish a source. Compute definition counts from their
   registered rows. Spelling a numeral as a word does not resolve the binding error.
   Keep dates and patient/record identifiers literal. A bound text column may supply an exact source observation.
+  A requested calendar year may describe a cohort when that year occurs in the executed cohort_year/calendar_year output.
+  An exact string from an executed CASE output may remain quoted when explaining what label a conditional query branch
+  would return. This does not establish that any
+  observed row has that label. Observed counts, amounts, rates, durations and entity-specific values still require bindings.
   In patient/entity row prose, a numeric quotation can stay literal only when the complete exact quote is in a typed
   documentary assertion in that entity's executed basis, and both record_id and source date are attributed in the same
   field. A matching sources entry alone is insufficient for row prose. Otherwise bind the full source quotation as a
@@ -1205,7 +1209,8 @@ def prose_parameter_context(question,calls):
     for m in re.finditer(r'\b(\d+)\s*[- ]\s*(day|week|month|year)s?\b',question or '',re.I):
         durations[(m[1],m[2].lower())]={'kind':'request_duration','span':[m.start(),m.end()],
                                       'text':m.group(),'question_sha256':hashlib.sha256((question or '').encode()).hexdigest()}
-    predicates={};columns=set();docs=[];scales={};zero_rates=[]
+    predicates={};columns=set();docs=[];scales={};zero_rates=[];labels={};calendar_labels={}
+    requested_years=set(re.findall(r'\b(?:19|20|21)\d{2}\b',question or ''))
     for call in calls:
         result=call.get('result')
         if (call.get('name')!='query_sql' or not isinstance(result,dict) or result.get('error')
@@ -1216,6 +1221,35 @@ def prose_parameter_context(question,calls):
         if not isinstance(sql,str):continue
         try:tree=sqlglot.parse_one(sql,read='sqlite')
         except (sqlglot.errors.SqlglotError,ValueError,TypeError):continue
+        origin={'result_view':result.get('result_view'),
+                'query_sha256':hashlib.sha256(sql.encode()).hexdigest()}
+        # Conditional string outputs define categories even when this source
+        # snapshot contains no row taking that branch. A predicate/filter
+        # literal or a proposed query is not an output-label definition.
+        for alias in tree.find_all(exp.Alias):
+            if alias.alias not in result.get('columns',[])or not isinstance(alias.this,exp.Case):continue
+            case=alias.this
+            values=[branch.args.get('true')for branch in case.args.get('ifs',[])]+[case.args.get('default')]
+            for value in values:
+                if isinstance(value,exp.Literal)and value.is_string:
+                    labels.setdefault(value.this,[]).append({**origin,'kind':'executed_output_label',
+                        'column':alias.alias,'conditional_expression':case.sql(dialect='sqlite')})
+        # A received calendar/cohort grouping label is not an empirical count.
+        # Only requested years actually present in a typed grouping column
+        # are eligible; later grammar checks determine each occurrence's role.
+        for column in ('cohort_year','calendar_year'):
+            if column not in result.get('columns',[]):continue
+            descriptors={'calendar'}
+            for alias in tree.find_all(exp.Alias):
+                if alias.alias==column:
+                    for source in alias.this.find_all(exp.Column):
+                        if source.name.endswith(('_date','_from','_start','_year')):
+                            descriptors.add(source.name.rsplit('_',1)[0].replace('_',' '))
+            cols,rows=output_table(result);index=cols.index(column)
+            for value in {str(row[index])for row in rows if type(row[index])in(str,int)} & requested_years:
+                calendar_labels.setdefault(value,[]).append({**origin,'kind':'executed_calendar_cohort',
+                    'column':column,'year':value,'descriptors':sorted(descriptors),
+                    'question_sha256':hashlib.sha256((question or '').encode()).hexdigest()})
         # A rate's explicitly executed scale is a unit parameter, not an
         # observed numerator. Require the returned alias and actual numerator
         # multiplication/division; an unrelated literal SELECT is insufficient.
@@ -1251,7 +1285,7 @@ def prose_parameter_context(question,calls):
             verified=loaded_documentation([call],loaded['identity'])
             if verified:docs.extend({**s,'identity':loaded['identity']}for s in verified['sections'])
     return {'durations':durations,'predicates':predicates,'columns':columns,'docs':docs,
-            'scales':scales,'zero_rates':zero_rates}
+            'scales':scales,'zero_rates':zero_rates,'output_labels':labels,'calendar_labels':calendar_labels}
 
 
 def structural_prose_context(answer,calls,proof):
@@ -1453,6 +1487,46 @@ def mask_prose_parameters(text,context,proofs):
     Original prose is unchanged and still receives source/meaning review. This
     function is never used to exempt patient/entity prose from scalar binding.
     """
+    required=context.get('required_result_views')or set()
+    def required_origin(values):return next((p for p in values if p['result_view']in required),None)
+    # Keep the quoted text in the answer. Only an exact native CASE label in
+    # a computation-definition sentence leaves the measurement scanner.
+    label_intro=re.compile(
+        r'\b(?:the\s+|this\s+|that\s+)?(?:query|sql|case(?:\s+expression)?|expression)\s+'
+        r'(?:(?:would|will|can|may)\s+)?(?:labels?(?:\s+(?:such\s+a|a|the|this|that)\s+row)?|returns?|emits?|outputs?)'
+        r'(?:\s+(?:the\s+)?(?:label|category|status|code|string|value))?\s*$',re.I)
+    quoted=re.compile(r'''(?<!\w)(?:'([^'\n]+)'|"([^"\n]+)"|“([^”\n]+)”|‘([^’\n]+)’|`([^`\n]+)`)(?!\w)''')
+    replacements=[]
+    for match in quoted.finditer(text):
+        label=next(v for v in match.groups()if v is not None)
+        origin=required_origin(context.get('output_labels',{}).get(label,[]))
+        if origin and label_intro.search(text[:match.start()]):
+            proofs.append({**origin,'literal':match.group(),
+                'scope':'Exact conditional output label only; no observed value, frequency or source meaning is accepted.'})
+            replacements.append(match.span())
+    for start,end in reversed(replacements):text=text[:start]+text[end:]
+    count_nouns=r'patients?|members?|accounts?|invoices?|events?|records?|rows?|visits?|items?|cases?|observations?'
+    def calendar_cohort(match):
+        modifier=match['modifier']or''
+        origins=context.get('calendar_labels',{}).get(match['year'],[])
+        origin=required_origin([p for p in origins if not modifier or modifier.lower()in p['descriptors']])
+        if(not origin or re.fullmatch(count_nouns,modifier,re.I)
+           or re.match(r'\s+'+count_nouns+r'\b',text[match.end():],re.I)
+           or re.search(r'\b(?:were|was|are|is|has|had|observed|counted|found|includes?|contains?)\s*$',text[:match.start()],re.I)):
+            return match.group()
+        proofs.append({**origin,'literal':match.group()})
+        context.setdefault('cohort_references',{})[match['year']]=origin
+        return match.group()[len(match['year']):]
+    text=re.sub(r'\b(?P<year>(?:19|20|21)\d{2})\s+(?:(?P<modifier>[A-Za-z][A-Za-z_-]*)\s+)?cohort\b',
+                calendar_cohort,text,flags=re.I)
+    def cohort_reference(match):
+        origin=context.get('cohort_references',{}).get(match['year'])
+        if not origin:return match.group()
+        proofs.append({**origin,'kind':'referenced_calendar_cohort','literal':match.group()})
+        start,end=match.span('year')
+        return match.group()[:start-match.start()]+match.group()[end-match.start():]
+    text=re.sub(r'\bthe\s+(?P<year>(?:19|20|21)\d{2})\s+(?:observed|estimated)\s+total\b',
+                cohort_reference,text,flags=re.I)
     structure=context.get('native_structure')or{}
     if structure:
         window=structure['window'];start=window.get('start');end=window.get('end');basis=window.get('basis')
@@ -1638,6 +1712,9 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
     formatter=string.Formatter();proofs=[];row_mode=False;row_quotes=[];field_quotes=[];parameter_proofs=[]
     parameters=prose_parameter_context(question,calls)
     parameters['final_result_view']=(answer.get('table_binding')or{}).get('result_view')or answer.get('table_from_tool')
+    parameters['required_result_views']=native_result_dependencies(calls,[parameters['final_result_view']])or set()
+    views=[c['result']['result_view']for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')]
+    parameters['required_result_views']-={view for view in views if views.count(view)>1}
     parameters['native_structure']=structural_prose_context(answer,calls,native_structure)
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')}
     old={p.get('field'):p for p in answer.get('computed_prose',[]) if isinstance(p,dict)}
@@ -1712,6 +1789,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
     def compile_value(field,value,basis=None):
         parameter_proofs.clear()
         parameters.pop('current_template',None);parameters.pop('current_bindings',None)
+        parameters['cohort_references']={}
         if isinstance(value,str) and field in old:
             prior=old[field]
             # A mutated field must supply a new explicit template, not silently
