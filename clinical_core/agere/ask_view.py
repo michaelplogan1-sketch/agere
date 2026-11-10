@@ -375,6 +375,14 @@ function vizQueueing(a){const o=(a.overall||{}).queueing||{},st=o.staffing||{},s
  let h='<section class="sec" data-focus="staffing"><h3>'+(blk?'Bed capacity':'Staffing')+' · '+esc(o.source||'')+'</h3>';
  if(scope){const w=scope.window||{},population=scope.population==='selected'?fmt(scope.patient_count,0)+' selected patients':'All received patients';
   h+='<p class="hint"><b>Analysis scope.</b> '+esc(population)+' · arrivals '+esc(w.start||'start of available history')+' to '+esc(w.end||scope.as_of||'end of available history')+' (inclusive)'+(scope.as_of?' · snapshot '+esc(scope.as_of):'')+(scope.organization_id?' · organization '+esc(scope.organization_id):'')+'.</p>'}
+ if(o.status==='insufficient_data'){
+  h+='<p class="alert warn"><b>Capacity remains unknown.</b> '+esc(o.reason||'Required inputs are unavailable.')+'. Completed demand observations are retained below.</p>';
+  h+='<div class="kpis">'+[['Observed arrivals',fmt(inp.arrivals_used,0)],['Baseline arrivals / week',rate(inp.weekly_arrivals_base)],['Scaled arrivals / week',rate(inp.weekly_arrivals_scaled)],['Required servers','Unknown'],['Capacity gap','Unknown']].map(k=>'<div class="kpi"><div class="l">'+esc(k[0])+'</div><div class="v">'+esc(k[1])+'</div></div>').join('')+'</div>';
+  h+='<p class="hint">Demand scaling is arithmetic, not a forecast or a staffing estimate. '+(inp.all_arrivals_timed===false?'Hour-of-day peaks are not fully observed. ':'')+'Service duration is needed for a capacity scenario; an approved service target is needed to interpret that scenario, and current staffing is needed for a capacity gap. Explicit assumptions remain assumptions.</p>';
+  if(rows.length)h+=tableHTML(rows,{name:'queueing-demand-observations',caption:'Completed demand observations · staffing unresolved',cols:['source','arrivals_used','rate_window_start_date','rate_window_end_date','weekly_arrivals_base','arrival_scale_applied','weekly_arrivals_scaled','mean_service_minutes','required_servers','capacity_gap_servers']});
+  if((a.warnings||[]).length)h+='<details><summary>Source and assumption limits</summary><ul>'+a.warnings.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
+  if(rows.length&&rows[0].configured_parameters_json)h+='<details><summary>Configured engine inputs · service targets are not approved</summary><pre>'+esc(rows[0].configured_parameters_json)+'</pre></details>';
+  return h+'</section>'}
  h+='<div class="kpis">'+
   [['Peak '+(blk?'beds':'servers'),fmt(st.peak_servers)+(st.peak_hour?' ('+st.peak_hour+')':'')],[(blk?'Bed':'Server')+'-hours / week',fmt(st.total_server_hours_per_week)],
    ['Arrivals / week',rate(inp.weekly_arrivals_planned)],['Observed arrivals',fmt(inp.arrivals_used,0)],['Mean service (min)',isNum(inp.mean_service_minutes)?fmt(inp.mean_service_minutes,1):'—'],

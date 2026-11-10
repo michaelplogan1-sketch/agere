@@ -4791,6 +4791,8 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                                         'The execution and source checks do not establish independent clinical certification.']))
             from .monitor import attach_comparison
             attach_comparison(a, out['tool_calls'])
+            from .queueing import attach_outcome
+            attach_outcome(a, out['tool_calls'])
             out['answer'] = a
         return out
     finally:

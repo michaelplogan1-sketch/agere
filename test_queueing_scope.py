@@ -190,7 +190,8 @@ class QueueingSharedExecution(unittest.TestCase):
         self.stack = self.fixture.stack
         self.stack.allow_live = False
         self.stack.run_graph = lambda plan, **kw: G.execute(self.stack, plan, **kw)
-        with sqlite3.connect(semantic_layer.ensure(self.stack.path)) as db:
+        # This tiny authored fixture is build tooling, not an analytical read.
+        with sqlite3.connect(semantic_layer.ensure(self.stack.path, allow_materialization=True)) as db:
             db.executemany('''INSERT INTO visit(encounter_id,patient_id,type_concept,event_date,end_date,
                              start_time,end_time,organization_id) VALUES(?,?,?,?,?,?,?,?)''', [
                 ('one','p0','emergency_visit','2026-05-04','2026-05-04','09:00','09:30','O1'),

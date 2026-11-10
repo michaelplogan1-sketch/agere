@@ -778,6 +778,35 @@ def table(report):
     return list(((report.get('answer') or {}).get('staffing') or {}).get('by_hour_of_week') or [])
 
 
+def attach_outcome(answer, calls):
+    """Restore native capacity context only for an exact server-bound table.
+
+    Unknown staffing must not become a zero chart. Model prose and review
+    statuses remain untouched; the native report is no clinical qualification.
+    """
+    value=answer.get('overall');overall=dict(value)if isinstance(value,dict)else{}
+    if 'queueing'in overall:
+        overall.pop('queueing');answer['overall']=overall
+    answer.pop('native_queueing_binding',None)
+    binding=answer.get('table_binding')or{}
+    if not binding.get('copied_from_executed_result')or binding.get('interpreted_columns'):return False
+    for call in calls:
+        if call.get('name')!='execute_analysis'or(call.get('input')or{}).get('operation')!='queueing':continue
+        result=call.get('result')or{};native=(result.get('engine_result')or{}).get('answer')or{}
+        context=native.get('overall')or{}
+        if ('queueing'not in context or result.get('result_view')!=binding.get('result_view')
+            or answer.get('table')!=result.get('rows')or native.get('table')!=result.get('rows')):continue
+        overall.update({k:context[k]for k in ('queueing','input_scope','input_membership','inference_status','assumptions')if k in context})
+        answer['overall']=overall
+        for key in ('warnings','assumptions'):
+            answer[key]=list(dict.fromkeys([*(answer.get(key)or[]),*(native.get(key)or[])]))
+        answer['native_queueing_binding']={'result_view':binding['result_view'],'rows':len(result['rows']),
+            'source':'complete executed queueing result matched to the final native table',
+            'model_verification_changed':False,'clinical_qualification':False}
+        return True
+    return False
+
+
 def summary(report):
     a = report['answer']
     if a.get('status') == 'insufficient_data':
