@@ -966,6 +966,8 @@ def _resume_compose(stack,body):
         resolution={'standalone':row['checkpoint']['question'],'method':'clarification_resumed','follow_up':True,
             'frame':None,'edits':['Resolved intent: '+row['checkpoint']['pause']['request']['slot']],
             'reason':'Continued the same saved investigation; completed native tools were restored without execution.'}
+        if row['checkpoint'].get('kind') == 'registered_input':
+            resolution['reason']='The selected server-registered input continues the original request; the choice supplies intent, not new source facts.'
         out=_finish_compose(stack,{**row.get('request_options',{}),**body},row['question'],conv,resolution,result,probe,t0)
         clarification.finish(stack.path,row['id'],result=out)
         return out
@@ -978,7 +980,7 @@ def _resume_compose(stack,body):
 
 def _handle_compose(stack, body, hosted_factory=None):
     """Run /api/stack/compose with optional conversation context. Logging matches the single-question route."""
-    from . import answer_log, learning
+    from . import answer_log, learning, clarification
     question, conv = str(body.get('question', '')), False
     resolution, t0 = None, time.time()
     hosted_usd, hosted_calls = 0.0, 0
@@ -998,6 +1000,12 @@ def _handle_compose(stack, body, hosted_factory=None):
         if refers and getattr(stack, 'shared_request_planning', False) is True:
             from .request_plan import Catalog
             refers = requires_saved_cohort(routing, Catalog.load(stack.path))
+        if not refers and not body.get('answer_context_id'):
+            pending_input = clarification.registered_input_pause(stack, question)
+            if pending_input is not None:
+                resolution={'standalone':question,'method':'registered_input_selection','frame':None,
+                            'follow_up':False,'edits':[],'reason':'Required versioned input is unresolved; no analysis was run.'}
+                return _finish_compose(stack, body, question, conv, resolution, pending_input, probe, t0)
         if conv is False:
             if refers:
                 raise QuestionNotUnderstood('This question refers to a previous cohort. Open that conversation or ask a complete question; no whole-population substitution was run.')

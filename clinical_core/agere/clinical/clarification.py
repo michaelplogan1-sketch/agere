@@ -124,6 +124,60 @@ def pending(result):
     return isinstance(result,dict)and isinstance(result.get('clarification_checkpoint'),dict)
 
 
+def registered_input_pause(stack, question):
+    """Use the same durable clarification store for a closed input command."""
+    from .engine_suite import input_request
+    from ..deliverables.answer_context import source_identity
+    from .shared_planner import policy_identity
+    found = input_request(question)
+    if found is None:
+        return None
+    spec = validate(found['request'])
+    source = source_identity(stack.path)
+    checkpoint = {'schema': VERSION, 'kind': 'registered_input', 'operation': found['operation'],
+                  'question': question, 'source': source, 'policy': policy_identity(), 'cohort': None,
+                  'as_of': source['as_of'], 'input_guard': input_guard(stack.path, None),
+                  'bindings': found['bindings'], 'pause': {'request': spec}, 'calls': []}
+    result = {'schema': VERSION, 'question': question, 'synthetic': True, 'clinical_execution_authorized': False,
+              'new_paid_api_calls': 0, 'planning_economics': {'known_api_estimate_usd': 0, 'new_paid_api_calls': 0},
+              'answer': {'status': 'clarify' if MODE.get() == 'interactive' else 'partial', 'answer_type': 'unsupported',
+                         'headline': spec['question'], 'missing': [spec['reason']], 'patient_ids': [], 'actionable_cohort': False,
+                         'limitations': ['No contract, population or settlement term has been chosen or computed.']},
+              'results': [], 'workflow': [], 'registered_input_request': spec}
+    if MODE.get() == 'interactive':
+        result['clarification_checkpoint'] = checkpoint
+    return result
+
+
+def resume_registered_input(stack, saved, reply):
+    from . import engine_suite
+    from .shared_planner import policy_identity
+    from ..deliverables.answer_context import source_identity
+    if (saved.get('schema') != VERSION or saved['source'] != source_identity(stack.path)
+            or saved['policy'] != policy_identity() or saved['input_guard'] != input_guard(stack.path, None)):
+        raise ValueError('Saved input selection sources or definitions changed; start a new analysis. No provider was called.')
+    selected = (reply.get('option') or {}).get('id') or str(reply.get('text') or '').strip().lower()
+    parameters = saved['bindings'].get(selected)
+    if parameters is None:
+        return {'schema': VERSION, 'question': saved['question'], 'synthetic': True, 'clinical_execution_authorized': False,
+                'answer': {'status': 'partial', 'answer_type': 'unsupported', 'patient_ids': [], 'actionable_cohort': False,
+                           'headline': 'Explicit contract inputs are still required.',
+                           'missing': ['Supply a registered, versioned contract with explicit payer, period, attribution and terms. The demo was not selected.']},
+                'new_paid_api_calls': 0, 'results': [], 'workflow': []}
+    module = engine_suite.module(saved['operation'])
+    bound = module.validate(parameters)  # a selected old version cannot silently become a new one
+    # The module owns its domain wording; the shared continuation only runs an
+    # exact command that resolves to the previously offered typed binding.
+    command = module.command_for_input(bound) if hasattr(module, 'command_for_input') else None
+    if not command or module.registered_input_command(command, saved['as_of'])['nodes'][0]['parameters'] != bound:
+        raise ValueError('Selected input has no matching closed command')
+    result = stack.compose(command)
+    result.setdefault('planner_receipt', {})['clarification_binding'] = {
+        'original_question': saved['question'], 'resolved_question': command, 'operation': saved['operation'],
+        'parameters': bound, 'authority': 'user_intent_only', 'source_facts_established': False}
+    return result
+
+
 def public(row,status='pending'):
     return {'id':row['id'],'conversation_id':row['conversation_id'],**row['checkpoint']['pause']['request'],
         'status':status,'retained_native_calls':len(row['checkpoint']['calls']),
@@ -194,6 +248,8 @@ def refresh_public(path,conversation_id,value):
 
 def resume_investigator(stack,saved,reply,*,origin=None):
     """Resume through the same cascade's final checks, without replanning tools."""
+    if saved.get('kind') == 'registered_input':
+        return resume_registered_input(stack, saved, reply)
     from . import proposers as P,request_plan as R,shared_planner as S,decision_context as D,together
     from ..gateway import BudgetLedger
     from .. import model_policy

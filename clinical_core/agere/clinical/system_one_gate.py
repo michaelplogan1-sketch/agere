@@ -243,7 +243,7 @@ def check(question, graph, result, *, stack, ledger=None, as_of_date=None):
     wire=native_integrity_model_view(summary,coverage_dependencies=True)
     summary=wire['text']
     when = as_of_date or as_of(stack)
-    instruction=('Native code checked every financial row, its scope and current source receipts. The full table remains in the saved answer; '
+    instruction=('Native code checked every registered result row, its scope and current source receipts. The full table remains in the saved answer; '
         'this state contains complete field/role contracts, native identities, selection and all uncertainty categories. '
         'Judge whether those computations/fields and explicit unknowns answer the original request. Native closure does not establish clinical truth. '
         if financial is not None else 'The complete original question, definitions, executed plan and result are in that state. '
@@ -264,6 +264,10 @@ def check(question, graph, result, *, stack, ledger=None, as_of_date=None):
             'label': label, 'p': round(p, 4), 'probabilities': probs, 'reasons': reasons, 'reject': reject,
             'cost_usd': usd, 'calls': calls, 'provider': provider, 'decided_by': out.get('decided_by'),
             'cache_hit': bool(out.get('cache_hit')), 'version': VERSION,
+            **({'native_coverage_proof': {'schema': financial['schema'],
+                'complete_native_result_digest': financial.get('complete_native_result_digest'),
+                'table_digest': financial.get('table_digest'),
+                'clinical_semantic_acceptance': False}} if financial is not None else {}),
             **({'native_integrity_projection':wire['native_projection']}if wire['projected']else{})}
 
 

@@ -328,6 +328,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 elif path=='/api/stack/action-workflow/retry':
                     from .deliverables.workflow import retry_deliverable
                     result=retry_deliverable(connected_stack.path,body,allow_live=connected_stack.allow_live)
+                elif path=='/api/stack/contract-input/save':
+                    from .clinical.contract_performance import save_input
+                    result=save_input(body)
                 elif path=='/api/stack/investigation/resume':
                     if set(body)!={'context_id'}:raise ValueError('Exact saved investigation required')
                     from .clinical.proposers import continue_from_artifact

@@ -274,6 +274,9 @@ def financial_coverage_state(path,question,graph,result):
     field/role inventory instead of asking a model to re-read numeric cells.
     """
     nodes=(graph or{}).get('nodes')or[]
+    if nodes and nodes[-1]['operation']=='contract_performance':
+        from .contract_performance import coverage_state
+        return coverage_state(path,question,graph,result)
     if not nodes or nodes[-1]['operation']!='financial_accounts':return None
     from . import request_plan,analysis_tools
     answer=result.get('answer')or{};items=result.get('results')or[];node=nodes[-1]

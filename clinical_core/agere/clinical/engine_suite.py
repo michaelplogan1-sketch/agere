@@ -122,6 +122,16 @@ def registered_input_command(question, as_of):
     return None, None
 
 
+def input_request(question):
+    for module in available().values():
+        request = getattr(module, 'input_request', None)
+        if callable(request):
+            found = request(question)
+            if found is not None:
+                return found
+    return None
+
+
 def native_scalars():
     return {op: tuple(getattr(m, 'NATIVE', ())) for op, m in available().items()}
 

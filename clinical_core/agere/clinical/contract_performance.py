@@ -8,6 +8,10 @@ from collections import Counter, defaultdict
 from decimal import Decimal, ROUND_HALF_UP
 import hashlib
 import json
+import os
+import fcntl
+import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 import sqlite3
@@ -27,13 +31,35 @@ NATIVE = ('value',)
 TEMPLATES = ('Show contract performance for demo-vbc-2029-c3',)
 
 
-def load(contract_id):
+def _input_root():
+    value = os.environ.get('AGERE_CONTRACT_INPUTS')
+    return Path(value).resolve() if value else None
+
+
+def _input_data(contract_id):
     if not isinstance(contract_id, str) or not re.fullmatch(r'[a-z0-9][a-z0-9-]*', contract_id):
         raise ValueError('A registered contract input id is required')
     target = DIRECTORY / (contract_id + '.json')
     if not target.is_file():
         raise ValueError('Contract inputs are unavailable; supply explicit versioned terms, attribution and period')
     data = json.loads(target.read_text())
+    root = _input_root()
+    pointer = root / contract_id / 'current.json' if root else None
+    if pointer and pointer.is_file():
+        active = json.loads(pointer.read_text())
+        revision = active['revision']
+        if revision != 'base':
+            if not re.fullmatch(r'[0-9a-f]{64}', revision):
+                raise ValueError('Invalid saved contract revision')
+            event = json.loads((pointer.parent / 'versions' / (revision + '.json')).read_text())
+            if digest(event) != revision or event['contract_id'] != contract_id:
+                raise ValueError('Saved contract revision integrity differs')
+            data = event['data']
+    return data
+
+
+def load(contract_id):
+    data = _input_data(contract_id)
     if (data.get('schema') != 'agere-contract-performance/1' or data.get('id') != contract_id
             or data.get('authored_synthetic') is not True or type(data.get('version')) is not int):
         raise ValueError('This local route requires a labeled, versioned synthetic contract input')
@@ -56,6 +82,121 @@ def load(contract_id):
     return data, definition, binding
 
 
+def catalog():
+    """Complete current named inputs; no implied selection or payer offer."""
+    out = []
+    for target in sorted(DIRECTORY.glob('*.json')):
+        data, _, binding = load(target.stem)
+        root = _input_root()
+        versions = []
+        if root and (root / target.stem / 'versions').is_dir():
+            for p in sorted((root / target.stem / 'versions').glob('*.json')):
+                event = json.loads(p.read_text())
+                if digest(event) != p.stem:
+                    raise ValueError('Contract history integrity differs')
+                versions.append({'revision': p.stem, 'version': event['data']['version'], 'reason': event['reason']})
+        out.append({'id': data['id'], 'label': data['label'], 'version': data['version'],
+                    'authored_synthetic': data['authored_synthetic'], 'payer_id': data['payer_id'],
+                    'period': data['period'], 'contract_digest': binding, 'terms': data,
+                    'saved_versions': versions, 'editing_available': root is not None,
+                    'active_revision': json.loads((root / data['id'] / 'current.json').read_text())['revision']
+                        if root and (root / data['id'] / 'current.json').is_file() else 'base'})
+    return out
+
+
+def _publish(path, data, *, immutable=False):
+    """Publish complete JSON; never replace an immutable history record."""
+    with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, prefix='.input-', suffix='.partial', delete=False) as stream:
+        temporary = Path(stream.name)
+        json.dump(data, stream, allow_nan=False)
+        stream.flush()
+        os.fsync(stream.fileno())
+    if immutable:
+        try:
+            os.link(temporary, path)
+        except FileExistsError:
+            if json.loads(path.read_text()) != data:
+                raise ValueError('Immutable contract event differs')
+    else:
+        os.replace(temporary, path)
+    if temporary.exists():
+        temporary.unlink()  # only this freshly authored, successfully published temporary
+    fd = os.open(path.parent, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def save_input(request):
+    """Version authored demo terms with optimistic concurrency and exact rollback.
+
+    No source warehouse, packaged rule, old answer or work row is overwritten.
+    The server's configured data directory is never supplied by the request.
+    """
+    if (not isinstance(request, dict) or set(request) != {'contract_id', 'expected_digest', 'changes', 'restore_revision', 'reason'}
+            or not isinstance(request['reason'], str) or not request['reason'].strip()):
+        raise ValueError('Exact contract, current binding, changes or restore revision, and reason required')
+    root = _input_root()
+    if root is None:
+        raise ValueError('Contract editing requires explicitly configured runtime input storage')
+    ident = request['contract_id']
+    load(ident)  # validate ID before creating any path
+    folder = root / ident
+    folder.mkdir(parents=True, exist_ok=True)
+    with (folder / '.lock').open('a+b') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        current, _, binding = load(ident)
+        if binding != request['expected_digest']:
+            raise ValueError('Contract inputs changed in another window; reload before saving')
+        changes, restore = request['changes'], request['restore_revision']
+        if not isinstance(changes, dict) or bool(changes) == bool(restore):
+            raise ValueError('Choose a term revision or restore a saved revision')
+        versions = folder / 'versions'
+        events = folder / 'events'
+        versions.mkdir(exist_ok=True)
+        events.mkdir(exist_ok=True)
+        stamp = datetime.now(timezone.utc).isoformat()
+        if restore:
+            if restore != 'base':
+                if not isinstance(restore, str) or not re.fullmatch(r'[0-9a-f]{64}', restore):
+                    raise ValueError('A saved revision or base is required')
+                event = json.loads((versions / (restore + '.json')).read_text())
+                if digest(event) != restore or event['contract_id'] != ident:
+                    raise ValueError('Saved revision integrity differs')
+            revision = restore
+        else:
+            allowed = {'benchmark_pmpm_cents', 'sharing_rate_bps', 'quality_target_bps'}
+            if set(changes) - allowed or any(type(v) is not int for v in changes.values()):
+                raise ValueError('Editable demo terms are integer benchmark cents, sharing basis points and quality-target basis points')
+            data = json.loads(json.dumps(current))
+            prior_versions = [json.loads(p.read_text())['data']['version'] for p in versions.glob('*.json')]
+            data['version'] = max([current['version'], *prior_versions]) + 1
+            for key, value in changes.items():
+                if key == 'quality_target_bps':
+                    if not 0 <= value <= 10000:
+                        raise ValueError('Quality target must be between zero and one hundred percent')
+                    data['quality']['target_bps'] = value
+                else:
+                    if value < 0 or (key == 'sharing_rate_bps' and value > 10000) or (key == 'benchmark_pmpm_cents' and value == 0):
+                        raise ValueError('Invalid authored demo financial term')
+                    data[key] = value
+            event = {'schema': 'authored-contract-revision/1', 'contract_id': ident, 'data': data,
+                     'parent_digest': binding, 'reason': request['reason'].strip(), 'created_at': stamp,
+                     'source_facts_established': False, 'authored_synthetic': True}
+            revision = digest(event)
+            _publish(versions / (revision + '.json'), event, immutable=True)
+        activation = {'schema': 'authored-contract-activation/1', 'contract_id': ident, 'revision': revision,
+                      'previous_digest': binding, 'reason': request['reason'].strip(), 'created_at': stamp}
+        _publish(events / (digest(activation) + '.json'), activation, immutable=True)
+        _publish(folder / 'current.json', {'revision': revision, 'activation': digest(activation)})
+        data, _, active = load(ident)
+    return {'status': 'saved', 'contract_id': ident, 'revision': revision, 'version': data['version'],
+            'contract_digest': active, 'authored_synthetic': True, 'source_facts_established': False,
+            'prior_answers_preserved': True, 'dependent_work_requires_current_binding': True,
+            'question': 'Show contract performance for ' + ident}
+
+
 def validate(parameters):
     if not isinstance(parameters, dict) or set(parameters) - {'contract_id', 'contract_digest'}:
         raise ValueError('Contract performance needs contract_id and optional current contract_digest')
@@ -76,8 +217,13 @@ def premise_issues(parameters):
 
 
 def schema(obj, string, array):
-    return obj({'contract_id': {'type': 'string', 'description': 'Explicit registered input id; no terms are inferred from enrollment.'},
-                'contract_digest': {'type': 'string', 'description': 'Optional on first execution; pinned by validation. Changed bindings refuse stale reuse.'}})
+    available = catalog()
+    out = obj({'contract_id': {'type': 'string', 'enum': [r['id'] for r in available],
+                              'description': 'Choose explicitly; these labeled synthetic terms are not received payer offers.'},
+               'contract_digest': {'type': 'string', 'description': 'Pinned by validation; changed bindings refuse stale reuse.'}})
+    out['required'] = ['contract_id']
+    out['description'] = json.dumps({'registered_inputs': available, 'selection': 'Ask which input the user intends when it is not explicit; never silently use a demo contract as their actual contract.'})
+    return out
 
 
 def executable_evidence(parameters):
@@ -208,6 +354,8 @@ def run(db, patient_ids, parameters, as_of):
             'practice_drivers': [{'practice_id': key, **row} for key, row in sorted(practices.items())],
             'excluded_claim_counts': dict(excluded), 'claim_bindings': claim_bindings,
             'quality': quality, 'quality_definition_digest': digest(definition),
+            'input_history': next(row['saved_versions'] for row in catalog() if row['id'] == contract['id']),
+            'editing_available': _input_root() is not None,
             'decision_key': digest({'contract_digest': binding, 'as_of': as_of, 'member_months': sorted((pid, month, practice) for (pid, month), practice in members.items()), 'claims': claim_bindings, 'quality': quality}),
             'assumptions': [*contract['assumptions'], *quality.get('warnings', []),
                             'Observed cost drivers are descriptive, not causal intervention savings. Approximate quality is not certified or independent clinical review.'],
@@ -215,9 +363,18 @@ def run(db, patient_ids, parameters, as_of):
 
 
 def execute(path, patient_ids, parameters, as_of):
+    from ..deliverables.answer_context import source_identity
+    from .answer_dependencies import wal_identity
+    observation = {'source': source_identity(path), 'wal': wal_identity(path)}
     target = semantic_layer.ensure(path)
     with sqlite3.connect(Path(target).resolve().as_uri() + '?mode=ro', uri=True) as db:
-        return run(db, patient_ids, parameters, str(as_of)[:10])
+        report = run(db, patient_ids, parameters, str(as_of)[:10])
+    if observation != {'source': source_identity(path), 'wal': wal_identity(path)}:
+        raise ValueError('Observed source changed during contract calculation')
+    if report['contract_digest'] != load(report['parameters']['contract_id'])[2]:
+        raise ValueError('Contract inputs changed during calculation; recompute before saving')
+    report['observation_binding'] = observation
+    return report
 
 
 def answer(report, plan, question):
@@ -232,6 +389,66 @@ def answer(report, plan, question):
             'value': summary, 'method': report['method'], 'limitations': report['assumptions'],
             'definitions': [{'term': 'contract input', 'basis': report['contract']}],
             'overall': {OP: {key: value for key, value in report.items() if key not in ('table', 'patient_ids', 'claim_bindings')}}}
+
+
+def coverage_state(path, question, graph, result):
+    """A source-bound, complete field/role proof for coverage judgment only.
+
+    The full native result must match its persisted execution, current observed
+    source and versioned input. Models need not recheck every numeric cell to
+    judge a fully consumed named-report request. Free-text or inherited graph
+    compositions retain their ordinary complete-evidence path.
+    """
+    expected = registered_input_command(question, None)
+    nodes = (graph or {}).get('nodes') or []
+    if expected is None or len(nodes) != 1 or graph != result.get('graph'):
+        return None
+    if nodes[0]['parameters'] != expected['nodes'][0]['parameters'] or result.get('question') != question:
+        raise ValueError('Contract coverage differs from the named current input request')
+    with sqlite3.connect((Path(path) / 'stack.sqlite3').resolve().as_uri() + '?mode=ro', uri=True) as db:
+        row = db.execute('SELECT payload FROM result_cache WHERE id=?', (result.get('result_id'),)).fetchone()
+    if row is None:
+        return None
+    saved = json.loads(row[0])
+    if saved.get('graph') != graph or saved.get('question') != question or saved.get('results') != result.get('results'):
+        raise ValueError('Contract native execution changed before coverage judgment')
+    current_answer = result.get('answer') or {}
+    native_answer = saved.get('answer') or {}
+    for key in ('table', 'patient_ids', 'overall', 'status', 'answer_type', 'count', 'method', 'headline'):
+        if current_answer.get(key) != native_answer.get(key):
+            raise ValueError('Contract answer changed before coverage judgment: ' + key)
+    report = saved['results'][0]['result']
+    from ..deliverables.answer_context import source_identity
+    from .answer_dependencies import wal_identity
+    observation = {'source': source_identity(path), 'wal': wal_identity(path)}
+    if report.get('observation_binding') != observation:
+        raise ValueError('Contract source changed before coverage judgment')
+    contract, definition, binding = load(report['parameters']['contract_id'])
+    if binding != report['contract_digest']:
+        raise ValueError('Contract input changed before coverage judgment')
+    rows = report['table']
+    return {'schema': 'native-contract-coverage/1', 'original_question': question,
+            'status': current_answer['status'], 'answer_type': current_answer['answer_type'],
+            'contract': contract, 'contract_digest': binding, 'quality_definition': definition,
+            'summary': report['summary'], 'rows': len(rows),
+            'columns': sorted({key for row in rows for key in row}),
+            'complete_native_result_digest': digest(saved), 'table_digest': digest(rows),
+            'observation_binding': observation,
+            'retained_collections': {'all_members': len(rows), 'all_months': len(report['monthly']),
+                'all_practices': len(report['practice_drivers']), 'all_included_claim_bindings': len(report['claim_bindings']),
+                'review_needed_members': sum(bool(row['review_needed']) for row in rows)},
+            'uncertainty': {'missing_amount_claims': report['summary']['missing_amount_claims'],
+                'quality_declined': report['quality'].get('declined'),
+                'missing_quality_inputs': report['quality'].get('missing_inputs', []),
+                'excluded_claim_counts': report['excluded_claim_counts'],
+                'quality_assessments': dict(Counter(str(row['quality_assessment'].get('assessment') or
+                    ('excluded' if row['quality_assessment'].get('excluded') else row['quality_assessment'].get('met'))) for row in rows))},
+            'field_roles': {'population': contract['population_rule'], 'money': contract['amount_basis'],
+                'quality': 'The complete registered approximate definition above is a synthetic demo rule, not certified clinical quality.',
+                'drivers': 'Complete monthly and practice cost/exposure partitions; descriptive, not causal.',
+                'work': 'Every member retains source IDs and review reasons; internal evidence review does not authorize care.'},
+            'limitations': report['assumptions'], 'clinical_semantic_acceptance': False,
+            'judgment_scope': 'Whether these complete executed fields, scope and explicit unknowns cover the named report request. Native integrity is checked in code; no model row sampling, numeric recalculation or clinical certification.'}
 
 
 def route(question, profile, as_of):
@@ -250,7 +467,10 @@ def requested_population(question):
     """Only a fully consumed request for a real registered input binds scope."""
     proposed = route(question, None, None)
     if proposed is None:
-        return None
+        if input_request(question) is None:
+            return None
+        return {'living_only': False, 'record_subject_scope': True, 'unresolved_registered_input': True,
+                'reason': 'Contract performance is a financial source report; its required versioned input must be selected before execution.'}
     return {'living_only': False, 'record_subject_scope': True,
             'registered_input_scope': proposed[0]['nodes'][0]['parameters'],
             'reason': 'The named versioned input defines retrospective recorded membership; present survival does not remove its financial subjects. Internal evidence review is separate from care eligibility.'}
@@ -265,3 +485,20 @@ def registered_input_command(question, as_of):
     """
     proposed = route(question, None, as_of)
     return None if proposed is None else proposed[0]
+
+
+def command_for_input(parameters):
+    return 'Show contract performance for ' + validate(parameters)['contract_id']
+
+
+def input_request(question):
+    if not re.fullmatch(r'\s*(?:show|review|analyze|analyse) (?:the )?contract performance[?.]?\s*', str(question), re.I):
+        return None
+    inputs = catalog()
+    return {'operation': OP, 'bindings': {row['id']: {'contract_id': row['id'], 'contract_digest': row['contract_digest']} for row in inputs},
+            'request': {'slot': 'registered_contract_input', 'question': 'Which contract input should this analysis use?',
+                'reason': 'A payer enrollment record does not establish your contract terms. The available demo is an authored synthetic scenario; it must be chosen explicitly.',
+                'options': [{'id': row['id'], 'label': row['label'] + ' · version ' + str(row['version']),
+                             'meaning': row['id'] + ': ' + row['payer_id'] + ', ' + row['period']['start'] + ' to ' + row['period']['end'] + '. Authored demo terms, not a received payer offer.'} for row in inputs]
+                           + ([{'id': 'inspect_requirements', 'label': 'Inspect required inputs', 'meaning': 'Keep the analysis unresolved and show the missing input requirements.'}] if not inputs else [])
+                           + [{'id': 'different_inputs', 'label': 'Use different contract inputs', 'meaning': 'Keep the analysis unresolved until explicit versioned terms, payer, population and period are supplied.'}]}}
