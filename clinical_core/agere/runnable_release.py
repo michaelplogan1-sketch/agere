@@ -6,7 +6,9 @@ Learning qualifications retain their original workspace binding; no plan rewrite
 validation monkeypatch, credential loading or provider-ledger rollback occurs.
 """
 import argparse
+import hashlib
 import importlib.metadata
+import io
 import json
 import os
 from pathlib import Path
@@ -15,10 +17,12 @@ import shutil
 import sqlite3
 import sys
 import sysconfig
+import tarfile
 import uuid
 from . import local_release as L
 
 VERSION = 'agere-runnable-local-release/1'
+CODE_ONLY = 'agere-code-only-local-release/1'
 BOOTSTRAP = '''import os, sys
 from pathlib import Path
 root = Path(__file__).resolve().parent
@@ -115,6 +119,178 @@ def resource_mounts(dependencies):
                 raise ValueError('Conflicting application model mount')
             mounts[name] = str(target.resolve())
     return mounts
+
+
+def code_only_preflight(target, authorization=None):
+    """A recorded, path-bound operator exception never weakens the general guard.
+
+    This is local build-owner authorization, not customer authentication. It
+    permits only the declared code archive/rehearsal; no database/model/runtime
+    copy path calls this function.
+    """
+    target = Path(target).resolve()
+    if authorization is None:
+        return L.require_storage(target)
+    record = L.read(authorization)
+    if (record.get('schema') != 'agere-code-only-storage-authorization/1'
+            or record.get('approved') is not True or not record.get('authority')
+            or target not in {Path(record[k]).resolve() for k in ('archive', 'installation')}
+            or any(record.get(k) != 0 for k in ('database_copy_bytes', 'model_copy_bytes', 'runtime_copy_bytes'))):
+        raise ValueError('Code-only storage authorization does not cover this target')
+    return {'authorization': str(Path(authorization).resolve()), 'authorization_sha256': L.sha(authorization),
+            'scope': 'explicit code-only exception; general storage guard unchanged'}
+
+
+def _code_payloads():
+    code = L.code_identity()
+    # The existing launcher imports this credential helper only for an explicitly
+    # enabled live subscription. Include its code, never credentials or caches.
+    code['run_integrated_stack.py'] = L.sha(L.ROOT / 'run_integrated_stack.py')
+    payloads = {}
+    for name, expected in code.items():
+        path = L.ROOT / L.safe_relative(name)
+        data = path.read_bytes()
+        if hashlib.sha256(data).hexdigest() != expected:
+            raise ValueError('Code changed while preparing archive')
+        payloads['app/' + name] = data
+    return payloads
+
+
+def make_code_only(config_path, output, *, authorization=None):
+    """Archive code, not a warehouse/checkpoint/Python installation.
+
+    The existing mutable build and provider ledger stay shared and never restored.
+    This mode is explicitly same-machine, not a standalone customer distribution.
+    """
+    guard = code_only_preflight(output, authorization)
+    config = L.validate_config(config_path)
+    build = Path(config['build']).resolve()
+    out = Path(output).resolve()
+    if out.exists(): raise ValueError('Archive already exists')
+    payloads = _code_payloads()
+    config = dict(config, build=str(build))
+    from .gateway import default_ledger_path
+    ledger = default_ledger_path().resolve()
+    if not ledger.is_file(): raise ValueError('Current provider ledger is required')
+    bootstrap = ("import sys\nfrom pathlib import Path\n"
+                 "sys.dont_write_bytecode = True\nroot = Path(__file__).resolve().parent\n"
+                 "sys.path.insert(0, str(root / 'app'))\n"
+                 "from clinical_core.agere.runnable_release import code_only_main\ncode_only_main(root)\n")
+    payloads.update({'configuration.json': (json.dumps(config, indent=2)+'\n').encode(),
+                     'bootstrap.py': bootstrap.encode()})
+    record = {'schema': CODE_ONLY, 'files': {name: {'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+                for name, data in payloads.items()},
+              'platform': {'system': platform.system(), 'machine': platform.machine(), 'python': platform.python_version()},
+              'python': str(Path(sys.executable).absolute()), 'build': str(build),
+              'models': str((L.ROOT / 'models').resolve()), 'ledger': str(ledger),
+              'authorization': guard, 'database_copy_bytes': 0, 'model_copy_bytes': 0, 'runtime_copy_bytes': 0,
+              'scope': 'Same-machine code archive; external Python/libraries, source/model resources and mutable build/work/input/ledger stores remain required. No qualification transfer or full backup.'}
+    payloads['release.json'] = (json.dumps(record, indent=2)+'\n').encode()
+    record_id = hashlib.sha256(payloads['release.json']).hexdigest()
+    payloads['complete.json'] = (json.dumps({'release_id': record_id})+'\n').encode()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    # Exclusive publication preserves every previous attempt. An interrupted
+    # archive remains identifiable and must never overwrite a known good one.
+    with out.open('xb') as stream, tarfile.open(fileobj=stream, mode='w:gz') as archive:
+        for name, data in payloads.items():
+            entry = tarfile.TarInfo(name); entry.size = len(data); entry.mode = 0o644
+            archive.addfile(entry, io.BytesIO(data))
+    return {'archive': str(out), 'archive_sha256': L.sha(out), 'release_id': record_id,
+            'archive_bytes': out.stat().st_size, 'uncompressed_bytes': sum(map(len, payloads.values())),
+            'files': len(payloads), 'source_data_copied': False, 'runtime_copied': False}
+
+
+def _verified_code_archive(archive):
+    files = {}
+    for entry in archive.getmembers():
+        name = entry.name
+        L.safe_relative(name)
+        if not entry.isfile() or name in files:
+            raise ValueError('Code archive requires unique regular files')
+        files[name] = archive.extractfile(entry).read()
+    record = json.loads(files['release.json'])
+    if (record.get('schema') != CODE_ONLY
+            or hashlib.sha256(files['release.json']).hexdigest() != json.loads(files['complete.json'])['release_id']
+            or set(files) != set(record['files']) | {'release.json', 'complete.json'}):
+        raise ValueError('Code archive identity/content mismatch')
+    for name, expected in record['files'].items():
+        if {'size': len(files[name]), 'sha256': hashlib.sha256(files[name]).hexdigest()} != expected:
+            raise ValueError('Code archive bytes changed: ' + name)
+        relative = name.removeprefix('app/')
+        allowed = (relative.startswith(('clinical_core/', 'config/')) and Path(relative).suffix in
+                   ('.py', '.js', '.json', '.jsonl', '.css', '.html', '.csv', '.txt', '.cql'))
+        allowed = allowed or relative in ('serve_current_warehouse.py', 'agere_checkpoint.py', 'run_integrated_stack.py',
+            'tools/training/datasets.py', 'tools/certify_gates.py', 'tools/normalization/jev_check.py')
+        allowed = allowed or (Path(relative).name == relative and relative.startswith('requirements') and relative.endswith('.txt'))
+        if name not in ('configuration.json', 'bootstrap.py') and not (name.startswith('app/') and allowed):
+            raise ValueError('Unexpected non-code archive entry')
+    return record, files
+
+
+def install_code_only(archive, output, *, authorization=None):
+    code_only_preflight(archive, authorization)
+    code_only_preflight(output, authorization)
+    out = Path(output).resolve()
+    if out.exists(): raise ValueError('Installation already exists')
+    with tarfile.open(archive, 'r:gz') as stream:
+        record, files = _verified_code_archive(stream)
+    if record['platform'] != {'system': platform.system(), 'machine': platform.machine(), 'python': platform.python_version()}:
+        raise ValueError('Code archive requires its declared Python/platform')
+    if Path(sys.executable).absolute() != Path(record['python']):
+        raise ValueError('Use the declared existing Python environment')
+    if any(record.get(k) != 0 for k in ('database_copy_bytes', 'model_copy_bytes', 'runtime_copy_bytes')):
+        raise ValueError('Not a code-only archive')
+    # All members are validated before any extraction; never tar.extractall().
+    out.mkdir(parents=True)
+    for name, data in files.items():
+        dest = out / L.safe_relative(name); dest.parent.mkdir(parents=True, exist_ok=True); dest.write_bytes(data)
+    (out / 'app/models').symlink_to(record['models'], target_is_directory=True)
+    return verify_code_only(out, authorization=authorization)
+
+
+def verify_code_only(root, *, authorization=None):
+    code_only_preflight(root, authorization)
+    root = Path(root).resolve(); record = L.read(root / 'release.json')
+    if (record.get('schema') != CODE_ONLY
+            or L.sha(root / 'release.json') != L.read(root / 'complete.json')['release_id']):
+        raise ValueError('Installed code-only release identity changed')
+    for name, expected in record['files'].items():
+        if L.file_entry(root / L.safe_relative(name)) != expected:
+            raise ValueError('Installed code changed: ' + name)
+    actual = {p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file() and not p.is_symlink()}
+    if actual != set(record['files']) | {'release.json', 'complete.json'}:
+        raise ValueError('Unexpected installed code/content')
+    if any(p.is_symlink() and p != root / 'app/models' for p in root.rglob('*')):
+        raise ValueError('Unexpected installation symlink')
+    mount = root / 'app/models'
+    if not mount.is_symlink() or mount.resolve() != Path(record['models']).resolve():
+        raise ValueError('Declared external model mount changed')
+    if not Path(record['ledger']).is_file(): raise ValueError('Current shared ledger unavailable')
+    if Path(sys.executable).absolute() != Path(record['python']): raise ValueError('Declared Python environment changed')
+    if record['platform'] != {'system': platform.system(), 'machine': platform.machine(), 'python': platform.python_version()}:
+        raise ValueError('Declared Python/platform changed')
+    L.validate_config(root / 'configuration.json')
+    return {'status': 'verified_code_only_same_machine', 'release_id': L.sha(root / 'release.json'),
+            'application': str(root / 'app'), 'shared_build': record['build'], 'python': record['python'],
+            'ledger': record['ledger'], 'scope': record['scope']}
+
+
+def code_only_main(root):
+    parser = argparse.ArgumentParser(description='Same-machine code-only release; existing data/runtime dependencies required')
+    parser.add_argument('--storage-authorization', type=Path)
+    commands = parser.add_subparsers(dest='command', required=True)
+    commands.add_parser('check')
+    serve = commands.add_parser('serve'); serve.add_argument('--port', type=int, required=True)
+    serve.add_argument('--allow-live-stack', action='store_true')
+    args = parser.parse_args()
+    result = verify_code_only(root, authorization=args.storage_authorization)
+    if args.command == 'check':
+        print(json.dumps(result)); return
+    record = L.read(root / 'release.json')
+    os.environ['AGERE_LEDGER_PATH'] = record['ledger']
+    from serve_current_warehouse import main as launch
+    launch(['--config', str(root / 'configuration.json'), '--ledger', record['ledger'], '--port', str(args.port)]
+           + (['--allow-live-stack'] if args.allow_live_stack else []))
 
 
 def make(checkpoint, output):

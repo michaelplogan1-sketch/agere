@@ -31,7 +31,8 @@ def warehouse_read_preflight(root, config_path=None):
     return {'path': str(target), 'mode': 'read-only', 'implicit_materialization': False}
 
 
-def inspect(root, control, owner, automation, intent="review", gate=None, storage_operation="large-run", warehouse_config=None):
+def inspect(root, control, owner, automation, intent="review", gate=None, storage_operation="large-run", warehouse_config=None,
+            storage_authorization=None, package_target=None):
     errors = []
 
     def require(condition, message):
@@ -136,6 +137,13 @@ def inspect(root, control, owner, automation, intent="review", gate=None, storag
                     warehouse_read_preflight(root, warehouse_config)
                 except (OSError, ValueError) as exc:
                     require(False, 'Pinned read-only warehouse unavailable: ' + str(exc))
+            elif storage_operation == "code-only-package":
+                try:
+                    from clinical_core.agere.runnable_release import code_only_preflight
+                    if package_target is None: raise ValueError('Explicit code-only package target required')
+                    code_only_preflight(package_target, storage_authorization)
+                except (OSError, ValueError) as exc:
+                    require(False, 'Code-only package preflight refused: ' + str(exc))
     except (KeyError, TypeError, ValueError, IndexError) as exc:
         errors.append(f"Incomplete or invalid control data: {exc}")
     return {
@@ -158,8 +166,10 @@ def main():
     parser.add_argument("--gate")
     parser.add_argument("--warehouse-config", type=Path,
                         help="Explicit pinned candidate configuration; historical defaults are never silently rebound")
-    parser.add_argument("--storage-operation", choices=("large-run", "source-edit", "small-fixture", "warehouse-read"), default="large-run",
+    parser.add_argument("--storage-operation", choices=("large-run", "source-edit", "small-fixture", "warehouse-read", "code-only-package"), default="large-run",
                         help="Large runs enforce the storage plan; edits/tiny fixtures and pinned read-only warehouse checks remain possible during recovery")
+    parser.add_argument('--storage-authorization', type=Path, help='Explicit user-approved exception bound to code-only archive/rehearsal paths')
+    parser.add_argument('--package-target', type=Path)
     args = parser.parse_args()
     root = Path(__file__).resolve().parent
     try:
@@ -175,7 +185,8 @@ def main():
         else:
             with heartbeat_path.open("rb") as source:
                 automation = tomllib.load(source)
-        result = inspect(root, control, owner, automation, args.intent, args.gate, args.storage_operation, args.warehouse_config)
+        result = inspect(root, control, owner, automation, args.intent, args.gate, args.storage_operation, args.warehouse_config,
+                         args.storage_authorization, args.package_target)
     except (OSError, ValueError, KeyError) as exc:
         result = {"status": "failed", "errors": [str(exc)]}
     print(json.dumps(result, indent=2))
