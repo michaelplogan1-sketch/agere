@@ -843,7 +843,16 @@ function vizFunnel(a){const o=(a.overall||{}).risk_outcomes||{},p=o.parameters||
  if((o.notes||[]).length)h+='<ul class="hint">'+o.notes.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
  if((o.data_gaps||[]).length)h+='<details><summary>Data limits ('+o.data_gaps.length+')</summary><ul>'+o.data_gaps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
  return h}
+function vizMonitorComparison(a){const c=a.overall.monitor_comparison,rows=Array.isArray(c.rows)?c.rows:(a.table||[]),charts=(c.registered_chart||{}).chart_status||[],base=c.baseline||{};
+ const months=new Set(rows.map(r=>r.month)),flags=rows.filter(r=>r.stable_family_flag===true).length,patterns=charts.filter(r=>r.status==='rate_signal'),missing=rows.filter(r=>r.rate==null).length;
+ const kp=(name,value)=>'<div class="kpi"><div class="l">'+esc(name)+'</div><div class="v">'+esc(value)+'</div></div>';
+ let h='<section class="sec" data-focus="monitor-comparison"><h3>Rate changes and source evidence</h3><p class="hint">Complete native comparison. Model verification and clinical significance remain separate.</p><div class="kpis">'+kp('Months examined',months.size)+kp('Corrected stable-rate flags',flags)+kp('Charts with exploratory patterns',patterns.length)+kp('Months with unknown rates',missing)+'</div>';
+ h+='<p>The stable-rate comparison tests each month against the remaining reporting period. Bonferroni covers '+esc(base.family_tests)+' tests. Registered run-pattern rules can flag a chart even when no single point crosses its limits.</p>';
+ if(patterns.length)h+='<details open><summary>Registered exploratory patterns</summary>'+tableHTML(patterns.map(r=>({'Series':r.series,'Group':r.group,'Rules':(r.rate_rules||[]).join(', '),'Months':(r.rate_signal_months||[]).join(', ')})),{name:'registered-rate-patterns'})+'</details>';
+ h+='<details open><summary>Monthly rates and baseline comparison</summary>'+tableHTML(rows.map(r=>({'Month':r.month,'Series':r.series,'Group':r.group,'Events':r.numerator,'Member-months':r.exposure,'Rate per 1,000':r.rate,'Adjusted p':r.stable_bonferroni_p,'Corrected flag':r.stable_family_flag,'Source records':r.received_source_records})),{name:'native-monitor-comparison'})+'</details>';
+ h+='<details><summary>Assumptions and source limits</summary><ul>'+(base.assumptions||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'<li>'+esc(c.source_limitation||'')+'</li><li>'+esc((c.registered_chart||{}).multiplicity||'')+'</li></ul></details></section>';return h;}
 function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
+ if(o.monitor_comparison)return vizMonitorComparison(a);
  if(a.answer_type==='table'&&a.table_columns)return '<p class="hint">'+esc(a.interpretation||'')+'</p>'+vizTable(a);
   if(o.loop_closure)return vizLoops(a);
   if(o.diagnostic_delay)return vizDelay(a);

@@ -583,9 +583,13 @@ def build_answer_core(plan, results, memberships, question):
                       overall={'period': report['period'], 'members_in_scope': report.get('members_in_scope'),
                                'tests_examined': report['tests_examined'], 'look_elsewhere_bits': report['look_elsewhere_bits'],
                                'charts': [] if report['check'] in ('ra_cusum', 'vlad') else chart_points(report),
+                               **({'monitor_comparison': report['comparison']} if report.get('comparison') is not None else {}),
                                **({'risk_adjusted': {'check': report['check'], 'parameters': report['parameters'], 'summary': report.get('summary'),
                                                      'control_limits': report.get('control_limits'), 'units': report.get('units'),
                                                      'signals': report.get('signals')}} if report['check'] in ('ra_cusum', 'vlad') else {})})
+        if report.get('comparison') is not None:
+            answer.update(count=len(table), computed_as={'source_request_id': digest({'question': question, 'parameters': report['parameters']}),
+                'operation': 'monitor', 'output': 'comparison', 'definition': report['comparison']['baseline']['method']})
         return answer
     if last['operation'] == 'claims_review':
         from .claims_review import summarize as claims_summary

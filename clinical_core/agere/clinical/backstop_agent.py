@@ -4789,6 +4789,8 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                 a['evidence_text'] = ' | '.join(f'{s["record_id"]} {s.get("date") or ""}: "{s["quote"]}"' for s in kept[:4])
             a['limitations'] = list(dict.fromkeys(notes + ['Answered by the final backstop analyst (Claude), using native calculations and source observations. '
                                         'The execution and source checks do not establish independent clinical certification.']))
+            from .monitor import attach_comparison
+            attach_comparison(a, out['tool_calls'])
             out['answer'] = a
         return out
     finally:

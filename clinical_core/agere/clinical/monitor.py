@@ -29,11 +29,11 @@ from datetime import date
 import json, math, re, sqlite3
 
 import numpy as np
-from scipy.stats import chi2, norm
+from scipy.stats import binomtest, chi2, norm
 
 from . import semantic_layer, vbc
 
-VERSION = 'monitor/2'
+VERSION = 'monitor/3'
 CHECKS = ('all', 'control_chart', 'feed', 'claims', 'claims_integrity', 'benford', 'peer_outliers', 'duplicates', 'ra_cusum', 'vlad')
 SERIES = ('ed_rate', 'admit_rate', 'pmpm', 'lab_volume', 'denial_rate', 'arrival_lag')
 CLAIM_SERIES = ('pmpm', 'denial_rate', 'arrival_lag')
@@ -41,7 +41,7 @@ GROUP_BY = ('auto', 'none', 'practice', 'payer', 'facility', 'source_system')
 METHODS = ('both', 'shewhart', 'ewma')
 AMOUNTS = ('billed', 'allowed', 'both')
 EXPOSURE_BASES = ('registered_coverage', 'historical_member_months')
-OUTPUTS = ('summary', 'monthly_points')
+OUTPUTS = ('summary', 'monthly_points', 'comparison')
 FIELDS = {'check', 'series', 'group_by', 'method', 'amount', 'stream', 'period', 'exposure_basis', 'output'} | {'chart', 'outcome', 'unit', 'or_shift', 'or_improve', 'arl0',
                                                                                     'window_days', 'adjust', 'min_cases', 'include_observation'}
 NATURAL_GROUP = {'ed_rate': 'practice', 'admit_rate': 'practice', 'pmpm': 'practice', 'lab_volume': 'source_system',
@@ -100,8 +100,10 @@ def validate(p):
         value = p.get(name, choices[0])
         if value not in choices: raise ValueError(f'monitor {name} must be one of {choices}')
         out[name] = value
-    if out['output'] == 'monthly_points' and (check != 'control_chart' or p.get('chart', 'control') != 'control'):
-        raise ValueError('monitor monthly_points output requires check=control_chart and chart=control')
+    if out['output'] in ('monthly_points', 'comparison') and (check != 'control_chart' or p.get('chart', 'control') != 'control'):
+        raise ValueError('monitor monthly_points/comparison output requires check=control_chart and chart=control')
+    if out['output'] == 'comparison' and (not series or any(s not in ('ed_rate', 'admit_rate', 'lab_volume') for s in series)):
+        raise ValueError('monitor comparison requires explicit count/exposure series: ed_rate, admit_rate or lab_volume')
     chart = p.get('chart') or (check if check in ('ra_cusum', 'vlad') else None)
     if chart is not None:
         if chart not in CHART_OPTIONS: raise ValueError(f'monitor chart must be one of {CHART_OPTIONS}')
@@ -477,6 +479,120 @@ def _monthly_rows(series, group_by, group, spec, months, report_idx, status, par
                      'data_rules_json': json.dumps((status or {}).get('data_rules', [])),
                      'parameters_json': json.dumps(params, sort_keys=True)})
     return rows
+
+
+def stable_rate_comparison(rows):
+    """A fixed reporting-period, equal-Poisson-rate baseline, not a predictor.
+
+    Conditional on each group's total events, a month's events are binomial
+    with probability exposure_month / exposure_total. This avoids treating an
+    estimated pooled rate as a known Poisson mean. Bonferroni covers every
+    testable series/group/month in this request, including non-signals; it does
+    not calibrate the separate adaptive chart/rule heuristics.
+    """
+    totals = defaultdict(lambda: [0, 0.0])
+    for row in rows:
+        count, exposure = row['numerator'], row['exposure']
+        if (count is None or not math.isfinite(count) or count < 0 or int(count) != count
+                or exposure is None or not math.isfinite(exposure) or exposure < 0):
+            raise ValueError('Stable-rate comparison requires finite nonnegative counts and exposure')
+        if exposure > 0:
+            total = totals[(row['series'], row['group_by'], row['group'])]
+            total[0] += int(count); total[1] += exposure
+    result = []
+    for source in rows:
+        row = dict(source)
+        events, exposure = totals[(row['series'], row['group_by'], row['group'])]
+        count, n = int(row['numerator']), row['exposure']
+        rest_events, rest_n = events - count, exposure - n
+        pooled = events / exposure if exposure > 0 else None
+        tested = n > 0 and rest_n > 0
+        probability = float(binomtest(count, events, n / exposure).pvalue) if tested and events else 1.0 if tested else None
+        row.update(stable_pooled_rate_per_1000=pooled * 1000 if pooled is not None else None,
+                   stable_expected_events=pooled * n if pooled is not None and n > 0 else None,
+                   stable_p_value=probability, stable_alpha=0.05,
+                   stable_rate_difference_per_1000=(1000 * (count / n - rest_events / rest_n)) if tested else None,
+                   stable_rate_ratio_to_rest=((count / n) / (rest_events / rest_n)) if tested and rest_events else None,
+                   stable_total_events=events, stable_total_exposure=exposure,
+                   stable_test_status=('tested' if events else 'no_events_no_power') if tested else 'insufficient_exposure',
+                   stable_baseline_start=row['report_start'], stable_baseline_end=row['report_end'])
+        result.append(row)
+    family = sum(row['stable_p_value'] is not None for row in result)
+    for row in result:
+        p = row['stable_p_value']
+        row.update(stable_family_tests=family, stable_bonferroni_p=min(1.0, p * family) if p is not None else None,
+                   stable_unadjusted_flag=p < 0.05 if p is not None else None,
+                   stable_family_flag=p * family < 0.05 if p is not None else None)
+    return result
+
+
+def comparison_view(report, path, patient_ids, as_of):
+    """Compose existing rate charts and source observation model, without prose math."""
+    from . import change_attribution
+    rows = stable_rate_comparison(report['monthly_points'])
+    source = change_attribution.execute(path, patient_ids,
+        {'period': report['parameters']['period'], 'group_by': 'source_system', 'output': 'monthly_coverage'}, as_of)
+    by_month = {r['month']: r for r in source['monthly_coverage']}
+    flags = defaultdict(int)
+    for anomaly in source['anomalies']: flags[anomaly['month']] += 1
+    for row in rows:
+        received = by_month.get(row['month'])
+        row.update(received_source_records=received['received_records_in_selected_streams'] if received else None,
+                   source_pattern_flags=flags[row['month']] if received else None,
+                   source_capture_status=received['capture_status'] if received else 'not_computed',
+                   physical_arrival_history_reconstructed=False,
+                   source_comparison_scope='Whole selected population, all received source streams; not group-specific completeness or causal attribution')
+    return {'schema': 'monitor-comparison/1', 'rows': rows, 'source_observation': source,
+            'baseline': {'method': 'Two-sided exact conditional equal-Poisson-rate test, each report month versus all other report months in the same series/group',
+                         'alpha': 0.05, 'family_tests': sum(r['stable_p_value'] is not None for r in rows),
+                         'multiplicity': 'Bonferroni across all testable requested series/group/month cells, including non-signals',
+                         'assumptions': ['Fixed retrospective reporting window and observed exposure; independent Poisson counts under the constant-rate null.',
+                             'Seasonality, recurrent-member dependence, overdispersion and incomplete capture can invalidate this simple null; no clinical or repeated-look qualification is established.',
+                             'No separate training/test split: the conditional test conditions on observed total counts; this is not out-of-sample prediction.']},
+            'registered_chart': {'method': report['method'], 'parameters': report['parameters'],
+                                 'multiplicity': 'Existing adaptive chart rules retain their look-elsewhere ranking penalty; baseline Bonferroni does not qualify their alert rate.',
+                                 'chart_status': report['chart_status']},
+            'clinical_qualification': False, 'causal_change_established': False,
+            'source_limitation': 'Received event-date volume is observable. Physical arrival/capture history and actual care-volume changes are not identified by these records.'}
+
+
+def attach_comparison(answer, calls):
+    """Restore a complete native view only for an exact server-bound table copy.
+
+    Model prose and its uncertain verification stay separate. A table summary
+    must not hide run-pattern signals just because no point crossed a limit.
+    """
+    value = answer.get('overall')
+    overall = dict(value) if isinstance(value, dict) else {}
+    if 'monitor_comparison' in overall:
+        overall.pop('monitor_comparison')  # model-authored metadata is not authority
+        answer['overall'] = overall
+    answer.pop('native_comparison_binding', None)
+    binding = answer.get('table_binding') or {}
+    if not binding.get('copied_from_executed_result') or binding.get('interpreted_columns'):
+        return False
+    for call in calls:
+        if call.get('name') != 'execute_analysis' or (call.get('input') or {}).get('operation') != 'monitor': continue
+        result = call.get('result') or {}
+        native = (result.get('engine_result') or {}).get('answer') or {}
+        comparison = (native.get('overall') or {}).get('monitor_comparison')
+        if (comparison is None or result.get('result_view') != binding.get('result_view')
+                or answer.get('table') != comparison['rows'] or native.get('table') != comparison['rows']):
+            continue
+        overall['monitor_comparison'] = comparison
+        answer['overall'] = overall
+        answer['computed_as'] = native['computed_as']
+        registered = comparison['registered_chart']['chart_status']
+        charts = sum(row['status'] == 'rate_signal' for row in registered)
+        corrected = sum(row['stable_family_flag'] is True for row in comparison['rows'])
+        notice = (f'Native comparison: {corrected} corrected stable-rate baseline flags; {charts} registered charts have exploratory '
+                  'rate-pattern signals. Run-pattern signals and single-point limits are distinct. Neither establishes a causal care change or complete source capture.')
+        answer['warnings'] = list(dict.fromkeys([*(answer.get('warnings') or []), notice]))
+        answer['native_comparison_binding'] = {'result_view': binding['result_view'], 'rows': len(comparison['rows']),
+            'source': 'complete executed monitor report matched to the final native table',
+            'model_verification_changed': False, 'clinical_qualification': False}
+        return True
+    return False
 
 
 def _claims_rows(db, months, keep, as_of):
@@ -1413,7 +1529,7 @@ def execute(path, patient_ids, params, as_of=None):
                                               gap_idx | series_data.get(s, set()),
                                               feed_months.get((FEED_STREAM[s], g), set()) if gb in ('facility', 'source_system') else set(),
                                               feed_months.get((FEED_STREAM[s], 'all'), set()))
-                        if p['output'] == 'monthly_points' and not silent:
+                        if p['output'] in ('monthly_points', 'comparison') and not silent:
                             monthly_points += _monthly_rows(s, gb, g, spec, months, report_idx, res[0] if res else None, p)
                         if res is None: continue
                         status, found, data_idx, n_tests = res
@@ -1605,6 +1721,9 @@ def execute(path, patient_ids, params, as_of=None):
     if feed_reports:  # real change vs feed outage for the flagged streams (joint tensor model; never breaks the monitor answer)
         from .change_attribution import annotate_monitor
         annotate_monitor(out, path, as_of, keep)
+    if p['output'] == 'comparison':
+        out['comparison'] = comparison_view(out, path, patient_ids, as_of)
+        out['limitations'] = [*out['limitations'], *out['comparison']['baseline']['assumptions'], out['comparison']['source_limitation']]
     return out
 
 
@@ -1643,6 +1762,15 @@ def follow_up(f):
 def summarize(report, limit=5):
     """Direct answer for the shared answer contract: (one-paragraph value, table)."""
     check, rows = report['check'], report['rows']
+    comparison = report.get('comparison')
+    if comparison is not None:
+        points = comparison['rows']; family = comparison['baseline']['family_tests']
+        flags = sum(r['stable_family_flag'] is True for r in points)
+        missing = sum(r['rate'] is None for r in points)
+        return (f"Native rate comparison: {len(points)} complete series/group/month rows; {flags} stable-rate baseline flags "
+                f"after Bonferroni across {family} tests; {missing} months have unknown rates. "
+                'Registered Shewhart/EWMA chart results and received-source observation evidence are retained separately. '
+                'A statistical flag requests investigation; source capture and causal care change remain unestablished.', points)
     if check in RA_CHARTS: return _summarize_ra(report, limit)
     lead = [f for f in rows if not f.get('echo')]
     if check == 'benford':

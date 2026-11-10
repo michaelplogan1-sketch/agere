@@ -24,7 +24,7 @@ class EntryModelReuse(unittest.TestCase):
         from contextlib import ExitStack
         from clinical_core.agere import model_policy as M
         from clinical_core.agere.clinical import harness_improvement as H
-        wh=SimpleNamespace(define=lambda day:None,close=lambda:None)
+        wh=SimpleNamespace(columns={},define=lambda day:None,close=lambda:None)
         tools=SimpleNamespace(cohort=None,scope=None,db=SimpleNamespace(close=lambda:None),continuation_identity=lambda:{'source':'fixture'},
             subtool_accounting={'new_paid_api_calls':0,'estimated_cost_usd':0.0},document_reviews=[],judged=[])
         run={'answer':{'status':'answered','headline':'Native result retained.'},'model':M.SONNET,
