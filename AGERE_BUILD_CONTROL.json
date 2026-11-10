@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-10T19:56:49.564582+00:00",
+  "updated_at": "2026-11-10T20:09:22.222309+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -720,44 +720,39 @@
     }
   ],
   "checkpoint": {
-    "kind": "connected_contract_input_followthrough_delivery",
+    "kind": "connected_contract_input_delivery_and_scoped_development_comparison",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "An ambiguous contract request asks which registered input to use; explicit selection continues the original saved conversation. Users can revise labeled demo assumptions through the UI/API, recompute against unchanged source facts, retain both answer/work histories, reject stale work and restore exact terms. Native current-result coverage replaces the formerly oversized optional judgment payload.",
+    "user_behavior_delta": "Explicit registered input selection, versioned authored assumption edits, exact recomputation on unchanged received facts, persistent old/new internal work, stale refusal and exact rollback are now demonstrated through ordinary chat/API and browser. A named-command development comparison characterizes orchestration cost/latency without changing the product or repeating the native arm.",
     "measured_failure_reduction": {
-      "input_pause_provider_calls": 0,
-      "initial_selected_analysis_seconds": 4.46979883313179,
-      "changed_term_analysis_seconds": 5.328353082993999,
-      "members": 413,
-      "recorded_member_months": 4385,
-      "included_claims": 3842,
-      "observed_allowed_cents": 168827048,
-      "benchmark_delta_cents": 43850000,
-      "source_unchanged": true,
-      "duplicate_reply_provider_calls": 0,
-      "old_work_blocked": true,
-      "old_work_items": 60,
-      "recomputed_review_work_items": 59,
-      "both_answer_and_work_histories_preserved": true,
-      "restore_recovers_original_binding": true,
-      "checks_run": 160,
+      "ambiguous_input_pause_provider_calls": 0,
+      "stale_work_mutation_refused": true,
+      "old_and_new_work_histories_preserved": true,
+      "prior_oversized_Jev_failure": 1,
+      "current_workflow_Jev_attempts": 4,
+      "current_workflow_Jev_failures": 0,
+      "native_initial_seconds": 4.46979883313179,
+      "native_revised_seconds": 5.328353082993999,
+      "native_workflow_known_api_equivalent_usd": 0.000424662,
+      "frontier_comparison_seconds": 20.222367209149525,
+      "frontier_comparison_calls": 4,
+      "independent_native_financial_cells_per_arm": 4879,
       "checks_passed": 159,
-      "checks_skipped": 1,
-      "skipped_reason": "Opt-in live System One unit smoke; actual connected workflow made four successful Jev attempts.",
-      "browser_editor_verified": true,
-      "browser_layout_check_provider_calls": 0
+      "opt_in_checks_skipped": 1,
+      "native_member_rows": 413,
+      "internal_review_items_original": 60,
+      "internal_review_items_recomputed": 59,
+      "source_unchanged": true
     },
     "evidence": [
       "artifacts/agere-contract-input-followthrough-2026-11-10/delivery-receipt.json",
-      "artifacts/agere-contract-input-followthrough-2026-11-10/ordinary-v1/receipt.json",
-      "artifacts/agere-contract-input-followthrough-2026-11-10/ordinary-v2/receipt.json",
-      "artifacts/agere-contract-input-followthrough-2026-11-10/visual-v3/receipt.json",
-      "artifacts/agere-contract-input-followthrough-2026-11-10/native-coverage-proof.json",
-      "artifacts/agere-contract-input-followthrough-2026-11-10/all-attempt-accounting.json"
+      "artifacts/agere-contract-input-followthrough-2026-11-10/comparison-v1/delivery-receipt.json",
+      "artifacts/agere-contract-input-followthrough-2026-11-10/comparison-v1/engineering-score.json",
+      "artifacts/agere-contract-input-followthrough-2026-11-10/visual-v3/receipt.json"
     ],
-    "remaining_gap": "Freeze/reuse this scoped candidate and run one relevant existing-tools Sonnet comparison without rerunning passed stack questions. Independent quality/model/statistical qualification, broader healthcare charter, deployment and full storage/backup plan remain explicit dependencies.",
-    "next_action": "G3: Contract input discovery/clarification, versioned edit/recompute/internal work, stale refusal, exact rollback and scoped native coverage are sealed. Preserve original context ANS-e7f6babdd97441990723cd63 and changed-term context ANS-ed1655b7758400e37cf2931f; do not rerun them or Q17/whole25 passing campaigns. Next freeze the actual demo comparison protocol and input/code/source bindings, then use the existing tools.ordinary_stack_comparison.frontier runner for one Sonnet-with-tools observation. Reuse retained candidate execution with explicit posthoc/observational limits and no general superiority claim; preserve every attempt/unknown cost and independent evaluator boundary. All ten areas/all25 history retained. No source copy/package, model catalog/training, protected keys/generator truth, Git push or scheduler restart.",
-    "product_commit": null
+    "remaining_gap": "Final same-input raw-schema/governed-frontier/Agere evaluation, actual demo acceptance and packaging/clean-start rehearsal, and the requested evidence-based write-up remain. Preserve current all25/tenarea history; broader clinical/model/customer readiness and full backup/storage plan stay separate.",
+    "next_action": "G3: The connected synthetic contract input \u2192 clarification \u2192 native performance \u2192 both buyer views \u2192 saved internal review work \u2192 changed-term recomputation/refusal/rollback is sealed at local9ea7e635. A single governed-Sonnet development comparison is retained; do not rerun these passing stack questions or turn its posthoc named-command result into a superiority claim. Next freeze the final finite release evaluation in the existing protocol/runner infrastructure: same actual demo terms, source clocks and independent rubric for raw-schema frontier, governed-tools frontier and Agere, with new-question/parameter/source-change/repeat roles separated and full display/native precision recorded. Reuse existing evidence and original25case dispositions; run only genuinely missing release scenarios, retaining partial/negative outcomes without a repair campaign. Then make one explicit scoped release decision, package/rehearse the demonstrated candidate without copying the warehouse and draft the requested evidence-based write-up. Source/profile/storage preflights remain; full clinical/model/customer qualification and backup/storage prerequisites are separate. No optional model catalog/training, source copy, protected keys/generator truth, Git push or scheduler restart.",
+    "product_commit": "9ea7e635"
   },
   "decisions": [
     {
@@ -1592,6 +1587,13 @@
         "artifacts/agere-q21-assertion-window-2026-11-06/engineering-proof.json",
         "artifacts/agere-q21-assertion-window-2026-11-06/receipt.json"
       ]
+    },
+    {
+      "at": "2026-11-10T20:09:22.222309+00:00",
+      "basis": "User asked to continue the accepted audit response; normal selected-input and changed-term workflow plus one frozen governed-tools observation now returned.",
+      "change": "Seal the input/work loop and retain the first governed-tools comparison as development evidence only. Keep final release evaluation/packaging/write-up pending; preserve strict display precision differences and all partial/scoring/harness outcomes instead of repeating answered cases.",
+      "scope_impact": "No charter removal or qualification transfer. All ten areas and all25 history retained; first release remains synthetic shared contract demo. Scheduler paused and pushes disabled.",
+      "evidence": "artifacts/agere-contract-input-followthrough-2026-11-10/comparison-v1/delivery-receipt.json"
     }
   ],
   "decision_log": [
@@ -7899,6 +7901,11 @@
       "status": "sealed_scoped_workflow",
       "receipt": "artifacts/agere-contract-input-followthrough-2026-11-10/delivery-receipt.json",
       "source_frozen": false
+    },
+    "contract_demo_comparison": {
+      "status": "sealed_development_observation_final_release_eval_pending",
+      "receipt": "artifacts/agere-contract-input-followthrough-2026-11-10/comparison-v1/delivery-receipt.json",
+      "source_frozen": false
     }
   },
   "current_visual_request": {
@@ -7935,7 +7942,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Contract input discovery/clarification, versioned edit/recompute/internal work, stale refusal, exact rollback and scoped native coverage are sealed. Preserve original context ANS-e7f6babdd97441990723cd63 and changed-term context ANS-ed1655b7758400e37cf2931f; do not rerun them or Q17/whole25 passing campaigns. Next freeze the actual demo comparison protocol and input/code/source bindings, then use the existing tools.ordinary_stack_comparison.frontier runner for one Sonnet-with-tools observation. Reuse retained candidate execution with explicit posthoc/observational limits and no general superiority claim; preserve every attempt/unknown cost and independent evaluator boundary. All ten areas/all25 history retained. No source copy/package, model catalog/training, protected keys/generator truth, Git push or scheduler restart.",
+  "next_action": "G3: The connected synthetic contract input \u2192 clarification \u2192 native performance \u2192 both buyer views \u2192 saved internal review work \u2192 changed-term recomputation/refusal/rollback is sealed at local9ea7e635. A single governed-Sonnet development comparison is retained; do not rerun these passing stack questions or turn its posthoc named-command result into a superiority claim. Next freeze the final finite release evaluation in the existing protocol/runner infrastructure: same actual demo terms, source clocks and independent rubric for raw-schema frontier, governed-tools frontier and Agere, with new-question/parameter/source-change/repeat roles separated and full display/native precision recorded. Reuse existing evidence and original25case dispositions; run only genuinely missing release scenarios, retaining partial/negative outcomes without a repair campaign. Then make one explicit scoped release decision, package/rehearse the demonstrated candidate without copying the warehouse and draft the requested evidence-based write-up. Source/profile/storage preflights remain; full clinical/model/customer qualification and backup/storage prerequisites are separate. No optional model catalog/training, source copy, protected keys/generator truth, Git push or scheduler restart.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -8250,5 +8257,5 @@
     ]
   },
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
-  "latest_receipt": "artifacts/agere-contract-input-followthrough-2026-11-10/delivery-receipt.json"
+  "latest_receipt": "artifacts/agere-contract-input-followthrough-2026-11-10/comparison-v1/delivery-receipt.json"
 }

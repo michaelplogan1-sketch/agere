@@ -5,9 +5,9 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: Contract input discovery/clarification, versioned edit/recompute/internal work, stale refusal, exact rollback and scoped native coverage are sealed. Preserve original context ANS-e7f6babdd97441990723cd63 and changed-term context ANS-ed1655b7758400e37cf2931f; do not rerun them or Q17/whole25 passing campaigns. Next freeze the actual demo comparison protocol and input/code/source bindings, then use the existing tools.ordinary_stack_comparison.frontier runner for one Sonnet-with-tools observation. Reuse retained candidate execution with explicit posthoc/observational limits and no general superiority claim; preserve every attempt/unknown cost and independent evaluator boundary. All ten areas/all25 history retained. No source copy/package, model catalog/training, protected keys/generator truth, Git push or scheduler restart.",
-  "latest_delivery": "Contract input selection, versioned demo edits and recomputation with preserved work and narrow native coverage",
-  "latest_receipt": "artifacts/agere-contract-input-followthrough-2026-11-10/delivery-receipt.json",
+  "active_work": "G3: The connected synthetic contract input \u2192 clarification \u2192 native performance \u2192 both buyer views \u2192 saved internal review work \u2192 changed-term recomputation/refusal/rollback is sealed at local9ea7e635. A single governed-Sonnet development comparison is retained; do not rerun these passing stack questions or turn its posthoc named-command result into a superiority claim. Next freeze the final finite release evaluation in the existing protocol/runner infrastructure: same actual demo terms, source clocks and independent rubric for raw-schema frontier, governed-tools frontier and Agere, with new-question/parameter/source-change/repeat roles separated and full display/native precision recorded. Reuse existing evidence and original25case dispositions; run only genuinely missing release scenarios, retaining partial/negative outcomes without a repair campaign. Then make one explicit scoped release decision, package/rehearse the demonstrated candidate without copying the warehouse and draft the requested evidence-based write-up. Source/profile/storage preflights remain; full clinical/model/customer qualification and backup/storage prerequisites are separate. No optional model catalog/training, source copy, protected keys/generator truth, Git push or scheduler restart.",
+  "latest_delivery": "Contract input/recomputation/work loop and scoped governed-Sonnet development comparison",
+  "latest_receipt": "artifacts/agere-contract-input-followthrough-2026-11-10/comparison-v1/delivery-receipt.json",
   "owned_server_pid": null,
   "owned_server_session": null,
   "full_queue_acceptance": false,
@@ -18,7 +18,7 @@
     "receipt": "artifacts/agere-shared-path-2026-11-09/delivery-receipt.json"
   },
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: Contract input discovery/clarification, versioned edit/recompute/internal work, stale refusal, exact rollback and scoped native coverage are sealed. Preserve original context ANS-e7f6babdd97441990723cd63 and changed-term context ANS-ed1655b7758400e37cf2931f; do not rerun them or Q17/whole25 passing campaigns. Next freeze the actual demo comparison protocol and input/code/source bindings, then use the existing tools.ordinary_stack_comparison.frontier runner for one Sonnet-with-tools observation. Reuse retained candidate execution with explicit posthoc/observational limits and no general superiority claim; preserve every attempt/unknown cost and independent evaluator boundary. All ten areas/all25 history retained. No source copy/package, model catalog/training, protected keys/generator truth, Git push or scheduler restart.",
+  "resume_priority": "G3: The connected synthetic contract input \u2192 clarification \u2192 native performance \u2192 both buyer views \u2192 saved internal review work \u2192 changed-term recomputation/refusal/rollback is sealed at local9ea7e635. A single governed-Sonnet development comparison is retained; do not rerun these passing stack questions or turn its posthoc named-command result into a superiority claim. Next freeze the final finite release evaluation in the existing protocol/runner infrastructure: same actual demo terms, source clocks and independent rubric for raw-schema frontier, governed-tools frontier and Agere, with new-question/parameter/source-change/repeat roles separated and full display/native precision recorded. Reuse existing evidence and original25case dispositions; run only genuinely missing release scenarios, retaining partial/negative outcomes without a repair campaign. Then make one explicit scoped release decision, package/rehearse the demonstrated candidate without copying the warehouse and draft the requested evidence-based write-up. Source/profile/storage preflights remain; full clinical/model/customer qualification and backup/storage prerequisites are separate. No optional model catalog/training, source copy, protected keys/generator truth, Git push or scheduler restart.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-09T18:35:52.790981+00:00",
   "heartbeat_status": "PAUSED",
@@ -26,44 +26,39 @@
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
   "latest_checkpoint": {
-    "kind": "connected_contract_input_followthrough_delivery",
+    "kind": "connected_contract_input_delivery_and_scoped_development_comparison",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "An ambiguous contract request asks which registered input to use; explicit selection continues the original saved conversation. Users can revise labeled demo assumptions through the UI/API, recompute against unchanged source facts, retain both answer/work histories, reject stale work and restore exact terms. Native current-result coverage replaces the formerly oversized optional judgment payload.",
+    "user_behavior_delta": "Explicit registered input selection, versioned authored assumption edits, exact recomputation on unchanged received facts, persistent old/new internal work, stale refusal and exact rollback are now demonstrated through ordinary chat/API and browser. A named-command development comparison characterizes orchestration cost/latency without changing the product or repeating the native arm.",
     "measured_failure_reduction": {
-      "input_pause_provider_calls": 0,
-      "initial_selected_analysis_seconds": 4.46979883313179,
-      "changed_term_analysis_seconds": 5.328353082993999,
-      "members": 413,
-      "recorded_member_months": 4385,
-      "included_claims": 3842,
-      "observed_allowed_cents": 168827048,
-      "benchmark_delta_cents": 43850000,
-      "source_unchanged": true,
-      "duplicate_reply_provider_calls": 0,
-      "old_work_blocked": true,
-      "old_work_items": 60,
-      "recomputed_review_work_items": 59,
-      "both_answer_and_work_histories_preserved": true,
-      "restore_recovers_original_binding": true,
-      "checks_run": 160,
+      "ambiguous_input_pause_provider_calls": 0,
+      "stale_work_mutation_refused": true,
+      "old_and_new_work_histories_preserved": true,
+      "prior_oversized_Jev_failure": 1,
+      "current_workflow_Jev_attempts": 4,
+      "current_workflow_Jev_failures": 0,
+      "native_initial_seconds": 4.46979883313179,
+      "native_revised_seconds": 5.328353082993999,
+      "native_workflow_known_api_equivalent_usd": 0.000424662,
+      "frontier_comparison_seconds": 20.222367209149525,
+      "frontier_comparison_calls": 4,
+      "independent_native_financial_cells_per_arm": 4879,
       "checks_passed": 159,
-      "checks_skipped": 1,
-      "skipped_reason": "Opt-in live System One unit smoke; actual connected workflow made four successful Jev attempts.",
-      "browser_editor_verified": true,
-      "browser_layout_check_provider_calls": 0
+      "opt_in_checks_skipped": 1,
+      "native_member_rows": 413,
+      "internal_review_items_original": 60,
+      "internal_review_items_recomputed": 59,
+      "source_unchanged": true
     },
     "evidence": [
       "artifacts/agere-contract-input-followthrough-2026-11-10/delivery-receipt.json",
-      "artifacts/agere-contract-input-followthrough-2026-11-10/ordinary-v1/receipt.json",
-      "artifacts/agere-contract-input-followthrough-2026-11-10/ordinary-v2/receipt.json",
-      "artifacts/agere-contract-input-followthrough-2026-11-10/visual-v3/receipt.json",
-      "artifacts/agere-contract-input-followthrough-2026-11-10/native-coverage-proof.json",
-      "artifacts/agere-contract-input-followthrough-2026-11-10/all-attempt-accounting.json"
+      "artifacts/agere-contract-input-followthrough-2026-11-10/comparison-v1/delivery-receipt.json",
+      "artifacts/agere-contract-input-followthrough-2026-11-10/comparison-v1/engineering-score.json",
+      "artifacts/agere-contract-input-followthrough-2026-11-10/visual-v3/receipt.json"
     ],
-    "remaining_gap": "Freeze/reuse this scoped candidate and run one relevant existing-tools Sonnet comparison without rerunning passed stack questions. Independent quality/model/statistical qualification, broader healthcare charter, deployment and full storage/backup plan remain explicit dependencies.",
-    "next_action": "G3: Contract input discovery/clarification, versioned edit/recompute/internal work, stale refusal, exact rollback and scoped native coverage are sealed. Preserve original context ANS-e7f6babdd97441990723cd63 and changed-term context ANS-ed1655b7758400e37cf2931f; do not rerun them or Q17/whole25 passing campaigns. Next freeze the actual demo comparison protocol and input/code/source bindings, then use the existing tools.ordinary_stack_comparison.frontier runner for one Sonnet-with-tools observation. Reuse retained candidate execution with explicit posthoc/observational limits and no general superiority claim; preserve every attempt/unknown cost and independent evaluator boundary. All ten areas/all25 history retained. No source copy/package, model catalog/training, protected keys/generator truth, Git push or scheduler restart.",
-    "product_commit": null
+    "remaining_gap": "Final same-input raw-schema/governed-frontier/Agere evaluation, actual demo acceptance and packaging/clean-start rehearsal, and the requested evidence-based write-up remain. Preserve current all25/tenarea history; broader clinical/model/customer readiness and full backup/storage plan stay separate.",
+    "next_action": "G3: The connected synthetic contract input \u2192 clarification \u2192 native performance \u2192 both buyer views \u2192 saved internal review work \u2192 changed-term recomputation/refusal/rollback is sealed at local9ea7e635. A single governed-Sonnet development comparison is retained; do not rerun these passing stack questions or turn its posthoc named-command result into a superiority claim. Next freeze the final finite release evaluation in the existing protocol/runner infrastructure: same actual demo terms, source clocks and independent rubric for raw-schema frontier, governed-tools frontier and Agere, with new-question/parameter/source-change/repeat roles separated and full display/native precision recorded. Reuse existing evidence and original25case dispositions; run only genuinely missing release scenarios, retaining partial/negative outcomes without a repair campaign. Then make one explicit scoped release decision, package/rehearse the demonstrated candidate without copying the warehouse and draft the requested evidence-based write-up. Source/profile/storage preflights remain; full clinical/model/customer qualification and backup/storage prerequisites are separate. No optional model catalog/training, source copy, protected keys/generator truth, Git push or scheduler restart.",
+    "product_commit": "9ea7e635"
   },
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
@@ -1868,6 +1863,11 @@
       "status": "sealed_scoped_workflow",
       "receipt": "artifacts/agere-contract-input-followthrough-2026-11-10/delivery-receipt.json",
       "source_frozen": false
+    },
+    "contract_demo_comparison": {
+      "status": "sealed_development_observation_final_release_eval_pending",
+      "receipt": "artifacts/agere-contract-input-followthrough-2026-11-10/comparison-v1/delivery-receipt.json",
+      "source_frozen": false
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
@@ -2284,7 +2284,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-10T19:56:49.564582+00:00",
+  "updated_at": "2026-11-10T20:09:22.222309+00:00",
   "last_commit": "2a4176dda89a24672b94b0a0ee083b20abb797e1",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -2379,7 +2379,7 @@
     "description": "Scoped approved archive cleanup completed; local storage-prevention candidate verified, not packaged/deployed",
     "receipt": "artifacts/agere-storage-repair-2026-11-10/delivery-receipt.json"
   },
-  "next_action": "G3: Contract input discovery/clarification, versioned edit/recompute/internal work, stale refusal, exact rollback and scoped native coverage are sealed. Preserve original context ANS-e7f6babdd97441990723cd63 and changed-term context ANS-ed1655b7758400e37cf2931f; do not rerun them or Q17/whole25 passing campaigns. Next freeze the actual demo comparison protocol and input/code/source bindings, then use the existing tools.ordinary_stack_comparison.frontier runner for one Sonnet-with-tools observation. Reuse retained candidate execution with explicit posthoc/observational limits and no general superiority claim; preserve every attempt/unknown cost and independent evaluator boundary. All ten areas/all25 history retained. No source copy/package, model catalog/training, protected keys/generator truth, Git push or scheduler restart.",
+  "next_action": "G3: The connected synthetic contract input \u2192 clarification \u2192 native performance \u2192 both buyer views \u2192 saved internal review work \u2192 changed-term recomputation/refusal/rollback is sealed at local9ea7e635. A single governed-Sonnet development comparison is retained; do not rerun these passing stack questions or turn its posthoc named-command result into a superiority claim. Next freeze the final finite release evaluation in the existing protocol/runner infrastructure: same actual demo terms, source clocks and independent rubric for raw-schema frontier, governed-tools frontier and Agere, with new-question/parameter/source-change/repeat roles separated and full display/native precision recorded. Reuse existing evidence and original25case dispositions; run only genuinely missing release scenarios, retaining partial/negative outcomes without a repair campaign. Then make one explicit scoped release decision, package/rehearse the demonstrated candidate without copying the warehouse and draft the requested evidence-based write-up. Source/profile/storage preflights remain; full clinical/model/customer qualification and backup/storage prerequisites are separate. No optional model catalog/training, source copy, protected keys/generator truth, Git push or scheduler restart.",
   "product_market_audit": {
     "as_of": "2026-11-09T18:42:05.848258+00:00",
     "scope": "Owner product/architecture/market audit against saved receipts and selected current public primary sources. Not independent clinical/model qualification, patent/FTO search, full research review or customer discovery.",
