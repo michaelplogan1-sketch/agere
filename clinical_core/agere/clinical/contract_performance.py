@@ -229,7 +229,8 @@ def schema(obj, string, array):
 def executable_evidence(parameters):
     p = validate(parameters)
     data, _, _ = load(p['contract_id'])
-    return {'contract_input': data, 'outputs': ['patient_id', 'recorded_member_months', 'observed_allowed_cents',
+    return {'contract_input': data, 'group_by': ['month', 'practice_id'], 'returns': 'table',
+            'outputs': ['patient_id', 'recorded_member_months', 'observed_allowed_cents',
             'approximate_quality', 'monthly_cost', 'practice_drivers', 'review_needed'],
             'claims': 'payer_claim counts_in_metrics = 1; same payer and attributed patient/member month; no cash or causal savings inference'}
 
@@ -374,6 +375,7 @@ def execute(path, patient_ids, parameters, as_of):
     if report['contract_digest'] != load(report['parameters']['contract_id'])[2]:
         raise ValueError('Contract inputs changed during calculation; recompute before saving')
     report['observation_binding'] = observation
+    report['native_execution_digest'] = digest(report)
     return report
 
 
@@ -387,6 +389,9 @@ def answer(report, plan, question):
     return {'status': 'partial' if partial else 'answered', 'answer_type': 'table', 'table': report['table'],
             'count': len(report['table']), 'patient_ids': report['patient_ids'], 'membership_role': 'evaluated',
             'value': summary, 'method': report['method'], 'limitations': report['assumptions'],
+            'computed_as': {'source_request_id': digest({'question': question, 'decision_key': report['decision_key']}),
+                'operation': OP, 'layer': VERSION, 'definition': report['method'],
+                'registered_input': report['contract']['id'], 'contract_digest': report['contract_digest']},
             'definitions': [{'term': 'contract input', 'basis': report['contract']}],
             'overall': {OP: {key: value for key, value in report.items() if key not in ('table', 'patient_ids', 'claim_bindings')}}}
 
@@ -394,22 +399,23 @@ def answer(report, plan, question):
 def coverage_state(path, question, graph, result):
     """A source-bound, complete field/role proof for coverage judgment only.
 
-    The full native result must match its persisted execution, current observed
-    source and versioned input. Models need not recheck every numeric cell to
-    judge a fully consumed named-report request. Free-text or inherited graph
-    compositions retain their ordinary complete-evidence path.
+    The complete native result must match its execution digest, current observed
+    source and explicit versioned input. The model still judges the ORIGINAL
+    question against the full field/scope/uncertainty contract. This is native
+    integrity, never a waiver of semantic coverage or clinical qualification.
     """
-    expected = registered_input_command(question, None)
+    expected = question_parameters(question)
     nodes = (graph or {}).get('nodes') or []
     if expected is None or len(nodes) != 1 or graph != result.get('graph'):
         return None
-    if nodes[0]['parameters'] != expected['nodes'][0]['parameters'] or result.get('question') != question:
+    if nodes[0]['operation'] != OP or nodes[0]['parameters'] != expected or result.get('question') != question:
         raise ValueError('Contract coverage differs from the named current input request')
     with sqlite3.connect((Path(path) / 'stack.sqlite3').resolve().as_uri() + '?mode=ro', uri=True) as db:
         row = db.execute('SELECT payload FROM result_cache WHERE id=?', (result.get('result_id'),)).fetchone()
-    if row is None:
-        return None
-    saved = json.loads(row[0])
+    # Evaluation deliberately disables result-cache writes. Its in-memory
+    # native execution still has the same source/current-input/whole-result
+    # digest; no cache population or large-store copy is needed for this proof.
+    saved = json.loads(row[0]) if row is not None else result
     if saved.get('graph') != graph or saved.get('question') != question or saved.get('results') != result.get('results'):
         raise ValueError('Contract native execution changed before coverage judgment')
     current_answer = result.get('answer') or {}
@@ -418,6 +424,17 @@ def coverage_state(path, question, graph, result):
         if current_answer.get(key) != native_answer.get(key):
             raise ValueError('Contract answer changed before coverage judgment: ' + key)
     report = saved['results'][0]['result']
+    execution_digest = report.get('native_execution_digest')
+    if row is None and not execution_digest:
+        return None  # old unsealed results retain their complete-evidence path
+    if execution_digest and execution_digest != digest({k:v for k,v in report.items() if k != 'native_execution_digest'}):
+        raise ValueError('Contract native execution digest changed before coverage judgment')
+    original = answer(report, graph, question)
+    for key in ('table', 'patient_ids', 'overall', 'count', 'method'):
+        if current_answer.get(key) != original.get(key):
+            raise ValueError('Contract answer differs from its native calculation: ' + key)
+    if original['status'] == 'partial' and current_answer.get('status') != 'partial':
+        raise ValueError('Incomplete native contract result cannot be upgraded')
     from ..deliverables.answer_context import source_identity
     from .answer_dependencies import wal_identity
     observation = {'source': source_identity(path), 'wal': wal_identity(path)}
@@ -447,6 +464,9 @@ def coverage_state(path, question, graph, result):
                 'quality': 'The complete registered approximate definition above is a synthetic demo rule, not certified clinical quality.',
                 'drivers': 'Complete monthly and practice cost/exposure partitions; descriptive, not causal.',
                 'work': 'Every member retains source IDs and review reasons; internal evidence review does not authorize care.'},
+            'output_scope': {'primary': 'All recorded attributed members of the given input, ordered by patient ID; no additional unexecuted patient predicate or ranking is claimed.',
+                'monthly': 'All period months', 'practices': 'All attributed practice partitions',
+                'interpretation': 'Original free wording still requires semantic coverage judgment. A matching registered input does not imply every extra request was answered.'},
             'limitations': report['assumptions'], 'clinical_semantic_acceptance': False,
             'judgment_scope': 'Whether these complete executed fields, scope and explicit unknowns cover the named report request. Native integrity is checked in code; no model row sampling, numeric recalculation or clinical certification.'}
 
@@ -489,6 +509,33 @@ def registered_input_command(question, as_of):
 
 def command_for_input(parameters):
     return 'Show contract performance for ' + validate(parameters)['contract_id']
+
+
+def question_parameters(question):
+    """Bind an explicit input identifier, not a new free-text analytical plan.
+
+    Period literals must describe this input's actual period. Other numbers
+    (ages, thresholds, alternative terms) remain unfilled and defer. The
+    unchanged model coverage check owns meaning beyond this literal binding.
+    """
+    text = str(question)
+    choices = [row for row in catalog() if re.search(r'(?<![\w-])' + re.escape(row['id']) + r'(?![\w-])', text, re.I)]
+    if len(choices) != 1:
+        return None
+    chosen = choices[0]
+    remaining = re.sub(r'(?<![\w-])' + re.escape(chosen['id']) + r'(?![\w-])', '', text, flags=re.I)
+    period = chosen['period']
+    # Full ISO boundaries and a named single-year period are source/input
+    # addresses, not invented integer parameters of the analytical method.
+    for boundary in (period['start'], period['end']):
+        remaining = re.sub(r'(?<![\w-])' + re.escape(boundary) + r'(?![\w-])', '', remaining)
+    if period['start'][:4] == period['end'][:4]:
+        year = period['start'][:4]
+        remaining = re.sub(r'\b(?:in|during|for)\s+(?:its\s+|the\s+)?' + year + r'\b', '', remaining, flags=re.I)
+        remaining = re.sub(r'\b' + year + r'\s+(?:performance\s+)?(?:period|year)\b', '', remaining, flags=re.I)
+    if re.search(r'(?<![\w.])\d+(?:\.\d+)?(?![\w])', remaining):
+        return None
+    return {'contract_id': chosen['id'], 'contract_digest': chosen['contract_digest']}
 
 
 def input_request(question):

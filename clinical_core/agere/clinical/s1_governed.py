@@ -442,6 +442,13 @@ def parse_numbers(question, props):
 
 def fill_engine(question, rec, op):
     from .capability_registry import PRODUCT  # noqa: F401 - op is validated by the caller
+    from .engine_suite import available
+    input_binding = getattr(available().get(op), 'question_parameters', None)
+    if callable(input_binding):
+        parameters = input_binding(question)
+        if parameters is None:
+            raise Unfillable('An explicit registered input and matching period are required; additional numeric constraints were not placed')
+        return parameters
     props = OR.tool(op)['input_schema']['properties']['parameters'].get('properties', {})
     params = parse_numbers(question, props)
     asked = 0

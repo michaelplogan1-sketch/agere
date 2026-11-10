@@ -91,7 +91,7 @@ def source_boundary(scratch):
         yield
 
 
-def frontier(stack, question, *, execute):
+def frontier(stack, question, *, execute, access='governed_tools', given_inputs=None):
     from clinical_core.agere.clinical import backstop_agent as B, semantic_analyst as S, together
     from clinical_core.agere.clinical import analyst_definitions, analyst_context, decision_context, spec_exec
     from clinical_core.agere.clinical.general_analysis import ANALYSIS_SYSTEM
@@ -104,18 +104,31 @@ def frontier(stack, question, *, execute):
     try:
         as_of = wh.as_of
         with decision_context.scope(question, as_of), spec_exec.ledger_for(stack) as ledger:
-            base = S.semantic_context(wh)
-            wh.define(as_of)
-            docs, _ = analyst_definitions.agere_context(wh, base)
-            macros = ANALYSIS_SYSTEM[ANALYSIS_SYSTEM.index('Authoritative definitions:'):ANALYSIS_SYSTEM.index('Temporal state:')]
-            docs += '\nREGISTERED MEDICATION GROUP CONTRACTS:\n' + json.dumps(GROUPS)
-            docs += '\nGOVERNED SQL MACROS:\n' + macros + '\nCLINICAL OWNER DEFINITIONS:\n' + json.dumps(describe())
+            if access not in ('governed_tools', 'raw_schema'):
+                raise ValueError('Choose governed_tools or raw_schema baseline access')
+            exposed_tools = B.TOOLS
+            if access == 'raw_schema':
+                # Same received semantic representation and explicit input terms;
+                # no analytical engines, governed macros, examples or definitions.
+                docs = 'RECEIVED SQLITE SCHEMA (no analytical results); as_of=' + str(as_of) + '\n# Semantic model documentation\n'
+                docs += '\n'.join('### ' + row['name'] + '\n' + json.dumps({
+                    'columns': wh.columns[row['name']], 'ddl': row['sql']})
+                    for row in wh.db.execute("SELECT name,sql FROM sqlite_master WHERE type IN ('table','view') ORDER BY name"))
+                exposed_tools = [tool for tool in B.TOOLS if tool['name'] == 'query_sql']
+            else:
+                base = S.semantic_context(wh)
+                wh.define(as_of)
+                docs, _ = analyst_definitions.agere_context(wh, base)
+                macros = ANALYSIS_SYSTEM[ANALYSIS_SYSTEM.index('Authoritative definitions:'):ANALYSIS_SYSTEM.index('Temporal state:')]
+                docs += '\nREGISTERED MEDICATION GROUP CONTRACTS:\n' + json.dumps(GROUPS)
+                docs += '\nGOVERNED SQL MACROS:\n' + macros + '\nCLINICAL OWNER DEFINITIONS:\n' + json.dumps(describe())
             if os.environ.get('AGERE_ANALYST_CONTEXT', 'discover') == 'discover':
                 docs = analyst_context.install(wh, docs)
             from clinical_core.agere.clinical.requirement_ledger import PATIENT_ID
             patients = [m.group() for m in PATIENT_ID.finditer(question)]
             tools = B.Tools(stack, wh, as_of, ledger=ledger, patients=patients, question=question)
-            metadata = {'model': M.SONNET, 'tool_names': [t['name'] for t in B.TOOLS],
+            metadata = {'model': M.SONNET, 'access': access, 'tool_names': [t['name'] for t in exposed_tools],
+                        'given_input_digest': hashlib.sha256(json.dumps(given_inputs,sort_keys=True).encode()).hexdigest(),
                         'documentation_sha256': hashlib.sha256(docs.encode()).hexdigest(),
                         'as_of': as_of, 'mandatory_answer_review': False, 'computed_prose_compiler': False,
                         'learnt_answer_replay': False, 'original_population': tools.cohort,
@@ -129,9 +142,14 @@ def frontier(stack, question, *, execute):
             probe = cost_telemetry.start(question)
             try:
                 with M.first_rung():
+                    def execute_tool(call):
+                        if call.get('name') not in {tool['name'] for tool in exposed_tools}:
+                            raise ValueError('Tool is outside this baseline access contract')
+                        return tools(call)
                     run = S.tool_loop(json.dumps({'question': question, 'as_of': as_of,
+                                                  'given_inputs': given_inputs,
                                                   'patient_scope': sorted(tools.scope) if tools.scope is not None else None}),
-                                      system, B.TOOLS, tools, send=B.as_tool_calls(_send(stack, ledger, receipts)),
+                                      system, exposed_tools, execute_tool, send=B.as_tool_calls(_send(stack, ledger, receipts)),
                                       extra={'output_config': FRONTIER_OUTPUT_CONFIG},
                                       model=M.SONNET, max_tools=None, review=None, format_retries=1,
                                       continuation_guard=tools.continuation_identity)

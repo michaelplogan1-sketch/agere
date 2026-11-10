@@ -3,12 +3,14 @@ import copy
 import json
 import sqlite3
 import unittest
+from contextlib import nullcontext
 from types import SimpleNamespace
 from unittest.mock import patch
 from clinical_core.agere import subscription_transport as T
 from clinical_core.agere.clinical import backstop_agent as B,semantic_analyst as S
 from tools.ordinary_stack_comparison import FRONTIER_OUTPUT_CONFIG
 from clinical_core.agere.clinical import system_one_gate as G
+import test_shared_planner as fixture
 
 
 class OrdinaryTransport(unittest.TestCase):
@@ -113,6 +115,45 @@ class BaselineTransport(unittest.TestCase):
         self.assertTrue(s['additionalProperties'])
         for key in ['maxLength','maxItems','maxProperties','max_tokens','computed_prose','verification']:
             self.assertNotIn(key,json.dumps(s))
+
+
+class BaselineAccess(unittest.TestCase):
+    setUp = fixture.SharedPlanner.setUp
+
+    def test_raw_schema_has_only_sql_and_all_received_schema_without_governed_answers(self):
+        from tools import ordinary_stack_comparison as study
+        from clinical_core.agere.clinical import together,spec_exec,analyst_definitions
+        def warehouse(_):return S.SemanticWarehouse(self.path/'semantic.sqlite3')
+        with patch.object(together,'warehouse',side_effect=warehouse), \
+             patch.object(spec_exec,'ledger_for',return_value=nullcontext(None)), \
+             patch.object(S,'semantic_context',side_effect=AssertionError('No governed documentation in raw arm')), \
+             patch.object(analyst_definitions,'agere_context',side_effect=AssertionError('No owner definitions in raw arm')):
+            result=study.frontier(self.stack,'Count received records',execute=False,access='raw_schema',
+                                  given_inputs={'authored_synthetic':True,'benchmark_cents':125})
+        meta=result['baseline_configuration']
+        self.assertEqual(meta['access'],'raw_schema')
+        self.assertEqual(meta['tool_names'],['query_sql'])
+        self.assertEqual(result['provider_calls'],0)
+        self.assertIsNone(meta['output_limits'])
+        self.assertFalse(meta['mandatory_answer_review'])
+
+    def test_raw_arm_rejects_unexposed_native_tool_and_keeps_given_inputs(self):
+        from tools import ordinary_stack_comparison as study
+        from clinical_core.agere.clinical import together,spec_exec,legacy_proposers
+        inputs={'authored_synthetic':True,'period':{'start':'2029-01-01','end':'2029-12-31'}}
+        def run(payload,system,tools,execute,**kwargs):
+            self.assertEqual(json.loads(payload)['given_inputs'],inputs)
+            self.assertEqual([t['name']for t in tools],['query_sql'])
+            self.assertIn('new_sensor_feed',system[1]['text'])
+            with self.assertRaisesRegex(ValueError,'outside this baseline access'):
+                execute({'name':'execute_analysis','input':{'operation':'contract_performance'}})
+            return {'answer':{'status':'unsupported','answer_type':'table','headline':'Authored access-boundary fixture'},'tool_calls':[]}
+        with patch.object(together,'warehouse',side_effect=lambda _:S.SemanticWarehouse(self.path/'semantic.sqlite3')), \
+             patch.object(spec_exec,'ledger_for',return_value=nullcontext(None)), \
+             patch.object(legacy_proposers,'_send',return_value=lambda _:None), \
+             patch.object(S,'tool_loop',side_effect=run):
+            result=study.frontier(self.stack,'Count received records',execute=True,access='raw_schema',given_inputs=inputs)
+        self.assertEqual(result['answer']['status'],'unsupported')
 
 
 if __name__=='__main__':unittest.main()

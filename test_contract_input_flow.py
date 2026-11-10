@@ -153,7 +153,7 @@ class ContractInputFlow(unittest.TestCase):
         self.assertEqual(proof['retained_collections']['all_months'], 12)
         self.assertFalse(proof['clinical_semantic_acceptance'])
         self.assertIn('review_needed', proof['columns'])
-        self.assertIsNone(C.coverage_state(self.path, question + ' with extra constraints', graph, result))
+        self.assertIsNone(C.coverage_state(self.path, question + ' for members over 60', graph, result))
         before = copy.deepcopy(result)
         result['answer']['table'][0]['observed_allowed_cents'] += 1
         with self.assertRaisesRegex(ValueError, 'changed'):
@@ -162,6 +162,52 @@ class ContractInputFlow(unittest.TestCase):
         with patch('clinical_core.agere.deliverables.answer_context.source_identity', return_value={'digest': 'changed'}):
             with self.assertRaisesRegex(ValueError, 'source changed'):
                 C.coverage_state(self.path, question, graph, before)
+
+    def test_explicit_registered_input_period_fills_existing_typed_router(self):
+        self.configure()
+        from clinical_core.agere.clinical import s1_governed as S, operator_router as O
+        question='For recorded attributed members under '+self.contract['id']+' in its 2029 period, show contract performance and all monthly and practice drivers.'
+        parameters=S.fill_engine(question,Mock(side_effect=AssertionError('No model parameter guessing')),C.OP)
+        self.assertEqual(parameters,C.validate({'contract_id':self.contract['id']}))
+        graph=O.to_graph(question,{'name':C.OP,'input':{'parameters':parameters}})
+        self.assertEqual(graph['nodes'][0]['operation'],C.OP)
+        from clinical_core.agere.clinical.literal_check import graph_evidence_text
+        evidence=graph_evidence_text(graph)
+        self.assertIn('"group_by": "month"',evidence)
+        self.assertIn('"group_by": "practice_id"',evidence)
+        for bad in [question.replace('its 2029','its 2028'), question+' for members over 65',
+                    question+' using a 60 percent sharing rate', 'Review contract performance for unknown']:
+            with self.subTest(question=bad), self.assertRaises(S.Unfillable):
+                S.fill_engine(bad,Mock(),C.OP)
+
+    def test_uncached_native_coverage_is_bound_and_does_not_approve_free_wording(self):
+        question,graph,result=self.coverage_fixture()
+        question='For '+self.contract['id']+' during 2029 show all recorded contract performance and infer causal savings'
+        result['question']=question;result['graph']['interpretation']=question
+        result['result_id']='uncached-ordinary-wording'
+        report=result['results'][0]['result']
+        report['native_execution_digest']=digest(report)
+        result['answer']=C.answer(report,graph,question)
+        proof=C.coverage_state(self.path,question,graph,result)
+        self.assertIn('semantic coverage judgment',proof['output_scope']['interpretation'])
+        self.assertFalse(proof['clinical_semantic_acceptance'])
+        self.assertIn('not causal',proof['field_roles']['drivers'])
+        report['summary']['observed_allowed_cents']+=1
+        with self.assertRaisesRegex(ValueError,'digest changed'):
+            C.coverage_state(self.path,question,graph,result)
+
+    def test_native_execution_identity_cannot_be_replaced_by_a_wording_metric_match(self):
+        self.configure()
+        from clinical_core.agere.clinical.answer_checks import metric_findings
+        report=self.run_report()
+        q='Show the contract performance, allowed cost, benchmark and monthly drivers'
+        answer=C.answer(report,{'coverage':'supported_observation'},q)
+        original=copy.deepcopy(answer['computed_as'])
+        with patch('clinical_core.agere.clinical.metrics.resolve',side_effect=AssertionError('Do not guess an unexecuted metric')):
+            metric_findings(answer,q,'2030-05-27')
+        self.assertEqual(answer['computed_as'],original)
+        self.assertEqual(original['operation'],C.OP)
+        self.assertNotIn('metric',original)
 
 
 if __name__ == '__main__':
