@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-10T21:20:28.407625+00:00",
+  "updated_at": "2026-11-10T21:34:03.775107+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -166,9 +166,10 @@
       "current_archive_HTTP": "artifacts/agere-final-ordinary-entry-2026-11-08/archived-http-v2/receipt.json",
       "current_release_id": "8662e88b1acdb539fa682ff2555f6c9ee9989789f1d29c72fb71983aca530c3b",
       "current_contract_candidate_packaging": {
-        "status": "unexecuted_storage_policy_blocked",
-        "proposal": "artifacts/agere-contract-release-2026-11-10/code-only-package-proposal.json",
-        "historical_package_receipts_not_requalified": true
+        "status": "passed_same_machine_code_only_with_declared_shared_dependencies",
+        "receipt": "artifacts/agere-contract-release-2026-11-10/packaging-delivery-receipt.json",
+        "archive_sha256": "ba8889dcc779902841e7041a756a1dcaf2d70cb1e314042843d2c455fcc32e04",
+        "not_a_requalification_of_historical_broader_packages": true
       }
     },
     {
@@ -641,6 +642,10 @@
         {
           "path": "artifacts/agere-contract-release-2026-11-10/delivery-receipt.json",
           "sha256": "0bba7e480ae2fea1221e2968e539816cec7b30fb4a5baad0cbcc6f22b05b8f90"
+        },
+        {
+          "path": "artifacts/agere-contract-release-2026-11-10/packaging-delivery-receipt.json",
+          "sha256": "737287cf3ab097788e83fdcc2861598d0d8ba34f4daa79b05e29112bbc098fea"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -653,8 +658,8 @@
       "latest_current_release_decision": "artifacts/agere-core-completion-2026-11-09/current-release-delivery-receipt.json",
       "preceding_current_release_decision": "artifacts/agere-final-ordinary-entry-2026-11-08/G3-exit-decision-v1.json",
       "first_synthetic_release_candidate": {
-        "status": "engineering_demonstrated_package_blocked",
-        "receipt": "artifacts/agere-contract-release-2026-11-10/delivery-receipt.json",
+        "status": "packaged_and_rehearsed_scoped_engineering",
+        "receipt": "artifacts/agere-contract-release-2026-11-10/packaging-delivery-receipt.json",
         "full_gate_acceptance": false
       }
     },
@@ -734,65 +739,43 @@
     }
   ],
   "checkpoint": {
-    "kind": "ordinary_contract_route_and_provenance_delivery_frozen_comparison_scored",
+    "kind": "scoped_contract_code_only_package_and_fresh_process_delivery",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Ordinary requests naming one registered input and its matching period now traverse the existing typed operator router instead of failing numeric/grouping admission and entering repeated prose repairs. The native result carries actual operation provenance, complete member/month/practice output and current source/input integrity. Current saved browser shows shared payer/provider views and complete CSV collections; old contexts retain their historical bindings. No financial method/source-role/quantity/clinical-threshold relaxation, model expansion or warehouse copy.",
+    "user_behavior_delta": "The demonstrated contract product can now be opened from an exact code archive in a fresh isolated Python process, using declared existing warehouse/model/Python/work/usage dependencies without copying them. Saved current analysis and one internal review item survive the new code root and are visible in the actual browser. Archived subscription-route startup is also verified without submitting a new question.",
     "measured_failure_reduction": {
-      "frozen_failed_agere_seconds": 267.4397314579692,
-      "frozen_failed_agere_provider_attempts": 30,
-      "frozen_failed_agere_known_api_equivalent_usd": 7.707270254,
-      "frozen_failed_agere_answer_status": "partial",
-      "targeted_warm_repair_seconds": 36.06335362512618,
-      "targeted_warm_repair_provider_attempts": 4,
-      "targeted_warm_repair_known_api_equivalent_usd": 0.37792312,
-      "targeted_warm_repair_answer_status": "answered",
-      "scope_of_change": "One located development failure and one targeted repair; not a randomized/generalization improvement estimate.",
-      "members": 413,
-      "member_months": 4385,
+      "archive_bytes": 6275917,
+      "package_copy_bytes_data_model_runtime": 0,
+      "fresh_code_process_startup": true,
+      "current_saved_members": 413,
       "months": 12,
       "practices": 116,
-      "keyed_native_projection_cells_checked_per_complete_report": 4879,
-      "native_projection_reconciled": true,
-      "ordinary_HTTP_two_decimal_USD_cells_checked": 2065,
-      "ordinary_HTTP_USD_display_faults": 0,
-      "fractional_cent_PMPM_display_roundtrip_differences": 357,
-      "checks_run": 170,
-      "checks_passed": 169,
-      "opt_in_skipped": 1,
-      "current_native_metadata_replay_provider_calls": 0,
-      "internal_work_items_guard_checked_before_metadata_fix": 60,
-      "all_new_attempts_including_frozen_arms_and_separate_repair": 43,
-      "known_api_equivalent_usd_all_new_attempts": 8.927579374,
-      "unpriced_new_attempts": 0,
-      "source_unchanged": true,
-      "model_clinical_qualification": false,
-      "superiority_established": false
+      "internal_review_work_reopened": 1,
+      "new_provider_attempts": 0,
+      "source_and_prior_attempts_unchanged": true,
+      "duplicate_archive_or_work_after_harness_error": false
     },
     "evidence": [
-      "artifacts/agere-contract-release-2026-11-10/delivery-receipt.json",
-      "artifacts/agere-contract-release-2026-11-10/protocol.json",
-      "artifacts/agere-contract-release-2026-11-10/engineering-score.json",
-      "artifacts/agere-contract-release-2026-11-10/evaluation-v1/receipt.json",
-      "artifacts/agere-contract-release-2026-11-10/ordinary-repair-v1/receipt.json",
-      "artifacts/agere-contract-release-2026-11-10/ordinary-repair-v1/current-work-term-proof.json",
-      "artifacts/agere-contract-release-2026-11-10/provenance-v1/receipt.json",
-      "artifacts/agere-contract-release-2026-11-10/provenance-v1/ui-finished.json",
-      "artifacts/agere-contract-release-2026-11-10/affected-checks-final-v1.log",
-      "artifacts/agere-contract-release-2026-11-10/startup-check.json",
-      "artifacts/agere-contract-release-2026-11-10/package-preflight.json",
-      "artifacts/agere-contract-release-2026-11-10/code-only-package-proposal.json",
-      "artifacts/agere-contract-release-2026-11-10/harness-attempt-accounting.json",
-      "artifacts/agere-contract-input-followthrough-2026-11-10/delivery-receipt.json",
-      "artifacts/agere-current-25case-2026-11-09/summary.json",
-      "docs/agere/WOLLSTONECRAFT_SYNTHETIC_CONTRACT_EVALUATION_DRAFT_2026-11-10.md"
+      "artifacts/agere-contract-release-2026-11-10/packaging-delivery-receipt.json",
+      "artifacts/agere-contract-release-2026-11-10/packaging-v1/receipt.json",
+      "artifacts/agere-contract-release-2026-11-10/packaging-v1/fresh-process-check.log",
+      "artifacts/agere-contract-release-2026-11-10/packaging-v1/followthrough/receipt.json",
+      "artifacts/agere-contract-release-2026-11-10/packaging-v1/followthrough/ui-finished.json",
+      "artifacts/agere-contract-release-2026-11-10/packaging-v1/live-enabled-startup.json",
+      "artifacts/agere-contract-release-2026-11-10/code-only-authorized-preflight.json",
+      "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
+      "artifacts/agere-contract-release-2026-11-10/code-only-package-checks-v1.log",
+      "artifacts/agere-contract-release-2026-11-10/code-only-package-checks-v2.log",
+      "docs/agere/WOLLSTONECRAFT_SYNTHETIC_CONTRACT_EVALUATION_DRAFT_2026-11-10.md",
+      "docs/agere/CONTRACT_DEMO_LOCAL_RELEASE_2026-11-10.md",
+      "artifacts/agere-contract-release-2026-11-10/delivery-receipt.json"
     ],
-    "remaining_gap": "Package/dependency closure, archive creation and clean-start rehearsal are unexecuted because the saved60GB package guard refuses at~43.2GB. This candidate does not establish clinical/model/generalization qualification, standalone distribution, recoverable full backup or customer readiness. The frozen Agere result was partial/costlier; targeted warm repair does not prove superiority. The new current native context is not a fresh ordinary-planning observation.",
-    "next_action": "G3 first synthetic contract release: ordinary registered-input routing, complete native payer/provider/member/month/practice report, current saved provenance, input/work invalidation and rollback are demonstrated; frozen three-arm results and requested evidence-based draft are sealed at local88b28253. Do not repeat the passing provider question, replace the failed frozen arm with the warm repair, recalibrate broadly, or add optional models/research. Remaining engineering delivery: code-only same-machine packaging/configuration dependency closure and clean-start rehearsal, with no warehouse/model/runtime copy. Package preflight REFUSED: approximately43.2GB free versus the explicit AGERE_STORAGE_PLAN.md60GB minimum even when copying no database. Before creating/opening any package, satisfy that rule or obtain Mike's explicit exception for the concrete1058file/23,896,261byte code-only proposal; do not silently bypass/relax the general guard. Then use the existing release tooling with a guarded code-only path, declare existing Python/source/model/usage/work/input dependencies, verify exact archive identity and one current saved-native/work view from a fresh code root; stop on an actual compatibility failure rather than a paid campaign. Keep full ten-area charter/all25history/current principal review/October11baseline; independent model/clinical qualification, broader generalization, backup/storage completion and customer deployment remain separate. Scheduler PAUSED, pushes disabled, no active/frozen job; direct build remains ACTIVE for authorized independent work, with packaging awaiting this real storage-policy dependency.",
-    "product_commit": "88b282536abc3e82a7d6c13961e5d729f152382a",
-    "current_context_id": "ANS-72bdb20a4fbffdeeb17f13f2",
-    "qualification": "Scoped synthetic engineering candidate only; no full MVP/clinical/model/customer acceptance",
-    "storage_dependency": "artifacts/agere-contract-release-2026-11-10/code-only-package-proposal.json"
+    "remaining_gap": "The first synthetic contract demonstration is packaged/rehearsed with existing same-machine dependencies. Independent model-role calibration and clinical/measure qualification, broader healthcare/full25 generalization, recoverable data backup and customer hosting/security/integration remain unestablished. No superiority or market-uniqueness conclusion follows. This is not a standalone/customer release or isolated data restore.",
+    "next_action": "G3 first synthetic contract engineering demonstration is complete and locally sealed: native shared payer/provider report,413members/12months/116practices, versioned inputs, saved work, currentness/refusal/rollback, retained three-arm comparison, requested evaluation draft, code-only archive and fresh-process/browser rehearsal. Use exact archive ba8889dcc779902841e7041a756a1dcaf2d70cb1e314042843d2c455fcc32e04 and docs/agere/CONTRACT_DEMO_LOCAL_RELEASE_2026-11-10.md for review. Do not rerun the passing question, create another package or expand optional models/training/research to manufacture a superiority claim. Next evidence need before market/clinical claims is independent clinical/measure and model-role qualification plus the explicitly retained broader question/ten-area acceptance gaps; G3 full-charter/G5 are not accepted by this scoped demo. Any next product increment must name a remaining promised user behavior and measured failure from the existing backlog, with an appropriate independent check; preserve current scoped release as recovery. Full backup/storage and customer deployment prerequisites remain explicit. Mike approved only the exact code-only archive/rehearsal storage exception; general60GBpackageguard unchanged. No new services, protected keys/generator truth, Documents corpus, external publication/contact/real care, main merge, Git push or scheduler restart. SchedulerPAUSED; no active/frozen job; direct user-authorized build ACTIVE.",
+    "product_commit": "e39b16a3579d52ac2ce56dd11857e31323db2cf8",
+    "engineering_scope_status": "first synthetic contract demonstration packaged and rehearsed; broader charter and independent qualifications open",
+    "archive_sha256": "ba8889dcc779902841e7041a756a1dcaf2d70cb1e314042843d2c455fcc32e04",
+    "current_context_id": "ANS-72bdb20a4fbffdeeb17f13f2"
   },
   "decisions": [
     {
@@ -1648,6 +1631,13 @@
       "change": "Seal scoped engineering evidence and requested draft, preserve original failed arms and explicit stale context history. Stop provider repetition; package creation/opening remains refused under the exact saved disk rule. Reconcile stale nested unsealed continuity into a lossless historical snapshot and expose the actual remaining dependency.",
       "scope_impact": "First synthetic workflow only; no ten-area/all25 removal or qualification transfer; no data copy, storage-policy override, new service/training, push or scheduler restart.",
       "evidence": "artifacts/agere-contract-release-2026-11-10/delivery-receipt.json"
+    },
+    {
+      "at": "2026-11-10T21:34:03.775107+00:00",
+      "basis": "Mike explicitly approved the one-time code-only storage exception. Actual archive and fresh code process opened the current shared report and persistent internal work; live-enabled startup reached readiness with zero provider attempts.",
+      "change": "Complete the scoped first synthetic engineering release without another data/runtime copy or paid campaign. Preserve the failed field-name assertion and finish against the same archive/installation/item. Record full dependencies and remaining qualification/customer/backup boundaries.",
+      "scope_impact": "One exact code-only archive/rehearsal exception only; general storage policy unchanged. No full-ten-area/G3/G5 acceptance, superiority claim, push, scheduler restart or customer deployment.",
+      "evidence": "artifacts/agere-contract-release-2026-11-10/packaging-delivery-receipt.json"
     }
   ],
   "decision_log": [
@@ -6157,13 +6147,11 @@
     }
   ],
   "unsealed_work": {
-    "status": "remaining_code_only_package_and_clean_rehearsal_storage_blocked",
+    "status": "no_unsealed_product_edits_for_first_synthetic_release",
     "source_frozen": false,
+    "release": "artifacts/agere-contract-release-2026-11-10/packaging-delivery-receipt.json",
     "previous_continuity_preserved": "artifacts/agere-contract-release-2026-11-10/preceding-unsealed-continuity.json.gz",
-    "sealed_delivery": "artifacts/agere-contract-release-2026-11-10/delivery-receipt.json",
-    "packaging_proposal": "artifacts/agere-contract-release-2026-11-10/code-only-package-proposal.json",
-    "remaining_scope": "Package/dependency closure, archive creation and clean-start rehearsal are unexecuted because the saved60GB package guard refuses at~43.2GB. This candidate does not establish clinical/model/generalization qualification, standalone distribution, recoverable full backup or customer readiness. The frozen Agere result was partial/costlier; targeted warm repair does not prove superiority. The new current native context is not a fresh ordinary-planning observation.",
-    "model_clinical_qualification": "not established; historical candidates remain in prior snapshot"
+    "broader_charter_and_qualification_gaps": "The first synthetic contract demonstration is packaged/rehearsed with existing same-machine dependencies. Independent model-role calibration and clinical/measure qualification, broader healthcare/full25 generalization, recoverable data backup and customer hosting/security/integration remain unestablished. No superiority or market-uniqueness conclusion follows. This is not a standalone/customer release or isolated data restore."
   },
   "current_visual_request": {
     "status": "completed",
@@ -6199,7 +6187,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3 first synthetic contract release: ordinary registered-input routing, complete native payer/provider/member/month/practice report, current saved provenance, input/work invalidation and rollback are demonstrated; frozen three-arm results and requested evidence-based draft are sealed at local88b28253. Do not repeat the passing provider question, replace the failed frozen arm with the warm repair, recalibrate broadly, or add optional models/research. Remaining engineering delivery: code-only same-machine packaging/configuration dependency closure and clean-start rehearsal, with no warehouse/model/runtime copy. Package preflight REFUSED: approximately43.2GB free versus the explicit AGERE_STORAGE_PLAN.md60GB minimum even when copying no database. Before creating/opening any package, satisfy that rule or obtain Mike's explicit exception for the concrete1058file/23,896,261byte code-only proposal; do not silently bypass/relax the general guard. Then use the existing release tooling with a guarded code-only path, declare existing Python/source/model/usage/work/input dependencies, verify exact archive identity and one current saved-native/work view from a fresh code root; stop on an actual compatibility failure rather than a paid campaign. Keep full ten-area charter/all25history/current principal review/October11baseline; independent model/clinical qualification, broader generalization, backup/storage completion and customer deployment remain separate. Scheduler PAUSED, pushes disabled, no active/frozen job; direct build remains ACTIVE for authorized independent work, with packaging awaiting this real storage-policy dependency.",
+  "next_action": "G3 first synthetic contract engineering demonstration is complete and locally sealed: native shared payer/provider report,413members/12months/116practices, versioned inputs, saved work, currentness/refusal/rollback, retained three-arm comparison, requested evaluation draft, code-only archive and fresh-process/browser rehearsal. Use exact archive ba8889dcc779902841e7041a756a1dcaf2d70cb1e314042843d2c455fcc32e04 and docs/agere/CONTRACT_DEMO_LOCAL_RELEASE_2026-11-10.md for review. Do not rerun the passing question, create another package or expand optional models/training/research to manufacture a superiority claim. Next evidence need before market/clinical claims is independent clinical/measure and model-role qualification plus the explicitly retained broader question/ten-area acceptance gaps; G3 full-charter/G5 are not accepted by this scoped demo. Any next product increment must name a remaining promised user behavior and measured failure from the existing backlog, with an appropriate independent check; preserve current scoped release as recovery. Full backup/storage and customer deployment prerequisites remain explicit. Mike approved only the exact code-only archive/rehearsal storage exception; general60GBpackageguard unchanged. No new services, protected keys/generator truth, Documents corpus, external publication/contact/real care, main merge, Git push or scheduler restart. SchedulerPAUSED; no active/frozen job; direct user-authorized build ACTIVE.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6208,7 +6196,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-10T21:20:28.407625+00:00",
+  "latest_checkpoint": "2026-11-10T21:34:03.775107+00:00",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -6468,7 +6456,7 @@
       "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json"
     }
   },
-  "server_status": "current25_owned_application_terminal",
+  "server_status": "owned_rehearsal_servers_terminal",
   "automatic_pushes": "disabled_by_explicit_user_2026-11-09",
   "push_authorization": "Revoked November9: do not git push without a new explicit Mike request.",
   "build_status": "ACTIVE",
@@ -6514,5 +6502,10 @@
     ]
   },
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
-  "latest_receipt": "artifacts/agere-contract-release-2026-11-10/delivery-receipt.json"
+  "latest_receipt": "artifacts/agere-contract-release-2026-11-10/packaging-delivery-receipt.json",
+  "code_only_storage_exception": {
+    "authorization": "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
+    "scope": "One code-only archive and fresh-code rehearsal from the linked proposal; existing source/model/Python/work/ledger stores referenced, never copied. General60GBguard unchanged.",
+    "approved": true
+  }
 }
