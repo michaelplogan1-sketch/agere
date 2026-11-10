@@ -17,6 +17,7 @@ ASSERTION_PROJECTIONS={
 CRITERIA={'requirements','protocol_review','program_document'}
 PERSISTED_REPORTS=DOCUMENTARY | CRITERIA | {'financial_accounts','accountability_review'}
 ANALYTICAL=PERSISTED_REPORTS | {
+    'contract_performance',
     'aggregate','trajectory','survival','queueing','profile','calibration','demand','program_effect','uplift',
     'monitor','market','pathway','scheduling','early_signal','claims_review','network','contract_strategy',
     'target_trial','line_of_therapy','trial_feasibility','risk_outcomes','diagnostic_delay','loop_closure','vbc',

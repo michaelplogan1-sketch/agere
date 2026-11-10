@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 from clinical_core.agere import local_release as L
 
@@ -166,6 +167,11 @@ class SavedAnswerRecovery(unittest.TestCase):
 
 class RecoveryTests(unittest.TestCase):
     def setUp(self):
+        # These authored packages contain kilobytes. Exercise their recovery
+        # behavior independently of the developer machine's free space;
+        # low-space rejection is covered by test_storage_prevention.
+        capacity = patch.object(L.shutil, 'disk_usage', return_value=SimpleNamespace(free=1_000_000_000_000))
+        capacity.start(); self.addCleanup(capacity.stop)
         self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name).resolve(); self.build = self.root / 'active'; self.build.mkdir()
         self.config = self.root / 'config.json'

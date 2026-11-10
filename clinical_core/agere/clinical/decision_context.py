@@ -231,6 +231,11 @@ def population(question):
     Explicit living scope takes precedence over the historical-event exception.
     """
     q = question or ''
+    if not LIVING_ASK.search(q):
+        from .engine_suite import requested_population
+        registered = requested_population(q)
+        if registered is not None:
+            return registered
     if ALL_RECEIVED_ROWS.search(q) and not LIVING_ASK.search(q):
         return {'living_only': False, 'all_received_rows': True,
                 'reason': 'explicit all-received-row scope includes every received patient ID in those rows'}

@@ -5,9 +5,9 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: Q02 shared financial correction/recovery is sealed at artifacts/agere-financial-source-path-2026-11-09/delivery-receipt.json (f02e9f0e). Current20rows/260cells reconcile across16payers/23169countedclaims/23853cashallocations, save/reopen current; partial/unverified is genuine machine uncertainty, not remaining compiler/source-definition failure. Do not rerun Q02 or passing Q01 to chase model votes. NEXT fix Q17 requested historical-period propagation in existing analytical operators. Original Q17 asks monthly ED rates during2028and2029 with historical eligible exposure, stable-rate comparison, registered change detection, multiplicity, missing months and source availability. Its retained change_attribution call has window_months3/baseline_months12 with no requested period; feed monitor has period2028-01-01..2029-12-31 but must prove it consumes that period rather than latest snapshot months. Inspect actual Q17 native-context and those operator contracts, reproduce the wrong-window behavior natively, wire the shared period through the existing handlers/contracts and verify full requested calendar coverage/missing months/exposure/available-source clocks before one changed-workflow check. No disease-specific route, new research/models, blanket numeric waiver or repeated passing campaign. Preserve all25/tenareas, serialization candidate and large Q13/Q21 ordinary recovery, Q08/Q22 review dependencies/Q23exactdefinitions/Q24requestedvisualQA and G5/clinical/model/actuarial/customer dependencies. Source/reporting clocks without physical-arrival history stay unknown. No active provider/build/training job/freeze; UI test server closed. ManualbuildACTIVE; schedulerPAUSED; noGitpush.",
-  "latest_delivery": "Scoped shared financial correction, sealed-draft current review and saved workspace with independently reconciled quantities; machine uncertainty retained",
-  "latest_receipt": "artifacts/agere-financial-source-path-2026-11-09/delivery-receipt.json",
+  "active_work": "G3: Reuse the passed contract-performance context ANS-1b054d35e511e90be0a2ea91 and native/source proofs; do not rerun this passing demo or Q17 votes. Next complete contract input discovery/clarification and a relevant changed-input recomputation through the same saved work/follow-up path. Expose the registered, labeled synthetic contract and exact version/period/payer terms through the existing analytical description/selection boundary so ambiguous requests cannot silently choose a population or invent terms. Preserve current typed money/member-month/quality rules and source clocks. Address the observed oversized optional Jev summary check with a scoped native-evidence representation or retain its explicit qualification/cost dependency; do not send every native row to a model or impose output/population caps. Then freeze the actual demo/comparison input and scoring protocol before one relevant comparison using the existing harness, preserving all25 historical dispositions and independent evaluator boundary; do not read protected keys or generator truth. No new model catalog/training, whole25campaign, packages/copies, Gitpush or scheduler restart. Native readonly/source-edit preflights remain required; no active job/freeze. All ten charter areas retained; first synthetic release is the shared payer/provider attributed-population contract workflow, not full clinical or customer readiness.",
+  "latest_delivery": "Versioned shared contract-performance question, both buyer views, exact native ledger, saved internal review work and changed-input/rollback guards",
+  "latest_receipt": "artifacts/agere-contract-performance-2026-11-10/delivery-receipt.json",
   "owned_server_pid": null,
   "owned_server_session": null,
   "full_queue_acceptance": false,
@@ -18,7 +18,7 @@
     "receipt": "artifacts/agere-shared-path-2026-11-09/delivery-receipt.json"
   },
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: Current25 frozen baseline is terminal and retained (19partial ordinary, Q13/Q21 diagnosed serialization interruptions, Q22/Q23blocked, Q24HTMLrendered, Q25authoredcorepass). Native serialization candidate now edits only clinical_core/contracts.py and clinical_core/agere/deliverables/receipts.py, with6new and32existingdistinctaffectedchecks passed; exactlegacyfingerprints/value/roundtrip/quantity/identityguards remain. Run and inspect artifacts/agere-current-25case-2026-11-09/Q13-encoding-v1/receipt.json through check_q13_encoding.py before any further edits. It is one actual changed Q13 ordinary request, not another whole25campaign. Candidate source must be frozen while it runs; never duplicate it. Exact root Python stall site was not established by native sampling; app launcher now supports diagnostic SIGUSR1 stacks if needed. Do not infer source/clinical qualification or all25 acceptance from faster serialization. After actual result, preserve every attempt, current source/support/coverage statuses and native quantities, and qualify delivery or retain/repair candidate as evidence warrants. No Gitpush; tenareas and remaining G3/nativefinancial/datewindow/reviewbinding/verifier/input/independentqualification gaps retained.",
+  "resume_priority": "G3: Reuse the passed contract-performance context ANS-1b054d35e511e90be0a2ea91 and native/source proofs; do not rerun this passing demo or Q17 votes. Next complete contract input discovery/clarification and a relevant changed-input recomputation through the same saved work/follow-up path. Expose the registered, labeled synthetic contract and exact version/period/payer terms through the existing analytical description/selection boundary so ambiguous requests cannot silently choose a population or invent terms. Preserve current typed money/member-month/quality rules and source clocks. Address the observed oversized optional Jev summary check with a scoped native-evidence representation or retain its explicit qualification/cost dependency; do not send every native row to a model or impose output/population caps. Then freeze the actual demo/comparison input and scoring protocol before one relevant comparison using the existing harness, preserving all25 historical dispositions and independent evaluator boundary; do not read protected keys or generator truth. No new model catalog/training, whole25campaign, packages/copies, Gitpush or scheduler restart. Native readonly/source-edit preflights remain required; no active job/freeze. All ten charter areas retained; first synthetic release is the shared payer/provider attributed-population contract workflow, not full clinical or customer readiness.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-09T18:35:52.790981+00:00",
   "heartbeat_status": "PAUSED",
@@ -26,30 +26,45 @@
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
   "latest_checkpoint": {
-    "kind": "financial_recovery_delivery_sealed_next_historical_window",
+    "kind": "connected_contract_performance_scoped_delivery",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "product_commit": "f02e9f0e",
-    "user_behavior_delta": "The original financial question correction traverses shared native prose/source-role checks, current saved-context persistence and actual desktop review UI. Continue analysis can re-investigate a sealed unfinished proposal across implementation changes without accepting a rejected answer. Missingness contrasts, source-key reconciliation and Boolean allocation classifications no longer force unneeded quantity repairs; provider financial quantities and standalone provider claim counts remain guarded.",
+    "user_behavior_delta": "A closed, named versioned contract request runs existing native enrollment/attribution, payer allowed-cost accounting and approximate quality, displays both buyer views from one saved answer, and carries review-needed members into persistent internal work. Changed contract inputs invalidate dependent saved/current work; restoring the binding recovers it.",
     "measured_failure_reduction": {
-      "retained_corrected_draft_compiler_failed_fields_before": 2,
-      "after": 0,
-      "compiled_source_role_failed_fields_before": 2,
-      "after_source_roles": 0,
-      "current_rows_source_exact": 20,
-      "current_cells_source_exact": 260,
+      "native_plan_rejection_before": "Historical enrolled subject removed by present-living default, then generic uncalibrated-plan check unavailable",
+      "after": "Exact registered input command and versioned retrospective scope pass existing source/quantity/output/action guards; ordinary free-text safeguards retained",
+      "first_request_seconds": 121.24287833296694,
+      "second_request_seconds": 107.8543429998681,
+      "current_request_seconds": 6.0450682090595365,
+      "current_frontier_calls": 0,
+      "current_jev_attempts": 2,
+      "current_jev_failed_attempts": 1,
+      "current_usd_known": false,
+      "members": 413,
+      "member_months": 4385,
+      "included_claims": 3842,
+      "allowed_cents": 168827048,
+      "monthly_rows": 12,
+      "practice_rows": 116,
+      "quality_approximate_numerator": 9,
+      "quality_approximate_denominator": 46,
+      "quality_target_met": false,
+      "illustrative_provider_share_cents": 0,
       "saved_current": true,
-      "current_answer_status": "partial/unverified",
-      "remaining_review": "unresolved machine verification; no identified rewrite target"
+      "internal_review_work_items": 60,
+      "work_transition_persisted": true,
+      "independent_received_source_sql_reconciled": true,
+      "changed_terms_current_read_and_work_refused": true,
+      "work_rows_and_revisions_preserved_after_refusal": true,
+      "binding_rollback_current": true
     },
     "evidence": [
-      "artifacts/agere-financial-source-path-2026-11-09/delivery-receipt.json",
-      "artifacts/agere-financial-source-path-2026-11-09/current-financial-workflow-proof.json",
-      "artifacts/agere-financial-source-path-2026-11-09/Q02-resume-v2/receipt.json",
-      "artifacts/agere-financial-source-path-2026-11-09/workspace-ui-check/receipt.json"
+      "artifacts/agere-contract-performance-2026-11-10/delivery-receipt.json",
+      "artifacts/agere-contract-performance-2026-11-10/ordinary-v3/receipt.json",
+      "artifacts/agere-contract-performance-2026-11-10/changed-input-work-proof.json"
     ],
-    "remaining_gap": "Q17 historical-period propagation; broader G3/tenareas and independent qualification/customer requirements. Current Q02 machine uncertainty remains explicit.",
-    "next_action": "G3: Q02 shared financial correction/recovery is sealed at artifacts/agere-financial-source-path-2026-11-09/delivery-receipt.json (f02e9f0e). Current20rows/260cells reconcile across16payers/23169countedclaims/23853cashallocations, save/reopen current; partial/unverified is genuine machine uncertainty, not remaining compiler/source-definition failure. Do not rerun Q02 or passing Q01 to chase model votes. NEXT fix Q17 requested historical-period propagation in existing analytical operators. Original Q17 asks monthly ED rates during2028and2029 with historical eligible exposure, stable-rate comparison, registered change detection, multiplicity, missing months and source availability. Its retained change_attribution call has window_months3/baseline_months12 with no requested period; feed monitor has period2028-01-01..2029-12-31 but must prove it consumes that period rather than latest snapshot months. Inspect actual Q17 native-context and those operator contracts, reproduce the wrong-window behavior natively, wire the shared period through the existing handlers/contracts and verify full requested calendar coverage/missing months/exposure/available-source clocks before one changed-workflow check. No disease-specific route, new research/models, blanket numeric waiver or repeated passing campaign. Preserve all25/tenareas, serialization candidate and large Q13/Q21 ordinary recovery, Q08/Q22 review dependencies/Q23exactdefinitions/Q24requestedvisualQA and G5/clinical/model/actuarial/customer dependencies. Source/reporting clocks without physical-arrival history stay unknown. No active provider/build/training job/freeze; UI test server closed. ManualbuildACTIVE; schedulerPAUSED; noGitpush."
+    "remaining_gap": "Finish the first-release input clarification/selection and changed-term recomputation/follow-up through the same contract workflow; then freeze its comparison protocol and current candidate. The generic discovery description does not yet enumerate registered contract inputs. One optional Jev cross-check exceeded its service token window; its cost remains unknown, though native/source/work guards passed. Independent quality/model qualification, broader25case/tenarea healthcare coverage, full storage/backup plan and customer deployment remain separate; no market or superiority claim.",
+    "next_action": "G3: Reuse the passed contract-performance context ANS-1b054d35e511e90be0a2ea91 and native/source proofs; do not rerun this passing demo or Q17 votes. Next complete contract input discovery/clarification and a relevant changed-input recomputation through the same saved work/follow-up path. Expose the registered, labeled synthetic contract and exact version/period/payer terms through the existing analytical description/selection boundary so ambiguous requests cannot silently choose a population or invent terms. Preserve current typed money/member-month/quality rules and source clocks. Address the observed oversized optional Jev summary check with a scoped native-evidence representation or retain its explicit qualification/cost dependency; do not send every native row to a model or impose output/population caps. Then freeze the actual demo/comparison input and scoring protocol before one relevant comparison using the existing harness, preserving all25 historical dispositions and independent evaluator boundary; do not read protected keys or generator truth. No new model catalog/training, whole25campaign, packages/copies, Gitpush or scheduler restart. Native readonly/source-edit preflights remain required; no active job/freeze. All ten charter areas retained; first synthetic release is the shared payer/provider attributed-population contract workflow, not full clinical or customer readiness."
   },
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
@@ -1827,10 +1842,32 @@
       "pid": 57483,
       "session": 78469,
       "app_pid": 57489
+    },
+    "storage_repair": {
+      "status": "scoped_maintenance_sealed_prevention_source_uncommitted",
+      "receipt": "artifacts/agere-storage-repair-2026-11-10/delivery-receipt.json",
+      "source_frozen": false,
+      "job_receipt": "artifacts/agere-storage-repair-2026-11-10/approved-compression-resume.json",
+      "approval_manifest": "artifacts/agere-storage-repair-2026-11-10/archive-cleanup-approval.json",
+      "active_jobs": []
+    },
+    "historical_discovery_native_v2": {
+      "receipt": "artifacts/agere-historical-discovery-2026-11-09/native-v2/receipt.json",
+      "pid": 22923,
+      "session": 39019,
+      "source_frozen": false,
+      "provider_work": false,
+      "status": "passed_native_current_accounting"
+    },
+    "contract_performance": {
+      "receipt": "artifacts/agere-contract-performance-2026-11-10/delivery-receipt.json",
+      "status": "scoped_workflow_sealed",
+      "source_frozen": false,
+      "session": 23231
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "artifacts/agere-financial-source-path-2026-11-09/delivery-receipt.json",
+  "latest_continuity_checkpoint": "artifacts/agere-contract-performance-2026-11-10/delivery-receipt.json",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
   "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
   "mvp_server": {
@@ -2243,7 +2280,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-09T20:23:07.764832+00:00",
+  "updated_at": "2026-11-10T19:25:24.227258+00:00",
   "last_commit": "81f8bbf5192b10a98cd28f4e1877cfda474bfa51",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -2334,8 +2371,11 @@
       "reason": "Stale owner entry; actual terminal receipt and absent process confirmed before Q09."
     }
   ],
-  "preceding_scoped_delivery": "artifacts/agere-core-completion-2026-11-09/native-decline-delivery-receipt.json",
-  "next_action": "G3: Q02 shared financial correction/recovery is sealed at artifacts/agere-financial-source-path-2026-11-09/delivery-receipt.json (f02e9f0e). Current20rows/260cells reconcile across16payers/23169countedclaims/23853cashallocations, save/reopen current; partial/unverified is genuine machine uncertainty, not remaining compiler/source-definition failure. Do not rerun Q02 or passing Q01 to chase model votes. NEXT fix Q17 requested historical-period propagation in existing analytical operators. Original Q17 asks monthly ED rates during2028and2029 with historical eligible exposure, stable-rate comparison, registered change detection, multiplicity, missing months and source availability. Its retained change_attribution call has window_months3/baseline_months12 with no requested period; feed monitor has period2028-01-01..2029-12-31 but must prove it consumes that period rather than latest snapshot months. Inspect actual Q17 native-context and those operator contracts, reproduce the wrong-window behavior natively, wire the shared period through the existing handlers/contracts and verify full requested calendar coverage/missing months/exposure/available-source clocks before one changed-workflow check. No disease-specific route, new research/models, blanket numeric waiver or repeated passing campaign. Preserve all25/tenareas, serialization candidate and large Q13/Q21 ordinary recovery, Q08/Q22 review dependencies/Q23exactdefinitions/Q24requestedvisualQA and G5/clinical/model/actuarial/customer dependencies. Source/reporting clocks without physical-arrival history stay unknown. No active provider/build/training job/freeze; UI test server closed. ManualbuildACTIVE; schedulerPAUSED; noGitpush.",
+  "preceding_scoped_delivery": {
+    "description": "Scoped approved archive cleanup completed; local storage-prevention candidate verified, not packaged/deployed",
+    "receipt": "artifacts/agere-storage-repair-2026-11-10/delivery-receipt.json"
+  },
+  "next_action": "G3: Reuse the passed contract-performance context ANS-1b054d35e511e90be0a2ea91 and native/source proofs; do not rerun this passing demo or Q17 votes. Next complete contract input discovery/clarification and a relevant changed-input recomputation through the same saved work/follow-up path. Expose the registered, labeled synthetic contract and exact version/period/payer terms through the existing analytical description/selection boundary so ambiguous requests cannot silently choose a population or invent terms. Preserve current typed money/member-month/quality rules and source clocks. Address the observed oversized optional Jev summary check with a scoped native-evidence representation or retain its explicit qualification/cost dependency; do not send every native row to a model or impose output/population caps. Then freeze the actual demo/comparison input and scoring protocol before one relevant comparison using the existing harness, preserving all25 historical dispositions and independent evaluator boundary; do not read protected keys or generator truth. No new model catalog/training, whole25campaign, packages/copies, Gitpush or scheduler restart. Native readonly/source-edit preflights remain required; no active job/freeze. All ten charter areas retained; first synthetic release is the shared payer/provider attributed-population contract workflow, not full clinical or customer readiness.",
   "product_market_audit": {
     "as_of": "2026-11-09T18:42:05.848258+00:00",
     "scope": "Owner product/architecture/market audit against saved receipts and selected current public primary sources. Not independent clinical/model qualification, patent/FTO search, full research review or customer discovery.",
@@ -2373,5 +2413,6 @@
       "https://arxiv.org/abs/2305.05176",
       "https://www.cms.gov/data-research/statistics-trends-and-reports/national-health-expenditure-data/nhe-fact-sheet"
     ]
-  }
+  },
+  "latest_maintenance_receipt": "artifacts/agere-storage-repair-2026-11-10/delivery-receipt.json"
 }

@@ -266,8 +266,28 @@ def _clone_function():
     return clone
 
 
+def require_storage(destination, *, largest_file=0):
+    """Enforce the standing storage plan before package/large-copy writes.
+
+    Metadata only: no hashing, database opening or destination creation.
+    Small fixture copies need no package-sized reserve; package callers invoke
+    this explicitly even when their inventory is small.
+    """
+    destination = Path(destination).absolute()
+    while not destination.exists():
+        destination = destination.parent
+    free = shutil.disk_usage(destination).free
+    required = max(60_000_000_000, 3 * largest_file)
+    if free < required:
+        raise OSError(f'Insufficient storage: {free} bytes free; {required} required '
+                      'by the storage preservation plan. Nothing copied.')
+    return {'free_bytes': free, 'required_free_bytes': required}
+
+
 def copy_file(source, target):
     source, target = Path(source), Path(target)
+    if source.stat().st_size > 100_000_000:
+        require_storage(target, largest_file=source.stat().st_size)
     target.parent.mkdir(parents=True, exist_ok=True)
     clone = _clone_function()
     # clonefile is atomic, follows source symlinks with flags=0 and requires a
@@ -282,6 +302,8 @@ def copy_file(source, target):
 
 def sqlite_copy(source, target):
     source, target = Path(source), Path(target)
+    if source.stat().st_size > 100_000_000:
+        require_storage(target, largest_file=source.stat().st_size)
     target.parent.mkdir(parents=True, exist_ok=True)
     if target.exists(): raise ValueError('SQLite destination already exists')
     src = sqlite3.connect(source.resolve().as_uri() + '?mode=ro', uri=True)
@@ -351,6 +373,7 @@ def checkpoint(config_path, output):
     config_sha = sha(config_path)
     if config.get('recovery'): raise ValueError('Checkpoint the active build, not a recovery inspection')
     build = Path(config['build']).resolve()
+    require_storage(output, largest_file=max((p.stat().st_size for p in build.rglob('*') if p.is_file()), default=0))
     target = fresh_destination(output, build)
     stage = target.with_name('.' + target.name + '.partial-' + uuid.uuid4().hex)
     stage.mkdir()
@@ -407,6 +430,7 @@ def verify_checkpoint(path):
 
 def restore(checkpoint_path, output):
     source = Path(checkpoint_path).resolve()
+    require_storage(output, largest_file=max((p.stat().st_size for p in (source / 'build').rglob('*') if p.is_file()), default=0))
     m = verify_checkpoint(source)
     target = fresh_destination(output, source, m['original_build'])
     stage = target.with_name('.' + target.name + '.partial-' + uuid.uuid4().hex)

@@ -1392,7 +1392,16 @@ def finish_materialization(path, temporary=None, *, started=None, verify_integri
     return {'path': str(target), 'elapsed_seconds': round(time.perf_counter() - started, 1), 'duckdb': duck}
 
 
-def ensure(path):
+class MaterializationRequired(ValueError):
+    """An analytical caller needs a separately prepared, compatible snapshot."""
+
+
+def ensure(path, *, allow_materialization=False):
+    """Reuse a compatible snapshot; analytical reads never build or copy one.
+
+    Build tooling can explicitly opt in. A missing pinned runtime policy must
+    not turn a question or a validation read into a multi-GB database backup.
+    """
     path = Path(path)
     target = path / 'semantic.sqlite3'
     meta = json.loads((path / 'run.json').read_text())
@@ -1404,14 +1413,26 @@ def ensure(path):
             db.close()
         if row.get('version') == VERSION and row.get('source_digest') == meta['source_digest']:
             if row.get('postprocessing_identity') == policy_identity(): return target
+            if not allow_materialization:
+                raise MaterializationRequired(
+                    'Semantic enrichment policy differs from the pinned materialization. '
+                    'Restore the application runtime profile; explicit materialization '
+                    'and verification are required before querying. No database copied.')
             # A model/admission choice changed, not the received structured source.
             # Reuse its complete core and refresh enrichments in a separate atomic file.
             tmp = path / 'semantic.sqlite3.tmp'
             if tmp.exists(): raise ValueError('Retained semantic build exists; inspect/recover it before starting another')
+            if target.stat().st_size > 100_000_000:
+                from ..local_release import require_storage
+                require_storage(tmp, largest_file=target.stat().st_size)
             with sqlite3.connect(target.resolve().as_uri() + '?mode=ro', uri=True) as source, sqlite3.connect(tmp) as copy:
                 source.backup(copy)
             finish_materialization(path, tmp)
             return target
+    if not allow_materialization:
+        raise MaterializationRequired(
+            'Compatible semantic materialization is unavailable. Prepare and verify '
+            'the snapshot explicitly before querying. No database built or copied.')
     build(path)
     return target
 

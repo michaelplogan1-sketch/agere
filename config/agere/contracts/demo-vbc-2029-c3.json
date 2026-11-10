@@ -1,0 +1,20 @@
+{
+  "schema": "agere-contract-performance/1",
+  "id": "demo-vbc-2029-c3",
+  "version": 1,
+  "authored_synthetic": true,
+  "label": "Synthetic contract performance demonstration",
+  "payer_id": "WH-PAYER-C3",
+  "period": {"start": "2029-01-01", "end": "2029-12-31"},
+  "population_rule": "Recorded member-months for this payer with a received practice attribution in the performance period; no visit-plurality or current-coverage substitution.",
+  "amount_basis": "Final payer allowed cents on non-superseded metric claims, matched to the same patient's attributed payer/member month; observed through the current source snapshot, without completion estimation. Not provider revenue or cash.",
+  "benchmark_pmpm_cents": 100000,
+  "sharing_rate_bps": 5000,
+  "quality": {"measure_id": "cbp", "target_bps": 7000},
+  "assumptions": [
+    "All terms, benchmark, sharing rate, quality target and scope in this file are authored demonstration assumptions, not a received payer offer or executed contract.",
+    "The registered CBP approximation is deliberately reused as a synthetic demo quality rule for 2029; its published reference year is not a verified 2029 contract specification.",
+    "One-sided illustrative sharing applies only to positive observed benchmark variance when the approximate quality target is met. No minimum savings threshold, cap, risk adjustment or completion factor is assumed.",
+    "Recorded member-month coverage is not event-date eligibility. Missing source capture, unreceived claims and clinical appropriateness remain unestablished."
+  ]
+}

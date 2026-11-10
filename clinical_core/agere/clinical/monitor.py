@@ -89,10 +89,11 @@ def validate(p):
     stream = p.get('stream', '')
     if not isinstance(stream, str) or (stream and not re.fullmatch(r'[a-z][a-z0-9_]{0,60}', stream)):
         raise ValueError('monitor stream must be a source stream name or empty')
-    period = p.get('period') or {}
-    if not isinstance(period, dict) or set(period) - {'start', 'end'} or \
-            any(not re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(v)) for v in period.values() if v):
+    period = p.get('period',{})
+    if not isinstance(period, dict) or set(period) - {'start', 'end'}:
         raise ValueError('monitor period needs YYYY-MM-DD start/end')
+    from .clinical_events import validate_window
+    validate_window({'basis':'source_event','start':period.get('start',''),'end':period.get('end','')})
     out = {'check': check, 'series': series, 'group_by': group_by, 'method': method, 'amount': amount, 'stream': stream,
            'period': {k: v for k, v in period.items() if v}}
     for name, choices in (('exposure_basis', EXPOSURE_BASES), ('output', OUTPUTS)):
@@ -369,13 +370,11 @@ def windows(p, as_of):
     end = min(end, as_of)
     last = end[:7] if end >= _month_end(end[:7]) else _shift(end[:7], -1)
     first_report = (p['period'].get('start') or f'{_shift(last, -(CHART_MONTHS - 1))}-01')[:7]
+    if p['period'].get('start')and not p['period']['start'].endswith('-01'):first_report=_shift(first_report,1)
     first_chart = min(first_report, _shift(last, -(CHART_MONTHS - 1)))
     chart = vbc._months(f'{first_chart}-01', f'{last}-01') if first_chart <= last else []
     report = [m for m in chart if m >= first_report]
-    if chart and not report:
-        # "this week" / a period inside the incomplete current month: report the latest COMPLETE month and say so
-        report = chart[-1:]
-        p.setdefault('notes', []).append(f'Requested period has no complete month yet; reporting the latest complete month ({chart[-1]}).')
+    if not report:raise ValueError('Requested monitoring period contains no complete observed month; no recent-month substitution')
     return chart, report
 
 

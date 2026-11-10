@@ -27,14 +27,14 @@ import re
 import sqlite3
 from pathlib import Path
 
-VERSION = 'change-attribution/1'
+VERSION = 'change-attribution/2'
 OP = 'change_attribution'
 GROUP_BY = ('home_practice', 'payer', 'source_system')
 CORE_STREAMS = ('encounters', 'labs', 'payer_medical_claims', 'payer_pharmacy_claims', 'pharmacy_dispenses', 'notes', 'appointments',
-                'vitals', 'medical_claims', 'adt_messages', 'telephone_messages', 'procedures', 'imaging_reports')
+                'vitals', 'medical_claims', 'adt', 'adt_messages', 'telephone_messages', 'procedures', 'imaging_reports')
 EXPLANATIONS = ('none', 'source_outage', 'local_feed', 'patient_change')
-LABEL = {'source_outage': 'feed outage / source capture change (stream-wide)', 'local_feed': 'local feed problem (one group, one stream)',
-         'patient_change': 'real change in patient activity (all streams of the group)', 'none': 'within normal variation',
+LABEL = {'source_outage': 'feed outage / capture-change hypothesis (stream-wide)', 'local_feed': 'local capture-change hypothesis (one group, one stream)',
+         'patient_change': 'recorded-activity change hypothesis (all streams of the group)', 'none': 'baseline-compatible pattern',
          'unresolved': 'unresolved (explanations not separable from these counts)'}
 STREAM_ALIASES = [('labs', r'\blab(?:oratory)?s?\b|\blab (?:volume|results?)\b'), ('encounters', r'\bencounters?\b|\bvisits?\b'),
                   ('payer_medical_claims', r'\b(?:medical )?claims?\b'), ('pharmacy_dispenses', r'\bpharmacy\b|\bdispens\w*\b|\bfills?\b'),
@@ -47,13 +47,16 @@ PRODUCT = {'population': 'optional', 'view': 'table',
                   'stream x month.'}
 CONTRACT = {'inputs': ['optional earlier_set'],
             'parameters': {'streams': [], 'focus_streams': ['labs'], 'group_by': 'home_practice|payer|source_system', 'group': '',
-                           'window_months': 3, 'baseline_months': 18, 'z_threshold': 3.0, 'min_ratio': 1.5},
+                           'window_months': 3, 'baseline_months': 18, 'z_threshold': 3.0, 'min_ratio': 1.5,
+                           'period': {'start': '', 'end': ''},'output':'anomalies|monthly_coverage'},
             'meaning': 'Poisson log-linear tensor model log E[Y[group, stream, month]] = c[g,s] + a[g,t] (patient-activity state shared '
                        'across streams) + b[s,t] (source-capture state shared across groups), fitted on baseline months with quasi-Poisson '
                        'dispersion; each recent cell deviating from its projection is attributed to source_outage (stream-wide shift), '
                        'local_feed (one group x stream), patient_change (all streams of a group) or none, by BIC weights over one-parameter '
                        'shifts of that month slice; top probability < 0.6 = unresolved. Use for real-change-vs-feed-outage and data-quality '
-                       'questions about volume drops or spikes; control charts stay with monitor.'}
+                       'questions about volume drops or spikes; control charts stay with monitor. An explicit period reports every complete '
+                       'month wholly inside it, with baseline_months before its first report month. window_months applies only when no '
+                       'start is supplied. These are unqualified pattern hypotheses, not identified causes or calibrated probabilities.'}
 NATIVE = ('value',)
 
 
@@ -65,11 +68,14 @@ def schema(obj, string, array):
                 'group': string(None, 'One group id to report on, or empty'),
                 'window_months': {'type': 'integer', 'minimum': 1, 'maximum': 6},
                 'baseline_months': {'type': 'integer', 'minimum': 6, 'maximum': 36},
-                'z_threshold': {'type': 'number', 'minimum': 1.5, 'maximum': 10}, 'min_ratio': {'type': 'number', 'minimum': 1.05, 'maximum': 10}})
+                'z_threshold': {'type': 'number', 'minimum': 1.5, 'maximum': 10}, 'min_ratio': {'type': 'number', 'minimum': 1.05, 'maximum': 10},
+                'period': obj({'start': string(None,'Inclusive YYYY-MM-DD report start, or empty for window_months'),
+                               'end': string(None,'Inclusive YYYY-MM-DD report end, or empty for snapshot cutoff')}),
+                'output':string(('anomalies','monthly_coverage'),'anomalies: every flagged cell; monthly_coverage: every report month, counts, missing-capture status and every nested anomaly, including months with no flags')})
 
 
 def validate(p):
-    allowed = {'streams', 'focus_streams', 'group_by', 'group', 'window_months', 'baseline_months', 'z_threshold', 'min_ratio'}
+    allowed = {'streams', 'focus_streams', 'group_by', 'group', 'window_months', 'baseline_months', 'z_threshold', 'min_ratio','period','output'}
     if not isinstance(p, dict) or set(p) - allowed: raise ValueError('change_attribution parameters: ' + ', '.join(sorted(allowed)))
     out = {'streams': list(dict.fromkeys(p.get('streams') or [])), 'focus_streams': list(dict.fromkeys(p.get('focus_streams') or [])),
            'group_by': p.get('group_by', 'home_practice'), 'group': p.get('group') or '', 'window_months': p.get('window_months', 3),
@@ -83,6 +89,13 @@ def validate(p):
     for k, lo, hi in (('z_threshold', 1.5, 10), ('min_ratio', 1.05, 10)):
         if type(out[k]) not in (int, float) or not lo <= out[k] <= hi: raise ValueError(f'{k} {lo}..{hi}')
         out[k] = float(out[k])
+    period=p.get('period',{})
+    if not isinstance(period,dict)or set(period)-{'start','end'}:raise ValueError('period needs YYYY-MM-DD start/end')
+    from .clinical_events import validate_window
+    window=validate_window({'basis':'source_event','start':period.get('start',''),'end':period.get('end','')})
+    out['period']={k:window[k]for k in ('start','end')if window[k]}
+    out['output']=p.get('output','anomalies')
+    if out['output']not in ('anomalies','monthly_coverage'):raise ValueError('output must be anomalies or monthly_coverage')
     return out
 
 
@@ -171,7 +184,7 @@ def attribute_tensor(Y, groups, streams, months, *, window=3, z_threshold=3.0, m
     a0, b0 = a[:, recent].mean(1), b[:, recent].mean(1)
     proj = np.exp(c + a0[:, None] + b0[None, :])
     proj[Y[:, :, :T - window].sum(2) == 0] = 0.0
-    anomalies = []
+    anomalies = [];screened=0
     for t in range(T - window, T):
         y = Y[:, :, t]
         z = (y - proj) / np.sqrt(phi * np.maximum(proj, 1e-9))
@@ -180,6 +193,7 @@ def attribute_tensor(Y, groups, streams, months, *, window=3, z_threshold=3.0, m
                 if proj[gi, si] < min_expected: continue
                 if focus_streams and streams[si] not in focus_streams: continue
                 if group and groups[gi] != group: continue
+                screened+=1
                 ratio = (y[gi, si] + 0.5) / (proj[gi, si] + 0.5)
                 if abs(z[gi, si]) < z_threshold or max(ratio, 1 / ratio) < min_ratio: continue
                 post = attribute_slice(y, proj, gi, si, phi)
@@ -200,7 +214,9 @@ def attribute_tensor(Y, groups, streams, months, *, window=3, z_threshold=3.0, m
     for r in anomalies: counts[r['attribution']] += 1
     return {'groups': list(groups), 'streams': list(streams), 'months': list(months), 'window_months': months[T - window:],
             'baseline_months': [months[0], months[T - window - 1]], 'dispersion_phi': round(phi, 3), 'anomalies': anomalies,
-            'attribution_counts': dict(counts),
+            'attribution_counts': dict(counts),'cells_screened':screened,
+            'multiplicity_handling':'No FWER/FDR control; residual/ratio screens across cells. BIC weights compare hypotheses within a flagged cell, not p-values or calibrated probabilities.',
+            'independent_method_qualification':False,
             'patient_activity_state': {g: [round(float(v), 4) for v in a[i, :T - window]] for i, g in enumerate(groups)},
             'source_capture_state': {s: [round(float(v), 4) for v in b[j, :T - window]] for j, s in enumerate(streams)}}
 
@@ -219,16 +235,36 @@ def months_for(as_of, window, baseline):
     return [_shift(last, -k) for k in range(window + baseline - 1, -1, -1)]
 
 
-def _group_map(db, group_by, keep):
+def windows(as_of,p):
+    """Pre-period baseline and all fully observed, fully requested report months."""
+    import calendar
+    period=p.get('period')or{}
+    end=min(period.get('end')or as_of,as_of)
+    last=end[:7]
+    if end<f'{last}-{calendar.monthrange(int(last[:4]),int(last[5:7]))[1]:02d}':last=_shift(last,-1)
+    start=period.get('start')or _shift(last,1-p['window_months'])+'-01'
+    first=start[:7]if start.endswith('-01')else _shift(start[:7],1)
+    if first>last:raise ValueError('Requested attribution period contains no complete observed month; no recent-month substitution')
+    report=[];month=first
+    while month<=last:report.append(month);month=_shift(month,1)
+    baseline=[_shift(first,-k)for k in range(p['baseline_months'],0,-1)]
+    return baseline+report,report
+
+
+def _group_map(db, group_by, keep,first,last):
     if group_by == 'home_practice':
         best = {}
         for pid, org, n in db.execute("SELECT patient_id, organization_id, count(*) FROM record WHERE stream IN ('encounters', 'appointments') "
-                                      "AND organization_id LIKE '%PRACTICE%' GROUP BY 1, 2"):
+                                      "AND organization_id LIKE '%PRACTICE%' AND event_date >= ? AND event_date < ? GROUP BY 1, 2 ORDER BY 1,2",
+                                      (first+'-01',_shift(last,1)+'-01')):
+            if keep is not None and pid not in keep:continue
             if pid not in best or n > best[pid][1]: best[pid] = (org, n)
         return {pid: v[0] for pid, v in best.items()}
     if group_by == 'payer':
         out = {}
-        for pid, lob in db.execute('SELECT patient_id, line_of_business FROM member_month ORDER BY month'):
+        for pid, lob in db.execute('SELECT patient_id, line_of_business FROM member_month WHERE substr(month,1,7) BETWEEN ? AND ? ORDER BY month',
+                                   (first,last)):
+            if keep is not None and pid not in keep:continue
             out[pid] = lob or 'unknown'
         return out
     return None  # source_system: the record's own organization_id
@@ -237,17 +273,20 @@ def _group_map(db, group_by, keep):
 def attribute(db, as_of, p, keep=None):
     """Warehouse entry point (reused by monitor): tensor from record counts, then attribute_tensor."""
     import numpy as np
-    months = months_for(str(as_of)[:10], p['window_months'], p['baseline_months'])
-    have = {r[0] for r in db.execute("SELECT DISTINCT stream FROM record WHERE event_date >= ?", (f'{months[0]}-01',))}
-    streams = [s for s in (p['streams'] or CORE_STREAMS) if s in have] or sorted(have)[:12]
+    months,report = windows(str(as_of)[:10],p)
+    raw_counts=defaultdict(float)
+    q=("SELECT patient_id,organization_id,stream,substr(event_date,1,7),count(*)FROM record "
+       "WHERE event_date>=? AND event_date<? GROUP BY 1,2,3,4")
+    for pid,org,stream,month,n in db.execute(q,(months[0]+'-01',_shift(months[-1],1)+'-01')):
+        if keep is None or pid in keep:raw_counts[(pid,org,stream,month)]+=n
+    have={k[2]for k in raw_counts}
+    streams = [s for s in (p['streams'] or CORE_STREAMS) if s in have] or sorted(have)
     for s in p['focus_streams']:
         if s in have and s not in streams: streams.append(s)
-    gmap = _group_map(db, p['group_by'], keep)
+    gmap = _group_map(db,p['group_by'],keep,months[0],_shift(report[0],-1))
     counts = defaultdict(float)
-    q = ("SELECT patient_id, organization_id, stream, substr(event_date, 1, 7), count(*) FROM record WHERE event_date >= ? AND event_date < ? "
-         f"AND stream IN ({','.join('?' * len(streams))}) GROUP BY 1, 2, 3, 4")
-    for pid, org, st, m, n in db.execute(q, (f'{months[0]}-01', f'{_shift(months[-1], 1)}-01', *streams)):
-        if keep is not None and pid not in keep: continue
+    for (pid,org,st,m),n in raw_counts.items():
+        if st not in streams:continue
         g = (org or 'unknown') if gmap is None else gmap.get(pid, 'no_home_practice' if p['group_by'] == 'home_practice' else 'unknown')
         counts[(g, st, m)] += n
     vol = defaultdict(float)
@@ -258,10 +297,19 @@ def attribute(db, as_of, p, keep=None):
     for (g, st, m), n in counts.items():
         if g in gi and m in mi: Y[gi[g], si[st], mi[m]] = n
     if not groups: raise ValueError('No group has enough received records for the tensor model')
-    rep = attribute_tensor(Y, groups, streams, months, window=p['window_months'], z_threshold=p['z_threshold'], min_ratio=p['min_ratio'],
+    rep = attribute_tensor(Y, groups, streams, months, window=len(report), z_threshold=p['z_threshold'], min_ratio=p['min_ratio'],
                            focus_streams=p['focus_streams'], group=p['group'] or None)
     rep['group_by'] = p['group_by']
     rep['records_in_tensor'] = int(Y.sum())
+    rep['period']={'requested':dict(p.get('period')or{}),'report_months':[report[0],report[-1]],
+        'baseline_months':[months[0],_shift(report[0],-1)],'complete_months_only':True,'snapshot_cutoff':str(as_of)[:10],
+        'clock':'record.event_date','group_assignment':'fixed from pre-report baseline; source_system uses each received record organization'}
+    rep['monthly_coverage']=[{'month':m,'received_records_in_selected_streams':int(sum(n for(g,s,day),n in counts.items()if day==m)),
+        'records_in_tensor':int(Y[:,:,mi[m]].sum()),
+        'capture_status':'received_records_capture_completeness_unestablished'if any(day==m for(g,s,day)in counts)else'no_received_records_capture_unknown'}for m in report]
+    rep['source_scope']={'selected_streams':streams,'received_streams_not_selected':sorted(have-set(streams)),
+        'omitted_low_volume_groups':sorted(set(vol)-set(groups)),
+        'meaning':'Event-month counts received in this snapshot; no reconstruction of physical warehouse arrival history, no proof that absent records mean no care.'}
     return rep
 
 
@@ -285,31 +333,45 @@ METHOD = ('Joint patient-state / source-observation tensor model: log E[records(
 ASSUMPTIONS = ['Synthetic warehouse; counts are received records by event month, not independently confirmed care volume.',
                'A stream-wide shift is evidence of a capture change but does not prove an individual patient\'s status.',
                'Late-arriving records in the last months look like drops; the window uses complete months only.',
-               'Groups with too few records are left out; a top attribution probability below 0.6 is reported as unresolved.']
+               'Groups with too few records are left out; a top attribution model weight below 0.6 is reported as unresolved.',
+               'Attribution weights are uncalibrated research hypotheses, not p-values or established causes. No FWER/FDR control is applied to cell screening.',
+               'No records in a month does not establish no care or complete source capture. Physical warehouse arrival history is not reconstructed.',
+               'Baseline precedes the report period; projection does not model seasonality or guarantee stability over a long reporting horizon.']
 
 
 def headline(r):
     an = r['anomalies']
     if not an:
-        return (f"No volume change beyond normal variation in {', '.join(r['window_months'])} across {len(r['groups'])} groups x "
+        return (f"No cells exceeded the configured residual and ratio screens in {', '.join(r['window_months'])} across {len(r['groups'])} groups x "
                 f"{len(r['streams'])} streams (dispersion {r['dispersion_phi']})")
     c = r['attribution_counts']
     parts = ', '.join(f'{v} {LABEL[k]}' for k, v in sorted(c.items(), key=lambda kv: -kv[1]))
     top = an[0]
     return (f"{len(an)} volume changes in {r['window_months'][0]} to {r['window_months'][-1]}: {parts}. Largest: {top['stream']} for "
             f"{top['group']} in {top['month']} {top['direction']} to {top['ratio']:.0%} of expected ({top['observed']} vs {top['expected']:.0f}) -> "
-            f"{top['label']} (p={max(top['probabilities'].values()):.2f})")
+            f"{top['label']} (BIC model weight={max(top['probabilities'].values()):.2f}; uncalibrated)")
 
 
 def answer(report, plan, question):
     partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
-    return {'status': 'partial' if partial else 'answered', 'answer_type': 'table', 'table': report['anomalies'],
+    rows=report['anomalies']
+    if report['parameters'].get('output')=='monthly_coverage':
+        rows=[]
+        for month in report['monthly_coverage']:
+            anomalies=[a for a in report['anomalies']if a['month']==month['month']]
+            rows.append({**month,'anomaly_count':len(anomalies),'anomalies':anomalies,
+                'baseline_start':report['baseline_months'][0],'baseline_end':report['baseline_months'][1],
+                'report_start':report['window_months'][0],'report_end':report['window_months'][-1],
+                'multiplicity_handling':report['multiplicity_handling'],
+                'independent_method_qualification':report['independent_method_qualification']})
+    return {'status': 'partial' if partial else 'answered', 'answer_type': 'table', 'table':rows,
             'count': len(report['anomalies']), 'patient_ids': [], 'value': headline(report) + '.', 'method': report['method'],
             'definitions': [{'term': 'feed outage vs real change', 'basis': 'Stream-wide shift (source-capture state) vs group-wide shift '
                                                                               'across streams (patient-activity state) in a joint tensor model'}],
             'limitations': report['assumptions'], 'membership_role': 'evaluated',
             'overall': {'change_attribution': {'counts': report['attribution_counts'], 'window': report['window_months'],
-                                               'dispersion_phi': report['dispersion_phi']}}}
+                                               'dispersion_phi':report['dispersion_phi'],
+                                               **{k:report[k]for k in ('period','monthly_coverage','source_scope','cells_screened','multiplicity_handling','independent_method_qualification')}}}}
 
 
 def annotate_monitor(report, path, as_of, keep=None):
@@ -320,14 +382,20 @@ def annotate_monitor(report, path, as_of, keep=None):
         from . import semantic_layer
         target = semantic_layer.ensure(path) if (Path(path)/'run.json').exists() else Path(path)/'semantic.sqlite3'
         flagged = sorted({f['stream'] for f in feeds})
-        p = validate({'streams': list(dict.fromkeys([*flagged[:10], 'encounters', 'labs', 'payer_medical_claims'])), 'focus_streams': flagged[:10], 'window_months': 3})
+        period=report.get('parameters',{}).get('period')or{}
+        if not period and (bounds:=report.get('period',{}).get('report_months')):
+            import calendar
+            period={'start':bounds[0]+'-01','end':bounds[-1]+'-'+str(calendar.monthrange(int(bounds[-1][:4]),int(bounds[-1][5:7]))[1])}
+        p = validate({'streams': list(dict.fromkeys([*flagged, 'encounters', 'labs', 'payer_medical_claims'])),
+                      'focus_streams':flagged,'group_by':'source_system','window_months':3,'period':period})
         db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
         try:
             rep = attribute(db, str(as_of)[:10], p, keep)
         finally:
             db.close()
         report['change_attribution'] = {'schema': VERSION, 'window_months': rep['window_months'], 'counts': rep['attribution_counts'],
-                                        'anomalies': rep['anomalies'][:25], 'headline': headline(rep), 'method': METHOD}
+                                        'anomalies': rep['anomalies'],'headline':headline(rep),'method':METHOD,
+                                        **{k:rep[k]for k in ['period','monthly_coverage','source_scope','cells_screened','multiplicity_handling','independent_method_qualification']}}
     except Exception as exc:  # noqa: BLE001 - an annotation never breaks the monitor answer
         report['change_attribution'] = {'schema': VERSION, 'status': 'not_computed', 'reason': str(exc)[:200]}
     return report
@@ -360,8 +428,17 @@ def route(question, profile, as_of):
     elif re.search(r'\bsource systems?\b|\bsending (?:system|organi[sz]ation)s?\b|\binterfaces?\b', low): params['group_by'] = 'source_system'
     org = re.search(r'\b(wh[n]?-[a-z]+-[a-z0-9-]+)\b', low)
     if org: params['group'] = org.group(1).upper()
+    # Reuse the ordinary language compiler's period parser. Unconsumed dates
+    # defer to the general planner rather than silently running recent months.
+    from .local_compiler import Reader,_take_period
+    temporal=Reader(question);period=_take_period(temporal,as_of)
+    if any(re.search(r'\b(?:19|20|21)\d{2}\b',word)for word in temporal.leftover()):return None
+    if period:params['period']={'start':period[0],'end':period[1]}
     m = re.search(r'\blast (\d) months?\b|\bpast (\d) months?\b', low)
-    if m: params['window_months'] = min(6, max(1, int(m.group(1) or m.group(2))))
+    if m:
+        n=int(m.group(1)or m.group(2))
+        if not 1<=n<=6:return None
+        params['window_months']=n
     return plan(OP, params, 'Joint patient-state / source-observation tensor model: real change vs feed outage', question,
                 [f"streams {','.join(focus) or 'all'}"])
 

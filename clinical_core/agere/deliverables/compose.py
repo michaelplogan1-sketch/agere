@@ -24,10 +24,13 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
+import gzip
+import io
 import os
 from pathlib import Path
 import re
 import time
+import tempfile
 import uuid
 
 from . import examples, intent as intentmod, runtime, tools as toolsmod, verify as verifymod
@@ -315,7 +318,25 @@ def _save(ws, dlv_id, *, doc, body, bundle, spec, revision=None):
         (d / 'artifact.html').unlink(missing_ok=True)
     if body is not None:
         (d / 'body.html').write_text(body)
-    (d / 'bundle.json').write_text(json.dumps(bundle.to_json(), default=str))
+    # Keep large evidence bundles lossless without allocating a complete JSON
+    # string or storing another uncompressed multi-GB copy of the saved answer.
+    # Older plain bundles remain readable; revisions select their current format
+    # in spec.json, so a retained old plain file cannot shadow a new packed one.
+    data = bundle.to_json()
+    size = sum(len(chunk.encode('utf-8')) for chunk in json.JSONEncoder(default=str).iterencode(data))
+    packed = size > 1_048_576
+    target = d / ('bundle.json.gz' if packed else 'bundle.json')
+    with tempfile.NamedTemporaryFile(mode='wb', dir=d, prefix='.bundle-', suffix='.partial', delete=False) as f:
+        partial = Path(f.name)
+        if packed:
+            with gzip.GzipFile(filename='', fileobj=f, mode='wb', mtime=0) as encoded:
+                with io.TextIOWrapper(encoded, encoding='utf-8') as stream:
+                    json.dump(data, stream, default=str)
+        else:
+            f.write(json.dumps(data, default=str).encode('utf-8'))
+        f.flush(); os.fsync(f.fileno())
+    partial.replace(target)
+    spec['bundle_storage'] = target.name
     (d / 'spec.json').write_text(json.dumps(spec, indent=1, default=str))
     return d
 
@@ -325,7 +346,12 @@ def load(ws, dlv_id, *, documents=True):
     if not re.fullmatch(r'DLV-[0-9A-F]{12}', str(dlv_id)) or not (d / 'spec.json').is_file():
         raise FileNotFoundError(f'No deliverable {dlv_id!r} in workspace {ws.slug}')
     spec = json.loads((d / 'spec.json').read_text())
-    bundle = Bundle.from_json(json.loads((d / 'bundle.json').read_text()))
+    name = spec.get('bundle_storage', 'bundle.json')
+    if name not in ('bundle.json', 'bundle.json.gz'):
+        raise ValueError('Invalid saved bundle storage path')
+    target = d / name
+    with (gzip.open if name.endswith('.gz') else open)(target, 'rt', encoding='utf-8') as stream:
+        bundle = Bundle.from_json(json.load(stream))
     body = (d / 'body.html').read_text() if documents and (d / 'body.html').is_file() else None
     doc = (d / 'artifact.html').read_text() if documents and (d / 'artifact.html').is_file() else None
     return spec, bundle, body, doc if spec.get('status') == 'delivered' else None

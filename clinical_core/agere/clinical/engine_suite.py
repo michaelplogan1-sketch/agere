@@ -17,6 +17,7 @@ import importlib
 VERSION = 'engine-suite/1'
 # op -> module (clinical_core.agere.clinical.<module>)
 MODULES = {
+    'contract_performance': 'contract_performance', # one attributed-population contract, shared payer/provider ledger and work context
     'outreach_allocation': 'outreach_allocation',   # capacity-aware MILP allocation of outreach / slots (scipy HiGHS)
     'outreach_bandit': 'outreach_learning',         # Thompson-sampling bandit over outreach arms from logged outcomes
     'policy_search': 'policy_search',               # evolutionary outreach-policy search against the population simulator
@@ -65,7 +66,7 @@ MODULES = {
     'chart_reader': 'chart_reader_op',               # one named patient's chart: every structured source + note frames (chart_reader.tier is the rung)
     'acquisition_policy': 'acquisition_policy',     # learned where-to-spend-effort policy from recorded outcomes (cost, success, no-further-computation)
 }
-ROUTE_ORDER = ('identity_resolution', 'cql_measure', 'saved_monitors', 'change_attribution', 'social_needs', 'guideline_conformance',
+ROUTE_ORDER = ('contract_performance', 'identity_resolution', 'cql_measure', 'saved_monitors', 'change_attribution', 'social_needs', 'guideline_conformance',
                'star_rating', 'mlr', 'settlement_bridge', 'bundle_compliance', 'hai_surveillance', 'antimicrobial_use',
                'spatiotemporal_cluster', 'network_adequacy', 'overbooking_fairness', 'or_block_optimization',
                'discharge_forecast', 'capacity_simulation', 'flow_decomposition', 'visit_groups', 'policy_search', 'policy_evaluation', 'acquisition_policy',
@@ -97,6 +98,28 @@ def product():
 
 def contracts():
     return {op: dict(m.CONTRACT) for op, m in available().items()}
+
+
+def requested_population(question):
+    """An explicit registered input can bind a source population, never free prose."""
+    for module in available().values():
+        bind = getattr(module, 'requested_population', None)
+        if callable(bind):
+            scope = bind(question)
+            if scope is not None:
+                return scope
+    return None
+
+
+def registered_input_command(question, as_of):
+    """Closed, explicitly named input commands join the existing authored tier."""
+    for operation, module in available().items():
+        command = getattr(module, 'registered_input_command', None)
+        if callable(command):
+            graph = command(question, as_of)
+            if graph is not None:
+                return graph, operation
+    return None, None
 
 
 def native_scalars():

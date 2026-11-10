@@ -1,5 +1,5 @@
 """Authored atomic recovery and optional model-policy contracts, no model inference."""
-import ast,json,os,sqlite3,tempfile,unittest
+import ast,json,os,sqlite3,tempfile,unittest,subprocess
 from pathlib import Path
 from unittest.mock import patch
 from clinical_core.agere.clinical import semantic_layer as S,note_facts as N,record_store as R
@@ -68,7 +68,7 @@ class Materialization(unittest.TestCase):
     def test_changed_model_policy_refreshes_only_postprocessing(self):
         self.finish()
         with patch.dict(os.environ,{'AGERE_NOTE_NER':'on'}),patch.object(S,'build') as build,patch.object(S,'finish_materialization') as finish:
-            self.assertEqual(S.ensure(self.path),self.target)
+            self.assertEqual(S.ensure(self.path,allow_materialization=True),self.target)
         build.assert_not_called();finish.assert_called_once_with(self.path,self.tmp)
         with sqlite3.connect(self.tmp) as db:self.assertEqual(db.execute('select count(*) from patient').fetchone()[0],2)
 
@@ -76,7 +76,7 @@ class Materialization(unittest.TestCase):
         self.finish()
         self.tmp.write_bytes(b'authored retained interrupted build')
         with patch.dict(os.environ,{'AGERE_NOTE_NER':'on'}),self.assertRaisesRegex(ValueError,'Retained semantic build'):
-            S.ensure(self.path)
+            S.ensure(self.path,allow_materialization=True)
         self.assertEqual(self.tmp.read_bytes(),b'authored retained interrupted build')
 
     def test_disabling_bulk_ner_keeps_full_received_narrative(self):
@@ -102,7 +102,10 @@ class Materialization(unittest.TestCase):
         self.assertFalse((self.path/'unused-output').exists())
 
     def test_old_native_core_program_is_identical_before_shared_postprocessing(self):
-        before=Path('/private/tmp/agere-denial-timing-followup-20261028/clinical_core/agere/clinical/semantic_layer.py').read_text()
+        # Immutable parent of the materialization change; an expired temporary
+        # checkout is neither a durable baseline nor a test prerequisite.
+        before=subprocess.check_output(['git','show','20ec7c2a285a0965f3c1414c9fbeddd11ebe61ea^:clinical_core/agere/clinical/semantic_layer.py'],
+            cwd=Path(__file__).resolve().parent,text=True,env={**os.environ,'GIT_OPTIONAL_LOCKS':'0'})
         after=Path(S.__file__).read_text()
         def parts(text):
             tree=ast.parse(text);build=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='build')

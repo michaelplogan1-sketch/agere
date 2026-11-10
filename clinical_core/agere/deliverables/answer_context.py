@@ -232,8 +232,8 @@ def capture(path, question, result, *, original_question=None, _population_scope
                                'observation_dependencies': data['dependencies']['observation']})[:24]
     d = root(path) / key
     d.mkdir(parents=True, exist_ok=True)
-    # Stream native histories as lossless gzip. Other snapshots use gzip when
-    # plain storage would not fit. Encoding never limits evidence. A shared
+    # Stream native histories and large snapshots as lossless gzip. Compression
+    # is a storage format, never a limit on evidence. A shared
     # publication lock preserves first-writer identity across both encodings.
     with (d/'.capture.lock').open('a+b')as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
@@ -244,7 +244,7 @@ def capture(path, question, result, *, original_question=None, _population_scope
             packed=isinstance(investigation,dict)and bool(investigation.get('tool_calls'))
             if not packed:
                 required=sum(len(chunk.encode('utf-8'))for chunk in json.JSONEncoder(default=str).iterencode(payload))
-                packed=required>shutil.disk_usage(d).free
+                packed=required>1_048_576 or required>shutil.disk_usage(d).free
             target=d/('answer.json.gz'if packed else'answer.json')
             # Publish only complete snapshots, without replacing a concurrent writer.
             # Keep an interrupted write under its partial name for recovery/accounting.

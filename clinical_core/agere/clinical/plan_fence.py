@@ -403,6 +403,21 @@ def definition_premise_issues(question, graph, schema, *, native_calls=None, ans
 def premise_issues(path, question, graph, *, saved=None, schema=None,native_calls=None,answer=None):
     """Readable reasons the plan's premises no longer hold (empty list = current)."""
     issues = []
+    # Versioned domain inputs can change without a warehouse/schema change.
+    # Fence only the dependent operator, including investigator-native calls.
+    from . import engine_suite
+    bound_nodes = list((graph or {}).get('nodes') or [])
+    for call in native_calls or []:
+        result = call.get('result') or {}
+        if call.get('name') == 'execute_analysis' and isinstance(result, dict):
+            bound_nodes.append({'operation': result.get('analysis'), 'parameters': result.get('parameters')})
+    for node in bound_nodes:
+        operation = node.get('operation')
+        if operation not in engine_suite.MODULES:
+            continue
+        check = getattr(engine_suite.module(operation), 'premise_issues', None)
+        if callable(check):
+            issues.extend(operation + ': ' + str(issue) for issue in check(node.get('parameters')))
     effective=graph
     if native_calls is not None and isinstance(answer,dict):
         from .decision_context import population_scope_issues

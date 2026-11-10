@@ -625,6 +625,15 @@ function vizNetwork(a){const o=(a.overall||{}).provider_network||{},g=o.graph||{
  return h}
 /* contract strategy: KPI tiles, net-value distribution per option (step histograms), 5th-95th intervals, ranking flips,
    Nash negotiation frontier (MSR x sharing rate: break-even and equal-value curves, bargaining bounds, Nash point) */
+function vizContractPerformance(a){const c=a.overall.contract_performance,s=c.summary||{},q=c.quality||{},qo=q.overall||{},terms=c.contract||{};
+ const money=v=>v==null?'Unresolved':usd(v/100),kp=(l,v)=>'<div class="kpi"><div class="l">'+esc(l)+'</div><div class="v">'+esc(v)+'</div></div>';
+ let h='<section class="sec" data-focus="contract"><h3>'+esc(terms.label||'Contract performance')+'</h3><p class="hint">Authored synthetic terms · '+esc(terms.id)+' · version '+esc(terms.version)+' · '+esc((c.period||{}).start)+' to '+esc((c.period||{}).end)+'. Both views use the same saved cohort and calculations.</p>';
+ h+='<div class="kpis">'+kp('Attributed members',fmt(s.members))+kp('Recorded member-months',fmt(s.recorded_member_months))+kp('Observed allowed cost',money(s.observed_allowed_cents))+kp('Authored benchmark',money(s.benchmark_cents))+kp('Approximate quality',qo.denominator==null?'Unresolved':fmt(qo.numerator)+' / '+fmt(qo.denominator))+'</div>';
+ h+='<details open><summary>Provider / population health view</summary><p>Illustrative provider share: <strong>'+esc(money(s.illustrative_provider_share_cents))+'</strong>. Quality target '+(s.approximate_quality_target_met==null?'is unresolved':s.approximate_quality_target_met?'is met':'is not met')+' under the authored demo rule. Review observed cost and quality evidence before choosing internal follow-up.</p></details>';
+ h+='<details><summary>Payer view</summary><p>Illustrative retained positive benchmark variance: <strong>'+esc(money(s.illustrative_payer_retained_positive_variance_cents))+'</strong>. This is scenario arithmetic, not realized savings, cash or settlement. Nonmetric claims and claims without the same attributed member-month remain outside the ledger.</p></details>';
+ h+='<details><summary>Monthly cost and exposure</summary>'+tableHTML((c.monthly||[]).map(r=>({'Month':r.month,'Member-months':r.recorded_member_months,'Allowed cost':money(r.observed_allowed_cents),'Benchmark':money(r.benchmark_cents)})),{name:'contract-monthly'})+'</details>';
+ h+='<details><summary>Practice contributions · descriptive drivers</summary>'+tableHTML((c.practice_drivers||[]).map(r=>({'Practice':r.practice_id,'Member-months':r.recorded_member_months,'Allowed cost':money(r.observed_allowed_cents),'Benchmark variance':money(r.observed_variance_cents)})),{name:'contract-practices'})+'</details>';
+ h+='<details><summary>Members and internal review needs</summary>'+tableHTML(a.table||[],{name:'contract-members'})+'</details><p class="hint">Quality uses the registered approximation. Clinical suitability, complete capture and payment entitlement are unestablished. Save or reopen the evidence and internal review work from this answer.</p></section>';return h;}
 function vizContract(a){const cs=(a.overall||{}).contract_strategy||{},rows=a.table||[],p=cs.parameters||{},n=cs.negotiation,sim=cs.simulation||{};
  const kp=(l,v)=>'<div class="kpi"><div class="l">'+l+'</div><div class="v">'+esc(v)+'</div></div>',b=rows[0]||{},lam=cs.risk_aversion,cf=cs.confidence;
  let h='<section class="sec" data-focus="contract"><h3>Contract strategy — benchmark $'+fmt(p.benchmark_pmpm,2)+' PMPM, base cost $'+fmt(sim.base_pmpm,2)+' PMPM, '+
@@ -835,6 +844,7 @@ function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.ove
   if(o.target_trial)return vizTargetTrial(a);
   if(o.line_of_therapy)return vizLines(a);
   if(o.trial_feasibility)return vizFunnel(a);
+  if(o.contract_performance)return vizContractPerformance(a);
   if(o.contract_strategy)return vizContract(a);
   if(o.knowledge)return vizKnowledge(a);
   if(o.early_signal)return vizEarlySignal(a);
