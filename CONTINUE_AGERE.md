@@ -1,16 +1,8 @@
-# Current Agere checkpoint — MANUAL / SCHEDULER PAUSED 2026-11-11T15:50:13.012163+00:00
+# Current Agere checkpoint — MANUAL / SCHEDULER PAUSED 2026-11-11T16:34:45.967688+00:00
 
-`AGERE_BUILD_CONTROL.json` remains the sequence authority. G3 finite local connected-workflow engineering is accepted; G5 qualification remains blocked. The full ten-area backlog and all 25 fixed case histories are retained, and full product/customer acceptance is false.
+`AGERE_BUILD_CONTROL.json` owns the sequence. G5: complete role-specific qualification when independent reference evidence and viable outcome labels are available; retain all25 case dispositions and separate unassessed coverage from located implementation defects. The current authenticated code release is delivered locally. No currently identified shared-path implementation defect remains from this increment; do not invent labels, promote unqualified student/bottle weights, repeat passing workflows, push Git or restart the paused scheduler. Customer deployment remains a separate dependency.
 
-**Gate / workflow / evidence / remaining gap:** G3 delivered, G5 current / original population analysis answered, saved and reopened with 128 rows and 140 exact native populations; native count uses zero model calls; current code archive starts and reopens saved work / `artifacts/agere-analytical-completion-2026-11-11/final-delivery-receipt.json` / broad current 25-question semantic acceptance, independent model/method/clinical qualification, compatible student deployment and customer prerequisites remain incomplete.
-
-**Runtime:** existing app PID 56993, session 17723, port 8908; no owned provider/build/training job remains active and product source is not frozen. The inspected answer is http://127.0.0.1:8908/ask?context=ANS-5ce3856e10e7f804bed7a7c6.
-
-**Package:** `artifacts/agere-analytical-completion-2026-11-11/release-final/agere-current-code.tar.gz` is 6,301,565 bytes compressed and uses existing declared Python, data, models and work stores. It is a same-machine local release, not an independent customer installation or data backup.
-
-**Exact next action:** G5: qualify the remaining reading, planning, verification and learning roles against independent source-family reference evidence and the retained all25 dispositions before promotion or broad accuracy/economics claims. Current references, viable target labels and authentic clinical/reviewer economics are not available. Preserve the current runnable local release and all supported unknowns; fix any subsequently located product defect in the shared path. Do not repeat passing workflows, rerun unchanged uncertain votes, invent labels, enable unqualified students/bottles, push Git or restart the paused scheduler. Customer deployment and full25 ordinary acceptance remain separately incomplete.
-
-The requested technical whitepaper is updated at `docs/agere/AGERE_TECHNICAL_WHITEPAPER_2026-11-11.md` and `artifacts/agere-whitepaper-release-2026-11-11/agere-technical-whitepaper.html`. All failed and interrupted attempts remain preserved. Git pushes and the scheduler remain disabled as requested.
+Gate / workflow / evidence / gap: G6 delivered, G5 qualification blocked / authenticated question, saved evidence, scope-preserving follow-up and fresh installation / `artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json`, product `b91e0f2e6558c6d3ecdc2388b988f9637718ef5f` / full25 acceptance, independent qualification and production prerequisites remain explicit. No source-frozen job. Temporary fixture and package servers stopped; main app PID56993 was retained. No pushes or scheduler restart.
 
 ## Superseded checkpoint
 
