@@ -423,6 +423,25 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
     return merged
 
 
+def prose_binding_rows(result):
+    """Use the compiler's governed scalar row as well as strict native tables.
+
+    An existing metric placeholder must remain renderable during an unrelated
+    literal repair. This does not make scalar metrics valid collection inputs.
+    """
+    from .result_assembly import _rows,incomplete_reason
+    if not isinstance(result,dict)or result.get('error'):
+        raise ValueError('An executed result is required')
+    problem=incomplete_reason(result)
+    if problem:raise ValueError(problem)
+    if (not any(isinstance(result.get(k),list)for k in ('rows','table','documents','passages','population_evidence'))
+            and any(result.get(k)is not None for k in ('value','count'))):
+        from .backstop_agent import output_table
+        columns,rows=output_table(result)
+        return _rows({**result,'columns':columns,'rows':rows})
+    return _rows(result)
+
+
 def resolve_prose_binding(address,native,key):
     """Resolve exact entity/source keys to the existing native scalar contract."""
     from .result_assembly import _rows,incomplete_reason
@@ -432,7 +451,7 @@ def resolve_prose_binding(address,native,key):
         raise ValueError('Binding requires an executed result_view, column and either where or row')
     result=native[address['result_view']]
     if incomplete_reason(result):raise ValueError('Binding has incomplete source dependencies')
-    columns,rows=_rows(result)
+    columns,rows=prose_binding_rows(result)
     if address['column']not in columns:raise ValueError('Binding column is unavailable: '+address['column'])
     if 'where'in address:
         if not isinstance(key,dict)or not key:raise ValueError('Key-selected binding requires the original entity key')
@@ -781,7 +800,7 @@ def repair_rendered_value(value,native,*,basis=None):
                 or type(address['row'])is not int or address['row']<0 or not isinstance(address['result_view'],str)
                 or not isinstance(address['column'],str)or address['result_view']not in native):
             raise ValueError('Binding repair must use available executed scalar addresses')
-        _,rows=_rows(native[address['result_view']])
+        _,rows=prose_binding_rows(native[address['result_view']])
         if address['row']>=len(rows)or address['column']not in rows[address['row']]:raise ValueError('Binding repair scalar is unavailable')
         scalar=rows[address['row']][address['column']]
         if scalar is not None and type(scalar)not in(str,int,float,bool):raise ValueError('Binding repair cell is not scalar')

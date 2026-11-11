@@ -30,6 +30,26 @@ class AnswerProseRepair(unittest.TestCase):
             {'path':path or ['headline'],'bind_literals':[{'literal':'2',
                 'binding':{'result_view':'agere_result_2','row':0,'column':'clinics'}}]}]}}
 
+    def test_existing_governed_scalar_survives_unrelated_year_binding_repair(self):
+        calls=[*self.calls,{'name':'execute_metric','input':{'metric_id':'received_paid'},
+            'result':{'result_view':'metric','metric_id':'received_paid','unit':'dollars','value':17.25}},
+            {'name':'query_sql','input':{'sql':'SELECT year FROM received'},
+             'result':{'result_view':'year','columns':['year'],'rows':[['2029']]}}]
+        native={c['result']['result_view']:c['result']for c in calls}
+        original={'template':'2029 observed amount: {paid} dollars.',
+                  'bindings':{'paid':{'result_view':'metric','row':0,'column':'value'}}}
+        fixed=E.bind_prose_literals(original,{'bind_literals':[{'literal':'2029',
+            'binding':{'result_view':'year','row':0,'column':'year'}}]},native)
+        self.assertEqual(E.repair_rendered_value(original,native),'2029 observed amount: 17.25 dollars.')
+        self.assertEqual(E.repair_rendered_value(fixed,native),E.repair_rendered_value(original,native))
+        self.assertEqual(fixed['bindings']['paid'],original['bindings']['paid'])
+        for mutation in ({'truncated':True},{'error':'unavailable'},{'table_rows':2}):
+            bad=copy.deepcopy(native);bad['metric'].update(mutation)
+            with self.subTest(mutation=mutation),self.assertRaises(ValueError):
+                E.repair_rendered_value(original,bad)
+        with self.assertRaisesRegex(ValueError,'another entity'):
+            E.resolve_prose_binding(original['bindings']['paid'],native,{'patient_id':'A'})
+
     def test_mixed_errors_locate_both_scopes_and_repair_headline_without_replacing_patient_prose(self):
         feedback=self.review(self.draft);before=copy.deepcopy(self.draft)
         self.assertEqual(len(feedback['prose_repair']['targets']),1)

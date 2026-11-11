@@ -27,6 +27,20 @@ class AnswerWorkflow(unittest.TestCase):
         c = A.capture(self.path, q, result)
         return q, p, result, c
 
+    def test_answer_only_captures_and_checks_current_without_artifact_processing(self):
+        q,_,result,_=self.composed()
+        result=copy.deepcopy(result);result['workflow']=[]
+        with patch.object(A,'load',wraps=A.load)as load,\
+             patch.object(W,'_progress',side_effect=AssertionError('No artifact progress to compare')),\
+             patch.object(W,'review_feedback',side_effect=AssertionError('No artifact to review')),\
+             patch.object(W,'materialize',side_effect=AssertionError('No requested artifact')):
+            out=W.fulfill(self.stack,q,result)
+        self.assertEqual(out['answer'],result['answer'])
+        self.assertEqual(out['workflow'],[])
+        self.assertEqual(load.call_count,1)
+        self.assertTrue(load.call_args.kwargs['current'])
+        self.assertTrue(A.load(self.path,out['action_context']['id'],current=True))
+
     def test_summary_keeps_deliverable_and_monitor_but_requires_action_population(self):
         q, p, result, c = self.composed()
         expected = [{'payer': 'P1', 'count': 2}, {'payer': 'P2', 'count': 1}, {'payer': 'P3', 'count': 1}]

@@ -133,6 +133,11 @@ def fulfill(stack,question,result,*,original_question=None,generation=None):
                         if isinstance(part,dict) else part for part in parts]
                 elif isinstance(parts,dict):
                     result['program_results']={**parts,'source_review_required':True,'clinical_execution_authorized':False}
+        # An answer with no requested downstream work is already captured and
+        # checked current. Do not traverse its complete evidence repeatedly to
+        # seek artifact feedback when no artifact was requested or produced.
+        if not result.get('workflow'):
+            break
         progress=_progress(context)
         if attempts and progress in seen:
             stop='no_new_native_evidence_or_confirmed_interpretation'

@@ -43,6 +43,7 @@ class Warehouse(unittest.TestCase):
     def tools(self, semantic, cohort):
         t = B.Tools.__new__(B.Tools)
         t.semantic,t.cohort,t.as_of,t.result_sources = semantic,cohort,'2030-05-27',{}
+        t.question,t.native_calls = 'Inspect the selected source population.',[]
         return t
 
     def test_sql_scope_is_applied_before_counts_dollars_views_and_ctes(self):
