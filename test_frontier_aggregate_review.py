@@ -36,7 +36,7 @@ class FrontierAggregateReview(unittest.TestCase):
         state['shared_evidence']=[{'source':'Complete original evidence with no omitted values. '*100,'count':2}for _ in range(40)]
         packet['text']=json.dumps(compact_json(state))
         verdict['supported_claim_ids']=['headline'];verdict.update(joint_support='contradicted',findings=[{
-            'claim_id':'count','label':'contradicted','reason':'Authored source fault','evidence_paths':['/packet_state/shared_evidence/39/count']}])
+            'claim_id':'count','label':'contradicted','reason':'Authored source fault','evidence_paths':['/data/payload/shared_evidence/39/count']}])
         def model(user,*args,**kwargs):
             payload=json.loads(user)
             self.assertEqual(uncompact_json(payload['packet_state']),state)
@@ -47,6 +47,8 @@ class FrontierAggregateReview(unittest.TestCase):
                 'clinical_core.agere.clinical.semantic_analyst.tool_loop',side_effect=model):
             out=B.frontier_aggregate_review(SimpleNamespace(),'Count records and estimate savings.',packet,ledger=None)
         self.assertEqual(out['status'],'reviewed');self.assertEqual(out['verdict']['joint_support'],'contradicted')
+        self.assertEqual(out['verdict']['findings'][0]['evidence_paths'],['/shared_evidence/39/count'])
+        self.assertEqual(out['provider_run']['answer']['findings'][0]['evidence_paths'],['/data/payload/shared_evidence/39/count'])
 
     def test_missing_duplicate_fabricated_claims_quotes_and_source_paths_fail_closed(self):
         for kind in ('omitted','duplicate','foreign_claim','fake_quote','fake_path','conflict','fake_label'):

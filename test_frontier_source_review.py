@@ -60,7 +60,11 @@ class SourceReview(unittest.TestCase):
             with patch.object(self,'verdict',return_value=verdict):
                 out,review=B.resolve_source_abstention(p,{'id':p['id'],'label':'unknown','decided_by':None},self.reviewer,ledger=None)
             self.assertEqual(out['label'],'contradicted'if kind=='fault'else'unknown')
-            if kind=='fault':self.assertEqual(out['claim_feedback'][0]['path'],['answer_rows',0,'relationship'])
+            if kind=='fault':
+                self.assertEqual(out['claim_feedback'][0]['path'],['answer_rows',0,'relationship'])
+                from clinical_core.contracts import digest
+                self.assertEqual(out['field_review']['packet_digest'],digest(p['text']))
+                self.assertEqual(out['field_review']['manifest_digest'],digest(p['claim_manifest']))
 
     def test_wrong_patient_or_embedded_source_gap_never_dispatches(self):
         for key,value in [('patient_id','B'),('source_context_gaps',['missing note'])]:
@@ -73,6 +77,55 @@ class SourceReview(unittest.TestCase):
         def limited(*a,**kw):raise ProviderUnavailable('subscription limit',kind='rate_limit',attempts=[{'status':'failed'}])
         with self.assertRaises(ProviderUnavailable):
             B.resolve_source_abstention(packet(),{'label':'unknown','decided_by':None},limited,ledger=None)
+
+
+class VerifiedSourceComposition(unittest.TestCase):
+    def fixture(self):
+        from test_final_claim_support import call
+        question='Show the received relationship, preserving uncertainty.'
+        rows=[{'patient_id':'A','relationship':'One-time consultation in 2029; ongoing care unknown.'}]
+        answer={'headline':'Received relationship; ongoing care remains unknown.','table':rows,'table_from_tool':'roles'}
+        packets=B.support_packets(question,answer,[call('roles',rows)],[],'2030-05-27')
+        def typed(q,options,evidence,**kw):
+            return {'label':'unknown'if evidence[0]['id']=='summary'else'supported',
+                'decided_by':None if evidence[0]['id']=='summary'else'authored','steps':[]}
+        support=B.check_support_packets(packets,typed,as_of='2030-05-27',ledger=None)
+        return question,packets,support,rows
+
+    def test_global_review_receives_exact_restored_values_and_cannot_certify_sources(self):
+        from clinical_core.agere.deliverables.receipts import uncompact_json
+        question,packets,support,rows=self.fixture();original=copy.deepcopy(packets)
+        combined=B.compose_verified_summary(packets,support)
+        state=uncompact_json(json.loads(combined['text']))
+        self.assertEqual(state['all_final_rows'],rows);self.assertEqual(packets,original)
+        self.assertFalse(state['verified_source_composition']['clinical_qualification'])
+        def reviewer(user,*a,**kw):
+            data=json.loads(user);self.assertEqual(data['original_question'],question)
+            self.assertEqual(uncompact_json(data['packet_state'])['all_final_rows'],rows)
+            return {'answer':{'coverage':{'label':'answers_fully','reason':'Exact requested relationship and uncertainty.','unaddressed_request_quotes':[]},
+                'supported_claim_ids':[c['id']for c in combined['claim_manifest']],'findings':[],
+                'joint_support':'supported','joint_reason':'Global interpretation matches exact source-bound values.'},
+                'model':'authored','new_paid_api_calls':0,'estimated_cost_usd':0}
+        with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'subscription','ANTHROPIC_API_KEY':'subscription-transport'}),patch(
+            'clinical_core.agere.clinical.legacy_proposers._send',return_value=lambda _:None),patch(
+            'clinical_core.agere.clinical.semantic_analyst.tool_loop',side_effect=reviewer):
+            out=B.frontier_composed_review(SimpleNamespace(),question,packets,support,ledger=None)
+        self.assertEqual(out['status'],'reviewed');self.assertFalse(out['clinical_qualification'])
+
+    def test_unknown_fault_changed_source_and_missing_packet_block_global_review(self):
+        for change in ('unknown','fault','changed_source','missing_packet','global_fault','wrong_date'):
+            _,ps,s,_=self.fixture()
+            if change=='unknown':s['packets'][1].update(label='unknown',decided_by=None)
+            elif change=='fault':s['packets'][1].update(label='contradicted',decided_by='authored')
+            elif change=='changed_source':ps[1]['text']+=' '
+            elif change=='missing_packet':s['packets'].pop()
+            elif change=='global_fault':s['packets'][0].update(label='contradicted',decided_by='authored')
+            else:
+                from clinical_core.agere.deliverables.receipts import uncompact_json
+                from clinical_core.contracts import digest
+                state=uncompact_json(json.loads(ps[1]['text']));state['as_of']='2028-01-01';ps[1]['text']=json.dumps(state)
+                s['packets'][1]['packet_digest']=digest(ps[1]['text'])
+            with self.subTest(change=change),self.assertRaises(ValueError):B.compose_verified_summary(ps,s)
 
 
 if __name__=='__main__':unittest.main()

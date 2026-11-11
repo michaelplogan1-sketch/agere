@@ -1899,6 +1899,66 @@ def frontier_source_review(stack,question,packet,*,ledger):
         if owned:active.close()
 
 
+def compose_verified_summary(packets,support):
+    """Restore exact source cells only after every required packet is supported.
+
+    Machine source support is an input to global interpretation, not a clinical
+    qualification or permission to accept global coverage automatically.
+    """
+    from ..deliverables.receipts import uncompact_json,compact_json
+    from ...contracts import digest
+    import copy
+    by_id={p['id']:p for p in packets};checked={p['id']:p for p in support.get('packets',[])}
+    if (len(by_id)!=len(packets)or len(checked)!=len(support.get('packets',[]))
+        or set(by_id)!=set(checked)or 'summary'not in by_id
+        or support.get('unchecked_packet_ids')or support.get('all_dependencies_checked')is not True):
+        raise ValueError('Global composition requires the exact complete checked packet schedule')
+    for ident,p in by_id.items():
+        r=checked[ident]
+        if (p.get('dependency_complete')is not True or p.get('source_context_complete')is not True
+            or p.get('required_source_packet_ids')or p.get('source_dependency_parent_id')
+            or r.get('packet_digest')!=digest(p['text'])):raise ValueError('Dependency input is incomplete, partitioned or changed')
+        if ident!='summary'and(r.get('label')!='supported'or not r.get('decided_by')or r.get('claim_feedback')):
+            raise ValueError('Source dependency is not settled')
+        if ident=='summary'and(r.get('decided_by')and r.get('label')!='supported'or any(f.get('decided_by')for f in r.get('claim_feedback',[]))):
+            raise ValueError('A deciding global fault requires repair')
+    state=uncompact_json(json.loads(by_id['summary']['text']));deps=state.get('required_clinical_dependencies')
+    if not isinstance(deps,list)or not deps:raise ValueError('No source dependencies to compose')
+    seen=set();decoded={}
+    for n,dep in enumerate(deps):
+        ident=dep['packet'];at=dep['at'];key=tuple(at)
+        if ident=='summary'or key in seen or len(at)!=2:raise ValueError('Invalid or duplicate global source address')
+        seen.add(key);p=by_id[ident]
+        source=decoded.setdefault(ident,uncompact_json(json.loads(p['text'])))
+        row=state['all_final_rows'][at[0]];source_row=source['answer_rows'][dep['answer_row']]
+        if (row[at[1]]!={'clinical_evidence_dependency':n}or source.get('patient_id')!=row.get('patient_id')
+            or source_row.get('patient_id')!=row.get('patient_id')or source.get('as_of')!=state.get('as_of')
+            or source.get('question')!=state.get('question')or source.get('source_context_gaps')):
+            raise ValueError('Source identity, question, date or reference binding changed')
+        value=source_row[at[1]]
+        if digest(value)!=dep['source_cell_digest']:raise ValueError('Source cell changed after dependency binding')
+        row[at[1]]=copy.deepcopy(value)
+    proof={'schema':'verified-source-summary/1','original_summary_digest':digest(by_id['summary']['text']),
+        'source_packets':[{'id':i,'packet_digest':checked[i]['packet_digest'],'decided_by':checked[i]['decided_by']}
+            for i in sorted(by_id)if i!='summary'],
+        'restored_cells':len(deps),'clinical_qualification':False}
+    state['verified_source_composition']=proof
+    # Preserve the dependency manifest as native audit history. Resolved cells
+    # now carry their original values, not model-generated replacements.
+    state['resolved_clinical_dependencies']=state.pop('required_clinical_dependencies')
+    text=json.dumps(compact_json(state),ensure_ascii=False,separators=(',',':'),default=str)
+    return {**by_id['summary'],'text':text,'bytes':len(text.encode()),'verified_source_composition':proof}
+
+
+def frontier_composed_review(stack,question,packets,support,*,ledger):
+    try:packet=compose_verified_summary(packets,support)
+    except (KeyError,TypeError,IndexError)as exc:
+        raise ValueError('Malformed or changed source dependency binding: '+str(exc))from exc
+    review=frontier_packet_review(stack,question,packet,ledger=ledger,scope='composed')
+    review['source_composition']=packet['verified_source_composition']
+    return review
+
+
 def frontier_packet_review(stack,question,packet,*,ledger,scope):
     """One evidence-bound reviewer turn after an undecided typed check.
 
@@ -1924,6 +1984,11 @@ def frontier_packet_review(stack,question,packet,*,ledger,scope):
     if scope=='aggregate':
         if (packet.get('id')!='summary'or any('patient_id'in row for row in state.get('all_final_rows',[])if isinstance(row,dict))):
             raise ValueError('Frontier aggregate review requires complete nonpatient dependencies')
+    elif scope=='composed':
+        proof=packet.get('verified_source_composition')
+        if (packet.get('id')!='summary'or not proof or proof!=state.get('verified_source_composition')
+            or proof.get('schema')!='verified-source-summary/1'or not proof.get('source_packets')
+            or proof.get('clinical_qualification')is not False):raise ValueError('Missing native source composition')
     elif scope=='source':
         pid=packet.get('source_dependency_patient_id');rows=state.get('answer_rows')
         if (packet.get('id')=='summary'or packet.get('patient_dependency_bound')is not True
@@ -1975,6 +2040,12 @@ def frontier_packet_review(stack,question,packet,*,ledger,scope):
             'declare missing population coverage a fault in this packet. Do not return coverage. '
             'Preserve exact patient identity, source date, author versus care-role distinctions, '
             'negation, uncertainty and missing evidence. Never use general clinical knowledge to fill a source gap.')
+    elif scope=='composed':
+        rules+=(' The native verified_source_composition binds every restored patient value to its '
+            'already supported source dependency. Do not repeat source extraction. Review global '
+            'coverage, population/date boundaries, definitions and the NEW headline/facts against '
+            'these exact values and original_question. The earlier source judgments remain machine '
+            'judgments, not clinical qualification; preserve their documented uncertainty.')
     receipts=[];wire=native_integrity_model_view(packet['text'],support_dependencies=True)
     # Send the selected lossless wire form. Expanding it here duplicates shared
     # native evidence and can exceed the transport's real context envelope.
@@ -1995,10 +2066,12 @@ def frontier_packet_review(stack,question,packet,*,ledger,scope):
         'status':'unavailable','verdict':run.get('answer'),
         'transport':{'encoding':encoded_state.get('encoding'),'wire_bytes':len(wire['text'].encode()),
             'decoded_state_digest':digest(decoded_state),'complete_packet_retained':True}}
-    verdict=run.get('answer')or{}
+    import copy
+    verdict=copy.deepcopy(run.get('answer')or{})
+    result['verdict']=verdict
     try:
         supported=verdict['supported_claim_ids'];findings=verdict['findings']
-        coverage=verdict['coverage']if scope=='aggregate'else {'label':'unknown','reason':'Dependency support only','unaddressed_request_quotes':[]}
+        coverage=verdict['coverage']if scope!='source'else {'label':'unknown','reason':'Dependency support only','unaddressed_request_quotes':[]}
         if coverage['label']not in ('answers_fully','answers_partially','answers_a_different_question','unknown'):raise ValueError('Unknown coverage label')
         if verdict['joint_support']not in ('supported','contradicted','not_established','unknown'):raise ValueError('Unknown support label')
         if any(f['label']not in ('contradicted','not_established','unknown')for f in findings):raise ValueError('Unknown field label')
@@ -2012,15 +2085,31 @@ def frontier_packet_review(stack,question,packet,*,ledger,scope):
         for f in findings:
             if not f['reason'].strip():raise ValueError('Located finding lacks a reason')
             if f['label']!='unknown'and not f['evidence_paths']:raise ValueError('Located fault lacks source address')
+            normalized=[]
             for pointer in f['evidence_paths']:
                 if not pointer.startswith('/'):raise ValueError('Invalid source pointer')
                 # Both explicit packet_state-relative and payload-rooted
                 # pointers resolve against the exact supplied source object.
                 value=decoded_state;parts=pointer[1:].split('/')
                 if parts[0]=='packet_state':parts=parts[1:]
+                # Some structured reviewers address the documented decoded
+                # payload through its wire wrapper. These aliases name the
+                # same root, never a new or guessed piece of evidence. Resolve
+                # every remaining segment against the fingerprint-checked state.
+                if encoded_state.get('encoding')=='agere-lossless-compact-json/1':
+                    for prefix in (['shared','data','payload'],['data','payload'],['payload']):
+                        if parts[:len(prefix)]==prefix:parts=parts[len(prefix):];break
+                elif encoded_state.get('encoding')=='agere-readable-native-json/1'and parts[:1]==['payload']:
+                    parts=parts[1:]
+                normalized.append('/'+'/'.join(parts))
                 for part in parts:
                     part=part.replace('~1','/').replace('~0','~')
-                    value=value[int(part)]if isinstance(value,list)else value[part]
+                    if isinstance(value,list):
+                        if not part.isdigit():raise ValueError('Invalid source array index')
+                        value=value[int(part)]
+                    else:value=value[part]
+            if normalized!=f['evidence_paths']:
+                f['provider_evidence_paths']=f['evidence_paths'];f['evidence_paths']=normalized
         if verdict['joint_support']=='supported'and findings:raise ValueError('Joint acceptance conflicts with unresolved claims')
         result['status']='reviewed'
     except (KeyError,ValueError,TypeError,IndexError,AttributeError)as exc:result['validation_error']=str(exc)
@@ -2058,6 +2147,15 @@ def resolve_source_abstention(packet,checked,reviewer,*,ledger):
         typed_review=checked,claim_feedback=findings,reason=verdict['joint_reason'],
         authority='frontier_machine_judgment',clinical_qualification=False,calibrated_probability=None,
         reviewed_claim_count=len(claims),supported_claim_count=len(verdict['supported_claim_ids']))
+    from ...contracts import digest
+    result['field_review']={'schema':'frontier-field-review/1','authority':'frontier_machine_judgment',
+        'packet_digest':review['packet_digest'],'manifest_digest':digest(packet['claim_manifest']),
+        'expected_count':len(claims),'supported_count':len(verdict['supported_claim_ids']),
+        'fault_count':sum(f['label']!='unknown'for f in findings),
+        'unresolved_count':sum(f['label']=='unknown'for f in findings),
+        'all_fields_supported':not findings,'complete_dependency_accepted':label=='supported',
+        'remaining_obligation':None if label=='supported'else'located_field_faults'if any(f['label']!='unknown'for f in findings)else'complete_dependency_support',
+        'clinical_qualification':False}
     return result,review
 
 
@@ -3075,14 +3173,18 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         # A typed abstention is a routing signal, never a license to lower its
         # threshold. The distinct frontier reviewer owns one complete aggregate
         # meaning judgment; its categorical verdict has no invented probability.
-        if (os.environ.get('AGERE_FRONTIER_AGGREGATE_REVIEW','off')=='on'and len(packets)==1
+        aggregate_route=os.environ.get('AGERE_FRONTIER_AGGREGATE_REVIEW','off')=='on'and len(packets)==1
+        composed_route=os.environ.get('AGERE_FRONTIER_SOURCE_REVIEW','off')=='on'and len(packets)>1
+        if ((aggregate_route or composed_route)
             and packets[0]['id']=='summary'and packets[0].get('dependency_complete')is True
             and packets[0].get('source_context_complete')is True
             and(not coverage.get('decided_by')or not support.get('decided_by'))
             and(not coverage.get('decided_by')or coverage.get('label')=='answers_fully')
             and(not support.get('decided_by')or support.get('label')=='supported')
             and not any(f.get('decided_by')for f in support.get('claim_feedback',[]))):
-            try:frontier=frontier_aggregate_review(stack,question,packets[0],ledger=ledger)
+            try:
+                frontier=(frontier_composed_review(stack,question,packets,support,ledger=ledger)if composed_route
+                    else frontier_aggregate_review(stack,question,packets[0],ledger=ledger))
             except ValueError as exc:frontier={'status':'not_applicable','reason':str(exc),'calls':0,'cost_usd':0}
             assessment['frontier_review']=frontier
             assessment['calls']+=frontier.get('calls',0)
@@ -3106,15 +3208,16 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                         'packet_digest':frontier['packet_digest'],'calibrated_probability':None}}
                     for f in verdict['findings']]
                 label=verdict['joint_support'];decided=who if label!='unknown'else None
+                source_results=[p for p in support.get('packets',[])if p['id']!='summary']if composed_route else[]
                 support={'label':label,'decided_by':decided,'claim_feedback':findings,
                     'failed_packet_ids':['summary']if label in ('contradicted','not_established')else[],
                     'all_dependencies_checked':True,'packet_manifest_complete':True,
-                    'checked_source_packets':['summary'],'unchecked_packet_ids':[],
+                    'checked_source_packets':1+len(source_results),'unchecked_packet_ids':[],
                     'steps':[{'provider':'claude','model':frontier['model'],'status':'answered',
                         'cost_usd':frontier['cost_usd'],'authority':'frontier_machine_judgment'}],
                     'packets':[{'id':'summary','label':label,'decided_by':decided,
                         'reason':verdict['joint_reason'],'claim_feedback':findings,
-                        'reviewed_claim_count':len(claims),'supported_claim_count':len(verdict['supported_claim_ids'])}],
+                        'reviewed_claim_count':len(claims),'supported_claim_count':len(verdict['supported_claim_ids'])},*source_results],
                     'reason':verdict['joint_reason']}
                 if label=='unknown'and not findings:support['joint_verification_wait']=['summary']
                 assessment.update(coverage=coverage,support=support)
@@ -4687,6 +4790,8 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             steps.append({'kind':'frontier_source_review','packet_id':packet['id'],
                 'status':review['status'],'calls':review.get('calls',0),'cost_usd':review.get('cost_usd'),
                 'authority':'frontier_machine_judgment'})
+        from ...contracts import digest
+        checked['packet_digest']=digest(packet['text'])
         return checked,steps
     def fault(result):
         return result.get('label')in ('contradicted','not_established')and bool(result.get('decided_by'))

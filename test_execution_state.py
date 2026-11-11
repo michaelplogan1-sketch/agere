@@ -34,8 +34,11 @@ class Assembly(unittest.TestCase):
   self.sources['people']['rows'][0]['patient_id']=None
   with self.assertRaisesRegex(ValueError,'missing key'):A.compose(self.sources,base='people',keys=['patient_id'])
  def test_alias_collision_and_bad_key_are_repairable(self):
-  for alias,on in [('patient_id',{'patient_id':'patient_id'}),('notes',{'rate_percent':'patient_id'})]:
+  for alias,on in [('patient_id',{'patient_id':'patient_id'}),('notes',{'not_received':'patient_id'})]:
    with self.assertRaises(ValueError):A.compose(self.sources,base='people',keys=['patient_id'],joins=[{'result':'notes','as':alias,'on':on,'mode':'collect'}])
+ def test_key_types_are_not_coerced_to_create_matches(self):
+  out=A.compose(self.sources,base='people',keys=['patient_id'],joins=[{'result':'notes','as':'notes','on':{'rate_percent':'patient_id'},'mode':'collect'}])
+  self.assertTrue(all(row['notes']is None for row in out['rows']))
  def test_unmatched_and_missing_right_id_rows_are_accounted_for(self):
   self.sources['notes']['rows']+=[{'patient_id':'C'},{'patient_id':None}]
   out=A.compose(self.sources,base='people',keys=['patient_id'],joins=[{'result':'notes','as':'notes','on':{'patient_id':'patient_id'},'mode':'collect'}]);c=out['assembly']['joins'][0]

@@ -173,6 +173,9 @@ class Navigation(unittest.TestCase):
             'branch_ids': [branch['id']]}})
         self.assertEqual({d['record_id'] for d in selected['additional_documents']}, {'order','review','other'})
         shown = actor_result(selected)
+        from clinical_core.agere.clinical.execution_state import catalog
+        compiled = catalog([{'name':'plan_evidence_expansion','input':{'review_result_view':'initial'},'result':selected}])
+        self.assertEqual(compiled[0]['observation'],shown)
         self.assertNotIn('inventory', shown)
         self.assertEqual(shown['source_branches'], selected['source_branches'])
         self.assertEqual(shown['native_inventory']['documents'], 5)

@@ -18,6 +18,7 @@ the bench posts directly; the product uses the ledgered context_student.send.
 from __future__ import annotations
 
 import json
+import os
 import random
 import re
 import sqlite3
@@ -788,6 +789,17 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         'format':{'type':'json_schema','schema':schema}}
             if deadline is not None and deadline - time.monotonic() <= 0:
                 raise TimeoutError('Wall-clock limit reached')
+            wire_proofs=[]
+            if compact_execution_state and pending_output is None and os.environ.get('AGERE_EXECUTION_WIRE_ENCODING','off')=='on':
+                from .execution_state import transport_messages
+                body['messages'],wire_proofs=transport_messages(body['messages'])
+            prompt_receipt={'turn':turns,'execution_state':compact_execution_state,
+                'message_bytes':len(json.dumps(body['messages'],default=str).encode()),
+                'native_tool_calls_retained':len(result['tool_calls']),
+                'role':'binding_repair'if binding_role else'analyst',
+                'system_bytes':len(json.dumps(body['system'],default=str).encode()),
+                'wire_encoding':wire_proofs,'status':'prepared'}
+            result.setdefault('actor_prompt_receipts',[]).append(prompt_receipt)
             try:
                 response, cost, cache_hit = send(body)
             except Exception:
@@ -795,11 +807,9 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 # usage. Preserve prior measured spend without claiming a total.
                 result['known_cost_usd'] = result['estimated_cost_usd']
                 result['estimated_cost_usd'] = None
+                prompt_receipt['status']='failed'
                 raise
-            result.setdefault('actor_prompt_receipts',[]).append({'turn':turns,'execution_state':compact_execution_state,
-                'message_bytes':len(json.dumps(actor_messages,default=str).encode()),'native_tool_calls_retained':len(result['tool_calls']),
-                'role':'binding_repair'if binding_role else'analyst',
-                'system_bytes':len(json.dumps(body['system'],default=str).encode())})
+            prompt_receipt.update(status='returned',cache_hit=bool(cache_hit))
             usage = response.get('usage', {})
             if cache_hit:
                 result['cache_hits'] = result.get('cache_hits', 0) + 1

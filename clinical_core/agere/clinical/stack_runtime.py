@@ -31,6 +31,7 @@ class Stack:
                     'frontier_fallback_enabled':os.environ.get('AGERE_FRONTIER_SOURCE_REVIEW','off')=='on',
                     'scope':'Complete unresolved source dependencies only; native defects and deciding faults require repair.',
                     'authority':'machine_judgment','clinical_qualification':False},
+                'execution_wire_encoding':os.environ.get('AGERE_EXECUTION_WIRE_ENCODING','off')=='on',
                 'local_retrieval_runtime':{
                     'encoder_weights_loaded':getattr(self.retriever.encoder,'weights_loaded',None),
                     'reranker_weights_loaded':getattr(self.retriever.reranker,'weights_loaded',None) if self.retriever.reranker else False,

@@ -9,6 +9,27 @@ from ...contracts import digest
 VERSION = 'execution-state/23'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
+def transport_messages(messages):
+    """Lossless wire encoding of compiled state; native evidence is unchanged."""
+    from ..deliverables.receipts import compact_json,uncompact_json
+    encoded=[];proofs=[]
+    for message in messages:
+        text=message.get('content')
+        try:state=json.loads(text)if isinstance(text,str)else None
+        except (ValueError,TypeError):state=None
+        if message.get('role')!='user'or not isinstance(state,dict)or state.get('schema')!=VERSION:
+            encoded.append(message);continue
+        packed=compact_json(state,expand_json_strings=True)
+        wire=json.dumps(packed,ensure_ascii=False,separators=(',',':'),allow_nan=False)
+        if len(wire.encode())>=len(text.encode()):encoded.append(message);continue
+        if uncompact_json(packed)!=state:raise ValueError('Execution-state transport did not round-trip')
+        encoded.append({**message,'content':wire})
+        proofs.append({'message_index':len(encoded)-1,'encoding':packed['encoding'],
+            'state_digest':digest(state),'native_message_bytes':len(text.encode()),
+            'wire_message_bytes':len(wire.encode()),'all_native_values_retained':True})
+    return encoded,proofs
+
+
 REFERENCE_CLARIFICATION_VERSION = 'noun-reference-clarification/3'
 
 
@@ -861,13 +882,16 @@ def source_prose_repair(candidate,support,packets,coverage):
             f.get('decided_by')and f.get('label')not in ('supported','unknown',None)
             for f in p.get('claim_feedback')or[])}
         if (support.get('all_dependencies_checked')is not False or
-                support.get('packet_manifest_complete')is not True or support.get('label')!='contradicted' or
+                support.get('packet_manifest_complete')is not True or support.get('label')not in ('contradicted','not_established') or
                 support.get('decided_by')!='all_dependency_checks' or not isinstance(unchecked,list)or not unchecked or
                 len(set(unchecked))!=len(unchecked)or not faults.intersection(support.get('failed_packet_ids')or[])or
                 any(k not in checks or checks[k].get('decided_by')or checks[k].get('label')!='unknown'for k in unchecked)):
             return None
     global_repair=global_source_prose_repair(candidate,support,packets)
-    if global_repair:return global_repair
+    located_patient_fault=any(p.get('id')!='summary'and any(f.get('decided_by')and f.get('label')not in ('unknown','supported',None)
+        for f in p.get('claim_feedback',[]))for p in support.get('packets',[]))
+    if global_repair and(not located_patient_fault or any(t.get('source_fault_established')for t in global_repair['answer_targets'])):
+        return global_repair
     spec=candidate.get('row_prose')or{}
     if spec.get('keys')!=['patient_id']:return None
     try:
@@ -980,7 +1004,7 @@ def global_source_prose_repair(candidate,support,packets):
             claim=by_id.get(f.get('claim_id'));path=f.get('path')
             if (not claim or f.get('packet_id')!='summary'or f.get('field')!=claim['field']
                     or path!=claim['path']or tuple(path)in seen or
-                    f.get('label')not in('unknown','wrong_entity','wrong_domain','wrong_subject','wrong_time','wrong_role','missing_evidence')):return None
+                    f.get('label')not in('unknown','wrong_entity','wrong_domain','wrong_subject','wrong_time','wrong_role','missing_evidence','contradicted','not_established')):return None
             seen.add(tuple(path));path=path[1:]
             value=candidate[path[0]]if len(path)==1 else candidate['facts'][path[1]]
             observed=state['answer'][path[0]]if len(path)==1 else state['answer']['facts'][path[1]]
@@ -1467,7 +1491,13 @@ def catalog(calls,*,readings_start=0):
             else:
                 # Non-table contracts/instructions must remain visible. They
                 # are not silently summarized by a language model or dropped.
-                entry['observation']=out
+                if str(out.get('schema','')).startswith('residual-evidence-navigation/'):
+                    from .semantic_analyst import actor_result
+                    # Use the same complete branch-selection interface as the
+                    # immediate tool response. Per-field inventory stays in the
+                    # immutable navigation object; replay must not inline it.
+                    entry['observation']=actor_result(out)
+                else:entry['observation']=out
         entries.append(entry)
     return entries
 
