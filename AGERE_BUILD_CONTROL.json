@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-11T19:00:16.676048+00:00",
+  "updated_at": "2026-11-11T19:25:56.368417+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -836,51 +836,57 @@
           "sha256": "0d426f9cc89b633917a85b58dac13dceec9281632ae5292727b51e68c9612947"
         }
       ],
-      "blocker": "The student participates as a preliminary reader only. Its calibration is5/8 machine-label agreement and has no accepted automatic decision threshold; qualification requires diverse independent source references. Other option contracts fall through to existing readers. Full25 ordinary semantic acceptance, total reviewer/cost economics and customer deployment remain open. Current delta is committed/live, not newly archived.",
+      "blocker": "Hierarchical navigation and saved continuation are connected engineering. Investigator-selected branches are not qualified learned relevance decisions. The local student remains preliminary at its unchanged null acceptance threshold; contrasting independent source references, role/method qualification, full25 ordinary semantic acceptance, total economics and customer deployment remain open.",
       "previous_blocker": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim.",
-      "next_action": "G5: the existing student is active in the live app as an exact-task preliminary reader, with automatic final decisions disabled by its unchanged null acceptance threshold. Continue the now-connected correction/acquisition path to obtain missing contrasting and independent source references before another fit or promotion; do not retrain unchanged data, lower thresholds or repeat passing campaigns. Preserve native computation, hosted verification, all25 cases, full ten-area scope and separate customer-deployment work. Include the committed delta and pinned student weights as declared dependencies in the next otherwise-required release; scheduler PAUSED and no Git pushes.",
+      "next_action": "G5: use the connected Source Review and incremental source-expansion paths to obtain the missing contrasting source-bound reference decisions, preserving reviewer role/independence and the exact original question, population, source versions and field meaning. Do not fit unchanged data or grant automatic authority to the active preliminary student. Finish only a demonstrated remaining integration gap from the retained full25/ten-area evidence; do not add optional models, restart broad passing campaigns or substitute another component catalog. Current navigation, native composition and saved-investigation replay are sealed. Scheduler PAUSED; no Git pushes.",
       "current_engineering_delivery": {
-        "path": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
-        "sha256": "0d426f9cc89b633917a85b58dac13dceec9281632ae5292727b51e68c9612947"
+        "path": "artifacts/agere-hierarchical-evidence-2026-11-11/delivery-receipt.json",
+        "sha256": "27edb4ff3e50b1fae68e602dba92455cd87ca0ae5a9ae1d2709ac3d4c9dafb79"
       },
-      "latest_engineering_connection": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json"
+      "latest_engineering_connection": "artifacts/agere-hierarchical-evidence-2026-11-11/delivery-receipt.json"
     }
   ],
   "checkpoint": {
-    "kind": "active_local_student_reader",
+    "kind": "connected_hierarchical_source_acquisition",
     "gate_id": "G5",
+    "current_gate_id": "G5",
     "last_delivered_gate": "G5",
-    "product_commit": "ac6c3c3050e76da11cd87940e64d4bc79097f248",
-    "user_behavior_delta": "Configured runtime now loads the existing exact-task local classifier before hosted typed readers. Source Review shows active status, matching observations and a real preliminary model reading beside the exact source. The null acceptance threshold preserves fallback and does not grant answer authority.",
+    "product_commit": "378e32750a8040670411023d00278adacc6fd57b",
+    "user_behavior_delta": "Focused review can expand into explicitly selected source/type/month branches, read only new sources, retain previous findings/uncertainty, continue from its combined native result, and resume a saved investigation through the existing replay path.",
     "measured_failure_reduction": {
-      "missing_configured_student_weights_connected": true,
-      "active_matching_saved_readings": 96,
-      "automatic_decisions": false,
-      "new_training_runs": 0,
-      "provider_calls": 0
+      "unlinked_source_selection_connected": true,
+      "incremental_combined_result_continuation_connected": true,
+      "saved_investigation_navigation_registered": true,
+      "authored_workflow_final_source_documents": 5,
+      "prior_findings_and_uncertainty_preserved": true,
+      "provider_calls": 0,
+      "training_runs": 0
     },
     "evidence": [
-      "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
-      "artifacts/agere-student-activation-2026-11-11/live-activation.json",
-      "artifacts/agere-student-activation-2026-11-11/activation-connection.json",
-      "artifacts/agere-student-activation-2026-11-11/browser-reading.txt"
+      "artifacts/agere-hierarchical-evidence-2026-11-11/workflow-final.json",
+      "artifacts/agere-hierarchical-evidence-2026-11-11/workflow-attempt-4.log",
+      "artifacts/agere-hierarchical-evidence-2026-11-11/continuation-compatibility.log",
+      "artifacts/agere-hierarchical-evidence-2026-11-11/runtime-observations.jsonl",
+      "artifacts/agere-hierarchical-evidence-2026-11-11/live-runtime.json",
+      "artifacts/agere-hierarchical-evidence-2026-11-11/live-runtime-final.json",
+      "artifacts/agere-hierarchical-evidence-2026-11-11/live-runtime-sealed.json",
+      "artifacts/agere-hierarchical-evidence-2026-11-11/delivery-receipt.json"
     ],
-    "remaining_gap": "The student participates as a preliminary reader only. Its calibration is5/8 machine-label agreement and has no accepted automatic decision threshold; qualification requires diverse independent source references. Other option contracts fall through to existing readers. Full25 ordinary semantic acceptance, total reviewer/cost economics and customer deployment remain open. Current delta is committed/live, not newly archived.",
-    "next_action": "G5: the existing student is active in the live app as an exact-task preliminary reader, with automatic final decisions disabled by its unchanged null acceptance threshold. Continue the now-connected correction/acquisition path to obtain missing contrasting and independent source references before another fit or promotion; do not retrain unchanged data, lower thresholds or repeat passing campaigns. Preserve native computation, hosted verification, all25 cases, full ten-area scope and separate customer-deployment work. Include the committed delta and pinned student weights as declared dependencies in the next otherwise-required release; scheduler PAUSED and no Git pushes.",
+    "remaining_gap": "Hierarchical navigation and saved continuation are connected engineering. Investigator-selected branches are not qualified learned relevance decisions. The local student remains preliminary at its unchanged null acceptance threshold; contrasting independent source references, role/method qualification, full25 ordinary semantic acceptance, total economics and customer deployment remain open.",
+    "next_action": "G5: use the connected Source Review and incremental source-expansion paths to obtain the missing contrasting source-bound reference decisions, preserving reviewer role/independence and the exact original question, population, source versions and field meaning. Do not fit unchanged data or grant automatic authority to the active preliminary student. Finish only a demonstrated remaining integration gap from the retained full25/ten-area evidence; do not add optional models, restart broad passing campaigns or substitute another component catalog. Current navigation, native composition and saved-investigation replay are sealed. Scheduler PAUSED; no Git pushes.",
+    "updated_at": "2026-11-11T19:25:56.368417+00:00",
     "last_observation": {
-      "at": "2026-11-11T19:00:16.676048+00:00",
+      "at": "2026-11-11T19:25:56.368417+00:00",
       "source_frozen": false,
       "new_product_delivery": true,
-      "evidence": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json"
+      "evidence": "artifacts/agere-hierarchical-evidence-2026-11-11/delivery-receipt.json"
     },
     "whitepaper_delivery": {
       "receipt": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json",
       "source": "docs/agere/AGERE_TECHNICAL_WHITEPAPER_2026-11-11.md",
       "html": "artifacts/agere-whitepaper-release-2026-11-11/agere-technical-whitepaper.html",
       "status": "updated_with_current_scoped_authenticated_workflow_and_release_evidence"
-    },
-    "updated_at": "2026-11-11T19:00:16.676048+00:00",
-    "current_gate_id": "G5"
+    }
   },
   "decisions": [
     {
@@ -6641,14 +6647,26 @@
       "decision": "Existing local student activated in its preliminary-reading role with runtime and browser evidence.",
       "basis": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
       "scope_impact": "Automatic decisions remain unavailable at the unchanged null threshold; no new model/clinical qualification, retraining or campaign. Configured weights now declared in release dependencies."
+    },
+    {
+      "at": "2026-11-11T19:10:02.312900+00:00",
+      "decision": "Prioritize the missing unlinked-source acquisition connection under the user request to finish the coherent stack rather than continue student-only work.",
+      "basis": "Current source_navigation._inventory only selects explicit typed references; unlinked received documents remain unexamined and cannot be selected through plan_evidence_expansion. Research triage retains hierarchical navigation as a candidate; native grouping requires no new model or qualification claim.",
+      "scope_impact": "Existing G5 evidence acquisition path; acceptance areas1,2,4,5,10. Keep all ten areas/all25 and G5 independent qualification dependency. Build the complete branch-selection, incremental reading, continuation and provenance path before its workflow verification."
+    },
+    {
+      "at": "2026-11-11T19:25:56.368417+00:00",
+      "decision": "Sealed connected source navigation, incremental reading and saved investigation replay.",
+      "basis": "artifacts/agere-hierarchical-evidence-2026-11-11/delivery-receipt.json",
+      "scope_impact": "No new model/training/service; native hierarchy and explicit selection supplement existing retrieval/reference closure. No automatic student promotion or full MVP/clinical qualification."
     }
   ],
   "unsealed_work": {
     "status": "none",
     "source_frozen": false,
     "active_jobs": [],
-    "last_completed_receipt": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
-    "remaining_verification": "Student runtime activation completed; independent automatic-decision qualification remains open."
+    "last_completed_receipt": "artifacts/agere-hierarchical-evidence-2026-11-11/delivery-receipt.json",
+    "remaining_verification": "No unfinished verification for this engineering increment. Independent role/clinical and full25 semantic acceptance remain open."
   },
   "current_visual_request": {
     "status": "completed",
@@ -6684,7 +6702,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G5: the existing student is active in the live app as an exact-task preliminary reader, with automatic final decisions disabled by its unchanged null acceptance threshold. Continue the now-connected correction/acquisition path to obtain missing contrasting and independent source references before another fit or promotion; do not retrain unchanged data, lower thresholds or repeat passing campaigns. Preserve native computation, hosted verification, all25 cases, full ten-area scope and separate customer-deployment work. Include the committed delta and pinned student weights as declared dependencies in the next otherwise-required release; scheduler PAUSED and no Git pushes.",
+  "next_action": "G5: use the connected Source Review and incremental source-expansion paths to obtain the missing contrasting source-bound reference decisions, preserving reviewer role/independence and the exact original question, population, source versions and field meaning. Do not fit unchanged data or grant automatic authority to the active preliminary student. Finish only a demonstrated remaining integration gap from the retained full25/ten-area evidence; do not add optional models, restart broad passing campaigns or substitute another component catalog. Current navigation, native composition and saved-investigation replay are sealed. Scheduler PAUSED; no Git pushes.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6693,7 +6711,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-hierarchical-evidence-2026-11-11/delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -6773,8 +6791,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 69992,
-  "owned_server_session": 69878,
+  "owned_server_pid": 71675,
+  "owned_server_session": 75790,
   "last_run_observation": {
     "at": "2026-11-08T23:35:47.474869+00:00",
     "no_active_jobs": true,
@@ -6999,7 +7017,7 @@
     ]
   },
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
-  "latest_receipt": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
+  "latest_receipt": "artifacts/agere-hierarchical-evidence-2026-11-11/delivery-receipt.json",
   "code_only_storage_exception": {
     "authorization": "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
     "scope": "One code-only archive and fresh-code rehearsal from the linked proposal; existing source/model/Python/work/ledger stores referenced, never copied. General60GBguard unchanged.",

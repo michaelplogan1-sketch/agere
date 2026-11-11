@@ -5,68 +5,62 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G5 reference acquisition and qualification after student reader activation",
+  "active_work": "G5 connected source acquisition; remaining reference and qualification dependencies explicit",
   "latest_delivery": {
+    "at": "2026-11-11T19:25:56.368417+00:00",
+    "gate": "G5",
+    "receipt": "artifacts/agere-hierarchical-evidence-2026-11-11/delivery-receipt.json",
+    "product_commit": "378e32750a8040670411023d00278adacc6fd57b",
+    "scope": "connected source acquisition and saved investigation continuation; qualification remains separate"
+  },
+  "latest_receipt": "artifacts/agere-hierarchical-evidence-2026-11-11/delivery-receipt.json",
+  "owned_server_pid": 71675,
+  "owned_server_session": 75790,
+  "full_queue_acceptance": false,
+  "spending_limit": "uncapped",
+  "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
+  "preceding_delivery": {
     "at": "2026-11-11T19:00:16.676048+00:00",
     "gate": "G5",
     "receipt": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
     "product_commit": "ac6c3c3050e76da11cd87940e64d4bc79097f248",
     "scope": "active local preliminary reader; automatic decision qualification remains open"
   },
-  "latest_receipt": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
-  "owned_server_pid": 69992,
-  "owned_server_session": 69878,
-  "full_queue_acceptance": false,
-  "spending_limit": "uncapped",
-  "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
-  "preceding_delivery": {
-    "gate": "G5",
-    "receipt": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
-    "product_commit": "d46d4eb594fc406fc076e59a871578d8561e974a",
-    "at": "2026-11-11T18:50:30.622064+00:00",
-    "scope": "combined local engineering; independent model/clinical/customer qualification remains open"
-  },
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G5: the existing student is active in the live app as an exact-task preliminary reader, with automatic final decisions disabled by its unchanged null acceptance threshold. Continue the now-connected correction/acquisition path to obtain missing contrasting and independent source references before another fit or promotion; do not retrain unchanged data, lower thresholds or repeat passing campaigns. Preserve native computation, hosted verification, all25 cases, full ten-area scope and separate customer-deployment work. Include the committed delta and pinned student weights as declared dependencies in the next otherwise-required release; scheduler PAUSED and no Git pushes.",
+  "resume_priority": "G5: use the connected Source Review and incremental source-expansion paths to obtain the missing contrasting source-bound reference decisions, preserving reviewer role/independence and the exact original question, population, source versions and field meaning. Do not fit unchanged data or grant automatic authority to the active preliminary student. Finish only a demonstrated remaining integration gap from the retained full25/ten-area evidence; do not add optional models, restart broad passing campaigns or substitute another component catalog. Current navigation, native composition and saved-investigation replay are sealed. Scheduler PAUSED; no Git pushes.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-09T18:35:52.790981+00:00",
   "heartbeat_status": "PAUSED",
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-hierarchical-evidence-2026-11-11/delivery-receipt.json",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
-  "last_observed_server_session": 60897,
+  "last_observed_server_session": 75790,
   "server_status": "running_idle",
   "unsealed_work": {
     "status": "none",
     "source_frozen": false,
     "active_jobs": [],
-    "last_completed_receipt": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
-    "remaining_verification": "Student runtime activation completed; independent automatic-decision qualification remains open."
+    "last_completed_receipt": "artifacts/agere-hierarchical-evidence-2026-11-11/delivery-receipt.json",
+    "remaining_verification": "No unfinished verification for this engineering increment. Independent role/clinical and full25 semantic acceptance remain open."
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "2026-11-11T18:18:26.878696+00:00",
-  "latest_continuity_receipt": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json",
+  "latest_continuity_checkpoint": "2026-11-11T19:25:56.368417+00:00",
+  "latest_continuity_receipt": "artifacts/agere-hierarchical-evidence-2026-11-11/delivery-receipt.json",
   "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
   "mvp_server": {
-    "schema": "agere-owned-runtime/1",
-    "observed_at": "2026-11-11T17:51:39.636738+00:00",
-    "pid": 65291,
-    "exec_session": 99171,
+    "status": "running",
+    "at": "2026-11-11T19:25:56.368417+00:00",
+    "pid": 71675,
+    "session": 75790,
     "port": 8908,
     "url": "http://127.0.0.1:8908/ask",
-    "status": "running_idle",
-    "product_commit": "17f52b60a285d7791caf01f30b10f88e48f38565",
-    "claude_transport": "subscription",
-    "disabled_providers": [
-      "perplexity"
-    ],
-    "source_frozen": false,
-    "active_run_receipt": null,
+    "review_url": "http://127.0.0.1:8908/learn",
+    "product_commit": "378e32750a8040670411023d00278adacc6fd57b",
     "request_locks": {
       "schema": "request-locks/1",
       "global_lock": false,
@@ -79,10 +73,70 @@
         "max_concurrent": 1
       }
     },
-    "presentation_sha256": "40a21077d964357ea598aef6604ce6eb19ebbf5022c5ce4e691f9bf908a42925",
-    "exact_presentation_match": true,
-    "provider_calls": 0,
-    "new_analysis_submitted": false
+    "source_navigation_version": "residual-evidence-navigation/2",
+    "navigation_registered_for_replay": true,
+    "local_student_runtime": {
+      "task_key": "agere_chart_judgment",
+      "enabled": true,
+      "automatic_decisions": false,
+      "clinical_qualification": false,
+      "status": "active_preliminary_reader",
+      "acceptance_threshold": null,
+      "input_contract": "1792b2a044c7106a2d755e50cbe7e25221dd04e834b55f53bd43da19d6dd3fc4",
+      "training_decisions": 75,
+      "option_contracts": 1,
+      "calibration": {
+        "decisions": 8,
+        "components": 5,
+        "student_agreement": 0.625,
+        "majority_agreement": 0.625,
+        "candidate_threshold_accepted": 0,
+        "candidate_threshold_agreement": null,
+        "missing_reference_options": [
+          "explicit_respiratory_non_use",
+          "non_use_other_drug_only",
+          "unknown"
+        ],
+        "per_label": {
+          "explicit_respiratory_non_use": {
+            "references": 0,
+            "correct": 0
+          },
+          "no_non_use_statement": {
+            "references": 5,
+            "correct": 2
+          },
+          "non_use_other_drug_only": {
+            "references": 0,
+            "correct": 0
+          },
+          "not_recognized_or_uncertain_only": {
+            "references": 3,
+            "correct": 3
+          },
+          "unknown": {
+            "references": 0,
+            "correct": 0
+          }
+        }
+      },
+      "scope": "Exact task and option meanings only; preliminary readings are not accepted answers."
+    },
+    "config": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/active-config.json",
+    "source_frozen": false,
+    "claude_transport": "subscription",
+    "disabled_providers": [
+      "perplexity"
+    ],
+    "proof_scope": "Restarted committed app responds; complete changed workflow and continuation are separately exercised with authored source/reader adapters. No actual frontier question or clinical qualification claimed.",
+    "source_hashes": {
+      "clinical_core/agere/clinical/source_navigation.py": "b05c644df6bf8e867eedc436fdbbbf53a94b1ccfcba8671cb4724d74ebefae72",
+      "clinical_core/agere/clinical/backstop_agent.py": "eaae5a7895b14808f9a4ccf02c6980687935bb5b3766f0b4554ba2b37cdbec3f",
+      "clinical_core/agere/clinical/semantic_analyst.py": "3cf7221d2449524300aea03ac8c929b31115f8ed0fc5a85b034a89406ec0bc6c",
+      "clinical_core/agere/clinical/harness_improvement.py": "0f3771aa1e810a866f35bcac6c5db39e4f6f7d986e1b05240cd8fe91d06f39af"
+    },
+    "schema": "agere-owned-runtime/1",
+    "exec_session": 75790
   },
   "pending_handoff": {
     "status": "completed",
@@ -103,19 +157,89 @@
   "source_control": "git; codex/integration-20261026 from origin/main 27c354f; branch pushed to existing private michaelplogan1-sketch/agere with explicit Mike approval; draft PR2. Original dirty checkout preserved.",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "pid": 69992,
-    "session": 69878,
+    "status": "running",
+    "at": "2026-11-11T19:25:56.368417+00:00",
+    "pid": 71675,
+    "session": 75790,
     "port": 8908,
     "url": "http://127.0.0.1:8908/ask",
     "review_url": "http://127.0.0.1:8908/learn",
-    "product_commit": "ac6c3c3050e76da11cd87940e64d4bc79097f248",
+    "product_commit": "378e32750a8040670411023d00278adacc6fd57b",
+    "request_locks": {
+      "schema": "request-locks/1",
+      "global_lock": false,
+      "locks": 2,
+      "active": 0,
+      "counters": {
+        "read": 0,
+        "question": 0,
+        "state": 1,
+        "max_concurrent": 1
+      }
+    },
+    "source_navigation_version": "residual-evidence-navigation/2",
+    "navigation_registered_for_replay": true,
+    "local_student_runtime": {
+      "task_key": "agere_chart_judgment",
+      "enabled": true,
+      "automatic_decisions": false,
+      "clinical_qualification": false,
+      "status": "active_preliminary_reader",
+      "acceptance_threshold": null,
+      "input_contract": "1792b2a044c7106a2d755e50cbe7e25221dd04e834b55f53bd43da19d6dd3fc4",
+      "training_decisions": 75,
+      "option_contracts": 1,
+      "calibration": {
+        "decisions": 8,
+        "components": 5,
+        "student_agreement": 0.625,
+        "majority_agreement": 0.625,
+        "candidate_threshold_accepted": 0,
+        "candidate_threshold_agreement": null,
+        "missing_reference_options": [
+          "explicit_respiratory_non_use",
+          "non_use_other_drug_only",
+          "unknown"
+        ],
+        "per_label": {
+          "explicit_respiratory_non_use": {
+            "references": 0,
+            "correct": 0
+          },
+          "no_non_use_statement": {
+            "references": 5,
+            "correct": 2
+          },
+          "non_use_other_drug_only": {
+            "references": 0,
+            "correct": 0
+          },
+          "not_recognized_or_uncertain_only": {
+            "references": 3,
+            "correct": 3
+          },
+          "unknown": {
+            "references": 0,
+            "correct": 0
+          }
+        }
+      },
+      "scope": "Exact task and option meanings only; preliminary readings are not accepted answers."
+    },
     "config": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/active-config.json",
-    "config_sha256": "4221945b3e75c32062c904aaadc8c24aa272aa1eed4b9b738d33cb62b4b71e8b",
-    "claude_transport": "subscription",
-    "perplexity": "disabled_no_probe",
     "source_frozen": false,
-    "status": "running_idle",
-    "proof": "artifacts/agere-student-activation-2026-11-11/live-activation.json"
+    "claude_transport": "subscription",
+    "disabled_providers": [
+      "perplexity"
+    ],
+    "proof_scope": "Restarted committed app responds; complete changed workflow and continuation are separately exercised with authored source/reader adapters. No actual frontier question or clinical qualification claimed.",
+    "source_hashes": {
+      "clinical_core/agere/clinical/source_navigation.py": "b05c644df6bf8e867eedc436fdbbbf53a94b1ccfcba8671cb4724d74ebefae72",
+      "clinical_core/agere/clinical/backstop_agent.py": "eaae5a7895b14808f9a4ccf02c6980687935bb5b3766f0b4554ba2b37cdbec3f",
+      "clinical_core/agere/clinical/semantic_analyst.py": "3cf7221d2449524300aea03ac8c929b31115f8ed0fc5a85b034a89406ec0bc6c",
+      "clinical_core/agere/clinical/harness_improvement.py": "0f3771aa1e810a866f35bcac6c5db39e4f6f7d986e1b05240cd8fe91d06f39af"
+    },
+    "proof": "artifacts/agere-hierarchical-evidence-2026-11-11/live-runtime-sealed.json"
   },
   "current_spending_constraint": "Uncapped with accounting; Claude subscription only, no external Anthropic API key. Synthetic received-source execution only.",
   "current_turn_spending_policy": "Accuracy and evidence coverage first; modest speed tradeoff for lower total cost acceptable per Mike on November5. No unilateral caps. Claude subscription only; account for every attempt and stop on actual subscription limit.",
@@ -524,9 +648,9 @@
     "primary_modified": false,
     "last_known_pid": 36215
   },
-  "previous_sealed_receipt": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
+  "previous_sealed_receipt": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
   "review_followthrough_authorization": "Mike: okay i am stepping away, please take your time on this, it is critical we get this MVP correct, you know our north star, work with claude to figure out it. I wont be here to approve anything so do not ask me for anything just do it",
-  "last_product_commit": "ac6c3c3050e76da11cd87940e64d4bc79097f248",
+  "last_product_commit": "378e32750a8040670411023d00278adacc6fd57b",
   "current_delivery_scope": "Current finite connected-workflow engineering contract, including accepted supported unknowns. Broad ordinary-question semantic accuracy and independent role qualification are not inferred from these checks.",
   "current_financial_delivery": {
     "context_id": "ANS-8d56378ee795fc4226dc4828",
@@ -534,8 +658,8 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-11T19:00:16.676048+00:00",
-  "last_commit": "ac6c3c3050e76da11cd87940e64d4bc79097f248",
+  "updated_at": "2026-11-11T19:25:56.368417+00:00",
+  "last_commit": "378e32750a8040670411023d00278adacc6fd57b",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
     "at": "2026-11-03T20:36:08.825946+00:00",
@@ -629,7 +753,7 @@
     "receipt": "artifacts/agere-analytical-completion-2026-11-11/delivery-receipt.json",
     "delivery": "Ordinary Resume now sends eligible capacity-refused aggregate verification to the existing frontier reviewer, retains interrupted drafts with unexecuted deliverable proposals, and exposes actual activity. Population inspection references complete native membership lists while retaining every proof and count. The installed39e971cf code-only archive starts in a fresh process and reopens its saved native answer without data/model/runtime duplication."
   },
-  "next_action": "G5: the existing student is active in the live app as an exact-task preliminary reader, with automatic final decisions disabled by its unchanged null acceptance threshold. Continue the now-connected correction/acquisition path to obtain missing contrasting and independent source references before another fit or promotion; do not retrain unchanged data, lower thresholds or repeat passing campaigns. Preserve native computation, hosted verification, all25 cases, full ten-area scope and separate customer-deployment work. Include the committed delta and pinned student weights as declared dependencies in the next otherwise-required release; scheduler PAUSED and no Git pushes.",
+  "next_action": "G5: use the connected Source Review and incremental source-expansion paths to obtain the missing contrasting source-bound reference decisions, preserving reviewer role/independence and the exact original question, population, source versions and field meaning. Do not fit unchanged data or grant automatic authority to the active preliminary student. Finish only a demonstrated remaining integration gap from the retained full25/ten-area evidence; do not add optional models, restart broad passing campaigns or substitute another component catalog. Current navigation, native composition and saved-investigation replay are sealed. Scheduler PAUSED; no Git pushes.",
   "product_market_audit": {
     "as_of": "2026-11-09T18:42:05.848258+00:00",
     "scope": "Owner product/architecture/market audit against saved receipts and selected current public primary sources. Not independent clinical/model qualification, patent/FTO search, full research review or customer discovery.",
