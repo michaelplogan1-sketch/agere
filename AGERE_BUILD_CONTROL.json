@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-11T16:34:45.967688+00:00",
+  "updated_at": "2026-11-11T17:08:54.709386+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -33,7 +33,7 @@
       "broader_charter_accepted": false
     }
   },
-  "current_gate": "G5",
+  "current_gate": "G3",
   "gates": [
     {
       "id": "G1",
@@ -192,7 +192,13 @@
       },
       "reopened_at": "2026-11-11T16:10:05.857344+00:00",
       "reopen_reason": "Existing hosted workspace drops the shared answer context from its envelope/history; unknown usage costs become zero; its startup still expects an external API key. These are concrete customer-path integration defects, not missing clinical labels.",
-      "next_action": "Delivered locally; retain explicit qualification and production dependencies."
+      "next_action": "Delivered locally; retain explicit qualification and production dependencies.",
+      "package_refresh_required": {
+        "reason": "New authenticated-conversation increment and active user-requested presentation edits postdate the last exact package.",
+        "after_gate": "G3",
+        "prior_package": "artifacts/agere-workspace-continuity-2026-11-11/current-release-v2/receipt.json",
+        "status": "pending_combined_refresh"
+      }
     },
     {
       "id": "G3",
@@ -204,7 +210,7 @@
         6,
         10
       ],
-      "status": "accepted",
+      "status": "active",
       "outcome": "One durable original-question context binds entity/population/date scope, evidence and rule versions, interpretation, supported analytical answers, and applicable buyer/payer options, work and follow-up. Demonstrate reusable composition across admissions/readmissions, care gaps and healthcare-adjacent context, ACO priorities and clinician/hospital performance. Retain medication, respiratory, cardiometabolic, functional, appointment and payer cases as regressions; evaluator-injected choices do not count as automation, and analytical questions need not force an intervention.",
       "acceptance_evidence": [
         {
@@ -688,15 +694,19 @@
         {
           "path": "artifacts/agere-analytical-completion-2026-11-11/final-delivery-receipt.json",
           "sha256": "83138033ac6c8cd313d38c1624e8f3a433761530193761a4d132c8b5091be3cd"
+        },
+        {
+          "path": "artifacts/agere-authenticated-conversation-2026-11-11/delivery-receipt.json",
+          "sha256": "12fec990d0d404dab8e6e6a53ac1165c20e98e6d7596fe90d53b5bf736861575"
         }
       ],
       "accepted_at": "2026-11-11T15:50:13.012163+00:00",
       "acceptance_scope": "Current finite connected-workflow engineering contract, including accepted supported unknowns. Broad ordinary-question semantic accuracy and independent role qualification are not inferred from these checks.",
-      "reopened_at": "2026-10-31T14:25:16.312943+00:00",
-      "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
+      "reopened_at": "2026-11-11T16:47:33.392677+00:00",
+      "reopen_reason": "Authenticated workspace ask calls compose_together directly, bypassing existing conversation clarification/resume, source-bound follow-up and learning/accounting completion. G5 missing independent labels must not block this implementation.",
       "remaining_acceptance": "Broad current 25-question ordinary semantic acceptance remains unestablished; retained partial/failed/scoped outcomes are not converted into passes. Independent model/method/clinical reference evidence, compatible local student deployment and usable outcome labels remain unqualified. Customer identity/tenancy, governed connections, provider arrangements and intended-use assurance remain undelivered. The finite engineering contract is not the full product charter.",
       "engineering_current_status": "Current finite engineering acceptance passed 9/9; the specific partial population workflow that reopened G3 is now answered, persisted and inspected.",
-      "next_action": "G5: qualify the remaining reading, planning, verification and learning roles against independent source-family reference evidence and the retained all25 dispositions before promotion or broad accuracy/economics claims. Current references, viable target labels and authentic clinical/reviewer economics are not available. Preserve the current runnable local release and all supported unknowns; fix any subsequently located product defect in the shared path. Do not repeat passing workflows, rerun unchanged uncertain votes, invent labels, enable unqualified students/bottles, push Git or restart the paused scheduler. Customer deployment and full25 ordinary acceptance remain separately incomplete.",
+      "next_action": "G3: complete the user-requested output redesign in chat 01a1cb8f-3562-7900-9399-5b06fc8ae6f7 (ask_view.py ownership), retain its focused browser evidence and source/quantity semantics, then refresh one combined code-only package for the conversation and presentation changes. Do not rerun passing broad campaigns or start provider/training jobs; retain G5 qualification dependencies explicitly.",
       "latest_current_release_decision": "artifacts/agere-analytical-completion-2026-11-11/final-delivery-receipt.json",
       "preceding_current_release_decision": "artifacts/agere-final-ordinary-entry-2026-11-08/G3-exit-decision-v1.json",
       "first_synthetic_release_candidate": {
@@ -803,42 +813,49 @@
     }
   ],
   "checkpoint": {
-    "kind": "finite_local_authenticated_delivery",
-    "gate_id": "G5",
-    "last_delivered_gate": "G6",
-    "product_commit": "b91e0f2e6558c6d3ecdc2388b988f9637718ef5f",
-    "user_behavior_delta": "Sign in \u2192 native question \u2192 shared saved evidence \u2192 tenant-scoped reopen \u2192 native saved-population grouping \u2192 linked child answer \u2192 fresh archived process reopen. Unknown costs and source limitations remain visible.",
+    "kind": "authenticated_conversation_delivery_output_design_active",
+    "gate_id": "G3",
+    "last_delivered_gate": "G3",
+    "product_commit": "f62a2b82be570172df9b131e50cdc2099c70637b",
+    "user_behavior_delta": "Sign in \u2192 shared analytical question \u2192 exact-cohort follow-up \u2192 durable clarification/resume \u2192 source-bound report on request \u2192 tenant-scoped reopen.",
     "measured_failure_reduction": [
-      "Authenticated history no longer drops shared answer contexts.",
-      "Saved-population follow-ups retain original question, parent context and exact membership, without a wider warehouse rerun.",
-      "Unknown costs remain unknown; explicit zero-cost calls are distinguished from ambiguous historical zeros.",
-      "External Anthropic API key expectation removed from the authenticated launcher; approved subscription transport installed.",
-      "Authenticated launcher now included and accepted in code-only archives."
+      "Authenticated questions and follow-ups now use the shared conversation lifecycle rather than bypassing it.",
+      "Durable clarification choices resume the exact request; duplicate replies reuse the original result with zero new provider charges.",
+      "Viewer requests cannot materialize work or generate reports; tenant-bound history and reports reject another organization.",
+      "Explicit saved-evidence report requests render and reopen the existing checked evidence without new analysis or provider calls.",
+      "Workspace learning observations stay local and cannot append inferred labels to a global corpus or invoke an operator-wide training plan.",
+      "Unsupported missing-input answers no longer display as zero patients or supply an empty follow-up cohort.",
+      "Failed analysis is preserved without a legacy fallback replay; changed sources reject continuation and report generation."
     ],
     "evidence": [
-      "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json",
-      "artifacts/agere-workspace-continuity-2026-11-11/delivery-receipt.json",
-      "artifacts/agere-workspace-continuity-2026-11-11/attempt-1.log",
-      "artifacts/agere-workspace-continuity-2026-11-11/attempt-2/workflow-receipt.json",
-      "artifacts/agere-workspace-continuity-2026-11-11/attempt-3/workflow-receipt.json",
-      "artifacts/agere-workspace-continuity-2026-11-11/attempt-3.log",
-      "artifacts/agere-workspace-continuity-2026-11-11/browser-answer.txt",
-      "artifacts/agere-workspace-continuity-2026-11-11/browser-followup.txt",
-      "artifacts/agere-workspace-continuity-2026-11-11/browser-fixture-source-restored.json",
-      "artifacts/agere-workspace-continuity-2026-11-11/ui-syntax.json",
-      "artifacts/agere-workspace-continuity-2026-11-11/usage-regression.log",
-      "artifacts/agere-workspace-continuity-2026-11-11/current-release/receipt.json",
-      "artifacts/agere-workspace-continuity-2026-11-11/current-release-v2/receipt.json",
-      "docs/agere/AGERE_TECHNICAL_WHITEPAPER_2026-11-11.md",
-      "artifacts/agere-whitepaper-release-2026-11-11/evidence-manifest.json"
+      "artifacts/agere-authenticated-conversation-2026-11-11/delivery-receipt.json",
+      "artifacts/agere-authenticated-conversation-2026-11-11/attempt-1.log",
+      "artifacts/agere-authenticated-conversation-2026-11-11/attempt-2.log",
+      "artifacts/agere-authenticated-conversation-2026-11-11/attempt-3.log",
+      "artifacts/agere-authenticated-conversation-2026-11-11/attempt-4.log",
+      "artifacts/agere-authenticated-conversation-2026-11-11/attempt-5.log",
+      "artifacts/agere-authenticated-conversation-2026-11-11/attempt-6.log",
+      "artifacts/agere-authenticated-conversation-2026-11-11/attempt-1/workflow-receipt.json",
+      "artifacts/agere-authenticated-conversation-2026-11-11/attempt-2/workflow-receipt.json",
+      "artifacts/agere-authenticated-conversation-2026-11-11/attempt-3/workflow-receipt.json",
+      "artifacts/agere-authenticated-conversation-2026-11-11/attempt-4/workflow-receipt.json",
+      "artifacts/agere-authenticated-conversation-2026-11-11/attempt-5/workflow-receipt.json",
+      "artifacts/agere-authenticated-conversation-2026-11-11/attempt-6/workflow-receipt.json",
+      "artifacts/agere-authenticated-conversation-2026-11-11/compatibility/workflow-receipt.json",
+      "artifacts/agere-authenticated-conversation-2026-11-11/ui-syntax.json",
+      "artifacts/agere-authenticated-conversation-2026-11-11/browser-clarification.txt",
+      "artifacts/agere-authenticated-conversation-2026-11-11/browser-missing-input.txt",
+      "artifacts/agere-authenticated-conversation-2026-11-11/browser-report.txt",
+      "artifacts/agere-authenticated-conversation-2026-11-11/browser-report.png",
+      "artifacts/agere-authenticated-conversation-2026-11-11/browser-server.json"
     ],
-    "remaining_gap": "Full25 ordinary-question semantic acceptance remains unestablished; all original partials and supported unknowns remain retained. Independent source-family/model/method/clinical/outcome reference evidence, viable target labels and authentic reviewer economics remain missing; current-contract local student weights are not deployed and trained generative bottles remain disabled. Customer production rollout, supported deployment/provider-session arrangements, approved customer data connections, operational support and intended-use assessment remain separate and undelivered. Existing local login/tenant/role behavior now has scoped synthetic engineering evidence. OWASP/HHS work stays deferred.",
-    "next_action": "G5: complete role-specific qualification when independent reference evidence and viable outcome labels are available; retain all25 case dispositions and separate unassessed coverage from located implementation defects. The current authenticated code release is delivered locally. No currently identified shared-path implementation defect remains from this increment; do not invent labels, promote unqualified student/bottle weights, repeat passing workflows, push Git or restart the paused scheduler. Customer deployment remains a separate dependency.",
+    "remaining_gap": "User-requested output redesign is active in design chat 01a1cb8f-3562-7900-9399-5b06fc8ae6f7. Refresh the combined code archive once those presentation edits are stable. Broad all25 semantic acceptance, independent source/model/method/clinical/outcome reference evidence, usable target labels and reviewer economics remain unestablished. Compatible local student weights are not deployed; generative bottles remain disabled. Customer deployment/provider-session arrangements and data rights remain separate; OWASP/HHS deferred.",
+    "next_action": "G3: complete the user-requested output redesign in chat 01a1cb8f-3562-7900-9399-5b06fc8ae6f7 (ask_view.py ownership), retain its focused browser evidence and source/quantity semantics, then refresh one combined code-only package for the conversation and presentation changes. Do not rerun passing broad campaigns or start provider/training jobs; retain G5 qualification dependencies explicitly.",
     "last_observation": {
-      "at": "2026-11-11T16:34:45.967688+00:00",
+      "at": "2026-11-11T17:08:54.709386+00:00",
       "source_frozen": false,
       "new_product_delivery": true,
-      "evidence": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json"
+      "evidence": "artifacts/agere-authenticated-conversation-2026-11-11/delivery-receipt.json"
     },
     "whitepaper_delivery": {
       "receipt": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json",
@@ -6535,15 +6552,32 @@
       "at": "2026-11-11T16:34:45.967688+00:00",
       "decision": "Delivered and packaged authenticated answer continuity and native population follow-ups using the existing stack. G6 local engineering accepted; G5 independent qualification remains blocked by missing evidence. No acceptance area removed or partial all25 case restamped.",
       "evidence": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json"
+    },
+    {
+      "at": "2026-11-11T16:47:33.392677+00:00",
+      "decision": "Reopen G3 for ordinary authenticated conversation integration; reuse existing conversation and clarification code rather than implementing another model or planner.",
+      "scope_impact": "Same ten areas/all25 and October11 baseline; no model promotion, new service or production claim.",
+      "authority": "Mike explicitly requested continued completion without further approval pauses."
+    },
+    {
+      "at": "2026-11-11T17:01:57.081263+00:00",
+      "decision": "Mike explicitly requested a new thread to improve output clarity, appearance and usability, with design skills; current build continues.",
+      "scope_impact": "User-requested presentation work only; no narrowing of ten areas or all25. Root integration continues in separately owned files."
+    },
+    {
+      "at": "2026-11-11T17:08:54.709386+00:00",
+      "decision": "Seal the authenticated-conversation increment; keep G3 active for the explicit user-requested output design. Preserve old packages as prior-code recovery evidence until one combined refresh.",
+      "scope_impact": "Full ten areas and all25 retained; no qualification or production claim. No provider calls, pushes or scheduler restart."
     }
   ],
   "unsealed_work": {
-    "status": "none",
+    "status": "output_design_in_progress",
     "source_frozen": false,
     "active_jobs": [],
-    "recovery_commit": "b91e0f2e6558c6d3ecdc2388b988f9637718ef5f",
-    "remaining_verification": "No unsealed code changes in this increment; G5 qualification and customer prerequisites remain explicit.",
-    "sealed_delivery": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json"
+    "recovery_commit": "f62a2b82be570172df9b131e50cdc2099c70637b",
+    "sealed_delivery": "artifacts/agere-authenticated-conversation-2026-11-11/delivery-receipt.json",
+    "remaining_verification": "G3: complete the user-requested output redesign in chat 01a1cb8f-3562-7900-9399-5b06fc8ae6f7 (ask_view.py ownership), retain its focused browser evidence and source/quantity semantics, then refresh one combined code-only package for the conversation and presentation changes. Do not rerun passing broad campaigns or start provider/training jobs; retain G5 qualification dependencies explicitly.",
+    "design_chat": "01a1cb8f-3562-7900-9399-5b06fc8ae6f7"
   },
   "current_visual_request": {
     "status": "completed",
@@ -6579,7 +6613,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G5: complete role-specific qualification when independent reference evidence and viable outcome labels are available; retain all25 case dispositions and separate unassessed coverage from located implementation defects. The current authenticated code release is delivered locally. No currently identified shared-path implementation defect remains from this increment; do not invent labels, promote unqualified student/bottle weights, repeat passing workflows, push Git or restart the paused scheduler. Customer deployment remains a separate dependency.",
+  "next_action": "G3: complete the user-requested output redesign in chat 01a1cb8f-3562-7900-9399-5b06fc8ae6f7 (ask_view.py ownership), retain its focused browser evidence and source/quantity semantics, then refresh one combined code-only package for the conversation and presentation changes. Do not rerun passing broad campaigns or start provider/training jobs; retain G5 qualification dependencies explicitly.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6894,7 +6928,7 @@
     ]
   },
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
-  "latest_receipt": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json",
+  "latest_receipt": "artifacts/agere-authenticated-conversation-2026-11-11/delivery-receipt.json",
   "code_only_storage_exception": {
     "authorization": "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
     "scope": "One code-only archive and fresh-code rehearsal from the linked proposal; existing source/model/Python/work/ledger stores referenced, never copied. General60GBguard unchanged.",
@@ -6935,5 +6969,26 @@
     "after_free_bytes": 73944072192,
     "observed_net_free_increase_bytes": 33339498496
   },
-  "latest_maintenance_receipt": "artifacts/agere-storage-cleanup-2026-11-11/delivery-receipt.json"
+  "latest_maintenance_receipt": "artifacts/agere-storage-cleanup-2026-11-11/delivery-receipt.json",
+  "authorized_output_design_chat": {
+    "authorized_at": "2026-11-11T17:01:57.081263+00:00",
+    "status": "active",
+    "authority": "Mike explicitly requested a new thread to improve output clarity, appearance and usability, with design skills; current build continues.",
+    "owned_files": [
+      "clinical_core/agere/ask_view.py",
+      "presentation-only assets imported by ask_view.py",
+      "directly relevant UI checks"
+    ],
+    "exclusions": [
+      "clinical_core/agere/hosted/pages.py",
+      "backend/routing/model/data code",
+      "BUILD_OWNER.json",
+      "AGERE_BUILD_CONTROL.json",
+      "CONTINUE_AGERE.md"
+    ],
+    "coordination": "Root chat retains build ownership and canonical checkpoint. Preserve all concurrent edits. No pushes, scheduler restart, main merge, further agents/chats or frozen-run edits.",
+    "screenshot": "artifacts/agere-output-design-2026-11-11/requested-redesign.png",
+    "thread_id": "01a1cb8f-3562-7900-9399-5b06fc8ae6f7",
+    "host_id": "local"
+  }
 }

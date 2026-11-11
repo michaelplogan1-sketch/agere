@@ -1,8 +1,8 @@
-# Current Agere checkpoint — MANUAL / SCHEDULER PAUSED 2026-11-11T16:34:45.967688+00:00
+# Current Agere checkpoint — MANUAL / SCHEDULER PAUSED 2026-11-11T17:08:54.709386+00:00
 
-`AGERE_BUILD_CONTROL.json` owns the sequence. G5: complete role-specific qualification when independent reference evidence and viable outcome labels are available; retain all25 case dispositions and separate unassessed coverage from located implementation defects. The current authenticated code release is delivered locally. No currently identified shared-path implementation defect remains from this increment; do not invent labels, promote unqualified student/bottle weights, repeat passing workflows, push Git or restart the paused scheduler. Customer deployment remains a separate dependency.
+`AGERE_BUILD_CONTROL.json` owns the sequence. G3: complete the user-requested output redesign in chat 01a1cb8f-3562-7900-9399-5b06fc8ae6f7 (ask_view.py ownership), retain its focused browser evidence and source/quantity semantics, then refresh one combined code-only package for the conversation and presentation changes. Do not rerun passing broad campaigns or start provider/training jobs; retain G5 qualification dependencies explicitly.
 
-Gate / workflow / evidence / gap: G6 delivered, G5 qualification blocked / authenticated question, saved evidence, scope-preserving follow-up and fresh installation / `artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json`, product `b91e0f2e6558c6d3ecdc2388b988f9637718ef5f` / full25 acceptance, independent qualification and production prerequisites remain explicit. No source-frozen job. Temporary fixture and package servers stopped; main app PID56993 was retained. No pushes or scheduler restart.
+Latest sealed G3 increment: artifacts/agere-authenticated-conversation-2026-11-11/delivery-receipt.json, product commit f62a2b82be570172df9b131e50cdc2099c70637b. Same 10 of 30 authored patients retained in follow-up; clarification and explicit saved reports connected; 0 provider calls. Design chat is active with separate ownership; no frozen job or Git pushes. Qualification and customer deployment remain incomplete.
 
 ## Superseded checkpoint
 
