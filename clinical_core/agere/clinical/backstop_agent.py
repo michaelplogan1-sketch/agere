@@ -510,6 +510,22 @@ class Tools:
         except TypeError as exc:  # a malformed call (unknown argument): a tool error the model can correct, not the end of the loop
             raise ValueError(f'bad arguments for {use.get("name")}: {exc}') from exc
 
+    def reserve_recovery_result(self, original):
+        """Keep an owned result's address across omitted operational records.
+
+        This reserves ordinals only. It restores no rows, source, verdict or
+        missing dependency; the action and its full receipt are checked again.
+        """
+        name=original.get('result_view') if isinstance(original,dict) else None
+        if name is None:return
+        matched=re.fullmatch(r'agere_result_([1-9][0-9]*)',name)
+        if not matched or name in self.executed_results:
+            raise ValueError('Owned recovery result address is invalid or already occupied')
+        ordinal=int(matched[1])
+        if ordinal<=len(self.seen):
+            raise ValueError('Owned recovery result order changed')
+        self.seen.extend([None]*(ordinal-len(self.seen)-1))
+
     def retain_result(self, out):
         """Register complete request-local results through the native view path."""
         if isinstance(out, dict) and not out.get('error'):

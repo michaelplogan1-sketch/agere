@@ -38,6 +38,35 @@ class NativeColumnProjection(unittest.TestCase):
         result.update(result_view='agere_result_2',executed_query=sql,native_sql_contract=B.NATIVE_SQL_CONTRACT)
         return {'name':'query_sql','input':{'sql':sql},'result':result}
 
+    def test_owned_recovery_keeps_native_addresses_across_operational_only_gap(self):
+        from clinical_core.agere.clinical import harness_improvement as H
+        from clinical_core.agere.deliverables import answer_context as A
+        def executor():
+            wh=S.SemanticWarehouse(Path(self.temp.name)/'semantic.sqlite3');wh.define('2030-05-27');self.addCleanup(wh.close)
+            tools=B.Tools.__new__(B.Tools)
+            tools.semantic=wh;tools.stack=SimpleNamespace(path=Path(self.temp.name));tools.seen=[]
+            tools.executed_results={};tools.result_sources={};tools.native_calls=[];tools.rows_by_record={};tools.question='Count received rows'
+            tools.continuation_identity=lambda:{'source':'authored'}
+            tools.cohort=None;tools.as_of='2030-05-27'
+            return tools
+        original=executor();calls=[]
+        for i,sql in enumerate(('SELECT 7 AS n','SELECT n FROM agere_result_1')):
+            if i:original.retain_result({'columns':['note'],'rows':[['Unverified operational feedback']],
+                'incomplete_dependencies':[{'authority':'unverified_review_feedback'}]})
+            use={'name':'query_sql','input':{'sql':sql}}
+            calls.append({**use,'result':original(use),'actor_callback_id':'callback_'+str(i)})
+        self.assertEqual([c['result']['result_view']for c in calls],['agere_result_1','agere_result_3'])
+        q=original.question;context={'question':q};draft={'status':'partial','table_from_tool':'agere_result_3'}
+        checkpoint=H.recovery_checkpoint(original,q,context,{'answer':draft,'tool_calls':calls})
+        with H.owned_recovery(H.recovery_actions(calls),q,origin={'question':q,'calls':calls},checkpoint=checkpoint):
+            current=executor();out=H.recover_actions(current,q,context)
+        self.assertIn('resume_draft',out,str(out))
+        self.assertEqual(out['resume_draft']['table_from_tool'],'agere_result_3')
+        self.assertEqual([c['result']['rows']for c in out['calls']],[c['result']['rows']for c in calls])
+        self.assertNotIn('agere_result_2',current.executed_results)
+        self.assertTrue(out['draft_recovery']['full_current_review_required']);self.assertIsNone(out['final_answer'])
+        with self.assertRaises(ValueError):current.reserve_recovery_result({'result_view':'agere_result_1'})
+
     def project(self,calls=None,roots=None):
         return native_column_projections(calls or self.calls,roots or ['agere_result_2'],{'agere_result_1','agere_result_2'})
 

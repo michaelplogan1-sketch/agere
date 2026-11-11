@@ -465,6 +465,8 @@ def recover_actions(tools,question,context=None):
         if provenance and digest([action['name'],action['input']])!=provenance['origin_action_digest']:
             raise ValueError('Recovery action changed after its origin was bound')
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed during owned recovery')
+        if checkpoint and callable(getattr(tools,'reserve_recovery_result',None)):
+            tools.reserve_recovery_result(saved['origin_calls'][index]['result'])
         try: value=tools({k:action[k]for k in ('name','input')})
         except (ValueError,sqlite3.Error) as exc:value={'error':str(exc)}
         reproduced=expected is not None and value=={'error':expected}
