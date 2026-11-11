@@ -434,11 +434,12 @@ def envelope(result, *, answer_type=None):
     decline = result.get('workspace_decline')
     answer = None
     want = answer_type or a.get('answer_type')
-    if status in ('answered', 'partial') and want == 'patient_set' and isinstance(a.get('patient_ids'), list):
+    has_answer = status in ('answered', 'partial') and a.get('answer_type') not in ('unsupported', 'clarify')
+    if has_answer and want == 'patient_set' and isinstance(a.get('patient_ids'), list):
         answer = {'patient_ids': a['patient_ids']}  # a patient list was asked for: return it, not just its size
-    elif status in ('answered', 'partial') and want == 'table' and isinstance(a.get('table'), list) and a['table']:
+    elif has_answer and want == 'table' and isinstance(a.get('table'), list) and a['table']:
         answer = {'table': _table_rows(a['table'])}
-    elif status in ('answered', 'partial'):
+    elif has_answer:
         if a.get('count') is not None:
             answer = {'count': a['count']}
         elif a.get('value') is not None and not isinstance(a.get('value'), (dict, list)):
@@ -459,11 +460,16 @@ def envelope(result, *, answer_type=None):
         interpretation += ': ' + (a.get('headline') or '; '.join(missing) or 'no answer')[:400]
     return {'pipeline': 'full', 'answer': answer, 'answer_type': a.get('answer_type') or answer_type,
             'status': status, 'headline': a.get('headline'), 'confidence': a.get('confidence'),
-            'action_context': result.get('action_context'), 'context_error': result.get('context_error'),
+            'action_context': result.get('action_context'), 'context_error': result.get('context_error') or result.get('action_context_error'),
             # certified cascade (clinical/cascade.py): the free tier that answered and its error bound; None = not certified
             'certified': result.get('certified'),
             'decision': together.get('decision') or receipt.get('route'), 'interpretation': interpretation,
-            'cost_usd': econ.get('new_api_estimate_usd'), 'new_paid_api_calls': result.get('new_paid_api_calls'),
+            'cost_usd': (result['cost_receipt'].get('usd') if result.get('cost_receipt') else econ.get('new_api_estimate_usd')),
+            'new_paid_api_calls': result.get('new_paid_api_calls'),
+            'cost_receipt': result.get('cost_receipt'), 'conversation': result.get('conversation'),
+            'clarification': result.get('clarification'), 'clarification_history': result.get('clarification_history'),
+            'clarification_replay': result.get('clarification_replay'), 'learning': result.get('learning'),
+            'workflow': result.get('workflow') or [],
             'route': receipt.get('route') or result.get('route'), 'operations': ops, 'missing': missing,
             'workspace_decline': {k: v for k, v in (decline or {}).items() if k != 'declined_graph'} or None,
             'decline': ({'kind': status, 'readings': a.get('readings') or [], 'missing': missing}

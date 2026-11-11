@@ -241,6 +241,10 @@ def after_answer(stack, question, result, *, body=None):
         receipt['components']['component_learning']=observe(stack,question,result,body)
     except Exception as exc:
         receipt['errors'].append('component observation: '+type(exc).__name__+': '+str(exc)[:300])
+    if getattr(stack, 'learning_observation_only', False):
+        receipt['components']['learning_cycle'] = {'status': 'observation_only', 'provider_calls': 0,
+            'reason': 'Workspace observations require independently reviewed labels and a scoped promotion plan.'}
+        return receipt
     if os.environ.get('AGERE_COMPONENT_LEARNING','off')=='on':
         # Explicit component-learning mode never reads the legacy learning,
         # question-plan or answer stores. Observations need direct review before
@@ -302,10 +306,12 @@ def after_failure(stack, question, exc):
     try:
         from .component_learning import observe
         observation=observe(stack,question,{'answer':{'status':'failed'}})
-        if os.environ.get('AGERE_COMPONENT_LEARNING','off')=='on':
+        if getattr(stack, 'learning_observation_only', False) or os.environ.get('AGERE_COMPONENT_LEARNING','off')=='on':
             return observation
     except Exception:  # bookkeeping cannot suppress the original failure/gap
         pass
+    if getattr(stack, 'learning_observation_only', False):
+        return None
     try:
         usage = getattr(exc, 'planner_receipt', {}) or {}
         return append('gaps', {'question': question, 'status': 'error', 'error': f'{type(exc).__name__}: {exc}'[:500],

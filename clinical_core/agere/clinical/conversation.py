@@ -1191,13 +1191,23 @@ def _finish_compose(stack,body,question,conv,resolution,result,probe,t0,hosted_c
         result=clarification.publish(stack.path,conv,question,result,
             request_options={k:body[k]for k in ('delivery_generation',)if k in body})
     try:
-        if not awaiting and result.get('program_results') and not _evaluating():
+        # Request principals may permit analysis while withholding work creation.
+        # This authority comes from the server's stack view, never a JSON option.
+        allow_work = getattr(stack, 'allow_workflow_actions', True)
+        if not awaiting and allow_work and result.get('program_results') and not _evaluating():
             from . import request_program
             request_program.materialize(stack, result)
         from ..deliverables.workflow import fulfill
-        if not awaiting:
+        if not awaiting and allow_work:
             result=fulfill(stack,resolution['standalone'] if resolution else question,result,original_question=question,
                            generation=body.get('delivery_generation'))
+        elif not awaiting:
+            result = {**result, 'workflow': [{**step, 'status': 'requires_analyst',
+                'reason': 'An analyst role is required to create work or deliverables.'} for step in result.get('workflow') or []]}
+            ref = answer_context.capture(stack.path, resolution['standalone'] if resolution else question,
+                                         result, original_question=question)
+            if ref:
+                result['action_context'] = ref
     except (OSError, ValueError, sqlite3.Error) as exc:
         result = {**result, 'action_context_error': str(exc)}
     if conv is not False:

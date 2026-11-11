@@ -517,7 +517,7 @@ def scope_options(context):
     """Public scope choices; membership itself remains server-owned."""
     answer = context['answer']
     contract = (context.get('planner_receipt') or {}).get('request_contract') or {}
-    summary = (contract.get('kind') == 'request_program' or answer.get('answer_type') == 'composite'
+    summary = (contract.get('kind') == 'request_program' or answer.get('answer_type') in ('composite', 'unsupported', 'clarify')
                or ('request' in contract and contract.get('membership_query') is None)
                or answer.get('analysis_population_count') is not None or answer.get('answer_type') == 'value'
                or (contract.get('kind') == 'general_analysis' and contract.get('returns') != 'patient_set'

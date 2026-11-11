@@ -710,7 +710,8 @@ class Workspace:
             out['customer_ids'] = self.customer_ids(ids)  # the customer's own identifiers (MRN, member id, EHR id)
         record = {'at': _now(), 'question': question, 'pipeline': out.get('pipeline'), 'decision': out['decision'],
                   'answer': out['answer'], 'cost_usd': out['cost_usd'], 'interpretation': out['interpretation']}
-        record.update({k: out[k] for k in ('status', 'action_context', 'parent_context_id', 'context_error', 'new_paid_api_calls') if k in out})
+        record.update({k: out[k] for k in ('status', 'action_context', 'parent_context_id', 'conversation', 'clarification',
+                                          'context_error', 'new_paid_api_calls') if k in out})
         with open(self.dir / 'questions.jsonl', 'a') as f:
             f.write(json.dumps(record, default=str) + '\n')
         if self.native:  # streaming dependency registry (what the answer read), so a later tick can mark it stale
@@ -797,6 +798,73 @@ class Workspace:
         self._save_full_answer(question, out, original_question=parent.get('original_question') or parent['question'])
         self._record(question, out)
         return out
+
+    def answer_report(self, context_id, request):
+        """Render requested evidence using the existing guarded native renderer."""
+        from . import workspace_stack
+        from ..deliverables import saved_report
+        if set(request) != {'template', 'request'}:
+            raise ValueError('A report layout and request are required; its evidence comes from the saved answer')
+        self.saved_answer(context_id)  # tenant-bound identity, including absent-context 404
+        out = saved_report.create(self.dir / workspace_stack.DIRNAME,
+            {**request, 'context_id': context_id},
+            context_url=f'/api/workspaces/{self.slug}/answers/{context_id}')
+        return {**out, 'context_id': context_id}
+
+    def answer_deliverables(self, context_id, deliverable_id=None):
+        from . import workspace_stack
+        from ..deliverables import answer_context as A, saved_report
+        from ..deliverables.compose import load, listing
+        context = self.saved_answer(context_id)['saved_context']
+        path = self.dir / workspace_stack.DIRNAME
+        ws = A.workspace(path, context)
+        if deliverable_id is None:
+            return {'context_id': context_id, 'deliverables': listing(ws)}
+        spec, bundle, _, html = load(ws, deliverable_id)
+        if spec.get('generation') == 'saved_report' and spec.get('status') == 'delivered':
+            data, _, _ = saved_report.read_format(path, context_id, deliverable_id, 'html')
+            html = data.decode('utf-8')
+        else:
+            A.bundle_validator(path, bundle)()
+        return {**spec, 'context_id': context_id, 'html': html}
+
+    def converse(self, body, *, can_write=False, live=True):
+        """Use the application's existing conversation lifecycle in this tenant."""
+        import copy
+        from . import workspace_stack
+        from ..clinical import conversation
+        if self.state['status'] != 'ready':
+            raise RuntimeError('The workspace must be ready before answering')
+        request = {k: v for k, v in body.items() if k != 'answer_type'}
+        request.setdefault('conversation_id', None)
+        stack = copy.copy(workspace_stack.stack_for(self, allow_live=live))
+        stack.allow_workflow_actions = bool(can_write)
+        # Collect scoped observations; a tenant request cannot append labels to
+        # the process-wide legacy corpus or start an operator's training plan.
+        stack.learning_observation_only = True
+        # Deliberately outside ask()'s legacy fallback: a clarification, scope
+        # guard, provider limit or interrupted conversation must not buy a replay.
+        result = conversation.handle_compose(stack, request)
+        out = workspace_stack.envelope(result, answer_type=body.get('answer_type'))
+        if result.get('clarification_replay'):
+            out.update(original_cost_receipt=out.get('cost_receipt'), cost_receipt={
+                'version': 'cost-receipt/1', 'paid_calls': 0, 'usd': 0, 'usd_known': True,
+                'accounting_complete': True, 'reused_clarification': True}, cost_usd=0, new_paid_api_calls=0)
+        ref = result.get('action_context')
+        if ref:
+            out['action_context'] = {**ref, 'url': f'/api/workspaces/{self.slug}/answers/{ref["id"]}'}
+        out['question'] = (result.get('conversation') or {}).get('question') or body.get('question') or result.get('question')
+        self._record(out['question'], out)
+        return out
+
+    def conversation_history(self, conversation_id):
+        from . import workspace_stack
+        from ..clinical import conversation
+        conversation.check_id(conversation_id)
+        rows = conversation.turns(self.dir / workspace_stack.DIRNAME, conversation_id)
+        if not rows:
+            raise FileNotFoundError('Conversation not found in this workspace')
+        return rows
 
     def _ask_hybrid(self, question, *, answer_type=None, send_factory=None):
         from ..clinical.semantic_analyst import SemanticWarehouse

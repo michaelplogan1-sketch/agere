@@ -34,7 +34,7 @@ def sections(answer):
             yield from sections(section['answer'])
 
 
-def create(path, request):
+def create(path, request, *, context_url=None):
     if set(request)-{'context_id','template','request','retained_inspection'} or not {'context_id','template','request'}<=set(request):
         raise ValueError('An exact saved answer, report layout and request are required')
     if request['template'] not in ('command', 'brief', 'explore'):
@@ -69,7 +69,7 @@ def create(path, request):
     reference['native_context_reference'] = {
         'schema': 'saved-report-native-reference/1', 'context_id': context['id'],
         'derivation': context['dependencies']['derivation'],
-        'url': '/api/stack/action-context?' + urlencode({'context': context['id'], 'view': 'native'}),
+        'url': context_url or '/api/stack/action-context?' + urlencode({'context': context['id'], 'view': 'native'}),
         'complete_investigation_retained': True}
     bundle.add('saved_answer', {'context_id': context['id']}, reference,
                definition=context['question'], as_of=context['source']['as_of'],
@@ -91,7 +91,7 @@ def create(path, request):
                'review_work': review_work, 'evidence': evidence}
     renderers = {name: Path(__file__).with_name(name).read_text() for name in
                  ('saved_report.py', 'patient_dashboard.py', 'patient_evidence.py', 'patient_report_pdf.py')}
-    key = 'DLV-' + fingerprint([VERSION, renderers, context['id'], request, payload])[:12].upper()
+    key = 'DLV-' + fingerprint([VERSION, renderers, context['id'], request, payload, context_url])[:12].upper()
     # Export intent belongs to this request, not a prior question or report.
     want_pdf = bool(re.search(r'\bpdf\b', request['request'], re.I))
     pdf_url = '/api/stack/action-deliverable?' + urlencode({'context': context['id'], 'id': key, 'format': 'pdf'}) if want_pdf else None
