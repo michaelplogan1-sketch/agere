@@ -30,6 +30,24 @@ class FrontierAggregateReview(unittest.TestCase):
         self.assertEqual(out['status'],'reviewed');self.assertIsNone(out['calibrated_probability'])
         self.assertFalse(out['clinical_qualification']);self.assertEqual(out['verdict'],verdict)
 
+    def test_shared_source_wire_stays_lossless_and_fault_paths_use_decoded_values(self):
+        from clinical_core.agere.deliverables.receipts import compact_json,uncompact_json
+        packet,verdict=self.fixture();state=uncompact_json(json.loads(packet['text']))
+        state['shared_evidence']=[{'source':'Complete original evidence with no omitted values. '*100,'count':2}for _ in range(40)]
+        packet['text']=json.dumps(compact_json(state))
+        verdict['supported_claim_ids']=['headline'];verdict.update(joint_support='contradicted',findings=[{
+            'claim_id':'count','label':'contradicted','reason':'Authored source fault','evidence_paths':['/packet_state/shared_evidence/39/count']}])
+        def model(user,*args,**kwargs):
+            payload=json.loads(user)
+            self.assertEqual(uncompact_json(payload['packet_state']),state)
+            self.assertLess(len(user),len(json.dumps(state))/4)
+            return {'answer':verdict,'model':'authored','new_paid_api_calls':0,'estimated_cost_usd':0}
+        with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'subscription','ANTHROPIC_API_KEY':'subscription-transport'}),patch(
+                'clinical_core.agere.clinical.legacy_proposers._send',return_value=lambda _:None),patch(
+                'clinical_core.agere.clinical.semantic_analyst.tool_loop',side_effect=model):
+            out=B.frontier_aggregate_review(SimpleNamespace(),'Count records and estimate savings.',packet,ledger=None)
+        self.assertEqual(out['status'],'reviewed');self.assertEqual(out['verdict']['joint_support'],'contradicted')
+
     def test_missing_duplicate_fabricated_claims_quotes_and_source_paths_fail_closed(self):
         for kind in ('omitted','duplicate','foreign_claim','fake_quote','fake_path','conflict','fake_label'):
             packet,verdict=self.fixture()

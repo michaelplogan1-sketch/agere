@@ -1928,7 +1928,11 @@ def frontier_aggregate_review(stack,question,packet,*,ledger):
         'unknown may have no path. Assess joint consistency separately. For incomplete coverage, quote '
         'the exact unmet words from original_question. Return only the required JSON; no confidence score.')
     receipts=[];wire=native_integrity_model_view(packet['text'],support_dependencies=True)
-    payload={'original_question':question,'packet_state':uncompact_json(json.loads(wire['text'])),
+    # Send the selected lossless wire form. Expanding it here duplicates shared
+    # native evidence and can exceed the transport's real context envelope.
+    # Findings still resolve against the complete decoded state below.
+    encoded_state=json.loads(wire['text']);decoded_state=uncompact_json(encoded_state)
+    payload={'original_question':question,'packet_state':encoded_state,
         'claim_manifest':claims,'machine_review_only':True}
     with model_policy.first_rung():
         run=semantic_analyst.tool_loop(json.dumps(payload),rules,[],lambda use:None,
@@ -1940,7 +1944,9 @@ def frontier_aggregate_review(stack,question,packet,*,ledger):
         'clinical_qualification':False,'calibrated_probability':None,'packet_digest':digest(packet['text']),
         'question_digest':digest(question),'model':run.get('model'),'provider_run':run,'provider_receipts':receipts,
         'calls':run.get('new_paid_api_calls',0),'cost_usd':run.get('estimated_cost_usd'),
-        'status':'unavailable','verdict':run.get('answer')}
+        'status':'unavailable','verdict':run.get('answer'),
+        'transport':{'encoding':encoded_state.get('encoding'),'wire_bytes':len(wire['text'].encode()),
+            'decoded_state_digest':digest(decoded_state),'complete_packet_retained':True}}
     verdict=run.get('answer')or{}
     try:
         supported=verdict['supported_claim_ids'];findings=verdict['findings'];coverage=verdict['coverage']
@@ -1961,7 +1967,7 @@ def frontier_aggregate_review(stack,question,packet,*,ledger):
                 if not pointer.startswith('/'):raise ValueError('Invalid source pointer')
                 # Both explicit packet_state-relative and payload-rooted
                 # pointers resolve against the exact supplied source object.
-                value=payload['packet_state'];parts=pointer[1:].split('/')
+                value=decoded_state;parts=pointer[1:].split('/')
                 if parts[0]=='packet_state':parts=parts[1:]
                 for part in parts:
                     part=part.replace('~1','/').replace('~0','~')
