@@ -408,6 +408,11 @@ class PersistentGateway:
             price=usage_cost(body['model'],raw.get('usage')) if isinstance(raw,dict) and raw.get('model')==body['model'] else None
             e.provider_receipt={'attempt_id':key,'request_hash':key,'attempted':True,'model':body['model'],
                                 'cost_usd':(price or {}).get('estimated_usd'),'usage':raw.get('usage') if isinstance(raw,dict) else None}
+            if isinstance(e,urllib.error.HTTPError)and e.code==400:
+                try:
+                    if json.loads(detail).get('detail',{}).get('error_type')=='max_tokens_exceeded':
+                        e.provider_receipt['input_error']='max_tokens_exceeded'
+                except (ValueError,TypeError,AttributeError):pass
             raise
         finally:_throughput_release(credential,probe,success)
     def cascade(self,task,*,primary='jev',acceptance_threshold=None):
