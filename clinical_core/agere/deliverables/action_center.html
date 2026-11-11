@@ -12,14 +12,14 @@
   <nav class="primary-nav" aria-label="Main navigation"><a href="/ask"><span data-icon="search"></span>Ask your data</a><a href="/ask#saved"><span data-icon="file"></span>Saved answers</a><a href="/action-center" aria-current="page"><span data-icon="board"></span>Action workspace <small>DEMO</small></a></nav><div class="side-caption">IN THIS WORKSPACE</div>
   <nav class="workspace-nav" aria-label="Workspace">
     <button data-view="overview" aria-current="page"><span data-icon="overview"></span>Overview</button>
-    <button data-view="cohort"><span data-icon="people"></span>Your cohort<span id="nav-cohort" class="nav-count">—</span></button>
+    <button data-view="cohort"><span data-icon="people"></span>Select patients<span id="nav-cohort" class="nav-count">—</span></button>
     <button data-view="work"><span data-icon="board"></span>Work board<span id="nav-work" class="nav-count">—</span></button>
-    <button data-view="studio"><span data-icon="spark"></span>Create a view</button>
+    <button data-view="studio"><span data-icon="spark"></span>Deliverable studio</button>
   </nav>
   <div class="side-bottom"><div class="local-dot"></div><span>Local workspace<small>Synthetic healthcare data</small></span></div>
 </aside>
 <div class="app">
-  <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> <strong id="view-name">Overview</strong></div><div class="top-actions"><a id="back-to-analysis" href="/ask#saved">Back to analysis</a><a class="button small" href="/ask"><span data-icon="plus"></span>New question</a></div></header>
+  <header class="topbar"><button type="button" class="wc-shell-toggle" aria-label="Open site navigation" aria-expanded="false">☰</button><div class="breadcrumb">Workspace <span>/</span> <strong id="view-name">Overview</strong></div><div class="top-actions"><a id="back-to-analysis" href="/ask#saved">Back to analysis</a><a class="button small" href="/ask"><span data-icon="plus"></span>New question</a></div></header>
   <main id="main" tabindex="-1"><nav class="wisdom-path" aria-label="Data to wisdom journey"><a href="/ask#data">Data</a><span>→</span><a href="/ask">Information</a><span>→</span><a href="/ask#saved">Intelligence</a><span>→</span><strong>Wisdom</strong><small>SYNTHETIC ACTION WORKSPACE</small></nav>
     <div id="loading" class="loading"><span class="spinner"></span>Opening your workspace…</div>
     <section id="saved" hidden></section>
@@ -44,12 +44,12 @@
         <div class="quiet-note"><span data-icon="shield"></span>Synthetic workspace. Open a review card to try a simulated agent journey.</div>
       </section>
       <section id="view-cohort" class="view" hidden>
-        <div class="section-kicker">01 / SELECT</div><div class="page-heading"><div><h1>Your cohort<span class="copper">.</span></h1><p id="cohort-description"></p></div><button class="text-button" id="cohort-evidence">View answer &amp; sources <span data-icon="arrow"></span></button></div>
+        <div class="section-kicker">01 / SELECT</div><div class="page-heading"><div><h1>Patients for review<span class="copper">.</span></h1><p id="cohort-description"></p></div><button class="text-button" id="cohort-evidence">View answer &amp; sources <span data-icon="arrow"></span></button></div>
         <div id="intent-banner" class="intent-banner" hidden><span class="tile-icon mint" id="intent-icon"></span><div><strong id="intent-title"></strong><p>Select the patients you want to include, then continue below.</p></div><button id="cancel-intent" class="icon-button" aria-label="Clear program choice">×</button></div>
         <section class="surface cohort-surface"><div class="cohort-tools"><label class="search-field"><span data-icon="search"></span><input id="search" type="search" placeholder="Search patients or returned details" aria-label="Search cohort"></label><label class="filter-label">Show<select id="cohort-filter" aria-label="Filter cohort"><option value="all">All patients</option><option value="unassigned">Without review work</option><option value="assigned">With review work</option><option value="details">With returned details</option><option value="selected">Selected patients</option></select></label></div>
-        <div class="table-caption"><span id="cohort-results"></span><button class="text-button" id="select-all">Select all matching</button></div>
+        <div class="cohort-layout-switch" role="group" aria-label="Patient view"><button type="button" data-cohort-layout="cards" aria-pressed="true">Patient cards</button><button type="button" data-cohort-layout="table" aria-pressed="false">Selection table</button></div><div id="cohort-cards" class="cohort-presentation"></div><div id="cohort-selection-table" hidden><div class="table-caption"><span id="cohort-results"></span><button class="text-button" id="select-all">Select all matching</button></div>
         <div class="table-scroll"><table><thead><tr><th class="check-cell"><input id="select-page" type="checkbox" aria-label="Select this page"></th><th>Patient</th><th>Answer details</th><th>Review work</th><th><span class="sr-only">Details</span></th></tr></thead><tbody id="patients"></tbody></table></div>
-        <div class="pagination"><span id="page-caption"></span><div><button id="previous-page" class="button small">← Previous</button><button id="next-page" class="button small">Next →</button></div></div></section>
+        <div class="pagination"><span id="page-caption"></span><div><button id="previous-page" class="button small">← Previous</button><button id="next-page" class="button small">Next →</button></div></div></div></section>
         <div id="selection-bar" class="selection-bar"><span class="selection-icon" data-icon="people"></span><div><strong id="selection">No patients selected</strong><small id="selection-hint">Select patients to prepare their next step.</small></div><button id="clear" class="text-button">Clear</button><button id="continue" class="button primary">Choose next step <span data-icon="arrow"></span></button></div>
       </section>
       <section id="view-work" class="view" hidden>

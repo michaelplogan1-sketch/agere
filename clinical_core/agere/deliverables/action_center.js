@@ -4,6 +4,7 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;',
 const pretty = value => String(value || '').replaceAll('_', ' ');
 const key = new URLSearchParams(location.search).get('context');
 const PAGE_SIZE = 15;
+let cohortTableView=false;
 let selectedTemplate = 'command';
 const states = {needs_review:'Ready to review', in_review:'In progress', blocked:'Needs attention', review_complete:'Review complete', cancelled:'Cancelled'};
 const stateHints = {needs_review:'Ready for a first look', in_review:'Someone is on it', blocked:'Waiting on a next step', review_complete:'Review wrapped up'};
@@ -33,7 +34,7 @@ const initials = owner => String(owner || '').trim().split(/\s+/).slice(0,2).map
 let data = null, selected = new Set(), busy = false, currentView = 'overview', pageIndex = 0, intent = null, toastTimer, lastDialogTrigger;
 let evidenceFlight = null, searchError = '', detailRequest = 0;
 const patientEvidence = new Map();
-const viewNames = {overview:'Overview',cohort:'Your cohort',work:'Work board',studio:'Creative studio'};
+const viewNames = {overview:'Overview',cohort:'Patient selection',work:'Work board',studio:'Deliverable studio'};
 
 function restoreWorkspaceRows(record) {
   const c=record?.context, encoding=c?.patient_row_encoding;
@@ -225,6 +226,7 @@ function go(view, focus=true) {
     if (button.dataset.view === view) button.setAttribute('aria-current','page'); else button.removeAttribute('aria-current');
   });
   $('view-name').textContent = viewNames[view];
+  document.querySelectorAll('.wc-shell-links [data-app-link]').forEach(a=>{if(a.dataset.appLink===(view==='studio'?'deliverables':'work'))a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
   history.replaceState(null, '', location.pathname + location.search + (view === 'overview' ? '' : '#'+view));
   if (view === 'cohort') showPatients();
   if (view === 'work') showWork();
@@ -311,6 +313,8 @@ function filteredPatients() {
 function showPatients() {
   if (!data) return;
   if (searchNeedsEvidence()) {
+    $('cohort-cards').hidden=cohortTableView;$('cohort-selection-table').hidden=!cohortTableView;
+    if(!cohortTableView)$('cohort-cards').innerHTML='<div class="empty-state" role="status"><h3>'+esc(searchError?'Search needs complete saved evidence':'Loading complete evidence for search…')+'</h3><p>'+esc(searchError||'The saved population and selections stay unchanged while the source rows load.')+'</p>'+(searchError?'<button class="button" data-retry-search>Retry search</button>':'')+'</div>';
     $('patients').innerHTML='<tr><td colspan="5"><div class="empty-state" role="status"><h3>'+(searchError?'Search needs the complete saved evidence':'Loading complete saved evidence for search…')+'</h3><p>'+esc(searchError || 'Searching every returned value, including source details. The saved cohort and your selections are preserved.')+'</p>'+(searchError?'<button class="button" data-retry-search>Retry search</button>':'')+'</div></td></tr>';
     $('cohort-results').textContent='Search '+(searchError?'unavailable':'loading')+' · '+num(data.context.patient_rows.length)+' in saved answer';
     $('page-caption').textContent='Complete evidence required for search';
@@ -334,7 +338,11 @@ function showPatients() {
   $('select-page').disabled = visible.length === 0;
   $('select-all').disabled = rows.length === 0;
   updateSelection();
+  $('cohort-cards').hidden=cohortTableView;$('cohort-selection-table').hidden=!cohortTableView;
+  document.querySelectorAll('[data-cohort-layout]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.cohortLayout==='table')===cohortTableView)));
+  if(!cohortTableView){const c=data.context;PatientWorkspace.mount($('cohort-cards'),{question:c.question,source:c.source,answer:c.answer,rows:rows.flatMap(p=>p.evidence_rows.length?p.evidence_rows:[{patient_id:p.patient_id}]),profiles:c.patient_profiles,onPatientSelected:pid=>run(()=>patientDetails(pid))})}
 }
+document.addEventListener('click',e=>{const b=e.target.closest('[data-cohort-layout]');if(b){cohortTableView=b.dataset.cohortLayout==='table';showPatients()}});
 function updateSelection() {
   $('selection').textContent = selected.size ? num(selected.size)+' patient'+(selected.size===1?'':'s')+' selected' : 'No patients selected';
   $('selection-hint').textContent = data.context.supports_patient_work === false ? 'This summary is for analysis. Ask which patients should receive follow-up first.' : !canCreate() ? 'This answer needs updating before review work can be created.' : intent ? programNames[intent]+' · ready when you are' : 'Select patients to prepare their next step.';
@@ -500,16 +508,14 @@ async function patientDetails(pid) {
   }
   if (request!==detailRequest || !$('detail-dialog').open) return;
   const evidenceRows = patient.evidence_rows || [];
-  const interpreted = new Set(data.context.answer.table_binding?.interpreted_columns || []);
-  const details = evidenceRows.length ? evidenceRows.map((row,index) => {
-    const entries = Object.entries(row), prose = entries.filter(([k])=>interpreted.has(k));
-    return (prose.length ? '<h3 class="detail-section">Proposed interpretation</h3>'+detailFields(prose) : '')+
-      '<h3 class="detail-section">Returned evidence'+(evidenceRows.length>1?' · '+(index+1):'')+'</h3>'+detailFields(entries.filter(([k])=>!interpreted.has(k)));
-  }).join('') : '<div class="patient-empty">This answer returned a patient identifier only. Clinical details and program suitability have not been assessed.<br><br>Ask for those details before making a clinical decision.</div>';
   const tasks = data.items.filter(i=>i.patient_id===pid);
-  $('detail-content').innerHTML = '<p class="muted">'+esc(pid)+' · Snapshot '+esc(date(data.context.source.as_of))+'</p><p class="muted">Answer status: '+esc(pretty(data.context.answer.status))+(data.context.answer.verification?' · '+esc(pretty(data.context.answer.verification)):'')+'</p>'+details+(tasks.length?'<h3 style="font-size:16px;margin-top:25px">Review work</h3>'+tasks.map(taskCard).join(''):'')+'<div class="sheet-actions"><button class="button primary" data-select-detail="'+esc(pid)+'">'+(selected.has(pid)?'Remove from selection':'Add to selection')+'</button></div>';
+  $('detail-dialog').classList.add('patient-sheet');
+  $('detail-content').innerHTML='<div id="work-patient-dossier"></div>'+(tasks.length?'<h3 class="detail-section">Review work</h3>'+tasks.map(taskCard).join(''):'')+'<div class="sheet-actions"><a class="button" href="/ask?context='+encodeURIComponent(data.context.id)+'&amp;patient='+encodeURIComponent(pid)+'#patients">Open patient workspace ↗</a><button class="button primary" data-select-detail="'+esc(pid)+'">'+(selected.has(pid)?'Remove from selection':'Add to selection')+'</button></div>';
+  const c=data.context,view=PatientWorkspace.mount($('work-patient-dossier'),{question:c.question,source:c.source,answer:c.answer,rows:evidenceRows.length?evidenceRows:[{patient_id:pid}],profiles:c.patient_profiles});
+  view?.openPatient(pid);
 }
 function editWork(id) {
+  $('detail-dialog').classList.remove('patient-sheet');
   detailRequest++;
   const item = data.items.find(i=>i.id===id);
   if (!item) return;
@@ -696,7 +702,7 @@ async function init() {
     $('saved').hidden=false; $('loading').hidden=true;
     document.querySelector('.workspace-nav').hidden=true;document.querySelector('.side-caption').hidden=true;
     $('view-name').textContent='Saved workspaces';
-    $('saved').innerHTML='<div class="section-kicker">SYNTHETIC WORK &amp; DELIVERABLES</div><div class="page-heading"><div><h1>Action workspaces<span class="copper">.</span></h1><p>Choose a saved answer to explore its cohort, review work, and simulated activity.</p></div></div><div class="saved-grid">'+((result.contexts||[]).map(c=>'<a class="saved-card" href="/action-center?context='+encodeURIComponent(c.id)+'"><h2>'+esc(c.question)+'</h2><p>'+num(c.patients)+' patients · '+esc(date(c.created_at))+icon('arrow')+'</p></a>').join('')||'<div class="empty-state"><h3>Start with a question.</h3><p>Your saved answer will become a workspace for exploring evidence and preparing next steps.</p><a class="button primary" href="/ask">Ask Agere →</a></div>')+'</div>';
+    $('saved').innerHTML='<div class="section-kicker">SYNTHETIC WORK &amp; DELIVERABLES</div><div class="page-heading"><div><h1>Action workspaces<span class="copper">.</span></h1><p>Choose a saved answer to explore its cohort, review work, and simulated activity.</p></div></div><div class="saved-grid">'+((result.contexts||[]).map(c=>'<a class="saved-card" href="/action-center?context='+encodeURIComponent(c.id)+(location.hash==='#studio'?'#studio':'')+'"><h2>'+esc(c.question)+'</h2><p>'+num(c.patients)+' patients · '+esc(date(c.created_at))+icon('arrow')+'</p></a>').join('')||'<div class="empty-state"><h3>Start with a question.</h3><p>Your saved answer will become a workspace for exploring evidence and preparing next steps.</p><a class="button primary" href="/ask">Ask Wollstonecraft →</a></div>')+'</div>';
   } catch (error) {
     $('loading').hidden=true;
     $('saved').hidden=false;
@@ -705,3 +711,6 @@ async function init() {
   }
 }
 init();
+
+// Global navigation and browser history use the same existing workspace views.
+window.addEventListener('hashchange',()=>{if(!data)return;const target=location.hash.slice(1)||'overview';if(viewNames[target]&&target!==currentView)go(target,false)});

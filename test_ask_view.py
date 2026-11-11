@@ -185,7 +185,7 @@ assert.match(vizQueueing(a),/Arrivals \/ week<\/div><div class="v">0</);
         code = script[script.index('function syncScope('):script.index('function updateScopeNote(')]
         setup = """
 let activeContext; const option={},input={},auto={},picker={querySelector:s=>s.includes('input')?input:s.includes('auto')?auto:option,querySelectorAll:()=>[],options:[]};
-const $=()=>picker, fmt=String, history={replaceState:()=>{}},demo={on:false},updateScopeNote=()=>{};
+const $=()=>picker, fmt=String, history={replaceState:()=>{}},demo={on:false},updateScopeNote=()=>{},syncAppLinks=()=>{};
 """
         checks = r'''
 const assert=require('node:assert/strict');

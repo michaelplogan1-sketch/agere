@@ -6,7 +6,9 @@ from .semantic_controls import SCRIPT
 
 
 def page():
-    return HTML.replace('__AXES__',json.dumps({k:list(v) for k,v in AXES.items()})).replace('__HELPERS__',SCRIPT).replace('__COHORTS__',(Path(__file__).parent/'assets/learning_cohorts.js').read_text()).replace('__TYPED__',(Path(__file__).parent/'assets/typed_learning.js').read_text())
+    from ..application_shell import wrap
+    result = HTML.replace('__AXES__',json.dumps({k:list(v) for k,v in AXES.items()})).replace('__HELPERS__',SCRIPT).replace('__COHORTS__',(Path(__file__).parent/'assets/learning_cohorts.js').read_text()).replace('__TYPED__',(Path(__file__).parent/'assets/typed_learning.js').read_text())
+    return wrap(result,active='review',title='Source review')
 
 
 HTML=r'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agere · Source learning</title>

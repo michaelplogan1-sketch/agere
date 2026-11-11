@@ -68,7 +68,7 @@ function resultLimitations(a){
 }
 function patientOverview(a){
  const rows=a.table||[];if(!rows.length)return '';
- return '<section class="record-preview"><div class="section-row"><div><h3>The people behind the result</h3><p>Preview of '+Math.min(3,rows.length)+' of '+fmt(rows.length,0)+' returned records. The data view includes every record and field.</p></div><button type="button" class="text-button" data-open-answer-tab="data">View all records →</button></div><div class="record-preview-grid">'+rows.slice(0,3).map(r=>'<article><span class="record-avatar" aria-hidden="true">'+esc(String(recordName(r)).split(/\s+/).map(s=>s[0]).slice(0,2).join(''))+'</span><strong>'+esc(recordName(r))+'</strong><span class="record-id">'+esc(r.patient_id)+'</span><span class="record-preview-note">Source details available</span></article>').join('')+'</div></section>';
+ return '<section class="record-preview"><div class="section-row"><div><h3>The people behind the result</h3><p>Preview of '+Math.min(3,rows.length)+' of '+fmt(rows.length,0)+' returned records. The data view includes every record and field.</p></div><button type="button" class="text-button" data-open-answer-tab="data">View all records →</button></div><div class="record-preview-grid">'+rows.slice(0,3).map(r=>'<article><span class="record-avatar" aria-hidden="true">'+esc(String(recordName(r)).split(/\s+/).map(s=>s[0]).slice(0,2).join(''))+'</span><button type="button" class="text-button" data-open-patient="'+esc(r.patient_id)+'">'+esc(recordName(r))+' ↗</button><span class="record-id">'+esc(r.patient_id)+'</span><span class="record-preview-note">Open patient dossier</span></article>').join('')+'</div></section>';
 }
 function sourceDetails(a){
  const ground=(a.grounding||[]),sources=(a.sources||[]);

@@ -26,13 +26,28 @@ const ideas=[
 ];
 let savedAnalyses=[],sourceAtlas=null,sourceError=null,currentPage='explore',activeContext=null,activeTab='overview',lastDialogFocus=null,conversationEpoch=0;
 function showPage(name,focus=false){
- if(!['explore','saved','data'].includes(name))name='explore';
+ if(!['explore','saved','patients','data'].includes(name))name='explore';
  currentPage=name;
- ['explore','saved','data'].forEach(n=>$('#page-'+n).hidden=n!==name);
+ ['explore','saved','patients','data'].forEach(n=>$('#page-'+n).hidden=n!==name);
  document.querySelectorAll('.app-nav [data-page]').forEach(e=>{if(e.dataset.page===name)e.setAttribute('aria-current','page');else e.removeAttribute('aria-current')});
- $('#page-name').textContent={explore:'Ask your data',saved:'Saved answers',data:'Sources'}[name];
- if(name==='saved')renderSaved();if(name==='data')loadSources();
+ $('#page-name').textContent={explore:'Ask your data',saved:'Saved answers',patients:'Patients',data:'Sources'}[name];
+ if(name==='saved')renderSaved();if(name==='data')loadSources();if(name==='patients')renderPatientLibrary();syncAppLinks();
  if(focus){$('#main').focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'})}
+}
+function syncAppLinks(){
+ const id=activeContext?.id,valid=/^ANS-[0-9a-f]{24}$/.test(id||'');
+ const routes={work:'/action-center',deliverables:'/action-center#studio',review:'/learn'};
+ document.querySelectorAll('[data-app-link]').forEach(a=>{const [path,fragment]=routes[a.dataset.appLink].split('#');a.href=path+(valid?'?context='+encodeURIComponent(id):'')+(fragment?'#'+fragment:'')});
+}
+function renderPatientLibrary(){
+ const picker=$('#patient-library-answer'),turn=state.turns[state.active],answer=turn?.data?.answer||{};
+ picker.innerHTML='<option value="">Choose a saved analysis</option>'+savedAnalyses.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.question)+'</option>').join('');
+ picker.value=activeContext?.id||'';
+ const rows=dataTables(answer).flatMap(t=>t.rows).filter(r=>r.patient_id!=null);
+ $('#patient-library-source').textContent=turn?.question||'Patient records stay attached to the analysis that selected them.';
+ $('#patient-library-back').hidden=!turn?.data?.answer;
+ if(!rows.length){$('#patient-library-view').innerHTML='<div class="empty-library"><h2>'+(!turn?.data?.answer?'Choose the population you want to explore.':'This answer did not return individual patient records.')+'</h2><p>Select a saved analysis above. Patient selection, evidence and the original time period stay together.</p></div>';return}
+ state.patientLibrary=PatientWorkspace.mount($('#patient-library-view'),{question:turn.question,source:turn.data.source,answer,rows,profiles:turn.data.patient_profiles,labels:Object.fromEntries(columnSpec(answer).map(c=>[c.key,c.label])),onPatientOpen:id=>{const url=new URL(location.href);url.searchParams.set('patient',id);url.hash='patients';history.replaceState(null,'',url)}});
 }
 function setResultMode(on){document.body.classList.toggle('has-result',on);$('#answer').hidden=!on;showPage('explore')}
 function renderIdeas(topic='All topics'){
@@ -44,7 +59,7 @@ function shortDate(s){return s?new Date(s).toLocaleDateString(undefined,{month:'
 async function fetchJSON(url){const r=await fetch(url);let d;try{d=await r.json()}catch(_){throw Error('Could not load this view. Please try again.')}if(!r.ok||d.error)throw Error(d.error||'This view is unavailable.');return d}
 async function loadSaved(){
  try{const d=await fetchJSON('/api/stack/action-contexts');savedAnalyses=d.contexts||[];$('#saved-count').textContent=savedAnalyses.length||'';
- $('#recent-analyses').innerHTML=savedAnalyses.slice(0,3).map(c=>'<a class="recent-row" href="/ask?context='+encodeURIComponent(c.id)+'">'+uiIcon('file')+'<div><strong>'+esc(c.question)+'</strong><small>'+shortDate(c.created_at)+' · '+(c.result_scope_available===false?'Analytical summary':c.patients==null?'Open to inspect saved scope':fmt(c.patients)+' patients in scope')+'</small></div><span aria-hidden="true">↗</span></a>').join('')||'<p class="hint">Your first analysis will appear here after you ask a question.</p>';renderSaved()}
+ $('#recent-analyses').innerHTML=savedAnalyses.slice(0,3).map(c=>'<a class="recent-row" href="/ask?context='+encodeURIComponent(c.id)+'">'+uiIcon('file')+'<div><strong>'+esc(c.question)+'</strong><small>'+shortDate(c.created_at)+' · '+(c.result_scope_available===false?'Analytical summary':c.patients==null?'Open to inspect saved scope':fmt(c.patients)+' patients in scope')+'</small></div><span aria-hidden="true">↗</span></a>').join('')||'<p class="hint">Your first analysis will appear here after you ask a question.</p>';renderSaved();if(currentPage==='patients')renderPatientLibrary()}
  catch(e){$('#recent-analyses').innerHTML='<p class="hint">Saved analyses couldn’t load. <button class="text-button" data-reload-saved>Retry</button></p>';$('#saved-list').innerHTML='<div class="empty-library">'+esc(e.message)+' <button class="text-button" data-reload-saved>Retry</button></div>'}
 }
 function renderSaved(){
@@ -83,7 +98,7 @@ function syncScope(t){
  $('#question-scope').value=option.disabled?(auto.disabled?'warehouse':'auto'):'saved';
  if(retained?.value==='input'&&!input.disabled)$('#question-scope').value='input';
  if(retained?.value&&[...$('#question-scope').options].some(o=>o.value===retained.value&&!o.disabled))$('#question-scope').value=retained.value;
- updateScopeNote();
+ updateScopeNote();syncAppLinks();
 }
 function updateScopeNote(){
  const scope=$('#question-scope').value;
@@ -98,7 +113,7 @@ async function openSavedContext(id){
  try{
   const d=await fetchJSON('/api/stack/action-context?context='+encodeURIComponent(id));if(epoch!==conversationEpoch)return;
   const c=d.context;state.cid=null;store.set('agere-conversation',null);
-  const t={question:c.original_question||c.question,resolved:c.question,archive:true,archiveBlocked:c.stale||c.invalidated,data:{workflow:d.workflow?.steps||[],review_programs:d.programs||{},answer:c.answer,graph:c.graph,results:c.results,planner_receipt:c.planner_receipt,planning_economics:c.planning_economics,action_context:{id:c.id,stale:c.stale,invalidated:c.invalidated,source_review_required:c.source_review_required,supports_patient_work:c.supports_patient_work,patients:c.patient_ids.length,input_patients:c.input_patients,result_scope_available:c.result_scope_available,population_scopes:c.population_scopes,population_scope_discovery_available:c.population_scope_discovery_available},new_paid_api_calls:c.planner_receipt?.new_paid_api_calls}};
+  const t={question:c.original_question||c.question,resolved:c.question,archive:true,archiveBlocked:c.stale||c.invalidated,data:{workflow:d.workflow?.steps||[],review_programs:d.programs||{},patient_profiles:c.patient_profiles||{},source:c.source,answer:c.answer,graph:c.graph,results:c.results,planner_receipt:c.planner_receipt,planning_economics:c.planning_economics,action_context:{id:c.id,stale:c.stale,invalidated:c.invalidated,source_review_required:c.source_review_required,supports_patient_work:c.supports_patient_work,patients:c.patient_ids.length,input_patients:c.input_patients,result_scope_available:c.result_scope_available,population_scopes:c.population_scopes,population_scope_discovery_available:c.population_scope_discovery_available},new_paid_api_calls:c.planner_receipt?.new_paid_api_calls}};
   t.archiveNotice=c.invalidated?'This saved answer was invalidated. Its history is available, but it cannot be used for new work or scoped follow-ups.':c.stale?'The warehouse has changed since this answer. Start a new analysis to use current data.':null;
   state.turns=[t];renderTurn(0);
  }catch(e){if(epoch!==conversationEpoch)return;$('#answer').innerHTML='<h2 class="headline">This analysis couldn’t open.</h2><p>'+esc(e.message)+'</p><button class="btn" data-page="saved">Back to saved analyses</button>'}
@@ -120,6 +135,15 @@ function renderResultData(term='',page=0){
  // An already-running process may still hold the preceding HTML template.
  if(!$('#result-downloads')){let total=0,shown=0;$('#result-data').innerHTML=dataTables(a).map(t=>{total+=t.rows.length;const rows=t.rows.filter(r=>!term||Object.values(r).some(v=>String(cell(v)).toLowerCase().includes(term.toLowerCase())));shown+=rows.length;return '<h3>'+esc(t.title)+'</h3>'+(rows.length?tableHTML(rows,{name:'agere-result',cols:t.columns}):'<p class="hint">No matching rows.</p>')}).join('');$('#result-count').textContent=shown+' of '+total+' rows';return}
  const tables=dataTables(a);let total=0,shown=0;
+ const patientRows=tables.flatMap(t=>t.rows),patientView=patientRows.length&&patientRows.every(r=>r.patient_id!=null);
+ $('#result-search').closest('.result-search').hidden=!!patientView&&!$('#result-all-columns').checked;
+ if(patientView&&!$('#result-all-columns').checked){
+  const current=state.turns[state.active];$('#result-downloads').innerHTML=tables.map(t=>csvButton(t.rows,'agere-result')).join('');
+  $('#result-data').innerHTML='<div id="result-patient-workspace"></div>';
+  state.patientWorkspace=PatientWorkspace.mount($('#result-patient-workspace'),{question:current.question,source:current.data.source,answer:a,rows:patientRows,profiles:current.data.patient_profiles,labels:Object.fromEntries(columnSpec(a).map(c=>[c.key,c.label])),initialSearch:term,onTable:()=>{$('#result-all-columns').checked=true;renderResultData(term)}});
+  $('#result-count').textContent=patientRows.length+' saved patient rows';return;
+ }
+ state.patientWorkspace=null;
  $('#result-downloads').innerHTML=tables.map(t=>csvButton(t.rows,'agere-result')).join('');
  $('#result-data').innerHTML=tables.map(t=>{total+=t.rows.length;const rows=t.rows.filter(r=>!term||JSON.stringify(r).toLowerCase().includes(term.toLowerCase()));shown+=rows.length;return '<h3 class="data-table-title">'+esc(t.title)+'</h3>'+presentationTable(rows,{...a,table:t.rows,table_columns:t.columns},{page,allColumns:$('#result-all-columns').checked})}).join('')||'<p class="hint">This answer has no tabular result. See the answer and method for the returned findings.</p>';
  $('#result-count').textContent=shown+' of '+total+' rows';
@@ -130,7 +154,7 @@ function setupExplorer(){
  document.addEventListener('click',e=>{
   const b=e.target.closest('[data-page],[data-topic],[data-idea],[data-close-dialog],[data-answer-tab],[data-reload-saved],[data-reload-sources],[data-source-question]');
   if(!b)return;
-  if(b.dataset.page){showPage(b.dataset.page,true);history.replaceState(null,'','/ask'+(b.dataset.page==='explore'?'':'#'+b.dataset.page))}
+  if(b.dataset.page){showPage(b.dataset.page,true);history.replaceState(null,'','/ask'+(activeContext?'?context='+encodeURIComponent(activeContext.id):'')+(b.dataset.page==='explore'?'':'#'+b.dataset.page))}
   if(b.dataset.topic)renderIdeas(b.dataset.topic);
   if(b.dataset.idea!=null)draftQuestion(ideas[Number(b.dataset.idea)].question);
   if(b.dataset.closeDialog)$('#'+b.dataset.closeDialog).close();
@@ -148,8 +172,9 @@ function setupExplorer(){
   if(b.dataset.recordPage!=null){renderResultData($('#result-search').value,+b.dataset.recordPage);$('#result-data').scrollIntoView({block:'start',behavior:'smooth'})}
  });
  document.addEventListener('click',async e=>{
-  const b=e.target.closest('[data-decision-draft],[data-suggestion-index],[data-review-workflows],[data-close-decision-dialog]');if(!b)return;
+  const b=e.target.closest('[data-open-patient],[data-decision-draft],[data-suggestion-index],[data-review-workflows],[data-close-decision-dialog]');if(!b)return;
   const t=state.turns[state.active],dialog=$('#decision-dialog');if(!t)return;
+  if(b.hasAttribute('data-open-patient')){showAnswerTab('data');state.patientWorkspace?.openPatient(b.dataset.openPatient);return}
   if(b.hasAttribute('data-close-decision-dialog')){dialog.close();return}
   if(b.dataset.decisionDraft){
    if(b.dataset.decisionDraft==='refresh'){const q=t.resolved||t.question;draftQuestion(q)}
@@ -204,6 +229,8 @@ function setupExplorer(){
  });
  $('#help-button').onclick=()=>openAppDialog('help-dialog');$('#usage-button').onclick=()=>openAppDialog('usage-dialog');$('#footer-usage').onclick=()=>openAppDialog('usage-dialog');
  document.querySelectorAll('.app-dialog').forEach(d=>d.addEventListener('close',()=>lastDialogFocus?.focus()));
- const params=new URLSearchParams(location.search);
- if(params.get('context'))openSavedContext(params.get('context'));else{loadConversation();showPage(location.hash.slice(1)||'explore')}
+ $('#patient-library-answer').addEventListener('change',async e=>{if(!e.target.value)return;await openSavedContext(e.target.value);showPage('patients',true);history.replaceState(null,'','/ask?context='+encodeURIComponent(e.target.value)+'#patients')});
+ $('#patient-library-back').onclick=()=>{showPage('explore',true);history.replaceState(null,'','/ask?context='+encodeURIComponent(activeContext.id))};
+ const params=new URLSearchParams(location.search),initialPage=location.hash.slice(1)||'explore',patient=params.get('patient');
+ if(params.get('context'))openSavedContext(params.get('context')).then(()=>{showPage(initialPage);const url=new URL(location.href);url.hash=initialPage==='explore'?'':initialPage;if(patient)url.searchParams.set('patient',patient);history.replaceState(null,'',url);if(patient&&initialPage==='patients')state.patientLibrary?.openPatient(patient)});else{loadConversation();showPage(initialPage)}
 }

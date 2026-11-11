@@ -344,8 +344,14 @@ def encode_inspection(record, accept_encoding=''):
 
 
 def page():
+    from ..application_shell import navigation, palette_css, SHELL_CSS, NAV_SCRIPT
+    from .patient_dashboard import PATIENT_WORKSPACE_JS, PATIENT_WORKSPACE_CSS
     assets = Path(__file__).parent
-    return (assets / 'action_center.html').read_text().replace(
+    result = (assets / 'action_center.html').read_text().replace(
         '/* ACTION_CENTER_CSS */', (assets / 'action_center.css').read_text() + '\n' +
-        (assets / 'workspace_skin.css').read_text()
-    ).replace('/* ACTION_CENTER_JS */', (assets / 'action_center.js').read_text())
+        (assets / 'workspace_skin.css').read_text() + palette_css() + SHELL_CSS + PATIENT_WORKSPACE_CSS
+    ).replace('/* ACTION_CENTER_JS */', PATIENT_WORKSPACE_JS + '\n' + (assets / 'action_center.js').read_text() + '\n' + NAV_SCRIPT)
+    import re
+    extra = re.search(r'<nav class="workspace-nav".*?</nav>',result,re.S).group()
+    result = re.sub(r'<aside class="sidebar">.*?</aside>',navigation('work',extra=extra),result,count=1,flags=re.S)
+    return result.replace('<body>','<body class="wc-action">').replace('Agere · Action workspace','Wollstonecraft · Review &amp; work')

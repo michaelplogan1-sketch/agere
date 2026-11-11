@@ -1083,10 +1083,11 @@ renderThread();loadEcon();setupExplorer();renderDemo();
 
 
 def page():
+    from .deliverables.patient_dashboard import PATIENT_WORKSPACE_CSS, PATIENT_WORKSPACE_JS
     assets = Path(__file__).parent / 'assets'
     shell = (assets / 'explore.html').read_text().replace('/* EXPLORE_CSS */',
-        (assets / 'answer.css').read_text() + '\n' + (assets / 'explore.css').read_text() + '\n' + (assets / 'answer_presentation.css').read_text())
+        (assets / 'answer.css').read_text() + '\n' + (assets / 'explore.css').read_text() + '\n' + (assets / 'answer_presentation.css').read_text() + '\n' + PATIENT_WORKSPACE_CSS)
     return (PAGE.replace('__EXPLORE_SHELL__', shell)
-            .replace('__EXPLORE_JS__', (assets / 'answer_presentation.js').read_text() + '\n' + (assets / 'explore.js').read_text() + '\n' +
+            .replace('__EXPLORE_JS__', (assets / 'answer_presentation.js').read_text() + '\n' + PATIENT_WORKSPACE_JS + '\n' + (assets / 'explore.js').read_text() + '\n' +
                      (assets / 'experience.js').read_text())
             .replace('__DEMO_STEPS__', json.dumps(DEMO_STEPS).replace('</', '<\\/')))

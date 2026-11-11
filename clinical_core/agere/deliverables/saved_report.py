@@ -91,6 +91,8 @@ def create(path, request, *, context_url=None):
                'review_work': review_work, 'evidence': evidence}
     renderers = {name: Path(__file__).with_name(name).read_text() for name in
                  ('saved_report.py', 'patient_dashboard.py', 'patient_evidence.py', 'patient_report_pdf.py')}
+    renderers['application_shell.py'] = (Path(__file__).parent.parent/'application_shell.py').read_text()
+    renderers['wollstonecraft_palette'] = (Path(__file__).parent.parent/'assets/answer_presentation.css').read_text()
     key = 'DLV-' + fingerprint([VERSION, renderers, context['id'], request, payload, context_url])[:12].upper()
     # Export intent belongs to this request, not a prior question or report.
     want_pdf = bool(re.search(r'\bpdf\b', request['request'], re.I))
