@@ -5,20 +5,26 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3 presentation/conversation delivery sealed; G5 local specialist and role qualification remains",
+  "active_work": "G5 current-source acquisition wiring sealed; qualified local student deployment remains open",
   "latest_delivery": {
+    "gate": "G5",
+    "receipt": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
+    "product_commit": "17f52b60a285d7791caf01f30b10f88e48f38565",
+    "at": "2026-11-11T17:51:39.636738+00:00",
+    "scope": "acquisition engineering only; model qualification remains open"
+  },
+  "latest_receipt": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
+  "owned_server_pid": 65291,
+  "owned_server_session": 99171,
+  "full_queue_acceptance": false,
+  "spending_limit": "uncapped",
+  "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
+  "preceding_delivery": {
     "gate": "G3",
     "receipt": "artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json",
     "product_commit": "a4826b21cd7e301853c8ab3cfaa6acc6aa7389b4",
     "at": "2026-11-11T17:30:37.910120+00:00"
   },
-  "latest_receipt": "artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json",
-  "owned_server_pid": 63919,
-  "owned_server_session": 60897,
-  "full_queue_acceptance": false,
-  "spending_limit": "uncapped",
-  "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
-  "preceding_delivery": "The shared cascade now tries checked native/reused plans before optional question classification, preserving every fallback and correction/continuation priority. Its single investigator receives prior rejection reasons and can use the existing scoped hybrid retriever/reranker alongside retained lexical document matches. Native compositional requests bind explicit catalog scope without dropping filters or broadening saved cohorts. Interrupted-investigation persistence/API/UI recovery is also loaded in the restarted app.",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
   "resume_priority": "G5: inspect the existing current-contract System One role manifests and eligibility receipts to identify a bounded useful role with available source-family-separated fitting/calibration references. Repair demonstrated integration or compatibility defects and compare only that changed role with its simple baseline; do not activate incompatible weights, invent independent labels, use protected answer keys or repeat passing workflows. If reference inputs remain absent, retain the explicit qualification dependency and continue only identified independent product implementation. Scheduler stays PAUSED; no Git pushes.",
   "build_status": "ACTIVE",
@@ -27,7 +33,7 @@
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
@@ -35,26 +41,26 @@
   "last_observed_server_session": 60897,
   "server_status": "running_idle",
   "unsealed_work": {
-    "status": "none_after_sealed_presentation_delivery",
+    "status": "none_after_sealed_learning_acquisition_delivery",
     "source_frozen": false,
     "active_jobs": [],
-    "recovery_commit": "a4826b21cd7e301853c8ab3cfaa6acc6aa7389b4",
-    "sealed_delivery": "artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json",
-    "remaining_verification": "Full25 ordinary semantic acceptance remains unestablished; retain all original partial/failed/scoped results. Independent source-family role/reference evidence, viable outcome labels and reviewer economics remain missing. Compatible local student weights are not deployed, trained generative bottles are disabled, and autonomous recursive improvement is not demonstrated. DecisionRAG and optional advanced research remain candidates. Customer deployment/provider-session arrangements, real data rights and intended-use assurance remain separate; OWASP/HHS deferred."
+    "recovery_commit": "17f52b60a285d7791caf01f30b10f88e48f38565",
+    "sealed_delivery": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
+    "remaining_verification": "No new student is trained or activated. Source-support observations are single-class (1691 supported); all 11 eligible tier-routing observations select backstop_agent. Current chart observations span six option-meaning contracts and lack critical contrasting outcomes and independent reviewed references. The new person partitions are development grouping proxies, not evidence of clinical/source-template independence. Full25 ordinary semantic acceptance, model/clinical qualification, reviewer economics and customer deployment remain unestablished. Previous combined archive remains the known-good UI/conversation recovery; this learning-source delta is committed but not newly archived."
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-11-11T15:50:13.012163+00:00",
-  "latest_continuity_receipt": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json",
+  "latest_continuity_receipt": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
   "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
   "mvp_server": {
     "schema": "agere-owned-runtime/1",
-    "observed_at": "2026-11-11T17:29:46.385439+00:00",
-    "pid": 63919,
-    "exec_session": 60897,
+    "observed_at": "2026-11-11T17:51:39.636738+00:00",
+    "pid": 65291,
+    "exec_session": 99171,
     "port": 8908,
     "url": "http://127.0.0.1:8908/ask",
     "status": "running_idle",
-    "product_commit": "a4826b21cd7e301853c8ab3cfaa6acc6aa7389b4",
+    "product_commit": "17f52b60a285d7791caf01f30b10f88e48f38565",
     "claude_transport": "subscription",
     "disabled_providers": [
       "perplexity"
@@ -520,9 +526,9 @@
     "primary_modified": false,
     "last_known_pid": 36215
   },
-  "previous_sealed_receipt": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json",
+  "previous_sealed_receipt": "artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json",
   "review_followthrough_authorization": "Mike: okay i am stepping away, please take your time on this, it is critical we get this MVP correct, you know our north star, work with claude to figure out it. I wont be here to approve anything so do not ask me for anything just do it",
-  "last_product_commit": "f62a2b82be570172df9b131e50cdc2099c70637b",
+  "last_product_commit": "17f52b60a285d7791caf01f30b10f88e48f38565",
   "current_delivery_scope": "Current finite connected-workflow engineering contract, including accepted supported unknowns. Broad ordinary-question semantic accuracy and independent role qualification are not inferred from these checks.",
   "current_financial_delivery": {
     "context_id": "ANS-8d56378ee795fc4226dc4828",
@@ -530,7 +536,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-11T17:08:54.709386+00:00",
+  "updated_at": "2026-11-11T17:51:39.636738+00:00",
   "last_commit": "f62a2b82be570172df9b131e50cdc2099c70637b",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -625,7 +631,7 @@
     "receipt": "artifacts/agere-analytical-completion-2026-11-11/delivery-receipt.json",
     "delivery": "Ordinary Resume now sends eligible capacity-refused aggregate verification to the existing frontier reviewer, retains interrupted drafts with unexecuted deliverable proposals, and exposes actual activity. Population inspection references complete native membership lists while retaining every proof and count. The installed39e971cf code-only archive starts in a fresh process and reopens its saved native answer without data/model/runtime duplication."
   },
-  "next_action": "G5: inspect the existing current-contract System One role manifests and eligibility receipts to identify a bounded useful role with available source-family-separated fitting/calibration references. Repair demonstrated integration or compatibility defects and compare only that changed role with its simple baseline; do not activate incompatible weights, invent independent labels, use protected answer keys or repeat passing workflows. If reference inputs remain absent, retain the explicit qualification dependency and continue only identified independent product implementation. Scheduler stays PAUSED; no Git pushes.",
+  "next_action": "G5: use the current-source partition receipt and preserved protection registry to prepare source-linked review/acquisition targets for one exact chart-judgment option-meaning contract, covering missing direct-target, unrelated-source, negative and uncertain outcomes. Keep independent references distinct from machine supervision; check source/template separation before fitting. Train and compare one candidate only when its declared fitting/calibration references support the role, then prove abstention/fallback and rollback before activation. Do not train the single-class support or tier-routing pools, repeat passing campaigns or invent labels. Include this delta in the next otherwise-required release package; scheduler PAUSED and no Git pushes.",
   "product_market_audit": {
     "as_of": "2026-11-09T18:42:05.848258+00:00",
     "scope": "Owner product/architecture/market audit against saved receipts and selected current public primary sources. Not independent clinical/model qualification, patent/FTO search, full research review or customer discovery.",

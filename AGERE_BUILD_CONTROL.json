@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-11T17:34:48.571466+00:00",
+  "updated_at": "2026-11-11T17:51:39.636738+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -201,6 +201,11 @@
         "required": false,
         "satisfied_by": "artifacts/agere-output-design-2026-11-11/combined-release-final/receipt.json",
         "product_commit": "a4826b21cd7e301853c8ab3cfaa6acc6aa7389b4"
+      },
+      "unarchived_current_delta": {
+        "product_commit": "17f52b60a285d7791caf01f30b10f88e48f38565",
+        "receipt": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
+        "scope": "learning acquisition/resource wiring only; previous combined archive retained as recovery"
       }
     },
     {
@@ -808,64 +813,58 @@
         {
           "path": "artifacts/agere-operational-source-projection-2026-11-01/delivery-receipt.json",
           "sha256": "11121b98ad424102ca136476b3030fc97caa5611d76d15d2c4fd26ff51d0881d"
+        },
+        {
+          "path": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
+          "sha256": "fbef5ae03e94521d8561a490edb2da0e1ff51e22f9522d77990d3934ab4cef61"
         }
       ],
-      "blocker": "Full25 ordinary semantic acceptance remains unestablished; retain all original partial/failed/scoped results. Independent source-family role/reference evidence, viable outcome labels and reviewer economics remain missing. Compatible local student weights are not deployed, trained generative bottles are disabled, and autonomous recursive improvement is not demonstrated. DecisionRAG and optional advanced research remain candidates. Customer deployment/provider-session arrangements, real data rights and intended-use assurance remain separate; OWASP/HHS deferred.",
+      "blocker": "No new student is trained or activated. Source-support observations are single-class (1691 supported); all 11 eligible tier-routing observations select backstop_agent. Current chart observations span six option-meaning contracts and lack critical contrasting outcomes and independent reviewed references. The new person partitions are development grouping proxies, not evidence of clinical/source-template independence. Full25 ordinary semantic acceptance, model/clinical qualification, reviewer economics and customer deployment remain unestablished. Previous combined archive remains the known-good UI/conversation recovery; this learning-source delta is committed but not newly archived.",
       "previous_blocker": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim.",
-      "next_action": "G5: inspect the existing current-contract System One role manifests and eligibility receipts to identify a bounded useful role with available source-family-separated fitting/calibration references. Repair demonstrated integration or compatibility defects and compare only that changed role with its simple baseline; do not activate incompatible weights, invent independent labels, use protected answer keys or repeat passing workflows. If reference inputs remain absent, retain the explicit qualification dependency and continue only identified independent product implementation. Scheduler stays PAUSED; no Git pushes.",
+      "next_action": "G5: use the current-source partition receipt and preserved protection registry to prepare source-linked review/acquisition targets for one exact chart-judgment option-meaning contract, covering missing direct-target, unrelated-source, negative and uncertain outcomes. Keep independent references distinct from machine supervision; check source/template separation before fitting. Train and compare one candidate only when its declared fitting/calibration references support the role, then prove abstention/fallback and rollback before activation. Do not train the single-class support or tier-routing pools, repeat passing campaigns or invent labels. Include this delta in the next otherwise-required release package; scheduler PAUSED and no Git pushes.",
       "current_engineering_delivery": {
-        "path": "artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json",
-        "sha256": "dde247b16bed9f382ed4c11610029bf8ebe75db1fe4168c1e598454250d0dec9"
+        "path": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
+        "sha256": "fbef5ae03e94521d8561a490edb2da0e1ff51e22f9522d77990d3934ab4cef61"
       }
     }
   ],
   "checkpoint": {
-    "kind": "presentation_and_conversation_combined_delivery",
+    "kind": "current_source_learning_acquisition_delivery",
     "gate_id": "G5",
-    "last_delivered_gate": "G3",
-    "product_commit": "a4826b21cd7e301853c8ab3cfaa6acc6aa7389b4",
-    "user_behavior_delta": "Saved answer \u2192 readable findings and limits \u2192 searchable/paged complete records and original values \u2192 full CSV \u2192 scoped follow-up or explicit source-review block; the authenticated workspace uses the same presentation functions. Requested aggregate reports lead with their actual result.",
+    "last_delivered_gate": "G5",
+    "product_commit": "17f52b60a285d7791caf01f30b10f88e48f38565",
+    "user_behavior_delta": "Current warehouse -> explicit hash-pinned exclusion registry -> verified public source-person partitions -> eligible development observations. Relocated installations retain the original exclusion identity; release dependencies name exactly the two registry metadata files. Schema-2 acquisition no longer falls through to generator-backed import.",
     "measured_failure_reduction": {
-      "main_saved_rows": 57,
-      "main_saved_fields": 19,
-      "csv_original_values_preserved": 1083,
-      "authenticated_clip_removed": 200,
-      "authored_complete_records_exercised": 237,
-      "aggregate_report_leading_count": 10,
-      "aggregate_record_count_substitution_removed": true,
-      "new_provider_calls": 0,
-      "analysis_replays": 0,
-      "archive_bytes": 6314444,
-      "data_models_runtime_copy_bytes": 0
+      "registry_lookup_failure_removed": true,
+      "current_warehouse_acquisition_dispatch_repaired": true,
+      "frozen_family_exclusions_retained": 52,
+      "warehouse_patients": 4115,
+      "chart_partition_eligible_observations": 1095,
+      "nontraining_observations_excluded": 219,
+      "new_provider_calls": 0
     },
     "evidence": [
-      "artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json",
-      "artifacts/agere-output-design-2026-11-11/delivery-receipt.json",
-      "artifacts/agere-output-design-2026-11-11/csv-conservation.json",
-      "artifacts/agere-output-design-2026-11-11/hosted-check-attempt-1.log",
-      "artifacts/agere-output-design-2026-11-11/hosted-check-attempt-2.log",
-      "artifacts/agere-output-design-2026-11-11/hosted-check-final.log",
-      "artifacts/agere-output-design-2026-11-11/hosted-browser.txt",
-      "artifacts/agere-output-design-2026-11-11/report-summary-checks.log",
-      "artifacts/agere-output-design-2026-11-11/report-summary-checks-final.log",
-      "artifacts/agere-output-design-2026-11-11/aggregate-browser.txt",
-      "artifacts/agere-output-design-2026-11-11/aggregate-browser.png",
-      "artifacts/agere-output-design-2026-11-11/main-browser.txt",
-      "artifacts/agere-output-design-2026-11-11/main-browser.png",
-      "artifacts/agere-output-design-2026-11-11/main-activation.json",
-      "artifacts/agere-output-design-2026-11-11/main-activation-final.json",
-      "artifacts/agere-output-design-2026-11-11/combined-release/receipt.json",
-      "artifacts/agere-output-design-2026-11-11/combined-release-final/receipt.json",
-      "artifacts/agere-output-design-2026-11-11/system-one-availability-observation.json"
+      "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
+      "artifacts/agere-system-one-readiness-2026-11-11/before.json",
+      "artifacts/agere-system-one-readiness-2026-11-11/affected-checks.log",
+      "artifacts/agere-system-one-readiness-2026-11-11/current-lineage-checks.log",
+      "artifacts/agere-system-one-readiness-2026-11-11/current-source-proof.json",
+      "artifacts/agere-system-one-readiness-2026-11-11/current-source-proof.log",
+      "artifacts/agere-system-one-readiness-2026-11-11/current-source-partitions/manifest.json",
+      "artifacts/agere-system-one-readiness-2026-11-11/current-source-partitions/policy.json",
+      "artifacts/agere-system-one-readiness-2026-11-11/configured-runtime.json",
+      "artifacts/agere-system-one-readiness-2026-11-11/preceding-active-config.json",
+      "artifacts/agere-system-one-readiness-2026-11-11/startup-check.log",
+      "artifacts/agere-system-one-readiness-2026-11-11/runtime-before.json",
+      "artifacts/agere-system-one-readiness-2026-11-11/runtime-activation.json"
     ],
-    "remaining_gap": "Full25 ordinary semantic acceptance remains unestablished; retain all original partial/failed/scoped results. Independent source-family role/reference evidence, viable outcome labels and reviewer economics remain missing. Compatible local student weights are not deployed, trained generative bottles are disabled, and autonomous recursive improvement is not demonstrated. DecisionRAG and optional advanced research remain candidates. Customer deployment/provider-session arrangements, real data rights and intended-use assurance remain separate; OWASP/HHS deferred.",
-    "next_action": "G5: inspect the existing current-contract System One role manifests and eligibility receipts to identify a bounded useful role with available source-family-separated fitting/calibration references. Repair demonstrated integration or compatibility defects and compare only that changed role with its simple baseline; do not activate incompatible weights, invent independent labels, use protected answer keys or repeat passing workflows. If reference inputs remain absent, retain the explicit qualification dependency and continue only identified independent product implementation. Scheduler stays PAUSED; no Git pushes.",
+    "remaining_gap": "No new student is trained or activated. Source-support observations are single-class (1691 supported); all 11 eligible tier-routing observations select backstop_agent. Current chart observations span six option-meaning contracts and lack critical contrasting outcomes and independent reviewed references. The new person partitions are development grouping proxies, not evidence of clinical/source-template independence. Full25 ordinary semantic acceptance, model/clinical qualification, reviewer economics and customer deployment remain unestablished. Previous combined archive remains the known-good UI/conversation recovery; this learning-source delta is committed but not newly archived.",
+    "next_action": "G5: use the current-source partition receipt and preserved protection registry to prepare source-linked review/acquisition targets for one exact chart-judgment option-meaning contract, covering missing direct-target, unrelated-source, negative and uncertain outcomes. Keep independent references distinct from machine supervision; check source/template separation before fitting. Train and compare one candidate only when its declared fitting/calibration references support the role, then prove abstention/fallback and rollback before activation. Do not train the single-class support or tier-routing pools, repeat passing campaigns or invent labels. Include this delta in the next otherwise-required release package; scheduler PAUSED and no Git pushes.",
     "last_observation": {
-      "at": "2026-11-11T17:34:48.571466+00:00",
+      "at": "2026-11-11T17:51:39.636738+00:00",
       "source_frozen": false,
-      "new_product_delivery": false,
-      "evidence": "artifacts/agere-output-design-2026-11-11/system-one-availability-observation.json",
-      "finding": "The active configuration has current-contract machine observations but no deployed student weights. All six legacy model manifests use schema v1 and lack the current input contract. Metadata inspection does not establish source-family-separated independent references or qualify a role. Do not redirect to the legacy model directory or treat machine-observation counts as independent labels."
+      "new_product_delivery": true,
+      "evidence": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json"
     },
     "whitepaper_delivery": {
       "receipt": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json",
@@ -6590,15 +6589,23 @@
       "decision": "Close the finite G3 conversation/output increment and refresh G6 package; retain G5 dependencies",
       "reason": "Shared main/authenticated result presentation, preserved record/value access and aggregate report summaries now have focused workflow/browser evidence. Final same-machine package is verified. No broad acceptance or model qualification is inferred.",
       "scope_impact": "All ten areas/all25 and wider product charter retained. Next work addresses the actual local specialist deployment gap instead of another passing output campaign."
+    },
+    {
+      "at": "2026-11-11T17:51:39.636738+00:00",
+      "gate": "G5",
+      "decision": "Repair current-source training-acquisition wiring before any fit; do not force models from one-class/missing-reference observations.",
+      "reason": "Observed missing preserved-registry path and outdated schema dispatch prevented valid acquisition; actual current metadata resolves 52 frozen exclusions across all 4115 public source people. Label/class/option-contract gaps remain explicit.",
+      "evidence": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
+      "scope_impact": "All ten acceptance areas retained; no thresholds changed, no machine labels relabelled as reviewed, no training/providers/new research or package campaign."
     }
   ],
   "unsealed_work": {
-    "status": "none_after_sealed_presentation_delivery",
+    "status": "none_after_sealed_learning_acquisition_delivery",
     "source_frozen": false,
     "active_jobs": [],
-    "recovery_commit": "a4826b21cd7e301853c8ab3cfaa6acc6aa7389b4",
-    "sealed_delivery": "artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json",
-    "remaining_verification": "Full25 ordinary semantic acceptance remains unestablished; retain all original partial/failed/scoped results. Independent source-family role/reference evidence, viable outcome labels and reviewer economics remain missing. Compatible local student weights are not deployed, trained generative bottles are disabled, and autonomous recursive improvement is not demonstrated. DecisionRAG and optional advanced research remain candidates. Customer deployment/provider-session arrangements, real data rights and intended-use assurance remain separate; OWASP/HHS deferred."
+    "recovery_commit": "17f52b60a285d7791caf01f30b10f88e48f38565",
+    "sealed_delivery": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
+    "remaining_verification": "No new student is trained or activated. Source-support observations are single-class (1691 supported); all 11 eligible tier-routing observations select backstop_agent. Current chart observations span six option-meaning contracts and lack critical contrasting outcomes and independent reviewed references. The new person partitions are development grouping proxies, not evidence of clinical/source-template independence. Full25 ordinary semantic acceptance, model/clinical qualification, reviewer economics and customer deployment remain unestablished. Previous combined archive remains the known-good UI/conversation recovery; this learning-source delta is committed but not newly archived."
   },
   "current_visual_request": {
     "status": "completed",
@@ -6634,7 +6641,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G5: inspect the existing current-contract System One role manifests and eligibility receipts to identify a bounded useful role with available source-family-separated fitting/calibration references. Repair demonstrated integration or compatibility defects and compare only that changed role with its simple baseline; do not activate incompatible weights, invent independent labels, use protected answer keys or repeat passing workflows. If reference inputs remain absent, retain the explicit qualification dependency and continue only identified independent product implementation. Scheduler stays PAUSED; no Git pushes.",
+  "next_action": "G5: use the current-source partition receipt and preserved protection registry to prepare source-linked review/acquisition targets for one exact chart-judgment option-meaning contract, covering missing direct-target, unrelated-source, negative and uncertain outcomes. Keep independent references distinct from machine supervision; check source/template separation before fitting. Train and compare one candidate only when its declared fitting/calibration references support the role, then prove abstention/fallback and rollback before activation. Do not train the single-class support or tier-routing pools, repeat passing campaigns or invent labels. Include this delta in the next otherwise-required release package; scheduler PAUSED and no Git pushes.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6643,7 +6650,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-analytical-completion-2026-11-11/final-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -6723,8 +6730,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 63919,
-  "owned_server_session": 60897,
+  "owned_server_pid": 65291,
+  "owned_server_session": 99171,
   "last_run_observation": {
     "at": "2026-11-08T23:35:47.474869+00:00",
     "no_active_jobs": true,
@@ -6949,7 +6956,7 @@
     ]
   },
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
-  "latest_receipt": "artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json",
+  "latest_receipt": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
   "code_only_storage_exception": {
     "authorization": "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
     "scope": "One code-only archive and fresh-code rehearsal from the linked proposal; existing source/model/Python/work/ledger stores referenced, never copied. General60GBguard unchanged.",
