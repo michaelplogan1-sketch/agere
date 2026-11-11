@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-11T21:43:31.642456+00:00",
+  "updated_at": "2026-11-11T22:04:24.808765+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -844,9 +844,9 @@
           "sha256": "2fd399c5d97a616d57d3dc97517a0f664d6aa1348ee987e651b8915af0f060ab"
         }
       ],
-      "blocker": "Q07 whole-answer source support and global acceptance remain unfinished. A valid saved32-action recovery context is now available without changing native results; the newer interrupted draft remains rejected by its operational-dependency guard. Existing app question is active. Verification latency, small-model input refusals, full25 semantic acceptance, independent source references/calibration, model/clinical qualification, total economics and customer deployment remain open.",
+      "blocker": "Q07 remains partial: expanded documentary evidence was obtained and composed, but requested-work/source/global acceptance was interrupted by the actual subscription limit. The latest34-action partial is automatically recoverable with the same65patients; earlier attempts are preserved. Source-review changes are substantive, so old draft acceptance cannot carry forward. Small-model context refusals, total economics, full25 ordinary semantic acceptance, independent role/reference calibration, model/clinical qualification and customer deployment remain open.",
       "previous_blocker": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim.",
-      "next_action": "G5: inspect app execution 5ed82d6e0532450ab1a736372fccc50b and allow its existing /api/stack/compose request to finish; do not duplicate it, stop the app or edit product source while active. Claude subscription has returned successful live responses after Mike reported reset. When idle, resume the validated saved Q07 context ANS-84c50fbdd01aa8cf6da276be via the existing continuation path, preserving all32 actions, unchanged native results, immutable field contracts and65 patients. Its recovery loader passes; the separate launch was canceled to prevent duplication, and overlapping costs remain unknown. Complete only remaining source/field repairs and global review. Preserve allten/all25, independent qualification, total economics and deployment dependencies. No broad passing rerun, unchanged training, Git push or scheduler restart.",
+      "next_action": "G5: Claude subscription work is stopped at the actual new session limit, reported reset8:30pm America/Chicago. Latest partial ANS-3f2a0af0a03e3d9dac158612 passes the ordinary recovery loader and retains the original65patients/34native actions/3document reviews, including the716-record expanded selection. On actual provider availability resume this latest context through the normal app path; do not rerun the old whole question. Inspect app/request receipts before launch and retain failed-key/circuit safeguards. Current-source recovery matched25actions, then correctly withheld the old draft because11patient review rows changed; never waive this evidence guard. Finish the remaining expanded-evidence composition, requested work and source/global review. Retain allten/all25, independent model/clinical qualification, total economics and deployment. No passing broad campaign, unchanged training, Git push or scheduler restart.",
       "current_engineering_delivery": {
         "path": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json",
         "sha256": "2fd399c5d97a616d57d3dc97517a0f664d6aa1348ee987e651b8915af0f060ab"
@@ -894,35 +894,53 @@
       "artifacts/agere-source-escalation-2026-11-11/live-runtime-restored.json",
       "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json"
     ],
-    "remaining_gap": "Q07 whole-answer source support and global acceptance remain unfinished. A valid saved32-action recovery context is now available without changing native results; the newer interrupted draft remains rejected by its operational-dependency guard. Existing app question is active. Verification latency, small-model input refusals, full25 semantic acceptance, independent source references/calibration, model/clinical qualification, total economics and customer deployment remain open.",
-    "next_action": "G5: inspect app execution 5ed82d6e0532450ab1a736372fccc50b and allow its existing /api/stack/compose request to finish; do not duplicate it, stop the app or edit product source while active. Claude subscription has returned successful live responses after Mike reported reset. When idle, resume the validated saved Q07 context ANS-84c50fbdd01aa8cf6da276be via the existing continuation path, preserving all32 actions, unchanged native results, immutable field contracts and65 patients. Its recovery loader passes; the separate launch was canceled to prevent duplication, and overlapping costs remain unknown. Complete only remaining source/field repairs and global review. Preserve allten/all25, independent qualification, total economics and deployment dependencies. No broad passing rerun, unchanged training, Git push or scheduler restart.",
+    "remaining_gap": "Q07 remains partial: expanded documentary evidence was obtained and composed, but requested-work/source/global acceptance was interrupted by the actual subscription limit. The latest34-action partial is automatically recoverable with the same65patients; earlier attempts are preserved. Source-review changes are substantive, so old draft acceptance cannot carry forward. Small-model context refusals, total economics, full25 ordinary semantic acceptance, independent role/reference calibration, model/clinical qualification and customer deployment remain open.",
+    "next_action": "G5: Claude subscription work is stopped at the actual new session limit, reported reset8:30pm America/Chicago. Latest partial ANS-3f2a0af0a03e3d9dac158612 passes the ordinary recovery loader and retains the original65patients/34native actions/3document reviews, including the716-record expanded selection. On actual provider availability resume this latest context through the normal app path; do not rerun the old whole question. Inspect app/request receipts before launch and retain failed-key/circuit safeguards. Current-source recovery matched25actions, then correctly withheld the old draft because11patient review rows changed; never waive this evidence guard. Finish the remaining expanded-evidence composition, requested work and source/global review. Retain allten/all25, independent model/clinical qualification, total economics and deployment. No passing broad campaign, unchanged training, Git push or scheduler restart.",
     "updated_at": "2026-11-11T21:32:24.906427+00:00",
     "last_observation": {
-      "at": "2026-11-11T21:43:31.642456+00:00",
-      "kind": "subscription_reset_and_saved_recovery_restoration",
+      "schema": "agere-continuation-observation/1",
+      "at": "2026-11-11T22:04:24.808765+00:00",
+      "gate": "G5",
+      "status": "partial_provider_limit",
       "new_product_delivery": false,
-      "provider": "claude_subscription",
-      "provider_availability": "successful_live_responses_after_user_reported_reset",
-      "app_pid": 79865,
-      "app_session": 82308,
-      "app_execution": "5ed82d6e0532450ab1a736372fccc50b",
-      "app_operation": "/api/stack/compose",
-      "app_started_at": "2026-11-11T21:36:35.363373+00:00",
-      "app_last_event": {
-        "sequence": 243,
-        "at": "2026-11-11T21:42:33.142480+00:00",
-        "kind": "component_finished",
-        "status": "completed",
-        "component": "claim_local_source_review"
+      "product_source_changed": false,
+      "provider_work_stopped": true,
+      "actual_limit": "RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your session limit \u00b7 resets 8:30pm (America/Chicago)",
+      "reported_reset": "8:30pm America/Chicago",
+      "result": {
+        "context_id": "ANS-3f2a0af0a03e3d9dac158612",
+        "patients": 65,
+        "same_original_patient_set": true,
+        "native_actions": 34,
+        "document_review_contexts": 3,
+        "recovery_loader": "passed",
+        "recovered_native_actions": 26,
+        "changed_review_patient_rows": 11,
+        "expanded_review_record_ids": 716,
+        "answer_status": "partial"
       },
-      "app_terminal_event": null,
-      "source_frozen": true,
-      "restored_context": "ANS-84c50fbdd01aa8cf6da276be",
-      "restored_context_receipt": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/restored-context-receipt.json",
-      "separate_attempt_receipt": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/run-receipt.json",
-      "current_attempt_cost_usd": null,
-      "accounting_scope": "Canceled attempt ledger window overlaps app execution; total cannot be inferred. Exact request events preserve app dispatch identity.",
-      "scheduler_status": "PAUSED",
+      "attempt": {
+        "elapsed_seconds": 494.51652066688985,
+        "reported_calls": 48,
+        "known_api_equivalent_subtotal_usd": 15.381867,
+        "total_cost_known": false,
+        "invoice_verified": false
+      },
+      "previous_app_request": "completed_with_application_answered_disposition_not_independent_qualification",
+      "canceled_attempt": "Preserved; overlapping ledger window cannot determine its exact calls/cost.",
+      "evidence": [
+        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/run-receipt.json",
+        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/response.json.gz",
+        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/saved-partial-observation.json",
+        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/action26-difference.json",
+        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/action26-nested-difference.json",
+        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/restored-context-receipt.json",
+        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/run-receipt.json",
+        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/preceding-app-completion.json"
+      ],
+      "source_frozen": false,
+      "active_jobs": [],
+      "heartbeat_status": "PAUSED",
       "git_pushes": false
     },
     "whitepaper_delivery": {
@@ -6742,29 +6760,25 @@
         "artifacts/agere-source-escalation-2026-11-11/reset-continuation/reset-observation.json"
       ],
       "scope_impact": "No acceptance area or guard removed; no source edits, new delivery, provider cap, scheduler restart or Git push."
+    },
+    {
+      "at": "2026-11-11T22:04:24.808765+00:00",
+      "decision": "Use the latest normally saved34-action partial as the next recovery point; stop provider work on the new actual limit. Preserve changed-source invalidation.",
+      "reason": "Normal app continuation preserved65patients and expanded716record IDs. First25 native actions match; action26 changed source findings for11patients. Quota stopped completion. Offline loader passes and nested difference confirms substantive evidence changes rather than timing-only drift.",
+      "evidence": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/followthrough-observation.json",
+      "scope_impact": "No product guard or acceptance area weakened; no new source implementation, qualification, spending cap, scheduler restart or Git push."
     }
   ],
   "unsealed_work": {
-    "status": "existing_app_request_then_saved_q07_continuation",
-    "source_frozen": true,
-    "active_jobs": [
-      {
-        "kind": "existing_app_question",
-        "pid": 79865,
-        "session": 82308,
-        "execution_id": "5ed82d6e0532450ab1a736372fccc50b",
-        "operation": "/api/stack/compose",
-        "status": "running",
-        "source_frozen": true,
-        "receipt": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/reset-observation.json"
-      }
-    ],
+    "status": "recoverable_partial_with_subscription_dependency",
+    "source_frozen": false,
+    "active_jobs": [],
     "last_completed_receipt": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json",
     "paths_outside_backend_seal": [
       "AGERE_STORAGE_PLAN.md",
       "docs/agere/reviews/2026-11-10-audit-response.md"
     ],
-    "remaining_verification": "Q07 whole-answer source support and global acceptance remain unfinished. A valid saved32-action recovery context is now available without changing native results; the newer interrupted draft remains rejected by its operational-dependency guard. Existing app question is active. Verification latency, small-model input refusals, full25 semantic acceptance, independent source references/calibration, model/clinical qualification, total economics and customer deployment remain open.",
+    "remaining_verification": "Q07 remains partial: expanded documentary evidence was obtained and composed, but requested-work/source/global acceptance was interrupted by the actual subscription limit. The latest34-action partial is automatically recoverable with the same65patients; earlier attempts are preserved. Source-review changes are substantive, so old draft acceptance cannot carry forward. Small-model context refusals, total economics, full25 ordinary semantic acceptance, independent role/reference calibration, model/clinical qualification and customer deployment remain open.",
     "separate_presentation_commit_preserved": "9efe9b37d1ccd36cd0b8cb2197d12d9b8c0b5bae"
   },
   "current_visual_request": {
@@ -6800,19 +6814,8 @@
       }
     }
   },
-  "active_jobs": [
-    {
-      "kind": "existing_app_question",
-      "pid": 79865,
-      "session": 82308,
-      "execution_id": "5ed82d6e0532450ab1a736372fccc50b",
-      "operation": "/api/stack/compose",
-      "status": "running",
-      "source_frozen": true,
-      "receipt": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/reset-observation.json"
-    }
-  ],
-  "next_action": "G5: inspect app execution 5ed82d6e0532450ab1a736372fccc50b and allow its existing /api/stack/compose request to finish; do not duplicate it, stop the app or edit product source while active. Claude subscription has returned successful live responses after Mike reported reset. When idle, resume the validated saved Q07 context ANS-84c50fbdd01aa8cf6da276be via the existing continuation path, preserving all32 actions, unchanged native results, immutable field contracts and65 patients. Its recovery loader passes; the separate launch was canceled to prevent duplication, and overlapping costs remain unknown. Complete only remaining source/field repairs and global review. Preserve allten/all25, independent qualification, total economics and deployment dependencies. No broad passing rerun, unchanged training, Git push or scheduler restart.",
+  "active_jobs": [],
+  "next_action": "G5: Claude subscription work is stopped at the actual new session limit, reported reset8:30pm America/Chicago. Latest partial ANS-3f2a0af0a03e3d9dac158612 passes the ordinary recovery loader and retains the original65patients/34native actions/3document reviews, including the716-record expanded selection. On actual provider availability resume this latest context through the normal app path; do not rerun the old whole question. Inspect app/request receipts before launch and retain failed-key/circuit safeguards. Current-source recovery matched25actions, then correctly withheld the old draft because11patient review rows changed; never waive this evidence guard. Finish the remaining expanded-evidence composition, requested work and source/global review. Retain allten/all25, independent model/clinical qualification, total economics and deployment. No passing broad campaign, unchanged training, Git push or scheduler restart.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6904,31 +6907,49 @@
   "owned_server_pid": 79865,
   "owned_server_session": 82308,
   "last_run_observation": {
-    "at": "2026-11-11T21:43:31.642456+00:00",
-    "kind": "subscription_reset_and_saved_recovery_restoration",
+    "schema": "agere-continuation-observation/1",
+    "at": "2026-11-11T22:04:24.808765+00:00",
+    "gate": "G5",
+    "status": "partial_provider_limit",
     "new_product_delivery": false,
-    "provider": "claude_subscription",
-    "provider_availability": "successful_live_responses_after_user_reported_reset",
-    "app_pid": 79865,
-    "app_session": 82308,
-    "app_execution": "5ed82d6e0532450ab1a736372fccc50b",
-    "app_operation": "/api/stack/compose",
-    "app_started_at": "2026-11-11T21:36:35.363373+00:00",
-    "app_last_event": {
-      "sequence": 243,
-      "at": "2026-11-11T21:42:33.142480+00:00",
-      "kind": "component_finished",
-      "status": "completed",
-      "component": "claim_local_source_review"
+    "product_source_changed": false,
+    "provider_work_stopped": true,
+    "actual_limit": "RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your session limit \u00b7 resets 8:30pm (America/Chicago)",
+    "reported_reset": "8:30pm America/Chicago",
+    "result": {
+      "context_id": "ANS-3f2a0af0a03e3d9dac158612",
+      "patients": 65,
+      "same_original_patient_set": true,
+      "native_actions": 34,
+      "document_review_contexts": 3,
+      "recovery_loader": "passed",
+      "recovered_native_actions": 26,
+      "changed_review_patient_rows": 11,
+      "expanded_review_record_ids": 716,
+      "answer_status": "partial"
     },
-    "app_terminal_event": null,
-    "source_frozen": true,
-    "restored_context": "ANS-84c50fbdd01aa8cf6da276be",
-    "restored_context_receipt": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/restored-context-receipt.json",
-    "separate_attempt_receipt": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/run-receipt.json",
-    "current_attempt_cost_usd": null,
-    "accounting_scope": "Canceled attempt ledger window overlaps app execution; total cannot be inferred. Exact request events preserve app dispatch identity.",
-    "scheduler_status": "PAUSED",
+    "attempt": {
+      "elapsed_seconds": 494.51652066688985,
+      "reported_calls": 48,
+      "known_api_equivalent_subtotal_usd": 15.381867,
+      "total_cost_known": false,
+      "invoice_verified": false
+    },
+    "previous_app_request": "completed_with_application_answered_disposition_not_independent_qualification",
+    "canceled_attempt": "Preserved; overlapping ledger window cannot determine its exact calls/cost.",
+    "evidence": [
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/run-receipt.json",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/response.json.gz",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/saved-partial-observation.json",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/action26-difference.json",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/action26-nested-difference.json",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/restored-context-receipt.json",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/run-receipt.json",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/preceding-app-completion.json"
+    ],
+    "source_frozen": false,
+    "active_jobs": [],
+    "heartbeat_status": "PAUSED",
     "git_pushes": false
   },
   "ordinary_curriculum_progress": {
@@ -7153,31 +7174,49 @@
   "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
   "continuation_authorization": "Mike November10: if it is not a sellable product stop stopping; complete it without waiting for another prompt. Existing 30-minute heartbeat reactivated via automation tool.",
   "continuation_observation": {
-    "at": "2026-11-11T21:43:31.642456+00:00",
-    "kind": "subscription_reset_and_saved_recovery_restoration",
+    "schema": "agere-continuation-observation/1",
+    "at": "2026-11-11T22:04:24.808765+00:00",
+    "gate": "G5",
+    "status": "partial_provider_limit",
     "new_product_delivery": false,
-    "provider": "claude_subscription",
-    "provider_availability": "successful_live_responses_after_user_reported_reset",
-    "app_pid": 79865,
-    "app_session": 82308,
-    "app_execution": "5ed82d6e0532450ab1a736372fccc50b",
-    "app_operation": "/api/stack/compose",
-    "app_started_at": "2026-11-11T21:36:35.363373+00:00",
-    "app_last_event": {
-      "sequence": 243,
-      "at": "2026-11-11T21:42:33.142480+00:00",
-      "kind": "component_finished",
-      "status": "completed",
-      "component": "claim_local_source_review"
+    "product_source_changed": false,
+    "provider_work_stopped": true,
+    "actual_limit": "RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your session limit \u00b7 resets 8:30pm (America/Chicago)",
+    "reported_reset": "8:30pm America/Chicago",
+    "result": {
+      "context_id": "ANS-3f2a0af0a03e3d9dac158612",
+      "patients": 65,
+      "same_original_patient_set": true,
+      "native_actions": 34,
+      "document_review_contexts": 3,
+      "recovery_loader": "passed",
+      "recovered_native_actions": 26,
+      "changed_review_patient_rows": 11,
+      "expanded_review_record_ids": 716,
+      "answer_status": "partial"
     },
-    "app_terminal_event": null,
-    "source_frozen": true,
-    "restored_context": "ANS-84c50fbdd01aa8cf6da276be",
-    "restored_context_receipt": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/restored-context-receipt.json",
-    "separate_attempt_receipt": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/run-receipt.json",
-    "current_attempt_cost_usd": null,
-    "accounting_scope": "Canceled attempt ledger window overlaps app execution; total cannot be inferred. Exact request events preserve app dispatch identity.",
-    "scheduler_status": "PAUSED",
+    "attempt": {
+      "elapsed_seconds": 494.51652066688985,
+      "reported_calls": 48,
+      "known_api_equivalent_subtotal_usd": 15.381867,
+      "total_cost_known": false,
+      "invoice_verified": false
+    },
+    "previous_app_request": "completed_with_application_answered_disposition_not_independent_qualification",
+    "canceled_attempt": "Preserved; overlapping ledger window cannot determine its exact calls/cost.",
+    "evidence": [
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/run-receipt.json",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/response.json.gz",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/saved-partial-observation.json",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/action26-difference.json",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/action26-nested-difference.json",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/restored-context-receipt.json",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/run-receipt.json",
+      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/preceding-app-completion.json"
+    ],
+    "source_frozen": false,
+    "active_jobs": [],
+    "heartbeat_status": "PAUSED",
     "git_pushes": false
   },
   "storage_maintenance": {
@@ -7222,11 +7261,13 @@
     "presentation_receipt": "artifacts/agere-output-decision-design-2026-11-11/delivery-receipt.json"
   },
   "provider_credit_status": {
-    "at": "2026-11-11T21:43:31.642456+00:00",
+    "at": "2026-11-11T22:04:24.808765+00:00",
     "provider": "claude_subscription",
-    "status": "live_responses_after_user_reported_reset",
-    "evidence": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/reset-observation.json",
-    "previous_limit_receipt": "artifacts/agere-source-escalation-2026-11-11/resume-receipt.json",
-    "provider_work_stopped": false
-  }
+    "status": "session_limit_reached_after_successful_reset",
+    "reported_reset": "8:30pm America/Chicago",
+    "evidence": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/run-receipt.json",
+    "provider_work_stopped": true,
+    "offline_followthrough_completed": "Saved loader check and native review-difference diagnosis; no guard relaxation or new provider calls."
+  },
+  "latest_continuity_receipt": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/followthrough-observation.json"
 }
