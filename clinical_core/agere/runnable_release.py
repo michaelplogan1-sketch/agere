@@ -219,7 +219,7 @@ def _verified_code_archive(archive):
         relative = name.removeprefix('app/')
         allowed = (relative.startswith(('clinical_core/', 'config/')) and Path(relative).suffix in
                    ('.py', '.js', '.json', '.jsonl', '.css', '.html', '.csv', '.txt', '.cql'))
-        allowed = allowed or relative in ('serve_current_warehouse.py', 'agere_checkpoint.py', 'run_integrated_stack.py',
+        allowed = allowed or relative in ('serve_current_warehouse.py', 'serve_hosted.py', 'agere_checkpoint.py', 'run_integrated_stack.py',
             'tools/training/datasets.py', 'tools/certify_gates.py', 'tools/normalization/jev_check.py')
         allowed = allowed or (Path(relative).name == relative and relative.startswith('requirements') and relative.endswith('.txt'))
         if name not in ('configuration.json', 'bootstrap.py') and not (name.startswith('app/') and allowed):
