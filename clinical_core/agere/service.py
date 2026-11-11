@@ -718,6 +718,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 elif path=='/api/stack/semantic/review':
                     from .clinical.semantic_reader import save_review
                     result=save_review(connected_stack.path,body)
+                elif path=='/api/stack/typed-learning/review':
+                    from .clinical.typed_distillation import save_review
+                    result=save_review(connected_stack.path,body)
                 elif path=='/api/stack/learning-queue/target':
                     from .clinical.learning_queue import mark_target
                     result=mark_target(connected_stack.path,body)
@@ -1024,6 +1027,14 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.learning_workbench import page
                 raw=page().encode();mime='text/html; charset=utf-8'
+            elif parsed.path in ('/api/stack/typed-learning','/api/stack/typed-learning/item'):
+                if connected_stack is None:self.send_error(404);return
+                from .clinical import typed_distillation
+                try:
+                    result=(typed_distillation.inspect_review(connected_stack.path,params.get('id',[''])[0])
+                            if parsed.path.endswith('/item') else typed_distillation.review_listing(connected_stack.path,offset=int(params.get('offset',['0'])[0])))
+                    raw=json.dumps(result,allow_nan=False).encode();mime='application/json'
+                except (ValueError,TypeError,KeyError,FileNotFoundError) as exc:self.send_error(400,str(exc)[:200]);return
             elif parsed.path=='/programs':
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.program_workbench import page

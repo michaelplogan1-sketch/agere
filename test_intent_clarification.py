@@ -11,6 +11,10 @@ REAL_RESUME=I.resume_investigator
 
 QUESTION='Review the recorded patient roster and help me choose the presentation.'
 SPEC={'slot':'presentation_goal','question':'Would you like a patient roster or an aggregate summary?',
+      'kind':'value','branch':'agere_result_1',
+      'value_model':{'prior':{'roster':0.5,'summary':0.5},
+          'outcomes':{'roster':{'ranking':['A','B']},'summary':{'ranking':[]}},
+          'basis':'Authored alternative-output hypotheses for controller verification, not measured user preferences.'},
       'reason':'The requested presentation is unclear; the received roster is already available.',
       'options':[{'id':'roster','label':'Patient roster','meaning':'Show the received patient rows.'},
                  {'id':'summary','label':'Aggregate summary','meaning':'Show a summary of the same recorded population.'}]}

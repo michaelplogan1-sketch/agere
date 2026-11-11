@@ -195,6 +195,13 @@ def system_one_pick(question, pair):
         out = gate.s1().decide(f'Which analysis best answers this question for a population-health analytics system? Question: {question}',
                                opts, [], as_of=gate.as_of(stack), task_key='route_arbiter', ledger=ledger, allow_live=True)
         label = out.get('label')
+        from .decision_evaluation import observe,snapshot_identity
+        probs=out.get('calibrated_probabilities')or out.get('probabilities')or{}
+        observe(decision_type='operator_choice',model=out.get('model')or out.get('provider'),
+            confidence=probs.get(label,0.0),proposal=label,incumbent=pair[0]['op'],
+            identity={'version':VERSION,'options':opts,'model':out.get('model'),
+                      'snapshot':snapshot_identity(stack)},
+            inputs={'question':question,'as_of':gate.as_of(stack)})
         return next((i for i, c in enumerate(pair) if c['op'] == label), None)
     except Exception:  # noqa: BLE001 - the previous order's winner stands
         return None

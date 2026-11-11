@@ -450,7 +450,7 @@ def classify(question, *, stack=None, ledger=None, as_of_date=None):
     label = out.get('label') or 'unknown'
     calls, usd = cost(out)
     receipt = {'label': label, 'p': round(float(probs.get(label, 0.0)), 4), 'probabilities': probs,
-               'provider': out.get('decided_by') or out.get('provider'), 'cost_usd': usd, 'calls': calls, 'cached': False}
+               'provider': out.get('decided_by') or out.get('provider'), 'model':out.get('model'), 'cost_usd': usd, 'calls': calls, 'cached': False}
     _ROUTE_CACHE[key] = receipt
     return receipt
 
@@ -474,6 +474,12 @@ def route_receipt(question, tiers, *, stack=None, ledger=None, as_of_date=None):
         floor = float(os.environ.get('AGERE_S1_ROUTE_MIN', '0.5'))
     except ValueError:
         floor = 0.5
+    from .decision_evaluation import observe,snapshot_identity
+    observe(decision_type='route',model=got.get('model')or got.get('provider'),confidence=got['p'],
+        proposal=reorder(tiers,got['label']),incumbent=tiers,
+        identity={'version':VERSION,'floor':floor,'routes':ROUTES,'model':got.get('model'),
+                  'snapshot':snapshot_identity(stack)},
+        inputs={'question':question,'tiers':tiers,'as_of':as_of_date})
     if got['label'] not in ROUTES or got['p'] < floor: return tiers, {**got, 'applied': False}
     return reorder(tiers, got['label']), {**got, 'applied': True}
 

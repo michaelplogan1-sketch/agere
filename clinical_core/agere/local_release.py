@@ -226,6 +226,13 @@ def dependencies(build, config):
         path = Path(plan).resolve()
         result.append({'path': str(path.parent), 'verification': 'top_level_json_manifests',
                        'files': {p.name: file_entry(p) for p in (path, path.parent/'reserved-sources.json')}})
+    lineage = environment.get('AGERE_TYPED_LEARNING_LINEAGE')
+    if lineage:
+        from .clinical.learning_queue import lineage as validate_lineage
+        validate_lineage(lineage, {'snapshot': config['snapshot']})
+        root = Path(lineage).resolve()
+        result.append({'path': str(root), 'verification': 'top_level_json_manifests',
+                       'files': {p.name: file_entry(p) for p in (root/'manifest.json', root/'policy.json')}})
     from .gateway import default_ledger_path
     ledger = default_ledger_path().resolve()
     if not ledger.is_file(): raise ValueError('Current shared provider ledger required')

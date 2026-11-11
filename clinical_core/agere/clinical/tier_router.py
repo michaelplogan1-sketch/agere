@@ -66,6 +66,11 @@ def reorder(stack, question, order, *, model=None, encoder=None):
         encoder=model_encoder(model,encoder)
     if model.get('feature_kind')!='lexical' and (encoder is None or getattr(encoder, 'identity', None) != model.get('encoder_identity')): return order, None
     tier, p = predict(question, encoder, model)
+    from .decision_evaluation import observe,snapshot_identity
+    observe(decision_type='route',model='tier_router',confidence=p,proposal=tier,incumbent=order,
+        identity={k:model.get(k)for k in ('version','weights','bias','labels','threshold','temperature','encoder_identity')},
+        inputs={'question':question,'order':order,
+                'snapshot':snapshot_identity(stack)})
     receipt = {'version': VERSION, 'tier': tier, 'p': round(p, 4), 'threshold': model.get('threshold'), 'applied': False}
     if tier not in order or p < float(model.get('threshold', 1.01)): return order, receipt
     front = [t for t in PINNED if t in order and t != tier] + [tier]

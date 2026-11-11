@@ -8,14 +8,28 @@ import json
 import re
 import sqlite3
 import time
+import math
 from contextlib import contextmanager,closing
 from contextvars import ContextVar
 from ...contracts import digest
 
 VERSION='intent-clarification/1'
+VALUE_VERSION='clarification-value/1'
+# Candidate engineering policy in normalized answer-change units, NOT fitted
+# user burden, money, clinical benefit or observed response probabilities.
+INTERRUPTION_COST=0.05
+EARLY_KINDS={'goal','population','period','definition'}
 MODE=ContextVar('agere_interaction_mode',default='interactive')
 SPEC={'type':'object','properties':{
     'slot':{'type':'string','pattern':'^[a-z][a-z0-9_]*$'},
+    'kind':{'type':'string','enum':['goal','population','period','definition','input','value']},
+    'branch':{'type':'string','description':'For input/value only: an existing native result_view consumed by the dependent branch.'},
+    'value_model':{'type':'object','properties':{
+        'prior':{'type':'object','additionalProperties':{'type':'number'}},
+        'outcomes':{'type':'object','additionalProperties':{'type':'object','properties':{
+            'population_size':{'type':'integer','minimum':0},'measure_value':{'type':'number'},
+            'ranking':{'type':'array','items':{'type':'string'}}},'additionalProperties':False}},
+        'basis':{'type':'string','minLength':1}},'required':['prior','outcomes','basis'],'additionalProperties':False},
     'question':{'type':'string','minLength':1},'reason':{'type':'string','minLength':1},
     'options':{'type':'array','minItems':2,'items':{'type':'object','properties':{
         'id':{'type':'string','minLength':1},'label':{'type':'string','minLength':1},
@@ -23,7 +37,11 @@ SPEC={'type':'object','properties':{
     'required':['slot','question','reason','options'],'additionalProperties':False}
 TOOL={'name':'request_clarification','description':
     'Ask a material question about USER INTENT for this analysis, such as the population, period, analytical definition or output goal. '
-    'Use known defaults and retrieve available source data first. Never ask the user to fix software, judge model confidence, approve routine analysis, '
+    'Assess goal/population/period/definition BEFORE analytical dispatch. Defer input/value choices until their dependent branch has a native result_view. '
+    'When supported projections are available, supply explicit assumed option probabilities, alternative answers (population_size, measure_value, ranking) and their basis in value_model. '
+    'These are counterfactual assumptions, not source facts. The controller uses their net information value to avoid unnecessary questions. '
+    'If projections are unavailable, a material intent question can still use the normal clarification path; never fabricate numbers to obtain an interruption. '
+    'Use known defaults. Never ask the user to fix software, judge model confidence, approve routine analysis, '
     'or supply clinical facts that should be verified from records. Finish independent work first. Call this tool alone in a reply. '
     'Completed native evidence is saved; only the unresolved analysis waits. Options describe alternative intentions, never invented source facts. '
     'In autonomous mode this records an unresolved requirement and you must continue independent work, preserving unknowns.',
@@ -39,7 +57,7 @@ def interaction(mode):
 
 
 def validate(spec):
-    if not isinstance(spec,dict)or set(spec)!={'slot','question','reason','options'}:
+    if not isinstance(spec,dict)or not {'slot','question','reason','options'}<=set(spec)or set(spec)-{'slot','question','reason','options','kind','branch','value_model'}:
         raise ValueError('Clarification needs a named intent slot, question, reason and options')
     if (not isinstance(spec['slot'],str)or not re.fullmatch(r'[a-z][a-z0-9_]*',spec['slot'])or
         any(not isinstance(spec[k],str)or not spec[k].strip()for k in ('question','reason'))or
@@ -53,12 +71,101 @@ def validate(spec):
     return copy.deepcopy(spec)
 
 
-def request(spec):
-    spec=validate(spec)
-    return {'clarification_required':spec,'interaction_mode':MODE.get(),
+def score(spec):
+    """Expected answer regret removed by a perfect intent reply, less burden.
+
+    Alternative outcomes and prior are explicit hypotheses. No native reads or
+    providers run here. The existing EVSI calculator validates the distributions.
+    """
+    from ...information_value import expected_information_value
+    model=spec.get('value_model')
+    if model is None:return {'gross_value':None,'net_value':None,'reason':'impact_unavailable'}
+    if not isinstance(model,dict)or set(model)!={'prior','outcomes','basis'}:
+        raise ValueError('Value model needs prior, alternative outcomes and assumption basis')
+    states=[o['id']for o in spec['options']]
+    outcomes=model['outcomes']
+    if not isinstance(outcomes,dict)or set(outcomes)!=set(states):raise ValueError('Outcome options differ')
+    dimensions=None
+    for outcome in outcomes.values():
+        if not isinstance(outcome,dict)or not outcome or set(outcome)-{'population_size','measure_value','ranking'}:
+            raise ValueError('Supply population size, measure value or ranking projections')
+        if dimensions is None:dimensions=set(outcome)
+        if set(outcome)!=dimensions:raise ValueError('Alternative outcomes need the same dimensions')
+        for key,value in outcome.items():
+            if key=='ranking':
+                if not isinstance(value,list)or any(not isinstance(x,str)or not x for x in value)or len(set(value))!=len(value):
+                    raise ValueError('Ranking needs distinct named entities')
+            elif type(value)not in (int,float)or not math.isfinite(value):raise ValueError('Finite outcome projection required')
+            elif key=='population_size'and (type(value)is not int or value<0):raise ValueError('Population size needs a nonnegative integer')
+    def distance(a,b):
+        changes=[]
+        for key in sorted(dimensions):
+            if key=='ranking':
+                ids=set(a[key])|set(b[key]);n=max(len(a[key]),len(b[key]),1)
+                pos=lambda r:{v:i for i,v in enumerate(r)}
+                x,y=pos(a[key]),pos(b[key])
+                changes.append(sum(abs(x.get(v,n)-y.get(v,n))for v in ids)/max(1,len(ids)*n))
+            else:changes.append(abs(a[key]-b[key])/max(1,abs(a[key]),abs(b[key])))
+        return sum(changes)/len(changes)
+    utilities={action:{state:-distance(outcomes[action],outcomes[state])for state in states}for action in states}
+    calc=expected_information_value(prior=model['prior'],utilities=utilities,
+        channels={'reply':{'available':True,'cost':INTERRUPTION_COST,
+            'likelihoods':{s:{o:float(s==o)for o in states}for s in states},
+            'basis':'Assumed perfect resolution of the listed user-intent options; an optimistic one-step bound.'}},
+        utility_scale='mean normalized answer change; decision cost=1',assumption_source=model['basis'])
+    result=calc['channels'][0]
+    return {**result,'recommended_assumption':calc['current_action_under_assumptions'],
+        'reason':'positive_net_value'if result['net_value']>0 else'nonpositive_net_value',
+        'calculation':calc,'outcomes_are':'assumed_counterfactuals_not_observed_facts'}
+
+
+def record_decision(path,decision):
+    """Durable, append-only calibration input even without an API context."""
+    from ..request_lineage import execution_observation,ACTIVE
+    active=ACTIVE.get()
+    decision['request_execution_id']=active.id if active is not None else None
+    if path is not None:
+        with closing(database(path))as db,db:
+            db.execute('INSERT INTO intent_clarification_decisions(payload) VALUES (?)',(json.dumps(decision,allow_nan=False),))
+    execution_observation('clarification_decision',**decision)
+
+
+def request(spec,*,tools=None):
+    path=tools.stack.path if tools is not None else None
+    decision={'schema':VALUE_VERSION,'at':time.time(),'candidate_digest':None,
+        'decision_type':'clarify_or_not','threshold':0.0,'interruption_cost':INTERRUPTION_COST,
+        'calibrated':False,'ask':False,'gross_value':None,'net_value':None}
+    try:
+        decision['candidate_digest']=digest(spec)
+        spec=validate(spec);decision.update(slot=spec['slot'],intent_kind=spec.get('kind'),**score(spec))
+        calls=getattr(tools,'native_calls',[])
+        dispatched=any(c['name']not in ('request_clarification','list_analyses','describe_analysis','list_metrics','describe_metric')for c in calls)
+        if spec['slot']in getattr(tools,'resolved_intent_slots',set()):
+            decision['reason']='already_resolved'
+        elif spec.get('kind')in EARLY_KINDS and dispatched:decision['reason']='early_intent_after_dispatch'
+        elif spec.get('kind')in ('input','value')and spec.get('branch')not in getattr(tools,'executed_results',{}):
+            decision['reason']='dependent_branch_not_ready'
+        elif spec.get('kind') is not None and spec.get('kind')not in EARLY_KINDS|{'input','value'}:decision['reason']='intent_kind_unavailable'
+        else:
+            material_unscored = decision['reason']=='impact_unavailable'
+            decision['ask']=(material_unscored or decision['net_value']is not None and decision['net_value']>0) and MODE.get()=='interactive'
+            if material_unscored:decision['reason']='unscored_material_intent'
+            if MODE.get()=='autonomous'and (material_unscored or decision['net_value']is not None and decision['net_value']>0):decision['reason']='autonomous_mode'
+        decision['timing']={'dispatched':dispatched,'branch':spec.get('branch')}
+        if tools is not None:decision['context_digest']=digest(tools.continuation_identity())
+    except (ValueError,TypeError,OverflowError)as exc:
+        decision.update(reason='invalid_candidate',error=str(exc));record_decision(path,decision);raise ValueError(str(exc))from exc
+    record_decision(path,decision)
+    if decision['reason']=='already_resolved':raise ValueError('The user already clarified this intent slot. Use the retained response; do not ask the same question again.')
+    if not decision['ask']:
+        intent_key='intent_equivalent'if decision['gross_value']==0 else'intent_unresolved'
+        return {intent_key:spec,'clarification_decision':decision,'interaction_mode':MODE.get(),
             'authority':'user_intent_only','source_facts_established':False,
-            'instruction':'Continue independent work and report this intent unresolved; do not guess.'if MODE.get()=='autonomous'else
-                          'Save completed evidence and wait for this intent choice. No clinical or source fact is established.'}
+            'instruction':'Do not interrupt. Continue independent work; disclose alternative assumptions or leave the dependent answer unresolved. '
+                          'A late goal/population/period/definition requires replanning before further dependent dispatch, not guessing.'}
+    return {'clarification_required':spec,'interaction_mode':MODE.get(),'clarification_decision':decision,
+            'authority':'user_intent_only','source_facts_established':False,
+            'instruction':'Save completed evidence and wait for this intent choice. No clinical or source fact is established.'}
 
 
 def checkpoint(tools,question,payload,run):
@@ -116,6 +223,9 @@ def database(path):
       CREATE TRIGGER IF NOT EXISTS immutable_intent_request BEFORE UPDATE ON intent_clarifications BEGIN SELECT RAISE(ABORT,'Immutable intent request');END;
       CREATE TRIGGER IF NOT EXISTS preserve_intent_request BEFORE DELETE ON intent_clarifications BEGIN SELECT RAISE(ABORT,'Immutable intent request');END;
       CREATE TRIGGER IF NOT EXISTS immutable_intent_response BEFORE UPDATE OF response ON intent_clarification_runs BEGIN SELECT RAISE(ABORT,'Immutable intent response');END;''')
+    db.executescript('''CREATE TABLE IF NOT EXISTS intent_clarification_decisions(seq INTEGER PRIMARY KEY,payload TEXT NOT NULL);
+      CREATE TRIGGER IF NOT EXISTS immutable_intent_value BEFORE UPDATE ON intent_clarification_decisions BEGIN SELECT RAISE(ABORT,'Immutable intent value decision');END;
+      CREATE TRIGGER IF NOT EXISTS preserve_intent_value BEFORE DELETE ON intent_clarification_decisions BEGIN SELECT RAISE(ABORT,'Immutable intent value decision');END;''')
     db.execute("CREATE TRIGGER IF NOT EXISTS preserve_intent_response BEFORE DELETE ON intent_clarification_runs BEGIN SELECT RAISE(ABORT,'Immutable intent response');END")
     return db
 

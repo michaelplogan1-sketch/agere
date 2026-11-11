@@ -196,8 +196,12 @@ has already declined this question, so it is yours to answer completely and corr
   from a governed source first: execute_metric when a governed metric fits (list_metrics shows them), else ask_agere (one simple
   sub-question per call); use query_sql for what neither answers or to break a result down further, following the decision context.
 - First settle each requirement with governed metrics, SQL and explicit structured source relationships where available.
-  When USER INTENT is materially ambiguous, finish independent work and call request_clarification alone with concise
-  alternative meanings and why the distinction affects the answer. Retrieve available facts yourself. Do not ask users
+  Before analytical dispatch, assess ambiguous goal, population, period and definition choices with request_clarification.
+  Defer input/value choices until their dependent branch has a retained native result_view; complete independent work first.
+  Call request_clarification alone. When supported, include explicit assumed probabilities and alternative population-size/measure/ranking
+  projections in value_model, with assumption provenance. The controller scores answer change minus interruption
+  cost; a nonpositive score avoids interruption. Missing projections remain unknown and use the ordinary material-intent
+  clarification path. Never invent numbers to justify a question. Retrieve available facts yourself. Do not ask users
   to repair software, approve routine work, validate your confidence or supply an unverified clinical fact. Existing
   declared definitions/defaults and already supplied preferences need no question. In autonomous mode continue every
   independent requirement and keep the unresolved intent explicit. A clarification reply is user intent, never source truth.
@@ -577,10 +581,7 @@ class Tools:
     def _call(self, use):
         if use.get('name')=='request_clarification':
             from .clarification import request
-            result=request(use.get('input'))
-            if result['clarification_required']['slot']in getattr(self,'resolved_intent_slots',set()):
-                raise ValueError('The user already clarified this intent slot. Use the retained response; do not ask the same question again.')
-            return result
+            return request(use.get('input'),tools=self)
         name, args = use.get('name'), use.get('input') or {}
         if name == 'inspect_populations':
             if set(args)!={'result_views'}:raise ValueError('inspect_populations requires only result_views')
@@ -910,8 +911,9 @@ class Tools:
             # Keep unresolved states available to the existing learning path;
             # they are review inputs, never automatic teacher/reference labels.
             from . import typed_distillation
+            learning_observation = None
             try:
-                typed_distillation.record_outcome(question, options, evidence, r, as_of=self.as_of)
+                learning_observation = typed_distillation.record_outcome(question, options, evidence, r, as_of=self.as_of)
             except Exception as exc:  # learning persistence cannot fail the answer
                 import logging
                 logging.getLogger(__name__).warning('Typed learning capture failed: %s', type(exc).__name__)
@@ -929,7 +931,8 @@ class Tools:
             p = (r.get('calibrated_probabilities') or r.get('probabilities') or {}).get(label)
             out.append({'record_id': rid, 'date': (doc.get('date') or '')[:10], 'type': doc.get('type'), 'label': label,
                         'probability': round(p, 3) if isinstance(p, (int, float)) else None, 'decided_by': r.get('decided_by') or r.get('provider'),
-                        'passage': used[0][:JUDGE_CHUNK]})
+                        'passage': used[0][:JUDGE_CHUNK],
+                        'learning_observation_id': 'typed_outcomes:'+learning_observation['id'] if learning_observation else None})
         self.judged += out
         known = sorted((d for d in out if d['label'] != 'unknown'), key=lambda d: d['date'] or '')
         return {'question': question, 'documents': out, 'latest': known[-1] if known else None,
@@ -5043,7 +5046,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                        'input_tokens':run.get('input_tokens'),'output_tokens':run.get('output_tokens')}
         partial_prefix=harness.partial_prefix_evidence(run)is not None
         reviewable_proposal=harness.draft_proposal_evidence(run)is not None
-        unresolved_intent=any(c.get('name')=='request_clarification'and (c.get('result')or{}).get('interaction_mode')=='autonomous'
+        unresolved_intent=any(c.get('name')=='request_clarification'and (c.get('result')or{}).get('intent_unresolved')
                               for c in run.get('tool_calls')or[])
         from ..gateway import classify_provider_error
         request_cancelled=bool(run.get('error')) and classify_provider_error(RuntimeError(run['error']))=='cancelled'
@@ -5095,9 +5098,14 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
             out['answer']={'status':'clarify','answer_type':'clarification','headline':run['clarification_pause']['request']['question'],
                 'missing':[run['clarification_pause']['request']['reason']],'patient_ids':[],'actionable_cohort':False,
                 'data_absence_established':False,'limitations':['User intent remains unresolved. Completed source observations are retained.']}
-        deferred=[call['result']['clarification_required']for call in out['tool_calls']
-                  if call.get('name')=='request_clarification'and isinstance(call.get('result'),dict)
-                  and call['result'].get('interaction_mode')=='autonomous'and call['result'].get('clarification_required')]
+        intent_results={}
+        for call in out['tool_calls']:
+            if call.get('name')!='request_clarification'or not isinstance(call.get('result'),dict):continue
+            value=call['result']
+            intent=value.get('intent_unresolved')or value.get('intent_equivalent')or value.get('clarification_required')
+            if intent:intent_results[intent['slot']]=value
+        deferred=[value['intent_unresolved']for slot,value in intent_results.items()
+                  if value.get('intent_unresolved')and slot not in getattr(tools,'resolved_intent_slots',set())]
         if deferred and isinstance(out.get('answer'),dict):
             out['answer']={**out['answer'],'status':'partial','actionable_cohort':False,
                 'missing':list(dict.fromkeys([*(out['answer'].get('missing')or[]),

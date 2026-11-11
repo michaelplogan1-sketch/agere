@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import sqlite3
 import time
@@ -114,6 +115,129 @@ def _bind(row, source):
     raise ValueError('observation_not_complete_current_received_text')
 
 
+def _review_tables(db):
+    db.executescript('''CREATE TABLE IF NOT EXISTS typed_reviews (
+        binding TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(binding,revision));
+        CREATE TABLE IF NOT EXISTS typed_review_requests (id TEXT PRIMARY KEY,request_hash TEXT NOT NULL,payload TEXT NOT NULL);
+        CREATE TRIGGER IF NOT EXISTS immutable_typed_review BEFORE UPDATE ON typed_reviews BEGIN SELECT RAISE(ABORT,'Reviews are append-only'); END;
+        CREATE TRIGGER IF NOT EXISTS preserve_typed_review BEFORE DELETE ON typed_reviews BEGIN SELECT RAISE(ABORT,'Reviews are append-only'); END;
+        CREATE TRIGGER IF NOT EXISTS immutable_typed_review_request BEFORE UPDATE ON typed_review_requests BEGIN SELECT RAISE(ABORT,'Review requests are append-only'); END;
+        CREATE TRIGGER IF NOT EXISTS preserve_typed_review_request BEFORE DELETE ON typed_review_requests BEGIN SELECT RAISE(ABORT,'Review requests are append-only'); END;''')
+
+
+def review_binding(contract, release, key, source_hash):
+    return digest([contract, release, key, source_hash])
+
+
+def _latest_review(db, binding):
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='typed_reviews'").fetchone(): return None
+    row = db.execute('SELECT payload FROM typed_reviews WHERE binding=? ORDER BY revision DESC LIMIT 1', (binding,)).fetchone()
+    return json.loads(row[0]) if row else None
+
+
+def _review_context(stack):
+    meta = json.loads((Path(stack)/'run.json').read_text())
+    if meta.get('synthetic') is not True: raise ValueError('Synthetic source-review workspace required')
+    lineage = os.environ.get('AGERE_TYPED_LEARNING_LINEAGE')
+    if not lineage: raise ValueError('Typed source-learning partitions are not configured')
+    policy, manifest = queue.lineage(lineage, meta); protected = semantic_learning.protections()
+    if manifest.get('protection_register_sha256') != protected['register_sha256']:
+        raise ValueError('Source-review protection registry changed')
+    return meta, policy, protected
+
+
+def _inspect_review(db, warehouse, context, observation_id):
+    table, sep, ident = str(observation_id).partition(':')
+    if not sep or table not in ('labels', 'typed_outcomes') or not ident:
+        raise ValueError('Exact saved observation identity required')
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)).fetchone():
+        raise ValueError('Observation store is unavailable')
+    ids = {str(r[0] or '').rsplit('#', 1)[0] for r in db.execute(
+        "SELECT json_extract(value,'$.id') FROM "+table+",json_each("+table+".evidence) WHERE "+table+".id=?", (ident,))}
+    if len(ids) != 1: raise ValueError('Single source-bound document required')
+    rid = next(iter(ids)); person = warehouse.execute('SELECT patient_id FROM source_records WHERE record_id=?', (rid,)).fetchone()
+    meta, policy, protected = context
+    reason = 'source_identifier_unresolved' if person is None else queue.eligibility(person[0], policy, protected)
+    if reason: raise ValueError(reason)
+    row = dict(db.execute('SELECT * FROM '+table+' WHERE id=?', (ident,)).fetchone())
+    if row['input_contract'] != student.input_contract() or row['task_key'] != 'agere_chart_judgment':
+        raise ValueError('Observation does not match current typed task')
+    source = dict(warehouse.execute('SELECT * FROM source_records WHERE record_id=?', (rid,)).fetchone())
+    if source.get('synthetic') != 1: raise ValueError('Synthetic received source required')
+    state, field, text = _bind(row, source)
+    key = hashlib.sha256(json.dumps(state, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+    binding = review_binding(row['input_contract'], meta['snapshot']['release'], key, digest(source))
+    review = _latest_review(db, binding)
+    return {'observation_id': observation_id, 'binding': binding, 'decision_key': key, 'state': state,
+        'patient_id': person[0], 'record_id': rid, 'source_field': field, 'source_text': text,
+        'source_hash': digest(source), 'source_release': meta['snapshot']['release'], 'input_contract': row['input_contract'],
+        'machine_label': row['label'], 'machine_provider': row['provider'], 'machine_probability': row['probability'],
+        'review': review, 'revision': review['revision'] if review else 0,
+        'authority': 'Local documentary review; reviewer identity and clinical authority are not independently verified.'}
+
+
+def inspect_review(stack, observation_id):
+    context = _review_context(stack)
+    with _read_db(student.store_path()) as db, _read_db(context[0]['snapshot']['source_dataset']['source']) as warehouse:
+        return _inspect_review(db, warehouse, context, observation_id)
+
+
+def review_listing(stack, *, offset=0):
+    if type(offset) is not int or offset < 0: raise ValueError('Nonnegative page offset required')
+    context = _review_context(stack); candidates = []; excluded = Counter()
+    if not student.store_path().exists(): return {'rows': [], 'total': 0, 'offset': offset, 'next_offset': None}
+    with _read_db(student.store_path()) as db, _read_db(context[0]['snapshot']['source_dataset']['source']) as warehouse:
+        tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        for table in ('typed_outcomes', 'labels'):
+            if table not in tables: continue
+            for header in db.execute('SELECT id FROM '+table+' WHERE task_key=? AND input_contract=? ORDER BY recorded_at DESC,id',
+                    ('agere_chart_judgment', student.input_contract())).fetchall():
+                ident = table+':'+header[0]
+                try: detail = _inspect_review(db, warehouse, context, ident)
+                except ValueError as exc: excluded[str(exc)] += 1; continue
+                if any(r['binding'] == detail['binding'] for r in candidates): continue
+                candidates.append({k: detail[k] for k in ('observation_id','binding','patient_id','record_id','machine_label','revision')}
+                    | {'question': detail['state']['subject'], 'review_status': (detail['review'] or {}).get('status')})
+    return {'rows': candidates[offset:offset+24], 'total': len(candidates), 'offset': offset,
+        'next_offset': offset+24 if offset+24 < len(candidates) else None, 'excluded': dict(excluded),
+        'automatic_training': False, 'clinical_authority_established': False}
+
+
+def save_review(stack, payload):
+    required = {'observation_id','expected_binding','expected_revision','request_id','actor','status','label','rationale','use_for_development'}
+    if not isinstance(payload, dict) or set(payload) != required: raise ValueError('Exact source-bound correction fields required')
+    if any(not isinstance(payload[k], str) or not payload[k].strip() for k in ('actor','rationale','request_id')):
+        raise ValueError('Reviewer, rationale and request identity required')
+    if payload['status'] not in ('accepted','corrected','unresolved','rejected') or type(payload['expected_revision']) is not int:
+        raise ValueError('Review status and expected revision required')
+    if type(payload['use_for_development']) is not bool: raise ValueError('Explicit development-use choice required')
+    current = inspect_review(stack, payload['observation_id'])
+    if current['binding'] != payload['expected_binding']: raise ValueError('Source or decision changed; reopen before saving')
+    labeled = payload['status'] in ('accepted','corrected')
+    if (labeled and payload['label'] not in current['state']['options']) or (not labeled and payload['label'] is not None):
+        raise ValueError('Choose an exact option only for an accepted or corrected review')
+    if payload['status'] == 'accepted' and payload['label'] != current['machine_label']:
+        raise ValueError('A changed answer must be saved as a correction')
+    if not labeled and payload['use_for_development']: raise ValueError('Unresolved or rejected reviews cannot teach a label')
+    db = sqlite3.connect(student.store_path(), timeout=30); request_hash = digest(payload)
+    try:
+        _review_tables(db); db.execute('BEGIN IMMEDIATE')
+        old = db.execute('SELECT request_hash,payload FROM typed_review_requests WHERE id=?', (payload['request_id'],)).fetchone()
+        if old:
+            if old[0] != request_hash: raise ValueError('Request identity reused with different correction')
+            return {**json.loads(old[1]), 'replayed': True}
+        previous = _latest_review(db, current['binding']); revision = previous['revision'] if previous else 0
+        if payload['expected_revision'] != revision: raise ValueError('Review changed; reload before saving')
+        row = {**payload, 'binding': current['binding'], 'revision': revision+1, 'created_at': datetime.now(timezone.utc).isoformat(),
+            'source_hash': current['source_hash'], 'source_release': current['source_release'], 'decision_key': current['decision_key'],
+            'input_contract': current['input_contract'], 'training_eligible': labeled and payload['use_for_development'],
+            'reviewer_identity_verified': False, 'authority': current['authority'], 'clinical_state_established': False}
+        db.execute('INSERT INTO typed_reviews VALUES (?,?,?)', (current['binding'], revision+1, json.dumps(row)))
+        db.execute('INSERT INTO typed_review_requests VALUES (?,?,?)', (payload['request_id'], request_hash, json.dumps(row)))
+        db.commit(); return row
+    finally: db.close()
+
+
 def prepare(config, lineage, output, *, options_sha256):
     """Freeze one exact document task from saved judgments; no new provider calls."""
     config = json.loads(Path(config).read_text()); output = Path(output)
@@ -165,6 +289,8 @@ def prepare(config, lineage, output, *, options_sha256):
                 'patient_family': policy['patient_families'][source['patient_id']], 'patient_id': source['patient_id'],
                 'record_id': rid, 'source_field': field, 'source_hash': digest(source),
                 'template': digest(queue.normalize(text)), 'observations': [], 'reference': None})
+            binding = review_binding(contract, config['snapshot']['release'], key, digest(source))
+            item['reference'] = _latest_review(observations, binding)
             item['observations'].append({**{k: row[k] for k in ('id', 'label', 'probability', 'provider', 'teacher_model', 'request_hash', 'recorded_at')},
                 'observation_id': observation_id, 'fit_eligible': bool(row.get('fit_eligible', True)),
                 'raw_outcome': json.loads(row['result']) if table == 'typed_outcomes' else None})
@@ -177,6 +303,11 @@ def prepare(config, lineage, output, *, options_sha256):
         row['label'] = next(iter(labels)) if len(labels) == 1 else None
         row['fit_status'] = 'machine_supervision' if len(labels) == 1 else 'conflicting_machine_labels' if labels else 'no_eligible_machine_label'
         row['weight'] = sum(float(r['probability']) for r in eligible)/len(eligible) if eligible else 0
+        reference = row['reference']
+        if reference:
+            row['label'] = reference['label'] if reference['training_eligible'] else None
+            row['weight'] = 1.0 if reference['training_eligible'] else 0.0
+            row['fit_status'] = 'local_documentary_review' if reference['training_eligible'] else 'review_withheld_from_training'
     if not rows: raise ValueError('No complete eligible received-source decisions for this option contract')
     output.mkdir(parents=True)
     queue.write(output/'targets.json', rows); queue.write(output/'exclusions.json', excluded)
@@ -193,6 +324,7 @@ def prepare(config, lineage, output, *, options_sha256):
             'label_counts': dict(Counter(r['label'] for r in rows if r['partition'] == p and r['label'] is not None))} for p in PARTITIONS},
         'files': {name: queue.sha(output/name) for name in ('targets.json', 'exclusions.json')},
         'provider_calls': 0, 'independent_reviewed_references': 0, 'automatic_acceptance': False, 'limits': LIMITS}
+    manifest['local_documentary_references'] = sum(r['fit_status'] == 'local_documentary_review' for r in rows)
     assert manifest['selected_observations'] == manifest['retained_observations'] + manifest['excluded_observations']
     queue.write(output/'manifest.json', manifest)
     return manifest
@@ -228,7 +360,7 @@ def fit(dataset, output):
     eligible = [r for r in rows if r['label'] is not None]
     training = [r for r in eligible if r['partition'] == 'train']
     examples = [student.example(r['state']['subject'], r['state']['options'], r['state']['evidence'], r['label'],
-        as_of=r['state']['as_of'], weight=r['weight'], source='saved_machine_supervision') for r in training]
+        as_of=r['state']['as_of'], weight=r['weight'], source=r['fit_status']) for r in training]
     model = student.train_rows(manifest['task_key'], examples)
     if model is None: raise ValueError('Declared training partition has insufficient distinct decisions or classes')
     majority = Counter(r['label'] for r in training).most_common(1)[0][0]
@@ -238,7 +370,7 @@ def fit(dataset, output):
         s = row['state']; probabilities = student.probabilities(model, s['subject'], s['options'], s['evidence'], as_of=s['as_of'])
         predicted = max(probabilities, key=probabilities.get)
         predictions.append({'decision_key': row['decision_key'], 'component': row['component'], 'partition': row['partition'],
-            'machine_reference': row['label'], 'predicted': predicted, 'confidence': probabilities[predicted],
+            'reference_label': row['label'], 'reference_kind': row['fit_status'], 'predicted': predicted, 'confidence': probabilities[predicted],
             'agrees': predicted == row['label'], 'majority_agrees': majority == row['label']})
     threshold, accepted, agreement = student.threshold_from([(r['confidence'], r['agrees']) for r in predictions if r['partition'] == 'calibration'])
     options = set(model['options'])
@@ -249,7 +381,8 @@ def fit(dataset, output):
         'comparison': {}, 'calibration_candidate': {'threshold': threshold, 'accepted': accepted, 'agreement': agreement},
         'decides': False, 'automatic_acceptance': False, 'deployment_mode': 'reading_only_candidate',
         'cross_fitted': {'threshold': None, 'split_unit': 'transitive_patient_source_template_decision_component'},
-        'scope': 'Development agreement with saved machine labels, not clinical accuracy.', 'limits': LIMITS,
+        'scope': 'Development agreement with declared machine/local documentary references, not clinical accuracy.', 'limits': LIMITS,
+        'training_reference_kinds': dict(Counter(r['fit_status'] for r in training)),
         'provider_calls': 0, 'trained_at': datetime.now(timezone.utc).isoformat(), 'seconds': time.perf_counter()-started}
     for part in ('calibration', 'validation'):
         batch = [r for r in predictions if r['partition'] == part]
@@ -259,9 +392,9 @@ def fit(dataset, output):
             'majority_agreement': sum(r['majority_agrees'] for r in batch)/len(batch) if batch else None,
             'candidate_threshold_accepted': len(accepted_rows),
             'candidate_threshold_agreement': sum(r['agrees'] for r in accepted_rows)/len(accepted_rows) if accepted_rows else None,
-            'missing_reference_options': sorted(options-{r['machine_reference'] for r in batch}),
-            'per_label': {label: {'references': sum(r['machine_reference'] == label for r in batch),
-                'correct': sum(r['machine_reference'] == label and r['agrees'] for r in batch)} for label in sorted(options)}}
+            'missing_reference_options': sorted(options-{r['reference_label'] for r in batch}),
+            'per_label': {label: {'references': sum(r['reference_label'] == label for r in batch),
+                'correct': sum(r['reference_label'] == label and r['agrees'] for r in batch)} for label in sorted(options)}}
     output.mkdir(parents=True)
     joblib.dump({'model': model, 'manifest': report}, output/(manifest['task_key']+'.joblib'), compress=3)
     queue.write(output/(manifest['task_key']+'.json'), report); queue.write(output/'predictions.json', predictions)
