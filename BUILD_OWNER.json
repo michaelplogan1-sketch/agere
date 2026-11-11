@@ -5,36 +5,36 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G5 typed learning connection sealed; source correction/reference integration next",
+  "active_work": "G5 qualification after combined local engineering activation",
   "latest_delivery": {
+    "gate": "G5",
+    "receipt": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
+    "product_commit": "d46d4eb594fc406fc076e59a871578d8561e974a",
+    "at": "2026-11-11T18:50:30.622064+00:00",
+    "scope": "combined local engineering; independent model/clinical/customer qualification remains open"
+  },
+  "latest_receipt": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
+  "owned_server_pid": 68869,
+  "owned_server_session": 30870,
+  "full_queue_acceptance": false,
+  "spending_limit": "uncapped",
+  "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
+  "preceding_delivery": {
     "gate": "G5",
     "receipt": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json",
     "product_commit": "dea82ffffaaaea6aa86d50b8f27e9cf2128671ef",
     "at": "2026-11-11T18:18:26.878696+00:00",
     "scope": "engineering learning connection; candidate not clinically/model qualified or active"
   },
-  "latest_receipt": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json",
-  "owned_server_pid": 65291,
-  "owned_server_session": 99171,
-  "full_queue_acceptance": false,
-  "spending_limit": "uncapped",
-  "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
-  "preceding_delivery": {
-    "gate": "G5",
-    "receipt": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
-    "product_commit": "17f52b60a285d7791caf01f30b10f88e48f38565",
-    "at": "2026-11-11T17:51:39.636738+00:00",
-    "scope": "acquisition engineering only; model qualification remains open"
-  },
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G5: connect explicit typed source corrections to the existing source-review workflow so a correction is bound to the exact saved question, option meanings, document version and cutoff; preserve reviewer provenance separately from machine outcomes. Feed only explicitly eligible references into the frozen typed dataset path. Do not repeat the current fit or broad passing campaigns; the current reading-only candidate has no acceptance threshold. Keep main runtime activation coordinated with the preserved concurrent presentation edits. Scheduler PAUSED; no Git pushes.",
+  "resume_priority": "G5: the combined main app is activated. Advance the exact chart-judgment role only from diverse, explicitly reviewed, source-bound references through the now-connected review/dataset workflow; acquire the missing direct-target, unrelated-target and uncertain reference outcomes without protected keys or invented clinical authority. Keep local documentary feedback separate from independent qualification. Do not repeat the existing fit, broad all25 campaign or passing presentation checks. New default student/routing/bottle activation requires appropriate comparative evidence; ordinary analyses retain native computation and subscription frontier fallback. Preserve the ten-area/all25 outcomes and explicit customer-deployment dependencies. Include this committed delta in the next otherwise-required code release; scheduler PAUSED and no Git pushes.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-09T18:35:52.790981+00:00",
   "heartbeat_status": "PAUSED",
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
@@ -42,18 +42,11 @@
   "last_observed_server_session": 60897,
   "server_status": "running_idle",
   "unsealed_work": {
-    "status": "typed_learning_delivery_sealed_other_presentation_edits_preserved",
+    "status": "none",
     "source_frozen": false,
     "active_jobs": [],
-    "recovery_commit": "dea82ffffaaaea6aa86d50b8f27e9cf2128671ef",
-    "sealed_delivery": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json",
-    "other_uncommitted_source": [
-      "clinical_core/agere/ask_view.py",
-      "clinical_core/agere/assets/answer_presentation.js",
-      "clinical_core/agere/assets/explore.html",
-      "clinical_core/agere/assets/explore.js"
-    ],
-    "remaining_verification": "No repeat fit or broad campaign. Main runtime has not been restarted; preserve and coordinate separately edited presentation source before combined activation. G5 qualification and typed review reference connection remain open."
+    "remaining_verification": "No unfinished combined activation. G5 qualification and current delta packaging remain explicitly separate.",
+    "last_completed_receipt": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json"
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-11-11T18:18:26.878696+00:00",
@@ -110,16 +103,20 @@
   "source_control": "git; codex/integration-20261026 from origin/main 27c354f; branch pushed to existing private michaelplogan1-sketch/agere with explicit Mike approval; draft PR2. Original dirty checkout preserved.",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "pid": null,
-    "session": null,
-    "port": 8885,
-    "status": "exited137_reader_policy_diagnosis",
-    "product_commit": "292c3e7caf8e9a229bbfc613fe8833c2f314bbff",
+    "url": "http://127.0.0.1:8908/ask",
+    "learning_url": "http://127.0.0.1:8908/learn",
+    "pid": 68869,
+    "session": 30870,
+    "product_commit": "d46d4eb594fc406fc076e59a871578d8561e974a",
+    "config": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/active-config.json",
+    "config_sha256": "ad5b2bb249c4c51bd19dda6e46c65230e3fd2622f0eea036fd7d16a991063339",
     "claude_transport": "subscription",
+    "perplexity": "disabled_no_probe",
+    "request_locks_active_at_verification": 0,
+    "status": "running_idle",
+    "port": 8908,
     "source_frozen": false,
-    "proof": "artifacts/agere-core-completion-2026-11-09/ordinary-http-v2/receipt.json",
-    "previous_runtime_receipt": "artifacts/agere-core-completion-2026-11-09/prior-owned-server.json",
-    "last_known_pid": 31175
+    "proof": "artifacts/agere-combined-integration-2026-11-11/final-live-integration.json"
   },
   "current_spending_constraint": "Uncapped with accounting; Claude subscription only, no external Anthropic API key. Synthetic received-source execution only.",
   "current_turn_spending_policy": "Accuracy and evidence coverage first; modest speed tradeoff for lower total cost acceptable per Mike on November5. No unilateral caps. Claude subscription only; account for every attempt and stop on actual subscription limit.",
@@ -280,25 +277,16 @@
     "superseded_by": "Mike directly transferred integration, runtime and fixes to this Codex chat on 2026-10-26."
   },
   "previous_live_runtime": {
-    "commit": "ce09ee3f302c460355c9841ac3e57c31329af05e",
-    "workspace": "/private/tmp/agere-followup-wording",
+    "pid": null,
+    "session": null,
     "port": 8885,
-    "pid": 77003,
-    "session": 18577,
-    "health": "ready",
-    "log": "/tmp/agere_generalization/live_ce09ee3_normal.log",
-    "configuration": "/Users/mikel/clinical-insights-local/config/agere/active_warehouse.json",
-    "config_sha256": "4eec831417af506fee543532c304c9cc65d07794015c98af3cc5c48ef77cef52",
-    "definition_overlay_matches_previous_live": true,
-    "env": {
-      "AGERE_CLAUDE": "on",
-      "AGERE_EVALUATION": "unset",
-      "AGERE_EVALUATION_STRICT": "unset",
-      "AGERE_LEDGER_PATH": "normal shared default"
-    },
-    "verification_provider_calls": 14,
-    "rollback_commit": "6fb43d4",
-    "at": "2026-10-25T13:50:05.026222+00:00"
+    "status": "exited137_reader_policy_diagnosis",
+    "product_commit": "292c3e7caf8e9a229bbfc613fe8833c2f314bbff",
+    "claude_transport": "subscription",
+    "source_frozen": false,
+    "proof": "artifacts/agere-core-completion-2026-11-09/ordinary-http-v2/receipt.json",
+    "previous_runtime_receipt": "artifacts/agere-core-completion-2026-11-09/prior-owned-server.json",
+    "last_known_pid": 31175
   },
   "candidate_receipt": "artifacts/agere-operational-source-projection-2026-11-01/delivery-receipt.json",
   "previous_unsealed_work": {
@@ -533,9 +521,9 @@
     "primary_modified": false,
     "last_known_pid": 36215
   },
-  "previous_sealed_receipt": "artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json",
+  "previous_sealed_receipt": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json",
   "review_followthrough_authorization": "Mike: okay i am stepping away, please take your time on this, it is critical we get this MVP correct, you know our north star, work with claude to figure out it. I wont be here to approve anything so do not ask me for anything just do it",
-  "last_product_commit": "17f52b60a285d7791caf01f30b10f88e48f38565",
+  "last_product_commit": "d46d4eb594fc406fc076e59a871578d8561e974a",
   "current_delivery_scope": "Current finite connected-workflow engineering contract, including accepted supported unknowns. Broad ordinary-question semantic accuracy and independent role qualification are not inferred from these checks.",
   "current_financial_delivery": {
     "context_id": "ANS-8d56378ee795fc4226dc4828",
@@ -543,8 +531,8 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-11T17:51:39.636738+00:00",
-  "last_commit": "f62a2b82be570172df9b131e50cdc2099c70637b",
+  "updated_at": "2026-11-11T18:50:30.622064+00:00",
+  "last_commit": "d46d4eb594fc406fc076e59a871578d8561e974a",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
     "at": "2026-11-03T20:36:08.825946+00:00",
@@ -638,7 +626,7 @@
     "receipt": "artifacts/agere-analytical-completion-2026-11-11/delivery-receipt.json",
     "delivery": "Ordinary Resume now sends eligible capacity-refused aggregate verification to the existing frontier reviewer, retains interrupted drafts with unexecuted deliverable proposals, and exposes actual activity. Population inspection references complete native membership lists while retaining every proof and count. The installed39e971cf code-only archive starts in a fresh process and reopens its saved native answer without data/model/runtime duplication."
   },
-  "next_action": "G5: use the current-source partition receipt and preserved protection registry to prepare source-linked review/acquisition targets for one exact chart-judgment option-meaning contract, covering missing direct-target, unrelated-source, negative and uncertain outcomes. Keep independent references distinct from machine supervision; check source/template separation before fitting. Train and compare one candidate only when its declared fitting/calibration references support the role, then prove abstention/fallback and rollback before activation. Do not train the single-class support or tier-routing pools, repeat passing campaigns or invent labels. Include this delta in the next otherwise-required release package; scheduler PAUSED and no Git pushes.",
+  "next_action": "G5: the combined main app is activated. Advance the exact chart-judgment role only from diverse, explicitly reviewed, source-bound references through the now-connected review/dataset workflow; acquire the missing direct-target, unrelated-target and uncertain reference outcomes without protected keys or invented clinical authority. Keep local documentary feedback separate from independent qualification. Do not repeat the existing fit, broad all25 campaign or passing presentation checks. New default student/routing/bottle activation requires appropriate comparative evidence; ordinary analyses retain native computation and subscription frontier fallback. Preserve the ten-area/all25 outcomes and explicit customer-deployment dependencies. Include this committed delta in the next otherwise-required code release; scheduler PAUSED and no Git pushes.",
   "product_market_audit": {
     "as_of": "2026-11-09T18:42:05.848258+00:00",
     "scope": "Owner product/architecture/market audit against saved receipts and selected current public primary sources. Not independent clinical/model qualification, patent/FTO search, full research review or customer discovery.",
@@ -724,7 +712,7 @@
   },
   "authorized_output_design_chat": {
     "authorized_at": "2026-11-11T17:01:57.081263+00:00",
-    "status": "completed_integrated",
+    "status": "completed_integrated_and_activated",
     "authority": "Mike explicitly requested a new thread to improve output clarity, appearance and usability, with design skills; current build continues.",
     "owned_files": [
       "clinical_core/agere/ask_view.py",
@@ -742,6 +730,8 @@
     "screenshot": "artifacts/agere-output-design-2026-11-11/requested-redesign.png",
     "thread_id": "01a1cb8f-3562-7900-9399-5b06fc8ae6f7",
     "host_id": "local",
-    "integration_receipt": "artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json"
+    "integration_receipt": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
+    "presentation_commit": "5619c1988e6e3e1196f7d6c9309a6e1b7eaaf7b6",
+    "presentation_receipt": "artifacts/agere-output-decision-design-2026-11-11/delivery-receipt.json"
   }
 }

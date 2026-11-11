@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-11T18:18:26.878696+00:00",
+  "updated_at": "2026-11-11T18:50:30.622064+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -206,6 +206,11 @@
         "product_commit": "dea82ffffaaaea6aa86d50b8f27e9cf2128671ef",
         "receipt": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json",
         "scope": "current-source learning acquisition, typed fitting and unresolved-outcome capture; prior combined archive retained"
+      },
+      "current_unarchived_delta": {
+        "product_commit": "d46d4eb594fc406fc076e59a871578d8561e974a",
+        "receipt": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
+        "status": "committed_and_live_local; preceding_package_retained_for_recovery"
       }
     },
     {
@@ -821,60 +826,51 @@
         {
           "path": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json",
           "sha256": "16340c7ce972d7ba8d21bca841fa1d381f357f85c6beb22d7a84cd3f912ca9e5"
+        },
+        {
+          "path": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
+          "sha256": "dfbd1648250dc78b7abab7c26fad7f351fe35612a8d9f98ab7c6b997c8d3f511"
         }
       ],
-      "blocker": "No new student is trained or activated. Source-support observations are single-class (1691 supported); all 11 eligible tier-routing observations select backstop_agent. Current chart observations span six option-meaning contracts and lack critical contrasting outcomes and independent reviewed references. The new person partitions are development grouping proxies, not evidence of clinical/source-template independence. Full25 ordinary semantic acceptance, model/clinical qualification, reviewer economics and customer deployment remain unestablished. Previous combined archive remains the known-good UI/conversation recovery; this learning-source delta is committed but not newly archived.",
+      "blocker": "G5 model/clinical qualification remains open: no accepted new student threshold or independent reviewed references; candidate stays outside active weights. Recorded feedback can inform later measured learning, but no autonomous recursive improvement or learned routing superiority is established. Ordinary all25 semantic acceptance, reviewer economics and customer deployment remain unestablished; prior partial outcomes are retained. Current runtime has combined committed source; existing packaged release remains the recovery archive and does not yet contain this delta. Optional research proposals in retained triage are not all implemented or qualified and do not expand the fixed engineering finish line.",
       "previous_blocker": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim.",
-      "next_action": "G5: connect explicit typed source corrections to the existing source-review workflow so a correction is bound to the exact saved question, option meanings, document version and cutoff; preserve reviewer provenance separately from machine outcomes. Feed only explicitly eligible references into the frozen typed dataset path. Do not repeat the current fit or broad passing campaigns; the current reading-only candidate has no acceptance threshold. Keep main runtime activation coordinated with the preserved concurrent presentation edits. Scheduler PAUSED; no Git pushes.",
+      "next_action": "G5: the combined main app is activated. Advance the exact chart-judgment role only from diverse, explicitly reviewed, source-bound references through the now-connected review/dataset workflow; acquire the missing direct-target, unrelated-target and uncertain reference outcomes without protected keys or invented clinical authority. Keep local documentary feedback separate from independent qualification. Do not repeat the existing fit, broad all25 campaign or passing presentation checks. New default student/routing/bottle activation requires appropriate comparative evidence; ordinary analyses retain native computation and subscription frontier fallback. Preserve the ten-area/all25 outcomes and explicit customer-deployment dependencies. Include this committed delta in the next otherwise-required code release; scheduler PAUSED and no Git pushes.",
       "current_engineering_delivery": {
-        "path": "artifacts/agere-system-one-readiness-2026-11-11/delivery-receipt.json",
-        "sha256": "fbef5ae03e94521d8561a490edb2da0e1ff51e22f9522d77990d3934ab4cef61"
+        "path": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
+        "sha256": "dfbd1648250dc78b7abab7c26fad7f351fe35612a8d9f98ab7c6b997c8d3f511"
       },
-      "latest_engineering_connection": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json"
+      "latest_engineering_connection": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json"
     }
   ],
   "checkpoint": {
-    "kind": "current_source_learning_acquisition_delivery",
+    "kind": "combined_research_correction_presentation_activation",
     "gate_id": "G5",
     "last_delivered_gate": "G5",
-    "product_commit": "dea82ffffaaaea6aa86d50b8f27e9cf2128671ef",
-    "user_behavior_delta": "Document decisions, including unresolved outcomes, enter the existing observation store; exact option tasks can become source-bound frozen development datasets and reading-only runtime-compatible local candidates. Unresolved outcomes and the local student cannot become automatic teaching labels.",
+    "product_commit": "d46d4eb594fc406fc076e59a871578d8561e974a",
+    "user_behavior_delta": "One active main app now serves the redesigned answer and review pathways, research-derived clarification timing/value and passive routing outcomes, plus exact source-bound correction review feeding typed development datasets.",
     "measured_failure_reduction": {
-      "typed_source_to_student_workflow_missing_before_now_connected": true,
-      "unresolved_outcome_capture_missing_before_now_connected": true,
-      "source_bound_decisions": 96,
-      "outer_partition_observations_excluded": 41,
-      "new_provider_calls": 0,
-      "model_acceptance_threshold": null
+      "research_implementation_previously_only_on_other_branch": true,
+      "main_runtime_lagged_current_learning_and_presentation": true,
+      "exact_review_to_typed_dataset_connection_missing": true,
+      "optional_unattached_learning_queue_showed_raw_file_error": true,
+      "eligible_saved_source_readings_available": 1061,
+      "excluded_nontraining_observations": 219,
+      "excluded_incomplete_source_bindings": 34
     },
     "evidence": [
-      "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json",
-      "artifacts/agere-typed-learning-2026-11-11/run.json",
-      "artifacts/agere-typed-learning-2026-11-11/prepare.log",
-      "artifacts/agere-typed-learning-2026-11-11/dataset/manifest.json",
-      "artifacts/agere-typed-learning-2026-11-11/dataset/targets.json",
-      "artifacts/agere-typed-learning-2026-11-11/dataset/exclusions.json",
-      "artifacts/agere-typed-learning-2026-11-11/fit.log",
-      "artifacts/agere-typed-learning-2026-11-11/candidate/agere_chart_judgment.json",
-      "artifacts/agere-typed-learning-2026-11-11/candidate/agere_chart_judgment.joblib",
-      "artifacts/agere-typed-learning-2026-11-11/candidate/predictions.json",
-      "artifacts/agere-typed-learning-2026-11-11/runtime-connection.json",
-      "artifacts/agere-typed-learning-2026-11-11/capture-connection.json",
-      "artifacts/agere-typed-learning-2026-11-11/capture.log",
-      "artifacts/agere-typed-learning-2026-11-11/capture-attempt-2.log",
-      "artifacts/agere-typed-learning-2026-11-11/typed_distillation.executed.py",
-      "artifacts/agere-typed-learning-2026-11-11/typed_distillation.capture-attempt-1.py",
-      "artifacts/agere-typed-learning-2026-11-11/connect_capture.attempt-1.py",
-      "artifacts/agere-typed-learning-2026-11-11/connect_capture.py",
-      "artifacts/agere-typed-learning-2026-11-11/connect_runtime.py"
+      "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
+      "artifacts/agere-combined-integration-2026-11-11/final-live-integration.json",
+      "artifacts/agere-combined-integration-2026-11-11/correction-connection.log",
+      "artifacts/agere-combined-integration-2026-11-11/clarification-compatible.log",
+      "artifacts/agere-output-decision-design-2026-11-11/delivery-receipt.json"
     ],
-    "remaining_gap": "G5 model/clinical qualification remains open: calibration supports no acceptance threshold; calibration and development validation lack direct-target, other-drug and unknown references, and there are no independent reviewed labels. Candidate remains outside active weights. Ordinary full25 semantic acceptance, reviewer economics and customer deployment remain unestablished. Main runtime remains the prior activation; concurrent presentation edits are preserved and this source delta is not newly archived.",
-    "next_action": "G5: connect explicit typed source corrections to the existing source-review workflow so a correction is bound to the exact saved question, option meanings, document version and cutoff; preserve reviewer provenance separately from machine outcomes. Feed only explicitly eligible references into the frozen typed dataset path. Do not repeat the current fit or broad passing campaigns; the current reading-only candidate has no acceptance threshold. Keep main runtime activation coordinated with the preserved concurrent presentation edits. Scheduler PAUSED; no Git pushes.",
+    "remaining_gap": "G5 model/clinical qualification remains open: no accepted new student threshold or independent reviewed references; candidate stays outside active weights. Recorded feedback can inform later measured learning, but no autonomous recursive improvement or learned routing superiority is established. Ordinary all25 semantic acceptance, reviewer economics and customer deployment remain unestablished; prior partial outcomes are retained. Current runtime has combined committed source; existing packaged release remains the recovery archive and does not yet contain this delta. Optional research proposals in retained triage are not all implemented or qualified and do not expand the fixed engineering finish line.",
+    "next_action": "G5: the combined main app is activated. Advance the exact chart-judgment role only from diverse, explicitly reviewed, source-bound references through the now-connected review/dataset workflow; acquire the missing direct-target, unrelated-target and uncertain reference outcomes without protected keys or invented clinical authority. Keep local documentary feedback separate from independent qualification. Do not repeat the existing fit, broad all25 campaign or passing presentation checks. New default student/routing/bottle activation requires appropriate comparative evidence; ordinary analyses retain native computation and subscription frontier fallback. Preserve the ten-area/all25 outcomes and explicit customer-deployment dependencies. Include this committed delta in the next otherwise-required code release; scheduler PAUSED and no Git pushes.",
     "last_observation": {
-      "at": "2026-11-11T18:18:26.878696+00:00",
+      "at": "2026-11-11T18:50:30.622064+00:00",
       "source_frozen": false,
       "new_product_delivery": true,
-      "evidence": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json"
+      "evidence": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json"
     },
     "whitepaper_delivery": {
       "receipt": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json",
@@ -882,7 +878,7 @@
       "html": "artifacts/agere-whitepaper-release-2026-11-11/agere-technical-whitepaper.html",
       "status": "updated_with_current_scoped_authenticated_workflow_and_release_evidence"
     },
-    "updated_at": "2026-11-11T18:18:26.878696+00:00",
+    "updated_at": "2026-11-11T18:50:30.622064+00:00",
     "current_gate_id": "G5"
   },
   "decisions": [
@@ -6617,21 +6613,29 @@
       "reason": "User explicitly redirected away from random tests to implementation. The previous generic trainer mixed incompatible option tasks and lacked source-separated preparation; existing observation capture discarded unresolved states. Both engineering connections are now implemented. One bounded current-source fit found no calibration acceptance threshold.",
       "evidence": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json",
       "scope_impact": "Full ten acceptance areas preserved. No broad campaign, new provider calls, default weights, clinical reference claims, scheduler restart or push."
+    },
+    {
+      "at": "2026-11-11T18:33:46.010028+00:00",
+      "gate": "G5",
+      "decision": "Consolidate the demonstrated branch/runtime gaps as one connected integration, per Mike\u2019s explicit instruction to do all of this now.",
+      "reason": "Six research commits remain outside integration, newest learning code is not in the running process, and separately authorized UI changes are in progress. Missing independent qualification does not prevent these engineering connections.",
+      "scope_impact": "Retain all ten areas, October11 baseline and current principal review; no automatic model qualification, new services, pushes or broad campaigns.",
+      "evidence": "artifacts/agere-combined-integration-2026-11-11/research-integration.patch"
+    },
+    {
+      "at": "2026-11-11T18:50:30.622064+00:00",
+      "decision": "Combined research, typed correction learning and presentation delivered in the main app.",
+      "basis": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
+      "scope_impact": "No acceptance area removed; G5 remains unqualified. Selected research source integrated while preserving newer runtime code and historical branch controls. Current source and active runtime now agree.",
+      "next_action": "G5: the combined main app is activated. Advance the exact chart-judgment role only from diverse, explicitly reviewed, source-bound references through the now-connected review/dataset workflow; acquire the missing direct-target, unrelated-target and uncertain reference outcomes without protected keys or invented clinical authority. Keep local documentary feedback separate from independent qualification. Do not repeat the existing fit, broad all25 campaign or passing presentation checks. New default student/routing/bottle activation requires appropriate comparative evidence; ordinary analyses retain native computation and subscription frontier fallback. Preserve the ten-area/all25 outcomes and explicit customer-deployment dependencies. Include this committed delta in the next otherwise-required code release; scheduler PAUSED and no Git pushes."
     }
   ],
   "unsealed_work": {
-    "status": "typed_learning_delivery_sealed_other_presentation_edits_preserved",
+    "status": "none",
     "source_frozen": false,
     "active_jobs": [],
-    "recovery_commit": "dea82ffffaaaea6aa86d50b8f27e9cf2128671ef",
-    "sealed_delivery": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json",
-    "other_uncommitted_source": [
-      "clinical_core/agere/ask_view.py",
-      "clinical_core/agere/assets/answer_presentation.js",
-      "clinical_core/agere/assets/explore.html",
-      "clinical_core/agere/assets/explore.js"
-    ],
-    "remaining_verification": "No repeat fit or broad campaign. Main runtime has not been restarted; preserve and coordinate separately edited presentation source before combined activation. G5 qualification and typed review reference connection remain open."
+    "remaining_verification": "No unfinished combined activation. G5 qualification and current delta packaging remain explicitly separate.",
+    "last_completed_receipt": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json"
   },
   "current_visual_request": {
     "status": "completed",
@@ -6667,7 +6671,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G5: connect explicit typed source corrections to the existing source-review workflow so a correction is bound to the exact saved question, option meanings, document version and cutoff; preserve reviewer provenance separately from machine outcomes. Feed only explicitly eligible references into the frozen typed dataset path. Do not repeat the current fit or broad passing campaigns; the current reading-only candidate has no acceptance threshold. Keep main runtime activation coordinated with the preserved concurrent presentation edits. Scheduler PAUSED; no Git pushes.",
+  "next_action": "G5: the combined main app is activated. Advance the exact chart-judgment role only from diverse, explicitly reviewed, source-bound references through the now-connected review/dataset workflow; acquire the missing direct-target, unrelated-target and uncertain reference outcomes without protected keys or invented clinical authority. Keep local documentary feedback separate from independent qualification. Do not repeat the existing fit, broad all25 campaign or passing presentation checks. New default student/routing/bottle activation requires appropriate comparative evidence; ordinary analyses retain native computation and subscription frontier fallback. Preserve the ten-area/all25 outcomes and explicit customer-deployment dependencies. Include this committed delta in the next otherwise-required code release; scheduler PAUSED and no Git pushes.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6676,7 +6680,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -6756,8 +6760,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 65291,
-  "owned_server_session": 99171,
+  "owned_server_pid": 68869,
+  "owned_server_session": 30870,
   "last_run_observation": {
     "at": "2026-11-08T23:35:47.474869+00:00",
     "no_active_jobs": true,
@@ -6982,7 +6986,7 @@
     ]
   },
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
-  "latest_receipt": "artifacts/agere-typed-learning-2026-11-11/delivery-receipt.json",
+  "latest_receipt": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
   "code_only_storage_exception": {
     "authorization": "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
     "scope": "One code-only archive and fresh-code rehearsal from the linked proposal; existing source/model/Python/work/ledger stores referenced, never copied. General60GBguard unchanged.",
@@ -7026,7 +7030,7 @@
   "latest_maintenance_receipt": "artifacts/agere-storage-cleanup-2026-11-11/delivery-receipt.json",
   "authorized_output_design_chat": {
     "authorized_at": "2026-11-11T17:01:57.081263+00:00",
-    "status": "completed_integrated",
+    "status": "completed_integrated_and_activated",
     "authority": "Mike explicitly requested a new thread to improve output clarity, appearance and usability, with design skills; current build continues.",
     "owned_files": [
       "clinical_core/agere/ask_view.py",
@@ -7044,6 +7048,8 @@
     "screenshot": "artifacts/agere-output-design-2026-11-11/requested-redesign.png",
     "thread_id": "01a1cb8f-3562-7900-9399-5b06fc8ae6f7",
     "host_id": "local",
-    "integration_receipt": "artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json"
+    "integration_receipt": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
+    "presentation_commit": "5619c1988e6e3e1196f7d6c9309a6e1b7eaaf7b6",
+    "presentation_receipt": "artifacts/agere-output-decision-design-2026-11-11/delivery-receipt.json"
   }
 }
