@@ -44,7 +44,7 @@ const fmt=(v,d)=>{if(!isNum(v))return v==null?'—':String(v);const a=Math.abs(v
 const usdK=v=>!isNum(v)?'—':Math.abs(v)>=1e6?(v<0?'−':'')+'$'+fmt(Math.abs(v)/1e6,1)+'M':Math.abs(v)>=1e3?(v<0?'−':'')+'$'+fmt(Math.abs(v)/1e3,0)+'k':(v<0?'−$':'$')+fmt(Math.abs(v),0);
 const usd=v=>isNum(v)?(v<0?'−$':'$')+Math.abs(v).toLocaleString(undefined,{maximumFractionDigits:0}):'—';
 const pct=(v,d)=>isNum(v)?(100*v).toFixed(d==null?1:d)+'%':'—';
-const label=k=>String(k).replace(/_/g,' ');
+const label=k=>fieldLabel(k);
 const store={get(k){try{return sessionStorage.getItem(k)}catch(_){return null}},set(k,v){try{v==null?sessionStorage.removeItem(k):sessionStorage.setItem(k,v)}catch(_){}}};
 const newId=()=>(window.crypto&&crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2)).replace(/[^A-Za-z0-9_-]/g,'');
 const state={cid:store.get('agere-conversation'),turns:[],active:-1,busy:false,csv:{},seq:0,briefing:null,outFilter:null};
@@ -103,7 +103,7 @@ function intervals(rows,opt){opt=opt||{};const W=CW(),lh=40,L=Math.min(Math.roun
  return s+'</svg>'}
 
 /* ---------- tables + CSV ---------- */
-function cols(rows,skip){const seen=[];rows.slice(0,50).forEach(r=>Object.keys(r||{}).forEach(k=>{if(!seen.includes(k)&&!(skip||[]).includes(k))seen.push(k)}));return seen}
+function cols(rows,skip){const seen=[];rows.forEach(r=>Object.keys(r||{}).forEach(k=>{if(!seen.includes(k)&&!(skip||[]).includes(k))seen.push(k)}));return seen}
 function cell(v){if(v==null)return '';if(Array.isArray(v))return v.map(x=>typeof x==='object'?JSON.stringify(x):x).join(', ');if(typeof v==='object')return JSON.stringify(v);return v}
 function tableHTML(rows,opt){opt=opt||{};if(!rows||!rows.length)return '';const id='csv'+(++state.seq);state.csv[id]={rows,name:opt.name||'agere-table'};
  const cs=opt.cols||cols(rows,opt.skip);const lim=opt.limit||200;
@@ -242,18 +242,17 @@ function worklist(a){const labels=((a.overall||{}).reason_labels)||{};let rows=a
     top_reasons:(v,r)=>(v||[]).map(c=>{const l=labels[c]||{};return '<span class="rchip '+esc(l.category||'')+'" title="'+esc(c)+'">'+esc(l.label||c)+'</span>'}).join('')+
      (r.reason_detail?'<details class="why"><summary>Evidence</summary><span class="muted" style="font-size:12px">'+esc(r.reason_detail)+'</span></details>':''),
     suggested_action:v=>'<span style="font-size:12px">'+esc(v)+'</span>'}})}
-function vizTrajectory(a){const rows=a.table||[];if(!rows.length||!('patient_id' in rows[0]))return null;const metric=['probability','change','slope_per_year'].find(k=>isNum(rows[0][k]));
- let h='<section class="sec"><div class="kpis"><div class="kpi"><div class="l">Patients in this answer</div><div class="v">'+fmt(a.count!=null?a.count:rows.length)+'</div></div></div>';
- if(metric){const top=rows.slice().sort((x,y)=>Math.abs(y[metric])-Math.abs(x[metric])).slice(0,15);h+='<h3 style="margin-top:12px">Largest '+esc(label(metric))+' (top '+top.length+')</h3>'+
-  hbars(top.map(r=>({label:r.patient_id,value:r[metric]})),{fmt:v=>metric==='probability'?pct(v,0):fmt(v),title:label(metric)+' by patient'})}
- return h+tableHTML(rows,{name:'trajectory-patients'})+'</section>'}
+function vizTrajectory(a){const rows=a.table||[];if(!rows.length||!('patient_id' in rows[0]))return null;
+ const metric=['probability','change','slope_per_year'].find(k=>isNum(rows[0][k]));let h='';
+ if(metric){const top=rows.slice().sort((x,y)=>Math.abs(y[metric])-Math.abs(x[metric])).slice(0,15);h+='<section class="sec"><h3>Largest '+esc(label(metric))+' (top '+top.length+')</h3>'+hbars(top.map(r=>({label:r.patient_id,value:r[metric]})),{fmt:v=>metric==='probability'?pct(v,0):fmt(v),title:label(metric)+' by patient'})+'</section>'}
+ return h+patientOverview(a)}
 function vizTable(a){const rows=a.table||[];if(!rows.length)return '';const columns=[...new Set(rows.flatMap(r=>Object.keys(r)))];const key=GROUP_KEYS.find(k=>columns.includes(k)&&rows.some(r=>r[k]!=null&&typeof r[k]!=='object'))||columns.find(k=>rows.some(r=>typeof r[k]==='string'));
  const metric=pickMetric(rows,a.question||a.interpretation);let h='<section class="sec">';
  if(key&&metric&&rows.length>1&&rows.length<=60){const drillable=['group','segment','practice','pcp','payer','coverage_type','facility','organization_id','month','year','quarter'].includes(key);
   if(rows.every(r=>isTime(r[key]))){const cats=rows.map(r=>String(r[key]));h+='<h3>'+esc(label(metric))+' by '+esc(label(key))+'</h3>'+lines([{name:label(metric),pts:rows.map((r,i)=>[i,r[metric]])}],{title:label(metric)+' over time',cats,ylabel:label(metric)})}
   else{const sorted=rows.slice().sort((x,y)=>(y[metric]||0)-(x[metric]||0));h+='<h3>'+esc(label(metric))+' by '+esc(label(key))+'</h3>'+hbars(sorted.slice(0,30).map(r=>({label:r[key]??'Not recorded',value:r[metric],ask:drillable&&r[key]!=null?drill(r[key]):null})),{title:label(metric)+' by '+label(key),ref:/ratio/.test(metric)?1:null,refLabel:'no difference (1.0)'})+
    (drillable?'<p class="hint">Select a bar to ask a follow-up about that '+esc(label(key))+'.</p>':'')}}
- h+=tableHTML(rows,{name:'agere-answer',cols:a.table_columns,ask:key&&['group','segment','practice','pcp','payer','coverage_type','facility'].includes(key)?(r=>drill(r[key])):null});
+ h+='<details class="overview-records"><summary>Explore returned data ('+rows.length.toLocaleString()+' rows)</summary>'+tableHTML(rows,{name:'agere-answer',cols:a.table_columns,ask:key&&['group','segment','practice','pcp','payer','coverage_type','facility'].includes(key)?(r=>drill(r[key])):null})+'</details>';
  return h+'</section>'}
 function vizScalar(a){if(a.answer_type==='count'||a.answer_type==='value'){const v=a.answer_type==='count'?a.count:a.value;if(v==null||typeof v==='string')return '';
   return '<section class="sec"><div class="big">'+esc(fmt(v))+(a.unit?esc(a.unit):'')+'</div><div class="muted">'+(a.answer_type==='count'?'count':'value')+(a.unknown_count?' · '+fmt(a.unknown_count)+' patients could not be evaluated':'')+'</div></section>'}
@@ -915,13 +914,14 @@ function badges(t){const d=t.data||{},a=d.answer||{},x=executionInfo(d);const st
 function resolvedLine(t){const c=(t.data||{}).conversation;const r=c?c.resolved_question:t.resolved;if(!r||r===t.question)return '';
  return '<div class="resolved">Answered as: <b>'+esc(r)+'</b>'+(c&&c.method==='hosted'?' (follow-up rewritten by a hosted model, then planned normally)':'')+'</div>'}
 function headlineHTML(a){let hl=String(a.headline||a.status||'');const cut=hl.indexOf(' Warnings (');if(cut>0&&(a.warnings||[]).length)hl=hl.slice(0,cut);
- return '<h2 class="headline'+(hl.length>200?' long':'')+'">'+esc(hl)+'</h2>'}
+ const boundary=hl.search(/[.!?](?=\s+[A-Z0-9])/),short=hl.length>280&&boundary>0?hl.slice(0,boundary+1):hl,remaining=short===hl?'':hl.slice(boundary+1).trim();
+ return '<div class="answer-narrative"><h2 class="headline">What the answer shows</h2><p>'+esc(short)+'</p>'+(remaining?'<details><summary>Read the full saved summary</summary><p>'+esc(remaining)+'</p></details>':'')+'</div>'}
 function warnBox(a){const w=(a.warnings||[]),m=(a.missing||[]);let h='';
  if(a.status==='clarify'&&(a.readings||[]).length&&typeof a.readings[0]==='string')h+='<div class="alert warn" role="note"><h3>Which do you mean?</h3><p>Agere\'s independent analysts found more than one defensible reading of this question. Ask again with the one you mean:</p><ul>'+a.readings.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
  if(w.length)h+='<div class="alert warn" role="note"><h3>Warnings ('+w.length+')</h3><ul>'+w.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
  if(m.length)h+='<div class="alert '+(a.status==='unsupported'?'bad':'warn')+'" role="note"><h3>Not covered</h3><ul>'+m.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';return h}
 function readingsBox(a,q){const r=a.readings||[];if(r.length<2||typeof r[0]==='string')return '';const show=v=>typeof v==='number'?fmt(v):v&&v.patients!=null?fmt(v.patients)+' patients':v&&v.rows?v.rows.length+' rows':esc(JSON.stringify(v));let h='<div class="sec" data-readings><h3>Two defensible readings</h3>'+(a.clarifying_question?'<p class="hint">'+esc(a.clarifying_question)+'</p>':'')+'<div class="readings">';r.forEach((x,i)=>{h+='<div class="reading'+(x.default?' default':'')+'"><div class="muted">'+(x.default?'Shown (default)':'Alternative')+'</div>'+'<div class="val">'+show(x.result)+'</div><p>'+esc(x.definition||'')+'</p>'+(x.query?'<details><summary>Query</summary><pre>'+esc(x.query)+'</pre></details>':'')+(q&&x.definition?'<button type="button" class="btn small" data-ask="'+esc(q+' (definition: '+x.definition+')')+'">Use this reading</button>':'')+'</div>'});return h+'</div></div>'}
-function actionLink(c){if(!c||!/^ANS-[0-9a-f]{24}$/.test(c.id||''))return '';return '<section class="next-step"><div><h3>Take this answer further</h3><p>Create an interactive view, explore the saved cohort, or prepare synthetic follow-up work.</p></div><a class="btn primary" href="/action-center?context='+encodeURIComponent(c.id)+'">Open action workspace ↗</a></section>'}
+function actionLink(c,blocked=false){if(!c||!/^ANS-[0-9a-f]{24}$/.test(c.id||''))return '';return '<section class="next-step"><div><h3>'+esc(blocked?'Review this saved answer':'Choose your next step')+'</h3><p>'+esc(blocked?'This answer is unavailable for follow-ups. Inspect the saved evidence or start a new question.':'Ask a follow-up below, or open the workspace to prepare a report or synthetic review work.')+'</p></div><a class="btn primary" href="/action-center?context='+encodeURIComponent(c.id)+'">Open action workspace ↗</a></section>'}
 function clarificationCard(c){if(!c)return '';const pending=c.status==='pending',tid='intent-'+c.id;
  const message={complete:'Your response was saved. The continued analysis appears below.',running:'Your response was saved and the analysis is continuing.',failed:'The continuation stopped. Completed work and the failed attempt are saved. Start a new analysis to try again.',pending:'Completed work is saved. Choose what you mean to continue the affected analysis.'}[c.status]||'This clarification is unavailable.';
  return '<section class="sec clarification-card" data-clarification="'+esc(c.id)+'"><h3>'+esc(c.question)+'</h3><p>'+esc(c.reason)+'</p><p class="hint" role="status">'+esc(message)+'</p>'+
@@ -939,14 +939,15 @@ function renderTurn(i){const t=state.turns[i];const box=$('#answer');state.activ
  if(t.data.clarification){box.innerHTML='<div class="q">'+esc(t.data.clarification.original_question||t.question)+'</div>'+clarificationCard(t.data.clarification)+'<div data-recorded-work>'+recordedWork(t)+'</div>';return}
  const a=t.data.answer||{};state.csv={};const x=executionInfo(t.data),status={answered:'Answer ready',partial:'Partial answer',not_understood:'Needs clarification',unsupported:'Not supported',low_confidence:'Needs review'}[a.status]||label(a.status||'Unknown status');
  let h='<div class="answer-topline"><span class="eyebrow">'+(t.archive?'SAVED ANALYSIS':'ANALYSIS RESULT')+'</span><button class="text-button" data-edit-question="'+esc(t.question)+'">Edit question ↗</button></div><div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+headlineHTML(a)+
- '<div class="badges"><span class="badge '+esc(a.status)+'">'+esc(status)+'</span><span class="badge">'+(t.archive?'Saved step API estimate: ':'This step API estimate: ')+esc(x.cost)+'</span>'+(t.seconds!=null?'<span class="badge">'+t.seconds.toFixed(1)+' seconds</span>':'')+'</div>'+
+ '<div class="badges"><span class="badge '+esc(a.status)+'">'+esc(status)+'</span>'+(a.verification==='unverified'?'<span class="badge partial">Verification incomplete</span>':'')+'<span class="badge">'+(t.archive?'Saved step API estimate: ':'This step API estimate: ')+esc(x.cost)+'</span>'+(t.seconds!=null?'<span class="badge">'+t.seconds.toFixed(1)+' seconds</span>':'')+'</div>'+
  (x.scope?'<p class="hint" data-cost-scope>'+esc(x.scope)+'</p>':'')+
- (t.archiveNotice?'<div class="alert warn">'+esc(t.archiveNotice)+'</div>':'')+warnBox(a)+readingsBox(a,t.resolved||t.question);
- h+='<div class="answer-tabs" role="tablist" aria-label="Answer views">'+['overview','data','method'].map((n,j)=>'<button type="button" id="tab-'+n+'" role="tab" aria-controls="result-'+n+'" aria-selected="'+(j===0)+'" tabindex="'+(j===0?0:-1)+'" data-answer-tab="'+n+'">'+({overview:'Overview',data:'Data',method:'Method & sources'}[n])+'</button>').join('')+'</div><section class="answer-panel" id="result-overview" data-answer-panel="overview" role="tabpanel" aria-labelledby="tab-overview">';
+ (t.archiveNotice?'<div class="alert warn">'+esc(t.archiveNotice)+'</div>':'')+(a.status==='clarify'?warnBox(a):'')+readingsBox(a,t.resolved||t.question);
+ h+='<div class="answer-tabs" role="tablist" aria-label="Answer views">'+['overview','data','method'].map((n,j)=>'<button type="button" id="tab-'+n+'" role="tab" aria-controls="result-'+n+'" aria-selected="'+(j===0)+'" tabindex="'+(j===0?0:-1)+'" data-answer-tab="'+n+'">'+({overview:'Answer',data:'Records & data',method:'Method & sources'}[n])+'</button>').join('')+'</div><section class="answer-panel" id="result-overview" data-answer-panel="overview" role="tabpanel" aria-labelledby="tab-overview">';
+ h+=answerSummary(a)+resultLimitations(a);
  try{h+=visual(a)||'<p class="hint">See the method and sources for the available evidence.</p>'}catch(err){h+='<div class="alert warn">Visual unavailable: '+esc(err.message)+'</div>'+tableHTML(a.table||[],{name:'agere-answer'})}
- h+='</section><section class="answer-panel" id="result-data-panel" data-answer-panel="data" role="tabpanel" aria-labelledby="tab-data" hidden><div class="result-search"><label class="sr" for="result-search">Search returned rows</label><input id="result-search" type="search" placeholder="Search returned rows"><span id="result-count" class="result-status"></span></div><div id="result-data"></div></section><section class="answer-panel" id="result-method" data-answer-panel="method" role="tabpanel" aria-labelledby="tab-method" hidden>'+requestPlan(t.data)+executionDetails(t.data)+details(a)+'</section>';
+ h+='</section><section class="answer-panel" id="result-data-panel" data-answer-panel="data" role="tabpanel" aria-labelledby="tab-data" hidden><div class="data-view-heading"><div><h3>Explore the returned data</h3><p>Search records, open details, or download the original values.</p></div><div id="result-downloads"></div></div><div class="result-search"><label class="sr" for="result-search">Search returned rows</label><input id="result-search" type="search" placeholder="Search returned rows"><span id="result-count" class="result-status" role="status"></span><label class="column-toggle"><input type="checkbox" id="result-all-columns"> Show all columns</label></div><div id="result-data"></div></section><section class="answer-panel" id="result-method" data-answer-panel="method" role="tabpanel" aria-labelledby="tab-method" hidden>'+sourceDetails(a)+requestPlan(t.data)+executionDetails(t.data)+details(a)+'</section>';
  const sg=activeContext&&!t.archiveBlocked&&activeContext.result_scope_available!==false?suggestions(a):[];if(sg.length)h+='<div class="chips" aria-label="Follow-ups">'+sg.map(v=>'<button type="button" class="chip" data-ask="'+esc(v)+'">'+esc(v)+' ↗</button>').join('')+'</div>';
- h+=(t.data.workflow?.length?'<section class="answer-workflow"><h3>Your requested workflow</h3>'+t.data.workflow.map(s=>'<p><strong>'+esc(label(s.kind))+' · '+esc(label(s.status))+'</strong> — '+esc(s.title)+(s.reason?'<small>'+esc(s.reason)+'</small>':'')+'</p>').join('')+'</section>':'')+actionLink(t.data.action_context)+'<div class="sec flag" data-flag>'+(t.data.learning?.components?.component_learning&&t.data.action_context?.id?'<button type="button" class="btn small" data-answercorrect="1">Mark answer correct</button> ':'')+'<button type="button" class="btn small" data-flagopen="1">Flag as wrong</button></div>';
+ h+=(t.data.workflow?.length?'<section class="answer-workflow"><h3>Your requested workflow</h3>'+t.data.workflow.map(s=>'<p><strong>'+esc(label(s.kind))+' · '+esc(label(s.status))+'</strong> — '+esc(s.title)+(s.reason?'<small>'+esc(s.reason)+'</small>':'')+'</p>').join('')+'</section>':'')+actionLink(t.data.action_context,t.archiveBlocked)+'<div class="sec flag" data-flag>'+(t.data.learning?.components?.component_learning&&t.data.action_context?.id?'<button type="button" class="btn small" data-answercorrect="1">Mark answer correct</button> ':'')+'<button type="button" class="btn small" data-flagopen="1">Flag as wrong</button></div>';
  box.innerHTML=h+'<div data-recorded-work>'+recordedWork(t)+'</div>';$('#tab-data').setAttribute('aria-controls','result-data-panel');renderResultData();showAnswerTab(activeTab);
  if(t.focus){const el=box.querySelector('[data-focus="'+t.focus+'"]');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}}
 function renderThread(){const ul=$('#thread');ul.innerHTML=state.turns.map((t,i)=>{const a=(t.data||{}).answer||{};const st=t.pending?'pending':t.error?'error':(a.status||t.status||'');
@@ -1085,8 +1086,8 @@ renderThread();loadEcon();setupExplorer();renderDemo();
 def page():
     assets = Path(__file__).parent / 'assets'
     shell = (assets / 'explore.html').read_text().replace('/* EXPLORE_CSS */',
-        (assets / 'answer.css').read_text() + '\n' + (assets / 'explore.css').read_text())
+        (assets / 'answer.css').read_text() + '\n' + (assets / 'explore.css').read_text() + '\n' + (assets / 'answer_presentation.css').read_text())
     return (PAGE.replace('__EXPLORE_SHELL__', shell)
-            .replace('__EXPLORE_JS__', (assets / 'explore.js').read_text() + '\n' +
+            .replace('__EXPLORE_JS__', (assets / 'answer_presentation.js').read_text() + '\n' + (assets / 'explore.js').read_text() + '\n' +
                      (assets / 'experience.js').read_text())
             .replace('__DEMO_STEPS__', json.dumps(DEMO_STEPS).replace('</', '<\\/')))

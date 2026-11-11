@@ -87,6 +87,8 @@ function syncScope(t){
 }
 function updateScopeNote(){
  const scope=$('#question-scope').value;
+ $('#q').placeholder=activeContext&&!state.turns[state.active]?.archiveBlocked?'Ask a follow-up about this answer…':'Ask anything about your data…';
+ $('#composer-status').textContent=scope==='saved'?'Exact saved patient set':scope==='warehouse'?'Across your connected sources':'Scope selected above';
  $('#population-members').hidden=!activeContext||!scope.startsWith('population:')||!!state.turns[state.active]?.archiveBlocked;
  $('#scope-note').textContent=scope==='input'?'Uses the original question’s saved input patients. These are not necessarily patients selected by its answer, and this choice does not authorize work.':scope==='saved'?'This follow-up keeps the exact saved patient set. Choose “Entire warehouse” to start a broader question.':scope==='auto'?'Ask about this analysis. For a patient follow-up, choose the population behind the count you mean.':scope.startsWith('population:')?'Follows this source-defined population, keeping its original period and filters.':'Use your own words. Add a date range, comparison, or filter.';
 }
@@ -113,10 +115,13 @@ function dataTables(a){
  if(a.answer_type==='count'||a.answer_type==='value')return[{title:'Computed value',rows:[{[a.answer_type]:a.count??a.value,unit:a.unit||''}]}];
  return[];
 }
-function renderResultData(term=''){
+function renderResultData(term='',page=0){
  const a=state.turns[state.active]?.data?.answer;if(!a||!$('#result-data'))return;
+ // An already-running process may still hold the preceding HTML template.
+ if(!$('#result-downloads')){let total=0,shown=0;$('#result-data').innerHTML=dataTables(a).map(t=>{total+=t.rows.length;const rows=t.rows.filter(r=>!term||Object.values(r).some(v=>String(cell(v)).toLowerCase().includes(term.toLowerCase())));shown+=rows.length;return '<h3>'+esc(t.title)+'</h3>'+(rows.length?tableHTML(rows,{name:'agere-result',cols:t.columns}):'<p class="hint">No matching rows.</p>')}).join('');$('#result-count').textContent=shown+' of '+total+' rows';return}
  const tables=dataTables(a);let total=0,shown=0;
- $('#result-data').innerHTML=tables.map(t=>{total+=t.rows.length;const rows=t.rows.filter(r=>!term||Object.values(r).some(v=>String(cell(v)).toLowerCase().includes(term.toLowerCase())));shown+=rows.length;return '<h3>'+esc(t.title)+'</h3>'+(rows.length?tableHTML(rows,{name:'agere-result',cols:t.columns}):'<p class="hint">No matching rows.</p>')}).join('')||'<p class="hint">This answer has no tabular result. See the overview and method for the returned findings.</p>';
+ $('#result-downloads').innerHTML=tables.map(t=>csvButton(t.rows,'agere-result')).join('');
+ $('#result-data').innerHTML=tables.map(t=>{total+=t.rows.length;const rows=t.rows.filter(r=>!term||JSON.stringify(r).toLowerCase().includes(term.toLowerCase()));shown+=rows.length;return '<h3 class="data-table-title">'+esc(t.title)+'</h3>'+presentationTable(rows,{...a,table:t.rows,table_columns:t.columns},{page,allColumns:$('#result-all-columns').checked})}).join('')||'<p class="hint">This answer has no tabular result. See the answer and method for the returned findings.</p>';
  $('#result-count').textContent=shown+' of '+total+' rows';
 }
 function openAppDialog(id){lastDialogFocus=document.activeElement;$('#'+id).showModal()}
@@ -135,6 +140,13 @@ function setupExplorer(){
   if(b.dataset.sourceQuestion)draftQuestion('How many received records are in the '+b.dataset.sourceQuestion+' source?');
  });
  document.addEventListener('input',e=>{if(e.target.id==='result-search')renderResultData(e.target.value)});
+ document.addEventListener('change',e=>{if(e.target.id==='result-all-columns')renderResultData($('#result-search').value)});
+ document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-open-answer-tab],[data-record-toggle],[data-record-page]');if(!b)return;
+  if(b.dataset.openAnswerTab){showAnswerTab(b.dataset.openAnswerTab);$('#tab-'+b.dataset.openAnswerTab).focus();$('#tab-'+b.dataset.openAnswerTab).scrollIntoView({block:'start',behavior:'smooth'})}
+  if(b.dataset.recordToggle){const row=document.getElementById(b.dataset.recordToggle),open=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',String(open));row.hidden=!open;b.textContent=open?'Hide details':'View details'}
+  if(b.dataset.recordPage!=null){renderResultData($('#result-search').value,+b.dataset.recordPage);$('#result-data').scrollIntoView({block:'start',behavior:'smooth'})}
+ });
  document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();if(!state.busy){showPage('explore');$('#q').focus()}}
   const tab=e.target.closest('[data-answer-tab]');
