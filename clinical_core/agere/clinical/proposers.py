@@ -1638,5 +1638,32 @@ def continue_from_artifact(stack, context_id, feedback=None):
         usage['new_paid_api_calls']=max(usage['new_paid_api_calls'],len(added))
         if any(row[1]!='validated' for row in added):usage['api_cost_known']=False
         exc.planner_receipt={**getattr(exc,'planner_receipt',{}),**usage,'artifact_feedback_context':context_id,'proposers':c.log}
+        from .shared_planner import economics
+        from . import evaluation
+        exc.new_paid_api_calls=usage['new_paid_api_calls']
+        exc.planning_economics=economics(exc.planner_receipt)
+        partial=getattr(exc,'partial_result',None)
+        if isinstance(partial,dict) and not evaluation.active():
+            try:
+                checkpoint=(partial.get('investigation') or {}).get('recovery_checkpoint') or {}
+                draft=checkpoint.get('draft') or {}
+                contract=partial.get('request_contract') or {}
+                if (partial.get('question')!=question or partial.get('execution_snapshot')!=context['source']
+                    or 'population' not in contract or contract['population']!=population
+                    or checkpoint.get('source')!=context['source']
+                    or (checkpoint.get('context') or {}).get('question')!=question
+                    or draft.get('status')!='partial' or checkpoint.get('draft_digest')!=H.digest(draft)
+                    or (partial.get('answer') or {}).get('status')!='partial' or partial.get('workflow')):
+                    raise ValueError('Interrupted analysis does not match the saved question, population, source and unfinished draft')
+                # Keep the original immutable answer and this request's attempts.
+                # A partial result never executes work or becomes accepted prose.
+                retained={**partial,'answer':{**partial['answer'],'verification':'unverified'},
+                    'planner_receipt':{**(partial.get('planner_receipt') or {}),**exc.planner_receipt,
+                                       'request_contract':contract},
+                    'new_paid_api_calls':exc.new_paid_api_calls,'planning_economics':exc.planning_economics}
+                exc.action_context=A.capture(stack.path,question,retained,
+                                             original_question=context.get('original_question'))
+            except (OSError,ValueError,TypeError,KeyError,sqlite3.Error) as capture_error:
+                exc.action_context_error=str(capture_error)
         raise
     finally:c.close()

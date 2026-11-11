@@ -57,8 +57,40 @@ async function api(url, body) {
     : {headers:{'X-Agere-Response-View':'workspace'}});
   let result;
   try { result = await response.json(); } catch (_) { throw Error('Could not read the server response. Try again.'); }
-  if (!response.ok || result.error) throw Error(result.error || 'The request could not be completed.');
+  if (!response.ok || result.error) {
+    const error = Error(result.error || 'The request could not be completed.');
+    error.receipt = result;
+    throw error;
+  }
   return restoreWorkspaceRows(result);
+}
+function showResumeInterruption(error) {
+  let notice = $('resume-interruption');
+  if (!notice) {
+    notice = document.createElement('section'); notice.id = 'resume-interruption';
+    notice.className = 'warning'; notice.setAttribute('role','alert');
+    $('center').prepend(notice);
+  }
+  notice.replaceChildren();
+  const receipt = error.receipt || {}, saved = receipt.action_context?.id;
+  const message = document.createElement('p'); message.textContent = error.message;
+  notice.append(message);
+  if (/^ANS-[a-f0-9]{24}$/.test(saved || '')) {
+    const link = document.createElement('a'); link.textContent = 'Open saved progress — review unfinished';
+    link.href = '/action-center?context='+encodeURIComponent(saved); notice.append(link);
+  } else {
+    const retained = document.createElement('p');
+    retained.textContent = receipt.action_context_error
+      ? 'Your previous saved analysis is unchanged. New progress could not be saved: '+receipt.action_context_error
+      : 'Your previous saved analysis is unchanged. No new saved progress was confirmed by the server.';
+    notice.append(retained);
+  }
+  if (receipt.new_paid_api_calls !== undefined) {
+    const usage = document.createElement('p');
+    usage.textContent = 'Attempts recorded for this continuation: '+receipt.new_paid_api_calls+'.'
+      +(receipt.planning_economics?.new_api_estimate_usd === null ? ' Total API cost is not yet known.' : '');
+    notice.append(usage);
+  }
 }
 function deferredCell(value) { return value?.$agere_deferred?.schema === 'saved-evidence-cell/1'; }
 function sameSavedValue(a,b) {
@@ -369,11 +401,14 @@ function render() {
   resume.hidden = !canResumeInvestigation();
   resume.textContent = 'Continue analysis';
   resume.onclick = () => run(async () => {
+    $('resume-interruption')?.remove();
     resume.disabled = true; resume.textContent = 'Reviewing saved work…';
     try {
       const result = await api('/api/stack/investigation/resume', {context_id:c.id});
       if (!result.action_context?.id) throw Error('The analysis did not produce a saved result.');
       location.href = '/action-center?context='+encodeURIComponent(result.action_context.id);
+    } catch (error) {
+      showResumeInterruption(error);
     } finally { resume.disabled = false; resume.textContent = 'Continue analysis'; }
   });
   $('center').hidden = false;

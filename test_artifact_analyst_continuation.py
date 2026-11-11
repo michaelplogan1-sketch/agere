@@ -191,6 +191,69 @@ class Continuation(unittest.TestCase):
    P.continue_from_artifact(self.stack,key)
   cascade.assert_not_called()
 
+ def test_interrupted_resume_saves_new_draft_and_failure_accounting_without_replacing_history(self):
+  from clinical_core.agere.gateway import BudgetLedger
+  from clinical_core.agere.service import _failure_receipts
+  def bound_origin(original,checkpoint):
+   from clinical_core.agere.clinical.backstop_agent import NATIVE_SQL_CONTRACT
+   call=original['investigation']['tool_calls'][0];call['actor_callback_id']='saved-native-callback'
+   call['result'].update(result_view='agere_result_1',native_sql_contract=NATIVE_SQL_CONTRACT,
+     executed_query=call['input']['sql'],columns=['patient_id','events'],truncated=False)
+   checkpoint['draft'].update(table_from_tool='agere_result_1')
+   checkpoint['draft_digest']=H.digest(checkpoint['draft'])
+  for changed in (None,'source','population','question','draft','live_source','save_error','evaluation'):
+   with self.subTest(changed=changed):
+    key=self.draft_with_rejected_returned_answer(bound_origin)
+    original=A.snapshot_path(A.root(self.path)/key/'answer.json').read_bytes()
+    partial=copy.deepcopy(self.result);partial.update(question=self.question,workflow=[],graph={'nodes':[]},
+      execution_snapshot=A.source_identity(self.path),request_contract={'population':None})
+    partial['answer'].update(status='partial',verification='unverified',headline='New native work, review interrupted')
+    draft={'status':'partial','headline':'New unfinished draft '+str(changed)}
+    partial['investigation']['recovery_checkpoint']={'source':partial['execution_snapshot'],
+      'context':{'question':self.question},'draft':draft,'draft_digest':H.digest(draft),'review_contexts':[]}
+    if changed=='source':partial['execution_snapshot']={**partial['execution_snapshot'],'source_digest':'changed'}
+    if changed=='population':partial['request_contract']['population']=[]
+    if changed=='question':partial['question']='A different question'
+    if changed=='draft':partial['investigation']['recovery_checkpoint']['draft_digest']='changed'
+    error=ProviderUnavailable('Authored subscription interruption',kind='rate_limit');error.partial_result=partial
+    test=self
+    class Cascade:
+     def __init__(self,*args,**kwargs):
+      self.ledger=BudgetLedger(test.path/'resume-attempts.sqlite3');self.log=[];self.started=0
+     def attempt(self,*args):
+      if changed=='live_source':
+       with sqlite3.connect(test.path/'semantic.sqlite3') as db:db.execute("UPDATE meta SET value='new-source' WHERE key='source_digest'")
+      raise error
+     def usage(self):return {'new_paid_api_calls':1,'known_api_estimate_usd':.01,'api_cost_known':False}
+     def close(self):self.ledger.close()
+    from contextlib import ExitStack
+    from clinical_core.agere.clinical import evaluation
+    review_context=A.load_unfinished_for_review(self.path,key)
+    with ExitStack() as patches:
+     patches.enter_context(patch.object(P,'Cascade',Cascade));patches.enter_context(patch.object(P.request_plan.Catalog,'load',return_value=object()))
+     if changed=='save_error':patches.enter_context(patch.object(A,'capture',side_effect=OSError('Authored disk interruption')))
+     if changed=='evaluation':
+      # Evaluation normally loads its own isolated context. Supply that boundary
+      # here to check that a partial failure never publishes into ordinary work.
+      patches.enter_context(patch.object(A,'load_unfinished_for_review',return_value=review_context))
+      patches.enter_context(evaluation.scope('authored-resume-isolation'))
+     with self.assertRaises(ProviderUnavailable)as caught:P.continue_from_artifact(self.stack,key)
+    self.assertIs(caught.exception,error)
+    self.assertEqual(A.snapshot_path(A.root(self.path)/key/'answer.json').read_bytes(),original)
+    response=_failure_receipts(error)
+    self.assertEqual(response['new_paid_api_calls'],1);self.assertIsNone(response['planning_economics']['new_api_estimate_usd'])
+    if changed=='evaluation':
+     self.assertNotIn('action_context',response);self.assertNotIn('action_context_error',response)
+    elif changed:
+     self.assertNotIn('action_context',response);self.assertIn('action_context_error',response)
+    else:
+     saved=response['action_context']['id'];self.assertNotEqual(saved,key)
+     reopened=A.load(self.path,saved,source_review=True)
+     self.assertEqual(reopened['question'],self.question)
+     self.assertEqual(reopened['investigation']['recovery_checkpoint']['draft'],draft)
+     self.assertEqual(reopened['planner_receipt']['artifact_feedback_context'],key)
+     self.assertEqual(reopened['answer']['verification'],'unverified');self.assertEqual(reopened['workflow'],[])
+
  def draft_with_rejected_returned_answer(self,mutation=None):
   original=copy.deepcopy(self.result);original['workflow']=[]
   self.draft_fixture_sequence=getattr(self,'draft_fixture_sequence',0)+1

@@ -36,13 +36,15 @@ def _pack_status():
 
 
 def _failure_receipts(exc):
-    """What a refused /api/stack/compose says about cost and isolation (handle_compose attaches both to the exception)."""
+    """Retained work, usage and isolation from a failed compose or resume."""
     out={}
     if getattr(exc,'cost_receipt',None):out['cost_receipt']=exc.cost_receipt
     if getattr(exc,'cost_telemetry',None):out['cost_telemetry']=exc.cost_telemetry
     if getattr(exc,'evaluation',None):out['evaluation']=exc.evaluation
     if getattr(exc,'action_context',None):out['action_context']=exc.action_context
     if getattr(exc,'action_context_error',None):out['action_context_error']=exc.action_context_error
+    if hasattr(exc,'new_paid_api_calls'):out['new_paid_api_calls']=exc.new_paid_api_calls
+    if getattr(exc,'planning_economics',None):out['planning_economics']=exc.planning_economics
     return out
 
 def answer_feedback(stack,body):
@@ -826,10 +828,10 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 from .clinical.program_work import WorkConflict
                 from .clinical.question_input import failure
                 details = failure(exc) if path=='/api/stack/compose' else {'error':str(exc)[:400]}
-                if path=='/api/stack/compose': details = {**details, **_failure_receipts(exc)}
+                if path in ('/api/stack/compose','/api/stack/investigation/resume'): details = {**details, **_failure_receipts(exc)}
                 raw=json.dumps(details,default=str).encode();status=409 if isinstance(exc,WorkConflict) else 400
             except RuntimeError as exc:
-                raw=json.dumps({'error':str(exc)[:400],**(_failure_receipts(exc) if path=='/api/stack/compose' else {})},default=str).encode();status=502
+                raw=json.dumps({'error':str(exc)[:400],**(_failure_receipts(exc) if path in ('/api/stack/compose','/api/stack/investigation/resume') else {})},default=str).encode();status=502
             finally:
                 try:
                     if execution:
