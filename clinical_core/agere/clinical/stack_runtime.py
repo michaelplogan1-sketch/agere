@@ -23,8 +23,10 @@ class Stack:
     def close(self):self.retriever.close()
     def metadata(self):
         from .analysis_graph import catalog
+        from .typed_distillation import active_student
         return {'schema':VERSION,'synthetic':True,'retrieval':self.retriever.meta,
                 'runtime_profile':os.environ.get('AGERE_RUNTIME_PROFILE','configured'),
+                'local_student_runtime':active_student()[0],
                 'local_retrieval_runtime':{
                     'encoder_weights_loaded':getattr(self.retriever.encoder,'weights_loaded',None),
                     'reranker_weights_loaded':getattr(self.retriever.reranker,'weights_loaded',None) if self.retriever.reranker else False,

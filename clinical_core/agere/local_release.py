@@ -233,6 +233,15 @@ def dependencies(build, config):
         root = Path(lineage).resolve()
         result.append({'path': str(root), 'verification': 'top_level_json_manifests',
                        'files': {p.name: file_entry(p) for p in (root/'manifest.json', root/'policy.json')}})
+    students = environment.get('AGERE_SYSTEM_ONE_STUDENTS')
+    if students and Path(students).is_dir():
+        root = Path(students).resolve()
+        artifacts = sorted(root.glob('*.joblib'))
+        if artifacts:
+            files = [p for model in artifacts for p in (model, model.with_suffix('.json'))]
+            result.append({'path': str(root), 'verification': 'top_level_json_manifests',
+                           'files': {p.name: file_entry(p) for p in files},
+                           'scope': 'Configured local student weights and their declared qualification; no source data copied.'})
     from .gateway import default_ledger_path
     ledger = default_ledger_path().resolve()
     if not ledger.is_file(): raise ValueError('Current shared provider ledger required')

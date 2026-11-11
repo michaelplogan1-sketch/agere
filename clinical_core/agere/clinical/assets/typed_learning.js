@@ -5,9 +5,11 @@ async function loadTypedLearning(){
  try{
   const r=await semanticFetch('/api/stack/typed-learning?offset='+typedOffset);
   list.replaceChildren();status.textContent=r.total+' source-bound readings available for review';
+  const active=r.local_student?.status?.startsWith('active_');
+  $('typed-model-status').textContent=active?'Local student active · '+r.student_matching_readings+' saved readings match its trained task. It runs before hosted readers; preliminary predictions still require verification.':'Local student '+(r.local_student?.status||'unavailable').replaceAll('_',' ')+'. Source review remains available.';
   for(const row of r.rows){
    const item=N('div',undefined,'typed-item'),button=N('button','Review source');
-   item.append(N('p',row.question),N('p',row.patient_id+' · '+(row.review_status?human(row.review_status):'Not reviewed'),'meta'));
+   item.append(N('p',row.question),N('p',row.patient_id+' · '+(row.review_status?human(row.review_status):'Not reviewed')+(row.local_student_applicable?' · Local model available':''),'meta'));
    button.onclick=()=>openTypedReading(row.observation_id);item.append(button);list.append(item);
   }
   if(!r.total)list.append(N('p','New chart readings will appear here when an analysis uses them.'));
@@ -21,6 +23,9 @@ async function openTypedReading(id){
   const r=await semanticFetch('/api/stack/typed-learning/item?id='+encodeURIComponent(id));
   box.replaceChildren(N('h3',r.state.subject),N('p',r.patient_id+' · source date '+r.state.evidence[0].date+' · analysis through '+r.state.as_of,'meta'),N('blockquote',r.source_text));
   box.append(N('p','Recorded model reading: '+(r.state.options[r.machine_label]||'Unresolved')));
+  const local=r.local_student;
+  if(local?.reading)box.append(N('p','Local student’s preliminary reading: '+r.state.options[local.reading.label]+' · needs verification','meta'));
+  else if(local?.status?.startsWith('active_'))box.append(N('p','The active local student does not cover this exact task. The existing hosted reader handles it.','meta'));
   const form=N('form'),actor=N('input'),rationale=N('textarea'),status=N('select'),answer=N('select'),use=N('input'),save=N('button','Save review'),message=N('p','','meta');
   actor.required=true;actor.placeholder='Your name or initials';actor.setAttribute('aria-label','Reviewer');
   rationale.required=true;rationale.placeholder='Explain what the document supports and why';rationale.setAttribute('aria-label','Reason for this review');

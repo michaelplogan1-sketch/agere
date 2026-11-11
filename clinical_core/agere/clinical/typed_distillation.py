@@ -176,16 +176,44 @@ def _inspect_review(db, warehouse, context, observation_id):
         'authority': 'Local documentary review; reviewer identity and clinical authority are not independently verified.'}
 
 
+def active_student():
+    """Inspect the actual configured weights, without changing their acceptance bar."""
+    state = {'task_key': 'agere_chart_judgment', 'enabled': student.enabled(),
+             'automatic_decisions': False, 'clinical_qualification': False}
+    if not state['enabled']: return {**state, 'status': 'disabled'}, None
+    obj = student.load(state['task_key'])
+    if not obj: return {**state, 'status': 'weights_unavailable'}, None
+    if obj['manifest'].get('input_contract') != student.input_contract():
+        return {**state, 'status': 'input_contract_mismatch'}, None
+    threshold = obj['manifest']['cross_fitted']['threshold']
+    return {**state, 'status': 'active_preliminary_reader' if threshold is None else 'active_selective_reader',
+            'automatic_decisions': threshold is not None, 'acceptance_threshold': threshold,
+            'input_contract': obj['manifest']['input_contract'],
+            'training_decisions': obj['manifest'].get('training_decisions', obj['manifest'].get('rows')),
+            'option_contracts': len(obj['model'].get('option_contracts', [])),
+            'calibration': obj['manifest'].get('comparison', {}).get('calibration'),
+            'scope': 'Exact task and option meanings only; preliminary readings are not accepted answers.'}, obj
+
+
 def inspect_review(stack, observation_id):
     context = _review_context(stack)
     with _read_db(student.store_path()) as db, _read_db(context[0]['snapshot']['source_dataset']['source']) as warehouse:
-        return _inspect_review(db, warehouse, context, observation_id)
+        result = _inspect_review(db, warehouse, context, observation_id)
+    state, _ = active_student(); question = result['state']
+    prediction = student.predict('agere_chart_judgment', question['subject'], question['options'],
+                                 question['evidence'], as_of=question['as_of'])
+    result['local_student'] = {**state, 'matches_this_task': prediction is not None,
+                               'reading': prediction.get('reading') if prediction else None,
+                               'answer_accepted': bool(prediction and prediction.get('label'))}
+    return result
 
 
 def review_listing(stack, *, offset=0):
     if type(offset) is not int or offset < 0: raise ValueError('Nonnegative page offset required')
     context = _review_context(stack); candidates = []; excluded = Counter()
-    if not student.store_path().exists(): return {'rows': [], 'total': 0, 'offset': offset, 'next_offset': None}
+    local_state, local_model = active_student()
+    contracts = set(local_model['model'].get('option_contracts', [])) if local_model else set()
+    if not student.store_path().exists(): return {'rows': [], 'total': 0, 'offset': offset, 'next_offset': None, 'local_student': local_state, 'student_matching_readings': 0}
     with _read_db(student.store_path()) as db, _read_db(context[0]['snapshot']['source_dataset']['source']) as warehouse:
         tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         for table in ('typed_outcomes', 'labels'):
@@ -197,8 +225,11 @@ def review_listing(stack, *, offset=0):
                 except ValueError as exc: excluded[str(exc)] += 1; continue
                 if any(r['binding'] == detail['binding'] for r in candidates): continue
                 candidates.append({k: detail[k] for k in ('observation_id','binding','patient_id','record_id','machine_label','revision')}
-                    | {'question': detail['state']['subject'], 'review_status': (detail['review'] or {}).get('status')})
-    return {'rows': candidates[offset:offset+24], 'total': len(candidates), 'offset': offset,
+                    | {'question': detail['state']['subject'], 'review_status': (detail['review'] or {}).get('status'),
+                       'local_student_applicable': json.dumps(detail['state']['options'], sort_keys=True) in contracts})
+    candidates.sort(key=lambda r: not r['local_student_applicable'])
+    return {'local_student': local_state, 'student_matching_readings': sum(r['local_student_applicable'] for r in candidates),
+        'rows': candidates[offset:offset+24], 'total': len(candidates), 'offset': offset,
         'next_offset': offset+24 if offset+24 < len(candidates) else None, 'excluded': dict(excluded),
         'automatic_training': False, 'clinical_authority_established': False}
 
