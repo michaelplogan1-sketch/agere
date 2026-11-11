@@ -277,7 +277,7 @@ function traceCells(d,q){const w=STATE.ws||{};const m=methodOf(d);const ans=d.an
  return [['01','Connect',w.name||'',`as of ${w.as_of||'—'}`],['02','Define',contractOf(d)||APP.examples.find(x=>x.question===q)?'typed definition':'question read','population, window, grain'],
   ['03','Compile',m?m.kind:'—',(d.operations||[]).slice(0,3).join(', ')||d.route||''],['04','Compute',ans?(('count' in ans)?'count':('value' in ans)?'value':ans.patient_ids?ans.patient_ids.length+' patients':'table'):'no answer',d.pipeline||''],
   ['05','Check',cert?'certified':(d.confidence!=null?'confidence '+fmt(d.confidence):(d.decision||'—')),cert&&typeof cert==='object'?(cert.tier||cert.route||'')+(cert.error_bound!=null?' ± '+cert.error_bound:''):''],
-  ['06','Compound',d.cost_usd===0?'reused, $0':'saved to history',d.cost_usd==null?'cost unknown':'$'+Number(d.cost_usd).toFixed(3)]]}
+  ['06','Save',d.action_context?'saved with evidence':'question history',d.cost_usd==null?'cost unknown':'$'+Number(d.cost_usd).toFixed(3)]]}
 function showAnswer(d,q,secs){const a=d.answer;let main='',list='';
  if(!a){main=`<div class="notice">No confident answer. ${esc((d.decline&&d.decline.kind)||'')} ${esc(d.headline||d.interpretation||'')}</div>${(d.decline&&d.decline.readings||[]).length?'<p class="muted">Possible readings:</p><ul>'+d.decline.readings.map(r=>'<li>'+esc(typeof r==='string'?r:JSON.stringify(r))+'</li>').join('')+'</ul>':''}`}
  else if('count' in a||'value' in a){const v=a.count??a.value;main=`<div class="num">${typeof v==='number'?v.toLocaleString(undefined,{maximumFractionDigits:2}):esc(v)}</div>`}
@@ -287,17 +287,22 @@ function showAnswer(d,q,secs){const a=d.answer;let main='',list='';
   ${ids.length>8?`<details><summary>Show ${Math.min(ids.length,200)-8} more${ids.length>200?' (first 200 of '+ids.length.toLocaleString()+')':''}</summary><div class="tablewrap"><table>${ids.slice(8,200).map((p,i)=>row(p,i+8)).join('')}</table></div></details>`:''}`}
  else if(a.table){main=`<div class="tablewrap"><table><tr><th>Group</th><th class="r">Value</th></tr>${a.table.slice(0,200).map(r=>`<tr><td>${esc((r.keys||[]).join(' · '))}</td><td class="r mono">${fmt(r.value)}</td></tr>`).join('')}</table></div>`}
  const m=methodOf(d),L=layerOf(d);
- return `<section class="card" style="margin-top:24px"><p class="eyebrow">ANSWER EXPLORER</p>${d.headline?`<h3>${esc(d.headline)}</h3>`:''}${main}
+ return `<section class="card" style="margin-top:24px"><p class="eyebrow">ANSWER EXPLORER</p>${d.headline?`<h3>${esc(d.headline)}</h3>`:''}<p class="eyebrow">${esc(d.status||d.decision||'Answer')}</p>${answerState(d)}${main}
  <div class="trace">${traceCells(d,q).map((c,i)=>`<div class="${i<4||d.answer?'on':''}"><small>${c[0]} / ${c[1]}</small><b>${esc(c[2])}</b><span>${esc(c[3])}</span></div>`).join('')}</div>
  <div class="grid g3"><div><p class="eyebrow">DEFINITION & SCOPE</p><p class="small">${definitionText(d,q)}</p></div>
  <div><p class="eyebrow">LAYER</p><p class="small"><b>${esc(L.name)}</b><br><span class="muted mono">${esc(L.detail)}</span></p></div>
- <div><p class="eyebrow">CONFIDENCE · COST</p><p class="small">${d.certified?'<span class="pill ok">certified</span> ':''}${d.confidence!=null?'confidence '+fmt(d.confidence)+'<br>':''}${d.cost_usd==null?'cost unknown':'$'+Number(d.cost_usd).toFixed(4)}${d.new_paid_api_calls!=null?' · '+fmt(d.new_paid_api_calls)+' paid calls':''} · ${secs.toFixed(1)} s</p></div></div>
+ <div><p class="eyebrow">CONFIDENCE · COST</p><p class="small">${d.certified?'<span class="pill ok">certified</span> ':''}${d.confidence!=null?'confidence '+fmt(d.confidence)+'<br>':''}${d.cost_usd==null?'cost unknown':'$'+Number(d.cost_usd).toFixed(4)}${d.new_paid_api_calls!=null?' · '+fmt(d.new_paid_api_calls)+' paid calls':''} · ${secs.toFixed(1)} s${d.reopened?' to reopen · no analysis replay':''}</p></div></div>
  ${list}${m?`<details style="margin-top:12px"><summary>${esc(m.kind)}</summary><pre>${esc(m.text)}</pre></details>`:''}
  ${d.certified&&typeof d.certified==='object'?`<details><summary>Certificate</summary><pre>${esc(JSON.stringify(d.certified,null,1))}</pre></details>`:''}
  ${d.plan?`<p><a class="btn ghost" href="#/w/${encodeURIComponent(STATE.slug)}/act">Open the plan in Plan & act</a></p>`:''}
  <details><summary>Full response</summary><pre>${esc(JSON.stringify(Object.assign({},d,{plan:d.plan?'(see Plan & act)':undefined}),null,1).slice(0,20000))}</pre></details></section>`}
-function bindAnswer(d){}
-async function loadHist(){try{const d=await api(W('/questions'));$('hist').innerHTML=d.questions.slice(0,10).map(r=>`<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span style="flex:1;min-width:200px">${esc(clip(r.question,180))}</span><b class="mono">${esc(clip(r.answer?(r.answer.count??r.answer.value??(r.answer.patient_ids?r.answer.patient_ids.length+' patients':'table')):'no confident answer',60))}</b></div>`).join('')||'None yet.'}catch(e){$('hist').textContent=e.message}}
+function answerState(d){const c=d.saved_context;
+ const warning=d.context_error||(c&&(c.stale||c.invalidated||c.source_review_required||((c.source_disposition||{}).status==='unavailable'))?'Saved evidence needs review. This is the original answer; data or verification has changed.':'');
+ return (warning?`<div class="notice err">${esc(warning)}</div>`:'')+(d.action_context?`<p class="small">Saved answer <span class="mono">${esc(d.action_context.id)}</span> <button class="chip" data-reopen="${esc(d.action_context.id)}">Reopen evidence</button></p>`:'')+
+ (c?`<details><summary>Saved scope and source status</summary><pre>${esc(JSON.stringify({question:c.original_question,source:c.source,stale:c.stale,invalidated:c.invalidated,source_disposition:c.source_disposition,dependency_validation:c.dependency_validation,input_patient_ids:c.input_patient_ids,population_scopes:c.population_scopes},null,2))}</pre></details>`:'')}
+function bindAnswer(d){document.querySelectorAll('#ans [data-reopen]').forEach(b=>b.onclick=()=>reopenAnswer(b.dataset.reopen))}
+async function reopenAnswer(id){const t0=Date.now();try{const d=await api(W('/answers/'+encodeURIComponent(id)));$('q').value=d.question;$('ans').innerHTML=showAnswer(d,d.question,(Date.now()-t0)/1000);bindAnswer(d)}catch(e){$('ans').innerHTML=`<div class="notice err">${esc(e.message)}</div>`}}
+async function loadHist(){try{const d=await api(W('/questions'));$('hist').innerHTML=d.questions.slice(0,10).map(r=>`<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span style="flex:1;min-width:200px">${esc(clip(r.question,180))}</span><b class="mono">${esc(clip(r.answer?(r.answer.count??r.answer.value??(r.answer.patient_ids?r.answer.patient_ids.length+' patients':'table')):'no confident answer',60))}</b>${r.action_context?`<button class="chip" data-saved-answer="${esc(r.action_context.id)}">Open answer</button>`:''}</div>`).join('')||'None yet.';document.querySelectorAll('#hist [data-saved-answer]').forEach(b=>b.onclick=()=>reopenAnswer(b.dataset.savedAnswer))}catch(e){$('hist').textContent=e.message}}
 
 // --- Plan & act ---------------------------------------------------------------------------------------------------------
 function paneAct(w){
@@ -497,7 +502,8 @@ async function refresh(){
  const k=await api('/api/admin/keys');document.getElementById('keys').innerHTML=tbl(k.keys,[['name','Name'],['role','Role'],['prefix','Key'],['created_at','Created'],['last_used_at','Last used'],[r=>r.revoked?'revoked':'active','Status']]);
  const c=await api('/api/admin/credentials');document.getElementById('creds').innerHTML=tbl(c.credentials,[['name','Name'],['kind','Kind'],['updated_at','Updated']]);
  const u=(await api('/api/admin/usage')).usage||{};const bw=Object.entries(u.by_workspace||{}).map(([w,v])=>Object.assign({workspace:w},typeof v==='object'?v:{value:v}));
- document.getElementById('usage').innerHTML='<div class="kpi">'+esc(u.records||0)+'</div><p class="muted">questions · $'+Number(u.cost_usd||0).toFixed(2)+' model cost · '+Math.round(u.seconds||0)+' s answering</p>'+(bw.length?tbl(bw,Object.keys(bw[0]).map(x=>[x,x])):'');
+ const cost=u.cost_usd==null?'total unknown ($'+Number(u.known_cost_usd||0).toFixed(2)+' known; '+Number(u.unknown_cost_records||0)+' unknown records)':'$'+Number(u.cost_usd).toFixed(2);
+ document.getElementById('usage').innerHTML='<div class="kpi">'+esc(u.records||0)+'</div><p class="muted">questions · '+cost+' model estimate · '+Math.round(u.seconds||0)+' s answering</p>'+(bw.length?tbl(bw,Object.keys(bw[0]).map(x=>[x,x])):'');
  const when=s=>s?new Date(s*1000).toLocaleString():'';
  const a=await api('/api/admin/audit');document.getElementById('audit').innerHTML=tbl((a.audit||[]).slice(0,100),[[r=>when(r.at),'When'],['user','User'],['action','Action'],[r=>JSON.stringify(r.detail||''),'Detail'],['ip','IP']]);}
 document.getElementById('addmem').onclick=async()=>{const m=document.getElementById('memmsg');try{const d=await api('/api/admin/members',{email:document.getElementById('mem').value,role:document.getElementById('role').value});

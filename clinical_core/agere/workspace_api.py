@@ -6,6 +6,7 @@ Routes (JSON; handled before the service's global stack lock because builds take
   GET  /api/workspaces/<slug>               summary + step detail + verification
   GET  /api/workspaces/<slug>/review        open mapping questions
   GET  /api/workspaces/<slug>/questions     question history
+  GET  /api/workspaces/<slug>/answers/<id>  saved answer and current source status (no analysis replay)
   POST /api/workspaces                      {name, source, as_of?, raw?}  -> create and start the build in the background
   POST /api/workspaces/<slug>/run           re-profile and rebuild from scratch (background)
   POST /api/workspaces/<slug>/decide        {item, decision}  decision: accept | reject | {source} | {source_table}
@@ -117,6 +118,8 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
                 return 200, _detail(ws, root)
             if parts[1] == 'review':
                 return 200, {'items': ws.review_items()}
+            if parts[1] == 'answers' and len(parts) == 3:
+                return 200, ws.saved_answer(parts[2])
             if parts[1] in ('work', 'decisions'):
                 from .plans import backbone
                 if parts[1] == 'work' and len(parts) == 2:
@@ -258,7 +261,7 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
             out = intent_router.handle(ws, q, answer_type=body.get('answer_type') or None)
             if on_usage:
                 on_usage(ws.slug, {'question': q[:300], 'cost_usd': out.get('cost_usd'), 'seconds': round(__import__('time').time() - t0, 2),
-                                   'decision': out.get('decision')})
+                                   'decision': out.get('decision'), 'context_id': (out.get('action_context') or {}).get('id')})
             return 200, out
         return 404, {'error': 'Unknown workspace action'}
     except FileNotFoundError as exc:

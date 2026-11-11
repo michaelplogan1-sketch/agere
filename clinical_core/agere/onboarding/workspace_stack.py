@@ -459,6 +459,7 @@ def envelope(result, *, answer_type=None):
         interpretation += ': ' + (a.get('headline') or '; '.join(missing) or 'no answer')[:400]
     return {'pipeline': 'full', 'answer': answer, 'answer_type': a.get('answer_type') or answer_type,
             'status': status, 'headline': a.get('headline'), 'confidence': a.get('confidence'),
+            'action_context': result.get('action_context'), 'context_error': result.get('context_error'),
             # certified cascade (clinical/cascade.py): the free tier that answered and its error bound; None = not certified
             'certified': result.get('certified'),
             'decision': together.get('decision') or receipt.get('route'), 'interpretation': interpretation,

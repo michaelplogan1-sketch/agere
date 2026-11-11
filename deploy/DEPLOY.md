@@ -1,5 +1,13 @@
 # Deploying hosted Agere
 
+**Current status (November 11): historical deployment recipe, not a qualified
+customer release.** Local authenticated workspace behavior is demonstrated with
+compact synthetic sources. Current startup uses the existing Claude subscription
+transport and ignores external Anthropic API keys. The image below does not
+include a signed-in Claude CLI, so its provider path has an unresolved deployment
+dependency. Do not interpret these commands as authorization to deploy or as
+evidence that production, real-data or clinical prerequisites are complete.
+
 Two containers: `agere` (serve_hosted.py on :8080, internal only) and `caddy` (TLS on 80/443, reverse proxy).
 All state lives in the `agere-data` volume mounted at `/data`:
 
@@ -40,7 +48,7 @@ Caddy needs it resolving before first start to get the certificate.
 git clone <repo> agere && cd agere/deploy
 cp .env.example .env
 python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"   # -> AGERE_SECRET_KEY
-$EDITOR .env          # AGERE_DOMAIN, AGERE_PUBLIC_URL, AGERE_SECRET_KEY, ANTHROPIC_API_KEY
+$EDITOR .env          # AGERE_DOMAIN, AGERE_PUBLIC_URL, AGERE_SECRET_KEY, AGERE_CLAUDE_TRANSPORT
 chmod 600 .env
 docker compose up -d --build
 docker compose ps     # agere should turn "healthy"
@@ -107,7 +115,7 @@ Logs rotate at 20 MB x 5 files per container. App audit events (logins, key use,
 
 ## Key rotation
 
-- **ANTHROPIC_API_KEY**: edit `.env`, then `docker compose up -d agere`.
+- **Claude subscription session**: current startup requires the approved subscription transport; an external Anthropic API key is not a supported fallback.
 - **AGERE_SECRET_KEY** (credential encryption): changing it makes existing stored credentials unreadable. Plan it:
   note which orgs have stored warehouse credentials, set the new key in `.env`, `docker compose up -d agere`, and have
   each org admin re-enter its credentials. Keep the old key with the matching backups.

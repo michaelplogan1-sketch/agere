@@ -1,5 +1,19 @@
 # Hosted Agere: deployable service with logins and one workspace space per customer
 
+Current evidence (November 11): the existing authenticated workspace now saves the
+full shared answer context. History reopens it through
+`GET /api/workspaces/<slug>/answers/<id>` under the session's organization root,
+without rerunning analysis. The response retains the original question, answer,
+population scope and evidence, and reports current source/dependency status.
+The local authored-source HTTP check covered sign-in, save/reopen, stale-source
+display, cross-tenant refusal and viewer restrictions. This is local engineering
+evidence, not customer deployment or a security/clinical qualification.
+
+Usage reports distinguish a known cost subtotal from unpriced records. A total
+with any unpriced records is unknown. Legacy zero-cost records are ambiguous;
+new explicitly zero-cost native calls remain known zero. Saved evidence reopening
+does not add a question or charge another analysis call.
+
 ## Shape
 ```
 internet ── Caddy (TLS, HTTP/2, security headers) ── agere-hosted (serve_hosted.py, 0.0.0.0:8080)
@@ -35,7 +49,11 @@ state volume /data:  hosted.sqlite3 (users, orgs, sessions, keys, audit, usage)
   → role check → handler. Workspace calls go to `workspace_api.handle(method, path, body, root=<org root>, actor=...)`.
   Roles: viewer = read + ask; analyst = + create/run/decide/batch; admin/owner = + members, API keys, credentials.
 - `serve_hosted.py` (repo root) — env config: AGERE_DATA_DIR, AGERE_HOST, AGERE_PORT, AGERE_SECRET_KEY,
-  AGERE_COOKIE_SECURE (default on), AGERE_PUBLIC_URL, ANTHROPIC_API_KEY, AGERE_DEMO_UPSTREAM (optional).
+  AGERE_COOKIE_SECURE (default on), AGERE_PUBLIC_URL, AGERE_CLAUDE_TRANSPORT=subscription,
+  AGERE_DEMO_UPSTREAM (optional). Startup installs the existing economical model
+  policy and subscription transport. It does not use an external Anthropic API key.
+  Claude-dependent paths require the existing signed-in CLI in the process's
+  environment; the historical container image does not supply that session.
 
 ## Rules
 - Synthetic data only until a BAA is in place (stated on the login page footer and in DEPLOY.md).

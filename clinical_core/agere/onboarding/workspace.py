@@ -649,6 +649,7 @@ class Workspace:
                         raise
                     fallback = {'from': 'full', 'reason': f'{type(exc).__name__}: {exc}'[:400]}
                 else:
+                    self._save_full_answer(question, out)
                     self._record(question, out)
                     return out
             else:
@@ -709,6 +710,7 @@ class Workspace:
             out['customer_ids'] = self.customer_ids(ids)  # the customer's own identifiers (MRN, member id, EHR id)
         record = {'at': _now(), 'question': question, 'pipeline': out.get('pipeline'), 'decision': out['decision'],
                   'answer': out['answer'], 'cost_usd': out['cost_usd'], 'interpretation': out['interpretation']}
+        record.update({k: out[k] for k in ('status', 'action_context', 'context_error', 'new_paid_api_calls') if k in out})
         with open(self.dir / 'questions.jsonl', 'a') as f:
             f.write(json.dumps(record, default=str) + '\n')
         if self.native:  # streaming dependency registry (what the answer read), so a later tick can mark it stale
@@ -733,7 +735,48 @@ class Workspace:
         # no send_factory: live stacks meter the hybrid core through together's ledgered sender (same ledger, receipts under
         # pipeline/provider-receipts); offline stacks refuse every hosted call
         stack = workspace_stack.stack_for(self, allow_live=live, send_factory=send_factory)
-        return workspace_stack.envelope(together.compose_together(stack, question, answer_type=answer_type), answer_type=answer_type)
+        result = together.compose_together(stack, question, answer_type=answer_type)
+        out = workspace_stack.envelope(result, answer_type=answer_type)
+        out.update(question=question, _full_result=result)
+        return out
+
+    def _save_full_answer(self, question, out):
+        from . import workspace_stack
+        from ..deliverables import answer_context
+        result = out.pop('_full_result')
+        try:
+            ref = answer_context.capture(self.dir / workspace_stack.DIRNAME, question, result)
+            if ref:
+                out['action_context'] = {**ref, 'url': f'/api/workspaces/{self.slug}/answers/{ref["id"]}'}
+        except Exception as exc:
+            # The analysis already happened. Preserve it and report the save failure;
+            # never buy a second answer through the automatic hybrid fallback.
+            import gzip
+            import uuid
+            receipt = self.dir / 'receipts' / f'answer-save-failed-{uuid.uuid4().hex}.json.gz'
+            receipt.parent.mkdir(parents=True, exist_ok=True)
+            out['context_error'] = 'The answer could not be saved for reopening. Its analysis has not been rerun.'
+            with gzip.open(receipt, 'wt') as f:
+                json.dump({'question': question, 'result': result, 'error': f'{type(exc).__name__}: {exc}'}, f, default=str)
+
+    def saved_answer(self, context_id):
+        """Reopen immutable evidence in this workspace, without preparing or rerunning it."""
+        from . import workspace_stack
+        from ..deliverables import answer_context
+        try:
+            saved = answer_context.load(self.dir / workspace_stack.DIRNAME, context_id)
+        except ValueError as exc:
+            if str(exc) in ('A saved answer context is required', 'Saved answer not found in this warehouse'):
+                raise FileNotFoundError('Saved answer not found in this workspace') from exc
+            raise
+        out = workspace_stack.envelope(saved)
+        out.update(question=saved['question'], saved_context=saved,
+                   action_context={'id': saved['id'], 'url': f'/api/workspaces/{self.slug}/answers/{saved["id"]}'},
+                   reopened=True, reopen_paid_api_calls=0)
+        ids = (out.get('answer') or {}).get('patient_ids')
+        if ids and self.native:
+            out['customer_ids'] = self.customer_ids(ids)
+        return out
 
     def _ask_hybrid(self, question, *, answer_type=None, send_factory=None):
         from ..clinical.semantic_analyst import SemanticWarehouse

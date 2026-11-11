@@ -175,6 +175,11 @@ class AuthStore:
         conn = self._conn()
         conn.execute("PRAGMA journal_mode=WAL")
         conn.executescript(_SCHEMA)
+        # Older rows stored unknown costs as zero. Keep those rows intact and
+        # mark their zero amounts as ambiguous instead of declaring them free.
+        with self._tx() as c:
+            if 'cost_known' not in {r['name'] for r in c.execute('PRAGMA table_info(usage)')}:
+                c.execute('ALTER TABLE usage ADD COLUMN cost_known INTEGER')
 
     # ---------------------------------------------------------------- plumbing
     def _conn(self) -> sqlite3.Connection:
@@ -588,27 +593,33 @@ class AuthStore:
                  "detail": json.loads(r["detail"]), "ip": r["ip"], "at": r["at"]} for r in rows]
 
     # ---------------------------------------------------------------- usage
-    def record_usage(self, org: Any, workspace: Optional[str], question_id: Optional[str], cost_usd: float,
+    def record_usage(self, org: Any, workspace: Optional[str], question_id: Optional[str], cost_usd: Optional[float],
                      seconds: float) -> None:
         oid = self._org_id(org)
         with self._tx() as c:
-            c.execute("INSERT INTO usage(org_id, workspace, question_id, cost_usd, seconds, at) VALUES (?,?,?,?,?,?)",
-                      (oid, workspace, question_id, float(cost_usd or 0), float(seconds or 0), self._now()))
+            c.execute("INSERT INTO usage(org_id, workspace, question_id, cost_usd, seconds, at, cost_known) VALUES (?,?,?,?,?,?,?)",
+                      (oid, workspace, question_id, float(cost_usd or 0), float(seconds or 0), self._now(), int(cost_usd is not None)))
 
     def usage(self, org: Any, since: Optional[float] = None) -> dict:
         """Aggregate usage for one org (tracked only; no caps)."""
         oid = self._org_id(org)
         since = float(since) if since is not None else 0.0
         c = self._conn()
-        tot = c.execute("SELECT COUNT(*) AS n, COALESCE(SUM(cost_usd),0) AS cost, COALESCE(SUM(seconds),0) AS secs"
-                        " FROM usage WHERE org_id=? AND at>=?", (oid, since)).fetchone()
-        by_ws = c.execute("SELECT workspace, COUNT(*) AS n, COALESCE(SUM(cost_usd),0) AS cost,"
-                          " COALESCE(SUM(seconds),0) AS secs FROM usage WHERE org_id=? AND at>=?"
-                          " GROUP BY workspace ORDER BY workspace", (oid, since)).fetchall()
-        return {"org_id": oid, "since": since, "records": tot["n"], "cost_usd": round(tot["cost"], 6),
-                "seconds": round(tot["secs"], 3),
-                "by_workspace": {r["workspace"]: {"records": r["n"], "cost_usd": round(r["cost"], 6),
-                                                  "seconds": round(r["secs"], 3)} for r in by_ws}}
+        known = '(cost_known=1 OR (cost_known IS NULL AND cost_usd>0))'
+        fields = (f'COUNT(*) AS n, COALESCE(SUM(CASE WHEN {known} THEN cost_usd ELSE 0 END),0) AS cost, '
+                  f'COALESCE(SUM(CASE WHEN {known} THEN 0 ELSE 1 END),0) AS unknown, '
+                  'COALESCE(SUM(seconds),0) AS secs')
+        tot = c.execute(f'SELECT {fields} FROM usage WHERE org_id=? AND at>=?', (oid, since)).fetchone()
+        by_ws = c.execute(f'SELECT workspace, {fields} FROM usage WHERE org_id=? AND at>=? '
+                          'GROUP BY workspace ORDER BY workspace', (oid, since)).fetchall()
+
+        def summary(r):
+            return {'records': r['n'], 'cost_usd': None if r['unknown'] else round(r['cost'], 6),
+                    'known_cost_usd': round(r['cost'], 6), 'unknown_cost_records': r['unknown'],
+                    'seconds': round(r['secs'], 3)}
+
+        return {'org_id': oid, 'since': since, **summary(tot),
+                'by_workspace': {r['workspace']: summary(r) for r in by_ws}}
 
     # ---------------------------------------------------------------- rate limit
     def allow(self, key: str, limit: int, window_s: float) -> bool:

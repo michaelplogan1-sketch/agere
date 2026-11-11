@@ -6,7 +6,7 @@
     AGERE_SECRET_KEY    Fernet key for stored warehouse credentials (required)
     AGERE_COOKIE_SECURE 1 (default) sets Secure cookies and HSTS; 0 only for local http testing
     AGERE_TRUST_PROXY   1 when behind a proxy that sets X-Forwarded-For (default 1 with AGERE_COOKIE_SECURE)
-    ANTHROPIC_API_KEY   model provider key for answering
+    AGERE_CLAUDE_TRANSPORT subscription (required transport; uses the signed-in Claude subscription)
 
 First organization and owner:  python -m clinical_core.agere.hosted.auth bootstrap --db <data>/hosted.sqlite3 --org NAME --email E
 See deploy/DEPLOY.md and docs/agere/HOSTED_DESIGN.md.
@@ -29,6 +29,20 @@ def scrub_environment(environ=os.environ):
     return removed
 
 
+def configure_models():
+    """Use the existing economical routing and authorized subscription transport."""
+    from clinical_core.agere import model_policy, subscription_transport
+    transport = os.environ.get('AGERE_CLAUDE_TRANSPORT', 'subscription')
+    if transport != 'subscription':
+        raise ValueError('Hosted Agere requires Claude subscription transport; external Anthropic API keys are not used')
+    os.environ['AGERE_CLAUDE_TRANSPORT'] = 'subscription'
+    os.environ.pop('ANTHROPIC_API_KEY', None)
+    os.environ.update(model_policy.application_runtime({})['environment'])
+    if not subscription_transport.install():
+        raise RuntimeError('Claude subscription transport could not be installed')
+    os.environ['ANTHROPIC_API_KEY'] = 'subscription-transport'  # internal availability marker, never an external key
+
+
 def main():
     removed = scrub_environment()
     if removed:
@@ -41,8 +55,7 @@ def main():
     secure = os.environ.get('AGERE_COOKIE_SECURE', '1') != '0'
     trust = os.environ.get('AGERE_TRUST_PROXY', '1' if secure else '0') == '1'
     host, port = os.environ.get('AGERE_HOST', '0.0.0.0'), int(os.environ.get('AGERE_PORT', '8080'))
-    if not os.environ.get('ANTHROPIC_API_KEY'):
-        print('warning: ANTHROPIC_API_KEY is not set; questions cannot be answered', flush=True)
+    configure_models()
     server = make_server(host, port, data, secret_key=key, cookie_secure=secure, trust_proxy=trust)
     print(f'Agere hosted on {host}:{port} (data {data}, secure cookies {"on" if secure else "off"})', flush=True)
     server.serve_forever()

@@ -443,8 +443,9 @@ def make_handler(ctx):
                 return ctx.credentials.get(org, name)
 
             def on_usage(workspace, row):
-                ctx.auth.record_usage(org, workspace, row.get('question', '')[:80], row.get('cost_usd'), row.get('seconds'))
-                ctx.auth.audit(org, uid, 'workspace.ask', {'workspace': workspace, 'question': row.get('question'), 'decision': row.get('decision')},
+                ctx.auth.record_usage(org, workspace, row.get('context_id') or row.get('question', '')[:80], row.get('cost_usd'), row.get('seconds'))
+                ctx.auth.audit(org, uid, 'workspace.ask', {'workspace': workspace, 'question': row.get('question'), 'decision': row.get('decision'),
+                                                        'context_id': row.get('context_id')},
                                ip=self.client_ip())
 
             from urllib.parse import parse_qsl
