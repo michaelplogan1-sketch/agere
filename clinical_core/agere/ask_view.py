@@ -3,7 +3,7 @@
 One self-contained HTML page (no external assets; charts are hand-written SVG). It reads only existing routes:
 /api/stack/compose (with conversation_id), /api/stack/conversation, /api/stack/briefing, /api/stack/economics and
 /api/stack/correct, /api/stack/learning-loop (read-only loop summary pill), plus /api/stack/briefing-feedback (opened / asked follow-up / dismissed per briefing card,
-the briefing ranker's implicit feedback). /ask?demo=1 adds the scripted buyer walkthrough in DEMO_STEPS; every step asks a real question.
+the briefing ranker's implicit feedback). /ask?demo=1 adds the scripted buyer walkthrough in DEMO_STEPS; it follows one saved contract analysis.
 """
 import json
 from pathlib import Path
@@ -969,7 +969,7 @@ async function ask(question,opt){opt=opt||{};question=String(question||'').trim(
 function loadConversation(){if(!state.cid)return;const epoch=conversationEpoch;fetch('/api/stack/conversation?id='+encodeURIComponent(state.cid)).then(r=>r.ok?r.json():null).then(d=>{if(!d||state.turns.length||epoch!==conversationEpoch)return;
  state.turns=(d.turns||[]).map(x=>({question:x.question,resolved:x.resolved_question,error:x.error||null,summary:(x.answer_summary||{}).headline||'',status:(x.answer_summary||{}).status,action_context:(x.answer_summary||{}).action_context,...(x.answer_summary?.clarification?{data:{answer:x.answer_summary,clarification:x.answer_summary.clarification}}:{})}));
  renderThread();const pending=state.turns.map((t,i)=>t.data?.clarification?.status==='pending'?i:-1).filter(i=>i>=0);if(pending.length)renderTurn(pending[pending.length-1])}).catch(()=>{})}
-function newConversation(){if(state.busy)return;conversationEpoch++;state.cid=null;store.set('agere-conversation',null);state.turns=[];state.active=-1;activeContext=null;activeTab='overview';renderThread();paintTranscript(-1);syncScope(null);setResultMode(false);$('#answer').innerHTML='';$('#q').value='';history.replaceState(null,'','/ask');$('#q').focus()}
+function newConversation(){if(state.busy)return;conversationEpoch++;state.cid=null;store.set('agere-conversation',null);state.turns=[];state.active=-1;activeContext=null;activeTab='overview';renderThread();paintTranscript(-1);syncScope(null);setResultMode(false);$('#answer').innerHTML='';$('#q').value='';history.replaceState(null,'','/ask'+(demo.on?'?demo=1':''));$('#q').focus()}
 function loadEcon(){fetch('/api/stack/economics').then(r=>r.ok?r.json():null).then(e=>{if(!e)return;
  $('#econ').innerHTML='<span class="pill" title="Questions answered by this installation"><b>'+fmt(e.questions||0)+'</b> questions</span>'+
   '<span class="pill" title="Answered without any paid model call"><b>'+(e.share_without_api_calls!=null?Math.round(100*e.share_without_api_calls)+'%':'—')+'</b> without paid calls</span>'+
@@ -999,7 +999,7 @@ function renderDemo(){if(!demo.on)return;const el=$('#demo');el.hidden=false;
   '<button type="button" class="btn primary small" id="demonext"'+(demo.i>=DEMO.length?' disabled':'')+'>'+(demo.i>=DEMO.length?'Walkthrough complete':'Step '+(demo.i+1)+': '+esc(DEMO[demo.i].label))+'</button>'+
   '<button type="button" class="btn small" id="demoreset">Restart walkthrough</button></div><ol>'+DEMO.map((s,i)=>'<li><button type="button" data-demo="'+i+'"'+(i===demo.i?' aria-current="step"':'')+(demo.done.has(i)?' class="done"':'')+'>'+(i+1)+'. '+esc(s.label)+(demo.done.has(i)?' ✓':'')+'</button></li>').join('')+'</ol>'}
 function demoContract(){const t=state.turns[state.active];return t&&!t.archiveBlocked&&t.data?.answer?.overall?.contract_performance?t:null}
-function syncContractDemo(){if(demo.on&&demo.i===0&&demoContract()){demo.done.add(0);demo.i=1;renderDemo()}}
+function syncContractDemo(){if(demo.on&&demoContract()){demo.done.add(0);if(demo.i===0)demo.i=1;renderDemo()}}
 async function runStep(i){const s=DEMO[i];if(!s||state.busy)return;demo.i=i;renderDemo();
  const note=$('#demonote');note.innerHTML='<div class="demonote" role="status"><b>Step '+(i+1)+' of '+DEMO.length+' · '+esc(s.label)+'.</b> '+esc(s.note||'')+'</div>';
  if(s.kind==='input'){
@@ -1021,7 +1021,7 @@ async function runStep(i){const s=DEMO[i];if(!s||state.busy)return;demo.i=i;rend
   if(s.id==='drivers')for(const name of ['monthly','members']){const other=$('[data-contract-section="'+name+'"]');if(other)other.open=true}
   target.scrollIntoView({behavior:'smooth',block:'center'});
  }
- demo.done.add(i);demo.i=i+1;renderDemo();
+ demo.done.add(i);const next=DEMO.findIndex((_,index)=>!demo.done.has(index));demo.i=next<0?DEMO.length:next;renderDemo();
 }
 
 __EXPLORE_JS__

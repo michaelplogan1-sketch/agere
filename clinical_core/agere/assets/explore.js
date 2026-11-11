@@ -68,7 +68,7 @@ function syncScope(t){
  const retained=(t?.pending||t?.error)?t.scopeBefore:null;
  const d=t?.data||{},c=retained?.context||d.action_context||t?.action_context;
  activeContext=c&&/^ANS-[0-9a-f]{24}$/.test(c.id)?c:null;
- if(activeContext)history.replaceState(null,'','/ask?context='+encodeURIComponent(activeContext.id));
+ if(activeContext)history.replaceState(null,'','/ask?context='+encodeURIComponent(activeContext.id)+(demo.on?'&demo=1':''));
  const option=$('#question-scope').querySelector('[value="saved"]');
  const a=d.answer||{},summaryWithoutCohort=c?.result_scope_available===false||(!(a.patient_ids||[]).length&&(a.analysis_population_count!=null||a.answer_type==='value'));
  option.disabled=!activeContext||!!t?.archiveBlocked||summaryWithoutCohort;
