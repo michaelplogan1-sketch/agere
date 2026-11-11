@@ -30,6 +30,25 @@ ANALYTICAL=PERSISTED_REPORTS | {
     'care_gap_closure','transitions_of_care','policy_evaluation','guideline_conformance','outreach_bandit','policy_search',
     'library_measure'}
 
+# Existing read-only graph engines belong on the ordinary investigator path as
+# well as the direct graph/console path. Keep state-changing identity, monitor,
+# learning and care workflows on their explicit interfaces. These operations
+# reuse the same validators, native source scope, provenance and answer guards.
+ANALYTICAL |= {
+    'explain','discover','derived_value','ed_visits','cql_measure',
+    'feed_gaps','source_defects','scanned_document_search','terminology_map','prior_auth_access',
+    'knowledge','onboarding_review','domain_pack'}
+GLOBAL_REPORTS={'knowledge','onboarding_review','domain_pack'}
+
+
+def population_contract(operation):
+    from . import graph_contracts as G
+    contract=G.input_contract(operation)
+    if operation in GLOBAL_REPORTS:
+        return {**contract,'count':[0,0],
+            'scope':'Source/knowledge/workspace report; no patient population is evaluated or inherited.'}
+    return contract
+
 
 def financial_input_contract():
     """The existing stock/flow rules, exposed before an analyst invents an identity."""
@@ -85,9 +104,12 @@ def financial_projections(view):
 def list_analyses():
     from .capability_registry import PRODUCT
     from .graph_planner import CONTRACTS
+    from .. import packs
+    available=ANALYTICAL & (PRODUCT.keys() | PERSISTED_REPORTS)
+    if packs.active()['id']=='healthcare':available=available-{'domain_pack'}
     return {'analyses':[{'operation':op,**(PRODUCT[op] if op in PRODUCT else
                       {'population':'required','view':'table','use':CONTRACTS[op]['meaning']})}
-                      for op in sorted(ANALYTICAL & (PRODUCT.keys() | PERSISTED_REPORTS))],
+                      for op in sorted(available)],
             'instruction':'Describe an operation for its typed parameters; execute it with the exact inherited or supplied population. No clinical actions are dispatched.'}
 
 
@@ -124,7 +146,7 @@ def describe(operation, *, path=None):
                 for key,s in sorted(protocols.items())]
         elif operation=='requirements':context['requirement_definitions']=list(R.definitions().values())
     return {'operation':operation,'parameters':G.parameter_schema(operation,catalog),
-            'population_contract':G.input_contract(operation),
+            'population_contract':population_contract(operation),
             **({'selection_contracts':{'inherited_annotations':{
                 'meaning':'Native code binds every received annotation source stream and the exact inherited population. Do not supply patient_ids/patient_query_sql or invent a source subset.',
                 'parameters':'Supply only the requested assertion_window. Code supplies streams, concepts=[] and received_annotations=true before normal shared graph validation.',
@@ -654,7 +676,10 @@ def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None,s
     if operation=='assertion_review':
         from .decision_context import validate_receipt_window
         validate_receipt_window(getattr(tools,'question',''),parameters,tools.as_of)
-    ids=population(tools,patient_ids,patient_query_sql)
+    global_report=population_contract(operation)['count'][1]==0
+    if global_report and (patient_ids is not None or patient_query_sql is not None):
+        raise ValueError('This report does not evaluate patients; omit population overrides')
+    ids=None if global_report else population(tools,patient_ids,patient_query_sql)
     if operation=='financial_accounts'and patient_query_sql is not None:
         from .source_scope import financial_population_problem
         available=[r[0]for r in tools.db.execute('SELECT patient_id FROM patient')]
@@ -663,11 +688,13 @@ def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None,s
         if issue:raise ValueError(issue)
     snapshot=tools.stack.retriever.meta['snapshot']['as_of']
     if str(snapshot)[:10]!=tools.as_of:raise ValueError('Analytical snapshot differs from request date')
-    if G.input_contract(operation)['count'][1]<1:raise ValueError('This operation cannot inherit a patient population')
-    plan={'interpretation':'Received-source analytical tool execution','coverage':'supported_observation','unmet_requirements':[],
-        'nodes':[{'id':'input','operation':'cohort','inputs':[],
-                  'parameters':{'specification':cohorts.empty(),**({'patient_ids':ids} if ids is not None else {})},'purpose':'Exact request population'},
-                 {'id':'analysis','operation':operation,'inputs':['input'],'parameters':parameters,'purpose':'Requested analytical calculation'}]}
+    nodes=[]
+    if not global_report:
+        nodes.append({'id':'input','operation':'cohort','inputs':[],
+            'parameters':{'specification':cohorts.empty(),**({'patient_ids':ids}if ids is not None else{})},'purpose':'Exact request population'})
+    nodes.append({'id':'analysis','operation':operation,'inputs':[]if global_report else['input'],
+        'parameters':parameters,'purpose':'Requested analytical calculation'})
+    plan={'interpretation':'Received-source analytical tool execution','coverage':'supported_observation','unmet_requirements':[],'nodes':nodes}
     plan=A.validate(plan,tools.as_of)  # even an empty input must not accept malformed parameters
     if ids==[]:
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope/definitions changed during selection')
@@ -691,6 +718,7 @@ def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None,s
     from .harness_improvement import semantic_result
     return {'analysis':operation,'status':answer.get('status'),'columns':columns,'rows':rows,'answer':answer,
             'input_patient_ids':ids,'parameters':plan['nodes'][-1]['parameters'],'engine_result':result,
+            **({'population_contract':population_contract(operation),'inherited_population_applied':False}if global_report else{}),
             **({'input_selection':selection}if selection!='parameters'else{}),
             **({'output':output,'native_output_scope':scope}if scope is not None else{}),
             'method':answer.get('method'),'limitations':answer.get('limitations') or [],
