@@ -18,6 +18,14 @@ def identity():
     return digest([VERSION, Path(__file__).read_text(), references.identity()])
 
 
+def _review_identity(call):
+    # Replay can read the same source via cache with different elapsed time and
+    # accounting. Reuse the existing replay equivalence contract; source hashes,
+    # exact field meanings, findings, uncertainty and population remain bound.
+    from .harness_improvement import comparison_result
+    return digest([call['name'], call['input'], comparison_result(call['name'], call['result'], [])])
+
+
 def _prior(tools, view):
     matches = [c for c in tools.native_calls if c.get('name') == 'review_documents'
                and isinstance(c.get('result'), dict)
@@ -281,7 +289,7 @@ def prepare(tools, review_result_view, branch_ids=None, basis_navigation_id=None
     saved = {'schema': VERSION, 'implementation': identity(),
              'question': tools.question, 'as_of': tools.as_of,
              'continuation_identity': guard, 'prior_result_view': review_result_view,
-             'prior_call_digest': digest(call), 'questions': questions,
+             'prior_call_digest': _review_identity(call), 'questions': questions,
              'patient_ids': [r['patient_id'] for r in rows],
              'inventory': inventory, 'source_branches': branches,
              'selected_branch_ids': branch_ids, 'basis_navigation_id': basis_navigation_id,
@@ -328,7 +336,7 @@ def load(tools, key):
     call, questions, rows = _prior(tools, saved['prior_result_view'])
     inventory, selected = _inventory(tools, call, questions, rows)
     branches, selected = _select(inventory, selected, saved.get('selected_branch_ids', []))
-    if (branches != saved.get('source_branches') or digest(call) != saved['prior_call_digest'] or inventory != saved['inventory']
+    if (branches != saved.get('source_branches') or _review_identity(call) != saved['prior_call_digest'] or inventory != saved['inventory']
             or [{'patient_id': p, 'record_id': r} for p, r in selected] != saved['additional_documents']):
         raise ValueError('Navigation source evidence changed; prepare a current review')
     return saved, call, questions, rows

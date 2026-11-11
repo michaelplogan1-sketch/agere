@@ -31,7 +31,7 @@ Qwen decision heads used supervised data; they do not qualify Agere's adapters
 or demonstrate autonomous clinical learning. Natural Questions hierarchy
 construction used offline embeddings, clustering and Qwen summaries.
 
-**Disposition: promising candidate for source acquisition, unimplemented here.**
+**November 11 engineering connection:** the existing `source_navigation.py` now exposes native source/type/month branches after a focused review. The investigator can select multiple unlinked branches, union them with typed-reference expansion, and read only new sources while retaining previous findings and uncertainty. Complete branch choices reach the model; the exact per-field source ledger remains in native storage. Saved-investigation replay uses the same source/meaning bindings. This connects the hierarchical navigation concept without reproducing or qualifying the paper's learned binary relevance models. Those models remain candidates, with no claimed paper-derived advantage.
 Use the existing `clinical_core/agere/clinical/source_selection.py` and shared
 assertion/decision context if a named evidence-selection failure warrants a
 trial. Scope patient/entity/date first, preserve original source IDs and text,

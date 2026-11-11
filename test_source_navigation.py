@@ -229,6 +229,44 @@ class Navigation(unittest.TestCase):
                 'native_plan_bytes':len(json.dumps(selected).encode()),'actor_plan_bytes':len(json.dumps(shown).encode()),
                 'source_branches_complete':True,'provider_calls':0,'source_navigation_id':selected['id']},indent=2)+'\n')
 
+    def test_saved_investigation_replays_navigation_with_cache_accounting_changes(self):
+        from clinical_core.agere.clinical import harness_improvement as H
+        plan=self.plan()
+        branch=plan['source_branches'][0]['id']
+        selected=N.prepare(self.tools,'agere_result_1',[branch],plan['id'])
+        self.call['result'].update(elapsed_s=1.2,cache_hit=True,
+            accounting={'new_paid_api_calls':0,'estimated_cost_usd':0.0})
+        self.assertEqual(self.plan()['id'],plan['id'])
+        self.assertEqual(N.load(self.tools,selected['id'])[0]['id'],selected['id'])
+        seen=[]
+        def reader(use):
+            seen.append(use['input']['record_ids'])
+            return {'source_scope':'focused','rows':[{
+                'patient_id':'p1','review_status':'reviewed','documents_reviewed':len(seen[-1]),
+                'review_limitations':'[]','review_unresolved_json':'[]',
+                'review_json':json.dumps({'basis':[{'record_id':rid,'quote':next(d[5]for d in self.docs if d[0]==rid)} for rid in seen[-1]]})}],
+                'coverage':[]}
+        self.tools._call=reader
+        fixture=self.tools
+        class Executor:
+            def __getattr__(self,name):return getattr(fixture,name)
+            def __call__(self,use):
+                result=B.Tools._call(self,use)
+                fixture.native_calls.append({**use,'result':result})
+                return result
+        actions=[{'name':'plan_evidence_expansion','input':{'review_result_view':'agere_result_1'}},
+                 {'name':'plan_evidence_expansion','input':{'review_result_view':'agere_result_1',
+                    'basis_navigation_id':plan['id'],'branch_ids':[branch]}},selected['review_next']]
+        with H.owned_recovery(actions,fixture.question):
+            result=H.recover_actions(Executor(),fixture.question)
+        self.assertEqual(len(result['calls']),3)
+        self.assertFalse(any(c['result'].get('error') for c in result['calls']))
+        self.assertEqual(seen,[['order','other','review']])
+        self.assertEqual(result['calls'][-1]['result']['rows'][0]['review_status'],'needs_review')
+        self.call['result']['rows'][0]['review_status']='changed_meaning'
+        with self.assertRaisesRegex(ValueError,'changed'):
+            N.load(fixture,selected['id'])
+
     def test_branch_selection_cannot_bypass_source_clock_scope_or_inventory_version(self):
         self.records[3]['available_date']='2031-01-01'
         plan=self.plan()
