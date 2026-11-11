@@ -1,3 +1,13 @@
+# Current Agere checkpoint — MANUAL / SCHEDULER PAUSED 2026-11-11T17:30:37.910120+00:00
+
+`AGERE_BUILD_CONTROL.json` owns the sequence. G5: inspect the existing current-contract System One role manifests and eligibility receipts to identify a bounded useful role with available source-family-separated fitting/calibration references. Repair demonstrated integration or compatibility defects and compare only that changed role with its simple baseline; do not activate incompatible weights, invent independent labels, use protected answer keys or repeat passing workflows. If reference inputs remain absent, retain the explicit qualification dependency and continue only identified independent product implementation. Scheduler stays PAUSED; no Git pushes.
+
+G3 finite presentation/conversation increment is sealed; G6 combined code package verified. Product commit a4826b21cd7e301853c8ab3cfaa6acc6aa7389b4. Receipt: artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json. Main app PID63919/session60897/port8908 is running idle. No frozen job or Git pushes.
+
+Gate / workflow change / evidence / remaining gap: G5 / main and authenticated answers share readable findings, complete searchable records and source limitations; aggregate reports show the actual result / 57×19 CSV values preserved, 237-row authored access, browser and final archive reopen with zero new provider calls / Full25 ordinary semantic acceptance remains unestablished; retain all original partial/failed/scoped results. Independent source-family role/reference evidence, viable outcome labels and reviewer economics remain missing. Compatible local student weights are not deployed, trained generative bottles are disabled, and autonomous recursive improvement is not demonstrated. DecisionRAG and optional advanced research remain candidates. Customer deployment/provider-session arrangements, real data rights and intended-use assurance remain separate; OWASP/HHS deferred.
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — MANUAL / SCHEDULER PAUSED 2026-11-11T17:08:54.709386+00:00
 
 `AGERE_BUILD_CONTROL.json` owns the sequence. G3: complete the user-requested output redesign in chat 01a1cb8f-3562-7900-9399-5b06fc8ae6f7 (ask_view.py ownership), retain its focused browser evidence and source/quantity semantics, then refresh one combined code-only package for the conversation and presentation changes. Do not rerun passing broad campaigns or start provider/training jobs; retain G5 qualification dependencies explicitly.
