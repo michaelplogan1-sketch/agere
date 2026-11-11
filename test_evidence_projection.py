@@ -595,6 +595,31 @@ class AggregateJsonProjection(unittest.TestCase):
                 rows[0][2]=json.dumps(payload)
             with self.subTest(change=change):self.assertIsNone(E.aggregate_json_input('agere_result_1','payload',consumers,by))
 
+    def test_native_numeric_role_exposes_all_groups_without_model_recounting(self):
+        by,consumers=self.fixture()
+        for key,call in by.items():call['result']['result_view']=key
+        proof=E.aggregate_json_input('agere_result_1','payload',consumers,by)
+        projection={'result_view':'agere_result_1','consumers':consumers,
+            'json_path_contract':proof['contract'],'json_path_observations':proof['observations'],
+            'json_path_output_checks':proof['checks']}
+        result=E.aggregate_json_calculation_view(projection,by['agere_result_1'],list(by.values()))
+        self.assertTrue(result['full_replayed_outputs_exact'])
+        self.assertEqual(result['complete_executed_outputs'][-1]['rows'],by['agere_result_3']['result']['rows'])
+        accounts=result['profiles'][0]
+        self.assertEqual((accounts['array_elements'],accounts['missing_arrays'],accounts['null_arrays']),(4,1,1))
+        fields={f['path']:f for f in accounts['fields']}
+        self.assertEqual((fields['$.amounts.cents']['present'],fields['$.amounts.cents']['null'],fields['$.amounts.cents']['absent']),(3,1,1))
+        self.assertEqual(fields['$.currency']['complete_categories'],[{'value':'USD','elements':2},{'value':'EUR','elements':2}])
+        self.assertNotIn('row_values',json.dumps(result))
+        changed=copy.deepcopy(projection);changed['json_path_observations'][0]['row_values'][0][1]='[]'
+        self.assertIsNone(E.aggregate_json_calculation_view(changed,by['agere_result_1'],list(by.values())))
+        # SQLite can coerce text into a SUM. A native arithmetic review must
+        # not hide those source values or treat narrative text as a quantity.
+        rows=by['agere_result_1']['result']['rows'];value=json.loads(rows[0][2]);value['accounts'][0]['amounts']['cents']='-7';rows[0][2]=json.dumps(value)
+        proof=E.aggregate_json_input('agere_result_1','payload',consumers,by)
+        projection.update(json_path_observations=proof['observations'],json_path_output_checks=proof['checks'])
+        self.assertIsNone(E.aggregate_json_calculation_view(projection,by['agere_result_1'],list(by.values())))
+
     def test_whole_dynamic_or_parse_position_reads_keep_complete_source(self):
         for query in ["SELECT r.payload FROM agere_result_1 r",
                       "SELECT json_array_length(r.payload,r.status) FROM agere_result_1 r",

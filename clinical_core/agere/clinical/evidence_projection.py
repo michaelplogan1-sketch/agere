@@ -1341,6 +1341,98 @@ def patient_selected_json_inputs(projection,patient_ids):
     return summary,inputs
 
 
+def aggregate_json_calculation_view(projection, producer, calls):
+    """Keep a replayed numeric aggregation native; expose its field semantics.
+
+    Only SUM/COUNT with literal array paths and explicit grouping qualify.
+    Textual/narrative aggregates, filters and arbitrary SQL stay unprojected.
+    This proves calculation fidelity, never source interpretation or support.
+    """
+    import sqlglot
+    from sqlglot import exp
+    from .backstop_agent import output_table
+    if projection.get('json_path_contract')!='native-replayed-json-array-fields/1':return None
+    observations=projection.get('json_path_observations')or[]
+    columns={o.get('column')for o in observations}
+    if len(columns)!=1:return None
+    column=next(iter(columns));view=projection['result_view'];consumers=projection['consumers']
+    by={c['result']['result_view']:c for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')}
+    uses=[c for c in consumers if column in c['columns_read']]
+    regenerated=aggregate_json_input(view,column,uses,by)
+    if (regenerated is None or regenerated['observations']!=observations
+        or regenerated['checks']!=projection.get('json_path_output_checks')):return None
+    numeric=set();categorical=set();outputs=[]
+    for consumer in uses:
+        try:tree=sqlglot.parse_one(consumer['query'],read='sqlite')
+        except sqlglot.errors.SqlglotError:return None
+        if any(tree.args.get(k)for k in ('where','having','qualify','limit','offset','distinct')):return None
+        owner=next(t.alias_or_name for t in tree.find_all(exp.Table)if isinstance(t.this,exp.Identifier))
+        arrays={}
+        for table in tree.find_all(exp.Table):
+            fn=table.this
+            if isinstance(fn,exp.Anonymous)and fn.name.lower()=='json_each':
+                arrays[table.alias]=fn.expressions[1].this
+        groups=tree.args.get('group');group_sql=set()
+        for g in groups.expressions if groups is not None else []:
+            if isinstance(g,exp.Literal)and not g.is_string and g.this.isdigit():
+                i=int(g.this)-1
+                if not 0<=i<len(tree.selects):return None
+                g=tree.selects[i];g=g.this if isinstance(g,exp.Alias)else g
+            group_sql.add(g.sql(dialect='sqlite'))
+        for expression in tree.selects:
+            node=expression.this if isinstance(expression,exp.Alias)else expression
+            if isinstance(node,exp.Count)and isinstance(node.this,exp.Star):continue
+            if isinstance(node,exp.Sum):
+                value=node.this
+                if isinstance(value,exp.Anonymous)and value.name.lower()=='json_array_length':continue
+                if not isinstance(value,(exp.JSONExtract,exp.JSONExtractScalar)):return None
+                if not isinstance(value.this,exp.Column)or value.this.table not in arrays:return None
+                path=value.expression.sql(dialect='sqlite')[1:-1]
+                numeric.add((arrays[value.this.table],path));continue
+            if node.sql(dialect='sqlite')not in group_sql:return None
+            if isinstance(node,exp.Column)and node.table==owner and node.name!=column:continue
+            if isinstance(node,(exp.JSONExtract,exp.JSONExtractScalar))and isinstance(node.this,exp.Column)and node.this.table in arrays:
+                categorical.add((arrays[node.this.table],node.expression.sql(dialect='sqlite')[1:-1]));continue
+            return None
+        cols,rows=output_table(by[consumer['result_view']]['result'])
+        outputs.append({'result_view':consumer['result_view'],'query':consumer['query'],'columns':cols,'rows':rows})
+    if numeric&categorical:return None
+    profiles=[]
+    for branch in observations:
+        fields=branch['element_field_paths'];seen={f:{'present':0,'null':0,'absent':0,'categories':{}}for f in fields}
+        lengths=[]
+        for present,raw in branch['row_values']:
+            value=json.loads(raw)if present else None
+            lengths.append({'present':present,'json_null':present and value is None,'elements':len(value)if isinstance(value,list)else None})
+            for item in value or []:
+                for field in fields:
+                    current=item;found=True
+                    for key in field[2:].split('.'):
+                        if not isinstance(current,dict)or key not in current:found=False;break
+                        current=current[key]
+                    stats=seen[field]
+                    if not found:stats['absent']+=1;continue
+                    stats['present']+=1
+                    if current is None:stats['null']+=1;continue
+                    if (branch['path'],field)in numeric:
+                        if type(current)not in (int,float)or type(current)is float and not math.isfinite(current):return None
+                    elif (branch['path'],field)in categorical:
+                        if not isinstance(current,(str,int,float,bool)):return None
+                        key=digest(current);entry=stats['categories'].setdefault(key,{'value':current,'elements':0});entry['elements']+=1
+                    else:return None
+        profiles.append({'column':column,'path':branch['path'],'row_count':len(lengths),
+            'present_arrays':sum(x['present']and not x['json_null']for x in lengths),
+            'missing_arrays':sum(not x['present']for x in lengths),'null_arrays':sum(x['json_null']for x in lengths),
+            'array_elements':sum(x['elements']or 0 for x in lengths),
+            'fields':[{'path':field,'role':'numeric_aggregate_operand'if(branch['path'],field)in numeric else'grouping_key',
+                **{k:v for k,v in stats.items()if k!='categories'},
+                **({'complete_categories':list(stats['categories'].values())}if stats['categories']else{})}for field,stats in seen.items()],
+            'complete_observations_digest':digest(branch['row_values'])})
+    return {'schema':'native-json-aggregate-inputs/1','profiles':profiles,'complete_executed_outputs':outputs,
+        'full_replayed_outputs_exact':True,'original_input_projection_digest':digest(projection),
+        'scope':'Every original row and array element was checked by native code and every complete consuming SUM/COUNT query reproduced exactly. Individual numeric operands remain in the complete native receipt, not model context. Field paths, missing/NULL distinctions, all categorical values, full queries and every grouped output remain supplied. No cross-currency sum or clinical interpretation is inferred from these profiles; required source/domain/date/denominator/meaning checks remain.'}
+
+
 def native_calculation_input_view(projection, producer, calls):
     """Show code-checked aggregate inputs without asking a model to recount IDs.
 
@@ -1376,8 +1468,9 @@ def native_calculation_input_view(projection, producer, calls):
         if not source or consumer.get('result_digest')!=digest(source['result']):return projection
     # Do not replace varying JSON source observations by a marginal profile.
     # A row-invariant branch is kept in full, with exact all-row equality.
+    aggregate=aggregate_json_calculation_view(projection,producer,calls)
     invariant=[]
-    for branch in projection.get('json_path_observations',[]):
+    for branch in ([]if aggregate is not None else projection.get('json_path_observations',[])):
         values=branch.get('row_values');column=branch.get('column');path=branch.get('path')
         if (projection.get('json_path_contract')!='native-static-json-paths/1'
             or branch.get('value_encoding')!='canonical-json'or column not in columns
@@ -1420,6 +1513,7 @@ def native_calculation_input_view(projection, producer, calls):
             'all_original_rows_and_entity_mappings_retained_natively':True,
             'row_copy_checked_against_complete_producer':True},
         **({'json_path_observations':invariant}if invariant else{}),
+        **({'json_aggregate_input_fidelity':aggregate}if aggregate is not None else{}),
         'native_method':result.get('method'),
         'scope':'Code checked every selected native input cell against its complete producer and computed these joint value frequencies from ALL rows. Original rows, duplicate IDs, identity mappings, scope inputs and full receipts remain native and available by result_view/receipt digest. This is calculation/input fidelity only, not a reversible encoding or source/clinical acceptance. Profiles do not establish patient overlap: use the actual native SQL outputs and their complete queries for arithmetic, never sum profile patient counts across groups. Source selection, definitions, period, denominator, missingness, documentary meaning, clinical interpretation and all final claims still require mandatory review. No patient-level claim may be verified from this aggregate view.'}
 
