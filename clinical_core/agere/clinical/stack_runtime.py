@@ -31,6 +31,8 @@ class Stack:
                     'frontier_fallback_enabled':os.environ.get('AGERE_FRONTIER_SOURCE_REVIEW','off')=='on',
                     'scope':'Native execution and joins first; System One chooses program-meaning or source-reading work. Frontier reviews unresolved meaning; native defects and deciding faults require repair.',
                     'work_triage':'execution-work-triage/1',
+                    'source_obligations':'source-fields-first/1',
+                    'field_reuse':'Exact input-bound supported fields; remaining claims only escalate with full source context.',
                     'authority':'machine_judgment','clinical_qualification':False},
                 'execution_wire_encoding':os.environ.get('AGERE_EXECUTION_WIRE_ENCODING','off')=='on',
                 'local_retrieval_runtime':{

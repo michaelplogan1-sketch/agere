@@ -2039,7 +2039,10 @@ def frontier_packet_review(stack,question,packet,*,ledger,scope):
             'Other patients, global completeness and whole-question coverage are reviewed separately; do not '
             'declare missing population coverage a fault in this packet. Do not return coverage. '
             'Preserve exact patient identity, source date, author versus care-role distinctions, '
-            'negation, uncertainty and missing evidence. Never use general clinical knowledge to fill a source gap.')
+            'negation, uncertainty and missing evidence. Never use general clinical knowledge to fill a source gap. '
+            'If resolved_source_claims is present, its input-bound fields retain the recorded native or machine authority. '
+            'Do not re-extract or relabel those fields. Review only the remaining manifest and joint consistency; '
+            'a conflict with a resolved field must keep joint support unresolved or contradicted, never be silently ignored.')
     elif scope=='composed':
         rules+=(' The native verified_source_composition binds every restored patient value to its '
             'already supported source dependency. Do not repeat source extraction. Review global '
@@ -2116,6 +2119,29 @@ def frontier_packet_review(stack,question,packet,*,ledger,scope):
     return result
 
 
+def unresolved_source_packet(packet,checked):
+    """Keep all source context, asking the frontier only for unsettled fields.
+
+    Native composition binds the original field judgments to exact inputs.
+    The frontier still checks joint consistency and may leave it unresolved.
+    """
+    from ...contracts import digest
+    from ..deliverables.receipts import uncompact_json,compact_json
+    supported=bound_field_support(packet,checked.get('field_review'))
+    if not supported:return packet,[]
+    resolved={r['claim_id']for r in supported};claims=packet['claim_manifest']
+    pending=[c for c in claims if c['id']not in resolved]
+    if not pending:return packet,[]  # complete composition owns this case
+    state=uncompact_json(json.loads(packet['text']))
+    state['resolved_source_claims']={'schema':'bound-source-field-obligations/1',
+        'original_packet_digest':digest(packet['text']),'original_claim_manifest':claims,
+        'supported_claims':supported,'clinical_qualification':False,
+        'scope':'These exact fields retain their native or deciding machine authority against this identical full source input. Review remaining claim_manifest entries and joint consistency. Do not infer clinical qualification or new source facts.'}
+    state['claim_manifest']=pending
+    text=json.dumps(compact_json(state),ensure_ascii=False,separators=(',',':'),default=str)
+    return {**packet,'text':text,'bytes':len(text.encode()),'claim_manifest':pending},sorted(resolved)
+
+
 def resolve_source_abstention(packet,checked,reviewer,*,ledger):
     """Escalate uncertainty once; never turn a missing dependency into a vote."""
     if (reviewer is None or packet.get('id')=='summary'
@@ -2125,7 +2151,8 @@ def resolve_source_abstention(packet,checked,reviewer,*,ledger):
         or checked.get('decided_by')or checked.get('status')or checked.get('input_error')
         or (checked.get('routed_judgment')or{}).get('decided_by')
         or any(f.get('decided_by')for f in checked.get('claim_feedback',[]))):return checked,None
-    try:review=reviewer(packet,ledger=ledger)
+    target,resolved_ids=unresolved_source_packet(packet,checked)
+    try:review=reviewer(target,ledger=ledger)
     except ValueError as exc:
         return {**checked,'frontier_review':{'status':'not_applicable','reason':str(exc),'calls':0,'cost_usd':0}},None
     result={**checked,'frontier_review':review}
@@ -2133,6 +2160,19 @@ def resolve_source_abstention(packet,checked,reviewer,*,ledger):
     # probabilities. A categorical frontier judgment never recalibrates them.
     if review.get('status')!='reviewed':return result,review
     verdict=review['verdict'];claims={c['id']:c for c in packet['claim_manifest']}
+    if resolved_ids:
+        from ...contracts import digest
+        # A response must cover exactly the dispatched unresolved obligations;
+        # old supported fields and source bytes cannot be replaced by that response.
+        target_ids={c['id']for c in target['claim_manifest']}
+        covered=[*verdict.get('supported_claim_ids',[]),*(f['claim_id']for f in verdict.get('findings',[]))]
+        if (review.get('packet_digest')!=digest(target['text'])or set(covered)!=target_ids
+            or len(covered)!=len(target_ids)):
+            return {**checked,'frontier_review':review},review
+        review={**review,'original_packet_digest':digest(packet['text']),
+            'reused_supported_claim_ids':resolved_ids,'remaining_claim_count':len(target_ids)}
+        result['frontier_review']=review
+        verdict={**verdict,'supported_claim_ids':[*resolved_ids,*verdict['supported_claim_ids']]}
     who='frontier_machine_reviewer'
     findings=[{'packet_id':packet['id'],'claim_id':f['claim_id'],
         'field':claims[f['claim_id']]['field'],'path':claims[f['claim_id']]['path'],
@@ -2149,7 +2189,7 @@ def resolve_source_abstention(packet,checked,reviewer,*,ledger):
         reviewed_claim_count=len(claims),supported_claim_count=len(verdict['supported_claim_ids']))
     from ...contracts import digest
     result['field_review']={'schema':'frontier-field-review/1','authority':'frontier_machine_judgment',
-        'packet_digest':review['packet_digest'],'manifest_digest':digest(packet['claim_manifest']),
+        'packet_digest':digest(packet['text']),'manifest_digest':digest(packet['claim_manifest']),
         'expected_count':len(claims),'supported_count':len(verdict['supported_claim_ids']),
         'fault_count':sum(f['label']!='unknown'for f in findings),
         'unresolved_count':sum(f['label']=='unknown'for f in findings),
@@ -3162,7 +3202,9 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             complete_dependency_packets=len(packets),max_dependency_bytes=max((p['bytes']for p in packets),default=0),
             total_dependency_bytes=sum(p['bytes']for p in packets),
             operational_receipts='Retained by native digest; excluded from clinical model context')
-        support=check_support_packets(packets,gate.s1().decide,as_of=as_of,ledger=ledger,field_decider=getattr(gate.s1(),'judge_fields',None),
+        if not hasattr(tools,'support_field_reviews'):tools.support_field_reviews={}
+        support=check_support_packets(packets,gate.s1().decide,as_of=as_of,ledger=ledger,
+                                      prior_field_reviews=tools.support_field_reviews,field_decider=getattr(gate.s1(),'judge_fields',None),
                                       source_observation_path=getattr(stack,'path',None),
                                       long_context_decider=gate.s1().decide,
                                       long_context_field_decider=getattr(gate.s1(),'judge_fields',None),
@@ -4747,7 +4789,27 @@ def global_narrative_claims(packet):
     return expected if len(expected)>1 else []
 
 
-def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,source_observation_path=None,long_context_decider=None,long_context_field_decider=None,frontier_decider=None):
+def quarantine_support_faults(faults,source_observation_path):
+    if source_observation_path is not None:
+        from .span_repair import quarantine_assertions
+        from .typed_document_review import quarantine_assertions as quarantine_typed_assertions
+        for fault_row in faults:
+            ident=fault_row.get('source_assertion_id')
+            if ident:
+                try:fault_row['source_observations_quarantined']=quarantine_assertions(
+                    source_observation_path,[ident],'Unadjudicated typed source feedback: '+fault_row['label']+'. '+fault_row['reason'])
+                except (OSError,sqlite3.Error)as exc:
+                    fault_row['source_observation_quarantine_error']=type(exc).__name__+': '+str(exc)
+                try:
+                    typed_count=quarantine_typed_assertions(source_observation_path,[ident],
+                        'Unadjudicated typed source feedback: '+fault_row['label']+'. '+fault_row['reason'])
+                    fault_row['typed_source_observations_quarantined']=typed_count
+                    fault_row['source_observations_quarantined']=fault_row.get('source_observations_quarantined',0)+typed_count
+                except (OSError,sqlite3.Error)as exc:
+                    fault_row['typed_source_observation_quarantine_error']=type(exc).__name__+': '+str(exc)
+
+
+def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,source_observation_path=None,long_context_decider=None,long_context_field_decider=None,frontier_decider=None,prior_field_reviews=None):
     """Repair a local source family while continuing proven independent families.
 
     The first packet normally owns the global summary. Once it clears that
@@ -4834,6 +4896,28 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             from .system_one_deciders import order_for
             long_order=order_for('agere_investigation_support_dependency_long_context')
         diagnostic=long_context_field_decider if oversized else field_decider
+        # Complete source-bound rows already have an exact conjunction
+        # contract. Resolve native/typed fields first; a redundant joint model
+        # vote cannot add an omitted claim or missing source to that contract.
+        if diagnostic is not None and complete_claim_scope(packet) is not None:
+            from ...contracts import digest
+            prior=(prior_field_reviews or{}).get(digest(packet['text']))
+            localized=localize_support_failure(packet,diagnostic,as_of=as_of,ledger=worker_ledger,
+                prior_review=prior,**({'order':long_order}if oversized else{}))
+            steps.extend(localized['steps']);review=localized['field_review']
+            faults=[f for f in localized['feedback']if f.get('decided_by')and f['label']!='unknown']
+            quarantine_support_faults(faults,source_observation_path)
+            composition=complete_claim_composition(packet,review)
+            review['remaining_obligation']=('located_field_faults'if faults else
+                None if composition else 'unresolved_fields_and_complete_dependency_support')
+            if composition:review['complete_dependency_accepted']=True
+            return {**identity,'label':('not_established'if all(f['label']=='missing_evidence'for f in faults)else'contradicted')if faults
+                    else 'supported'if composition else 'unknown',
+                'decided_by':'typed_claim_checks'if faults else 'complete_typed_claim_composition'if composition else None,
+                'obligation_route':'source-fields-first/1',
+                'claim_feedback':localized['feedback'],'field_review':review,
+                **({'claim_composition':composition}if composition else{}),
+                'reason':'Complete source-bound fields are composed at unchanged thresholds; only unresolved obligations may escalate. Global meaning remains separate.'},steps
         global_fields=global_narrative_claims(packet)
         global_review=None
         if global_fields:
@@ -4890,23 +4974,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             checked['claim_feedback']=localized['feedback'];steps.extend(localized['steps'])
             checked['field_review']=localized['field_review']
             faults=[f for f in localized['feedback']if f.get('decided_by') and f['label']!='unknown']
-            if source_observation_path is not None:
-                from .span_repair import quarantine_assertions
-                from .typed_document_review import quarantine_assertions as quarantine_typed_assertions
-                for fault_row in faults:
-                    ident=fault_row.get('source_assertion_id')
-                    if ident:
-                        try:fault_row['source_observations_quarantined']=quarantine_assertions(
-                            source_observation_path,[ident],'Unadjudicated typed source feedback: '+fault_row['label']+'. '+fault_row['reason'])
-                        except (OSError,sqlite3.Error)as exc:
-                            fault_row['source_observation_quarantine_error']=type(exc).__name__+': '+str(exc)
-                        try:
-                            typed_count=quarantine_typed_assertions(source_observation_path,[ident],
-                                'Unadjudicated typed source feedback: '+fault_row['label']+'. '+fault_row['reason'])
-                            fault_row['typed_source_observations_quarantined']=typed_count
-                            fault_row['source_observations_quarantined']=fault_row.get('source_observations_quarantined',0)+typed_count
-                        except (OSError,sqlite3.Error)as exc:
-                            fault_row['typed_source_observation_quarantine_error']=type(exc).__name__+': '+str(exc)
+            quarantine_support_faults(faults,source_observation_path)
             if faults:
                 checked.update(label='not_established' if all(f['label']=='missing_evidence'for f in faults) else 'contradicted',
                     decided_by='typed_claim_checks',reason='Specific source/field faults resolved by typed claim checks.')
@@ -4987,6 +5055,11 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             results.append({**{k:packet[k]for k in ('id','parent_packet_id')if k in packet},'label':'unknown','decided_by':None,'status':'awaiting_dependency_repair',
                 **({'blocked_family_id':source_packet_family(packet,by_id)}if source_packet_family(packet,by_id)in blocked else {}),
                 'reason':'Not sent: repair the diagnosed dependency first. This packet has not been accepted or rejected.'})
+    if prior_field_reviews is not None:
+        from ...contracts import digest
+        for packet,result in zip(scheduled,results):
+            review=result.get('field_review')or(result.get('typed_review')or{}).get('field_review')
+            if bound_field_support(packet,review):prior_field_reviews[digest(packet['text'])]=review
     failed=[r for r in results if r['label']in ('contradicted','not_established')and r.get('decided_by')]
     settled=bool(results)and all(r['label']=='supported'and r.get('decided_by')for r in results)
     feedback=[f for r in results for f in r.get('claim_feedback',[])]
@@ -5105,7 +5178,54 @@ def field_review_observation(reading,steps,claim_id):
     return {'schema':'typed-field-review-observation/1','state':state,'model_judgment':judgment,'attempts':attempts},reason
 
 
-def localize_support_failure(packet,judge,*,as_of,ledger,order=None):
+def field_review_binding(packet):
+    from ...contracts import digest
+    return digest({k:packet.get(k)for k in ('id','date','result_view','patient_dependency_bound',
+        'source_dependency_patient_id','source_context_complete','dependency_complete',
+        'parent_packet_id','required_source_packet_ids','source_dependency_parent_id',
+        'source_dependency_fingerprint')})
+
+
+def bound_field_support(packet,review):
+    """Reuse supported fields only for the identical complete review input.
+
+    Reuse carries original machine/native authority and no new provider attempt.
+    A changed question, source, date, claim manifest or value invalidates it.
+    """
+    from ...contracts import digest
+    from ..deliverables.receipts import uncompact_json
+    if not isinstance(review,dict):return []
+    try:
+        claims=packet['claim_manifest'];state=uncompact_json(json.loads(packet['text']))
+        if (review.get('schema')!='localized-field-review/1'
+            or review.get('packet_digest')!=digest(packet['text'])
+            or review.get('review_binding')!=field_review_binding(packet)
+            or review.get('manifest_digest')!=digest(claims)
+            or state.get('claim_manifest')!=claims or review.get('expected_count')!=len(claims)):
+            return []
+        by={c['id']:c for c in claims};readings=review.get('supported_claims')
+        if not isinstance(readings,list)or len(by)!=len(claims)or review.get('supported_count')!=len(readings):return []
+        ids=[r['claim_id']for r in readings]
+        if len(ids)!=len(set(ids)):return []
+        audit_context=audit_field_context(packet,state)or{}
+        for r in readings:
+            c=by[r['claim_id']];o=r['verification_observation'];j=o.get('model_judgment')or{}
+            if (r.get('field')!=c['field']or r.get('path')!=c['path']
+                or r.get('value_digest')!=digest(_claim_value(state,c['path']))or o.get('state')!='supported'):return []
+            if o.get('native_provenance'):
+                if native_field_proof(packet,c,state,audit_context=audit_context)!=o['native_provenance']:return []
+            elif o.get('source_tuple_support'):
+                if source_tuple_field_observation(packet,c,state,audit_context=audit_context)!=o:return []
+            else:
+                p,t=j.get('probability'),j.get('threshold')
+                if (j.get('label')!='supported'or not j.get('decided_by')
+                    or type(p)not in(int,float)or type(t)not in(int,float)
+                    or not math.isfinite(p)or not math.isfinite(t)or not 0<t<=p<=1):return []
+        return readings
+    except (KeyError,ValueError,TypeError,IndexError):return []
+
+
+def localize_support_failure(packet,judge,*,as_of,ledger,order=None,prior_review=None):
     """Name the failing field and source meaning after a failed packet check."""
     from ..request_lineage import component
     from ..deliverables.receipts import uncompact_json
@@ -5151,7 +5271,10 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None):
     from ...contracts import digest
     feedback=[];steps=[];supported=[];claims=packet['claim_manifest'];semantic_claims=[]
     audit_context=audit_field_context(packet,state)or{}
+    reused={r['claim_id']:r for r in bound_field_support(packet,prior_review)}
     for claim in claims:
+        if claim['id']in reused:
+            supported.append(reused[claim['id']]);continue
         proof=native_field_proof(packet,claim,state,audit_context=audit_context)
         if proof:
             supported.append({'claim_id':claim['id'],'field':claim['field'],'path':claim['path'],
@@ -5205,8 +5328,9 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None):
     return {'feedback':feedback,'steps':steps,'field_review':{
         'schema':'localized-field-review/1','authority':'native_provenance_and_machine_review'if native_count else'machine_review',
         'packet_digest':digest(packet['text']),'manifest_digest':digest(claims),
+        'review_binding':field_review_binding(packet),
         'expected_count':len(claims),'supported_count':len(supported),
-        'native_supported_count':native_count,
+        'native_supported_count':native_count,'reused_supported_count':len(reused),
         'source_tuple_supported_count':sum('source_tuple_support'in r['verification_observation']for r in supported),
         'unresolved_count':sum(not f.get('decided_by')for f in feedback),
         'fault_count':sum(bool(f.get('decided_by'))for f in feedback),
@@ -5215,8 +5339,8 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None):
         'clinical_qualification':False}}
 
 
-def complete_claim_composition(packet,review):
-    """Conjoin exact source-complete patient claims; never infer omitted claims.
+def complete_claim_scope(packet):
+    """Identify the existing complete source-claim contract before model dispatch.
 
     This applies only to an entire, unpartitioned patient row scope with actual
     complete source contexts. A global summary, source child, incomplete source,
@@ -5231,7 +5355,8 @@ def complete_claim_composition(packet,review):
         state=uncompact_json(json.loads(packet['text']));pid=packet['source_dependency_patient_id']
         rows=state.get('answer_rows');contexts=state.get('source_contexts');claims=packet.get('claim_manifest')
         audit_context=audit_field_context(packet,state)or{}
-        if (state.get('patient_id')!=pid or not rows or not contexts or state.get('source_context_gaps')or
+        if (not pid or state.get('patient_id')!=pid or state.get('as_of')!=packet.get('date')
+            or not rows or not contexts or state.get('source_context_gaps')or
             state.get('claim_manifest')!=claims or not all(isinstance(r,dict)and r.get('patient_id')==pid for r in rows)or
             not all(isinstance(c,dict)and c.get('patient_id')==pid and c.get('record_id')and(
                 isinstance(c.get('text'),str)and c.get('date')or audit_context and
@@ -5241,7 +5366,19 @@ def complete_claim_composition(packet,review):
         expected=[{'id':'claim_'+str(n),'field':str(k),'path':['answer_rows',i,k]}
                   for n,(i,k)in enumerate((i,k)for i,row in enumerate(rows)for k in row if k!='patient_id')]
         if claims!=expected or not claims:return None
+        return state,claims,contexts,audit_context
+    except (ValueError,KeyError,TypeError,IndexError):return None
+
+
+def complete_claim_composition(packet,review):
+    """Conjoin exact source-complete patient claims; never infer omitted claims."""
+    from ...contracts import digest
+    bound=complete_claim_scope(packet)
+    if bound is None:return None
+    state,claims,contexts,audit_context=bound
+    try:
         supported=review.get('supported_claims')
+        if len(bound_field_support(packet,review))!=len(claims):return None
         if (review.get('packet_digest')!=digest(packet['text'])or review.get('manifest_digest')!=digest(claims)or
             review.get('expected_count')!=len(claims)or review.get('supported_count')!=len(claims)or
             review.get('unresolved_count')!=0 or review.get('fault_count')!=0 or

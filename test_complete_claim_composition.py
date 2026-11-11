@@ -28,19 +28,18 @@ def fields(task,named,evidence,**kw):
 class ClaimComposition(unittest.TestCase):
     def review(self,p):return B.localize_support_failure(p,fields,as_of=p['date'],ledger=None)['field_review']
 
-    def test_every_field_is_composed_but_global_unknown_and_explicit_faults_still_block(self):
+    def test_fields_are_composed_before_redundant_joint_vote_and_global_unknown_stays(self):
         p=packet();summary={**p,'id':'summary','claim_manifest':[], 'patient_dependency_bound':False}
-        for global_label,patient_label,patient_decided in [('supported','unknown',None),
-                ('unknown','unknown',None),('supported','contradicted','fixture')]:
+        for global_label in ('supported','unknown'):
             def whole(q,options,evidence,**kw):
-                label=global_label if evidence[0]['id']=='summary'else patient_label
-                return {'label':label,'decided_by':('fixture'if label=='supported'else None)if evidence[0]['id']=='summary'else patient_decided,
+                self.assertEqual(evidence[0]['id'],'summary','Source fields compose without a second joint vote')
+                label=global_label
+                return {'label':label,'decided_by':'fixture'if label=='supported'else None,
                     'probabilities':{label:.9},'steps':[]}
             r=B.check_support_packets([summary,p],whole,as_of=p['date'],ledger=None,field_decider=fields)
-            self.assertEqual(r['label'],'unknown'if patient_decided else global_label)
-            if not patient_decided:
-                self.assertEqual(r['packets'][1]['decided_by'],'complete_typed_claim_composition')
-                self.assertTrue(r['packets'][1]['field_review']['complete_dependency_accepted'])
+            self.assertEqual(r['label'],global_label)
+            self.assertEqual(r['packets'][1]['decided_by'],'complete_typed_claim_composition')
+            self.assertTrue(r['packets'][1]['field_review']['complete_dependency_accepted'])
             self.assertFalse(r['packets'][1].get('claim_composition',{}).get('clinical_qualification',False))
 
     def test_omitted_duplicate_changed_or_unsettled_judgment_cannot_close_packet(self):
