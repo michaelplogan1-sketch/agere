@@ -100,6 +100,8 @@ class Navigation(unittest.TestCase):
         self.assertEqual(plan['inventory'][0]['fields']['basis']['reference_issues'][0]['reason'],
                          'not_received_for_patient')
         self.assertFalse(plan['absence_established'])
+        from clinical_core.agere.clinical.semantic_analyst import actor_result
+        self.assertEqual(actor_result(plan)['reference_issues'][0]['reason'], 'not_received_for_patient')
 
     def test_reader_receives_only_new_sources_and_conserves_original_values(self):
         plan = self.plan(); before = copy.deepcopy(self.call); seen = []

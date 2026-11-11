@@ -209,6 +209,14 @@ def actor_reading(saved):
     units = [u for p in inventory for f in p['fields'].values() for u in f['units']]
     shown = {k: v for k, v in saved.items()
              if k not in ('inventory', 'patient_ids', 'additional_documents')}
+    # Broken references and structured linked sources affect the next step.
+    # Keep their exact source identities, rather than hiding them behind totals.
+    shown['reference_issues'] = [{'patient_id': p['patient_id'], 'field': field, **issue}
+        for p in inventory for field, account in p['fields'].items()
+        for issue in account['reference_issues']]
+    shown['linked_structured_sources'] = [{'patient_id': p['patient_id'], 'field': field, **source}
+        for p in inventory for field, account in p['fields'].items()
+        for source in account['linked_no_document']]
     shown['native_inventory'] = {
         'navigation_id': saved['id'], 'inventory_digest': digest(inventory),
         'patients': len(saved['patient_ids']),
