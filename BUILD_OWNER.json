@@ -758,7 +758,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-11T22:04:24.808765+00:00",
+  "updated_at": "2026-11-11T22:09:15.181837+00:00",
   "last_commit": "ea0536a0bcaef0c888bb78b5de1b6b5910bdeedd",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -888,7 +888,7 @@
     "receipt": "artifacts/agere-analytical-completion-2026-11-11/delivery-receipt.json",
     "delivery": "Ordinary Resume now sends eligible capacity-refused aggregate verification to the existing frontier reviewer, retains interrupted drafts with unexecuted deliverable proposals, and exposes actual activity. Population inspection references complete native membership lists while retaining every proof and count. The installed39e971cf code-only archive starts in a fresh process and reopens its saved native answer without data/model/runtime duplication."
   },
-  "next_action": "G5: Claude subscription work is stopped at the actual new session limit, reported reset8:30pm America/Chicago. Latest partial ANS-3f2a0af0a03e3d9dac158612 passes the ordinary recovery loader and retains the original65patients/34native actions/3document reviews, including the716-record expanded selection. On actual provider availability resume this latest context through the normal app path; do not rerun the old whole question. Inspect app/request receipts before launch and retain failed-key/circuit safeguards. Current-source recovery matched25actions, then correctly withheld the old draft because11patient review rows changed; never waive this evidence guard. Finish the remaining expanded-evidence composition, requested work and source/global review. Retain allten/all25, independent model/clinical qualification, total economics and deployment. No passing broad campaign, unchanged training, Git push or scheduler restart.",
+  "next_action": "G5: address the measured frontier-usage bottleneck before another large provider continuation. Usage diagnosis artifacts/agere-source-escalation-2026-11-11/reset-continuation/usage-diagnosis.json records329Sonnet/19Opus calls for the CKD request, including320source-review responses and16.24M reported input/cache tokens. Inspect the existing frontier_packet_review/build_prompt/run_cli boundary to separate required evidence from repeated transport context, then implement the demonstrated context/review-reuse reduction with exact patient/source/claim guards and unchanged qualification thresholds. Do this offline while the actual Claude limit remains; no provider probes. After availability, validate only the affected behavior and resume latest partial ANS-3f2a0af0a03e3d9dac158612 (65patients/34actions), preserving every attempt and unknown cost. Allten/all25/model-clinical/deployment dependencies remain; no new caps, broad passing rerun, unchanged training, Git push or scheduler restart.",
   "product_market_audit": {
     "as_of": "2026-11-09T18:42:05.848258+00:00",
     "scope": "Owner product/architecture/market audit against saved receipts and selected current public primary sources. Not independent clinical/model qualification, patent/FTO search, full research review or customer discovery.",
@@ -1024,5 +1024,6 @@
     "integration_receipt": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
     "presentation_commit": "5619c1988e6e3e1196f7d6c9309a6e1b7eaaf7b6",
     "presentation_receipt": "artifacts/agere-output-decision-design-2026-11-11/delivery-receipt.json"
-  }
+  },
+  "usage_diagnosis": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/usage-diagnosis.json"
 }
