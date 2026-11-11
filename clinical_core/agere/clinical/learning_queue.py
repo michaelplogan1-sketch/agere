@@ -53,7 +53,7 @@ def import_lineage(stack,release,output):
     """
     stack,release,output=Path(stack),Path(release),Path(output)
     meta=json.loads((stack/'run.json').read_text());manifest=json.loads((release/'manifest.json').read_text())
-    if manifest.get('schema')=='single-healthcare-warehouse/1':
+    if manifest.get('schema') in ('single-healthcare-warehouse/1', 'healthcare-warehouse/2'):
         from .original_source_lineage import prepare
         return prepare(stack,release,output)
     if meta.get('synthetic') is not True or manifest.get('synthetic') is not True:raise ValueError('Synthetic lineage sources required')

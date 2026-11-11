@@ -214,6 +214,18 @@ def dependencies(build, config):
         if d.is_relative_to(ROOT / 'models'):
             item['application_mount'] = str(d.relative_to(ROOT))
         result.append(item)
+    # A relocated learning registry stays external; retain only its exclusion
+    # metadata as dependencies, never enumerate other experiment files.
+    from .model_policy import application_runtime
+    environment = application_runtime(config)['environment']
+    plan = environment.get('AGERE_LEARNING_PROTECTION_PLAN')
+    pin = environment.get('AGERE_LEARNING_PROTECTION_PLAN_SHA256')
+    if plan or pin:
+        from .clinical.semantic_learning import protections
+        protections(plan_path=plan, plan_sha256=pin)
+        path = Path(plan).resolve()
+        result.append({'path': str(path.parent), 'verification': 'top_level_json_manifests',
+                       'files': {p.name: file_entry(p) for p in (path, path.parent/'reserved-sources.json')}})
     from .gateway import default_ledger_path
     ledger = default_ledger_path().resolve()
     if not ledger.is_file(): raise ValueError('Current shared provider ledger required')
