@@ -10,7 +10,7 @@ from pathlib import Path
 from . import answer_context as A
 from .receipts import fingerprint
 
-VERSION = 'saved-report/4'
+VERSION = 'saved-report/5'
 
 
 def value(v):
@@ -55,7 +55,8 @@ def create(path, request):
     answer = context['answer']
     records = [row for part in sections(answer) for row in part.get('table') or []]
     evidence = projection(context)
-    title = request['request']
+    title = {'brief': 'Evidence review brief', 'command': 'Evidence and next steps',
+             'explore': 'Explore the saved evidence'}[request['template']]
     status = answer.get('status') or 'Not recorded'
     payload = {'context_id': context['id'], 'question': context['question'], 'source': context['source'],
                'answer': answer, 'patient_ids': context['patient_ids'], 'workflow': context.get('workflow') or [],
@@ -64,7 +65,7 @@ def create(path, request):
                  ('saved_report.py', 'patient_dashboard.py', 'patient_evidence.py', 'patient_report_pdf.py')}
     key = 'DLV-' + fingerprint([VERSION, renderers, context['id'], request, payload])[:12].upper()
     # Export intent belongs to this request, not a prior question or report.
-    want_pdf = bool(re.search(r'\bpdf\b', title, re.I))
+    want_pdf = bool(re.search(r'\bpdf\b', request['request'], re.I))
     pdf_url = '/api/stack/action-deliverable?' + urlencode({'context': context['id'], 'id': key, 'format': 'pdf'}) if want_pdf else None
     body = dashboard(context, title=title, pdf_url=pdf_url, evidence=evidence, layout=request['template'])
     pdf_bytes = None
@@ -87,7 +88,7 @@ def create(path, request):
         formats['pdf'] = {'filename': 'artifact.pdf', 'mime': 'application/pdf',
                           'sha256': hashlib.sha256(pdf_bytes).hexdigest(), **pdf_receipt}
     spec = {'schema': 'agere-deliverable/1', 'id': key, 'title': title, 'status': 'delivered',
-            'workspace': context['id'], 'request': title, 'template': request['template'],
+            'workspace': context['id'], 'request': request['request'], 'template': request['template'],
             'created_at': A.now(), 'revision': 1, 'synthetic': True, 'mockup': False,
             'generation': 'saved_report','retained_inspection':retained,'clinical_execution_authorized':False, 'renderer_version': VERSION, 'formats': formats,
             'costs': {'total_usd': 0, 'known_api_estimate_usd': 0, 'api_cost_known': True,

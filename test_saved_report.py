@@ -92,6 +92,27 @@ class SavedReport(unittest.TestCase):
         self.assertIn('Recorded headline fields',body);self.assertIn('not resolved',body)
         self.assertIn('later observations do not establish an earlier clinical state',body)
 
+    def test_empty_missing_list_does_not_hide_unfinished_source_review(self):
+        question,result=self.prepare()
+        result['answer'].update(status='partial',missing=[],verification='unverified',
+            investigation_review={'status':'repair','repair_kind':'global_source_dependencies',
+                                  'feedback':'Source coverage is unfinished <not accepted>'})
+        result['answer']['sections']=[{'title':'Subgroup','answer':{'status':'partial',
+            'verification':'uncertain','investigation_review':{'feedback':'The subgroup definition needs evidence.'}}}]
+        c=A.capture(self.path,question,result)
+        request='Turn the saved analysis into an HTML review brief with all unresolved requirements.'
+        d=R.create(self.path,{'context_id':c['id'],'template':'brief','request':request})
+        body=d['html'];overview=body.split('id="review-brief">')[1].split('<script id="data"')[0]
+        self.assertIn('unverified',overview);self.assertIn('uncertain',overview)
+        self.assertIn('Source coverage is unfinished &lt;not accepted&gt;',overview)
+        self.assertIn('The subgroup definition needs evidence.',overview)
+        self.assertNotIn('Recorded unresolved items',body)
+        self.assertIn('This count does not include unfinished verification',body)
+        payload=json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>',body,re.S).group(1))
+        self.assertEqual(payload['answer'],result['answer'])
+        self.assertEqual(d['title'],'Evidence review brief');self.assertEqual(d['request'],request)
+        self.assertEqual(d['new_paid_api_calls'],0)
+
     def test_source_text_cannot_inject_html_script_or_replace_template_markers(self):
         question,result=self.prepare();result['answer']['limitations']=['</script><img src=x onerror=alert(1)> %%STATUS%%']
         c=A.capture(self.path,question,result)
