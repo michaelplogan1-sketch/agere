@@ -480,6 +480,9 @@ def complete_actor_reading(value):
 def actor_result(value):
     """A model preview, while native receipts and SQL result views retain ALL rows."""
     if not isinstance(value,dict):return value
+    from . import source_navigation
+    if value.get('schema') == source_navigation.VERSION:
+        return source_navigation.actor_reading(value)
     shown={k:v for k,v in value.items() if k not in ('executed_query','elapsed_s','engine_result')}
     if value.get('executed_query'):
         from ...contracts import digest

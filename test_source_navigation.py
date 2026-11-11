@@ -155,5 +155,90 @@ class Navigation(unittest.TestCase):
         self.records[1]['patient_id'] = 'foreign'
         with self.assertRaisesRegex(ValueError, 'same-patient'): self.plan()
 
+    def test_hierarchical_workflow_reads_only_new_branches_and_continues_native_result(self):
+        import sqlite3
+        from clinical_core.agere.clinical.semantic_analyst import actor_result
+        self.docs[3] = ('other', 'hie_document', 'hie_documents', 'letter', '2030-02-02',
+                        'An outside source gives another dated account.', '')
+        self.docs.append(('later', 'hie_document', 'hie_documents', 'letter', '2030-03-02',
+                          'A separate later source remains unexamined.', ''))
+        self.records.append(record('later', 'hie_documents'))
+        original = copy.deepcopy(self.call)
+        plan = self.plan()
+        branch = next(b for b in plan['source_branches'] if b['month'] == '2030-02')
+        selected = B.Tools._call(self.tools, {'name': 'plan_evidence_expansion', 'input': {
+            'review_result_view': 'agere_result_1', 'basis_navigation_id': plan['id'],
+            'branch_ids': [branch['id']]}})
+        self.assertEqual({d['record_id'] for d in selected['additional_documents']}, {'order','review','other'})
+        shown = actor_result(selected)
+        self.assertNotIn('inventory', shown)
+        self.assertEqual(shown['source_branches'], selected['source_branches'])
+        self.assertEqual(shown['native_inventory']['documents'], 5)
+        self.assertFalse(shown['absence_established'])
+        self.assertEqual(json.loads(Path(self.tmp.name, 'source-navigations', selected['id']+'.json').read_text())['inventory'], selected['inventory'])
+        reads=[]
+        def reader(use):
+            ids=use['input']['record_ids'];reads.append(list(ids))
+            return {'source_scope': 'focused', 'rows': [{
+                'patient_id': 'p1', 'review_status': 'reviewed', 'documents_reviewed': len(ids),
+                'review_limitations': '[]', 'review_unresolved_json': '[]',
+                'review_json': json.dumps({'basis': [{'record_id': rid, 'quote': next(d[5] for d in self.docs if d[0]==rid)} for rid in ids]})}],
+                'coverage': [{'patient_id': 'p1', 'unique_whole_documents': len(ids)}],
+                'accounting': {'new_paid_api_calls': 0}}
+        self.tools._call=reader
+        combined = B.Tools._call(self.tools, selected['review_next'])
+        combined['result_view']='agere_result_2'
+        self.tools.native_calls.append({'name': 'review_documents', 'input': {'navigation_id': selected['id']}, 'result': combined})
+        # The next expansion starts from the combined native result. Earlier
+        # evidence is not re-read or discarded, even when it is unresolved.
+        next_plan = N.prepare(self.tools, 'agere_result_2')
+        self.assertEqual(next_plan['additional_documents'], [])
+        self.assertEqual({b['month'] for b in next_plan['source_branches'] if b['level']=='month'}, {'2030-03'})
+        later = next(b for b in next_plan['source_branches'] if b['level']=='month')
+        final_plan = N.prepare(self.tools, 'agere_result_2', [later['id']], next_plan['id'])
+        final = B.Tools._call(self.tools, final_plan['review_next'])
+        self.assertEqual(reads, [['order','other','review'], ['later']])
+        self.assertEqual(final['rows'][0]['documents_reviewed'],5)
+        self.assertEqual(final['rows'][0]['document_reading_attempts'],5)
+        self.assertEqual(final['rows'][0]['source_records_processed'],5)
+        self.assertEqual(self.call, original)
+        self.assertEqual(final['rows'][0]['review_status'], 'needs_review')
+        self.assertEqual(json.loads(final['rows'][0]['review_unresolved_json']), json.loads(self.old['review_unresolved_json']))
+        # Use the same native materialization used by the investigator, then
+        # reopen its source-bound findings. This is an authored reader adapter,
+        # not a claim that a model interpreted these sources correctly.
+        db=sqlite3.connect(':memory:');self.addCleanup(db.close)
+        registrations=[]
+        semantic=SimpleNamespace(db=db, _authorize=lambda *a: sqlite3.SQLITE_OK,
+            register_native_result=lambda name,receipt: registrations.append(name))
+        columns, rows=B.output_table(final)
+        B.define_result(semantic, 'agere_result_3', columns, rows, receipt=final)
+        findings=db.execute("SELECT json_extract(j.value,'$.record_id') FROM agere_result_3 r,json_each(r.review_json,'$.basis') j").fetchall()
+        self.assertEqual({r[0] for r in findings}, {'root','order','review','other','later'})
+        self.assertEqual(registrations,['agere_result_3'])
+        self.assertFalse(final['navigation']['absence_established'])
+        import os
+        target=os.environ.get('AGERE_NAVIGATION_WORKFLOW_RECEIPT')
+        if target:
+            Path(target).write_text(json.dumps({'status':'passed','kind':'authored_connected_tool_workflow',
+                'model_transport':'prepared_reader_not_live_or_clinically_qualified',
+                'original_documents':1,'all_final_documents':len(findings),'incremental_read_batches':reads,
+                'original_findings_and_uncertainty_preserved':True,'native_sql_materialization':registrations,
+                'native_plan_bytes':len(json.dumps(selected).encode()),'actor_plan_bytes':len(json.dumps(shown).encode()),
+                'source_branches_complete':True,'provider_calls':0,'source_navigation_id':selected['id']},indent=2)+'\n')
+
+    def test_branch_selection_cannot_bypass_source_clock_scope_or_inventory_version(self):
+        self.records[3]['available_date']='2031-01-01'
+        plan=self.plan()
+        self.assertEqual(plan['source_branches'], [])
+        self.records[3]['available_date']='2030-01-02'
+        plan=self.plan();branch=plan['source_branches'][0]['id']
+        for ids,basis in [([branch],None),(['foreign'],plan['id']),('not-a-list',plan['id'])]:
+            with self.subTest(ids=ids,basis=basis),self.assertRaises(ValueError):
+                N.prepare(self.tools,'agere_result_1',ids,basis)
+        self.docs[3]=(*self.docs[3][:5],'Changed unlinked source.', '')
+        with self.assertRaisesRegex(ValueError,'changed'):
+            N.prepare(self.tools,'agere_result_1',[branch],plan['id'])
+
 
 if __name__ == '__main__': unittest.main()
