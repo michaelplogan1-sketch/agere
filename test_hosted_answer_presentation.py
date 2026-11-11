@@ -8,6 +8,20 @@ from clinical_core.agere.hosted import pages
 
 
 class HostedAnswerPresentation(unittest.TestCase):
+    def test_report_distinguishes_aggregate_zero_unknown_and_rows(self):
+        from clinical_core.agere.deliverables.patient_dashboard import summary_metrics, brief_overview
+        self.assertEqual(summary_metrics({'count':10}, []), [{'value':10,'label':'Count returned'}])
+        self.assertEqual(summary_metrics({'count':0}, [])[0]['value'], 0)
+        self.assertIsNone(summary_metrics({'count':None}, [])[0]['value'])
+        self.assertEqual(summary_metrics({'status':'unsupported'}, []), [])
+        rows=[{'patient_id':'P-1'},{'patient_id':'P-1'}]
+        self.assertEqual(summary_metrics({}, rows), [
+            {'value':1,'label':'Patients in returned records'}, {'value':2,'label':'Complete result rows'}])
+        text=brief_overview({'answer':{'count':10},'rows':[]})
+        self.assertIn('<strong>10</strong> Count returned', text)
+        self.assertIn('no individual result rows',text)
+        self.assertNotIn('complete population',text)
+
     def test_shared_renderer_complete_records_and_source_meanings(self):
         html = pages.app()
         self.assertIn('data-theme="light"', html)

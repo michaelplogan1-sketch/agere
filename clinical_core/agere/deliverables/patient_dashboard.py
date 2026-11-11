@@ -3,6 +3,19 @@ from pathlib import Path
 import json,html,re,gzip,base64
 VERSION='patient-dashboard/1'
 
+def summary_metrics(answer, rows):
+ """Describe the saved result shape without substituting row count for its value."""
+ result=[]
+ for key,label in (('count','Count returned'),('value','Computed value')):
+  if key in answer:
+   result.append({'value':answer[key],'label':answer.get('unit')or label})
+   break
+ if rows:
+  ids={str(r['patient_id'])for r in rows if r.get('patient_id')is not None}
+  if ids:result.append({'value':len(ids),'label':'Patients in returned records'})
+  result.append({'value':len(rows),'label':'Complete result rows'})
+ return result
+
 def payload(context,*,title='Evidence into next steps',labels=None,evidence=None,layout='explore'):
  if layout not in ('command','brief','explore'):raise ValueError('Unknown report layout')
  from .patient_evidence import RECOMMENDATION_FIELD_PATTERN,projection,review_cards,source_reading_notice
@@ -39,7 +52,7 @@ def payload(context,*,title='Evidence into next steps',labels=None,evidence=None
  for field,text in {'on_raas_inhibitor':'RAAS inhibitor / ARNI','on_beta_blocker':'Evidence-based beta-blocker',
   'on_arni':'ARNI','on_mra':'MRA','on_sglt2i':'SGLT2 inhibitor'}.items():
   field_labels[field]=text+' fill membership (see saved time basis)'
- return {'layout':layout,'source_reading_notice':source_reading_notice(context),'source_disposition':context.get('source_disposition'),'recommendation_field_pattern':RECOMMENDATION_FIELD_PATTERN,'context_id':context.get('id'),'question':context['question'],'source':context['source'],'answer':a,'rows':rows,'patient_reviews':cards,'worklist_rows':worklist,'labels':{**field_labels,**(labels or{})},'title':title,'retained_inspection':bool(context.get('retained_inspection')),'evidence':evidence}
+ return {'layout':layout,'summary_metrics':summary_metrics(a,rows),'source_reading_notice':source_reading_notice(context),'source_disposition':context.get('source_disposition'),'recommendation_field_pattern':RECOMMENDATION_FIELD_PATTERN,'context_id':context.get('id'),'question':context['question'],'source':context['source'],'answer':a,'rows':rows,'patient_reviews':cards,'worklist_rows':worklist,'labels':{**field_labels,**(labels or{})},'title':title,'retained_inspection':bool(context.get('retained_inspection')),'evidence':evidence}
 
 def exports(context,*,title='Evidence into next steps',evidence=None,layout='explore'):
  import csv,io
@@ -65,6 +78,7 @@ def brief_overview(data):
   out='<section class="review-block"><h3>'+html.escape(str(heading))+'</h3>'
   if isinstance(a.get('headline'),str):out+='<p>'+html.escape(a['headline'])+'</p>'
   elif a.get('headline'):out+='<details><summary>Recorded headline fields</summary>'+value(a['headline'])+'</details>'
+  for metric in summary_metrics(a,[]):out+='<p class="recorded-value"><strong>'+value(metric['value'])+'</strong> '+html.escape(str(metric['label']))+'</p>'
   for key in ('facts','missing','limitations','verification','investigation_review'):
    if a.get(key):out+='<h4>'+{'facts':'Recorded findings','missing':'Unresolved requirements','limitations':'Interpretation and financial assumptions','verification':'Saved verification status','investigation_review':'Recorded review findings — not a new assessment'}[key]+'</h4>'+value(a[key])
   rows=a.get('table')or[]
@@ -75,7 +89,8 @@ def brief_overview(data):
  a=data['answer']
  return ('<section class="panel full-width" id="review-brief"><h2>Review agenda</h2>'
   '<p>Saved analytical status: <strong>'+html.escape(str(a.get('status')or'Not recorded'))+'</strong>. '
-  'The complete population remains in the records below. Clinical context uses the dated saved snapshot; later observations do not establish an earlier clinical state.</p>'
+  +('All returned records remain available below. 'if data.get('rows')else'This answer has no individual result rows; use the saved aggregate or findings below. ')
+  +'Clinical context uses the dated saved snapshot; later observations do not establish an earlier clinical state.</p>'
   +section(a)+''.join(section(s)for s in a.get('sections')or[]if isinstance(s,dict)and isinstance(s.get('answer'),dict))+'</section>')
 
 
@@ -116,7 +131,7 @@ const grouped=new Map();D.rows.forEach((r,i)=>{const id=String(r.patient_id||'Re
 const keys=[...new Set(D.rows.flatMap(r=>Object.keys(r)))],binary=keys.filter(k=>{const v=D.rows.map(r=>r[k]).filter(v=>v!=null);return v.length&&v.every(v=>v===0||v===1||v===false||v===true)});
 const unknowns=parts.reduce((n,a)=>n+(Array.isArray(a.missing)?a.missing.length:0),0);$('question').textContent=D.question;$('snapshot').textContent='Source snapshot: '+D.source.as_of+' · '+unknowns+' recorded missing requirements. This count does not include unfinished verification or unknown source coverage.';
 const verification=typeof D.answer.verification==='string'?D.answer.verification:'Not recorded';
-$('kpis').innerHTML=[[patients.length,'Saved record groups'],[D.rows.length,'Complete result rows'],[D.answer.status||'Not recorded','Saved analytical status'],[verification,'Saved verification status']].map(([v,l])=>'<div class="kpi"><strong>'+esc(v)+'</strong><span>'+esc(l)+'</span></div>').join('');
+$('kpis').innerHTML=[...D.summary_metrics.map(m=>[m.value,m.label]),[D.answer.status||'Not recorded','Saved analytical status'],[verification,'Saved verification status']].map(([v,l])=>'<div class="kpi"><strong>'+esc(v)+'</strong><span>'+esc(l)+'</span></div>').join('');
 $('status').textContent=(D.source_reading_notice?D.source_reading_notice+' ':'')+(D.retained_inspection?'Retained analysis for inspection; planning code changed after execution. No new analysis or current care authorization is implied. ':'')+'Saved analytical status: '+(D.answer.status||'not recorded')+'. This view preserves the analysis and its uncertainty. Missing values remain explicitly unknown.';
 function flag(p,k){const v=p.rows.map(r=>r[k]);return v.length&&v.every(v=>v===1||v===true)?1:v.length&&v.every(v=>v===0||v===false)?0:null}
 $('charts').innerHTML=binary.map(k=>{const yes=patients.filter(p=>flag(p,k)===1).length,no=patients.filter(p=>flag(p,k)===0).length,unk=patients.length-yes-no,n=patients.length||1;return '<div class="chart"><b>'+esc(label(k))+'</b><div class="bar" role="img" aria-label="'+esc(label(k)+': '+yes+' one, '+no+' zero, '+unk+' missing or conflicting')+'"><span class="yes" style="width:'+100*yes/n+'%"></span><span class="no" style="width:'+100*no/n+'%"></span><span class="unknown" style="width:'+100*unk/n+'%"></span></div><small>'+yes+' one · '+no+' zero · '+unk+' missing / conflicting</small></div>'}).join('')||'<p class="subtle">No binary indicator fields were returned.</p>';
