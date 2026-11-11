@@ -80,6 +80,22 @@ class AnalyticalTools(unittest.TestCase):
         self.assertEqual(preview['answer']['table_rows_computed'],3000)
         self.assertEqual(len(native['answer']['table']),3000)
 
+    def test_complete_engine_roster_reaches_native_sql_despite_presentation_limit(self):
+        rows=[{'patient_id':'decline','gap_status':'open-gap'},
+              {'patient_id':'stable','gap_status':'closed-gap'}]
+        report={'table':rows[:1],'complete_table':rows,'table_rows':2}
+        execution={'answer':{'status':'answered','table':rows[:1]},
+                   'results':[{'result':report}]}
+        t=self.tools()
+        with patch('clinical_core.agere.clinical.analysis_graph.execute',return_value=execution):
+            result=t({'name':'execute_analysis','input':{'operation':'care_gap_closure',
+                'parameters':{'focus':'all','top':1}}})
+        self.assertEqual(result['rows'],rows)
+        self.assertEqual(result['table_rows'],2)
+        self.assertEqual(result['presentation_rows'],1)
+        counts=t({'name':'query_sql','input':{'sql':f"SELECT gap_status,COUNT(*) AS n FROM {result['result_view']} GROUP BY gap_status ORDER BY gap_status"}})
+        self.assertEqual(counts['rows'],[{'gap_status':'closed-gap','n':1},{'gap_status':'open-gap','n':1}])
+
     def test_logged_outcomes_feed_the_existing_bandit_through_the_same_mathematical_tool(self):
         with sqlite3.connect(self.path/'stack.sqlite3') as db:
             for channel,hits in [('phone',8),('text',1)]:

@@ -707,6 +707,12 @@ def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None,s
     with component('analytical_engine',operation=operation,population_size=None if ids is None else len(ids)):
         result=A.execute(tools.stack,plan)
     answer=result.get('answer') or {};rows=answer.get('table') or []
+    # Presentation limits must not become incomplete native inputs for joins,
+    # population counts or subsequent explanations. Engines may retain their
+    # complete selected roster separately from the user-facing table.
+    report=(result.get('results') or [{}])[-1].get('result') or {}
+    complete_table=report.get('complete_table')
+    if isinstance(complete_table,list):rows=complete_table
     if operation in PERSISTED_REPORTS:
         rows=documentary_rows(tools.stack.path,operation,result['results'][-1]['result'])
     scope=None
@@ -717,6 +723,7 @@ def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None,s
     if scope is not None and not columns:columns=['audit_account_id','patient_id']
     from .harness_improvement import semantic_result
     return {'analysis':operation,'status':answer.get('status'),'columns':columns,'rows':rows,'answer':answer,
+            **({'table_rows':len(rows),'presentation_rows':len(answer.get('table')or[])}if isinstance(complete_table,list)else{}),
             'input_patient_ids':ids,'parameters':plan['nodes'][-1]['parameters'],'engine_result':result,
             **({'population_contract':population_contract(operation),'inherited_population_applied':False}if global_report else{}),
             **({'input_selection':selection}if selection!='parameters'else{}),

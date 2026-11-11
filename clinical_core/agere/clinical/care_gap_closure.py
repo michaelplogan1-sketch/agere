@@ -54,7 +54,8 @@ def schema(obj, string, array):
                 'denominator': string(DENOMINATOR, 'what closure rates divide by'),
                 'exclude_not_applicable': {'type': 'boolean', 'description': 'true: members the measure does not apply to are left out of the table'},
                 'closure_evidence': string(CLOSURE, 'result_only: a billed claim without a result does not close the gap'),
-                'group_by': string(GROUP_BY), 'top': {'type': 'integer', 'minimum': 1, 'maximum': 5000}})
+                'group_by': string(GROUP_BY), 'top': {'type': ['integer', 'null'], 'minimum': 1,
+                    'description': 'Optional presentation row limit; null or omitted shows the complete selected roster. Native analysis retains every selected row.'}})
 
 
 def validate(p):
@@ -62,7 +63,7 @@ def validate(p):
     if not isinstance(p, dict) or set(p) - allowed: raise ValueError('care_gap_closure parameters: ' + ', '.join(sorted(allowed)))
     out = {'measures': sorted(set(p.get('measures') or [])), 'focus': p.get('focus', 'no_closing_evidence'),
            'as_of': p.get('as_of') or '', 'denominator': p.get('denominator', 'applicable_members'), 'exclude_not_applicable': p.get('exclude_not_applicable', True),
-           'closure_evidence': p.get('closure_evidence', 'result_or_claim'), 'group_by': p.get('group_by', 'none'), 'top': p.get('top', 200)}
+           'closure_evidence': p.get('closure_evidence', 'result_or_claim'), 'group_by': p.get('group_by', 'none'), 'top': p.get('top')}
     if any(m not in MEASURES for m in out['measures']): raise ValueError(f'measures: subset of {MEASURES}')
     if out['focus'] not in FOCUS: raise ValueError(f'focus: {FOCUS}')
     if out['as_of'] and not re.fullmatch(r'\d{4}-\d{2}-\d{2}', out['as_of']): raise ValueError('as_of: ISO date')
@@ -70,7 +71,8 @@ def validate(p):
     if type(out['exclude_not_applicable']) is not bool: raise ValueError('exclude_not_applicable: boolean')
     if out['closure_evidence'] not in CLOSURE: raise ValueError(f'closure_evidence: {CLOSURE}')
     if out['group_by'] not in GROUP_BY: raise ValueError(f'group_by: {GROUP_BY}')
-    if type(out['top']) is not int or not 1 <= out['top'] <= 5000: raise ValueError('top 1..5000')
+    if out['top'] is not None and (type(out['top']) is not int or out['top'] < 1):
+        raise ValueError('top must be a positive presentation limit or null for the complete roster')
     return out
 
 
@@ -192,7 +194,8 @@ def run(db, patient_ids, p, as_of):
     queue = CA.work_queue(rows, lambda r: weight[r['measure']] + (3 if 'recontact' in r['next_action']['step'] else 0) + (-1 if 'confirm the' in r['next_action']['step'] else 0),
                           lambda r: r['practice'])
     return {'schema': VERSION, 'as_of': as_of, 'parameters': p, 'measures': measures, 'unavailable_measures': unavailable, 'summary': summary, 'work_queue': queue, 'as_of_used': as_of,
-            'by_group': by_group, 'table': table[:p['top']], 'patient_ids': ids,
+            'by_group': by_group, 'table': table[:p['top']], 'complete_table': table,
+            'table_rows': len(table), 'patient_ids': ids,
             'open': sum(c['open-gap'] for c in counts.values()), 'closed': sum(c['closed-gap'] for c in counts.values()),
             'method': f"DEQM gap status per member and measure; lookbacks end {as_of}; closure evidence {p['closure_evidence']}."}
 
