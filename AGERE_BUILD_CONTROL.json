@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-11T22:09:15.181837+00:00",
+  "updated_at": "2026-11-11T22:48:51.281281+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -842,106 +842,116 @@
         {
           "path": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json",
           "sha256": "2fd399c5d97a616d57d3dc97517a0f664d6aa1348ee987e651b8915af0f060ab"
+        },
+        {
+          "path": "artifacts/agere-work-triage-2026-11-11/delivery-receipt.json",
+          "sha256": "4bb5fd083cb055903a64cf632dfbd4d02650bd394c0f43fa05d183005b3d67a9"
         }
       ],
       "blocker": "Q07 remains partial: expanded documentary evidence was obtained and composed, but requested-work/source/global acceptance was interrupted by the actual subscription limit. The latest34-action partial is automatically recoverable with the same65patients; earlier attempts are preserved. Source-review changes are substantive, so old draft acceptance cannot carry forward. Small-model context refusals, total economics, full25 ordinary semantic acceptance, independent role/reference calibration, model/clinical qualification and customer deployment remain open.",
       "previous_blocker": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim.",
-      "next_action": "G5: address the measured frontier-usage bottleneck before another large provider continuation. Usage diagnosis artifacts/agere-source-escalation-2026-11-11/reset-continuation/usage-diagnosis.json records329Sonnet/19Opus calls for the CKD request, including320source-review responses and16.24M reported input/cache tokens. Inspect the existing frontier_packet_review/build_prompt/run_cli boundary to separate required evidence from repeated transport context, then implement the demonstrated context/review-reuse reduction with exact patient/source/claim guards and unchanged qualification thresholds. Do this offline while the actual Claude limit remains; no provider probes. After availability, validate only the affected behavior and resume latest partial ANS-3f2a0af0a03e3d9dac158612 (65patients/34actions), preserving every attempt and unknown cost. Allten/all25/model-clinical/deployment dependencies remain; no new caps, broad passing rerun, unchanged training, Git push or scheduler restart.",
+      "next_action": "G5: continue the same shared work-triage design for genuine narrative dependencies using retained Q07 partial ANS-3f2a0af0a03e3d9dac158612. Inspect its already captured per-field decisions and source versions; compose valid native/typed proofs before any additional joint or frontier review, and send only unresolved semantic obligations to a suitable reader. Preserve source/claim/entity/date/quantity bindings, independent qualification requirements and failed-key accounting. Do not rerun the completed CKD investigation or broad passing campaigns. Finish the connected changed path and retain allten/all25; no Git push, scheduler restart, new service or real care.",
       "current_engineering_delivery": {
-        "path": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json",
-        "sha256": "2fd399c5d97a616d57d3dc97517a0f664d6aa1348ee987e651b8915af0f060ab"
+        "receipt": "artifacts/agere-work-triage-2026-11-11/delivery-receipt.json",
+        "product_commit": "c470370ec60bc6cf2ca9d506b3b4aa3733370cf7",
+        "scope": "Shared native execution/assembly proof and System One work triage now select program-level meaning review for structured outputs, across domains. Documentary/model-derived fields keep source reading. Frontier receives unresolved global meaning instead of an automatic patient-row campaign."
       },
-      "latest_engineering_connection": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json"
+      "latest_engineering_connection": "artifacts/agere-work-triage-2026-11-11/delivery-receipt.json"
     }
   ],
   "checkpoint": {
-    "kind": "native_recovery_address_preservation",
+    "kind": "shared_execution_work_triage",
     "gate_id": "G5",
     "current_gate_id": "G5",
     "last_delivered_gate": "G5",
-    "product_commit": "ea0536a0bcaef0c888bb78b5de1b6b5910bdeedd",
-    "user_behavior_delta": "Owned continuation preserves exact native result addresses even without a valid draft checkpoint. Operational recovery feedback no longer consumes source-result ordinals. Current app restored; latest interrupted 65-patient answer and every earlier attempt retained.",
+    "product_commit": "c470370ec60bc6cf2ca9d506b3b4aa3733370cf7",
+    "user_behavior_delta": "Shared native execution/assembly proof and System One work triage now select program-level meaning review for structured outputs, across domains. Documentary/model-derived fields keep source reading. Frontier receives unresolved global meaning instead of an automatic patient-row campaign.",
     "measured_failure_reduction": {
-      "before": "Origin-only recovery stopped after18 of32 retained actions: omitted operational result ordinal shifted a later join base and changed a recorded native error.",
+      "before": "Original CKD question produced320 frontier source-review responses across its investigation/repairs; final308-row result still used patient dependency review.",
       "after": {
-        "replayed_native_actions": 25,
-        "original_addresses_and_expected_errors_exact": true,
-        "provider_calls": 0,
-        "seconds": 2.4371614579577
+        "retained_final_answer_rows": 308,
+        "native_table_unchanged": true,
+        "source_programs_and_assemblies": 10,
+        "dependency_packets": 1,
+        "review_status": "confirmed",
+        "seconds": 18.99623995902948,
+        "new_calls": {
+          "jev-1.13.0": 2,
+          "claude-sonnet-5-5": 1
+        },
+        "cached_system_one_triage": true
       },
-      "checks": {
-        "related_checks_passed": 81,
-        "log": "artifacts/agere-source-escalation-2026-11-11/recovery-address-checks.log"
-      },
-      "not_established": "The remaining document/model continuation and whole-answer acceptance are not completed by this native prefix."
+      "comparison_scope": "Changed ordinary final-review function over original native receipts; no fresh investigation, final artifact regeneration or whole-question speedup claimed.",
+      "guard_evidence": "30 distinct affected checks across shared triage, primitive-copy and frontier-source suites; last six-check run covers stable evidence/cache identities. Patient/account/inventory authored transfer. Native changes, wrong joins, missing data, raw narrative, undecided routing and semantic faults remain guarded."
     },
     "evidence": [
-      "artifacts/agere-source-escalation-2026-11-11/resume-receipt.json",
-      "artifacts/agere-source-escalation-2026-11-11/resume-native-run.json.gz",
-      "artifacts/agere-source-escalation-2026-11-11/resume-attempt-1.log",
-      "artifacts/agere-source-escalation-2026-11-11/recovery-origin-receipt.json",
-      "artifacts/agere-source-escalation-2026-11-11/recovery-origin-chain.json.gz",
-      "artifacts/agere-source-escalation-2026-11-11/recovery-provenance-observations.json",
-      "artifacts/agere-source-escalation-2026-11-11/saved-resumable-partial.json",
-      "artifacts/agere-source-escalation-2026-11-11/saved-limit-partial.json",
-      "artifacts/agere-source-escalation-2026-11-11/native-continuation-sample.txt",
-      "artifacts/agere-source-escalation-2026-11-11/native-address-recovery-attempt1-proof.json",
-      "artifacts/agere-source-escalation-2026-11-11/native-address-recovery-attempt2-proof.json",
-      "artifacts/agere-source-escalation-2026-11-11/native-address-recovery-proof.json",
-      "artifacts/agere-source-escalation-2026-11-11/native-address-recovery-result.json.gz",
-      "artifacts/agere-source-escalation-2026-11-11/native-recovery-prefix.log",
-      "artifacts/agere-source-escalation-2026-11-11/recovery-address-checks.log",
-      "artifacts/agere-source-escalation-2026-11-11/live-runtime-restored.json",
-      "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json"
+      "artifacts/agere-work-triage-2026-11-11/delivery-receipt.json",
+      "artifacts/agere-work-triage-2026-11-11/run-receipt.json",
+      "artifacts/agere-work-triage-2026-11-11/ordinary-review.json.gz",
+      "artifacts/agere-work-triage-2026-11-11/triage.json",
+      "artifacts/agere-work-triage-2026-11-11/native-program.json",
+      "artifacts/agere-work-triage-2026-11-11/telemetry.json",
+      "artifacts/agere-work-triage-2026-11-11/focused-checks.json",
+      "artifacts/agere-work-triage-2026-11-11/live-runtime.json",
+      "artifacts/agere-work-triage-2026-11-11/attempt-1/run-receipt.json",
+      "artifacts/agere-work-triage-2026-11-11/attempt-2/run-receipt.json"
     ],
-    "remaining_gap": "Q07 remains partial: expanded documentary evidence was obtained and composed, but requested-work/source/global acceptance was interrupted by the actual subscription limit. The latest34-action partial is automatically recoverable with the same65patients; earlier attempts are preserved. Source-review changes are substantive, so old draft acceptance cannot carry forward. Small-model context refusals, total economics, full25 ordinary semantic acceptance, independent role/reference calibration, model/clinical qualification and customer deployment remain open.",
-    "next_action": "G5: address the measured frontier-usage bottleneck before another large provider continuation. Usage diagnosis artifacts/agere-source-escalation-2026-11-11/reset-continuation/usage-diagnosis.json records329Sonnet/19Opus calls for the CKD request, including320source-review responses and16.24M reported input/cache tokens. Inspect the existing frontier_packet_review/build_prompt/run_cli boundary to separate required evidence from repeated transport context, then implement the demonstrated context/review-reuse reduction with exact patient/source/claim guards and unchanged qualification thresholds. Do this offline while the actual Claude limit remains; no provider probes. After availability, validate only the affected behavior and resume latest partial ANS-3f2a0af0a03e3d9dac158612 (65patients/34actions), preserving every attempt and unknown cost. Allten/all25/model-clinical/deployment dependencies remain; no new caps, broad passing rerun, unchanged training, Git push or scheduler restart.",
-    "updated_at": "2026-11-11T21:32:24.906427+00:00",
+    "remaining_gap": "This establishes the changed retained-result verifier and cross-domain engineering guards, not a fresh full-question benchmark, clinical eligibility or sellable readiness. Genuine narrative source interpretation, end-to-end routing/economics across the retained full25, independent local-student/reference qualification and customer deployment remain open. Latest Q07 partial ANS-3f2a0af0a03e3d9dac158612 (65patients/34actions) remains unchanged and recoverable. No patient contact or real care is authorized.",
+    "next_action": "G5: continue the same shared work-triage design for genuine narrative dependencies using retained Q07 partial ANS-3f2a0af0a03e3d9dac158612. Inspect its already captured per-field decisions and source versions; compose valid native/typed proofs before any additional joint or frontier review, and send only unresolved semantic obligations to a suitable reader. Preserve source/claim/entity/date/quantity bindings, independent qualification requirements and failed-key accounting. Do not rerun the completed CKD investigation or broad passing campaigns. Finish the connected changed path and retain allten/all25; no Git push, scheduler restart, new service or real care.",
+    "updated_at": "2026-11-11T22:48:51.281281+00:00",
     "last_observation": {
-      "schema": "agere-continuation-observation/1",
-      "at": "2026-11-11T22:04:24.808765+00:00",
-      "gate": "G5",
-      "status": "partial_provider_limit",
-      "new_product_delivery": false,
-      "product_source_changed": false,
-      "provider_work_stopped": true,
-      "actual_limit": "RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your session limit \u00b7 resets 8:30pm (America/Chicago)",
-      "reported_reset": "8:30pm America/Chicago",
-      "result": {
-        "context_id": "ANS-3f2a0af0a03e3d9dac158612",
-        "patients": 65,
-        "same_original_patient_set": true,
-        "native_actions": 34,
-        "document_review_contexts": 3,
-        "recovery_loader": "passed",
-        "recovered_native_actions": 26,
-        "changed_review_patient_rows": 11,
-        "expanded_review_record_ids": 716,
-        "answer_status": "partial"
+      "schema": "retained-work-triage-check/1",
+      "status": "completed",
+      "pid": 88955,
+      "started_at": "2026-11-11T22:44:41.125088+00:00",
+      "context": "ANS-f5014b619007a7a4e1e96ca8",
+      "question": "Find all the CKD patients that qualify for our virtual ckd nephrology program (pts with CKD 3+ not on dialysis and don't have a nephrologist). Then create an interactive command center with the ability to launch agents that will follow up with patients, get them signed up, follow them clinically with check ins, make sure they get their lab work and pick up their medications and keep their follows up with the virtual nephrologist.",
+      "patient_rows": 308,
+      "mode": "Changed ordinary final-review path over original immutable native receipts, not a fresh end-to-end investigation",
+      "source_hashes": {
+        "clinical_core/agere/clinical/backstop_agent.py": "acc50337121adaa26cd6e8050d7510c8b1ee8260fbbc3ce8ba766931449822ce"
       },
-      "attempt": {
-        "elapsed_seconds": 494.51652066688985,
-        "reported_calls": 48,
-        "known_api_equivalent_subtotal_usd": 15.381867,
-        "total_cost_known": false,
-        "invoice_verified": false
+      "review_status": "confirmed",
+      "repair_kind": null,
+      "feedback": null,
+      "triage_label": "program_meaning",
+      "evidence_coverage": {
+        "tool_results": 27,
+        "full_results_supplied": false,
+        "final_table_rows": 308,
+        "original_fingerprint": "b79dfed11402c49852f170dd324eed6c412e66b1775f0957b170e7fddd072b25",
+        "model_view": "native-table-copy-and-meaning/1",
+        "native_full_results_retained": true,
+        "native_table_copy": {
+          "schema": "native-program-copy/1",
+          "rows": 308,
+          "table_digest": "f5599cd48bb0b28a44e1edb31ffcba02e5d01b05b9f4a279ef3eaf280f7b1f47",
+          "packet_sha256": "65d7449c3311f78a35da82a05ef5653f79c62bd715b2a257e876ce66d0d5c689",
+          "meaning_review_required": true
+        },
+        "complete_dependency_packets": 1,
+        "max_dependency_bytes": 151926,
+        "total_dependency_bytes": 151926,
+        "operational_receipts": "Retained by native digest; excluded from clinical model context"
       },
-      "previous_app_request": "completed_with_application_answered_disposition_not_independent_qualification",
-      "canceled_attempt": "Preserved; overlapping ledger window cannot determine its exact calls/cost.",
-      "evidence": [
-        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/run-receipt.json",
-        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/response.json.gz",
-        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/saved-partial-observation.json",
-        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/action26-difference.json",
-        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/action26-nested-difference.json",
-        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/restored-context-receipt.json",
-        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/run-receipt.json",
-        "artifacts/agere-source-escalation-2026-11-11/reset-continuation/preceding-app-completion.json"
-      ],
-      "source_frozen": false,
-      "active_jobs": [],
-      "heartbeat_status": "PAUSED",
-      "git_pushes": false
+      "coverage_label": "answers_fully",
+      "support_label": "supported",
+      "support_packets": 1,
+      "finished_at": "2026-11-11T22:45:00.121201+00:00",
+      "seconds": 18.99623995902948,
+      "api_calls": 3,
+      "claude_calls_by_model": {
+        "claude-sonnet-5-5": 1
+      },
+      "calls_by_model": {
+        "jev-1.13.0": 2,
+        "claude-sonnet-5-5": 1
+      },
+      "accounting_complete": true,
+      "cost_usd": 0.336139,
+      "original_saved_answer_unchanged": true,
+      "native_table_unchanged": true,
+      "clinical_qualification": false
     },
     "whitepaper_delivery": {
       "receipt": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json",
@@ -6774,18 +6784,32 @@
       "reason": "User asked why capacity disappears quickly. Actual CKD lineage has348Claude calls/320source-review outputs in761.511s; CLI input/cache totals16.24M. Q07 subsequently has26Claude attempts in494.517s and a quota stop. Repeating this operating point conflicts with useful-answer economics.",
       "evidence": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/usage-diagnosis.json",
       "scope_impact": "No requirement or qualification threshold removed; no arbitrary spend/population/document/output cap. Reuse only unchanged verified dependencies; provider work remains stopped on actual limit."
+    },
+    {
+      "at": "2026-11-11T22:38:24.027643+00:00",
+      "gate": "G5",
+      "decision": "G5: implement shared evidence-work triage across the stack, using the CKD trace only as the measured failure. Native code proves full execution/assembly fidelity; System One routes complete structured programs to one program-meaning review and documentary interpretations to source-bound readers; frontier handles unresolved reasoning or requested final composition. Preserve source/entity/date/quantity guards and thresholds. Demonstrate the affected ordinary verifier path on retained source-bound work, preserve all attempts; no broad passing campaign, Git push or scheduler restart.",
+      "reason": "Latest user explicitly requires question/tool triage for the entire stack, not a CKD handler; retained CKD run dispatched320 frontier source reviews despite a native SQL/assembly answer.",
+      "scope_impact": "No scope removed. Ten areas/all25, principal review and October11 baseline retained."
+    },
+    {
+      "at": "2026-11-11T22:48:51.281281+00:00",
+      "gate": "G5",
+      "decision": "Activate general execution-work triage after native transfer guards and actual retained-source final review. Keep clinical/model qualification separate.",
+      "evidence": "artifacts/agere-work-triage-2026-11-11/delivery-receipt.json",
+      "scope_impact": "All ten areas/all25 remain. No CKD-specific handler, source cap, threshold relaxation or historical restamp."
     }
   ],
   "unsealed_work": {
-    "status": "recoverable_partial_with_subscription_dependency",
+    "status": "no_active_candidate_run_remaining_source_work_explicit",
     "source_frozen": false,
     "active_jobs": [],
-    "last_completed_receipt": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json",
+    "last_completed_receipt": "artifacts/agere-work-triage-2026-11-11/delivery-receipt.json",
     "paths_outside_backend_seal": [
       "AGERE_STORAGE_PLAN.md",
       "docs/agere/reviews/2026-11-10-audit-response.md"
     ],
-    "remaining_verification": "Q07 remains partial: expanded documentary evidence was obtained and composed, but requested-work/source/global acceptance was interrupted by the actual subscription limit. The latest34-action partial is automatically recoverable with the same65patients; earlier attempts are preserved. Source-review changes are substantive, so old draft acceptance cannot carry forward. Small-model context refusals, total economics, full25 ordinary semantic acceptance, independent role/reference calibration, model/clinical qualification and customer deployment remain open.",
+    "remaining_verification": "This establishes the changed retained-result verifier and cross-domain engineering guards, not a fresh full-question benchmark, clinical eligibility or sellable readiness. Genuine narrative source interpretation, end-to-end routing/economics across the retained full25, independent local-student/reference qualification and customer deployment remain open. Latest Q07 partial ANS-3f2a0af0a03e3d9dac158612 (65patients/34actions) remains unchanged and recoverable. No patient contact or real care is authorized.",
     "separate_presentation_commit_preserved": "9efe9b37d1ccd36cd0b8cb2197d12d9b8c0b5bae"
   },
   "current_visual_request": {
@@ -6822,7 +6846,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G5: address the measured frontier-usage bottleneck before another large provider continuation. Usage diagnosis artifacts/agere-source-escalation-2026-11-11/reset-continuation/usage-diagnosis.json records329Sonnet/19Opus calls for the CKD request, including320source-review responses and16.24M reported input/cache tokens. Inspect the existing frontier_packet_review/build_prompt/run_cli boundary to separate required evidence from repeated transport context, then implement the demonstrated context/review-reuse reduction with exact patient/source/claim guards and unchanged qualification thresholds. Do this offline while the actual Claude limit remains; no provider probes. After availability, validate only the affected behavior and resume latest partial ANS-3f2a0af0a03e3d9dac158612 (65patients/34actions), preserving every attempt and unknown cost. Allten/all25/model-clinical/deployment dependencies remain; no new caps, broad passing rerun, unchanged training, Git push or scheduler restart.",
+  "next_action": "G5: continue the same shared work-triage design for genuine narrative dependencies using retained Q07 partial ANS-3f2a0af0a03e3d9dac158612. Inspect its already captured per-field decisions and source versions; compose valid native/typed proofs before any additional joint or frontier review, and send only unresolved semantic obligations to a suitable reader. Preserve source/claim/entity/date/quantity bindings, independent qualification requirements and failed-key accounting. Do not rerun the completed CKD investigation or broad passing campaigns. Finish the connected changed path and retain allten/all25; no Git push, scheduler restart, new service or real care.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6831,7 +6855,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json",
+  "latest_checkpoint": "artifacts/agere-work-triage-2026-11-11/delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -6911,8 +6935,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 79865,
-  "owned_server_session": 82308,
+  "owned_server_pid": 89022,
+  "owned_server_session": 67562,
   "last_run_observation": {
     "schema": "agere-continuation-observation/1",
     "at": "2026-11-11T22:04:24.808765+00:00",
@@ -7172,7 +7196,7 @@
     ]
   },
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
-  "latest_receipt": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json",
+  "latest_receipt": "artifacts/agere-work-triage-2026-11-11/delivery-receipt.json",
   "code_only_storage_exception": {
     "authorization": "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
     "scope": "One code-only archive and fresh-code rehearsal from the linked proposal; existing source/model/Python/work/ledger stores referenced, never copied. General60GBguard unchanged.",
@@ -7181,50 +7205,40 @@
   "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
   "continuation_authorization": "Mike November10: if it is not a sellable product stop stopping; complete it without waiting for another prompt. Existing 30-minute heartbeat reactivated via automation tool.",
   "continuation_observation": {
-    "schema": "agere-continuation-observation/1",
-    "at": "2026-11-11T22:04:24.808765+00:00",
-    "gate": "G5",
-    "status": "partial_provider_limit",
-    "new_product_delivery": false,
-    "product_source_changed": false,
-    "provider_work_stopped": true,
-    "actual_limit": "RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your session limit \u00b7 resets 8:30pm (America/Chicago)",
-    "reported_reset": "8:30pm America/Chicago",
-    "result": {
-      "context_id": "ANS-3f2a0af0a03e3d9dac158612",
-      "patients": 65,
-      "same_original_patient_set": true,
-      "native_actions": 34,
-      "document_review_contexts": 3,
-      "recovery_loader": "passed",
-      "recovered_native_actions": 26,
-      "changed_review_patient_rows": 11,
-      "expanded_review_record_ids": 716,
-      "answer_status": "partial"
-    },
-    "attempt": {
-      "elapsed_seconds": 494.51652066688985,
-      "reported_calls": 48,
-      "known_api_equivalent_subtotal_usd": 15.381867,
-      "total_cost_known": false,
-      "invoice_verified": false
-    },
-    "previous_app_request": "completed_with_application_answered_disposition_not_independent_qualification",
-    "canceled_attempt": "Preserved; overlapping ledger window cannot determine its exact calls/cost.",
-    "evidence": [
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/run-receipt.json",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/response.json.gz",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/saved-partial-observation.json",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/action26-difference.json",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/action26-nested-difference.json",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/restored-context-receipt.json",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/run-receipt.json",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/preceding-app-completion.json"
-    ],
-    "source_frozen": false,
-    "active_jobs": [],
-    "heartbeat_status": "PAUSED",
-    "git_pushes": false
+    "at": "2026-11-11T22:48:51.281281+00:00",
+    "status": "shared_route_activated",
+    "receipt": "artifacts/agere-work-triage-2026-11-11/delivery-receipt.json",
+    "runtime": {
+      "at": "2026-11-11T22:47:25.591577+00:00",
+      "status": "running",
+      "pid": 89022,
+      "session": 67562,
+      "port": 8908,
+      "url": "http://127.0.0.1:8908/ask",
+      "request_locks": {
+        "schema": "request-locks/1",
+        "global_lock": false,
+        "locks": 2,
+        "active": 0,
+        "counters": {
+          "read": 0,
+          "question": 0,
+          "state": 1,
+          "max_concurrent": 1
+        }
+      },
+      "source_verification_runtime": {
+        "frontier_fallback_enabled": true,
+        "scope": "Native execution and joins first; System One chooses program-meaning or source-reading work. Frontier reviews unresolved meaning; native defects and deciding faults require repair.",
+        "work_triage": "execution-work-triage/1",
+        "authority": "machine_judgment",
+        "clinical_qualification": false
+      },
+      "saved_answer_http_status": 200,
+      "source_frozen": false,
+      "provider_calls": 0,
+      "scope": "Activated shared routing and saved UI availability; no new full-question benchmark or clinical qualification"
+    }
   },
   "storage_maintenance": {
     "at": "2026-11-11T11:22:13.795383+00:00",
@@ -7268,14 +7282,11 @@
     "presentation_receipt": "artifacts/agere-output-decision-design-2026-11-11/delivery-receipt.json"
   },
   "provider_credit_status": {
-    "at": "2026-11-11T22:04:24.808765+00:00",
-    "provider": "claude_subscription",
-    "status": "session_limit_reached_after_successful_reset",
-    "reported_reset": "8:30pm America/Chicago",
-    "evidence": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/run-receipt.json",
-    "provider_work_stopped": true,
-    "offline_followthrough_completed": "Saved loader check and native review-difference diagnosis; no guard relaxation or new provider calls."
+    "at": "2026-11-11T22:48:51.281281+00:00",
+    "status": "available_on_observed_attempt",
+    "evidence": "artifacts/agere-work-triage-2026-11-11/telemetry.json",
+    "note": "One Sonnet subscription response succeeded; available account balance/reset time is not known."
   },
-  "latest_continuity_receipt": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/followthrough-observation.json",
+  "latest_continuity_receipt": "artifacts/agere-work-triage-2026-11-11/delivery-receipt.json",
   "usage_diagnosis": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/usage-diagnosis.json"
 }
