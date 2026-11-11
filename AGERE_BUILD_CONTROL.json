@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-11T12:14:32.003456+00:00",
+  "updated_at": "2026-11-11T12:47:17.359082+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -790,13 +790,20 @@
     "remaining_gap": "Core integration is running locally, with scoped engineering evidence only. The retained124-row population investigation remains partial/unverified; final source/coverage review and matched accepted-answer economics are unfinished. Current applicability of all25 original cases and current release/restore remain unestablished; do not repeat passing campaigns or package again in place of implementation. The configured local-student directory contains no deployed weights; older root student manifests lack the current input contract and are not promoted. Trained generative bottles remain off; guarded execution reuse and measured improvement are connected. Claude subscription transport is configured but current quota availability is unconfirmed after the earlier weekly-limit receipt; no provider request or quota probe was sent. Independent clinical/model qualification and customer production prerequisites remain separate and incomplete.",
     "next_action": "G3: Continue manually on the integrated ordinary question path at e3d5445a22705bf92527d30aa59fadb606acb4d0. Scheduler remains PAUSED and Git pushes forbidden. Native/reuse-first dispatch, investigator hybrid search, prior-failure handoff, catalog-scope binding and interrupted-progress persistence are implemented and loaded. Next connected product work is completing an unresolved ordinary analytical answer through that path, preserving native results and current source bindings; use the retained124-row investigation only for its outstanding final review, not another full-cohort rebuild. Claude is configured through subscription transport; the last recorded limit has no confirmed reset date, so do not send quota probes or repetitive retries. Keep its actual availability separate from configuration. Local student weights are not deployed for the current input contract; do not describe an enabled flag as active inference, promote stale weights or start untargeted training. Keep allten areas/all25 and current principal/October11 baseline. Do not commission another code audit, add catalogs, repeat passing campaigns or regenerate packages instead of completing missing behavior. Record finite remaining qualification and deployment dependencies honestly.",
     "last_observation": {
-      "at": "2026-11-11T12:14:32.003456+00:00",
-      "kind": "local_connected_delivery",
-      "new_product_delivery": true,
+      "at": "2026-11-11T12:47:17.359082+00:00",
+      "kind": "requested_technical_whitepaper_delivered",
+      "new_product_delivery": false,
+      "new_product_gate_progress": false,
       "provider_calls": 0,
       "source_frozen": false,
-      "active_jobs": 0,
-      "runtime_receipt": "artifacts/agere-stack-integration-2026-11-11/runtime-receipt.json"
+      "receipt": "artifacts/agere-whitepaper-2026-11-11/delivery-receipt.json",
+      "remaining_gap": "Existing G3 implementation and qualification gaps are unchanged by documentation. Final population review, current-contract student deployment, accepted-answer economics, current all25/release applicability and setup/restore remain explicit; customer and clinical qualification are separate."
+    },
+    "whitepaper_delivery": {
+      "receipt": "artifacts/agere-whitepaper-2026-11-11/delivery-receipt.json",
+      "source": "docs/agere/AGERE_TECHNICAL_WHITEPAPER_2026-11-11.md",
+      "html": "artifacts/agere-whitepaper-2026-11-11/agere-technical-whitepaper.html",
+      "status": "technical_documentation_delivered_not_product_acceptance"
     }
   },
   "decisions": [
@@ -6381,6 +6388,14 @@
       "receipt": "artifacts/agere-stack-integration-2026-11-11/delivery-receipt.json",
       "reason": "Follow latest user directive to connect existing stack directly. Optional classification no longer precedes native/reuse attempts; investigator retrieval now uses existing hybrid ranking and retains failure context. No code-review agent, research expansion or broad campaign.",
       "scope_impact": "Ten acceptance areas/all25 and current qualification boundaries preserved; local model enablement distinguished from actual deployed weights."
+    },
+    {
+      "at": "2026-11-11T12:47:17.359082+00:00",
+      "kind": "requested_whitepaper_delivery",
+      "gate": "G3",
+      "receipt": "artifacts/agere-whitepaper-2026-11-11/delivery-receipt.json",
+      "reason": "Latest user asks for whitepaper readiness. Produce a sourced account of actual implementation, scoped results, research hypotheses and remaining build work without another broad campaign or unsupported completion claims. Saved provider-limit metadata does not resolve the absolute reset date.",
+      "scope_impact": "All ten areas and all25 preserved. No product-source change, no new product acceptance, no publication, no scheduler restart and no push. Resume the existing connected completion next action."
     }
   ],
   "unsealed_work": {

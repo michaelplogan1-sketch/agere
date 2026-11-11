@@ -488,7 +488,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-11T12:14:32.003456+00:00",
+  "updated_at": "2026-11-11T12:47:17.359082+00:00",
   "last_commit": "e3d5445a22705bf92527d30aa59fadb606acb4d0",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -660,5 +660,11 @@
     "finished_at": "2026-11-11T11:25:28.947117+00:00",
     "after_free_bytes": 73944072192,
     "observed_net_free_increase_bytes": 33339498496
+  },
+  "requested_whitepaper_delivery": {
+    "receipt": "artifacts/agere-whitepaper-2026-11-11/delivery-receipt.json",
+    "source": "docs/agere/AGERE_TECHNICAL_WHITEPAPER_2026-11-11.md",
+    "html": "artifacts/agere-whitepaper-2026-11-11/agere-technical-whitepaper.html",
+    "status": "technical_documentation_delivered_not_product_acceptance"
   }
 }
