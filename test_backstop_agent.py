@@ -79,6 +79,41 @@ class EntryModelReuse(unittest.TestCase):
         self.assertEqual(result['answer_reviews'],reviews)
 
 
+class ExplicitGlobalViews(unittest.TestCase):
+    def test_explicit_references_bind_all_rows_without_accepting_the_claim(self):
+        import copy
+        calls=[{'name':'inspect_populations','input':{},'result':{'result_view':'agere_result_28',
+            'columns':['population_id','patients'],'rows':[['a',3],['b',7]]}}]
+        answer={'facts':{'trace':'Members are available in agere_result_28; clinical eligibility remains unresolved.'}}
+        before=copy.deepcopy(calls);original=copy.deepcopy(answer['facts'])
+        added=B.bind_explicit_global_views(answer,calls)
+        self.assertEqual(added,[{'path':['facts','trace'],'basis':[
+            {'result_view':'agere_result_28','row':0},{'result_view':'agere_result_28','row':1}]}])
+        B.bind_computed_prose(answer,calls)
+        self.assertEqual(answer['facts'],original);self.assertEqual(calls,before)
+        self.assertNotIn('verification',answer)
+        self.assertEqual(answer['computed_prose'][0]['rendered'],original['trace'])
+        self.assertEqual(B.bind_explicit_global_views(answer,calls),[])
+
+    def test_missing_ambiguous_incomplete_and_source_free_references_remain_unbound(self):
+        import copy
+        base={'name':'query_sql','input':{'sql':'SELECT flag FROM source'},'result':{
+            'result_view':'agere_result_1','columns':['flag'],'rows':[['unresolved']]}}
+        for kind in ('missing','ambiguous','incomplete','constant','mixed','prefix','empty'):
+            with self.subTest(kind=kind):
+                call=copy.deepcopy(base);calls=[call];value='See agere_result_1.'
+                if kind=='missing':calls=[]
+                if kind=='ambiguous':calls.append(copy.deepcopy(call))
+                if kind=='incomplete':call['result']['truncated']=True
+                if kind=='constant':call['input']['sql']='SELECT 1 AS flag'
+                if kind=='mixed':value+=' Also agere_result_9.'
+                if kind=='prefix':value='See invalid_agere_result_1_suffix.'
+                if kind=='empty':call['result']['rows']=[]
+                answer={'facts':{'trace':value}};before=copy.deepcopy(answer)
+                self.assertEqual(B.bind_explicit_global_views(answer,calls),[])
+                self.assertEqual(answer,before)
+
+
 class ConnectedDocumentSearch(unittest.TestCase):
     def test_hybrid_search_preserves_lexical_hits_and_rejects_foreign_or_changed_spans(self):
         from unittest.mock import Mock

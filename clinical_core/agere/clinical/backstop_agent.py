@@ -2649,6 +2649,10 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             bind_computed_prose(answer,calls,verified_quotes=kept,question=question,native_structure=native_audit)
             return None
         except (ValueError,KeyError,IndexError,TypeError) as exc:return exc
+    # An exact executed-view reference already identifies its evidence. Expand
+    # that address natively; the normal compiler and semantic review still
+    # decide whether the evidence supports the unchanged statement.
+    bind_explicit_global_views(answer,calls)
     prose_exception=compile_prose()
     if (prose_exception is not None and not static_feedback and getattr(stack,'allow_live',False) and
             os.environ.get('AGERE_REFERENCE_CLARIFICATION_CHECK','on')=='on'):
@@ -3332,6 +3336,46 @@ def native_table_copy_review(answer,calls,document_reviews,as_of):
         'source_digest':source_digest,'as_of':as_of,'calculation_contracts':contracts,
         'executed_source_definitions':definitions,
         'scope':'All primitive output cells exactly copy the complete executed SQL table. No row is sampled or omitted. This proves transport fidelity only. Source selection, event/availability clocks, units, financial identities, clinical meaning, completeness and every global claim still require review. Source codes are not adjudicated clinical facts.'}
+
+
+def bind_explicit_global_views(answer,calls):
+    """Expand literal native view references without interpreting prose.
+
+    Use every row of every explicitly named, unique, complete result. Never
+    choose rows by text similarity, infer an unstated dependency, overwrite an
+    existing basis, or treat this address expansion as semantic acceptance.
+    """
+    from .result_assembly import incomplete_reason
+    existing=answer.get('global_prose_basis',[])
+    if not isinstance(existing,list):return []  # the compiler reports this
+    occupied=[entry.get('path')for entry in existing if isinstance(entry,dict)]
+    fields=[(['headline'],answer.get('headline'))]
+    if isinstance(answer.get('facts'),dict):
+        fields.extend((['facts',key],value)for key,value in answer['facts'].items())
+    added=[]
+    for path,value in fields:
+        if path in occupied or not isinstance(value,str):continue
+        views=list(dict.fromkeys(re.findall(r'(?<![A-Za-z0-9_])agere_result_\d+(?![A-Za-z0-9_])',value)))
+        if not views:continue
+        basis=[]
+        for view in views:
+            matches=[c for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')==view]
+            if len(matches)!=1:break
+            call=matches[0];result=call['result']
+            if result.get('error')or incomplete_reason(result):break
+            columns,rows=output_table(result)
+            if not rows or not columns or any(len(row)!=len(columns)for row in rows):break
+            if call.get('name')=='query_sql':
+                import sqlglot
+                sql=result.get('declared_executed_query')or result.get('executed_query')or(call.get('input')or{}).get('sql')
+                try:source_free=not sql or sqlglot.parse_one(sql,read='sqlite').find(sqlglot.exp.From)is None
+                except (sqlglot.errors.SqlglotError,ValueError,TypeError):source_free=True
+                if source_free:break
+            basis.extend({'result_view':view,'row':index}for index in range(len(rows)))
+        else:
+            added.append({'path':path,'basis':basis})
+    if added:answer['global_prose_basis']=[*existing,*added]
+    return added
 
 
 def global_dependency_request(answer,calls):
