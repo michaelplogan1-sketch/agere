@@ -303,6 +303,11 @@ def staged(order, routed=()):
 
 
 ORDER = tuple(t for _, tiers in STAGES for t in tiers if t in TIERS) + staged(t for t in TIERS if t not in STAGE_OF)  # the stated order within each stage
+# Resolve existing checked plans before asking a model which planner to use.
+# These still pass the ordinary source, literal, execution and answer guards;
+# native compilation may use its bounded ambiguity adjudicator when necessary.
+NATIVE_REUSE_FIRST = ('exact_local_plan', 'learned_verified_sql', 'scoped_review_compiler',
+                      'specialist_families_early', 'local_compiler', 'semantic_cache')
 PAID = {'typed_decider', 'hosted_typed_interpreter', 'hosted_verified_sql', 'frontier_graph_planner', 'hybrid_analysts',
         'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose', 'atomic_system_one', 's1_metric_router',
         's1_operator_router'}
@@ -449,6 +454,52 @@ class Cascade:
         self.cost_known = self.cost_known and known
 
     # -- the cascade --------------------------------------------------------------------------------------------------
+    def ordered_tiers(self):
+        """Dispatch routing lazily, retaining every existing fallback exactly once.
+
+        An accepted native/reused answer needs no question-classification call.
+        Corrections and owned continuation keep their dedicated existing order.
+        order_used always includes the remaining fallbacks so answer review,
+        reserved investigation and budget deferral see the complete path.
+        """
+        from .harness_improvement import recovering
+        from .learning import correction_context
+        try:
+            self.corrected = bool(correction_context(self.stack.path, self.question))
+        except Exception:  # noqa: BLE001 - fixtures may have no learning store
+            self.corrected = False
+        adaptive = os.environ.get('AGERE_NONFRONTIER_FIRST') == 'adaptive'
+        if not adaptive or self.corrected or recovering(self.question):
+            order = self.order()
+            self.order_used = tuple(t for t in order if not FREE_ONLY.get() or STAGES[stage_of(t)][0] in FREE_STAGES)
+            yield from self.order_used
+            return
+
+        prefix = tuple(t for t in NATIVE_REUSE_FIRST if t in ORDER)
+        fallback, policy = adaptive_order(ORDER)
+        self.order_used = prefix + tuple(t for t in fallback if t not in prefix)
+        if FREE_ONLY.get():
+            self.order_used = tuple(t for t in self.order_used if STAGES[stage_of(t)][0] in FREE_STAGES)
+        self.execution_policy = {**policy, 'order': list(self.order_used),
+            'native_reuse_first': list(prefix), 'router_dispatch': 'not_needed_yet',
+            'reason': 'Try checked native and reusable plans before optional routing. '
+                      'Only unresolved requests need a question classifier and specialist selection.'}
+        yield from prefix
+
+        # A rewording is only an inexpensive preliminary attempt. Let the
+        # original question own classification if these stages cannot answer.
+        if FREE_ONLY.get() or (self.budget is not None and self.budget.expired()):
+            self.execution_policy['router_dispatch'] = ('deferred_to_original_question' if FREE_ONLY.get()
+                                                         else 'not_started_after_budget_expired')
+            yield from (t for t in self.order_used if t not in prefix)
+            return
+        routed = self.order()
+        self.order_used = prefix + tuple(t for t in routed if t not in prefix)
+        self.execution_policy = {**getattr(self, 'execution_policy', {}),
+            'order': list(self.order_used), 'native_reuse_first': list(prefix),
+            'router_dispatch': 'after_native_reuse_declined'}
+        yield from (t for t in self.order_used if t not in prefix)
+
     def order(self):
         """A recorded correction is read only by the hosted interpreter, so it goes first for that question; every other
         proposer still follows in its usual order."""
@@ -734,13 +785,12 @@ class Cascade:
         # a rewording's free-stage attempt gets a short budget of its own: the question as typed then runs with the full answer budget
         budget = self.budget = start_budget(float(os.environ.get('AGERE_REWORDING_BUDGET_SECONDS', '8')) if FREE_ONLY.get() else None)
         try:
-            order = self.order_used = self.order()
             free_only = FREE_ONLY.get()
-            if free_only: order = self.order_used = [t for t in order if STAGES[stage_of(t)][0] in FREE_STAGES]
-            for i, name in enumerate(order):
+            for name in self.ordered_tiers():
+                order = self.order_used
                 if not self.runnable(name): continue
                 if budget.expired():  # out of time: everything that would have run next is deferred, then the honest early reply
-                    for later in order[i:]:
+                    for later in order[order.index(name):]:
                         if self.runnable(later) and not (self.claude_down and later in CLAUDE_TIERS): self.defer(later, 'answer budget used up')
                     break
                 est = self.expected(name)
@@ -917,9 +967,15 @@ class Cascade:
                 return None
             reasons = next((e['detail'] for e in reversed(self.log) if e['proposer'] == 'backstop_agent' and e['outcome'] == 'rejected'), 'final answer checks did not pass')
             return 'Final answer checks: ' + str(reasons) + '. Repair this in the current investigation using the existing tool results.'
+        hint = dict(getattr(self, 'second_look_hint', None) or {})
+        attempts = [{'proposer': entry['proposer'], 'outcome': entry['outcome'], 'detail': entry.get('detail')}
+                    for entry in self.log if entry.get('outcome') in ('rejected', 'held', 'deferred')]
+        if attempts:
+            hint['prior_attempts'] = attempts
+            hint['execution_policy'] = getattr(self, 'execution_policy', None)
         with model_policy.question_path(), model_policy.first_rung():
             run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger, population=self.population,
-                                        hint=getattr(self, 'second_look_hint', None), validate_final=validate_final,
+                                        hint=hint or None, validate_final=validate_final,
                                         **({'continuation':continuation,'clarification_reply':clarification_reply}if continuation is not None else {}))
         self.spend(run.get('new_paid_api_calls', 0), run.get('known_cost_usd') or run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
         self.last_backstop_run=run

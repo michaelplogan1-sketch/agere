@@ -111,6 +111,43 @@ class AdaptiveOrder(unittest.TestCase):
             self.assertEqual(len(order), len(set(order)))
 
 
+class LazyDispatch(unittest.TestCase):
+    def test_native_answer_can_finish_without_question_classification(self):
+        cascade = P.Cascade(type('S', (), {'path': '/unused'})(), None, 'a native question')
+        with patch.dict(os.environ, {'AGERE_NONFRONTIER_FIRST': 'adaptive'}), \
+             patch('clinical_core.agere.clinical.learning.correction_context', return_value=None), \
+             patch('clinical_core.agere.clinical.harness_improvement.recovering', return_value=False), \
+             patch.object(cascade, 'order', side_effect=AssertionError('Unnecessary classifier')):
+            tiers = cascade.ordered_tiers()
+            self.assertEqual(next(tiers), 'exact_local_plan')
+            self.assertIn('backstop_agent', cascade.order_used)
+            tiers.close()
+
+    def test_declined_native_prefix_routes_once_without_repeating_or_losing_a_tier(self):
+        cascade = P.Cascade(type('S', (), {'path': '/unused'})(), None, 'an unresolved question')
+        with patch.dict(os.environ, {'AGERE_NONFRONTIER_FIRST': 'adaptive'}), \
+             patch('clinical_core.agere.clinical.learning.correction_context', return_value=None), \
+             patch('clinical_core.agere.clinical.harness_improvement.recovering', return_value=False), \
+             patch.object(cascade, 'order', return_value=tuple(reversed(P.ORDER))) as route:
+            tiers = cascade.ordered_tiers()
+            prefix = [next(tiers) for _ in P.NATIVE_REUSE_FIRST]
+            route.assert_not_called()
+            actual = prefix + list(tiers)
+            route.assert_called_once()
+            self.assertCountEqual(actual, P.ORDER)
+            self.assertEqual(len(actual), len(set(actual)))
+
+    def test_correction_and_owned_continuation_precede_reused_answers(self):
+        for corrected, recovering in ((True, False), (False, True)):
+            with self.subTest(corrected=corrected, recovering=recovering):
+                cascade = P.Cascade(type('S', (), {'path': '/unused'})(), None, 'a prior question')
+                with patch.dict(os.environ, {'AGERE_NONFRONTIER_FIRST': 'adaptive'}), \
+                     patch('clinical_core.agere.clinical.learning.correction_context', return_value=corrected), \
+                     patch('clinical_core.agere.clinical.harness_improvement.recovering', return_value=recovering), \
+                     patch.object(cascade, 'order', return_value=('backstop_agent',)):
+                    self.assertEqual(list(cascade.ordered_tiers()), ['backstop_agent'])
+
+
 class AnalystGate(unittest.TestCase):
     def test_only_an_audited_analyst_answer_takes_the_audit_as_its_check(self):
         from clinical_core.agere.clinical import acceptance_contract as AC

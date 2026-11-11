@@ -79,6 +79,36 @@ class EntryModelReuse(unittest.TestCase):
         self.assertEqual(result['answer_reviews'],reviews)
 
 
+class ConnectedDocumentSearch(unittest.TestCase):
+    def test_hybrid_search_preserves_lexical_hits_and_rejects_foreign_or_changed_spans(self):
+        from unittest.mock import Mock
+        tools = B.Tools.__new__(B.Tools)
+        tools.db, tools.as_of = None, '2030-05-27'
+        tools._texts = Mock(return_value=[('r1', 'note', '', 'clinical', '2030-01-01', 'Exact hybrid passage', ''),
+                                         ('r2', 'note', '', 'clinical', '2030-01-02', 'Lexical match', '')])
+        tools.NE = SimpleNamespace(retrieve=lambda *a, **kw: [{'record_id': 'r2', 'text': 'Lexical match'}])
+        search = Mock(return_value={'evidence': [
+            {'source': {'record_id': 'r1', 'patient_id': 'p'}, 'text': 'Exact hybrid passage'},
+            {'source': {'record_id': 'r1', 'patient_id': 'other'}, 'text': 'Exact hybrid passage'},
+            {'source': {'record_id': 'r1', 'patient_id': 'p'}, 'text': 'Invented passage'},
+            {'source': {'record_id': 'unknown', 'patient_id': 'p'}, 'text': 'Unknown source'}],
+            'retrieval_policy': {'reranker': 'bge'}, 'candidate_passages': 4})
+        tools.stack = SimpleNamespace(retriever=SimpleNamespace(search=search))
+        result = tools.search_documents('p', 'a concept', date_to='2030-02-01')
+        self.assertEqual([p['record_id'] for p in result['passages']], ['r1', 'r2'])
+        self.assertFalse(result['retrieval']['complete_evidence_guarantee'])
+        self.assertEqual(result['retrieval']['hybrid_bound_passages'], 1)
+        self.assertEqual(search.call_args.kwargs['patient_ids'], ['p'])
+        self.assertEqual(search.call_args.kwargs['analysis_window']['end'], '2030-02-01')
+        tools.search_documents('p', 'a concept', date_to='2030-02-01', offset=15)
+        search.assert_called_once()  # paging does not repeat model work
+        tools._document_searches.clear()
+        search.side_effect = RuntimeError('local retrieval unavailable')
+        fallback = tools.search_documents('p', 'a concept')
+        self.assertEqual([p['record_id'] for p in fallback['passages']], ['r2'])
+        self.assertEqual(fallback['retrieval']['hybrid_status'], 'failed_lexical_retained')
+
+
 class FakeTools:
     def __init__(self, docs): self.read = {k: {'text': v} for k, v in docs.items()}
     def read_document(self, rid):

@@ -3,8 +3,8 @@
 Every earlier layer has had its turn and none settled the question: one strong Claude agent now gets the whole problem, with the tools a
 human analyst would use and the conversation it belongs to.
 
-  * Model: Haiku starts this role's tool loop. Failed meaning/format/progress checks can escalate the SAME conversation
-    to Sonnet without repeating native tools. Opus stays deliverable-only (model_policy).
+  * Model: Sonnet starts this role's tool loop. Failed meaning/format/progress checks can escalate the SAME conversation
+    to Opus without repeating native tools (model_policy).
   * Tools (one continuing tool loop, semantic_analyst.tool_loop; an optional caller-configured AGERE_BACKSTOP_TOOLS quota):
       query_sql         read-only SQL over the semantic layer, with the decision-context definition views (living_patient, condition_member,
                         latest_lab, last_12_months, medicare_member) created on the connection;
@@ -142,8 +142,9 @@ TOOLS = [
      "source, document type, date, title, length. Optional inclusive date range (YYYY-MM-DD). Follow next_offset for further pages.",
      'input_schema': {'type': 'object', 'properties': {'patient_id': {'type': 'string'}, 'date_from': {'type': 'string'},
                                                        'date_to': {'type': 'string'}, 'offset': {'type': 'integer', 'minimum': 0}}, 'required': ['patient_id'], 'additionalProperties': False}},
-    {'name': 'search_documents', 'description': "Ranked passages of one patient's documents that mention the given words or concept "
-     "(synonyms, drug names and OCR variants included): record_id, date, document type, passage text. Optional date range. Follow next_offset for further pages.",
+    {'name': 'search_documents', 'description': "Search one patient's documents with lexical/concept matches plus the configured hybrid "
+     "retriever and reranker. Returns exact source passages, record_id, date, document type and retrieval coverage. "
+     "Optional date range. Follow next_offset for further pages; retrieval cannot establish absence or complete document review.",
      'input_schema': {'type': 'object', 'properties': {'patient_id': {'type': 'string'}, 'terms': {'type': 'string'},
                                                        'date_from': {'type': 'string'}, 'date_to': {'type': 'string'}, 'offset': {'type': 'integer', 'minimum': 0}},
                       'required': ['patient_id', 'terms'], 'additionalProperties': False}},
@@ -804,14 +805,21 @@ class Tools:
                 'total': len(rows), 'truncated': offset + 200 < len(rows), 'next_offset': offset + 200 if offset + 200 < len(rows) else None}
 
     def search_documents(self, patient_id, terms, date_from=None, date_to=None, offset=0):
-        self._texts(patient_id)
+        texts = self._texts(patient_id)  # enforces request scope before either retrieval path
+        key = (patient_id, terms, date_from, date_to)
+        cache = getattr(self, '_document_searches', None)
+        if cache is None:
+            cache = self._document_searches = {}
+        if key in cache:
+            out, retrieval = cache[key]
+            return self._document_search_page(patient_id, terms, out, retrieval, offset)
         window = {'start': date_from, 'end': date_to} if (date_from or date_to) else None
         found = self.NE.retrieve(self.db, patient_id, {'term': terms, 'codes': [], 'quote': terms}, window=window, as_of=self.as_of)
         out = [{'record_id': p.get('record_id'), 'date': (p.get('date') or '')[:10], 'type': p.get('note_type'), 'source': p.get('source'),
                 'passage': p.get('text')} for p in found]
         if not out:  # the concept lexicon found nothing: a plain word search over the patient's texts (OCR-tolerant via the reader's fold)
             words = [w for w in re.findall(r'[a-z0-9]+', terms.lower()) if len(w) > 2]
-            for rid, src, stream, kind, date, text, title in self._texts(patient_id):
+            for rid, src, stream, kind, date, text, title in texts:
                 if window and ((date_from and (date or '') < date_from) or (date_to and (date or '')[:10] > date_to)): continue
                 low = (text or '').lower()
                 for w in words:
@@ -820,9 +828,55 @@ class Tools:
                         out.append({'record_id': rid, 'date': (date or '')[:10], 'type': kind, 'source': src,
                                     'passage': text[max(0, i - 300): i + 500]})
                         break
+        retrieval = {'lexical_passages': len(out), 'hybrid_status': 'unavailable',
+                     'complete_evidence_guarantee': False,
+                     'scope': 'Patient/date-scoped passages for inspection; relevance does not establish truth or absence.'}
+        retriever = getattr(self.stack, 'retriever', None)
+        if callable(getattr(retriever, 'search', None)):
+            try:
+                result = retriever.search(terms, patient=patient_id, patient_ids=[patient_id],
+                    analysis_window=({'basis': 'source_event', 'start': date_from or '', 'end': date_to or ''}
+                                     if window else None))
+                documents = {r[0]: r for r in texts}
+                ranked = []
+                for item in result.get('evidence') or []:
+                    source, passage = item.get('source') or {}, item.get('text')
+                    row = documents.get(source.get('record_id'))
+                    if row is None or source.get('patient_id') != patient_id or not isinstance(passage, str) or not passage:
+                        continue
+                    rid, src, stream, kind, date, text, title = row
+                    # Hybrid retrieval may also return structured records or
+                    # another text field. Only exact current document spans
+                    # enter this tool; the full native source stays readable.
+                    if passage not in (text or ''): continue
+                    if window and ((date_from and (date or '') < date_from) or
+                                   (date_to and (date or '')[:10] > date_to)): continue
+                    ranked.append({'record_id': rid, 'date': (date or '')[:10], 'type': kind,
+                                   'source': src, 'passage': passage})
+                # Ranking changes presentation, never removes a lexical hit.
+                seen, combined = set(), []
+                for item in ranked + out:
+                    identity = (item['record_id'], item['passage'])
+                    if identity not in seen:
+                        combined.append(item); seen.add(identity)
+                out = combined
+                retrieval.update(hybrid_status='used', hybrid_bound_passages=len(ranked),
+                    hybrid_candidate_passages=result.get('candidate_passages'),
+                    method=result.get('method'), policy=result.get('retrieval_policy'),
+                    cache_hit=bool(result.get('cache_hit')), source_scope_checked=True)
+            except (ValueError, RuntimeError, OSError, ImportError, sqlite3.Error) as exc:
+                # Optional retrieval failure leaves every lexical result and
+                # an explicit incomplete retrieval receipt, never an absence.
+                retrieval.update(hybrid_status='failed_lexical_retained', error_type=type(exc).__name__)
+        cache[key] = (out, retrieval)
+        return self._document_search_page(patient_id, terms, out, retrieval, offset)
+
+    @staticmethod
+    def _document_search_page(patient_id, terms, out, retrieval, offset):
         offset = max(0, int(offset))
         return {'patient_id': patient_id, 'terms': terms, 'passages': out[offset:offset + 15], 'total': len(out),
-                'truncated': offset + 15 < len(out), 'next_offset': offset + 15 if offset + 15 < len(out) else None}
+                'truncated': offset + 15 < len(out), 'next_offset': offset + 15 if offset + 15 < len(out) else None,
+                'retrieval': dict(retrieval)}
 
     def judge_documents(self, question, options, record_ids):
         """MGB CS1 pattern: the planner (this agent) states one atomic typed question; System One answers it per document over the WHOLE
