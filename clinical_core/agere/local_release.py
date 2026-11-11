@@ -131,7 +131,7 @@ def code_identity():
     files += list((ROOT / 'config').glob('*.json'))
     # The active build pointer is installation configuration, not release code.
     files = [p for p in files if p.name != 'active_warehouse.json']
-    files += [ROOT / 'serve_current_warehouse.py', ROOT / 'agere_checkpoint.py']
+    files += [ROOT / 'serve_current_warehouse.py', ROOT / 'serve_hosted.py', ROOT / 'agere_checkpoint.py']
     # These modules provide runtime prompts/validation, even when fitting and
     # hosted inference are disabled. Archive code only, never training data.
     files += [ROOT / name for name in ('tools/training/datasets.py',
