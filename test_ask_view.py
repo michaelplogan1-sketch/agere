@@ -50,15 +50,15 @@ class Page(unittest.TestCase):
         raw = re.search(r'<script id="demo-script" type="application/json">(.*?)</script>', self.html, re.S).group(1)
         steps = json.loads(raw)
         self.assertEqual(steps, ask_view.DEMO_STEPS)
-        self.assertEqual(len(steps), 10)
-        self.assertEqual(steps[0]['kind'], 'briefing')
-        self.assertEqual(steps[-1]['kind'], 'followup')
-        self.assertEqual(len({s['id'] for s in steps}), 10)
+        self.assertEqual(steps[0]['kind'], 'input')
+        self.assertEqual(steps[-1]['kind'], 'work')
+        self.assertEqual(len({s['id'] for s in steps}), len(steps))
         for s in steps:
-            self.assertIn(s['kind'], ('briefing', 'ask', 'followup'))
+            self.assertIn(s['kind'], ('input', 'view', 'work'))
             self.assertTrue(s['label'] and s['note'])
-            if s['kind'] != 'briefing': self.assertTrue(s['question'].strip())
-        self.assertIn('40 slots', ' '.join(s.get('question', '') for s in steps))
+            if s['kind'] == 'view':
+                self.assertIn('data-contract-section="' + s['section'] + '"', self.html)
+        self.assertFalse(any('question' in s for s in steps))  # no unrelated rerun per view
 
     def test_script_has_no_closing_tag_injection(self):
         self.assertEqual(self.html.count('</script>'), 2)

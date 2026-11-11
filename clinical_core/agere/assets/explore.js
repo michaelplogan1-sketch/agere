@@ -16,6 +16,7 @@ const uiPaths={
 function uiIcon(name){return '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">'+(uiPaths[name]||uiPaths.file)+'</svg>'}
 function hydrateUI(){document.querySelectorAll('[data-ui-icon]').forEach(e=>e.innerHTML=uiIcon(e.dataset.uiIcon))}
 const ideas=[
+ {topic:'Costs',title:'Review population performance',detail:'Choose contract inputs, compare cost and quality, and prepare review work.',question:'Show contract performance',icon:'check',color:'mint'},
  {topic:'Costs',title:'Where is the money going?',detail:'Compare allowed cost per member, by coverage.',question:'What was allowed PMPM by coverage in 2029?',icon:'cost',color:'mint'},
  {topic:'Patients',title:'Find the right population',detail:'Combine conditions, exclusions, and care teams.',question:'Count patients with diabetes and without CKD by PCP',icon:'users',color:'blue'},
  {topic:'Operations',title:'Understand missed visits',detail:'Explore appointment patterns across practices.',question:'Count appointments where kept = 0 by practice',icon:'clock',color:'peach'},

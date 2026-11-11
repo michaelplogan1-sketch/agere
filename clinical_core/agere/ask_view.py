@@ -8,39 +8,21 @@ the briefing ranker's implicit feedback). /ask?demo=1 adds the scripted buyer wa
 import json
 from pathlib import Path
 
-# Scripted buyer walkthrough for /ask?demo=1. Edit freely: kind is "briefing" (asks the top briefing card's follow-up),
-# "ask" (a standalone question) or "followup" (a follow-up resolved against the previous turn). "focus" scrolls the
-# answer card to a section (settlement, allocation, worklist, reasons, effect, curve).
+# The first synthetic release follows one versioned input and one saved answer.
+# Navigating buyer/evidence views never starts another analytical request.
 DEMO_STEPS = [
-    {'id': 'briefing', 'kind': 'briefing', 'label': 'Morning briefing',
-     'note': 'Agere scans the data release with no question asked and ranks what stands out. The top card\'s follow-up is asked for real.'},
-    {'id': 'settlement', 'kind': 'ask', 'label': 'VBC settlement risk', 'focus': 'settlement',
-     'question': 'What would our shared savings be with a benchmark of $90 PMPM and a sharing rate of 50%?',
-     'note': 'Exact contract arithmetic on the supplied terms, then 4,000 bootstrap draws through the same arithmetic: chance of earning savings, owing a loss, value at risk.'},
-    {'id': 'allocation', 'kind': 'ask', 'label': 'Fair allocation', 'focus': 'allocation',
-     'question': 'What would our shared savings be with a benchmark of $90 PMPM and a sharing rate of 50%, by practice?',
-     'note': 'Shapley values split the pooled settlement by each practice\'s marginal contribution, compared with a pro-rata split by member-months.'},
-    {'id': 'drivers', 'kind': 'ask', 'label': 'Which practices drove it',
-     'question': 'What is the allowed PMPM by practice?',
-     'note': 'Completion-adjusted allowed cost per member per month. Click a bar to drill into that practice in the same conversation.'},
-    {'id': 'worklist', 'kind': 'ask', 'label': 'Who to call this week', 'focus': 'worklist',
-     'question': 'who should our care managers call this week? we have 40 slots',
-     'note': 'An optimised 40-slot worklist: expected value, engagement probability, minutes and a certificate that the selection is optimal for the stated objective.'},
-    {'id': 'why', 'kind': 'ask', 'label': 'Why: reasons and drivers', 'focus': 'reasons',
-     'question': 'What drives emergency department visits in our population?',
-     'note': 'Each worklist row carries its own reason chips (previous step). This asks what drives ED use across the whole population.'},
-    {'id': 'effect', 'kind': 'ask', 'label': 'Did care management work?', 'focus': 'effect',
-     'question': 'Did care management reduce ED visits?',
-     'note': 'Matched difference-in-differences with placebo, pre-trend and synthetic-control checks. Warnings and the inference status are shown, not hidden.'},
-    {'id': 'curve', 'kind': 'ask', 'label': 'Readmission curve by payer', 'focus': 'curve',
-     'question': 'What does the readmission curve look like by payer?',
-     'note': 'Kaplan-Meier time to readmission after discharge, with censoring and a log-rank comparison across payers.'},
-    {'id': 'notes', 'kind': 'ask', 'label': 'EF < 40 from notes',
-     'question': 'How many heart failure patients have an EF under 40 documented in notes?',
-     'note': 'Ejection fraction lives in free text. Agere reads it from note-extracted facts and states the definition it used.'},
-    {'id': 'drill', 'kind': 'followup', 'label': 'Drill down: list them',
-     'question': 'list them',
-     'note': 'A follow-up in the same conversation. The console shows the standalone question it was answered as.'},
+    {'id': 'input', 'kind': 'input', 'label': 'Choose contract inputs',
+     'note': 'Choose the versioned synthetic terms in the conversation, or open an existing contract answer. No payer terms or attribution are guessed.'},
+    {'id': 'provider', 'kind': 'view', 'label': 'Population health view', 'section': 'provider',
+     'note': 'Native cost, member-months and approximate quality share one attributed population and period. Review needs are separate from clinical eligibility.'},
+    {'id': 'payer', 'kind': 'view', 'label': 'Payer view', 'section': 'payer',
+     'note': 'Inspect the other buyer view of the same calculation. Scenario variance is not realized savings, cash or payment entitlement.'},
+    {'id': 'drivers', 'kind': 'view', 'label': 'Trace the drivers', 'section': 'practices',
+     'note': 'Open practice contributions, monthly exposure and the complete member list. These describe recorded data; they do not establish causation.'},
+    {'id': 'inputs', 'kind': 'view', 'label': 'Inspect and revise assumptions', 'section': 'assumptions',
+     'note': 'The editor saves a versioned change only when you submit it. Recalculation checks current inputs; older answers and work retain their original bindings.'},
+    {'id': 'work', 'kind': 'work', 'label': 'Continue into saved work',
+     'note': 'Open the saved answer’s action workspace for evidence and internal review follow-up. No outreach or care is executed by this walkthrough.'},
 ]
 
 PAGE = r"""__EXPLORE_SHELL__
@@ -637,12 +619,12 @@ function vizContractPerformance(a){const c=a.overall.contract_performance,s=c.su
  const money=v=>v==null?'Unresolved':usd(v/100),kp=(l,v)=>'<div class="kpi"><div class="l">'+esc(l)+'</div><div class="v">'+esc(v)+'</div></div>';
  let h='<section class="sec" data-focus="contract"><h3>'+esc(terms.label||'Contract performance')+'</h3><p class="hint">Authored synthetic terms · '+esc(terms.id)+' · version '+esc(terms.version)+' · '+esc((c.period||{}).start)+' to '+esc((c.period||{}).end)+'. Both views use the same saved cohort and calculations.</p>';
  h+='<div class="kpis">'+kp('Attributed members',fmt(s.members))+kp('Recorded member-months',fmt(s.recorded_member_months))+kp('Observed allowed cost',money(s.observed_allowed_cents))+kp('Authored benchmark',money(s.benchmark_cents))+kp('Approximate quality',qo.denominator==null?'Unresolved':fmt(qo.numerator)+' / '+fmt(qo.denominator))+'</div>';
- h+='<details open><summary>Provider / population health view</summary><p>Illustrative provider share: <strong>'+esc(money(s.illustrative_provider_share_cents))+'</strong>. Quality target '+(s.approximate_quality_target_met==null?'is unresolved':s.approximate_quality_target_met?'is met':'is not met')+' under the authored demo rule. Review observed cost and quality evidence before choosing internal follow-up.</p></details>';
- h+='<details><summary>Payer view</summary><p>Illustrative retained positive benchmark variance: <strong>'+esc(money(s.illustrative_payer_retained_positive_variance_cents))+'</strong>. This is scenario arithmetic, not realized savings, cash or settlement. Nonmetric claims and claims without the same attributed member-month remain outside the ledger.</p></details>';
- h+='<details><summary>Monthly cost and exposure</summary>'+tableHTML((c.monthly||[]).map(r=>({'Month':r.month,'Member-months':r.recorded_member_months,'Allowed cost':money(r.observed_allowed_cents),'Benchmark':money(r.benchmark_cents)})),{name:'contract-monthly'})+'</details>';
- h+='<details><summary>Practice contributions · descriptive drivers</summary>'+tableHTML((c.practice_drivers||[]).map(r=>({'Practice':r.practice_id,'Member-months':r.recorded_member_months,'Allowed cost':money(r.observed_allowed_cents),'Benchmark variance':money(r.observed_variance_cents)})),{name:'contract-practices'})+'</details>';
- h+='<details><summary>Members and internal review needs</summary>'+tableHTML(a.table||[],{name:'contract-members'})+'</details>';
- if(c.editing_available)h+='<details><summary>Revise demo assumptions</summary><div data-contract-editor="'+esc(terms.id)+'" data-binding="'+esc(c.contract_digest)+'"><p class="hint">Save a versioned authored assumption and recalculate this report. Earlier answers and work remain in history; affected work needs a current binding. These inputs are not a payer offer or care instruction.</p><div class="contract-input-grid"><label>Benchmark per member-month ($)<input data-contract-benchmark value="'+esc(terms.benchmark_pmpm_cents/100)+'" inputmode="decimal"></label><label>Sharing rate (%)<input data-contract-sharing value="'+esc(terms.sharing_rate_bps/100)+'" inputmode="decimal"></label><label>Approximate quality target (%)<input data-contract-quality value="'+esc(terms.quality.target_bps/100)+'" inputmode="decimal"></label><label>Reason for the change<input data-contract-reason></label></div><div class="tools"><button type="button" class="btn primary" data-contract-save>Save assumptions and recalculate</button><button type="button" class="btn" data-contract-restore="base">Restore packaged demo inputs</button></div><p data-contract-message role="status"></p></div></details>';
+ h+='<details open data-contract-section="provider"><summary>Provider / population health view</summary><p>Illustrative provider share: <strong>'+esc(money(s.illustrative_provider_share_cents))+'</strong>. Quality target '+(s.approximate_quality_target_met==null?'is unresolved':s.approximate_quality_target_met?'is met':'is not met')+' under the authored demo rule. Review observed cost and quality evidence before choosing internal follow-up.</p></details>';
+ h+='<details data-contract-section="payer"><summary>Payer view</summary><p>Illustrative retained positive benchmark variance: <strong>'+esc(money(s.illustrative_payer_retained_positive_variance_cents))+'</strong>. This is scenario arithmetic, not realized savings, cash or settlement. Nonmetric claims and claims without the same attributed member-month remain outside the ledger.</p></details>';
+ h+='<details data-contract-section="monthly"><summary>Monthly cost and exposure</summary>'+tableHTML((c.monthly||[]).map(r=>({'Month':r.month,'Member-months':r.recorded_member_months,'Allowed cost':money(r.observed_allowed_cents),'Benchmark':money(r.benchmark_cents)})),{name:'contract-monthly'})+'</details>';
+ h+='<details data-contract-section="practices"><summary>Practice contributions · descriptive drivers</summary>'+tableHTML((c.practice_drivers||[]).map(r=>({'Practice':r.practice_id,'Member-months':r.recorded_member_months,'Allowed cost':money(r.observed_allowed_cents),'Benchmark variance':money(r.observed_variance_cents)})),{name:'contract-practices'})+'</details>';
+ h+='<details data-contract-section="members"><summary>Members and internal review needs</summary>'+tableHTML(a.table||[],{name:'contract-members'})+'</details>';
+ if(c.editing_available)h+='<details data-contract-section="assumptions"><summary>Revise demo assumptions</summary><div data-contract-editor="'+esc(terms.id)+'" data-binding="'+esc(c.contract_digest)+'"><p class="hint">Save a versioned authored assumption and recalculate this report. Earlier answers and work remain in history; affected work needs a current binding. These inputs are not a payer offer or care instruction.</p><div class="contract-input-grid"><label>Benchmark per member-month ($)<input data-contract-benchmark value="'+esc(terms.benchmark_pmpm_cents/100)+'" inputmode="decimal"></label><label>Sharing rate (%)<input data-contract-sharing value="'+esc(terms.sharing_rate_bps/100)+'" inputmode="decimal"></label><label>Approximate quality target (%)<input data-contract-quality value="'+esc(terms.quality.target_bps/100)+'" inputmode="decimal"></label><label>Reason for the change<input data-contract-reason></label></div><div class="tools"><button type="button" class="btn primary" data-contract-save>Save assumptions and recalculate</button><button type="button" class="btn" data-contract-restore="base">Restore packaged demo inputs</button></div><p data-contract-message role="status"></p></div></details>';
  h+='<p class="hint">Quality uses the registered approximation. Clinical suitability, complete capture and payment entitlement are unestablished. Save or reopen the evidence and internal review work from this answer.</p></section>';return h;}
 async function saveContractInput(el){const box=el.closest('[data-contract-editor]'),message=box.querySelector('[data-contract-message]');
  const scaled=selector=>{const text=box.querySelector(selector).value.trim(),m=/^(\d+)(?:\.(\d{1,2}))?$/.exec(text);if(!m)throw Error('Use a nonnegative amount with at most two decimal places.');const n=Number(m[1])*100+Number((m[2]||'').padEnd(2,'0'));if(!Number.isSafeInteger(n))throw Error('This value cannot be represented exactly by this input.');return n};
@@ -983,7 +965,7 @@ async function ask(question,opt){opt=opt||{};question=String(question||'').trim(
   if(d.error||!r.ok){t.error=d.error||('HTTP '+r.status);t.action_context=d.action_context}else{t.data=d;t.resolved=(d.conversation||{}).resolved_question;if(opt.clarification)state.turns.forEach(old=>{if(old.data?.clarification?.id===opt.clarification.id)old.data.clarification.status='complete'})}}
  catch(err){t.pending=false;t.error=String(err)}finally{stopWork();state.busy=false;$('#askb').disabled=false;$('#newconv').disabled=false;$('#q').readOnly=false}
  if(opt.clarification)try{const r=await fetch('/api/stack/conversation?id='+encodeURIComponent(state.cid));if(r.ok){const d=await r.json();for(const item of d.turns||[]){const c=item.answer_summary?.clarification;if(c)for(const old of state.turns)if(old.data?.clarification?.id===c.id)old.data.clarification=c}}}catch(_){}
- state.outFilter=null;renderTurn(state.turns.indexOf(t));completeWork(t);loadEcon();loadSaved();document.dispatchEvent(new Event('agere-activity-changed'));return t}
+ state.outFilter=null;renderTurn(state.turns.indexOf(t));completeWork(t);syncContractDemo();loadEcon();loadSaved();document.dispatchEvent(new Event('agere-activity-changed'));return t}
 function loadConversation(){if(!state.cid)return;const epoch=conversationEpoch;fetch('/api/stack/conversation?id='+encodeURIComponent(state.cid)).then(r=>r.ok?r.json():null).then(d=>{if(!d||state.turns.length||epoch!==conversationEpoch)return;
  state.turns=(d.turns||[]).map(x=>({question:x.question,resolved:x.resolved_question,error:x.error||null,summary:(x.answer_summary||{}).headline||'',status:(x.answer_summary||{}).status,action_context:(x.answer_summary||{}).action_context,...(x.answer_summary?.clarification?{data:{answer:x.answer_summary,clarification:x.answer_summary.clarification}}:{})}));
  renderThread();const pending=state.turns.map((t,i)=>t.data?.clarification?.status==='pending'?i:-1).filter(i=>i>=0);if(pending.length)renderTurn(pending[pending.length-1])}).catch(()=>{})}
@@ -1010,17 +992,37 @@ function loadBriefing(){return fetch('/api/stack/briefing').then(r=>r.ok?r.json(
  $('#brief').querySelectorAll('[data-brief-path]').forEach(b=>b.onclick=async()=>{b.disabled=true;const old=b.textContent;b.textContent='Preparing…';try{const r=await fetch('/api/stack/briefing-pathway',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({card_id:b.dataset.card,pathway:b.dataset.briefPath})});const v=await r.json();if(!r.ok)throw Error(v.error||'Unable to prepare this pathway');location.href=v.action_context.url}catch(e){$('#brief-status').textContent=e.message;b.textContent=old;b.disabled=false}});return cards;
  }).catch(()=>{$('#brief-status').textContent='The briefing could not load. Your question workspace is still available.';$('#brief').innerHTML='<button class="btn" id="retry-brief">Retry briefing</button>';$('#retry-brief').onclick=loadBriefing;return []})}
 
-/* ---------- demo ---------- */
+/* ---------- one saved contract workflow ---------- */
 const demo={on:/[?&]demo=1\b/.test(location.search),i:0,done:new Set()};
 function renderDemo(){if(!demo.on)return;const el=$('#demo');el.hidden=false;
- el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><b>Buyer walkthrough</b><span class="muted" style="font-size:13px">Every step asks a real question.</span>'+
-  '<button type="button" class="btn primary small" id="demonext"'+(demo.i>=DEMO.length?' disabled':'')+'>'+(demo.i>=DEMO.length?'Walkthrough complete':'Run step '+(demo.i+1)+': '+esc(DEMO[demo.i].label))+'</button>'+
-  '<button type="button" class="btn small" id="demoreset">Restart</button></div><ol>'+DEMO.map((s,i)=>'<li><button type="button" data-demo="'+i+'"'+(i===demo.i?' aria-current="step"':'')+(demo.done.has(i)?' class="done"':'')+'>'+(i+1)+'. '+esc(s.label)+(demo.done.has(i)?' ✓':'')+'</button></li>').join('')+'</ol>'}
-async function runStep(i){const s=DEMO[i];if(!s||state.busy)return;if(i===0){newConversation()}demo.i=i;renderDemo();
- $('#demonote').innerHTML='<div class="demonote"><b>Step '+(i+1)+' of '+DEMO.length+' · '+esc(s.label)+'.</b> '+esc(s.note||'')+'</div>';
- let q=s.question;if(s.kind==='briefing'){const cards=state.briefing||await loadBriefing();const r=$('#right');r.classList.add('flash');r.scrollIntoView({behavior:'smooth',block:'nearest'});setTimeout(()=>r.classList.remove('flash'),2200);
-  q=cards.length?cards[0].follow_up:null;if(!q){demo.done.add(i);demo.i=i+1;renderDemo();return}}
- await ask(q,{focus:s.focus});demo.done.add(i);demo.i=i+1;renderDemo()}
+ el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><b>Population contract walkthrough</b><span class="muted" style="font-size:13px">One analysis. Two buyer views. Saved follow-up.</span>'+
+  '<button type="button" class="btn primary small" id="demonext"'+(demo.i>=DEMO.length?' disabled':'')+'>'+(demo.i>=DEMO.length?'Walkthrough complete':'Step '+(demo.i+1)+': '+esc(DEMO[demo.i].label))+'</button>'+
+  '<button type="button" class="btn small" id="demoreset">Restart walkthrough</button></div><ol>'+DEMO.map((s,i)=>'<li><button type="button" data-demo="'+i+'"'+(i===demo.i?' aria-current="step"':'')+(demo.done.has(i)?' class="done"':'')+'>'+(i+1)+'. '+esc(s.label)+(demo.done.has(i)?' ✓':'')+'</button></li>').join('')+'</ol>'}
+function demoContract(){const t=state.turns[state.active];return t&&!t.archiveBlocked&&t.data?.answer?.overall?.contract_performance?t:null}
+function syncContractDemo(){if(demo.on&&demo.i===0&&demoContract()){demo.done.add(0);demo.i=1;renderDemo()}}
+async function runStep(i){const s=DEMO[i];if(!s||state.busy)return;demo.i=i;renderDemo();
+ const note=$('#demonote');note.innerHTML='<div class="demonote" role="status"><b>Step '+(i+1)+' of '+DEMO.length+' · '+esc(s.label)+'.</b> '+esc(s.note||'')+'</div>';
+ if(s.kind==='input'){
+  if(demoContract()){syncContractDemo();return}
+  const t=state.turns[state.active];
+  if(!t?.data?.clarification||t.data.clarification.status!=='pending')await ask('Show contract performance',{standalone:true});
+  syncContractDemo();return;
+ }
+ const t=demoContract();
+ if(!t){note.insertAdjacentHTML('beforeend','<p class="hint" role="status">Choose contract inputs above or reopen a current contract answer before continuing. An unresolved or stale answer cannot complete this step.</p>');return}
+ if(s.kind==='work'){
+  const c=t.data.action_context||t.action_context;
+  if(!c||!/^ANS-[0-9a-f]{24}$/.test(c.id||'')){note.insertAdjacentHTML('beforeend','<p role="status">This answer has no saved work context yet.</p>');return}
+  note.insertAdjacentHTML('beforeend','<p><a class="btn primary" href="/action-center?context='+encodeURIComponent(c.id)+'">Open this answer’s review workspace ↗</a></p>');
+ }else{
+  const target=$('[data-contract-section="'+s.section+'"]');
+  if(!target){note.insertAdjacentHTML('beforeend','<p role="status">This section is unavailable in the current answer. Reopen its full overview; no new calculation has been started.</p>');return}
+  target.open=true;
+  if(s.id==='drivers')for(const name of ['monthly','members']){const other=$('[data-contract-section="'+name+'"]');if(other)other.open=true}
+  target.scrollIntoView({behavior:'smooth',block:'center'});
+ }
+ demo.done.add(i);demo.i=i+1;renderDemo();
+}
 
 __EXPLORE_JS__
 

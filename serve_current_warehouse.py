@@ -45,6 +45,20 @@ def validate_semantic_policy(stack):
         raise ValueError('Semantic enrichment policy differs from the connected materialization. '
                          'Restore its pinned configuration or explicitly rebuild and verify the materialization before serving questions.')
 
+
+def disable_providers(names):
+    """Honor an explicit availability decision after loading local credentials.
+
+    This is not a retry or a budget change. Ledger failures and usage stay intact.
+    """
+    credentials = {'perplexity': 'PERPLEXITY_API_KEY', 'jev': 'TYPESAFE_API_KEY'}
+    for name in names:
+        os.environ.pop(credentials[name], None)
+    if names:
+        order = os.environ.get('AGERE_DOCUMENT_TYPED_ORDER', 'perplexity,jev')
+        os.environ['AGERE_DOCUMENT_TYPED_ORDER'] = ','.join(
+            name for name in order.split(',') if name.strip() not in names)
+
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument('--port', type=int, default=8885)
@@ -52,6 +66,8 @@ def main(argv=None):
     p.add_argument('--check', action='store_true', help='Validate configuration and identities without loading models')
     p.add_argument('--allow-live-stack', action='store_true')
     p.add_argument('--ledger', type=Path, help='Explicit provider ledger for this application; exact cache and usage share this store')
+    p.add_argument('--disable-provider', action='append', default=[], choices=('perplexity', 'jev'),
+                   help='Keep an unavailable provider disabled without probing it; repeat for multiple providers')
     p.add_argument('--runtime-profile', choices=('economical', 'configured'),
                    help='Default economical uses native/System One and hosted frontier roles; configured honors explicitly selected optional roles')
     a = p.parse_args(argv)
@@ -68,6 +84,7 @@ def main(argv=None):
     if a.check:
         print(json.dumps({'status': 'validated', 'build': str(output), 'recovery': recovery,
                           'runtime': runtime,
+                          'disabled_providers': sorted(set(a.disable_provider)),
                           'scope': 'Startup identity checks; not clinical/model qualification'}))
         return
     if a.allow_live_stack and os.environ.get('AGERE_CLAUDE_TRANSPORT', 'subscription').strip().lower() != 'subscription':
@@ -86,6 +103,7 @@ def main(argv=None):
             from run_integrated_stack import keys
             from clinical_core.agere import subscription_transport
             keys()  # Existing credentials; never print values.
+            disable_providers(a.disable_provider)
             if not subscription_transport.install():
                 raise ValueError('Claude subscription transport did not initialize')
         # Pending reservations belong to their requesting process. Startup must
