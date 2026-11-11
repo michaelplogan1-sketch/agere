@@ -898,14 +898,15 @@ function executionInfo(d){d=d||{};const pr=d.planner_receipt||{},econ=d.planning
  if(authoritative)Object.entries(cr.calls_by_model||{}).filter(([_,n])=>isNum(n)&&n>0).forEach(([name])=>model(name));
  const raw=pr.route||d.route||'',route=tg.winner==='analyst'?'Executed analyst SQL':ROUTES[raw]||raw||'Not recorded';
  const graph=d.graph||{},nodes=Array.isArray(graph.nodes)?graph.nodes:[],operations=[...new Set(nodes.map(n=>n.operation).filter(Boolean))];
- return {route,calls,total,known,cost,models:[...models],operations,reason:tg.reason||pr.escalation_reason||'',
+ return {route,calls,total,known,cost,scope:typeof econ.scope==='string'?econ.scope:'',models:[...models],operations,reason:tg.reason||pr.escalation_reason||'',
   analystState:analyst.state||tg.analyst_state||'',decision:hybrid.decision||tg.decision||'',cached:!!(d.cache_hit||pr.cache_hit)}}
 function executionDetails(d){const x=executionInfo(d),rows=[['Answer route',x.route],['Executed operators',x.operations.join(', ')||'Not recorded'],
- ['Models recorded',x.models.join(', ')||'None recorded'],['New paid API calls',x.calls==null?'Unknown':String(x.calls)],['New API cost estimate',x.cost]];
+ ['Models recorded',x.models.join(', ')||'None recorded'],['New paid API calls',x.calls==null?'Unknown':String(x.calls)],['This step · API cost estimate',x.cost]];
+ if(x.scope)rows.push(['Cost coverage',x.scope]);
  if(x.analystState)rows.push(['Analyst dispatch',label(x.analystState)]);if(x.decision)rows.push(['Selection / repair',label(x.decision)]);
  if(x.cached)rows.push(['Reuse','Cached result reused']);if(x.reason)rows.push(['Route explanation',x.reason]);
  return '<details data-execution><summary>How Agere answered</summary><div class="tablewrap"><table><tbody>'+rows.map(([k,v])=>'<tr><th scope="row">'+esc(k)+'</th><td class="wrap">'+esc(v)+'</td></tr>').join('')+
- '</tbody></table></div><p class="hint">API estimates cover this request; reused calls are not new charges. Local compute, setup and review are excluded. Unknown cost is not zero. Execution checks do not establish clinical accuracy.</p></details>'}
+ '</tbody></table></div><p class="hint">This estimate covers the recorded step, not necessarily the full history of this answer. Earlier attempts and reused work may have separate costs. Subscription figures are API equivalents, not cash charges. Local compute, setup and review are excluded. Unknown cost is not zero. Execution checks do not establish clinical accuracy.</p></details>'}
 function badges(t){const d=t.data||{},a=d.answer||{},x=executionInfo(d);const st=t.error?'error':(a.status||'');
  const b=['<span class="badge '+esc(st)+'">'+esc(label(st||'unknown'))+'</span>',
   '<span class="badge">Route: '+esc(x.route)+'</span>','<span class="badge">Paid API calls: '+(x.calls==null?'Unknown':fmt(x.calls))+'</span>',
@@ -938,7 +939,8 @@ function renderTurn(i){const t=state.turns[i];const box=$('#answer');state.activ
  if(t.data.clarification){box.innerHTML='<div class="q">'+esc(t.data.clarification.original_question||t.question)+'</div>'+clarificationCard(t.data.clarification)+'<div data-recorded-work>'+recordedWork(t)+'</div>';return}
  const a=t.data.answer||{};state.csv={};const x=executionInfo(t.data),status={answered:'Answer ready',partial:'Partial answer',not_understood:'Needs clarification',unsupported:'Not supported',low_confidence:'Needs review'}[a.status]||label(a.status||'Unknown status');
  let h='<div class="answer-topline"><span class="eyebrow">'+(t.archive?'SAVED ANALYSIS':'ANALYSIS RESULT')+'</span><button class="text-button" data-edit-question="'+esc(t.question)+'">Edit question ↗</button></div><div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+headlineHTML(a)+
- '<div class="badges"><span class="badge '+esc(a.status)+'">'+esc(status)+'</span><span class="badge">'+(t.archive?'Recorded API cost: ':'API estimate: ')+esc(x.cost)+'</span>'+(t.seconds!=null?'<span class="badge">'+t.seconds.toFixed(1)+' seconds</span>':'')+'</div>'+
+ '<div class="badges"><span class="badge '+esc(a.status)+'">'+esc(status)+'</span><span class="badge">'+(t.archive?'Saved step API estimate: ':'This step API estimate: ')+esc(x.cost)+'</span>'+(t.seconds!=null?'<span class="badge">'+t.seconds.toFixed(1)+' seconds</span>':'')+'</div>'+
+ (x.scope?'<p class="hint" data-cost-scope>'+esc(x.scope)+'</p>':'')+
  (t.archiveNotice?'<div class="alert warn">'+esc(t.archiveNotice)+'</div>':'')+warnBox(a)+readingsBox(a,t.resolved||t.question);
  h+='<div class="answer-tabs" role="tablist" aria-label="Answer views">'+['overview','data','method'].map((n,j)=>'<button type="button" id="tab-'+n+'" role="tab" aria-controls="result-'+n+'" aria-selected="'+(j===0)+'" tabindex="'+(j===0?0:-1)+'" data-answer-tab="'+n+'">'+({overview:'Overview',data:'Data',method:'Method & sources'}[n])+'</button>').join('')+'</div><section class="answer-panel" id="result-overview" data-answer-panel="overview" role="tabpanel" aria-labelledby="tab-overview">';
  try{h+=visual(a)||'<p class="hint">See the method and sources for the available evidence.</p>'}catch(err){h+='<div class="alert warn">Visual unavailable: '+esc(err.message)+'</div>'+tableHTML(a.table||[],{name:'agere-answer'})}
