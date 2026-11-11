@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-10T18:34:55.097433-06:00",
+  "updated_at": "2026-11-11T01:04:48.242356+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -653,6 +653,10 @@
         {
           "path": "artifacts/agere-monitor-comparison-2026-11-10/delivery-receipt.json",
           "sha256": "6051d098bbf389e2ecd70d9517987242d2d858cc11042feffdc1a11dffc3f8c0"
+        },
+        {
+          "path": "artifacts/agere-adaptive-execution-2026-11-10/delivery-receipt.json",
+          "sha256": "c2d625fbdb3fc51e222aad9fcb9088f1bcb4c4ae6cc0fbe0118c8a4c3ce46499"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -746,35 +750,37 @@
     }
   ],
   "checkpoint": {
-    "kind": "connected_first_synthetic_release_entry_delivered",
+    "kind": "adaptive_execution_delivered_source_assertion_interruption_retained",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "product_commit": "4ab59680afc6303808e980145e219d4fb1692d65",
-    "user_behavior_delta": "The ordinary home page and buyer walkthrough now connect input clarification, one native shared contract report, both buyer views, full monthly/practice/member evidence, versioned input revision controls and exact saved internal review workspace. Viewing later steps performs no new question execution. Supported startup replaces the fixed25 development-runner import and explicitly disables an unavailable provider without probing it.",
+    "product_commit": "26118516571c31ad07eac7ff3eb8daad914d463f",
+    "user_behavior_delta": "Economical application uses checked reuse/native execution, matching typed choices and promoted specialist nomination before one Sonnet tool investigator; expensive unselected scans and generative tiers remain fallbacks. Explicit corrections, enablement, population/source checks, existing same-conversation Opus escalation and recursive reuse remain intact. No speculative spec path starts alongside selected investigation.",
     "measured_failure_reduction": [
-      "Historical unrelated ten-question demo replaced with the completed shared workflow",
-      "Unresolved input cannot mark a result step complete",
-      "Saved-answer URL preserves walkthrough mode",
-      "Only visited/completed walkthrough steps can finish navigation",
-      "Supported launcher carries the existing Perplexity-unavailable decision"
+      "The observed ordinary request reached its fitting System One chooser then the shared investigator without executing unrelated per-record/scanning/spec/local generative tiers. Previously mandatory all-nonfrontier order and loss of promoted specialist priority are removed. This is not a matched latency/cost superiority result."
     ],
     "evidence": [
-      "artifacts/agere-product-entry-2026-11-10/delivery-receipt.json",
-      "artifacts/agere-product-entry-2026-11-10/increment-contract.json",
-      "artifacts/agere-product-entry-2026-11-10/startup-check.json",
-      "artifacts/agere-product-entry-2026-11-10/affected-page-checks.log",
-      "artifacts/agere-product-entry-2026-11-10/affected-page-final.log",
-      "artifacts/agere-product-entry-2026-11-10/new-provider-attempts.json",
-      "artifacts/agere-product-entry-2026-11-10/provider-accounting.json",
-      "artifacts/agere-product-entry-2026-11-10/current-answer.json.gz",
-      "artifacts/agere-product-entry-2026-11-10/final-saved-answer.json.gz",
-      "artifacts/agere-product-entry-2026-11-10/buyer-views-ax.txt",
-      "artifacts/agere-product-entry-2026-11-10/review-workspace-ax.txt",
-      "artifacts/agere-product-entry-2026-11-10/saved-reopen-ax.txt",
-      "artifacts/agere-product-entry-2026-11-10/current-product.png"
+      "artifacts/agere-adaptive-execution-2026-11-10/delivery-receipt.json",
+      "artifacts/agere-adaptive-execution-2026-11-10/increment-contract.json",
+      "artifacts/agere-adaptive-execution-2026-11-10/affected-checks.log",
+      "artifacts/agere-adaptive-execution-2026-11-10/affected-checks-final.log",
+      "artifacts/agere-adaptive-execution-2026-11-10/startup-check.json",
+      "artifacts/agere-adaptive-execution-2026-11-10/workflow-receipt.json",
+      "artifacts/agere-adaptive-execution-2026-11-10/new-provider-attempts.json.gz",
+      "artifacts/agere-adaptive-execution-2026-11-10/provider-accounting.json",
+      "artifacts/agere-adaptive-execution-2026-11-10/response.json.gz",
+      "artifacts/agere-adaptive-execution-2026-11-10/saved-answer.json.gz",
+      "artifacts/agere-adaptive-execution-2026-11-10/native-verification.json",
+      "artifacts/agere-adaptive-execution-2026-11-10/saved-answer-ui.txt",
+      "artifacts/agere-adaptive-execution-2026-11-10/current-answer.png",
+      "artifacts/agere-adaptive-execution-2026-11-10/server-receipt.json",
+      "artifacts/agere-adaptive-execution-2026-11-10/source-assertions/workflow-receipt.json",
+      "artifacts/agere-adaptive-execution-2026-11-10/source-assertions/new-provider-attempts.json.gz",
+      "artifacts/agere-adaptive-execution-2026-11-10/source-assertions/provider-accounting.json",
+      "artifacts/agere-adaptive-execution-2026-11-10/source-assertions/retained-tool-actions.json",
+      "artifacts/agere-adaptive-execution-2026-11-10/source-assertions/interruption-diagnosis.json"
     ],
-    "remaining_gap": "First synthetic contract demonstration is delivered. Broader ordinary healthcare answer reliability/full25 acceptance and independent model/clinical/measure qualification remain unestablished. Exact diabetes/BP program inputs and some service-duration/capacity inputs remain absent. Market novelty and accuracy/cost superiority are not demonstrated; data backup and customer deployment prerequisites remain separate. All ten areas and research obligations remain retained; optional research is not added to this release.",
-    "next_action": "The first synthetic contract release is delivered and reachable through /ask?demo=1 on the supported launcher. Do not reopen its passed calculation, packaging, buyer-view, source-count or workspace checks. Preserve 4ab59680 and the existing exact code-only archive for recovery. G3 remains active for broader ordinary healthcare completion: use the retained Q20/Q21 source-support/coverage feedback to distinguish a concrete shared execution/answer defect from unresolved interpretation; repair only an evidenced remaining user behavior, with one affected workflow check and no whole25 or unchanged-vote campaign. Missing source specifications and independent labels stay explicit dependencies; do not invent definitions, lower thresholds, promote optional models, claim full MVP/superiority or create another plan/catalog. Current server remains interactive, not autonomous work; scheduler PAUSED/no Git push."
+    "remaining_gap": "G3 remains active: the broader source-interpretation Q21 workflow has no terminal result in this increment because the owner diagnostic interrupted it, and its native interpretation step still needs safe profiling/continuation. Broader ordinary healthcare/full25 reliability is unestablished. Existing learning hooks collected observation106, but the configured student/release paths contain no promoted model and learning_cycle is observation_only; no all-model activation or independent qualification claimed. Exact program/service inputs, independent accuracy/economics/clinical qualification, storage backup and customer deployment remain separate. All ten areas and research requirements retained.",
+    "next_action": "G3: Preserve the delivered adaptive execution policy at26118516 and the successful ordinary quarterly utilization result ANS-1d026f33c12ece0faae0b6b9; do not rerun it, the contract demo or whole25. Next complete the remaining broad source-assertion workflow from source-assertions/retained-tool-actions.json using the existing read-only owned recovery, explicitly reexecuting and validating native actions rather than trusting emitted model calls. Profile the CPU-bound review_documents(assertion_result_view=agere_result_10) interpretation step with a supported profiler or an explicitly installed handler; never signal an unconfigured process. Preserve the interrupted11attempts/$2.2313364 and all uncertainty; no accepted result exists for that attempt. Repair only the measured native/semantic gap and finish the original request, without adding model catalogs or qualification campaigns. Keep missing-source and independent model/clinical/customer dependencies explicit. Current app35046/session67865 is interactive; schedulerPAUSED/no Git push."
   },
   "decisions": [
     {
@@ -6202,13 +6208,29 @@
       "decision": "Finish the existing first synthetic release entry instead of introducing another research/model component or rerunning the fixed25. Latest user demands completion; current release still exposed obsolete historical walkthrough and harness startup.",
       "evidence": "artifacts/agere-product-entry-2026-11-10/delivery-receipt.json",
       "scope_impact": "No acceptance area removed; broad G3 and G5 qualification remain open. The delivered first-release engineering is no longer listed as future build work."
+    },
+    {
+      "at": "2026-11-11T00:47:22.435731+00:00",
+      "decision": "Latest user explicitly prioritizes selecting the right stack components and going directly to frontier reasoning when repeated small-model work is wasteful. Replace economical all-nonfrontier-first ordering with task-fit ordering in the existing cascade. No architecture rewrite or new service.",
+      "evidence": {
+        "source": "model_policy.ECONOMICAL_RUNTIME and Cascade.order force all record-level tiers ahead of frontier; staged() also erases promoted tier priority",
+        "prior_outcomes": "Q20 retained 448.3s/27 attempts; Q21 retained interrupted 1168.9s/590 attempts. These are not claimed causal savings or matched baselines."
+      },
+      "scope_impact": "Sequencing changes inside G3 only. All ten areas, current principal review, October11 baseline, all25 dispositions, independent qualification and deployment prerequisites retained."
+    },
+    {
+      "at": "2026-11-11T01:04:48.242356+00:00",
+      "decision": "Activate the scoped execution-selection increment on actual ordinary workflow evidence; retain original Q21 as incomplete after owner diagnostic interruption. Do not relabel this as sellable/full-MVP readiness or an implementation crash.",
+      "evidence": "artifacts/agere-adaptive-execution-2026-11-10/delivery-receipt.json",
+      "scope_impact": "All ten acceptance areas, all25 dispositions, principal review and October11baseline retained; no model promotion, hidden labels, scope reduction or new cap."
     }
   ],
   "unsealed_work": {
-    "status": "product_entry_delivery_sealed",
+    "status": "adaptive_execution_sealed_source_assertion_incomplete",
     "source_frozen": false,
-    "sealed_delivery": "artifacts/agere-product-entry-2026-11-10/delivery-receipt.json",
-    "remaining_verification": "First synthetic contract demonstration is delivered. Broader ordinary healthcare answer reliability/full25 acceptance and independent model/clinical/measure qualification remain unestablished. Exact diabetes/BP program inputs and some service-duration/capacity inputs remain absent. Market novelty and accuracy/cost superiority are not demonstrated; data backup and customer deployment prerequisites remain separate. All ten areas and research obligations remain retained; optional research is not added to this release."
+    "sealed_delivery": "artifacts/agere-adaptive-execution-2026-11-10/delivery-receipt.json",
+    "remaining_verification": "G3 remains active: the broader source-interpretation Q21 workflow has no terminal result in this increment because the owner diagnostic interrupted it, and its native interpretation step still needs safe profiling/continuation. Broader ordinary healthcare/full25 reliability is unestablished. Existing learning hooks collected observation106, but the configured student/release paths contain no promoted model and learning_cycle is observation_only; no all-model activation or independent qualification claimed. Exact program/service inputs, independent accuracy/economics/clinical qualification, storage backup and customer deployment remain separate. All ten areas and research requirements retained.",
+    "interrupted_work": "artifacts/agere-adaptive-execution-2026-11-10/source-assertions/workflow-receipt.json"
   },
   "current_visual_request": {
     "status": "completed",
@@ -6244,7 +6266,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "The first synthetic contract release is delivered and reachable through /ask?demo=1 on the supported launcher. Do not reopen its passed calculation, packaging, buyer-view, source-count or workspace checks. Preserve 4ab59680 and the existing exact code-only archive for recovery. G3 remains active for broader ordinary healthcare completion: use the retained Q20/Q21 source-support/coverage feedback to distinguish a concrete shared execution/answer defect from unresolved interpretation; repair only an evidenced remaining user behavior, with one affected workflow check and no whole25 or unchanged-vote campaign. Missing source specifications and independent labels stay explicit dependencies; do not invent definitions, lower thresholds, promote optional models, claim full MVP/superiority or create another plan/catalog. Current server remains interactive, not autonomous work; scheduler PAUSED/no Git push.",
+  "next_action": "G3: Preserve the delivered adaptive execution policy at26118516 and the successful ordinary quarterly utilization result ANS-1d026f33c12ece0faae0b6b9; do not rerun it, the contract demo or whole25. Next complete the remaining broad source-assertion workflow from source-assertions/retained-tool-actions.json using the existing read-only owned recovery, explicitly reexecuting and validating native actions rather than trusting emitted model calls. Profile the CPU-bound review_documents(assertion_result_view=agere_result_10) interpretation step with a supported profiler or an explicitly installed handler; never signal an unconfigured process. Preserve the interrupted11attempts/$2.2313364 and all uncertainty; no accepted result exists for that attempt. Repair only the measured native/semantic gap and finish the original request, without adding model catalogs or qualification campaigns. Keep missing-source and independent model/clinical/customer dependencies explicit. Current app35046/session67865 is interactive; schedulerPAUSED/no Git push.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6253,7 +6275,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-product-entry-2026-11-10/delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-adaptive-execution-2026-11-10/delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -6333,8 +6355,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 33438,
-  "owned_server_session": 89988,
+  "owned_server_pid": 35046,
+  "owned_server_session": 67865,
   "last_run_observation": {
     "at": "2026-11-08T23:35:47.474869+00:00",
     "no_active_jobs": true,
@@ -6559,7 +6581,7 @@
     ]
   },
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
-  "latest_receipt": "artifacts/agere-product-entry-2026-11-10/delivery-receipt.json",
+  "latest_receipt": "artifacts/agere-adaptive-execution-2026-11-10/delivery-receipt.json",
   "code_only_storage_exception": {
     "authorization": "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
     "scope": "One code-only archive and fresh-code rehearsal from the linked proposal; existing source/model/Python/work/ledger stores referenced, never copied. General60GBguard unchanged.",
