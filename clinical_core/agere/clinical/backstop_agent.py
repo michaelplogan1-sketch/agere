@@ -907,6 +907,14 @@ class Tools:
             evidence = [{'id': f'{rid}#{k}', 'record_id': rid, 'text': c, 'date': (doc.get('date') or '')[:10]} for k, c in enumerate(chunks)]
             r = system_one.decide(question, options, evidence, as_of=self.as_of, task_key='agere_chart_judgment', ledger=self.ledger,
                                   allow_live=bool(getattr(self.stack, 'allow_live', False)))
+            # Keep unresolved states available to the existing learning path;
+            # they are review inputs, never automatic teacher/reference labels.
+            from . import typed_distillation
+            try:
+                typed_distillation.record_outcome(question, options, evidence, r, as_of=self.as_of)
+            except Exception as exc:  # learning persistence cannot fail the answer
+                import logging
+                logging.getLogger(__name__).warning('Typed learning capture failed: %s', type(exc).__name__)
             from .system_one_gate import cost
             calls,usd=cost(r)
             accounting=getattr(self,'subtool_accounting',None)

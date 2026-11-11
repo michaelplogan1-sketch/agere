@@ -24,13 +24,43 @@ LIMITS = [
     'Labels are saved machine judgments, not independently reviewed clinical references.',
     'Development subdivisions use only eligible outer training people. Frozen and outer evaluation people are excluded.',
     'Patient identity and normalized whole-document wording are grouping proxies; semantic and clinical independence are not established.',
-    'Observation capture selected confident non-unknown responses. This is a selected development sample, not population performance.',
+    'Legacy labels selected confident non-unknown responses; newly captured unresolved outcomes remain review inputs, not fitting labels. This is development data, not population performance.',
     'The candidate remains reading-only. Qualification, clinical authority and default activation are not created by this workflow.',
 ]
 
 
 def option_contract(options):
     return hashlib.sha256(json.dumps(options, sort_keys=True).encode()).hexdigest()
+
+
+def record_outcome(question, options, evidence, result, *, as_of, task_key='agere_chart_judgment'):
+    """Retain unresolved outcomes without teaching the student's own predictions.
+
+    Uses the existing observation store. Every distinct state/result is retained;
+    exact repeats share one row. A capture failure must not fail a user answer.
+    """
+    state = student.decision_state(question, options, evidence, as_of=as_of)
+    contract = student.input_contract()
+    label = result.get('label')
+    probability = (result.get('calibrated_probabilities') or result.get('probabilities') or {}).get(label)
+    provider = result.get('decided_by') or result.get('provider')
+    eligible = bool(result.get('decided_by') in ('jev', 'perplexity') and label in state['options'] and
+                    label != 'unknown' and isinstance(probability, (int, float)) and student.TEACHER_MIN <= probability <= 1)
+    key = digest([contract, task_key, state, result])
+    path = student.store_path(); path.parent.mkdir(parents=True, exist_ok=True)
+    db = sqlite3.connect(path, timeout=30)
+    try:
+        with db:
+            db.execute('CREATE TABLE IF NOT EXISTS typed_outcomes ('
+                'id TEXT PRIMARY KEY,task_key TEXT,question TEXT,options TEXT,evidence TEXT,label TEXT,probability REAL,'
+                'provider TEXT,recorded_at TEXT,input_contract TEXT,as_of TEXT,teacher_model TEXT,request_hash TEXT,'
+                'fit_eligible INTEGER NOT NULL,result TEXT NOT NULL)')
+            db.execute('INSERT OR IGNORE INTO typed_outcomes VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                (key,task_key,state['subject'],json.dumps(state['options']),json.dumps(state['evidence']),label,probability,
+                 provider,datetime.now(timezone.utc).isoformat(),contract,state['as_of'],result.get('model'),
+                 result.get('request_hash'),int(eligible),json.dumps(result,sort_keys=True,allow_nan=False)))
+    finally: db.close()
+    return {'id': key, 'fit_eligible': eligible, 'kind': 'machine_outcome'}
 
 
 @contextmanager
@@ -107,37 +137,41 @@ def prepare(config, lineage, output, *, options_sha256):
     contract = student.input_contract(); selected = []; excluded = []; groups = {}
     with _read_db(environment['AGERE_SYSTEM_ONE_DISTILL']) as observations, _read_db(source_path) as warehouse:
         # Only option metadata and source IDs are read before exclusion checks.
-        candidates = observations.execute('SELECT id,options FROM labels WHERE task_key=? AND input_contract=? ORDER BY id',
-            ('agere_chart_judgment', contract)).fetchall()
-        for header in candidates:
+        tables = {r[0] for r in observations.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        candidates = [(table, header) for table in ('labels', 'typed_outcomes') if table in tables
+            for header in observations.execute('SELECT id,options FROM '+table+' WHERE task_key=? AND input_contract=? ORDER BY id',
+                ('agere_chart_judgment', contract)).fetchall()]
+        for table, header in candidates:
             if option_contract(json.loads(header['options'])) != options_sha256: continue
-            ident = header['id']; selected.append(ident)
+            ident = header['id']; observation_id = table+':'+ident; selected.append(observation_id)
             ids = {str(r[0] or '').rsplit('#', 1)[0] for r in observations.execute(
-                "SELECT json_extract(value,'$.id') FROM labels,json_each(labels.evidence) WHERE labels.id=?", (ident,))}
+                "SELECT json_extract(value,'$.id') FROM "+table+",json_each("+table+".evidence) WHERE "+table+".id=?", (ident,))}
             if len(ids) != 1:
-                excluded.append({'observation_id': ident, 'reason': 'single_document_binding_required'}); continue
+                excluded.append({'observation_id': observation_id, 'reason': 'single_document_binding_required'}); continue
             rid = next(iter(ids))
             person = warehouse.execute('SELECT patient_id FROM source_records WHERE record_id=?', (rid,)).fetchone()
             reason = 'source_identifier_unresolved' if person is None else queue.eligibility(person[0], policy, protected)
             if reason:
-                excluded.append({'observation_id': ident, 'reason': reason}); continue
-            row = dict(observations.execute('SELECT * FROM labels WHERE id=?', (ident,)).fetchone())
+                excluded.append({'observation_id': observation_id, 'reason': reason}); continue
+            row = dict(observations.execute('SELECT * FROM '+table+' WHERE id=?', (ident,)).fetchone())
             source = dict(warehouse.execute('SELECT * FROM source_records WHERE record_id=?', (rid,)).fetchone())
             if source.get('synthetic') != 1:
-                excluded.append({'observation_id': ident, 'reason': 'non_synthetic_source'}); continue
+                excluded.append({'observation_id': observation_id, 'reason': 'non_synthetic_source'}); continue
             try: state, field, text = _bind(row, source)
             except ValueError as exc:
-                excluded.append({'observation_id': ident, 'reason': str(exc)}); continue
+                excluded.append({'observation_id': observation_id, 'reason': str(exc)}); continue
             key = hashlib.sha256(json.dumps(state, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
             item = groups.setdefault(key, {'decision_key': key, 'state': state,
                 'patient_family': policy['patient_families'][source['patient_id']], 'patient_id': source['patient_id'],
                 'record_id': rid, 'source_field': field, 'source_hash': digest(source),
                 'template': digest(queue.normalize(text)), 'observations': [], 'reference': None})
-            item['observations'].append({k: row[k] for k in ('id', 'label', 'probability', 'provider', 'teacher_model', 'request_hash', 'recorded_at')})
+            item['observations'].append({**{k: row[k] for k in ('id', 'label', 'probability', 'provider', 'teacher_model', 'request_hash', 'recorded_at')},
+                'observation_id': observation_id, 'fit_eligible': bool(row.get('fit_eligible', True)),
+                'raw_outcome': json.loads(row['result']) if table == 'typed_outcomes' else None})
     # No label-dependent movement or search for a more favorable split.
     rows = partition(list(groups.values()))
     for row in rows:
-        eligible = [r for r in row['observations'] if r['probability'] is not None and
+        eligible = [r for r in row['observations'] if r['fit_eligible'] and r['probability'] is not None and
                     float(r['probability']) >= student.TEACHER_MIN and r['label'] in row['state']['options']]
         labels = {r['label'] for r in eligible}
         row['label'] = next(iter(labels)) if len(labels) == 1 else None
