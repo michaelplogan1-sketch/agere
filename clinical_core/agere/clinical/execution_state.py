@@ -374,8 +374,8 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
             target=located.get((ident,field))
             if targets and target is None:
                 raise ValueError('A focused repair may edit only the producer-located fields')
-            derived=[]
-            if isinstance(value,dict)and 'bind_literals'in value:
+            derived=[];literal_operation=isinstance(value,dict)and 'bind_literals'in value
+            if literal_operation:
                 if (not target or target['code']not in ('unbound_literal','missing_scalar_source')
                         or feedback.get('prose_repair',{}).get('intent')=='source_meaning_review'):
                     raise ValueError('Literal binding edits require a located binding-only compiler failure')
@@ -391,7 +391,7 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
                 original=existing[ident]['fields'][field]
                 rendered=repair_rendered_value(value,native,basis=[*existing[ident].get('basis',[]),*extra])
                 expected=repair_rendered_value(original,native,basis=existing[ident].get('basis'))
-                if canonical_repair_prose(rendered)!=canonical_repair_prose(expected):
+                if not literal_operation and canonical_repair_prose(rendered)!=canonical_repair_prose(expected):
                     error=BindingPreservationError(edit['key'],field,expected,rendered)
                     if not retain_valid:raise error
                     rejected.append(error)
@@ -481,7 +481,7 @@ def resolve_prose_binding(address,native,key):
 
 
 def bind_prose_literals(value,operation,native,*,key=None,resolved_bases=None,basis=None):
-    """Attach native cells to unchanged literal spans, without model rewriting.
+    """Bind exact spans; explicit numeric corrections still require full review.
 
     This only constructs the existing scalar template contract. The ordinary
     compiler still checks entity bases, source completeness and every value;
@@ -502,7 +502,7 @@ def bind_prose_literals(value,operation,native,*,key=None,resolved_bases=None,ba
     replacements={};used=set(bindings)
     for edit_index,edit in enumerate(operation['bind_literals']):
         if (not isinstance(edit,dict)or not {'literal','binding'}<=set(edit)
-                or set(edit)-{'literal','binding','occurrence'}or not isinstance(edit['literal'],str)or not edit['literal']):
+                or set(edit)-{'literal','binding','occurrence','correction_reason'}or not isinstance(edit['literal'],str)or not edit['literal']):
             raise ValueError('Each literal edit requires exact literal text and an executed scalar binding')
         literal=edit['literal'];matches=[]
         # A numeric repair addresses a whole value, never a substring of a
@@ -541,8 +541,17 @@ def bind_prose_literals(value,operation,native,*,key=None,resolved_bases=None,ba
             # another SQL value merely to reproduce display punctuation.
             start+=1
             literal=literal[1:]
-        if canonical_repair_prose(literal)!=canonical_repair_prose(rendered):
-            raise ValueError('Literal binding must preserve the exact value; query its actual source instead of changing the sentence')
+        if 'correction_reason'in edit:
+            import math
+            reason=edit['correction_reason']
+            _,source_rows=prose_binding_rows(native[address['result_view']])
+            scalar=source_rows[address['row']][address['column']]
+            if (not isinstance(reason,str)or not reason.strip()
+                or re.fullmatch(number,canonical_repair_prose(literal))is None
+                or type(scalar)not in(int,float)or not math.isfinite(scalar)):
+                raise ValueError('Numeric correction requires a whole quantity, finite native number and explicit reason')
+        elif canonical_repair_prose(literal)!=canonical_repair_prose(rendered):
+            raise ValueError('Literal binding must preserve the exact value; use correction_reason only for a source-supported numeric correction')
         serial=len(used);name='bound_literal_'+str(serial)
         while name in used:serial+=1;name='bound_literal_'+str(serial)
         used.add(name);bindings[name]=address;replacements.setdefault(index,[]).append((start,end,name))
@@ -656,7 +665,7 @@ def binding_repair_schema(focus):
         def obj(properties):return {'type':'object','properties':properties,'required':list(properties),'additionalProperties':False}
         address=obj({'result_view':{'type':'string'},'row':{'type':'integer','minimum':0},'column':{'type':'string'}})
         edit={'type':'object','properties':{'literal':{'type':'string','minLength':1},'binding':address,
-            'occurrence':{'type':'integer','minimum':0}},'required':['literal','binding'],'additionalProperties':False}
+            'occurrence':{'type':'integer','minimum':0},'correction_reason':{'type':'string','minLength':1}},'required':['literal','binding'],'additionalProperties':False}
         field=obj({'path':{'enum':[t['path']for t in focus['answer_targets']]},
             'bind_literals':{'type':'array','minItems':1,'items':edit}})
         return obj({'repair_draft':obj({'draft_digest':{'enum':[focus['draft_digest']]},'fields':{'type':'array','items':field}})})
@@ -668,7 +677,7 @@ def binding_repair_schema(focus):
     selector=obj({'column':{'type':'string'},'value':{'type':['string','number','boolean','null']}})
     address={'result_view':{'type':'string'},'column':{'type':'string'},'where':{'type':'array','items':selector}}
     edit=obj({'literal':{'type':'string','minLength':1},'binding':obj(address),
-              'occurrence':{'type':'integer','minimum':0}},['literal','binding'])
+              'occurrence':{'type':'integer','minimum':0},'correction_reason':{'type':'string','minLength':1}},['literal','binding'])
     field=obj({'bind_literals':{'type':'array','items':edit,'minItems':1}})
     fields={t['field']:field for t in focus['targets']}
     key=obj({k:{'enum':list({digest(t['key'][k]):t['key'][k]for t in focus['targets']}.values())}for k in focus['keys']})
@@ -1142,7 +1151,7 @@ def focused_prose_state(candidate,feedback,calls):
             'native_answer_rows':len(candidate.get('table')or[]),'complete_row_prose_rows':len(row_prose.get('rows')or[])if isinstance(row_prose,dict)else 0,
             'retained_patient_target_count':len(feedback['prose_repair'].get('targets')or[]),
             'patch_contract':{'draft_digest':digest(candidate),'fields':[{'path':'exact located path array','bind_literals':[{'literal':'exact unbound span','binding':{'result_view':'executed view','row':'zero-based native row','column':'scalar column'}}]}]},
-            'instruction':'Bind only the located headline/facts literals using repair_draft.fields. Preserve the entire original sentence, existing placeholders, quantities, dates and uncertainty. Do not rewrite other prose or regenerate the answer. Use exact executed scalar cells, or query their actual source/definition first; never copy draft constants into SQL. The complete native answer, any entity prose and all located failures remain retained and are recompiled after this patch. These edits establish no source meaning or clinical acceptance.'}
+            'instruction':'Bind only the located headline/facts literals using repair_draft.fields. Preserve the original sentence, existing placeholders, dates and uncertainty. Bind unchanged quantities normally. If the actual native quantity disproves a draft number, add correction_reason to that literal edit explaining its source and definition; code replaces only that number with the finite native value. Never bind a draft number to a different-scope quantity merely to pass. Do not rewrite other prose or regenerate the answer. Use exact executed scalar cells, or query their actual source/definition first; never copy draft constants into SQL. The complete native answer, any entity prose and all located failures remain retained and are recompiled after this patch. These edits establish no source meaning or clinical acceptance.'}
     targets=prose_repair_targets(candidate,feedback)
     if targets is None:return None
     keys=candidate['row_prose']['keys'];wanted={digest(t['key'])for t in targets}
@@ -1186,7 +1195,7 @@ def focused_prose_state(candidate,feedback,calls):
         'patch_contract':draft_state(candidate)['localized_prose_repair'],
         'instruction':'These are all located compiler failures, not a reduced patient cohort or a clinical conclusion. '
             'Repair only the named fields. Preserve each original sentence, numerical details, units, dates and uncertainty; '
-            'use scalar bindings rather than deleting facts. Number words may become the equivalent numeral. '
+            'use scalar bindings rather than deleting facts. Number words may become the equivalent numeral. To correct a wrong number, add correction_reason to its literal edit with the native source/definition justification; only that number may change, using a finite same-entity native scalar. Full source and coverage review still follow. '
             'For binding-only repairs prefer the compact field value {"bind_literals":[{"literal":"exact unbound text",'
             '"binding":{"result_view":"an executed view","column":"its scalar column",'
             '"where":[{"column":"record_id","value":"the exact source ID"}]}}]}. '

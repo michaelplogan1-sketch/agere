@@ -166,7 +166,7 @@ TOOLS = [
 BINDING_RULES = '''You repair compiler-located numeric references in an existing, retained answer.
 This operation does not interpret clinical meaning, plan a new investigation, or generate a replacement answer.
 The original question, population/date scope, native execution receipts and exact repair fields are in the execution state.
-Preserve every sentence, quantity, unit, date, entity, uncertainty and existing binding. Return only the specified
+Preserve every sentence, unit, date, entity, uncertainty and existing binding. Bind quantities without changing them unless actual native evidence disproves the draft number: then add correction_reason explaining the source and definition to that literal edit. Code changes only that number to its finite native scalar, with full source/coverage review still required. Return only the specified
 repair_draft with bind_literals entries and its exact draft_digest. An empty edit list retains unresolved work.
 
 Bind each named literal to an actual executed scalar whose meaning and scope match that sentence. A matching

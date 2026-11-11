@@ -1039,6 +1039,13 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                              for r in new_rows]
                     result.setdefault('prose_repairs',[]).append({'base_draft_digest':patch_proposal['repair_draft']['draft_digest'],
                         'proposal_digest':digest(patch_proposal),'changed_rows':sum(bool(n)for n in changed),
+                        'numeric_corrections':[{'path':field['path'],**edit}
+                            for field in patch_proposal['repair_draft'].get('fields',[])
+                            for edit in field.get('bind_literals',[])if 'correction_reason'in edit]
+                            +[{'key':row['key'],'field':field,**edit}
+                              for row in patch_proposal['repair_draft'].get('rows',[])
+                              for field,operation in row['fields'].items()if isinstance(operation,dict)
+                              for edit in operation.get('bind_literals',[])if 'correction_reason'in edit],
                         'changed_fields':sum(changed),
                         'changed_answer_fields':len(patch_proposal['repair_draft'].get('fields',[])),
                         'added_basis_rows':sum(len(r['basis'])-len(old_bases[digest(r['key'])])for r in new_rows),

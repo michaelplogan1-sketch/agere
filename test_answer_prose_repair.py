@@ -82,6 +82,36 @@ class AnswerProseRepair(unittest.TestCase):
         numeric=copy.deepcopy(self.draft);numeric['headline']=2
         self.assertIsNone(E.answer_prose_repair_targets(numeric,self.review(numeric)))
 
+    def test_explicit_wrong_quantity_correction_preserves_draft_and_requires_review(self):
+        draft=copy.deepcopy(self.draft);draft['headline']='Four clinics are represented; scope remains unverified.'
+        feedback=self.review(draft);edit=self.edit(draft)
+        item=edit['repair_draft']['fields'][0]['bind_literals'][0];item['literal']='Four'
+        with self.assertRaisesRegex(ValueError,'preserve the exact value'):
+            E.apply_prose_repair(edit,draft,calls=self.calls,feedback=feedback)
+        item['correction_reason']='The complete received clinic count is the native clinics scalar.'
+        fixed=E.apply_prose_repair(edit,draft,calls=self.calls,feedback=feedback)
+        native={c['result']['result_view']:c['result']for c in self.calls}
+        self.assertEqual(E.repair_rendered_value(fixed['headline'],native),'2 clinics are represented; scope remains unverified.')
+        self.assertEqual(fixed['table'],draft['table']);self.assertEqual(fixed['row_prose'],draft['row_prose'])
+        self.assertEqual(fixed['status'],'partial');self.assertNotEqual(self.review(fixed).get('status'),'confirmed')
+        for invalid in ('',False,None):
+            item['correction_reason']=invalid
+            with self.subTest(reason=invalid),self.assertRaises(ValueError):
+                E.apply_prose_repair(edit,draft,calls=self.calls,feedback=feedback)
+        item['correction_reason']='A reason does not authorize text or another entity.'
+        for scalar in ('two',True,None,float('nan')):
+            calls=copy.deepcopy(self.calls);calls[1]['result']['rows']=[[scalar]]
+            with self.subTest(scalar=scalar),self.assertRaises(ValueError):
+                E.apply_prose_repair(edit,draft,calls=calls,feedback=feedback)
+        item['literal']='clinics'
+        with self.assertRaises(ValueError):E.apply_prose_repair(edit,draft,calls=self.calls,feedback=feedback)
+        item['literal']='2030'
+        with self.assertRaises(ValueError):
+            E.bind_prose_literals('On 2030-01-01',{'bind_literals':[item]},native)
+        item['literal']='four';item['binding']={'result_view':'agere_result_2','row':0,'column':'clinics'}
+        with self.assertRaisesRegex(ValueError,'another entity'):
+            E.bind_prose_literals('four visits',{'bind_literals':[item]},native,key={'clinic_id':'A'})
+
     def test_facts_use_exact_keys_and_do_not_authorize_other_fields(self):
         draft=copy.deepcopy(self.draft);draft['facts']={'clinics.total':'2 reported clinics.'}
         feedback=self.review(draft)

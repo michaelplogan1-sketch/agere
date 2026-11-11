@@ -23,6 +23,34 @@ class Executor:
 
 
 class Harness(unittest.TestCase):
+    def test_population_comparison_normalizes_only_validated_derivative_identifiers(self):
+        import copy
+        from clinical_core.agere.clinical.membership import NATIVE_POPULATIONS
+        def fixture(elapsed):
+            parent={'columns':['patients'],'rows':[[2]],'executed_query':'SELECT COUNT(DISTINCT patient_id) patients FROM patient',
+                    'result_view':'agere_result_1','elapsed_s':elapsed}
+            proof={'binding':{'result_view':'agere_result_1','row':0,'column':'patients'},'source':{'source_digest':'authored'},
+                   'result_digest':H.digest(parent),'source_row_digest':H.digest([2]),'executed_query_digest':H.digest(parent['executed_query']),
+                   'patient_ids_digest':H.digest(['A','B']),'patient_count':2,'counted_source_rows':2,'selection_query':'SELECT patient_id FROM patient'}
+            scope={'id':'POP-'+H.digest(proof)[:24],'label':'Patients','proof':proof,'patient_ids':['A','B'],'patient_count':2,'counted_source_rows':2}
+            result={'schema':NATIVE_POPULATIONS,'source':proof['source'],'scopes':[scope],
+                    'rows':[{'population_id':scope['id'],'label':'Patients','patient_count':2,'patient_ids':json.dumps(['A','B'])}]}
+            return result,[{'name':'query_sql','result':parent}]
+        a,ac=fixture(1);b,bc=fixture(2);before=copy.deepcopy(a)
+        self.assertNotEqual(a,b)
+        self.assertEqual(H.comparison_result('inspect_populations',a,ac),H.comparison_result('inspect_populations',b,bc))
+        self.assertEqual(a,before)
+        for mutation in ('members','parent','source','table','id','proof'):
+            bad,parents=fixture(1)
+            if mutation=='members':bad['scopes'][0]['patient_ids']=['A','C']
+            elif mutation=='parent':parents[0]['result']['rows']=[[3]]
+            elif mutation=='source':bad['source']={'source_digest':'different'}
+            elif mutation=='table':bad['rows'][0]['patient_count']=3
+            elif mutation=='id':bad['scopes'][0]['id']='wrong'
+            else:bad['scopes'][0]['proof']['result_digest']='wrong'
+            with self.subTest(mutation=mutation):
+                self.assertEqual(H.comparison_result('inspect_populations',bad,parents).get('population_binding_validation'),'failed')
+
     def failed_native_checkpoint(self):
         actions,origin,checkpoint=self.recovery_checkpoint()
         failure={'name':'query_sql','input':{'sql':'SELECT * FROM missing_view'},

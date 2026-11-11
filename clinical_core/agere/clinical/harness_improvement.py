@@ -230,6 +230,8 @@ def comparison_result(name,value,prior_calls,*,_memo=None):
     comparison representation, and the original receipt is never rewritten.
     """
     result=semantic_result(value)
+    if name=='inspect_populations' and isinstance(value,dict):
+        return _population_comparison(value,result,prior_calls,_memo)
     if name!='query_sql' or not isinstance(value,dict):return result
     declared=value.get('declared_executed_query');views=value.get('read_views')
     if not isinstance(declared,str) or not isinstance(views,list) or not views:return result
@@ -262,6 +264,51 @@ def comparison_result(name,value,prior_calls,*,_memo=None):
         normalized={name:native_result_source(*output_table(semantic_result(sources[name]))) for name in views}
         result['executed_query']=portable_native_query(declared,normalized,views)
     except (ValueError,TypeError):return result
+    return result
+
+
+def _population_comparison(value,result,prior_calls,memo):
+    """Normalize derived IDs only after validating their complete raw binding.
+
+    The raw receipts and patient sets are never changed. Executor timing can
+    alter a parent digest and therefore a POP ID without changing membership;
+    both replayed parent outputs still undergo ordinary exact comparison.
+    """
+    from .membership import NATIVE_POPULATIONS
+    from .backstop_agent import output_table
+    if value.get('schema')!=NATIVE_POPULATIONS:return result
+    memo={}if memo is None else memo
+    sources={c['result']['result_view']:(i,c)for i,c in enumerate(prior_calls)
+             if isinstance(c.get('result'),dict)and c['result'].get('result_view')}
+    try:
+        expected_rows=[];ids={}
+        for raw,normalized in zip(value['scopes'],result['scopes']):
+            proof=raw['proof'];binding=proof['binding'];view=binding['result_view']
+            index,parent=sources[view];source=parent['result'];columns,rows=output_table(source)
+            row=rows[binding['row']];members=raw['patient_ids']
+            if (type(binding['row'])is not int or binding['row']<0
+                or proof['result_digest']!=digest(source)
+                or proof['source_row_digest']!=digest(row)
+                or proof['executed_query_digest']!=digest(source.get('declared_executed_query')or source.get('executed_query'))
+                or proof['source']!=value['source']
+                or proof['patient_ids_digest']!=digest(members)
+                or members!=sorted(set(members))
+                or len(members)!=raw['patient_count']or raw['patient_count']!=proof['patient_count']
+                or row[columns.index(binding['column'])]!=proof['patient_count']
+                or raw['counted_source_rows']!=proof['counted_source_rows']
+                or raw['id']!='POP-'+digest(proof)[:24]or raw['id']in ids):
+                raise ValueError('Invalid raw population proof')
+            expected_rows.append({'population_id':raw['id'],'label':raw['label'],
+                'patient_count':raw['patient_count'],'patient_ids':json.dumps(members)})
+            if view not in memo:
+                memo[view]=comparison_result(parent.get('name'),source,prior_calls[:index],_memo=memo)
+            normalized['proof']['result_digest']=digest(memo[view])
+            normalized['id']='POP-'+digest(normalized['proof'])[:24]
+            ids[raw['id']]=normalized['id']
+        if value['rows']!=expected_rows:raise ValueError('Population table differs from its complete proofs')
+        for row in result['rows']:row['population_id']=ids[row['population_id']]
+    except (KeyError,TypeError,ValueError,IndexError):
+        return {**semantic_result(value),'population_binding_validation':'failed'}
     return result
 
 
