@@ -136,6 +136,9 @@ class State(unittest.TestCase):
   tools.retain_result=lambda out:B.Tools.retain_result(tools,out)
   replay={'calls':[],'downstream_review_feedback':feedback,'recovered_read_only_actions':19};before=copy.deepcopy(replay)
   projected=E.recovery_context(replay,tools);ref=projected['downstream_review_native']
+  self.assertTrue(ref['result_view'].startswith('agere_recovery_feedback_'))
+  self.assertEqual(tools.seen,[])
+  self.assertTrue(E.operational_feedback_result(tools.executed_results[ref['result_view']]))
   self.assertEqual(json.loads(db.execute('SELECT feedback_json FROM "'+ref['result_view']+'"').fetchone()[0]),feedback)
   state=json.loads(E.messages(json.dumps({'question':'Review current evidence','execution_reuse':projected}),[])[0]['content'])
   self.assertLess(len(json.dumps(state)),8000)

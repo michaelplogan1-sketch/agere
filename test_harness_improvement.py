@@ -287,6 +287,20 @@ class Harness(unittest.TestCase):
                 with H.owned_recovery(actions,self.q,origin=origin):H.recover_actions(e,self.q)
             self.assertEqual(e.executed,[])
 
+    def test_origin_only_recovery_reserves_addresses_across_operational_gaps(self):
+        import copy
+        _,calls=self.trajectory(2)
+        calls[1]['result']['result_view']='agere_result_3'
+        actions=H.recovery_actions(calls);e=self.executor(wrong=True);reserved=[]
+        e.reserve_recovery_result=lambda result:reserved.append(copy.deepcopy(result))
+        with H.owned_recovery(actions,self.q,origin={'question':self.q,'calls':calls}):
+            out=H.recover_actions(e,self.q)
+        self.assertEqual([r['result_view']for r in reserved],['agere_result_1','agere_result_3'])
+        self.assertEqual(len(e.executed),2)
+        self.assertEqual(out['calls'][0]['result']['rows'],[[99]])
+        self.assertNotIn('resume_draft',out)
+        self.assertIsNone(out['final_answer'])
+
     def test_missing_origin_never_invents_callbacks_and_mutated_actions_fail_before_execution(self):
         import copy
         _,calls=self.trajectory(2);actions=[{k:copy.deepcopy(c[k])for k in ('name','input')}for c in calls]

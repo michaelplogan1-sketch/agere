@@ -90,7 +90,7 @@ def owned_recovery(actions,question=None,feedback=None,document_reviews=None,fie
     token=_OWNED_RECOVERY.set({'actions':actions,'question':question,'feedback':feedback,'document_reviews':document_reviews or [],
         'field_contracts':json.loads(json.dumps(contracts)),'call_provenance':provenance,'checkpoint':retained,
         'prior_review_notes':copy.deepcopy(prior_review_notes or []),
-        'origin_calls':origin['calls'] if retained else []} if actions is not None else None)
+        'origin_calls':copy.deepcopy(origin['calls']) if origin is not None else []} if actions is not None else None)
     try: yield
     finally: _OWNED_RECOVERY.reset(token)
 
@@ -512,7 +512,10 @@ def recover_actions(tools,question,context=None):
         if provenance and digest([action['name'],action['input']])!=provenance['origin_action_digest']:
             raise ValueError('Recovery action changed after its origin was bound')
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed during owned recovery')
-        if checkpoint and callable(getattr(tools,'reserve_recovery_result',None)):
+        # Literal recovery also needs its recorded addresses when no draft can
+        # yet be trusted. Operational views may have occupied intervening
+        # ordinals. Reserve only the name; always execute the action again.
+        if provenance and callable(getattr(tools,'reserve_recovery_result',None)):
             tools.reserve_recovery_result(saved['origin_calls'][index]['result'])
         try: value=tools({k:action[k]for k in ('name','input')})
         except (ValueError,sqlite3.Error) as exc:value={'error':str(exc)}

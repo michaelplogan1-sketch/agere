@@ -1288,10 +1288,17 @@ def recovery_context(replay,tools):
         if existing.get('rows')!=[dict(zip(columns,rows[0]))]:
             raise ValueError('Recovery feedback native view changed')
     else:
-        existing=tools.retain_result({'columns':columns,'rows':[dict(zip(columns,rows[0]))],
-            'truncated':False,'kind':'unverified_recovery_feedback','feedback_digest':native_digest,
-            'incomplete_dependencies':[{'authority':'unverified_review_feedback',
-                'reason':'Retained unfinished feedback/draft is operational state, not source evidence for an answer.'}]})
+        # Recovery feedback is operational state, just like review_reference.
+        # Give it a stable address without shifting executed source result IDs.
+        from .backstop_agent import define_result
+        name='agere_recovery_feedback_'+native_digest
+        existing={'columns':columns,'rows':[dict(zip(columns,rows[0]))],
+            'result_view':name,'truncated':False,'kind':'unverified_recovery_feedback',
+            'feedback_digest':native_digest,
+            'incomplete_dependencies':[{'result_view':name,'authority':'unverified_review_feedback',
+                'reason':'Retained unfinished feedback/draft is operational state, not source evidence for an answer.'}]}
+        tools.result_sources[name]=define_result(tools.semantic,name,columns,rows,receipt=existing)
+        tools.executed_results[name]=existing
     name=existing['result_view']
     reference={'result_view':name,'json_column':'feedback_json','feedback_digest':native_digest,
         'instruction':'Full original feedback and draft remain queryable with query_sql/json_extract. Draft values are unverified; bind any final answer to current executed results and complete verification.'}
