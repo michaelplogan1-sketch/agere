@@ -1,8 +1,8 @@
 {
-  "complete_population_program": "artifacts/agere-release-current-2026-11-08/acceptance/complete_population_program.json",
-  "longitudinal_prediction_path": "artifacts/agere-release-current-2026-11-08/acceptance/longitudinal_prediction_path.json",
-  "discovery_explanation_path": "artifacts/agere-release-current-2026-11-08/acceptance/discovery_explanation_path.json",
-  "outcome_and_financial_reconciliation": "artifacts/agere-release-current-2026-11-08/acceptance/outcome_and_financial_reconciliation.json",
+  "complete_population_program": "artifacts/agere-complete-roster-2026-11-10/native-capability-compatibility-v1/complete_population_program.json",
+  "longitudinal_prediction_path": "artifacts/agere-complete-roster-2026-11-10/native-capability-compatibility-v1/longitudinal_prediction_path.json",
+  "discovery_explanation_path": "artifacts/agere-complete-roster-2026-11-10/native-capability-compatibility-v1/discovery_explanation_path.json",
+  "outcome_and_financial_reconciliation": "artifacts/agere-complete-roster-2026-11-10/native-capability-compatibility-v1/outcome_and_financial_reconciliation.json",
   "evidence_change_reassessment": "artifacts/agere-core-completion-2026-11-09/capability-evidence-v1/evidence_change_reassessment.json",
   "source_and_adapter_conformance": "artifacts/agere-release-current-2026-11-08/acceptance/source_and_adapter_conformance.json",
   "economical_role_routing": "artifacts/agere-core-completion-2026-11-09/capability-evidence-v1/economical_role_routing.json",
