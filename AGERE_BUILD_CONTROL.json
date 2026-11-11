@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-11T21:02:41.615258+00:00",
+  "updated_at": "2026-11-11T21:32:24.906427+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -838,66 +838,71 @@
         {
           "path": "artifacts/agere-source-escalation-2026-11-11/delivery-receipt.json",
           "sha256": "e17bdd552ab57ca7c761c020304f42f44c790f10cf47b9e2bcb6d68efc6a9c87"
+        },
+        {
+          "path": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json",
+          "sha256": "2fd399c5d97a616d57d3dc97517a0f664d6aa1348ee987e651b8915af0f060ab"
         }
       ],
-      "blocker": "The retained Q07 answer is partial: two located patients still need source expansion or explicit unknowns for documentary findings and narrative clinician roles. Global composition has not passed a live whole-answer review. The corrected retained prompt is lossless offline but has not been accepted in a new provider recovery. Recovery callback provenance must be recovered from original action receipts, never invented. Independent contrasting references, local-student decision calibration, clinical/model qualification, full25 ordinary semantic acceptance, total economics and customer deployment remain open.",
+      "blocker": "Q07 is still partial, with source-support/input-construction obligations and a final computed-prose scalar-binding failure. The latest interrupted draft has no valid automatic recovery checkpoint because operational feedback entered its dependencies. Actual Claude subscription capacity is unavailable until its reported reset. Verification serialization latency, small-model input refusals and total economics need resolution; no favorable-economics claim. Contrasting independent reference decisions, active-student automatic decision calibration, model/clinical qualification, full25 semantic acceptance and customer deployment remain open.",
       "previous_blocker": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim.",
-      "next_action": "G5: resume the saved Q07 partial ANS-6299fe02edbcc08ea456fb22 from its retained 32 native actions and original receipts. Resolve only the located documentary_findings/narrative_letter_clinician_roles source gaps for SYN-628D43AA-67F and SYN-A63E644A-06E through existing source expansion or explicit source-scope unknowns; preserve all 65 patients, original question, source/date identity and prior evidence. Use the corrected navigation projection/lossless transport and original callback provenance; do not rerun the whole25 or repeat passing workflows. A complete live global review and independent source-bound reference decisions remain required; do not grant the preliminary student automatic authority or fit unchanged data. Preserve concurrent presentation candidates; scheduler PAUSED and no Git pushes.",
+      "next_action": "G5: provider work is stopped on the actual Claude subscription session limit (reported reset 8pm America/Chicago). Use the restored app for saved evidence and existing offline source-reference work. On provider availability, continue the original retained Q07 actions from recovery-origin-chain.json.gz using the corrected origin-only address reservation and immutable field contracts; the first25 native actions now reproduce exactly with zero provider calls. Preserve the original65 patients and repair only the remaining source/field dependencies. The latest interrupted draft is not automatically resumable because its native dependency check rejected operational feedback as evidence; do not bypass that guard. Resolve the named compiler/source gaps, then complete global review. Retain all ten areas/all25 and separate independent qualification, total economics and deployment. No broad passing rerun, unchanged-data retraining, extra model catalog, Git push or scheduler restart.",
       "current_engineering_delivery": {
-        "path": "artifacts/agere-source-escalation-2026-11-11/delivery-receipt.json",
-        "sha256": "e17bdd552ab57ca7c761c020304f42f44c790f10cf47b9e2bcb6d68efc6a9c87"
+        "path": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json",
+        "sha256": "2fd399c5d97a616d57d3dc97517a0f664d6aa1348ee987e651b8915af0f060ab"
       },
-      "latest_engineering_connection": "artifacts/agere-source-escalation-2026-11-11/delivery-receipt.json"
+      "latest_engineering_connection": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json"
     }
   ],
   "checkpoint": {
-    "kind": "selective_source_verification_and_native_execution_transport",
+    "kind": "native_recovery_address_preservation",
     "gate_id": "G5",
     "current_gate_id": "G5",
     "last_delivered_gate": "G5",
-    "product_commit": "69bf6454021d872c1860d0ec951e05f224039551",
-    "user_behavior_delta": "Unresolved complete source checks can selectively use the subscription frontier reviewer and return source-located repair feedback. Supported source cells can compose into a global review with exact digests. Saved investigator execution uses complete native navigation branch choices and lossless wire encoding; failed prompts retain accounting before dispatch. The current 65-patient partial answer is saved and reopenable.",
+    "product_commit": "ea0536a0bcaef0c888bb78b5de1b6b5910bdeedd",
+    "user_behavior_delta": "Owned continuation preserves exact native result addresses even without a valid draft checkpoint. Operational recovery feedback no longer consumes source-result ordinals. Current app restored; latest interrupted 65-patient answer and every earlier attempt retained.",
     "measured_failure_reduction": {
-      "retained_complete_source_packets_supported": 64,
-      "retained_complete_source_packets_total": 65,
-      "located_source_fault_preserved": true,
-      "recovery_answer_rows_preserved": 65,
-      "compiled_navigation_native_bytes": 3248699,
-      "corrected_reconstructed_wire_message_bytes": 349312,
-      "all_branch_choices_exact": true,
-      "roundtrip_exact": true,
-      "whole_workflow_completed": false
+      "before": "Origin-only recovery stopped after18 of32 retained actions: omitted operational result ordinal shifted a later join base and changed a recorded native error.",
+      "after": {
+        "replayed_native_actions": 25,
+        "original_addresses_and_expected_errors_exact": true,
+        "provider_calls": 0,
+        "seconds": 2.4371614579577
+      },
+      "checks": {
+        "related_checks_passed": 81,
+        "log": "artifacts/agere-source-escalation-2026-11-11/recovery-address-checks.log"
+      },
+      "not_established": "The remaining document/model continuation and whole-answer acceptance are not completed by this native prefix."
     },
     "evidence": [
-      "artifacts/agere-source-escalation-2026-11-11/live-receipt-attempt1.json",
-      "artifacts/agere-source-escalation-2026-11-11/live-receipt-attempt2.json",
-      "artifacts/agere-source-escalation-2026-11-11/live-receipt.json",
-      "artifacts/agere-source-escalation-2026-11-11/live-result.json",
-      "artifacts/agere-source-escalation-2026-11-11/composition-live-receipt.json",
-      "artifacts/agere-source-escalation-2026-11-11/composition-support.json",
-      "artifacts/agere-source-escalation-2026-11-11/composition-global-review.json",
-      "artifacts/agere-source-escalation-2026-11-11/fault-replay-receipt.json",
-      "artifacts/agere-source-escalation-2026-11-11/fault-replay-result.json",
-      "artifacts/agere-source-escalation-2026-11-11/repair-receipt.json",
-      "artifacts/agere-source-escalation-2026-11-11/repair-result.json.gz",
-      "artifacts/agere-source-escalation-2026-11-11/existing-assembly-test-failure.json",
-      "artifacts/agere-source-escalation-2026-11-11/transport-and-repair-sealed.log",
-      "artifacts/agere-source-escalation-2026-11-11/navigation-replay-final.log",
-      "artifacts/agere-source-escalation-2026-11-11/retained-state-wire-proof.json",
-      "artifacts/agere-source-escalation-2026-11-11/navigation-transport-proof.json",
-      "artifacts/agere-source-escalation-2026-11-11/saved-partial.json",
-      "artifacts/agere-source-escalation-2026-11-11/live-runtime-final.json",
-      "artifacts/agere-source-escalation-2026-11-11/delivery-receipt.json"
+      "artifacts/agere-source-escalation-2026-11-11/resume-receipt.json",
+      "artifacts/agere-source-escalation-2026-11-11/resume-native-run.json.gz",
+      "artifacts/agere-source-escalation-2026-11-11/resume-attempt-1.log",
+      "artifacts/agere-source-escalation-2026-11-11/recovery-origin-receipt.json",
+      "artifacts/agere-source-escalation-2026-11-11/recovery-origin-chain.json.gz",
+      "artifacts/agere-source-escalation-2026-11-11/recovery-provenance-observations.json",
+      "artifacts/agere-source-escalation-2026-11-11/saved-resumable-partial.json",
+      "artifacts/agere-source-escalation-2026-11-11/saved-limit-partial.json",
+      "artifacts/agere-source-escalation-2026-11-11/native-continuation-sample.txt",
+      "artifacts/agere-source-escalation-2026-11-11/native-address-recovery-attempt1-proof.json",
+      "artifacts/agere-source-escalation-2026-11-11/native-address-recovery-attempt2-proof.json",
+      "artifacts/agere-source-escalation-2026-11-11/native-address-recovery-proof.json",
+      "artifacts/agere-source-escalation-2026-11-11/native-address-recovery-result.json.gz",
+      "artifacts/agere-source-escalation-2026-11-11/native-recovery-prefix.log",
+      "artifacts/agere-source-escalation-2026-11-11/recovery-address-checks.log",
+      "artifacts/agere-source-escalation-2026-11-11/live-runtime-restored.json",
+      "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json"
     ],
-    "remaining_gap": "The retained Q07 answer is partial: two located patients still need source expansion or explicit unknowns for documentary findings and narrative clinician roles. Global composition has not passed a live whole-answer review. The corrected retained prompt is lossless offline but has not been accepted in a new provider recovery. Recovery callback provenance must be recovered from original action receipts, never invented. Independent contrasting references, local-student decision calibration, clinical/model qualification, full25 ordinary semantic acceptance, total economics and customer deployment remain open.",
-    "next_action": "G5: resume the saved Q07 partial ANS-6299fe02edbcc08ea456fb22 from its retained 32 native actions and original receipts. Resolve only the located documentary_findings/narrative_letter_clinician_roles source gaps for SYN-628D43AA-67F and SYN-A63E644A-06E through existing source expansion or explicit source-scope unknowns; preserve all 65 patients, original question, source/date identity and prior evidence. Use the corrected navigation projection/lossless transport and original callback provenance; do not rerun the whole25 or repeat passing workflows. A complete live global review and independent source-bound reference decisions remain required; do not grant the preliminary student automatic authority or fit unchanged data. Preserve concurrent presentation candidates; scheduler PAUSED and no Git pushes.",
-    "updated_at": "2026-11-11T21:02:41.615258+00:00",
+    "remaining_gap": "Q07 is still partial, with source-support/input-construction obligations and a final computed-prose scalar-binding failure. The latest interrupted draft has no valid automatic recovery checkpoint because operational feedback entered its dependencies. Actual Claude subscription capacity is unavailable until its reported reset. Verification serialization latency, small-model input refusals and total economics need resolution; no favorable-economics claim. Contrasting independent reference decisions, active-student automatic decision calibration, model/clinical qualification, full25 semantic acceptance and customer deployment remain open.",
+    "next_action": "G5: provider work is stopped on the actual Claude subscription session limit (reported reset 8pm America/Chicago). Use the restored app for saved evidence and existing offline source-reference work. On provider availability, continue the original retained Q07 actions from recovery-origin-chain.json.gz using the corrected origin-only address reservation and immutable field contracts; the first25 native actions now reproduce exactly with zero provider calls. Preserve the original65 patients and repair only the remaining source/field dependencies. The latest interrupted draft is not automatically resumable because its native dependency check rejected operational feedback as evidence; do not bypass that guard. Resolve the named compiler/source gaps, then complete global review. Retain all ten areas/all25 and separate independent qualification, total economics and deployment. No broad passing rerun, unchanged-data retraining, extra model catalog, Git push or scheduler restart.",
+    "updated_at": "2026-11-11T21:32:24.906427+00:00",
     "last_observation": {
-      "at": "2026-11-11T21:02:41.615258+00:00",
+      "at": "2026-11-11T21:32:24.906427+00:00",
       "source_frozen": false,
       "new_product_delivery": true,
-      "workflow_status": "partial",
-      "evidence": "artifacts/agere-source-escalation-2026-11-11/delivery-receipt.json"
+      "workflow_status": "partial_provider_limit",
+      "evidence": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json"
     },
     "whitepaper_delivery": {
       "receipt": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json",
@@ -6697,34 +6702,27 @@
       "reason": "One retained recovery returned prompt-too-long after 32 native actions. The raw navigation inventory reentered compiled execution state; corrected to the existing complete branch-selection projection and exact lossless transport. Provider acceptance after this fix is not yet demonstrated.",
       "evidence": "artifacts/agere-source-escalation-2026-11-11/delivery-receipt.json",
       "scope_impact": "No acceptance area removed; qualification and deployment remain distinct. Concurrent presentation edits excluded from backend seal."
+    },
+    {
+      "at": "2026-11-11T21:32:24.906427+00:00",
+      "gate": "G5",
+      "decision": "Stop provider work at actual subscription limit; correct the measured native address defect offline and retain incomplete Q07.",
+      "reason": "The full continuation did not reduce all final source/qualification gaps. Source replay address drift led to re-investigation and poor economics; use native ordinal reservation plus separate operational addresses before any further provider continuation. No new models or broad campaign.",
+      "evidence": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json",
+      "scope_impact": "All ten areas/all25 retained; independent qualification and deployment remain separate."
     }
   ],
   "unsealed_work": {
-    "status": "concurrent_presentation_candidates",
+    "status": "unfinished_source_work_with_external_provider_dependency",
     "source_frozen": false,
     "active_jobs": [],
-    "last_completed_receipt": "artifacts/agere-source-escalation-2026-11-11/delivery-receipt.json",
+    "last_completed_receipt": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json",
     "paths_outside_backend_seal": [
-      "clinical_core/agere/ask_view.py",
-      "clinical_core/agere/assets/answer_presentation.css",
-      "clinical_core/agere/assets/answer_presentation.js",
-      "clinical_core/agere/assets/explore.html",
-      "clinical_core/agere/assets/explore.js",
-      "clinical_core/agere/clinical/learning_workbench.py",
-      "clinical_core/agere/deliverables/action_center.html",
-      "clinical_core/agere/deliverables/action_center.js",
-      "clinical_core/agere/deliverables/action_center.py",
-      "clinical_core/agere/deliverables/patient_dashboard.py",
-      "clinical_core/agere/deliverables/saved_report.py",
-      "clinical_core/agere/deliverables/workspace_skin.css",
-      "test_ask_view.py",
       "AGERE_STORAGE_PLAN.md",
-      "clinical_core/agere/application_shell.py",
-      "docs/agere/reviews/2026-11-10-audit-response.md",
-      "test_connected_site.py",
-      "test_patient_workspace.py"
+      "docs/agere/reviews/2026-11-10-audit-response.md"
     ],
-    "remaining_verification": "Backend increment sealed with explicit partial-workflow limitations. Concurrent presentation changes remain identifiable and are not accepted by this backend receipt."
+    "remaining_verification": "Q07 is still partial, with source-support/input-construction obligations and a final computed-prose scalar-binding failure. The latest interrupted draft has no valid automatic recovery checkpoint because operational feedback entered its dependencies. Actual Claude subscription capacity is unavailable until its reported reset. Verification serialization latency, small-model input refusals and total economics need resolution; no favorable-economics claim. Contrasting independent reference decisions, active-student automatic decision calibration, model/clinical qualification, full25 semantic acceptance and customer deployment remain open.",
+    "separate_presentation_commit_preserved": "9efe9b37d1ccd36cd0b8cb2197d12d9b8c0b5bae"
   },
   "current_visual_request": {
     "status": "completed",
@@ -6760,7 +6758,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G5: resume the saved Q07 partial ANS-6299fe02edbcc08ea456fb22 from its retained 32 native actions and original receipts. Resolve only the located documentary_findings/narrative_letter_clinician_roles source gaps for SYN-628D43AA-67F and SYN-A63E644A-06E through existing source expansion or explicit source-scope unknowns; preserve all 65 patients, original question, source/date identity and prior evidence. Use the corrected navigation projection/lossless transport and original callback provenance; do not rerun the whole25 or repeat passing workflows. A complete live global review and independent source-bound reference decisions remain required; do not grant the preliminary student automatic authority or fit unchanged data. Preserve concurrent presentation candidates; scheduler PAUSED and no Git pushes.",
+  "next_action": "G5: provider work is stopped on the actual Claude subscription session limit (reported reset 8pm America/Chicago). Use the restored app for saved evidence and existing offline source-reference work. On provider availability, continue the original retained Q07 actions from recovery-origin-chain.json.gz using the corrected origin-only address reservation and immutable field contracts; the first25 native actions now reproduce exactly with zero provider calls. Preserve the original65 patients and repair only the remaining source/field dependencies. The latest interrupted draft is not automatically resumable because its native dependency check rejected operational feedback as evidence; do not bypass that guard. Resolve the named compiler/source gaps, then complete global review. Retain all ten areas/all25 and separate independent qualification, total economics and deployment. No broad passing rerun, unchanged-data retraining, extra model catalog, Git push or scheduler restart.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6769,7 +6767,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-source-escalation-2026-11-11/delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -6849,8 +6847,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 76802,
-  "owned_server_session": 78353,
+  "owned_server_pid": 79865,
+  "owned_server_session": 82308,
   "last_run_observation": {
     "at": "2026-11-08T23:35:47.474869+00:00",
     "no_active_jobs": true,
@@ -7075,7 +7073,7 @@
     ]
   },
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
-  "latest_receipt": "artifacts/agere-source-escalation-2026-11-11/delivery-receipt.json",
+  "latest_receipt": "artifacts/agere-source-escalation-2026-11-11/recovery-followthrough-receipt.json",
   "code_only_storage_exception": {
     "authorization": "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
     "scope": "One code-only archive and fresh-code rehearsal from the linked proposal; existing source/model/Python/work/ledger stores referenced, never copied. General60GBguard unchanged.",
@@ -7140,5 +7138,14 @@
     "integration_receipt": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
     "presentation_commit": "5619c1988e6e3e1196f7d6c9309a6e1b7eaaf7b6",
     "presentation_receipt": "artifacts/agere-output-decision-design-2026-11-11/delivery-receipt.json"
+  },
+  "provider_credit_status": {
+    "at": "2026-11-11T21:26:40.577436+00:00",
+    "provider": "claude_subscription",
+    "status": "session_limit_reached",
+    "reported_reset": "8pm America/Chicago",
+    "evidence": "artifacts/agere-source-escalation-2026-11-11/resume-receipt.json",
+    "provider_work_stopped": true,
+    "offline_work_continues": true
   }
 }
