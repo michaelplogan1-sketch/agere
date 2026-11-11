@@ -269,6 +269,8 @@ def mark_target(stack,payload):
 
 def list_items(stack,*,lane='',stream='',offset=0):
     if type(offset) is not int or not 0<=offset<=100000 or not isinstance(lane,str) or not isinstance(stream,str):raise ValueError('Bounded queue filters required')
+    if not (Path(stack)/'learning-queue-link.json').exists():
+        return {'status':'not_attached','rows':[],'total':0,'offset':offset,'limit':12,'new_paid_api_calls':0}
     _,run,_,items=connected(stack)
     selected=[r for r in items if (not lane or r['selection_lane']==lane) and (not stream or r['stream']==stream)]
     db=reader.db(stack)
