@@ -59,3 +59,59 @@ console.log(JSON.stringify({checks:'passed',rows:57,pages:4,unknown_zero_empty_d
 '''
   result=subprocess.run([shutil.which('node'),'-e',script],text=True,capture_output=True)
   self.assertEqual(result.returncode,0,result.stderr)
+
+class DecisionBrief(unittest.TestCase):
+ def test_actions_remain_bound_to_returned_suggestions_and_workflow_requirements(self):
+  script=(Path(ask_view.__file__).parent/'assets/answer_presentation.js').read_text()
+  setup=r'''
+const assert=require('node:assert/strict');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isNum=v=>typeof v==='number'&&isFinite(v),fmt=String,state={seq:0};
+const cols=rows=>[...new Set(rows.flatMap(r=>Object.keys(r)))];
+'''
+  checks=r'''
+const t={question:'Who needs follow-up?',archiveBlocked:true,data:{action_context:{id:'ANS-000000000000000000000001',invalidated:true},answer:{status:'partial',verification:'unverified',headline:'Two source records returned.',patient_ids:['A','B'],table:[{patient_id:'A',on_therapy:0},{patient_id:'B',on_therapy:null}],missing:['Responsible team is unknown.']}}};
+const before=JSON.stringify(t);
+let out=decisionActions(t);
+assert.match(out,/No intervention plan returned/);
+assert.match(out,/Responsible team is unknown/);
+assert.match(out,/data-decision-draft="refresh"/);
+assert.doesNotMatch(out,/data-suggestion-index|Start treatment|Enroll now/);
+assert.match(decisionHero(t),/>2<\/strong>/);
+assert.match(decisionHero(t),/Saved answer needs updating/);
+assert.equal(JSON.stringify(t),before);
+// These are recorded operational suggestions; the UI must retain the exact scope and qualification.
+t.archiveBlocked=false;t.data.action_context.invalidated=false;
+t.data.answer.table=[{patient_id:'A',suggested_action:'review_access',reason_detail:'Source reports a transport barrier.'},{patient_id:'B',suggested_action:'review_access',reason_detail:'Source needs verification.'},{patient_id:'B',suggested_action:'check_records',reason_detail:null}];
+const actionBefore=JSON.stringify(t.data.answer);
+assert.equal(recordedActionGroups(t.data.answer).length,2);
+assert.equal(recordedActionGroups(t.data.answer)[0].rows.length,2);
+out=decisionActions(t);
+assert.match(out,/Needs evidence review/);
+assert.match(out,/Recorded in 2 returned rows/);
+assert.match(out,/data-decision-draft="options"/);
+assert.doesNotMatch(out,/Recommended for all|Approved|Verified intervention|eligible/);
+assert.match(suggestionDetails(t,0),/Source reports a transport barrier/);
+assert.match(suggestionDetails(t,0),/Source needs verification/);
+assert.doesNotMatch(suggestionDetails(t,0),/check_records/);
+assert.equal(JSON.stringify(t.data.answer),actionBefore);
+const programs={evidence_review:{label:'Received review workflow',requirements:['Exact prerequisite <unsafe>']}};
+out=workflowDetails(t,programs);
+assert.match(out,/Received review workflow/);
+assert.match(out,/Exact prerequisite &lt;unsafe&gt;/);
+assert.match(out,/availability does not mean they were recommended/);
+assert.doesNotMatch(out,/PharmD|Remote monitoring/); // No client-side program catalog is invented.
+assert.match(out,/#cohort/);
+const selected=workflowDetails(t,{...programs,other:{label:'Other program',requirements:[]}},'evidence_review');
+assert.match(selected,/Received review workflow/);assert.doesNotMatch(selected,/Other program/);assert.match(selected,/View all review workflows/);
+// Aggregate outputs keep their native value, rather than substituting their row count.
+const aggregate={data:{answer:{answer_type:'count',count:10,table:[{count:10}]}}};
+assert.match(decisionHero(aggregate),/>10<\/strong>/);
+assert.doesNotMatch(answerSummary(aggregate.data.answer,{noMetric:true}),/result-at-a-glance/);
+assert.match(decisionHero({data:{answer:{answer_type:'count',count:0}}}),/>0<\/strong>/);
+assert.match(decisionHero({data:{answer:{answer_type:'count',count:null}}}),/>—<\/strong>/);
+assert.match(decisionHero({data:{answer:{answer_type:'patient_set',count:0,patient_ids:[]}}}),/patients selected/);
+console.log('Recorded suggestions, missing plan, workflow prerequisites and exact counts passed.');
+'''
+  result=subprocess.run([shutil.which('node'),'-e',setup+script+checks],text=True,capture_output=True)
+  self.assertEqual(result.returncode,0,result.stderr)

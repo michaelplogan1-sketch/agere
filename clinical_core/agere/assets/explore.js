@@ -98,7 +98,7 @@ async function openSavedContext(id){
  try{
   const d=await fetchJSON('/api/stack/action-context?context='+encodeURIComponent(id));if(epoch!==conversationEpoch)return;
   const c=d.context;state.cid=null;store.set('agere-conversation',null);
-  const t={question:c.original_question||c.question,resolved:c.question,archive:true,archiveBlocked:c.stale||c.invalidated,data:{workflow:d.workflow?.steps||[],answer:c.answer,graph:c.graph,results:c.results,planner_receipt:c.planner_receipt,planning_economics:c.planning_economics,action_context:{id:c.id,patients:c.patient_ids.length,input_patients:c.input_patients,result_scope_available:c.result_scope_available,population_scopes:c.population_scopes,population_scope_discovery_available:c.population_scope_discovery_available},new_paid_api_calls:c.planner_receipt?.new_paid_api_calls}};
+  const t={question:c.original_question||c.question,resolved:c.question,archive:true,archiveBlocked:c.stale||c.invalidated,data:{workflow:d.workflow?.steps||[],review_programs:d.programs||{},answer:c.answer,graph:c.graph,results:c.results,planner_receipt:c.planner_receipt,planning_economics:c.planning_economics,action_context:{id:c.id,stale:c.stale,invalidated:c.invalidated,source_review_required:c.source_review_required,supports_patient_work:c.supports_patient_work,patients:c.patient_ids.length,input_patients:c.input_patients,result_scope_available:c.result_scope_available,population_scopes:c.population_scopes,population_scope_discovery_available:c.population_scope_discovery_available},new_paid_api_calls:c.planner_receipt?.new_paid_api_calls}};
   t.archiveNotice=c.invalidated?'This saved answer was invalidated. Its history is available, but it cannot be used for new work or scoped follow-ups.':c.stale?'The warehouse has changed since this answer. Start a new analysis to use current data.':null;
   state.turns=[t];renderTurn(0);
  }catch(e){if(epoch!==conversationEpoch)return;$('#answer').innerHTML='<h2 class="headline">This analysis couldn’t open.</h2><p>'+esc(e.message)+'</p><button class="btn" data-page="saved">Back to saved analyses</button>'}
@@ -147,6 +147,24 @@ function setupExplorer(){
   if(b.dataset.recordToggle){const row=document.getElementById(b.dataset.recordToggle),open=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',String(open));row.hidden=!open;b.textContent=open?'Hide details':'View details'}
   if(b.dataset.recordPage!=null){renderResultData($('#result-search').value,+b.dataset.recordPage);$('#result-data').scrollIntoView({block:'start',behavior:'smooth'})}
  });
+ document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-decision-draft],[data-suggestion-index],[data-review-workflows],[data-close-decision-dialog]');if(!b)return;
+  const t=state.turns[state.active],dialog=$('#decision-dialog');if(!t)return;
+  if(b.hasAttribute('data-close-decision-dialog')){dialog.close();return}
+  if(b.dataset.decisionDraft){
+   if(b.dataset.decisionDraft==='refresh'){const q=t.resolved||t.question;draftQuestion(q)}
+   else{$('#q').value=decisionState(t).patient?'Which interventions are supported by the evidence in this answer? For each option, explain who it may apply to, the evidence, prerequisites, and what remains unknown.':'Which next actions are supported by this answer? Compare the options, their evidence, prerequisites, and remaining unknowns.';$('#q').focus();$('#q').scrollIntoView({block:'center',behavior:'smooth'})}
+   return;
+  }
+  if(!dialog.open){lastDialogFocus=b;dialog.showModal()}
+  if(b.dataset.suggestionIndex!=null){$('#decision-dialog-body').innerHTML=suggestionDetails(t,+b.dataset.suggestionIndex);return}
+  $('#decision-dialog-body').innerHTML='<h2 id="decision-dialog-title">Opening review workflows…</h2>';
+  try{let programs=t.data.review_programs;
+   if(!programs){const d=await fetchJSON('/api/stack/action-context?context='+encodeURIComponent(t.data.action_context.id));programs=d.programs||{};t.data.review_programs=programs}
+   if(state.turns[state.active]===t&&dialog.open)$('#decision-dialog-body').innerHTML=workflowDetails(t,programs,b.dataset.reviewWorkflows);
+  }catch(error){if(dialog.open)$('#decision-dialog-body').innerHTML='<h2 id="decision-dialog-title">Workflows couldn’t open</h2><p>'+esc(error.message)+'</p>'}
+ });
+ document.addEventListener('close',e=>{if(e.target.id==='decision-dialog')lastDialogFocus?.focus()},{capture:true});
  document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();if(!state.busy){showPage('explore');$('#q').focus()}}
   const tab=e.target.closest('[data-answer-tab]');
