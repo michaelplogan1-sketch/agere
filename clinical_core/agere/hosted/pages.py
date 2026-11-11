@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import html as _html
 import json
+from pathlib import Path
 
 from . import brand
 
@@ -183,7 +184,28 @@ def app():
             'ask_title': brand.ASK_TITLE, 'oap': _oap_terms()}
     body = '<header class="top" id="orgbar"></header><main id="view"><section class="section"><div class="wrap muted">Loading…</div></section></main>'
     boot = 'const APP=' + json.dumps(data).replace('</', '<\\/') + ';\n'
-    return _page(f'{NAME}', body, boot + APP_JS + '\nloadMe().then(route).catch(e=>{if(e.status!==401)document.getElementById("view").innerHTML=\'<p class="err wrap">\'+esc(e.message)+\'</p>\'});')
+    assets = Path(__file__).parents[1] / 'assets'
+    presentation = ('const ResultView=(()=>{const state={seq:0};'
+        'const isNum=v=>typeof v==="number"&&Number.isFinite(v);'
+        'const cols=rows=>[...new Set(rows.flatMap(r=>Object.keys(r)))];\n'
+        + (assets/'answer_presentation.js').read_text()
+        + '\nreturn {summary:answerSummary,table:presentationTable,limits:resultLimitations,sources:sourceDetails,columns:cols};})();\n')
+    page = _page(f'{NAME}', body, boot + presentation + APP_JS + '\nloadMe().then(route).catch(e=>{if(e.status!==401)document.getElementById("view").innerHTML=\'<p class="err wrap">\'+esc(e.message)+\'</p>\'});')
+    return page.replace('<html lang="en">', '<html lang="en" data-theme="light">').replace('</head>',
+        '<style>' + (assets/'answer_presentation.css').read_text() + HOSTED_ANSWER_CSS + '</style></head>')
+
+
+HOSTED_ANSWER_CSS = r'''
+.hosted-answer{--fg:#262633;--line:#e4e2e9;--muted:#625f6e;background:#fff;border-radius:16px;padding:28px;min-width:0}
+.hosted-answer h2{font-size:24px;line-height:1.3;margin:0 0 14px}.hosted-answer .answer-question{font-size:14px;color:#62576e;border-left:3px solid #c6b7df;padding-left:14px;line-height:1.7}
+.hosted-answer .answer-intro{font-size:16px;line-height:1.8;max-width:85ch}.hosted-answer .answer-status{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 24px}.hosted-answer .num{font-size:48px;color:#583b87}
+.hosted-answer .result-at-a-glance{margin-top:20px}.hosted-answer .answer-findings,.hosted-answer .result-limitations{margin-top:20px}
+.hosted-answer .result-records{margin:24px 0}.hosted-answer .result-records>summary{font-size:16px;min-height:44px}.hosted-answer #hostedRecords{min-width:0}
+.hosted-answer .result-search{margin-top:16px}.hosted-answer .column-toggle input{width:16px;margin:0}.hosted-answer [hidden]{display:none!important}
+.hosted-answer .trace{margin:20px 0}.hosted-answer .method-disclosure{margin:24px 0}.hosted-answer .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.hosted-answer details pre{max-height:420px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}.hosted-answer .card{background:#faf9fc}.hosted-answer .answer-state{margin:16px 0}
+@media(max-width:650px){.hosted-answer{padding:18px}.hosted-answer h2{font-size:21px}.hosted-answer .result-table:not(.all-columns) tr:has(>td:first-child) td:first-child{display:table-cell}.hosted-answer .result-search button{min-height:44px}}
+'''
 
 
 APP_JS = r'''
@@ -280,25 +302,32 @@ function traceCells(d,q){const w=STATE.ws||{};const m=methodOf(d);const ans=d.an
   ['03','Compile',m?m.kind:'—',(d.operations||[]).slice(0,3).join(', ')||d.route||''],['04','Compute',ans?(('count' in ans)?'count':('value' in ans)?'value':ans.patient_ids?ans.patient_ids.length+' patients':'table'):'no answer',d.pipeline||''],
   ['05','Check',cert?'certified':(d.confidence!=null?'confidence '+fmt(d.confidence):(d.decision||'—')),cert&&typeof cert==='object'?(cert.tier||cert.route||'')+(cert.error_bound!=null?' ± '+cert.error_bound:''):''],
   ['06','Save',d.action_context?'saved with evidence':'question history',d.cost_usd==null?'cost unknown':'$'+Number(d.cost_usd).toFixed(3)]]}
-function showAnswer(d,q,secs){const a=d.answer;let main='',list='';
- if(d.clarification&&d.clarification.status==='pending'){main=clarificationView(d.clarification)}
- else if(!a){main=`<div class="notice">No confident answer. ${esc((d.decline&&d.decline.kind)||'')} ${esc(d.headline||d.interpretation||'')}</div>${(d.decline&&d.decline.readings||[]).length?'<p class="muted">Possible readings:</p><ul>'+d.decline.readings.map(r=>'<li>'+esc(typeof r==='string'?r:JSON.stringify(r))+'</li>').join('')+'</ul>':''}`}
- else if('count' in a||'value' in a){const v=a.count??a.value;main=`<div class="num">${typeof v==='number'?v.toLocaleString(undefined,{maximumFractionDigits:2}):esc(v)}</div>`}
- else if(a.patient_ids){const ids=a.patient_ids,cid=d.customer_ids||{};main=`<div class="num">${ids.length.toLocaleString()}</div><p class="muted">patients</p>
-  `;const row=(p,i)=>`<tr><td class="mono">${i+1}</td><td class="mono">${esc(p)}</td><td class="mono">${esc(cid[p]||'')}</td></tr>`;
-  list=`<p class="eyebrow" style="margin-top:20px">PATIENTS</p><div class="tablewrap"><table><tr><th>#</th><th>Patient</th><th>Customer id</th></tr>${ids.slice(0,8).map(row).join('')}</table></div>
-  ${ids.length>8?`<details><summary>Show ${Math.min(ids.length,200)-8} more${ids.length>200?' (first 200 of '+ids.length.toLocaleString()+')':''}</summary><div class="tablewrap"><table>${ids.slice(8,200).map((p,i)=>row(p,i+8)).join('')}</table></div></details>`:''}`}
- else if(a.table){main=`<div class="tablewrap"><table><tr><th>Group</th><th class="r">Value</th></tr>${a.table.slice(0,200).map(r=>`<tr><td>${esc((r.keys||[]).join(' · '))}</td><td class="r mono">${fmt(r.value)}</td></tr>`).join('')}</table></div>`}
- const m=methodOf(d),L=layerOf(d);
- return `<section class="card" style="margin-top:24px"><p class="eyebrow">ANSWER EXPLORER</p>${d.headline?`<h3>${esc(d.headline)}</h3>`:''}<p class="eyebrow">${esc(d.status||d.decision||'Answer')}</p>${answerState(d)}${main}
- <div class="trace">${traceCells(d,q).map((c,i)=>`<div class="${i<4||d.answer?'on':''}"><small>${c[0]} / ${c[1]}</small><b>${esc(c[2])}</b><span>${esc(c[3])}</span></div>`).join('')}</div>
- <div class="grid g3"><div><p class="eyebrow">DEFINITION & SCOPE</p><p class="small">${definitionText(d,q)}</p></div>
- <div><p class="eyebrow">LAYER</p><p class="small"><b>${esc(L.name)}</b><br><span class="muted mono">${esc(L.detail)}</span></p></div>
- <div><p class="eyebrow">CONFIDENCE · COST</p><p class="small">${d.certified?'<span class="pill ok">certified</span> ':''}${d.confidence!=null?'confidence '+fmt(d.confidence)+'<br>':''}${d.cost_usd==null?'cost unknown':'$'+Number(d.cost_usd).toFixed(4)}${d.new_paid_api_calls!=null?' · '+fmt(d.new_paid_api_calls)+' paid calls':''} · ${secs.toFixed(1)} s${d.reopened?' to reopen · no analysis replay':''}</p></div></div>
- ${savedFollowup(d)}${reportView(d)}${list}${m?`<details style="margin-top:12px"><summary>${esc(m.kind)}</summary><pre>${esc(m.text)}</pre></details>`:''}
- ${d.certified&&typeof d.certified==='object'?`<details><summary>Certificate</summary><pre>${esc(JSON.stringify(d.certified,null,1))}</pre></details>`:''}
- ${d.plan?`<p><a class="btn ghost" href="#/w/${encodeURIComponent(STATE.slug)}/act">Open the plan in Plan & act</a></p>`:''}
- <details><summary>Full response</summary><pre>${esc(JSON.stringify(Object.assign({},d,{plan:d.plan?'(see Plan & act)':undefined}),null,1).slice(0,20000))}</pre></details></section>`}
+function answerRows(a,d){
+ if(Array.isArray(a?.table))return a.table.some(r=>Array.isArray(r.keys)&&!('group' in r))?a.table.map(r=>Array.isArray(r.keys)&&!('group' in r)?{group:r.keys.map(v=>v==null?'Unknown':typeof v==='object'?JSON.stringify(v):String(v)).join(' · '),...r}:r):a.table;
+ return (a?.patient_ids||[]).map(id=>({patient_id:id,...(d.customer_ids?.[id]?{customer_id:d.customer_ids[id]}:{})}));
+}
+function answerCSV(rows){const keys=ResultView.columns(rows),cell=v=>'"'+String(v==null?'':typeof v==='object'?JSON.stringify(v):v).replace(/"/g,'""')+'"';return [keys.map(cell).join(','),...rows.map(row=>keys.map(k=>cell(row[k])).join(','))].join('\r\n')}
+function showAnswer(d,q,secs){const a=d.answer,rows=answerRows(a,d);let main='';
+ if(d.clarification?.status==='pending')main=clarificationView(d.clarification);
+ else if(!a)main=`<div class="notice">${esc(d.headline||d.interpretation||'More information is needed to answer this question.')}</div>${(d.decline?.readings||[]).length?'<p class="muted">Possible meanings:</p><ul>'+d.decline.readings.map(r=>'<li>'+esc(typeof r==='string'?r:JSON.stringify(r))+'</li>').join('')+'</ul>':''}`;
+ else {
+  if('count' in a||'value' in a){const v=a.count??a.value;main=`<div class="num">${v==null?'Unknown':esc(typeof v==='number'?v.toLocaleString():v)}</div><p class="muted">${esc(a.unit||('count' in a?'Count returned':'Computed value'))}</p>`}
+  main+=ResultView.summary({...a,table:rows})+ResultView.limits(a);
+  if(rows.length)main+=`<details class="result-records" id="hostedRecordSection"><summary>Explore all ${fmt(rows.length)} records</summary><div class="result-search"><input id="hostedRecordSearch" type="search" aria-label="Search returned records" placeholder="Search names, identifiers or any field"><label class="column-toggle"><input id="hostedAllColumns" type="checkbox">All columns</label><button class="chip" id="hostedCSV">Download all ${fmt(rows.length)} rows</button></div><p id="hostedRecordStatus" class="result-status" role="status"></p><div id="hostedRecords">${ResultView.table(rows,{...a,table:rows})}</div></details>`;
+ }
+ const m=methodOf(d),L=layerOf(d),status=d.status||d.decision||'Answer';
+ return `<section class="card hosted-answer" style="margin-top:24px"><p class="answer-question">${esc(q)}</p><h2>What the answer shows</h2>${a&&d.headline?`<p class="answer-intro">${esc(d.headline)}</p>`:''}<div class="answer-status"><span class="pill">${esc(label(status))}</span>${a?.verification==='unverified'?'<span class="pill">Verification incomplete</span>':''}<span class="small muted">${d.cost_usd==null?'API cost unknown':'API estimate $'+Number(d.cost_usd).toFixed(4)} · ${secs.toFixed(1)} s${d.reopened?' to reopen · no analysis replay':''}</span></div>${answerState(d)}${main}
+ <details class="method-disclosure"><summary>Method, sources &amp; scope</summary>${a?ResultView.sources(a):''}<div class="trace">${traceCells(d,q).map((c,i)=>`<div class="${i<4||d.answer?'on':''}"><small>${c[0]} / ${c[1]}</small><b>${esc(c[2])}</b><span>${esc(c[3])}</span></div>`).join('')}</div><div class="grid g3"><div><p class="eyebrow">DEFINITION &amp; SCOPE</p><p class="small">${definitionText(d,q)}</p></div><div><p class="eyebrow">EXECUTION</p><p class="small"><b>${esc(L.name)}</b><br>${esc(L.detail)}</p></div><div><p class="eyebrow">USAGE</p><p class="small">${d.new_paid_api_calls==null?'New model calls unknown':fmt(d.new_paid_api_calls)+' new model calls'}. Local compute and review costs are not included in the API estimate.</p></div></div>${m?`<details><summary>${esc(m.kind)}</summary><pre>${esc(m.text)}</pre></details>`:''}${d.certified?`<details><summary>Recorded certificate</summary><pre>${esc(JSON.stringify(d.certified,null,2))}</pre></details>`:''}</details>
+ ${savedFollowup(d)}${reportView(d)}${d.plan?`<p><a class="btn ghost" href="#/w/${encodeURIComponent(STATE.slug)}/act">Open the plan in Plan &amp; act</a></p>`:''}<details><summary>Original response</summary><pre>${esc(JSON.stringify(Object.assign({},d,{plan:d.plan?'(see Plan & act)':undefined}),null,1))}</pre></details></section>`;
+}
+function bindAnswerRecords(d){const a=d.answer,rows=answerRows(a,d),box=$('hostedRecords');if(!box)return;let page=0;
+ const render=()=>{const query=$('hostedRecordSearch').value.trim().toLocaleLowerCase(),found=query?rows.filter(row=>JSON.stringify(row).toLocaleLowerCase().includes(query)):rows;
+  box.innerHTML=ResultView.table(found,{...a,table:rows},{page,allColumns:$('hostedAllColumns').checked});$('hostedRecordStatus').textContent=fmt(found.length)+' of '+fmt(rows.length)+' records shown. Download includes every record.'};
+ $('hostedRecordSearch').oninput=()=>{page=0;render()};$('hostedAllColumns').onchange=render;
+ box.onclick=e=>{const toggle=e.target.closest('[data-record-toggle]'),pager=e.target.closest('[data-record-page]');if(toggle){const el=$(toggle.dataset.recordToggle);el.hidden=!el.hidden;toggle.setAttribute('aria-expanded',String(!el.hidden));toggle.textContent=el.hidden?'View details':'Hide details'}if(pager){page=Number(pager.dataset.recordPage);render()}};
+ document.querySelectorAll('#ans [data-open-answer-tab]').forEach(b=>b.onclick=()=>{const section=$('hostedRecordSection');section.open=true;section.scrollIntoView({block:'start',behavior:'smooth'});$('hostedRecordSearch').focus({preventScroll:true})});
+ $('hostedCSV').onclick=()=>{const blob=new Blob([answerCSV(a.table||rows)],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='wollstonecraft-results.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};render();
+}
 function answerState(d){const c=d.saved_context;
  const warning=d.context_error||(c&&(c.stale||c.invalidated||c.source_review_required||((c.source_disposition||{}).status==='unavailable'))?'Saved evidence needs review. This is the original answer; data or verification has changed.':'');
  return (warning?`<div class="notice err">${esc(warning)}</div>`:'')+(d.action_context?`<p class="small">Saved answer <span class="mono">${esc(d.action_context.id)}</span> <button class="chip" data-reopen="${esc(d.action_context.id)}">Reopen evidence</button></p>`:'')+
@@ -319,7 +348,7 @@ function savedFollowup(d){const ref=d.action_context,c=d.saved_context||ref;if(!
  const scopes=[...(c.result_scope_available?[{id:'result',label:'Patients in this answer'}]:[]),...(c.input_patients!=null?[{id:'input',label:'Original input population'}]:[]),...(c.population_scopes||[]).map(s=>({id:'population:'+s.id,label:s.label+' · '+s.patients+' patients'}))];
  if(!scopes.length)return '';const blocked=c.stale||c.invalidated||c.source_review_required||(c.source_disposition||{}).status==='unavailable';
  return `<div class="card" style="margin-top:16px"><label for="savedq">Ask about this saved population</label><p class="small muted">Uses the same people and original evidence. List patients, count them, group by practice or payer, or exclude recorded deaths.</p><select id="savedScope" aria-label="Saved population">${scopes.map(s=>`<option value="${esc(s.id)}">${esc(s.label)}</option>`).join('')}</select><input id="savedq" placeholder="Group them by practice" ${blocked?'disabled':''}><button id="savedFollowup" class="chip" ${blocked?'disabled':''}>Apply to saved population</button><span id="savedMsg" class="small muted">${blocked?'Refresh the source-bound answer before changing its population.':''}</span></div>`}
-function bindAnswer(d){bindClarification(d);bindReports(d);document.querySelectorAll('#ans [data-reopen]').forEach(b=>b.onclick=()=>reopenAnswer(b.dataset.reopen));const b=$('savedFollowup');if(b)b.onclick=async()=>{const q=$('savedq').value.trim();if(!q)return;b.disabled=true;const t0=Date.now();try{const out=await api(W('/answers/'+encodeURIComponent(d.action_context.id)+'/followup'),{question:q,scope:$('savedScope').value});if(out.status==='clarify'){$('savedMsg').textContent=out.headline+' '+(out.suggestions||[]).join(' · ');return}rememberConversation(out);$('ans').innerHTML=showAnswer(out,q,(Date.now()-t0)/1000);bindAnswer(out);loadHist()}catch(e){$('savedMsg').textContent=e.message}finally{b.disabled=false}}}
+function bindAnswer(d){bindAnswerRecords(d);bindClarification(d);bindReports(d);document.querySelectorAll('#ans [data-reopen]').forEach(b=>b.onclick=()=>reopenAnswer(b.dataset.reopen));const b=$('savedFollowup');if(b)b.onclick=async()=>{const q=$('savedq').value.trim();if(!q)return;b.disabled=true;const t0=Date.now();try{const out=await api(W('/answers/'+encodeURIComponent(d.action_context.id)+'/followup'),{question:q,scope:$('savedScope').value});if(out.status==='clarify'){$('savedMsg').textContent=out.headline+' '+(out.suggestions||[]).join(' · ');return}rememberConversation(out);$('ans').innerHTML=showAnswer(out,q,(Date.now()-t0)/1000);bindAnswer(out);loadHist()}catch(e){$('savedMsg').textContent=e.message}finally{b.disabled=false}}}
 async function reopenAnswer(id){const t0=Date.now();try{const d=await api(W('/answers/'+encodeURIComponent(id)));STATE.answerContext=id;$('q').value=d.question;$('ans').innerHTML=showAnswer(d,d.question,(Date.now()-t0)/1000);bindAnswer(d)}catch(e){$('ans').innerHTML=`<div class="notice err">${esc(e.message)}</div>`}}
 async function loadHist(){try{const d=await api(W('/questions'));$('hist').innerHTML=d.questions.slice(0,10).map(r=>`<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span style="flex:1;min-width:200px">${esc(clip(r.question,180))}</span><b class="mono">${esc(clip(r.answer?(r.answer.count??r.answer.value??(r.answer.patient_ids?r.answer.patient_ids.length+' patients':'table')):'no confident answer',60))}</b>${r.conversation?`<button class="chip" data-conversation="${esc(r.conversation.id)}">Open conversation</button>`:r.action_context?`<button class="chip" data-saved-answer="${esc(r.action_context.id)}">Open answer</button>`:''}</div>`).join('')||'None yet.';document.querySelectorAll('#hist [data-conversation]').forEach(b=>b.onclick=()=>openConversation(b.dataset.conversation));document.querySelectorAll('#hist [data-saved-answer]').forEach(b=>b.onclick=()=>reopenAnswer(b.dataset.savedAnswer))}catch(e){$('hist').textContent=e.message}}
 
