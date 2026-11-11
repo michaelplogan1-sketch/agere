@@ -27,6 +27,10 @@ class Stack:
         return {'schema':VERSION,'synthetic':True,'retrieval':self.retriever.meta,
                 'runtime_profile':os.environ.get('AGERE_RUNTIME_PROFILE','configured'),
                 'local_student_runtime':active_student()[0],
+                'source_verification_runtime':{
+                    'frontier_fallback_enabled':os.environ.get('AGERE_FRONTIER_SOURCE_REVIEW','off')=='on',
+                    'scope':'Complete unresolved source dependencies only; native defects and deciding faults require repair.',
+                    'authority':'machine_judgment','clinical_qualification':False},
                 'local_retrieval_runtime':{
                     'encoder_weights_loaded':getattr(self.retriever.encoder,'weights_loaded',None),
                     'reranker_weights_loaded':getattr(self.retriever.reranker,'weights_loaded',None) if self.retriever.reranker else False,
