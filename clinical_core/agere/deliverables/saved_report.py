@@ -8,9 +8,9 @@ import json
 import re
 from pathlib import Path
 from . import answer_context as A
-from .receipts import fingerprint
+from .receipts import Bundle, fingerprint
 
-VERSION = 'saved-report/5'
+VERSION = 'saved-report/6'
 
 
 def value(v):
@@ -43,10 +43,12 @@ def create(path, request):
         raise ValueError('A report request up to 4000 characters is required')
     retained=request.get('retained_inspection',False)
     if type(retained)is not bool:raise ValueError('retained_inspection must be explicit boolean')
-    context, bundle = A.evidence_bundle(path, request['context_id'],retained_inspection=retained)
+    # Load and validate the original once. A report consumes its answer and
+    # displayed evidence, not a second copy of every analyst attempt/SQL result.
+    # The immutable native context remains the full audit record; its sealed
+    # derivation and live source/work state are rechecked before publication.
+    context = A.load(path, request['context_id'], current=not retained)
     if retained:context={**context,'retained_inspection':True}
-    validator = A.bundle_validator(path, bundle)
-    validator()
     from .patient_dashboard import render as dashboard, exports
     from .patient_evidence import projection
     import hashlib
@@ -55,12 +57,38 @@ def create(path, request):
     answer = context['answer']
     records = [row for part in sections(answer) for row in part.get('table') or []]
     evidence = projection(context)
+    review_work = A.work(path, context)
+    bundle = Bundle({'workspace': context['id'], 'as_of': context['source']['as_of'],
+                     'synthetic': True, 'retained_inspection': retained,
+                     'clinical_execution_authorized': False,
+                     'scope': 'Exact saved report evidence with a sealed reference to the complete native investigation.'})
+    reference = {k: context[k] for k in (
+        'id', 'question', 'original_question', 'source', 'answer', 'patient_ids',
+        'input_patient_ids', 'workflow', 'dependencies', 'context_policy_identity',
+        'source_disposition', 'dependency_validation', 'stale', 'invalidated') if k in context}
+    reference['native_context_reference'] = {
+        'schema': 'saved-report-native-reference/1', 'context_id': context['id'],
+        'derivation': context['dependencies']['derivation'],
+        'url': '/api/stack/action-context?' + urlencode({'context': context['id'], 'view': 'native'}),
+        'complete_investigation_retained': True}
+    bundle.add('saved_answer', {'context_id': context['id']}, reference,
+               definition=context['question'], as_of=context['source']['as_of'],
+               data_fp=fingerprint(context['source']), source='server-saved /ask execution')
+    from collections import Counter
+    bundle.add('review_work', {'context_id': context['id']},
+               {'items': review_work, 'counts': dict(Counter(i['state'] for i in review_work))},
+               definition='Internal review states, not outreach, enrollment or clinical completion',
+               data_fp=fingerprint(review_work))
+    bundle.add('saved_report_evidence', {'context_id': context['id']}, evidence,
+               definition='Complete supporting evidence projected by the saved report renderer',
+               data_fp=fingerprint(evidence), source=reference['native_context_reference']['url'])
+    validator = A.bundle_validator(path, bundle)
     title = {'brief': 'Evidence review brief', 'command': 'Evidence and next steps',
              'explore': 'Explore the saved evidence'}[request['template']]
     status = answer.get('status') or 'Not recorded'
     payload = {'context_id': context['id'], 'question': context['question'], 'source': context['source'],
                'answer': answer, 'patient_ids': context['patient_ids'], 'workflow': context.get('workflow') or [],
-               'review_work': A.work(path, context), 'evidence': evidence}
+               'review_work': review_work, 'evidence': evidence}
     renderers = {name: Path(__file__).with_name(name).read_text() for name in
                  ('saved_report.py', 'patient_dashboard.py', 'patient_evidence.py', 'patient_report_pdf.py')}
     key = 'DLV-' + fingerprint([VERSION, renderers, context['id'], request, payload])[:12].upper()

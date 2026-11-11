@@ -126,6 +126,40 @@ class SavedReport(unittest.TestCase):
         with patch.object(A,'source_identity',return_value={'changed':True}),self.assertRaises(ValueError):
             R.create(self.path,{'context_id':c['id'],'template':'brief','request':'Saved report'})
 
+    def test_report_references_full_native_history_and_keeps_complete_display_evidence(self):
+        from clinical_core.agere.deliverables.compose import load
+        from clinical_core.agere.deliverables.patient_evidence import projection
+        question,result=self.prepare(partial=True)
+        result['investigation']={'diagnostic_history':['retained attempt ' * 1000] * 20}
+        c=A.capture(self.path,question,result);native=A.load(self.path,c['id'])
+        d=R.create(self.path,{'context_id':c['id'],'template':'brief','request':'Saved report'})
+        _,bundle,_,_=load(A.workspace(self.path,native),d['id'])
+        saved=next(bundle.results[rid] for rid,r in bundle.receipts.items() if r['tool']=='saved_answer')
+        shown=next(bundle.results[rid] for rid,r in bundle.receipts.items() if r['tool']=='saved_report_evidence')
+        self.assertEqual(saved['answer'],native['answer']);self.assertEqual(shown,projection(native))
+        self.assertNotIn('investigation',saved)
+        self.assertEqual(saved['native_context_reference']['derivation'],native['dependencies']['derivation'])
+        self.assertEqual(A.load(self.path,c['id'])['investigation'],result['investigation'])
+        raw,_,_=R.read_format(self.path,c['id'],d['id'],'json')
+        self.assertEqual(json.loads(raw)['answer'],native['answer'])
+
+    def test_source_change_during_render_still_prevents_publication(self):
+        from clinical_core.agere.deliverables import patient_dashboard as H
+        question,result=self.prepare();c=A.capture(self.path,question,result)
+        render=H.render
+        with patch.object(A,'source_identity',wraps=A.source_identity) as source:
+            def changed(*args,**kwargs):
+                body=render(*args,**kwargs);source.return_value={'changed':True};return body
+            with patch.object(H,'render',side_effect=changed),self.assertRaisesRegex(ValueError,'data changed'):
+                R.create(self.path,{'context_id':c['id'],'template':'brief','request':'Saved report'})
+        self.assertFalse((A.root(self.path)/c['id']/'deliverables').exists())
+
+    def test_work_change_during_render_still_prevents_publication(self):
+        question,result=self.prepare();c=A.capture(self.path,question,result)
+        with patch.object(A,'work',side_effect=[[],[{'id':'new','state':'needs_review'}]]),self.assertRaisesRegex(ValueError,'Review work changed'):
+            R.create(self.path,{'context_id':c['id'],'template':'brief','request':'Saved report'})
+        self.assertFalse((A.root(self.path)/c['id']/'deliverables').exists())
+
     def test_mode_is_explicit_and_unknown_values_are_rejected_before_compose(self):
         self.assertEqual(C.compose_shape({'question':'Count claims','delivery_generation':'frontier'})[:2],('Count claims','auto'))
         with self.assertRaises(ValueError):C.compose_shape({'question':'Count claims','delivery_generation':'silently_cap_cost'})
