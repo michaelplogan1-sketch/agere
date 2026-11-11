@@ -522,7 +522,8 @@ def native_json_paths(query, view, column):
     from sqlglot import exp
     try:tree=sqlglot.parse_one(query,read='sqlite')
     except (sqlglot.errors.SqlglotError,ValueError,TypeError):return None
-    if not isinstance(tree,exp.Select)or tree.args.get('with_')or tree.find(exp.Star):return None
+    if (not isinstance(tree,exp.Select)or tree.args.get('with_')
+        or any(not isinstance(s.parent,exp.Count)for s in tree.find_all(exp.Star))):return None
     tables=[t for t in tree.find_all(exp.Table)if isinstance(t.this,exp.Identifier)and t.name==view]
     if len(tables)!=1:return None
     table=tables[0];inner=table.find_ancestor(exp.Select)
@@ -543,6 +544,12 @@ def native_json_paths(query, view, column):
             path=path[1:-1]
             if not re.fullmatch(r'\$\.[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*',path):return None
             fn=extract.parent
+            # Direct static scalar/object extraction also reads exactly this
+            # branch. Every consuming query is replayed below, including its
+            # grouping, filters and NULL behavior; no claim is certified here.
+            if not isinstance(fn,exp.Anonymous)or fn.name.lower()!='json_each':
+                paths.append(path)
+                continue
             if(not isinstance(fn,exp.Anonymous)or fn.name.lower()!='json_each'
                 or len(fn.expressions)!=1 or fn.expressions[0]is not extract):return None
             owner=fn.parent
@@ -743,6 +750,121 @@ def selected_json_input(view,column,consumers,by):
         'scope':'Complete original recorded SQL outputs, types, order, duplicates and NULLs reproduced at full element scope and selected element scope from every statically read field. Only witnessed elements/fields are shown; all original rows, unselected elements and source receipts remain native. An empty selection is not absence of data or a clinical finding. No source meaning is certified.'}
 
 
+def aggregate_json_input(view, column, consumers, by):
+    """Replay aggregates using every array element and only statically read fields.
+
+    Array length needs cardinality, not the unused contents of each object.
+    Element projections keep missing paths, explicit NULLs, order and duplicates.
+    No predicate, aggregate or output is rewritten; any unfamiliar use fails closed.
+    """
+    import sqlite3
+    import sqlglot
+    from sqlglot import exp
+    from .backstop_agent import output_table
+    from .semantic_analyst import SemanticWarehouse
+    columns,rows=output_table(by[view]['result'])
+    if column not in columns:return None
+    branches={}
+    def keys(node):
+        text=node.sql(dialect='sqlite')
+        return tuple(text[3:-1].split('.')) if re.fullmatch(r"'\$\.[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*'",text) else None
+    for consumer in consumers:
+        try:tree=sqlglot.parse_one(consumer['query'],read='sqlite')
+        except (sqlglot.errors.SqlglotError,KeyError,TypeError):return None
+        if (not isinstance(tree,exp.Select)or tree.args.get('with_')or tree.find(exp.Subquery)
+                or tree.find(exp.Window)or any(not isinstance(s.parent,exp.Count)for s in tree.find_all(exp.Star))):return None
+        physical=[t for t in tree.find_all(exp.Table)if isinstance(t.this,exp.Identifier)]
+        if len(physical)!=1 or physical[0].name!=view or physical[0].db not in ('','temp'):return None
+        owner=physical[0].alias_or_name
+        refs=[c for c in tree.find_all(exp.Column)if c.table==owner and c.name==column]
+        if not refs:return None
+        aliases={}
+        for ref in refs:
+            fn=ref.parent
+            if(not isinstance(fn,exp.Anonymous)or fn.name.lower()not in ('json_each','json_array_length')
+               or len(fn.expressions)!=2 or fn.expressions[0]is not ref):return None
+            path=keys(fn.expressions[1])
+            if not path:return None
+            fields=branches.setdefault(path,set())
+            if fn.name.lower()=='json_each':
+                table=fn.parent
+                if not isinstance(table,exp.Table)or not table.alias or table.alias in aliases:return None
+                aliases[table.alias]=fields
+        outputs={x.alias_or_name for x in tree.selects}
+        for ref in tree.find_all(exp.Column):
+            if ref.table==owner:continue
+            if not ref.table:
+                if ref.name in columns or ref.name not in outputs or not isinstance(ref.parent,(exp.Ordered,exp.Group)):return None
+                continue
+            if ref.table not in aliases:return None
+            if ref.name=='key':continue  # every original array ordinal is retained
+            extract=ref.parent
+            if(ref.name!='value'or not isinstance(extract,(exp.JSONExtract,exp.JSONExtractScalar))
+               or extract.this is not ref):return None
+            path=keys(extract.expression)
+            if not path:return None
+            aliases[ref.table].add(path)
+    if not branches:return None
+    # Overlapping roots could overwrite a differently projected ancestor.
+    if any(a!=b and b[:len(a)]==a for a in branches for b in branches):return None
+    if any(a!=b and b[:len(a)]==a for fields in branches.values()for a in fields for b in fields):return None
+    at=columns.index(column);projected=[];observations={p:[]for p in branches}
+    def select(value,path):
+        for key in path:
+            if not isinstance(value,dict)or key not in value:return False,None
+            value=value[key]
+        return True,value
+    def put(target,path,value):
+        for key in path[:-1]:target=target.setdefault(key,{})
+        target[path[-1]]=value
+    for row in rows:
+        value=row[at]
+        if isinstance(value,str):
+            try:value=json.loads(value)
+            except ValueError:return None
+        if not isinstance(value,dict):return None
+        partial={}
+        for path,fields in branches.items():
+            present,branch=select(value,path)
+            if present and branch is not None and not isinstance(branch,list):return None
+            narrowed=branch
+            if isinstance(branch,list):
+                if any(not isinstance(item,dict)for item in branch):return None
+                narrowed=[]
+                for item in branch:
+                    kept={}
+                    for field in sorted(fields):
+                        found,cell=select(item,field)
+                        if found:put(kept,field,copy.deepcopy(cell))
+                    narrowed.append(kept)
+            observations[path].append([present,json.dumps(narrowed,ensure_ascii=False,separators=(',',':'),allow_nan=False)if present else None])
+            if present:put(partial,path,narrowed)
+        projected.append([*row[:at],partial,*row[at+1:]])
+    quote=lambda name:'"'+name.replace('"','""')+'"'
+    checks=[]
+    try:
+        with sqlite3.connect(':memory:')as db:
+            db.execute('CREATE TEMP TABLE '+quote(view)+' ('+','.join(map(quote,columns))+')')
+            insert='INSERT INTO '+quote(view)+' VALUES ('+','.join("json_extract(?1,'$["+str(i)+"]')"for i in range(len(columns)))+')'
+            db.executemany(insert,((json.dumps(row,default=str,allow_nan=False),)for row in projected))
+            db.execute("SELECT * FROM json_each('[]')").fetchall();db.enable_load_extension(False)
+            db.commit()
+            db.execute('PRAGMA query_only=ON');db.set_authorizer(SemanticWarehouse._authorize)
+            for consumer in consumers:
+                expected_columns,expected=output_table(by[consumer['result_view']]['result'])
+                cursor=db.execute(consumer['query']);actual=[list(r)for r in cursor]
+                if [c[0]for c in cursor.description]!=expected_columns or digest(actual)!=digest(expected):return None
+                checks.append({'result_view':consumer['result_view'],'query_digest':digest(consumer['query']),
+                    'columns':expected_columns,'row_count':len(actual),'output_digest':digest(actual),
+                    'full_output_cells_types_order_duplicates_nulls_exact':True})
+    except (sqlite3.Error,ValueError,TypeError,KeyError):return None
+    return {'columns':{column},'contract':'native-replayed-json-array-fields/1','checks':checks,
+        'observations':[{'column':column,'path':'$.'+'.'.join(path),'value_encoding':'canonical-json',
+            'row_values':observations[path],'element_field_paths':['$.'+'.'.join(f)for f in sorted(fields)],
+            'scope':'Every original row and array element remains in order, including duplicates. Only statically read element fields are shown; empty objects retain cardinality, not missing-source findings. Missing and JSON null are distinct. All original downstream SQL outputs reexecuted exactly; full original source receipts remain native. Source meaning still requires review.'}
+            for path,fields in sorted(branches.items())]}
+
+
 def native_json_projection(view, columns, rows, consumers, by):
     """Keep exact used JSON branches and reexecute every consuming program.
 
@@ -768,6 +890,8 @@ def native_json_projection(view, columns, rows, consumers, by):
                     'full_output_cells_types_order_duplicates_nulls_exact':True}for c in selected['checks']],
                 'selection_proofs':[{k:v for k,v in selected.items()if k!='row_values'}],
                 'contract':'native-replayed-json-selection/1'}
+        aggregate=aggregate_json_input(view,column,uses,by)
+        if aggregate is not None:return aggregate
         paths=[]
         for consumer in uses:
             read=native_json_paths(consumer['query'],view,column)

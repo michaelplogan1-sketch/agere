@@ -547,4 +547,63 @@ class NativeIntegrityModelView(unittest.TestCase):
         self.assertEqual(native_integrity_model_view(text),{'text':text,'bytes':len(text.encode()),'projected':False})
 
 
+class AggregateJsonProjection(unittest.TestCase):
+    def fixture(self):
+        import sqlite3
+        rows=[['A','received',json.dumps({'accounts':[
+            {'currency':'USD','amounts':{'cents':-7},'unused_history':['source']*100},
+            {'currency':'USD','amounts':{'cents':-7}},
+            {'currency':'EUR','amounts':{'cents':None}},
+            {'currency':'EUR','amounts':{}}], 'unassigned':[{'private_unused':'one'},{'private_unused':'two'}]})],
+            ['B','unknown',json.dumps({'accounts':None,'unassigned':[]})],
+            ['C','unknown','{}'],['D','received',json.dumps({'accounts':[],'unassigned':None})]]
+        columns=['patient_id','status','payload'];by={'agere_result_1':{'name':'execute_analysis','result':{'columns':columns,'rows':rows}}}
+        queries=["SELECT r.status,COUNT(*) AS patients,SUM(json_array_length(r.payload,'$.accounts')) AS accounts,SUM(json_array_length(r.payload,'$.unassigned')) AS unassigned FROM agere_result_1 r GROUP BY r.status",
+                 "SELECT json_extract(a.value,'$.currency') AS currency,COUNT(*) AS accounts,SUM(json_extract(a.value,'$.amounts.cents')) AS cents FROM agere_result_1 r JOIN json_each(r.payload,'$.accounts') a GROUP BY 1 ORDER BY 1"]
+        consumers=[]
+        with sqlite3.connect(':memory:')as db:
+            db.execute('CREATE TABLE agere_result_1(patient_id,status,payload)');db.executemany('INSERT INTO agere_result_1 VALUES (?,?,?)',rows)
+            for i,query in enumerate(queries,2):
+                key='agere_result_'+str(i);cursor=db.execute(query)
+                by[key]={'result':{'columns':[c[0]for c in cursor.description],'rows':[list(r)for r in cursor]}}
+                consumers.append({'result_view':key,'query':query,'columns_read':['payload','status']if i==2 else['payload']})
+        return by,consumers
+
+    def test_full_population_aggregate_preserves_values_cardinality_and_missing(self):
+        by,consumers=self.fixture();before=copy.deepcopy(by)
+        proof=E.native_json_projection('agere_result_1',by['agere_result_1']['result']['columns'],by['agere_result_1']['result']['rows'],consumers,by)
+        self.assertEqual(proof['contract'],'native-replayed-json-array-fields/1')
+        self.assertEqual(len(proof['checks']),2)
+        arrays={r['path']:r for r in proof['observations']}
+        accounts=arrays['$.accounts']['row_values']
+        self.assertEqual(len(accounts),4)
+        self.assertEqual(json.loads(accounts[0][1]),[{'amounts':{'cents':-7},'currency':'USD'},
+            {'amounts':{'cents':-7},'currency':'USD'},{'amounts':{'cents':None},'currency':'EUR'},{'currency':'EUR'}])
+        self.assertEqual(accounts[1:],[ [True,'null'],[False,None],[True,'[]'] ])
+        self.assertEqual(json.loads(arrays['$.unassigned']['row_values'][0][1]),[{},{}])
+        self.assertNotIn('unused_history',json.dumps(proof,default=sorted));self.assertEqual(by,before)
+        self.assertEqual(by['agere_result_3']['result']['rows'],[[None,1,None],['EUR',2,None],['USD',2,-14]])
+
+    def test_changed_amount_currency_or_output_prevents_projection(self):
+        for change in ('amount','currency','output'):
+            by,consumers=self.fixture()
+            if change=='output':by['agere_result_3']['result']['rows'][-1][-1]=14
+            else:
+                rows=by['agere_result_1']['result']['rows'];payload=json.loads(rows[0][2])
+                if change=='amount':payload['accounts'][0]['amounts']['cents']=7
+                else:payload['accounts'][0]['currency']='GBP'
+                rows[0][2]=json.dumps(payload)
+            with self.subTest(change=change):self.assertIsNone(E.aggregate_json_input('agere_result_1','payload',consumers,by))
+
+    def test_whole_dynamic_or_parse_position_reads_keep_complete_source(self):
+        for query in ["SELECT r.payload FROM agere_result_1 r",
+                      "SELECT json_array_length(r.payload,r.status) FROM agere_result_1 r",
+                      "SELECT a.value FROM agere_result_1 r JOIN json_each(r.payload,'$.accounts') a",
+                      "SELECT a.id FROM agere_result_1 r JOIN json_each(r.payload,'$.accounts') a",
+                      "SELECT a.value FROM agere_result_1 r JOIN json_each(r.payload,'$.accounts') a WHERE r.payload LIKE '%source%'",
+                      "SELECT json_array_length(r.payload,'$.accounts') FROM agere_result_1 r JOIN unrelated u ON u.patient_id=r.patient_id"]:
+            by,_=self.fixture()
+            with self.subTest(query=query):self.assertIsNone(E.aggregate_json_input('agere_result_1','payload',[{'query':query,'result_view':'agere_result_2'}],by))
+
+
 if __name__=='__main__':unittest.main()

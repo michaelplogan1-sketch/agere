@@ -239,6 +239,21 @@ class NativeColumnProjection(unittest.TestCase):
         self.assertTrue(result['json_path_output_checks'][0]['full_output_cells_types_order_duplicates_nulls_exact'])
         self.assertEqual(calls,before)
 
+    def test_complete_direct_contract_branch_can_replace_a_text_sample(self):
+        calls=self.json_fixture(uniform=True)
+        query="SELECT a.status,json_extract(a.documentary_receipt,'$.contract') AS contract,COUNT(*) AS n FROM agere_result_4 a GROUP BY 1,2"
+        calls[-1]=self.execute(query);calls[-1]['result']['result_view']='agere_result_3'
+        projection=native_column_projections(calls,['agere_result_2','agere_result_3'],
+            {'agere_result_2','agere_result_3','agere_result_4'})['agere_result_4']
+        view=native_calculation_input_view(projection,calls[0],calls)
+        branch=view['json_path_observations'][0]['native_all_row_equality']
+        self.assertEqual(json.loads(branch['complete_value']),{'requirements':[{'id':'rule','binding':None}]})
+        self.assertEqual(branch['row_count'],4)
+        self.assertEqual(view['input_fidelity']['row_count'],4)
+        calls[-1]['result']['rows'][0]['n']+=1
+        self.assertNotIn('agere_result_4',native_column_projections(calls,['agere_result_2','agere_result_3'],
+            {'agere_result_2','agere_result_3','agere_result_4'}))
+
     def test_dynamic_paths_hidden_document_and_parse_position_fields_keep_full_inputs(self):
         for expression,path in [('r.json',"'$.contract.requirements'"),('r.id',"'$.contract.requirements'"),
                                 ('r.parent',"'$.contract.requirements'"),('r.value',"'$.' || 'contract.requirements'"),
