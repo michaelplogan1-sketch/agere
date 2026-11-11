@@ -6,6 +6,8 @@ G3 finite presentation/conversation increment is sealed; G6 combined code packag
 
 Gate / workflow change / evidence / remaining gap: G5 / main and authenticated answers share readable findings, complete searchable records and source limitations; aggregate reports show the actual result / 57×19 CSV values preserved, 237-row authored access, browser and final archive reopen with zero new provider calls / Full25 ordinary semantic acceptance remains unestablished; retain all original partial/failed/scoped results. Independent source-family role/reference evidence, viable outcome labels and reviewer economics remain missing. Compatible local student weights are not deployed, trained generative bottles are disabled, and autonomous recursive improvement is not demonstrated. DecisionRAG and optional advanced research remain candidates. Customer deployment/provider-session arrangements, real data rights and intended-use assurance remain separate; OWASP/HHS deferred.
 
+Latest G5 metadata observation: configured student weights are absent; the isolated store retains 3107 current-contract machine observations across 7 roles. These are not independent qualification references. Six legacy v1 manifests lack the input contract and remain inactive. No training, labels inspected, provider calls or defaults changed. Evidence: artifacts/agere-output-design-2026-11-11/system-one-availability-observation.json. Continue by checking existing role-specific qualification/reference eligibility metadata; do not activate from observation volume alone.
+
 ## Superseded checkpoint
 
 # Current Agere checkpoint — MANUAL / SCHEDULER PAUSED 2026-11-11T17:08:54.709386+00:00

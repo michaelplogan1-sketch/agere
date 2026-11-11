@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-11T17:30:37.910120+00:00",
+  "updated_at": "2026-11-11T17:34:48.571466+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -855,15 +855,17 @@
       "artifacts/agere-output-design-2026-11-11/main-activation.json",
       "artifacts/agere-output-design-2026-11-11/main-activation-final.json",
       "artifacts/agere-output-design-2026-11-11/combined-release/receipt.json",
-      "artifacts/agere-output-design-2026-11-11/combined-release-final/receipt.json"
+      "artifacts/agere-output-design-2026-11-11/combined-release-final/receipt.json",
+      "artifacts/agere-output-design-2026-11-11/system-one-availability-observation.json"
     ],
     "remaining_gap": "Full25 ordinary semantic acceptance remains unestablished; retain all original partial/failed/scoped results. Independent source-family role/reference evidence, viable outcome labels and reviewer economics remain missing. Compatible local student weights are not deployed, trained generative bottles are disabled, and autonomous recursive improvement is not demonstrated. DecisionRAG and optional advanced research remain candidates. Customer deployment/provider-session arrangements, real data rights and intended-use assurance remain separate; OWASP/HHS deferred.",
     "next_action": "G5: inspect the existing current-contract System One role manifests and eligibility receipts to identify a bounded useful role with available source-family-separated fitting/calibration references. Repair demonstrated integration or compatibility defects and compare only that changed role with its simple baseline; do not activate incompatible weights, invent independent labels, use protected answer keys or repeat passing workflows. If reference inputs remain absent, retain the explicit qualification dependency and continue only identified independent product implementation. Scheduler stays PAUSED; no Git pushes.",
     "last_observation": {
-      "at": "2026-11-11T17:30:37.910120+00:00",
+      "at": "2026-11-11T17:34:48.571466+00:00",
       "source_frozen": false,
-      "new_product_delivery": true,
-      "evidence": "artifacts/agere-output-design-2026-11-11/final-delivery-receipt.json"
+      "new_product_delivery": false,
+      "evidence": "artifacts/agere-output-design-2026-11-11/system-one-availability-observation.json",
+      "finding": "The active configuration has current-contract machine observations but no deployed student weights. All six legacy model manifests use schema v1 and lack the current input contract. Metadata inspection does not establish source-family-separated independent references or qualify a role. Do not redirect to the legacy model directory or treat machine-observation counts as independent labels."
     },
     "whitepaper_delivery": {
       "receipt": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json",
