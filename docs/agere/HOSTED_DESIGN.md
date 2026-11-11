@@ -9,6 +9,16 @@ The local authored-source HTTP check covered sign-in, save/reopen, stale-source
 display, cross-tenant refusal and viewer restrictions. This is local engineering
 evidence, not customer deployment or a security/clinical qualification.
 
+The same history now connects to
+`POST /api/workspaces/<slug>/answers/<id>/followup`. It applies the existing native
+saved-set transforms (list/count, grouping and recorded-death exclusion), saves a
+child context and retains the original question, parent membership and limitations.
+Viewers may perform these analytical transforms but cannot create program work.
+Stale sources, another tenant's context and client-supplied patient replacements
+are refused. Unrecognized transforms request clarification and never fall back
+to a wider analysis. This finite native path does not claim arbitrary conversational
+analysis or clinical eligibility.
+
 Usage reports distinguish a known cost subtotal from unpriced records. A total
 with any unpriced records is unknown. Legacy zero-cost records are ambiguous;
 new explicitly zero-cost native calls remain known zero. Saved evidence reopening

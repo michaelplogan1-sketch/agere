@@ -7,6 +7,7 @@ Routes (JSON; handled before the service's global stack lock because builds take
   GET  /api/workspaces/<slug>/review        open mapping questions
   GET  /api/workspaces/<slug>/questions     question history
   GET  /api/workspaces/<slug>/answers/<id>  saved answer and current source status (no analysis replay)
+  POST /api/workspaces/<slug>/answers/<id>/followup {question, scope?} native transform of saved population
   POST /api/workspaces                      {name, source, as_of?, raw?}  -> create and start the build in the background
   POST /api/workspaces/<slug>/run           re-profile and rebuild from scratch (background)
   POST /api/workspaces/<slug>/decide        {item, decision}  decision: accept | reject | {source} | {source_table}
@@ -147,7 +148,8 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
             return 404, {'error': 'Unknown workspace route'}
         body = body or {}
         action = parts[1] if len(parts) > 1 else None
-        if not can_write and (not parts or action != 'ask'):
+        saved_followup = len(parts) == 4 and action == 'answers' and parts[3] == 'followup'
+        if not can_write and (not parts or (action != 'ask' and not saved_followup)):
             return 403, {'error': 'Your role can read and ask questions only'}
         if not parts:
             if not body.get('name') or not body.get('source'):
@@ -158,6 +160,17 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
             _background(ws.slug, ws.run, root)
             return 202, _detail(ws, root)
         ws = W(parts[0])
+        if saved_followup:
+            q = str(body.get('question') or '').strip()
+            if not q or set(body) - {'question', 'scope'}:
+                raise ValueError('A question and optional saved population scope are required')
+            t0 = __import__('time').time()
+            out = ws.followup_answer(parts[2], q, scope=body.get('scope', 'result'))
+            if on_usage:
+                on_usage(ws.slug, {'question': q, 'context_id': (out.get('action_context') or {}).get('id'),
+                                   'cost_usd': out.get('cost_usd'), 'decision': out.get('decision'),
+                                   'seconds': round(__import__('time').time() - t0, 2)})
+            return 200, out
         if action == 'run':
             _background(ws.slug, ws.run, root)
             return 202, _detail(ws, root)

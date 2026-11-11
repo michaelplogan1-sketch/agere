@@ -710,7 +710,7 @@ class Workspace:
             out['customer_ids'] = self.customer_ids(ids)  # the customer's own identifiers (MRN, member id, EHR id)
         record = {'at': _now(), 'question': question, 'pipeline': out.get('pipeline'), 'decision': out['decision'],
                   'answer': out['answer'], 'cost_usd': out['cost_usd'], 'interpretation': out['interpretation']}
-        record.update({k: out[k] for k in ('status', 'action_context', 'context_error', 'new_paid_api_calls') if k in out})
+        record.update({k: out[k] for k in ('status', 'action_context', 'parent_context_id', 'context_error', 'new_paid_api_calls') if k in out})
         with open(self.dir / 'questions.jsonl', 'a') as f:
             f.write(json.dumps(record, default=str) + '\n')
         if self.native:  # streaming dependency registry (what the answer read), so a later tick can mark it stale
@@ -740,12 +740,12 @@ class Workspace:
         out.update(question=question, _full_result=result)
         return out
 
-    def _save_full_answer(self, question, out):
+    def _save_full_answer(self, question, out, *, original_question=None):
         from . import workspace_stack
         from ..deliverables import answer_context
         result = out.pop('_full_result')
         try:
-            ref = answer_context.capture(self.dir / workspace_stack.DIRNAME, question, result)
+            ref = answer_context.capture(self.dir / workspace_stack.DIRNAME, question, result, original_question=original_question)
             if ref:
                 out['action_context'] = {**ref, 'url': f'/api/workspaces/{self.slug}/answers/{ref["id"]}'}
         except Exception as exc:
@@ -776,6 +776,26 @@ class Workspace:
         ids = (out.get('answer') or {}).get('patient_ids')
         if ids and self.native:
             out['customer_ids'] = self.customer_ids(ids)
+        return out
+
+    def followup_answer(self, context_id, question, *, scope='result'):
+        """Use existing native transformations of server-owned saved membership."""
+        from . import workspace_stack
+        from ..deliverables import answer_context
+        parent = self.saved_answer(context_id)['saved_context']
+        result = answer_context.followup(self.dir / workspace_stack.DIRNAME, context_id, question, scope=scope)
+        if result is None:
+            out = {'question': question, 'status': 'clarify', 'answer': None, 'pipeline': 'full',
+                    'headline': 'Choose a supported follow-up for this saved population.',
+                    'suggestions': ['Show me the patient list', 'Group them by practice', 'Count them'],
+                    'decision': 'saved_population_clarification', 'interpretation': 'Saved population retained; follow-up needs clarification.',
+                    'parent_context_id': context_id, 'cost_usd': 0, 'new_paid_api_calls': 0}
+            self._record(question, out)
+            return out
+        out = workspace_stack.envelope(result)
+        out.update(question=question, parent_context_id=context_id, _full_result=result)
+        self._save_full_answer(question, out, original_question=parent.get('original_question') or parent['question'])
+        self._record(question, out)
         return out
 
     def _ask_hybrid(self, question, *, answer_type=None, send_factory=None):

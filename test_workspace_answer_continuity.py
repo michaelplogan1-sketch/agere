@@ -78,6 +78,26 @@ class WorkspaceAnswerContinuityTests(unittest.TestCase):
                     history = alpha.call('GET', '/api/workspaces/demo/questions')[2]['questions']
                     self.assertEqual(history[0]['action_context']['id'], key)
                     self.assertEqual(len(history), 1)
+                    followup_url = url + '/followup'
+                    code, _, grouped = viewer.call('POST', followup_url, {'question': 'Group them by practice'})
+                    report['followup'] = {'http': code, 'result': grouped}
+                    save()
+                    self.assertEqual(code, 200, grouped)
+                    self.assertEqual(grouped['parent_context_id'], key)
+                    self.assertEqual(sum(r['value'] for r in grouped['answer']['table']), 10)
+                    self.assertEqual(grouped['new_paid_api_calls'], 0)
+                    self.assertFalse(grouped.get('context_error'))
+                    child_url = grouped['action_context']['url']
+                    child = alpha.call('GET', child_url)[2]['saved_context']
+                    self.assertEqual(child['original_question'], answer['question'])
+                    self.assertEqual(child['patient_ids'], reopened['saved_context']['patient_ids'])
+                    self.assertEqual(child['cohort_transform']['parent_context_id'], key)
+                    self.assertEqual(beta.call('POST', followup_url, {'question': 'Count them'})[0], 404)
+                    self.assertEqual(alpha.call('POST', followup_url, {'question': 'Count them', 'patient_ids': ['invented']})[0], 400)
+                    code, _, unsupported = viewer.call('POST', followup_url, {'question': 'What is total revenue for everyone?'})
+                    self.assertEqual(code, 200)
+                    self.assertEqual(unsupported['status'], 'clarify')
+                    self.assertIsNone(unsupported['answer'])
                     report['other_tenant_http'] = beta.call('GET', url)[0]
                     report['signed_out_http'] = Client(base).call('GET', url)[0]
                     report['viewer_reopen_http'] = viewer.call('GET', url)[0]
@@ -96,9 +116,12 @@ class WorkspaceAnswerContinuityTests(unittest.TestCase):
                     self.assertEqual(code, 200)
                     self.assertTrue(stale['saved_context']['stale'])
                     self.assertEqual(stale['answer'], answer['answer'])
+                    stale_code, _, stale_error = viewer.call('POST', followup_url, {'question': 'Count them'})
+                    self.assertEqual(stale_code, 400, stale_error)
+                    report['stale_followup_http'] = stale_code
                     report['stale_reopen'] = {'http': code, 'stale': True, 'answer_unchanged': True}
                     report['usage'] = alpha.call('GET', '/api/admin/usage')[2]['usage']
-                    self.assertEqual(report['usage']['records'], 1)
+                    self.assertEqual(report['usage']['records'], 3)
                     self.assertEqual(provider.call_count, 0)
                     report.update(provider_calls=provider.call_count, status='passed')
                     save()
