@@ -240,6 +240,48 @@ def nonfrontier_first(order):
     return tuple(t for t in order if t not in hosted)+tuple(t for t in order if t in hosted)
 
 
+def adaptive_order(order, *, routing=None, tier_routing=None, corrected=False):
+    """Use task fit before exhaustive fallback, without activating any component.
+
+    A class prediction is enough to try a cheap typed choice, not to justify a
+    population-wide document scan or loading generative weights. A promoted
+    outcome router may nominate a specialist; it still has to pass runnable(),
+    source/plan checks and ordinary acceptance. Every remaining tier is retained.
+    The investigator uses the same native/retrieval/learning tools and escalates
+    in its existing conversation, rather than making each proposer rediscover it.
+    """
+    order = tuple(order)
+    label = (routing or {}).get('label') if (routing or {}).get('applied') else 'unknown'
+    fast = set(STAGES[STAGE_INDEX['reuse_certified']][1]) | set(STAGES[STAGE_INDEX['free_planners']][1])
+    front = [t for t in order if t in fast]
+    # Keep explicit corrections ahead of a formerly accepted fast answer.
+    if corrected:
+        front = [t for t in FEEDBACK_READERS if t in order] + front
+    nominated = (tier_routing or {}).get('tier') if (tier_routing or {}).get('applied') else None
+    if nominated in order and nominated not in CLAUDE_TIERS and nominated != 'spec_path':
+        front.append(nominated)
+    choices = {
+        'literal_lookup': ('typed_decider',),
+        'metric': ('s1_metric_router', 'typed_decider'),
+        'engine_analysis': ('s1_operator_router', 'typed_decider'),
+        'definition_dependent': ('typed_decider',),
+    }.get(label, ())
+    front.extend(t for t in choices if t in order)
+    if 'backstop_agent' in order:
+        front.append('backstop_agent')
+    front = list(dict.fromkeys(front))
+    selected = tuple(front) + tuple(t for t in order if t not in front)
+    return selected, {
+        'policy': 'task-fit-before-exhaustive-fallback/1', 'question_class': label,
+        'qualified_specialist': nominated if nominated in front else None,
+        'correction_first': bool(corrected), 'order': list(selected),
+        'frontier_entry': 'backstop_agent' if 'backstop_agent' in order else None,
+        'reason': 'Try checked reuse/native plans and fitting typed choices; otherwise let one investigator choose tools. '
+                  'Unselected scans and generative proposers remain fallbacks, with unchanged enablement and acceptance.',
+        'cost_optimality_established': False,
+    }
+
+
 def stage_of(tier):
     if tier in STAGE_OF: return STAGE_OF[tier]
     return STAGE_INDEX['system_one_choice'] if tier.startswith(('system_one_', 's1_')) else len(STAGES) - 1
@@ -463,6 +505,10 @@ class Cascade:
             rest=[t for t in order if t not in trained]
             at=min((i for i,t in enumerate(rest) if stage_of(t)>=STAGE_INDEX['spec_path']),default=len(rest))
             order=tuple(rest[:at]+trained+rest[at:])
+        if os.environ.get('AGERE_NONFRONTIER_FIRST') == 'adaptive':
+            order, self.execution_policy = adaptive_order(order, routing=self.routing,
+                tier_routing=getattr(self, 'tier_routing', None), corrected=corrected)
+            return order
         if os.environ.get('AGERE_NONFRONTIER_FIRST')=='on':
             # Keep every applicable component available, but finish the code,
             # local-model and System One stages before hosted interpretation.
@@ -1166,6 +1212,7 @@ class Cascade:
                 'stage_diagnostics': stage_diagnostics.attribute(self.log, answered_by=name),
                 'cascade_routing': {'system_one': self.routing, 'learned': self.learned_routing,
                                     'tier_router': getattr(self, 'tier_routing', None),
+                                    'execution_policy': getattr(self, 'execution_policy', None),
                                     'free_first': getattr(self, 'free_first_receipt', None)}}
 
     # -- typed proposals ------------------------------------------------------------------------------------------------

@@ -1126,7 +1126,10 @@ def start_spec_early(stack, catalog, question, population):
     """The grammar declined: the spec path's paid fillers (System One slots, the Haiku spec writer) start now, in parallel with the cascade's
     earlier stages (spec_fill.start_early). Not for a rewording (free stages only), a question naming one patient (the chart reader answers
     those) or without Claude."""
-    if os.environ.get('AGERE_NONFRONTIER_FIRST') == 'on': return
+    # Adaptive routing chooses one fitting planner after cheap reuse/native
+    # attempts. Speculative spec generation would charge a competing planner
+    # even when the selected route answers without it.
+    if os.environ.get('AGERE_NONFRONTIER_FIRST') in ('on', 'adaptive'): return
     from . import spec_path, spec_fill, patient_ids
     from .proposers import FREE_ONLY, claude_available
     if FREE_ONLY.get() or not getattr(stack, 'allow_live', False) or not spec_path.enabled(stack) or not claude_available(): return

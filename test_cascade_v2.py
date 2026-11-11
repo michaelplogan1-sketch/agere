@@ -41,6 +41,12 @@ class EarlyStart(unittest.TestCase):
     def setUp(self):
         spec_fill._EARLY.clear()
 
+    def test_adaptive_selection_does_not_launch_a_competing_spec_writer(self):
+        from clinical_core.agere.clinical.shared_planner import start_spec_early
+        with patch.dict(os.environ, {'AGERE_NONFRONTIER_FIRST': 'adaptive'}), patch.object(spec_fill, 'start_early') as start:
+            start_spec_early(None, None, 'Explain the utilization change', None)
+        start.assert_not_called()
+
     def test_started_fillers_are_taken_once_by_question(self):
         stack = type('S', (), {'path': '/tmp/x', 'allow_live': True})()
         calls = []
@@ -49,7 +55,7 @@ class EarlyStart(unittest.TestCase):
             calls.append(name)
             return {'name': name, 'status': 'invalid', 'seconds': 0.0, 'plan': None, 'contract': None, 'error': 'fake', 'notes': {}}
         catalog = type('C', (), {'identity': {'as_of': '2030-05-27'}})()
-        with patch.object(spec_fill, 'run_filler', fake_run_filler):
+        with patch.object(spec_fill, 'run_filler', fake_run_filler), patch.object(spec_fill, 'enabled_fillers', return_value=('haiku',)):
             spec_fill.start_early(stack, catalog, 'How many  patients have X?', names=('haiku',))
             spec_fill.start_early(stack, catalog, 'How many patients have X?', names=('haiku',))  # same question: started once
             ctx, futures = spec_fill.take_early(stack, 'How many patients have X?', None)
@@ -67,6 +73,42 @@ class EarlyStart(unittest.TestCase):
         with patch.object(spec_fill, 'enabled_fillers', lambda: ()):
             spec_fill.start_early(stack, catalog, 'other')  # pruning runs on every start
         self.assertNotIn(spec_fill._early_key(stack, 'q', None), spec_fill._EARLY)
+
+
+class AdaptiveOrder(unittest.TestCase):
+    def test_unfamiliar_question_reaches_one_investigator_before_scans_and_rewriters(self):
+        order, receipt = P.adaptive_order(P.ORDER)
+        self.assertCountEqual(order, P.ORDER)
+        pivot = order.index('backstop_agent')
+        for tier in ('exact_local_plan', 'semantic_cache', 'local_compiler', 'chart_reader'):
+            self.assertLess(order.index(tier), pivot)
+        for tier in ('evidence_review', 'atomic_system_one', 'spec_path', 'local_normalizer', 'hosted_typed_interpreter'):
+            self.assertGreater(order.index(tier), pivot)
+        self.assertFalse(receipt['cost_optimality_established'])
+
+    def test_fitting_typed_choice_gets_first_opportunity_but_broad_class_is_not_a_scan_certificate(self):
+        metric, _ = P.adaptive_order(P.ORDER, routing={'applied': True, 'label': 'metric'})
+        self.assertLess(metric.index('s1_metric_router'), metric.index('backstop_agent'))
+        chart, _ = P.adaptive_order(P.ORDER, routing={'applied': True, 'label': 'chart_evidence'})
+        self.assertGreater(chart.index('atomic_system_one'), chart.index('backstop_agent'))
+        uncertain, _ = P.adaptive_order(P.ORDER, routing={'applied': False, 'label': 'metric'})
+        self.assertGreater(uncertain.index('s1_metric_router'), uncertain.index('backstop_agent'))
+
+    def test_qualified_specialist_is_preserved_without_overriding_enablement_or_corrections(self):
+        order, receipt = P.adaptive_order(P.ORDER, tier_routing={'applied': True, 'tier': 'bottled_sql'}, corrected=True)
+        self.assertEqual(order[0], 'hosted_typed_interpreter')
+        self.assertLess(order.index('bottled_sql'), order.index('backstop_agent'))
+        self.assertEqual(receipt['qualified_specialist'], 'bottled_sql')
+        with patch.dict(os.environ, {'AGERE_PROPOSER_SKIP': 'bottled_sql'}):
+            self.assertFalse(P.enabled('bottled_sql', type('S', (), {'allow_live': True})()))
+
+    def test_declined_investigator_keeps_every_specialist_fallback(self):
+        # Reachability under a failed first planner: no cost/time/population cap
+        # and no route removes a component merely because its class differs.
+        for label in ('metric', 'chart_evidence', 'engine_analysis', 'unknown'):
+            order, _ = P.adaptive_order(tuple(reversed(P.ORDER)), routing={'applied': True, 'label': label})
+            self.assertCountEqual(order, P.ORDER)
+            self.assertEqual(len(order), len(set(order)))
 
 
 class AnalystGate(unittest.TestCase):
