@@ -57,4 +57,36 @@ class FrontierAggregateReview(unittest.TestCase):
         packet,verdict=self.fixture();packet['required_source_packet_ids']=['patient_A']
         with self.assertRaises(ValueError):self.run_review(packet,verdict)
 
+class FrontierOverflowRouting(unittest.TestCase):
+    def test_capacity_refusal_reaches_verifier_and_never_overrides_decided_fault(self):
+        from test_native_column_projection import NativeColumnProjection
+        from clinical_core.agere.clinical import system_one_gate as gate
+        fixture=NativeColumnProjection(methodName='runTest');fixture.setUp();self.addCleanup(fixture.doCleanups)
+        question='Count machine receipts and unresolved statuses.'
+        tools=SimpleNamespace(document_reviews=[],executed_results={})
+        coverage={'label':'answers_fully','decided_by':'authored-coverage','calls':0,'cost_usd':0.}
+        packet=B.support_packets(question,fixture.answer,fixture.calls,[],'2030-05-27')[0]
+        verdict={'coverage':{'label':'answers_fully','reason':'All requested observations present.','unaddressed_request_quotes':[]},
+            'supported_claim_ids':[c['id']for c in packet['claim_manifest']],'findings':[],
+            'joint_support':'supported','joint_reason':'All scoped facts match the authored evidence.'}
+        for mode in ('reviewed','unavailable','decided_fault'):
+            support={'label':'unknown','decided_by':None,'packets':[{'id':'summary','input_error':'dependency_envelope_exceeded'}],
+                'steps':[],'claim_feedback':[]}
+            if mode=='decided_fault':support.update(label='contradicted',decided_by='typed-review',
+                claim_feedback=[{'decided_by':'typed-review','label':'contradicted'}])
+            result={'status':'unavailable'if mode=='unavailable'else'reviewed','verdict':verdict,
+                'calls':1,'cost_usd':.1,'model':'authored-reviewer','packet_digest':'bound'}
+            with self.subTest(mode=mode),patch.dict(os.environ,{'AGERE_FRONTIER_AGGREGATE_REVIEW':'on','AGERE_QUANTITATIVE_ROLE_CHECK':'off'}),patch.object(
+                    gate,'ready',return_value=True),patch.object(gate,'check',return_value=coverage),patch.object(
+                    gate,'s1',return_value=SimpleNamespace(decide=None)),patch.object(gate,'cost',return_value=(0,0.)),patch.object(
+                    B,'check_support_packets',return_value=support),patch.object(B,'frontier_aggregate_review',return_value=result)as frontier:
+                out=B.review_final(SimpleNamespace(),question,copy.deepcopy(fixture.answer),fixture.calls,tools,ledger=None,as_of='2030-05-27')
+            if mode=='reviewed':
+                self.assertEqual(frontier.call_count,1,out);self.assertEqual(out['status'],'confirmed',out)
+                self.assertEqual(out['typed_support']['packets'][0]['input_error'],'dependency_envelope_exceeded')
+                self.assertFalse(out['coverage']['clinical_qualification']);self.assertEqual(out['cost_usd'],.1)
+            elif mode=='unavailable':
+                self.assertEqual(frontier.call_count,1,out);self.assertEqual(out['repair_kind'],'verification_input_construction')
+            else:self.assertEqual(frontier.call_count,0,out)
+
 if __name__=='__main__':unittest.main()

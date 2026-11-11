@@ -254,6 +254,50 @@ class Continuation(unittest.TestCase):
      self.assertEqual(reopened['planner_receipt']['artifact_feedback_context'],key)
      self.assertEqual(reopened['answer']['verification'],'unverified');self.assertEqual(reopened['workflow'],[])
 
+ def test_cancelled_real_backstop_normalizes_proposed_deliverable_before_resume_capture(self):
+  from clinical_core.agere.gateway import BudgetLedger
+  from clinical_core.agere.clinical import backstop_agent as B
+  from clinical_core.agere.service import _failure_receipts
+  def bind(original,checkpoint):
+   call=original['investigation']['tool_calls'][0];call['actor_callback_id']='saved-native-callback'
+   call['result'].update(result_view='agere_result_1',native_sql_contract=B.NATIVE_SQL_CONTRACT,
+     executed_query=call['input']['sql'],columns=['patient_id','events'],truncated=False)
+   checkpoint['draft'].update(table_from_tool='agere_result_1')
+   checkpoint['draft_digest']=H.digest(checkpoint['draft'])
+  key=self.draft_with_rejected_returned_answer(bind)
+  before=A.snapshot_path(A.root(self.path)/key/'answer.json').read_bytes()
+  original=A.load_unfinished_for_review(self.path,key)
+  calls=original['investigation']['tool_calls']
+  draft={**original['investigation']['recovery_checkpoint']['draft'],
+         'status':'answered','verification':'checked','workflow':[self.step]}
+  run={'answer':draft,'tool_calls':calls,'error':'request_cancelled: Claude subscription stream aborted; native work retained',
+       'model':'authored-fixture','new_paid_api_calls':1,'estimated_cost_usd':None,'known_cost_usd':.01}
+  run['recovery_checkpoint']=H.recovery_checkpoint(SimpleNamespace(stack=self.stack),self.question,
+      {'question':self.question},run)
+  self.assertEqual(run['recovery_checkpoint']['draft']['status'],'partial')
+  self.assertEqual(run['recovery_checkpoint']['draft']['workflow'],[self.step])
+  real_tier=P.Cascade.tier_backstop_agent;test=self
+  class Cascade:
+   def __init__(self,*args,**kwargs):
+    self.stack=test.stack;self.question=test.question;self.population=None;self.log=[];self.started=0
+    self.ledger=BudgetLedger(test.path/'cancelled-attempts.sqlite3');self.spend=Mock()
+   def attempt(self,*args):return real_tier(self)
+   def usage(self):return {'new_paid_api_calls':1,'known_api_estimate_usd':.01,'api_cost_known':False}
+   def close(self):self.ledger.close()
+  with patch.object(P,'Cascade',Cascade),patch.object(P.request_plan.Catalog,'load',return_value=object()),patch.object(
+      P,'claude_available',return_value=True),patch.object(B,'answer',return_value=run),patch.object(
+      P,'shape_misfit',return_value=None),patch.object(P,'answer_gate',side_effect=AssertionError('No post-cancel provider gate')):
+   with self.assertRaises(ProviderUnavailable)as caught:P.continue_from_artifact(self.stack,key)
+  response=_failure_receipts(caught.exception)
+  self.assertNotIn('action_context_error',response)
+  saved=A.load(self.path,response['action_context']['id'],source_review=True)
+  self.assertEqual(saved['question'],self.question);self.assertEqual(saved['workflow'],[])
+  self.assertEqual(saved['answer']['verification'],'unverified')
+  self.assertEqual(saved['investigation']['recovery_checkpoint']['draft']['workflow'],[self.step])
+  self.assertEqual(saved['investigation']['tool_calls'],calls)
+  self.assertEqual(response['new_paid_api_calls'],1);self.assertIsNone(response['planning_economics']['new_api_estimate_usd'])
+  self.assertEqual(A.snapshot_path(A.root(self.path)/key/'answer.json').read_bytes(),before)
+
  def draft_with_rejected_returned_answer(self,mutation=None):
   original=copy.deepcopy(self.result);original['workflow']=[]
   self.draft_fixture_sequence=getattr(self,'draft_fixture_sequence',0)+1

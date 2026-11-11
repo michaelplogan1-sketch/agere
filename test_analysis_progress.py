@@ -6,6 +6,14 @@ from clinical_core.agere import request_lineage as L
 class AnalysisProgress(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.path=Path(self.tmp.name);self.key='a'*32
+ def test_resume_uses_its_own_observed_activity_without_claiming_acceptance(self):
+  with L.begin(self.path,'/api/stack/investigation/resume',{'context_id':'ANS-authored'},tracking=self.key)as execution:
+   L.observe('component_finished',component='investigator_sql',status='completed',metrics={'rows':124})
+   execution.finish({'answer':{'status':'partial'}})
+  value=L.progress(self.path,self.key)
+  self.assertEqual(value['answer_status'],'partial')
+  self.assertIn('Source query finished · 124 result rows',[v['label']for v in value['updates']])
+  with self.assertRaisesRegex(ValueError,'not repeated'):L.begin(self.path,'/api/stack/investigation/resume',{},tracking=self.key)
  def test_missing_attempt_is_unknown_and_creates_no_database(self):
   r=L.progress(self.path,self.key);self.assertEqual(r['status'],'waiting');self.assertEqual(list(self.path.iterdir()),[])
  def test_observed_steps_are_incremental_and_terminal_does_not_mean_answered(self):

@@ -19,7 +19,7 @@ from ..contracts import digest
 ACTIVE = ContextVar('agere_request_execution', default=None)
 VERSION = 'question-request-lineage/1'
 OPERATIONS = {
- '/api/stack/ask', '/api/stack/compose', '/api/stack/context/synthesize',
+ '/api/stack/ask', '/api/stack/compose', '/api/stack/investigation/resume', '/api/stack/context/synthesize',
  '/api/stack/claims/reconcile', '/api/stack/source-plan-answers/compose',
  '/api/stack/decision/prepare', '/api/stack/decision/population-prepare',
  '/api/stack/decision/scoped-prepare',

@@ -503,6 +503,27 @@ def actor_result(value):
         shown.update(rows_computed=len(rows),preview_only=False,
             reading_instruction='Every row of this explicitly requested native reading is supplied intact. Interpret the actual values and source observations; this does not establish source completeness, clinical truth or current responsibility.')
         return shown
+    # Population inspection is a native membership proof, not an instruction
+    # for the analyst to read every member ID. Keep every proof and its source
+    # contract visible, but reference the identical member list already stored
+    # in the queryable result instead of sending it a second time.
+    from .membership import NATIVE_POPULATIONS
+    if (value.get('schema')==NATIVE_POPULATIONS and isinstance(value.get('result_view'),str)
+            and value.get('columns')==['population_id','label','patient_count','patient_ids']
+            and isinstance(value.get('scopes'),list) and isinstance(rows,list)):
+        from ...contracts import digest
+        scopes=value['scopes']
+        if (len(scopes)==len(rows) and all(isinstance(scope,dict) and isinstance(row,dict)
+                and isinstance(scope.get('patient_ids'),list) and scope.get('id')==row.get('population_id')
+                and row.get('patient_ids')==json.dumps(scope['patient_ids'])
+                and scope.get('patient_count')==row.get('patient_count')==len(scope['patient_ids'])
+                and (scope.get('proof')or{}).get('patient_ids_digest')==digest(scope['patient_ids'])
+                for scope,row in zip(scopes,rows))):
+            shown['scopes']=[{**{k:v for k,v in scope.items()if k!='patient_ids'},
+                'patient_membership':{'result_view':value['result_view'],'population_id':scope['id'],
+                    'column':'patient_ids','encoding':'complete JSON array',
+                    'sha256':digest(scope['patient_ids'])}}for scope in scopes]
+            shown['membership_reading']='Complete member IDs remain in patient_ids for each population_id in the native result_view. Query them when individual membership is needed. All counts, selection proofs, unknowns and source contracts are retained here; membership is not clinical eligibility.'
     if isinstance(rows,list):
         collections=collection_manifest(rows)
         if collections:

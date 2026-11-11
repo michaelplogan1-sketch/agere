@@ -22,6 +22,27 @@ class NativePopulations(unittest.TestCase):
         with patch.object(A,'source_identity',side_effect=[self.source,{**self.source,'source_digest':'changed'}]):
             with self.assertRaises(ValueError):B.inspect_native_populations(tools,['agere_result_2'])
 
+    def test_actor_references_members_without_removing_proofs_or_native_lookup(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from clinical_core.agere.clinical import semantic_analyst as S
+        from clinical_core.agere.deliverables import answer_context as A
+        query="SELECT kind,COUNT(*) events,COUNT(DISTINCT patient_id) patients FROM agere_result_1 GROUP BY kind"
+        calls=[self.producer,self.call(query)]
+        tools=SimpleNamespace(native_calls=calls,semantic=SimpleNamespace(db=self.db),stack=SimpleNamespace(path='authored'),as_of=self.source['as_of'])
+        with patch.object(A,'source_identity',return_value=self.source):out=B.inspect_native_populations(tools,['agere_result_2'])
+        out['result_view']='agere_result_3';before=copy.deepcopy(out);shown=S.actor_result(out)
+        self.db.execute('CREATE TEMP TABLE membership(population_id,patient_ids)')
+        self.db.executemany('INSERT INTO membership VALUES(?,?)',[(r['population_id'],r['patient_ids'])for r in out['rows']])
+        for original,view in zip(out['scopes'],shown['scopes']):
+            self.assertNotIn('patient_ids',view);self.assertEqual(view['proof'],original['proof'])
+            self.assertEqual(view['patient_count'],original['patient_count'])
+            ids=[r[0]for r in self.db.execute('SELECT j.value FROM membership m,json_each(m.patient_ids) j WHERE population_id=?',(view['patient_membership']['population_id'],))]
+            self.assertEqual(ids,original['patient_ids'])
+        self.assertEqual(shown['unavailable'],out['unavailable']);self.assertEqual(out,before)
+        malformed=copy.deepcopy(out);malformed['rows'][0]['patient_ids']='[]'
+        self.assertIn('patient_ids',S.actor_result(malformed)['scopes'][0])
+
     def setUp(self):
         self.db=sqlite3.connect(':memory:');self.addCleanup(self.db.close)
         self.db.executescript("CREATE TABLE patient(patient_id);INSERT INTO patient VALUES('A'),('B'),('C');CREATE TABLE agere_result_1(patient_id,kind,flag);INSERT INTO agere_result_1 VALUES('A','x',0),('A','x',0),('B','y',0),('C',NULL,1);")

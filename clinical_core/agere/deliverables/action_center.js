@@ -52,8 +52,8 @@ function restoreWorkspaceRows(record) {
   });
   return {...record,context:{...c,patient_rows:patients}};
 }
-async function api(url, body) {
-  const response = await fetch(url, body ? {method:'POST',headers:{'Content-Type':'application/json','X-Agere-Response-View':'workspace'},body:JSON.stringify(body)}
+async function api(url, body, headers = {}) {
+  const response = await fetch(url, body ? {method:'POST',headers:{'Content-Type':'application/json','X-Agere-Response-View':'workspace',...headers},body:JSON.stringify(body)}
     : {headers:{'X-Agere-Response-View':'workspace'}});
   let result;
   try { result = await response.json(); } catch (_) { throw Error('Could not read the server response. Try again.'); }
@@ -403,13 +403,31 @@ function render() {
   resume.onclick = () => run(async () => {
     $('resume-interruption')?.remove();
     resume.disabled = true; resume.textContent = 'Reviewing saved work…';
+    const progressKey = crypto.randomUUID().replaceAll('-', '');
+    $('resume-progress')?.remove();
+    const progress = document.createElement('div'); progress.id = 'resume-progress';
+    progress.setAttribute('role', 'status'); progress.setAttribute('aria-live', 'polite');
+    progress.textContent = 'Opening your saved analysis…'; resume.parentElement.append(progress);
+    let stopped = false, timer, sequence = -1;
+    async function poll() {
+      if (stopped) return;
+      try {
+        const observed = await api('/api/stack/analysis-progress?key='+progressKey+'&after='+sequence);
+        if (stopped) return;
+        sequence = observed.sequence;
+        const updates = observed.updates || [];
+        if (updates.length) progress.textContent = updates.slice(-4).map(event=>event.label).join(' · ');
+      } catch (_) { if (!stopped) progress.textContent = 'Activity updates are unavailable. Your analysis is still running; the request has not been repeated.'; }
+      if (!stopped) timer = setTimeout(poll, 1200);
+    }
+    poll();
     try {
-      const result = await api('/api/stack/investigation/resume', {context_id:c.id});
+      const result = await api('/api/stack/investigation/resume', {context_id:c.id}, {'X-Agere-Progress-Key':progressKey});
       if (!result.action_context?.id) throw Error('The analysis did not produce a saved result.');
       location.href = '/action-center?context='+encodeURIComponent(result.action_context.id);
     } catch (error) {
       showResumeInterruption(error);
-    } finally { resume.disabled = false; resume.textContent = 'Continue analysis'; }
+    } finally { stopped = true; clearTimeout(timer); progress.remove(); resume.disabled = false; resume.textContent = 'Continue analysis'; }
   });
   $('center').hidden = false;
   $('loading').hidden = true;

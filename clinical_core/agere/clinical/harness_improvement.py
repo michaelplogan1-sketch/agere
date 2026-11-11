@@ -51,11 +51,13 @@ def owned_recovery(actions,question=None,feedback=None,document_reviews=None,fie
         if (not isinstance(checkpoint,dict)or set(checkpoint)!={'source','context','draft','draft_digest','review_contexts'}
                 or not isinstance(checkpoint['source'],dict)or not isinstance(checkpoint['context'],dict)
                 or checkpoint['context'].get('question')!=question or not isinstance(checkpoint['draft'],dict)
-                or checkpoint['draft'].get('status')!='partial'or checkpoint['draft'].get('workflow')
+                or checkpoint['draft'].get('status')!='partial'
                 or checkpoint['draft_digest']!=digest(checkpoint['draft'])or feedback
                 or not provenance or any(p is None for p in provenance)
                 ):
             raise ValueError('Draft recovery requires an exact partial draft, question context, source and every native origin')
+        from .workflow_contract import validate as validate_workflow
+        validate_workflow(checkpoint['draft'].get('workflow')or[],question)
         calls=origin['calls'];draft=checkpoint['draft'];roots=[draft.get('table_from_tool')]
         def bindings(value):
             if isinstance(value,dict):
@@ -152,7 +154,11 @@ def recovery_checkpoint(tools,question,context,run):
         # it. Preserve the raw draft above; the resumable copy is unverified.
         if draft.get('status')=='answered':
             draft={**copy.deepcopy(draft),'status':'partial','verification':'unverified'}
-    if not isinstance(draft,dict) or draft.get('status')!='partial' or draft.get('workflow') or not calls:return None
+    if isinstance(draft,dict) and draft.get('status')=='answered' and run.get('error'):
+        # A proposed deliverable is not executed work. Retain it with the
+        # unfinished analysis; resumption must still pass all current reviews.
+        draft={**copy.deepcopy(draft),'status':'partial','verification':'unverified'}
+    if not isinstance(draft,dict) or draft.get('status')!='partial' or not calls:return None
     saved=_OWNED_RECOVERY.get() or {}
     reviews=[*((saved.get('checkpoint') or {}).get('review_contexts') or []),*(run.get('answer_reviews') or [])]
     needed={v for c in calls for v in (c.get('result') or {}).get('read_views',[]) if v.startswith('agere_review_feedback_')}

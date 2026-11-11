@@ -986,15 +986,11 @@ class Cascade:
                     'clinical_execution_authorized':False}
             contract,interpretation=self.contract_of('backstop_agent',graph,{'route':'backstop_agent','awaiting_user_intent':True},result)
             return contract,{**interpretation,'execution_accepted':False,'awaiting_user_intent':True}
-        if run.get('error') and outage(RuntimeError(run['error']))=='cancelled':
-            from ..gateway import ProviderUnavailable
-            interrupted=ProviderUnavailable(run['error'],kind='cancelled')
-            interrupted.partial_result=run  # keep the completed native prefix available to the request owner
-            raise interrupted
         limit_error=None
-        if run.get('error') and outage(RuntimeError(run['error'])) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription':
+        interrupted_kind=outage(RuntimeError(run['error'])) if run.get('error') else None
+        if interrupted_kind=='cancelled' or (interrupted_kind=='rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT')=='subscription'):
             from ..gateway import ProviderUnavailable
-            limit_error=ProviderUnavailable(run['error'], kind='rate_limit')
+            limit_error=ProviderUnavailable(run['error'],kind=interrupted_kind)
         answer = run.get('answer')
         if not isinstance(answer, dict) or answer.get('status') not in ('answered', 'partial', 'unsupported'):
             if limit_error is not None:raise limit_error
@@ -1040,7 +1036,7 @@ class Cascade:
             # only a server-owned checkpoint; the uncompiled prose stays inside
             # it, separate from the last structurally complete displayed answer.
             checkpoint=run.get('recovery_checkpoint')
-            if checkpoint and answer.get('status')=='partial':
+            if checkpoint:
                 limit_error.partial_result={**result,'question':self.question,'graph':graph,'workflow':[],
                     'answer':{**answer,'status':'partial','verification':'unverified'},
                     'execution_snapshot':checkpoint['source'],

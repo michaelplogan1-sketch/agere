@@ -2962,16 +2962,6 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                           'blocked_family_ids','global_stop','joint_verification_wait')},
                           calls=assessment['calls'] + n, cost_usd=assessment['cost_usd'] + usd)
         input_errors=[s['input_error']for s in [*support.get('steps',[]),*support.get('packets',[])]if s.get('input_error')]
-        if input_errors:
-            return {**assessment,'status':'repair','repair_kind':'verification_input_construction',
-                'progress_state':{'input_errors':sorted(set(input_errors)),
-                    'packets':[{'id':p['id'],'bytes':p['bytes']}for p in packets]},
-                'feedback':'Final review did not run because its source dependency input exceeds the provider envelope. '
-                    'This is an input construction failure, not clinical uncertainty or an unavailable provider. '
-                    'Use retained native results to bind each statement to the complete source fields it actually needs. '
-                    'Read full relevant static JSON branches instead of substrings or whole unrelated receipts, and use explicit native SUM/COUNT stages for arithmetic. '
-                    'Keep every population, source row, requested output, date, currency, missing value and original receipt. '
-                    'Do not truncate, sample, drop claims or repeat successful source engines. Repair only source queries/bindings; all final checks still apply.'}
         # A typed abstention is a routing signal, never a license to lower its
         # threshold. The distinct frontier reviewer owns one complete aggregate
         # meaning judgment; its categorical verdict has no invented probability.
@@ -3022,6 +3012,19 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                     feedback.append('Frontier coverage finding: '+cv['reason']+' Unmet original words: '+json.dumps(cv['unaddressed_request_quotes']))
                 if label in ('contradicted','not_established'):
                     feedback.append('Frontier joint source finding: '+verdict['joint_reason'])
+        # Capacity refusal is not a source fault. Give the eligible complete
+        # aggregate packet to its distinct frontier reviewer before requesting
+        # analyst repair. A rejected/unavailable review never becomes acceptance.
+        if input_errors and (assessment.get('frontier_review')or{}).get('status')!='reviewed':
+            return {**assessment,'status':'repair','repair_kind':'verification_input_construction',
+                'progress_state':{'input_errors':sorted(set(input_errors)),
+                    'packets':[{'id':p['id'],'bytes':p['bytes']}for p in packets]},
+                'feedback':'Final review did not run because its source dependency input exceeds the provider envelope. '
+                    'This is an input construction failure, not clinical uncertainty or an unavailable provider. '
+                    'Use retained native results to bind each statement to the complete source fields it actually needs. '
+                    'Read full relevant static JSON branches instead of substrings or whole unrelated receipts, and use explicit native SUM/COUNT stages for arithmetic. '
+                    'Keep every population, source row, requested output, date, currency, missing value and original receipt. '
+                    'Do not truncate, sample, drop claims or repeat successful source engines. Repair only source queries/bindings; all final checks still apply.'}
         if coverage.get('decided_by') and coverage['label'] in ('answers_partially', 'answers_a_different_question'):
             feedback.append('Coverage check: ' + coverage['label'].replace('_', ' ') + '. Re-read every requested part, filter, period and comparison; supply the missing results.')
         elif not coverage.get('decided_by') or coverage['label']=='unknown':

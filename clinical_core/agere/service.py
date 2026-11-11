@@ -199,7 +199,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     held.enter_context(evaluation.request_scope(self.headers, connected_stack.path))
                 from . import request_lineage
                 execution=None if recovery and path in READ_POSTS else request_lineage.begin(connected_stack.path,path,body,
-                    tracking=self.headers.get('X-Agere-Progress-Key')if path=='/api/stack/compose'else None)
+                    tracking=self.headers.get('X-Agere-Progress-Key')if path in ('/api/stack/compose','/api/stack/investigation/resume')else None)
                 if execution:held.enter_context(execution)  # activates the lineage scope; closed with the request, even on error
                 if path=='/api/stack/appointment-graph/work':
                     from .clinical import appointment_graph
