@@ -1158,6 +1158,17 @@ class Parser(AnalystForms, SdohComposition, ComparisonForms, ClaimFrames, RateFo
         rest = re.sub(r"^[\u2019']s?\s+(?=\S)", '', rest)  # "diabetics' most recent A1c": the possessive of the population noun
         base_filter = None
         if default: base_filter = self.preset_filter(default, source_quote)
+        # A source qualifier names this catalog, not a clinical concept. Bind
+        # its exact wording rather than silently deleting it as filler. This
+        # composes with any received source, filters and grouping; it cannot
+        # broaden an explicitly inherited cohort.
+        catalog_scope = re.match(r'^(?:in|from|across)\s+(?:the|our|this)\s+'
+                                 r'(?:(?:connected|current|active)\s+)?(?:warehouse|dataset|database)\b', rest, re.I)
+        if catalog_scope:
+            if self.bound:
+                raise PlanError('Explicit warehouse scope conflicts with an inherited population; select warehouse scope first')
+            source_quote = [source_quote, catalog_scope.group()]
+            rest = rest[catalog_scope.end():].lstrip()
         where, tail = self.expression(rest)
         if tail.strip(): raise PlanError('Unconsumed request: '+tail)
         if modifiers and self.base != 'patient': raise PlanError('Population adjectives apply to patients: ' + ' '.join(modifiers))
