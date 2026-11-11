@@ -105,7 +105,7 @@ class SharedJsonValues(unittest.TestCase):
                 encode(value)
 
     def test_shared_metadata_does_not_expand_unrelated_native_rows_in_python(self):
-        rows=[{'entity_id':str(i),'cents':i,'unknown':None} for i in range(100)]
+        rows=[{'entity_id':str(i),'cents':i,'unknown':None} for i in range(1000)]
         shared={'source_digest':'received-source','as_of':'2029-12-31'}
         value={'rows':rows,'first':shared,'second':shared}
         original=json.dumps
@@ -117,6 +117,41 @@ class SharedJsonValues(unittest.TestCase):
         with patch.object(json,'dumps',side_effect=observe):
             self.assertEqual(digest(value),expected)
         self.assertEqual(visits,[True])
+
+    def test_shared_metadata_in_every_row_uses_whole_row_encoder(self):
+        shared = {'source_digest': 'received-source', 'unknown': None}
+        rows = [{'entity_id': str(i), 'cents': -i, 'source': shared,
+                 'date': '2029-12-31', 'polarity': 'negated'} for i in range(1000)]
+        original = json.dumps
+        row_ids = {id(row) for row in rows}
+        encoded_rows = []
+        def observe(v, *args, **kwargs):
+            if id(v) in row_ids:
+                encoded_rows.append(id(v))
+            return original(v, *args, **kwargs)
+        expected = hashlib.sha256(original(rows, sort_keys=True,
+            separators=(',', ':'), allow_nan=False).encode()).hexdigest()
+        with patch.object(json, 'dumps', side_effect=observe):
+            self.assertEqual(digest(rows), expected)
+        self.assertEqual(encoded_rows, [id(row) for row in rows])
+        shared['source_digest'] = 'changed-source'
+        self.assertNotEqual(digest(rows), expected)
+
+    def test_large_shared_basis_still_streams_without_expanding_whole_parent(self):
+        basis, value = self.fixture(1000)
+        original = json.dumps
+        expanded = []
+        def observe(v, *args, **kwargs):
+            if v is value or v is basis:
+                expanded.append(v is basis)
+            return original(v, *args, **kwargs)
+        expected = hashlib.sha256()
+        for part in json.JSONEncoder(sort_keys=True, separators=(',', ':'),
+                                     allow_nan=False).iterencode(value):
+            expected.update(part.encode())
+        with patch.object(json, 'dumps', side_effect=observe):
+            self.assertEqual(digest(value), expected.hexdigest())
+        self.assertEqual(expanded, [True])
 
 
 if __name__ == '__main__':

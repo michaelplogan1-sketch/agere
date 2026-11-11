@@ -22,21 +22,29 @@ def json_fingerprint(value, *, separators=None, allow_nan=True, default=None):
     counts = Counter()
     seen = set()
     active = set()
+    expanded_nodes = {}
+    # This only chooses an encoding strategy; it never truncates an input.
+    # Small rows with shared metadata are cheaper in the standard C encoder
+    # than in a Python walk that serializes every key and scalar separately.
+    direct_nodes = 2048
 
     def count(v):
         if not isinstance(v, (dict, list, tuple)):
-            return
+            return 1
         identity = id(v)
         counts[identity] += 1
         if identity in active:
             raise ValueError('Circular reference detected')
         if identity in seen:
-            return
+            return expanded_nodes[identity]
         seen.add(identity)
         active.add(identity)
+        size = 1
         for child in v.values() if isinstance(v, dict) else v:
-            count(child)
+            size = min(direct_nodes + 1, size + count(child))
         active.remove(identity)
+        expanded_nodes[identity] = size
+        return size
 
     count(value)
     repeated = {key for key, n in counts.items() if n > 1}
@@ -57,6 +65,7 @@ def json_fingerprint(value, *, separators=None, allow_nan=True, default=None):
     sha = hashlib.sha256()
     fragments = {}
     scalar_cache = {}
+    key_cache = {}
 
     def scalar(v):
         if isinstance(v, str):
@@ -68,7 +77,8 @@ def json_fingerprint(value, *, separators=None, allow_nan=True, default=None):
 
     def emit(v):
         identity = id(v)
-        if isinstance(v, (dict, list, tuple)) and not shared_below(v):
+        if isinstance(v, (dict, list, tuple)) and (
+                expanded_nodes[identity] <= direct_nodes or not shared_below(v)):
             # A small shared metadata object elsewhere must not force every
             # unrelated source row through the Python key/scalar encoder.
             # Whole unshared branches use the standard C encoder unchanged.
@@ -85,8 +95,11 @@ def json_fingerprint(value, *, separators=None, allow_nan=True, default=None):
                     sha.update(item_separator.encode())
                 # Let the standard encoder retain its exact key conversions,
                 # escaping and invalid-key errors. No hand-authored coercion.
-                text = json.dumps({key: None}, **options)
-                sha.update(text[1:text.rfind(':')].encode())
+                cache_key = (type(key), key)
+                if cache_key not in key_cache:
+                    text = json.dumps({key: None}, **options)
+                    key_cache[cache_key] = text[1:text.rfind(':')].encode()
+                sha.update(key_cache[cache_key])
                 sha.update(key_separator.encode())
                 emit(child)
             sha.update(b'}')
