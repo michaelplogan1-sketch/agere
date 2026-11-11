@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-11T04:49:21.362912+00:00",
+  "updated_at": "2026-11-11T12:14:32.003456+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -669,6 +669,10 @@
         {
           "path": "artifacts/agere-complete-roster-2026-11-10/report-reference-delivery-receipt.json",
           "sha256": "bc42267cca87ee5707abd2b81a37394b5031d368ec9e2039ec2d0bc6a61e4867"
+        },
+        {
+          "path": "artifacts/agere-stack-integration-2026-11-11/delivery-receipt.json",
+          "sha256": "5cb3b2fcc5f2b71f7bb85344f6317de79fc7a012c268f100907e6345197e495b"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -762,27 +766,38 @@
     }
   ],
   "checkpoint": {
-    "kind": "saved_report_reference_delivered_dependencies_explicit",
+    "kind": "connected_execution_path_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "product_commit": "9bf84c0edfb771a9de26f606f76f28341947d3be",
-    "user_behavior_delta": "The same saved124-row population brief now renders in34.590s versus91.990s in the preceding observed run, with its additional evidence file reduced from60,903,777 to66,116bytes. Exact HTML/JSON/CSV hashes and answer fingerprint match. The full native investigation is preserved by a sealed reference and current source/work checks. Corrected verification labels and dependency-aware changed-evidence workflow remain delivered.",
+    "product_commit": "e3d5445a22705bf92527d30aa59fadb606acb4d0",
+    "user_behavior_delta": "The shared cascade now tries checked native/reused plans before optional question classification, preserving every fallback and correction/continuation priority. Its single investigator receives prior rejection reasons and can use the existing scoped hybrid retriever/reranker alongside retained lexical document matches. Native compositional requests bind explicit catalog scope without dropping filters or broadening saved cohorts. Interrupted-investigation persistence/API/UI recovery is also loaded in the restarted app.",
     "measured_failure_reduction": [
-      "Removed full investigation duplication from each saved report bundle",
-      "Same report generation observed91.990s\u219234.590s with exact export hashes and0provider calls"
+      "Catalog-scope ordinary request changed from HTTP400/not_understood to HTTP200/answered with0paidcalls",
+      "Changed routing checks show no question-classifier call before native success; every fallback retained exactly once",
+      "Changed search checks preserve lexical hits, reject foreign/changed spans and avoid repeated retrieval on pagination"
     ],
     "evidence": [
-      "artifacts/agere-complete-roster-2026-11-10/handoff-delivery-receipt.json",
-      "artifacts/agere-complete-roster-2026-11-10/report-reference-delivery-receipt.json",
-      "artifacts/agere-complete-roster-2026-11-10/current-review-brief-v3/receipt.json",
-      "artifacts/agere-complete-roster-2026-11-10/current-review-brief-v3/download-verification.json",
-      "artifacts/agere-complete-roster-2026-11-10/current-release-final.json",
-      "artifacts/agere-complete-roster-2026-11-10/operations-current-v2/proof.json",
-      "artifacts/agere-complete-roster-2026-11-10/dependencies-compact-v6-report-compatibility/proof.json",
-      "artifacts/agere-complete-roster-2026-11-10/subscription-reset-observation.json"
+      "artifacts/agere-stack-integration-2026-11-11/changed-connections.log",
+      "artifacts/agere-stack-integration-2026-11-11/catalog-scope-v1.log",
+      "artifacts/agere-stack-integration-2026-11-11/ordinary-question-response.json",
+      "artifacts/agere-stack-integration-2026-11-11/ordinary-question-receipt.json",
+      "artifacts/agere-stack-integration-2026-11-11/ordinary-question-after-response.json",
+      "artifacts/agere-stack-integration-2026-11-11/ordinary-question-after-receipt.json",
+      "artifacts/agere-stack-integration-2026-11-11/runtime-receipt.json",
+      "artifacts/agere-resume-persistence-2026-11-11/workflow-proof.json",
+      "artifacts/agere-stack-integration-2026-11-11/delivery-receipt.json"
     ],
-    "remaining_gap": "Current population answer remains partial/unverified. Claude weekly limit blocks final global source/coverage review and current matched accepted-answer economics; no retries/probes. Provider supplied a5am Chicago reset time without an absolute date; unauthenticated read-only browser settings could not clarify it. Current clean artifact/restore remains blocked by standing60GB storage preflight (40,467,038,208bytes observed free; one-time code-only exception consumed). Current full25 ordinary acceptance, independent model/method/clinical qualification and customer production prerequisites remain unestablished. Current local app and recorded native workflows are available; no full-MVP/sellable claim.",
-    "next_action": "G3: Inspect owned receipts first. When actual Claude subscription availability is restored, resume only the retained124-row population final source/coverage review from population-retained-v3/investigation.json.gz and current context ANS-4c7dbc0c83fcb08966c6a4b4; preserve native results and all attempts, do not replay completed analysis. No provider retry probes while the recorded weekly limit persists. Once an accepted current answer exists, complete one equivalent-input baseline for accepted-answer economics; preserve all25 case dispositions without restamping historical passes. Finish current code artifact/clean restore only when the existing60GB storage preflight passes or a separately authorized exception exists. Report-only performance/exports and native dependency behavior are delivered: do not repeat passing campaigns or expand scope with optional components. Offline app PID41370/session68399 on8908. Fullten/principal/October11 baseline, ACTIVE quiet continuation and no pushes remain."
+    "remaining_gap": "Core integration is running locally, with scoped engineering evidence only. The retained124-row population investigation remains partial/unverified; final source/coverage review and matched accepted-answer economics are unfinished. Current applicability of all25 original cases and current release/restore remain unestablished; do not repeat passing campaigns or package again in place of implementation. The configured local-student directory contains no deployed weights; older root student manifests lack the current input contract and are not promoted. Trained generative bottles remain off; guarded execution reuse and measured improvement are connected. Claude subscription transport is configured but current quota availability is unconfirmed after the earlier weekly-limit receipt; no provider request or quota probe was sent. Independent clinical/model qualification and customer production prerequisites remain separate and incomplete.",
+    "next_action": "G3: Continue manually on the integrated ordinary question path at e3d5445a22705bf92527d30aa59fadb606acb4d0. Scheduler remains PAUSED and Git pushes forbidden. Native/reuse-first dispatch, investigator hybrid search, prior-failure handoff, catalog-scope binding and interrupted-progress persistence are implemented and loaded. Next connected product work is completing an unresolved ordinary analytical answer through that path, preserving native results and current source bindings; use the retained124-row investigation only for its outstanding final review, not another full-cohort rebuild. Claude is configured through subscription transport; the last recorded limit has no confirmed reset date, so do not send quota probes or repetitive retries. Keep its actual availability separate from configuration. Local student weights are not deployed for the current input contract; do not describe an enabled flag as active inference, promote stale weights or start untargeted training. Keep allten areas/all25 and current principal/October11 baseline. Do not commission another code audit, add catalogs, repeat passing campaigns or regenerate packages instead of completing missing behavior. Record finite remaining qualification and deployment dependencies honestly.",
+    "last_observation": {
+      "at": "2026-11-11T12:14:32.003456+00:00",
+      "kind": "local_connected_delivery",
+      "new_product_delivery": true,
+      "provider_calls": 0,
+      "source_frozen": false,
+      "active_jobs": 0,
+      "runtime_receipt": "artifacts/agere-stack-integration-2026-11-11/runtime-receipt.json"
+    }
   },
   "decisions": [
     {
@@ -1309,8 +1324,8 @@
     },
     {
       "at": "2026-10-19T15:56:24.839223+00:00",
-      "basis": "Mike: put Data \u2192 Information \u2192 Intelligence \u2192 Wisdom in the LinkedIn visual; remove sections 9 and 11 so it shows the stack and classic computer science.",
-      "change": "Create unbranded nine-panel analytics-only public visual and update the post\u2019s image pointer.",
+      "basis": "Mike: put Data → Information → Intelligence → Wisdom in the LinkedIn visual; remove sections 9 and 11 so it shows the stack and classic computer science.",
+      "change": "Create unbranded nine-panel analytics-only public visual and update the post’s image pointer.",
       "scope_impact": "Presentation scope only. Full product charter and implementation next action preserved; no publishing or runtime changes."
     },
     {
@@ -1382,7 +1397,7 @@
     },
     {
       "at": "2026-10-20T11:41:16.361279+00:00",
-      "basis": "Mike explicitly requests a substantially more impressive TextQL/TypeSafe-inspired interface organized around Data \u2192 Information \u2192 Intelligence \u2192 Wisdom.",
+      "basis": "Mike explicitly requests a substantially more impressive TextQL/TypeSafe-inspired interface organized around Data → Information → Intelligence → Wisdom.",
       "change": "Prioritize and activate this connected interface increment on :8885; correct null-first-group chart rendering discovered in browser validation.",
       "scope_impact": "No charter narrowing or planner-qualification claim. G3 remains active, G5 blocked; all ten areas retained. Shared planning remains the next functional increment.",
       "evidence": "artifacts/agere-wisdom-design-v1/implementation-receipt.json"
@@ -1764,7 +1779,7 @@
     {
       "at": "2026-10-21T01:30:58.960365+00:00",
       "decision": "Activate summary-scope release f16b208 at /ask with rollback8e83d0d; close the explicit original-input preservation defect and resume original compound current-state semantics.",
-      "basis": "121 primary/frozen tests, five authored received-source fixtures, six actual HTTP checks, candidate browser and live292\u2192118events/67patients\u2192292 input-follow-up with independent source match and zero calls.",
+      "basis": "121 primary/frozen tests, five authored received-source fixtures, six actual HTTP checks, candidate browser and live292→118events/67patients→292 input-follow-up with independent source match and zero calls.",
       "scope_impact": "Specific B2 failure reduction; no new clinical authority or interpretation qualification. All ten areas retained, G3 active, G5 blocked/full acceptancefalse. No further helper/UI detour before the recorded clinical semantic requirement.",
       "evidence": "artifacts/agere-summary-scope-v1/implementation-receipt.json"
     },
@@ -1878,7 +1893,7 @@
     {
       "at": "2026-10-26T20:04:27.389968+00:00",
       "decision": "Stop immediately at the Claude subscription weekly limit; preserve source and current-run receipts without an external API fallback.",
-      "basis": "RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your weekly limit \u00b7 resets Oct 28 at 6am (America/Chicago)",
+      "basis": "RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your weekly limit · resets Oct 28 at 6am (America/Chicago)",
       "scope_impact": "No activation, completed-workflow claim or narrowed charter. G3 stays incomplete. No automatic retry or heartbeat created.",
       "evidence": "artifacts/agere-auto-workflow-2026-10-26/stop-receipt.json"
     },
@@ -1979,14 +1994,14 @@
       "at": "2026-10-27T20:00:45.204194+00:00",
       "gate": "G3",
       "decision": "Stage independently reviewed shared workflow fixes outside the frozen training source",
-      "basis": "Mike authorized parallel review and sent its workflow/component/company qualification approach back to the build owner. First measured increment preserves selected patients, full evidence and report meaning; findings9\u201321 remain within the connected G3 sequence. No new architecture or protected evaluation.",
+      "basis": "Mike authorized parallel review and sent its workflow/component/company qualification approach back to the build owner. First measured increment preserves selected patients, full evidence and report meaning; findings9–21 remain within the connected G3 sequence. No new architecture or protected evaluation.",
       "impact": "Canonical source495525e3 and PID29583 remain unchanged; provider calls0, runtime/default models unpromoted. Staged commit fcbc798 and offline receipts preserve progress."
     },
     {
       "at": "2026-10-27T20:58:17.594226+00:00",
       "gate": "G3",
       "decision": "Keep frozen finite learning jobs unchanged and preserve verified shared workflow fixes3c8780e as a staged candidate",
-      "basis": "Mike requested continued offline work; 388/390 surrounding checks pass with2live skips;63affected checks pass; identical17known-defect fixtures now pass vs16assertions/one provider-limit resend exception before. New normalization/correction/bounded-value findings36\u201338 remain explicit.",
+      "basis": "Mike requested continued offline work; 388/390 surrounding checks pass with2live skips;63affected checks pass; identical17known-defect fixtures now pass vs16assertions/one provider-limit resend exception before. New normalization/correction/bounded-value findings36–38 remain explicit.",
       "scope_impact": "No runtime/model promotion or providers. All ten acceptance areas retained; code/evidence bundle preserved separately from model source495525e3.",
       "evidence": "artifacts/agere-schema-repair-2026-10-27/workflow-followup/3c8780e/workflow-receipt-v3.json"
     },
@@ -1994,7 +2009,7 @@
       "at": "2026-10-27T21:46:37.643706+00:00",
       "gate": "G3",
       "decision": "Extend the same independently reviewed workflow increment through measurement and optimization integrity; stage outside frozen studies",
-      "basis": "Nine authored measurement tests fail before/pass after; 482of484surrounding checks pass with2live skips atfa570b3. Latest42\u201344 defects remain explicitly queued.",
+      "basis": "Nine authored measurement tests fail before/pass after; 482of484surrounding checks pass with2live skips atfa570b3. Latest42–44 defects remain explicitly queued.",
       "scope_impact": "No new layers, providers, runtime/model promotion or narrowed acceptance. Source495525e3 and existing finite studies unchanged.",
       "evidence": "artifacts/agere-schema-repair-2026-10-27/workflow-followup/fa570b3/workflow-receipt-v5.json"
     },
@@ -2347,7 +2362,7 @@
     {
       "at": "2026-10-30T17:57:18.967745+00:00",
       "gate": "G5",
-      "decision": "Prioritize one connected clinician-readable full-question/cost increment under Mike\u2019s explicit new acceptance request. Diagnose before calls:1.37MB expanded draft entered original request, repeated1.9MB prompts and fourClaude calls8.6791282USD API-equivalent. Native cached source reexecution5.48s and typed final contract compile preserve57rows/facts/unknowns with0providers;32.5KB actor-state candidate remains offline/unpromoted.",
+      "decision": "Prioritize one connected clinician-readable full-question/cost increment under Mike’s explicit new acceptance request. Diagnose before calls:1.37MB expanded draft entered original request, repeated1.9MB prompts and fourClaude calls8.6791282USD API-equivalent. Native cached source reexecution5.48s and typed final contract compile preserve57rows/facts/unknowns with0providers;32.5KB actor-state candidate remains offline/unpromoted.",
       "evidence": [
         "artifacts/agere-claude-cost-diagnostic-2026-10-30/diagnostic.json"
       ],
@@ -2526,7 +2541,7 @@
     {
       "at": "2026-10-31T13:44:30.534739+00:00",
       "gate": "G5",
-      "decision": "Hold implementation for independent blueprint/code/plan audit; after review proceed autonomously under Mike\u2019s latest explicit instruction.",
+      "decision": "Hold implementation for independent blueprint/code/plan audit; after review proceed autonomously under Mike’s latest explicit instruction.",
       "reason": "Repeated partial runs and recovery/actor overhead justify reassessment. Send actual code, full ten-area scope, earlier reviews, measured failures and a challengeable proposed sequence through existing Claude subscription. Do not assume either reviewer is correct without code evidence.",
       "evidence": "artifacts/agere-blueprint-review-2026-10-31/review-request.md",
       "all_ten_areas_retained": true
@@ -3324,7 +3339,7 @@
     {
       "at": "2026-11-03T20:36:08.825946+00:00",
       "gate": "G3",
-      "decision": "Honor Mike\u2019s latest request for another use of bottling by inspecting a previously completed financial task and running an offline component check before returning to harder-question repair.",
+      "decision": "Honor Mike’s latest request for another use of bottling by inspecting a previously completed financial task and running an offline component check before returning to harder-question repair.",
       "evidence": [
         "artifacts/agere-financial-bottle-current-2026-11-03/receipt.json"
       ],
@@ -6304,14 +6319,76 @@
         "artifacts/agere-complete-roster-2026-11-10/subscription-reset-observation.json"
       ],
       "scope_impact": "Allten/all25 retained. Scoped predicate statuses do not establish current whole25 acceptance, clinical/model qualification or sellability."
+    },
+    {
+      "at": "2026-11-11T11:11:47.649099+00:00",
+      "gate": "G3",
+      "decision": "Treat the subscription limit and package reserve as action-specific dependencies, not a global engineering wait. Mike challenged the overnight lack of implementation; the preceding checkpoint selected only dependency-bound next actions. Inspect the existing retained-answer recovery path for a concrete connected increment rather than repeating unchanged observations.",
+      "evidence": [
+        "artifacts/agere-storage-repair-2026-11-10/current-space-review-2026-11-11.json",
+        "artifacts/agere-complete-roster-2026-11-10/continuation-observations.jsonl",
+        "artifacts/agere-complete-roster-2026-11-10/population-retained-v3/receipt.json"
+      ],
+      "scope_impact": "No new component or architecture rewrite, narrowed acceptance area, provider-limit bypass or storage exception. Recovery wiring is under existing G3 and acceptance area10. No new product defect or delivery claimed from inspection alone."
+    },
+    {
+      "at": "2026-11-11T11:18:15.191976+00:00",
+      "decision": "Perform user-requested content-preserving cleanup of inactive byte-identical historical database/index copies. Current user cleanup request supersedes previous read-only inspection restriction for this scope.",
+      "reason": "Recover duplicate physical storage without erasing unique evidence or breaking saved paths.",
+      "scope_impact": "No change to product charter or gate sequence; current app/data, models, protected learning and evaluations excluded; no full-copy fallback.",
+      "evidence": [
+        "artifacts/agere-storage-cleanup-2026-11-11/manifest.json",
+        "artifacts/agere-storage-cleanup-2026-11-11/run.json"
+      ]
+    },
+    {
+      "at": "2026-11-11T11:25:28.947117+00:00",
+      "decision": "Seal user-requested lossless run-output cleanup; return to existing G3 product action.",
+      "reason": "202 inactive generated JSON files processed with original bytes/paths/hash/mode/mtime retained;33.1GB net observed recovered.19 clone-only replacements yielded no material gain so that pass was stopped.",
+      "scope_impact": "Maintenance only, not product acceptance.60GB minimum reserve restored; no package/deployment/clinical claim or new approvals.",
+      "evidence": [
+        "artifacts/agere-storage-cleanup-2026-11-11/delivery-receipt.json"
+      ]
+    },
+    {
+      "at": "2026-11-11T11:34:39.365639+00:00",
+      "decision": "Pause scheduled continuation at explicit user request; preserve the unfinished recovery regression and existing sealed product receipt.",
+      "reason": "Mike is present and requested current state and remaining finish line. No product fix is complete in this turn.",
+      "scope_impact": "Scheduler only is paused; manual build authority retained, Git pushes disabled, allten/all25 and qualification boundaries unchanged.",
+      "evidence": [
+        "artifacts/agere-resume-persistence-2026-11-11/before.log",
+        "artifacts/agere-resume-persistence-2026-11-11/before-corrected-fixture.log"
+      ]
+    },
+    {
+      "at": "2026-11-11T11:54:26.000220+00:00",
+      "kind": "user_directed_shared_stack_integration",
+      "source_frozen": false,
+      "active_jobs": 0,
+      "new_product_delivery": false,
+      "recovery_commit": "f9cec6aa",
+      "recovery_evidence": [
+        "artifacts/agere-resume-persistence-2026-11-11/workflow-proof.json",
+        "artifacts/agere-resume-persistence-2026-11-11/expanded-regression-v3.log"
+      ],
+      "routing_failure": "Cascade.order invokes optional routing before native/reuse attempts; repeated rewording routes can classify work that native code can answer.",
+      "correction": "Integrate lazy routing in existing question execution path; preserve correction-first, recovery, acceptance, source and accounting guards. No separate review or broad test campaign."
+    },
+    {
+      "at": "2026-11-11T12:14:32.003456+00:00",
+      "kind": "connected_execution_delivery",
+      "gate": "G3",
+      "receipt": "artifacts/agere-stack-integration-2026-11-11/delivery-receipt.json",
+      "reason": "Follow latest user directive to connect existing stack directly. Optional classification no longer precedes native/reuse attempts; investigator retrieval now uses existing hybrid ranking and retains failure context. No code-review agent, research expansion or broad campaign.",
+      "scope_impact": "Ten acceptance areas/all25 and current qualification boundaries preserved; local model enablement distinguished from actual deployed weights."
     }
   ],
   "unsealed_work": {
-    "status": "provider_and_current_package_dependencies",
+    "status": "remaining_answer_qualification_and_release_dependencies",
     "source_frozen": false,
-    "candidate_commit": "9bf84c0edfb771a9de26f606f76f28341947d3be",
-    "sealed_delivery": "artifacts/agere-complete-roster-2026-11-10/report-reference-delivery-receipt.json",
-    "remaining_verification": "Current population answer remains partial/unverified. Claude weekly limit blocks final global source/coverage review and current matched accepted-answer economics; no retries/probes. Provider supplied a5am Chicago reset time without an absolute date; unauthenticated read-only browser settings could not clarify it. Current clean artifact/restore remains blocked by standing60GB storage preflight (40,467,038,208bytes observed free; one-time code-only exception consumed). Current full25 ordinary acceptance, independent model/method/clinical qualification and customer production prerequisites remain unestablished. Current local app and recorded native workflows are available; no full-MVP/sellable claim.",
+    "candidate_commit": "e3d5445a22705bf92527d30aa59fadb606acb4d0",
+    "sealed_delivery": "artifacts/agere-stack-integration-2026-11-11/delivery-receipt.json",
+    "remaining_verification": "Core integration is running locally, with scoped engineering evidence only. The retained124-row population investigation remains partial/unverified; final source/coverage review and matched accepted-answer economics are unfinished. Current applicability of all25 original cases and current release/restore remain unestablished; do not repeat passing campaigns or package again in place of implementation. The configured local-student directory contains no deployed weights; older root student manifests lack the current input contract and are not promoted. Trained generative bottles remain off; guarded execution reuse and measured improvement are connected. Claude subscription transport is configured but current quota availability is unconfirmed after the earlier weekly-limit receipt; no provider request or quota probe was sent. Independent clinical/model qualification and customer production prerequisites remain separate and incomplete.",
     "provider_dependency": {
       "provider": "claude",
       "kind": "subscription_weekly_limit",
@@ -6320,13 +6397,38 @@
       "retry_probes_allowed": false,
       "evidence": "artifacts/agere-complete-roster-2026-11-10/population-retained-v3/investigation.json.gz",
       "reset_date_confirmed": false,
-      "settings_observation": "artifacts/agere-complete-roster-2026-11-10/subscription-reset-observation.json"
+      "settings_observation": "artifacts/agere-complete-roster-2026-11-10/subscription-reset-observation.json",
+      "current_state": "subscription_configured_no_new_quota_observation"
     },
     "storage_dependency": {
       "minimum_bytes": 60000000000,
-      "observed_free_bytes": 40467038208,
+      "observed_free_bytes": 73944072192,
       "package_created": false,
-      "evidence": "artifacts/agere-complete-roster-2026-11-10/operations-current-v1/proof.json"
+      "evidence": "artifacts/agere-storage-cleanup-2026-11-11/delivery-receipt.json",
+      "status": "minimum_reserve_restored_package_still_unverified"
+    },
+    "resume_persistence_candidate": {
+      "at": "2026-11-11T11:54:26.000220+00:00",
+      "kind": "user_directed_shared_stack_integration",
+      "source_frozen": false,
+      "active_jobs": 0,
+      "new_product_delivery": false,
+      "recovery_commit": "f9cec6aa",
+      "recovery_evidence": [
+        "artifacts/agere-resume-persistence-2026-11-11/workflow-proof.json",
+        "artifacts/agere-resume-persistence-2026-11-11/expanded-regression-v3.log"
+      ],
+      "routing_failure": "Cascade.order invokes optional routing before native/reuse attempts; repeated rewording routes can classify work that native code can answer.",
+      "correction": "Integrate lazy routing in existing question execution path; preserve correction-first, recovery, acceptance, source and accounting guards. No separate review or broad test campaign.",
+      "status": "loaded_in_current_runtime",
+      "delivery_receipt": "artifacts/agere-stack-integration-2026-11-11/delivery-receipt.json"
+    },
+    "stack_integration_candidate": {
+      "status": "scoped_engineering_delivered",
+      "product_commit": "e3d5445a22705bf92527d30aa59fadb606acb4d0",
+      "receipt": "artifacts/agere-stack-integration-2026-11-11/delivery-receipt.json",
+      "full_acceptance": false,
+      "source_frozen": false
     }
   },
   "current_visual_request": {
@@ -6363,7 +6465,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: Inspect owned receipts first. When actual Claude subscription availability is restored, resume only the retained124-row population final source/coverage review from population-retained-v3/investigation.json.gz and current context ANS-4c7dbc0c83fcb08966c6a4b4; preserve native results and all attempts, do not replay completed analysis. No provider retry probes while the recorded weekly limit persists. Once an accepted current answer exists, complete one equivalent-input baseline for accepted-answer economics; preserve all25 case dispositions without restamping historical passes. Finish current code artifact/clean restore only when the existing60GB storage preflight passes or a separately authorized exception exists. Report-only performance/exports and native dependency behavior are delivered: do not repeat passing campaigns or expand scope with optional components. Offline app PID41370/session68399 on8908. Fullten/principal/October11 baseline, ACTIVE quiet continuation and no pushes remain.",
+  "next_action": "G3: Continue manually on the integrated ordinary question path at e3d5445a22705bf92527d30aa59fadb606acb4d0. Scheduler remains PAUSED and Git pushes forbidden. Native/reuse-first dispatch, investigator hybrid search, prior-failure handoff, catalog-scope binding and interrupted-progress persistence are implemented and loaded. Next connected product work is completing an unresolved ordinary analytical answer through that path, preserving native results and current source bindings; use the retained124-row investigation only for its outstanding final review, not another full-cohort rebuild. Claude is configured through subscription transport; the last recorded limit has no confirmed reset date, so do not send quota probes or repetitive retries. Keep its actual availability separate from configuration. Local student weights are not deployed for the current input contract; do not describe an enabled flag as active inference, promote stale weights or start untargeted training. Keep allten areas/all25 and current principal/October11 baseline. Do not commission another code audit, add catalogs, repeat passing campaigns or regenerate packages instead of completing missing behavior. Record finite remaining qualification and deployment dependencies honestly.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6372,7 +6474,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-complete-roster-2026-11-10/report-reference-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-stack-integration-2026-11-11/delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -6452,8 +6554,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 41370,
-  "owned_server_session": 68399,
+  "owned_server_pid": 49885,
+  "owned_server_session": 38128,
   "last_run_observation": {
     "at": "2026-11-08T23:35:47.474869+00:00",
     "no_active_jobs": true,
@@ -6632,13 +6734,13 @@
       "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json"
     }
   },
-  "server_status": "running_offline_on8908",
+  "server_status": "running_subscription_configured_on8908_quota_unconfirmed",
   "automatic_pushes": "disabled_by_explicit_user_2026-11-09",
   "push_authorization": "Revoked November9: do not git push without a new explicit Mike request.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-09T18:35:52.790981+00:00",
   "pause_reason": null,
-  "heartbeat_status": "ACTIVE",
+  "heartbeat_status": "PAUSED",
   "product_market_audit": {
     "as_of": "2026-11-09T18:42:05.848258+00:00",
     "scope": "Owner product/architecture/market audit against saved receipts and selected current public primary sources. Not independent clinical/model qualification, patent/FTO search, full research review or customer discovery.",
@@ -6678,12 +6780,46 @@
     ]
   },
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
-  "latest_receipt": "artifacts/agere-complete-roster-2026-11-10/report-reference-delivery-receipt.json",
+  "latest_receipt": "artifacts/agere-stack-integration-2026-11-11/delivery-receipt.json",
   "code_only_storage_exception": {
     "authorization": "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
     "scope": "One code-only archive and fresh-code rehearsal from the linked proposal; existing source/model/Python/work/ledger stores referenced, never copied. General60GBguard unchanged.",
     "approved": true
   },
-  "continuation_mode": "quiet_automatic_continuation_without_routine_user_gating",
-  "continuation_authorization": "Mike November10: if it is not a sellable product stop stopping; complete it without waiting for another prompt. Existing 30-minute heartbeat reactivated via automation tool."
+  "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
+  "continuation_authorization": "Mike November10: if it is not a sellable product stop stopping; complete it without waiting for another prompt. Existing 30-minute heartbeat reactivated via automation tool.",
+  "continuation_observation": {
+    "at": "2026-11-11T11:34:39.365639+00:00",
+    "kind": "user_requested_scheduler_pause_and_status",
+    "new_product_delivery": false,
+    "heartbeat_status": "PAUSED",
+    "automatic_git_pushes": false,
+    "candidate": "test_artifact_analyst_continuation.py",
+    "candidate_status": "unsealed_failing_regression_only_product_source_unchanged",
+    "evidence": [
+      "artifacts/agere-resume-persistence-2026-11-11/before.log",
+      "artifacts/agere-resume-persistence-2026-11-11/before-corrected-fixture.log"
+    ],
+    "measured_failure_reduction": 0,
+    "observed_failure": "Missing resumed-failure attempt accounting reproduced; source inspection also identifies missing partial-result capture and resume API/UI recovery metadata. Later new regression assertions have not yet been reached.",
+    "active_jobs": 0,
+    "source_frozen": false
+  },
+  "storage_maintenance": {
+    "at": "2026-11-11T11:22:13.795383+00:00",
+    "kind": "user_requested_lossless_duplicate_cleanup",
+    "status": "completed",
+    "pid": null,
+    "session_id": null,
+    "receipt": "artifacts/agere-storage-cleanup-2026-11-11/delivery-receipt.json",
+    "manifest": "artifacts/agere-storage-cleanup-2026-11-11/json-cleanup-manifest.json",
+    "source_frozen": false,
+    "product_edits": false,
+    "authorization": "Mike: okay clen things up we do not need",
+    "scope": "202 inactive generated JSON outputs; same paths and logical hashes; no model/training/evaluation/current runtime edits.",
+    "finished_at": "2026-11-11T11:25:28.947117+00:00",
+    "after_free_bytes": 73944072192,
+    "observed_net_free_increase_bytes": 33339498496
+  },
+  "latest_maintenance_receipt": "artifacts/agere-storage-cleanup-2026-11-11/delivery-receipt.json"
 }
