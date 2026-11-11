@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-11T00:00:25.301923+00:00",
+  "updated_at": "2026-11-11T00:19:01.660254+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -743,48 +743,43 @@
     }
   ],
   "checkpoint": {
-    "kind": "native_capacity_consumer_and_input_blocked_disposition",
+    "kind": "existing_native_engines_connected_and_live_local_product",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "product_commit": "24cbe9447606ffd370aff38458990afa939d5826",
-    "user_behavior_delta": "The shared ordinary-result handoff restores an exact native queueing result only for the complete server-bound table. Saved UI distinguishes observed demand from unknown staffing/capacity instead of presenting a zero staffing chart. Original model prose, partial status and uncertain review are retained.",
+    "product_commit": "1d7e366791a515f24bb73c524161c21ab9cc1cf4",
+    "user_behavior_delta": "Existing explanation/discovery, governed clinical/utilization/quality/derived calculations, source-quality/document/terminology/access engines and cited knowledge/onboarding are callable through the shared ordinary investigator tool path. Global reports do not inherit or silently expand patient populations. Non-healthcare pack methods appear only under a matching active industry. Existing validators, source/quantity/date/unknown guards, native result views, shared decision/work interfaces and separate clinical authority remain.",
     "measured_failure_reduction": {
-      "selected_patients": 3930,
-      "received_kept_appointments": 30639,
-      "weekly_baseline": 157.1231,
-      "weekly_plus_10_percent": 172.8354,
-      "independent_source_checks": 8,
-      "required_servers": null,
-      "capacity_gap_servers": null,
-      "native_consumer_new_provider_attempts": 0,
-      "unique_affected_checks_passed": 34,
-      "machine_review_candidate_active": false,
-      "machine_review_improvement_established": false,
-      "paid_role_attempts_failed": 4,
-      "paid_role_attempts_priced": 0,
-      "paid_role_attempts_unknown_cost": 4,
-      "actual_cash_local_compute_review_cost": null
+      "previously_unreachable_existing_engines_connected": 13,
+      "healthcare_callable_now_added": 12,
+      "industry_conditional_added": 1,
+      "ordinary_rows": 12,
+      "ordinary_status": "answered",
+      "ordinary_machine_review": "confirmed",
+      "native_ED_input_patients": 4115,
+      "native_ED_monthly_rows": 12,
+      "native_paid_calls": 0,
+      "ordinary_attempts": 16,
+      "ordinary_known_api_equivalent_usd": 1.310504004,
+      "unpriced_attempts": 0,
+      "new_unit_test_suites": 0,
+      "whole25_reruns": 0,
+      "full_research_or_model_qualification": false
     },
     "evidence": [
-      "artifacts/agere-input-blocked-workflow-2026-11-10/delivery-receipt.json",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/increment-contract.json",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/program-inventory.json",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/check-accounting.json",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/affected-checks-v1.log",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/affected-checks-v2.log",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/candidate-final-checks.log",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/role-v1/receipt.json",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/role-network-v2/receipt.json",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/consumer-v1/receipt.json",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/consumer-score-v2/receipt.json",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/consumer-score-v3/receipt.json",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/consumer-ui-v4/receipt.json",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/consumer-ui-v4/ui-finished.json",
-      "artifacts/agere-input-blocked-workflow-2026-11-10/final-compatibility.json"
+      "artifacts/agere-connected-engines-2026-11-10/delivery-receipt.json",
+      "artifacts/agere-connected-engines-2026-11-10/increment-contract.json",
+      "artifacts/agere-connected-engines-2026-11-10/surface-smoke.json",
+      "artifacts/agere-connected-engines-2026-11-10/final-native-smoke.json",
+      "artifacts/agere-connected-engines-2026-11-10/native-ed-smoke.json.gz",
+      "artifacts/agere-connected-engines-2026-11-10/native-knowledge-smoke.json.gz",
+      "artifacts/agere-connected-engines-2026-11-10/ordinary-v1/receipt.json",
+      "artifacts/agere-connected-engines-2026-11-10/ordinary-v1/native-context.json.gz",
+      "artifacts/agere-connected-engines-2026-11-10/ordinary-v1/priced-provider-attempts.json",
+      "artifacts/agere-connected-engines-2026-11-10/check-accounting.json",
+      "artifacts/agere-connected-engines-2026-11-10/live-app/server-receipt.json"
     ],
-    "remaining_gap": "Full fixed25/ten-area release disposition and actual incomplete end-to-end behavior remain. G5 independent clinical/model/outcome/economics qualification and customer deployment are not complete. The outcome-aware work-review candidate has no deciding live result and remains OFF. No clinical specification, care authority, verification threshold or new service was invented.",
-    "next_action": "G3 release closure: use the existing fixed25/ten-area scorecard and latest sealed source/financial/discovery/serialization/contract/capacity receipts to close the usable local candidate. Resolve only concrete remaining end-to-end code failures; reuse byte-compatible passing evidence and retain unknown machine/source judgments. Do not add model/research components, start another whole25 passing campaign, repeat Q16/Q17, lower verifier thresholds or invent diabetes/BP specifications. Q09/Q23 are explicit installed-specification/parent dependencies; staffing lacks mapped duration/approved targets/current staffing. Outcome-aware pending-work candidate remains OFF (4unpriced DNS failures; failed-key guard prevents retries); this does not block independent local engineering. Preserve full ten/all25/principal/October11 and original clinical/population/VBC/financial scope. Existing contract archive is recovery; no new package, provider key, source copy, push or scheduler restart.",
-    "current_context_id": "ANS-678b4ab796304e65f8046fa9"
+    "remaining_gap": "Whole25/ten-area acceptance, G5 independent clinical/model/outcome/economics qualification and customer deployment remain unestablished. Exact diabetes/BP program specifications and corresponding replay parent remain absent; some capacity inputs are unavailable. DecisionRAG/new research candidates and outcome-aware work-review candidate are not promoted by this delivery. A working broad local candidate is not a sale-ready or clinically validated deployment.",
+    "next_action": "G3 usable local candidate:13existing native engines are now connected through ordinary investigator; current product1d7e3667 runs at http://127.0.0.1:8908/ask (interactive server, not a frozen experiment/provider job). One ordinary recorded-ED question returned answered/confirmed12monthlyrows/1501visits; its route was governedSQL, not the newly exposed engine. Actual shared nativeEDtool executes12rows/all4115subjects and knowledge executes without patient-population expansion. Do not repeat this passing request or start another broad test/model/research campaign. Continue only concrete missing promised user behavior under the existing eight-capability/ten-area/fixed25 contract; preserve supported unknowns and explicit independent qualification/customer dependencies. Existing packaged contract demo/recovery remains; no new package or source warehouse copy. Exact diabetes/BP specifications and some staffing inputs are external input dependencies, not a reason to invent rules or repeat calculations. No fullMVP/clinical/model superiority/sale-ready claim. Keep research candidates unpromoted unless needed and supported. SchedulerPAUSED/no Gitpush."
   },
   "decisions": [
     {
@@ -6190,14 +6185,29 @@
         "artifacts/agere-input-blocked-workflow-2026-11-10/check-accounting.json"
       ],
       "scope_impact": "Full ten-area/25-case scope retained; explicit source/specification/clinical qualification dependencies remain."
+    },
+    {
+      "at": "2026-11-11T00:04:38.683273+00:00",
+      "decision": "Implement missing shared access to existing analytical engines as requested; limit checks to changed integration.",
+      "evidence": [
+        "artifacts/agere-connected-engines-2026-11-10/increment-contract.json"
+      ],
+      "scope_impact": "Ten pre-existing read-only methods become callable; no new component, disease handler, source definition, model promotion or qualification claim."
+    },
+    {
+      "at": "2026-11-11T00:19:01.660254+00:00",
+      "decision": "Deliver existing engines through the ordinary tool path and run the current local product; stop adding broad tests/research.",
+      "evidence": [
+        "artifacts/agere-connected-engines-2026-11-10/delivery-receipt.json"
+      ],
+      "scope_impact": "13existing connections; no new formula/model/clinical authority. Fullten/all25 and separate qualification/customer prerequisites retained."
     }
   ],
   "unsealed_work": {
-    "status": "native_capacity_sealed_release_closure_next",
+    "status": "connected_engines_sealed_live_local_product",
     "source_frozen": false,
-    "sealed_delivery": "artifacts/agere-input-blocked-workflow-2026-11-10/delivery-receipt.json",
-    "disabled_candidate": "AGERE_NATIVE_WORK_OUTCOMES=off",
-    "remaining_verification": "Full fixed25/ten-area release disposition and actual incomplete end-to-end behavior remain. G5 independent clinical/model/outcome/economics qualification and customer deployment are not complete. The outcome-aware work-review candidate has no deciding live result and remains OFF. No clinical specification, care authority, verification threshold or new service was invented."
+    "sealed_delivery": "artifacts/agere-connected-engines-2026-11-10/delivery-receipt.json",
+    "remaining_verification": "Whole25/ten-area acceptance, G5 independent clinical/model/outcome/economics qualification and customer deployment remain unestablished. Exact diabetes/BP program specifications and corresponding replay parent remain absent; some capacity inputs are unavailable. DecisionRAG/new research candidates and outcome-aware work-review candidate are not promoted by this delivery. A working broad local candidate is not a sale-ready or clinically validated deployment."
   },
   "current_visual_request": {
     "status": "completed",
@@ -6233,7 +6243,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3 release closure: use the existing fixed25/ten-area scorecard and latest sealed source/financial/discovery/serialization/contract/capacity receipts to close the usable local candidate. Resolve only concrete remaining end-to-end code failures; reuse byte-compatible passing evidence and retain unknown machine/source judgments. Do not add model/research components, start another whole25 passing campaign, repeat Q16/Q17, lower verifier thresholds or invent diabetes/BP specifications. Q09/Q23 are explicit installed-specification/parent dependencies; staffing lacks mapped duration/approved targets/current staffing. Outcome-aware pending-work candidate remains OFF (4unpriced DNS failures; failed-key guard prevents retries); this does not block independent local engineering. Preserve full ten/all25/principal/October11 and original clinical/population/VBC/financial scope. Existing contract archive is recovery; no new package, provider key, source copy, push or scheduler restart.",
+  "next_action": "G3 usable local candidate:13existing native engines are now connected through ordinary investigator; current product1d7e3667 runs at http://127.0.0.1:8908/ask (interactive server, not a frozen experiment/provider job). One ordinary recorded-ED question returned answered/confirmed12monthlyrows/1501visits; its route was governedSQL, not the newly exposed engine. Actual shared nativeEDtool executes12rows/all4115subjects and knowledge executes without patient-population expansion. Do not repeat this passing request or start another broad test/model/research campaign. Continue only concrete missing promised user behavior under the existing eight-capability/ten-area/fixed25 contract; preserve supported unknowns and explicit independent qualification/customer dependencies. Existing packaged contract demo/recovery remains; no new package or source warehouse copy. Exact diabetes/BP specifications and some staffing inputs are external input dependencies, not a reason to invent rules or repeat calculations. No fullMVP/clinical/model superiority/sale-ready claim. Keep research candidates unpromoted unless needed and supported. SchedulerPAUSED/no Gitpush.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6242,7 +6252,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-11T00:00:25.301923+00:00",
+  "latest_checkpoint": "2026-11-11T00:19:01.660254+00:00",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -6322,8 +6332,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": null,
-  "owned_server_session": null,
+  "owned_server_pid": 32558,
+  "owned_server_session": 85347,
   "last_run_observation": {
     "at": "2026-11-08T23:35:47.474869+00:00",
     "no_active_jobs": true,
@@ -6502,7 +6512,7 @@
       "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json"
     }
   },
-  "server_status": "current25_owned_application_terminal",
+  "server_status": "interactive_local_app_running",
   "automatic_pushes": "disabled_by_explicit_user_2026-11-09",
   "push_authorization": "Revoked November9: do not git push without a new explicit Mike request.",
   "build_status": "ACTIVE",
@@ -6548,7 +6558,7 @@
     ]
   },
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
-  "latest_receipt": "artifacts/agere-input-blocked-workflow-2026-11-10/delivery-receipt.json",
+  "latest_receipt": "artifacts/agere-connected-engines-2026-11-10/delivery-receipt.json",
   "code_only_storage_exception": {
     "authorization": "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
     "scope": "One code-only archive and fresh-code rehearsal from the linked proposal; existing source/model/Python/work/ledger stores referenced, never copied. General60GBguard unchanged.",
