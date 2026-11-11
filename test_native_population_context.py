@@ -9,6 +9,19 @@ import test_shared_planner as fixtures
 class PopulationContext(unittest.TestCase):
     setUp=fixtures.SharedPlanner.setUp
 
+    def test_complete_members_open_without_reanalysis_and_foreign_population_is_rejected(self):
+        from unittest.mock import patch
+        saved=self.capture_summary();scope=next(s for s in saved['population_scopes']if s['label']=='x')
+        request={'context_id':saved['id'],'population_id':scope['id']}
+        with patch.object(A,'_prepare_native_population_snapshot',side_effect=AssertionError('No repeated SQL')):
+            out=A.open_population_members(self.path,request)
+        self.assertEqual(out['patient_ids'],['A']);self.assertEqual(out['patient_count'],1)
+        self.assertEqual(out['new_paid_api_calls'],0);self.assertFalse(out['clinical_eligibility_established'])
+        with self.assertRaises(ValueError):A.open_population_members(self.path,{**request,'population_id':'foreign'})
+        with self.assertRaises(ValueError):A.open_population_members(self.path,{**request,'patient_ids':['B']})
+        with patch.object(A,'source_identity',return_value={'source_digest':'changed'}):
+            with self.assertRaises(ValueError):A.open_population_members(self.path,request)
+
     def capture_summary(self):
         source=A.source_identity(self.path)
         rows=[['A','x'],['A','x'],['B','y']]

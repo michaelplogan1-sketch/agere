@@ -303,6 +303,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 elif path=='/api/stack/action-populations':
                     from .deliverables import answer_context
                     result=answer_context.prepare_population_scopes(connected_stack.path,body)
+                elif path=='/api/stack/action-population-members':
+                    from .deliverables import answer_context
+                    result=answer_context.open_population_members(connected_stack.path,body)
                 elif path in ('/api/stack/action-work/create', '/api/stack/action-work/update', '/api/stack/action-work/refresh', '/api/stack/action-deliverable', '/api/stack/action-report', '/api/stack/action-mockup', '/api/stack/action-simulate'):
                     from .deliverables import answer_context
                     if path.endswith('/action-mockup'):

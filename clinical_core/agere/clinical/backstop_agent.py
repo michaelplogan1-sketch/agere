@@ -61,6 +61,8 @@ JUDGE_CHUNK = 1800       # characters per evidence chunk handed to System One (a
 
 TOOLS = [
     CLARIFICATION_TOOL,
+    {'name':'inspect_populations','description':'Trace complete patient memberships behind executed native patient-count cells. Supply the aggregate result_view names used by the answer. Returns exact source-bound member sets and explicit unavailable reasons; event counts and money are not patient counts. The saved answer exposes these populations for native browsing and follow-up, without generating a patient interpretation for every member. This does not establish clinical eligibility.',
+     'input_schema':{'type':'object','properties':{'result_views':{'type':'array','items':{'type':'string'}}},'required':['result_views'],'additionalProperties':False}},
     {'name':'read_patient_profiles','description':'Read received patient display names and profile fields by exact ID, using the same source profiles attached to saved answers. These fields are separate from the semantic patient SQL table. Supply patient_query_sql for an executed cohort, explicit patient_ids, or omit both for the inherited population. Returns every selected patient, source date/fingerprint and an SQL result_view for composition. Missing or future profiles remain unknown. Names do not establish a clinician assignment or clinical eligibility.',
      'input_schema':{'type':'object','properties':{'patient_ids':{'type':'array','items':{'type':'string'}},
         'patient_query_sql':{'type':'string'}},'additionalProperties':False}},
@@ -338,6 +340,11 @@ has already declined this question, so it is yours to answer completely and corr
 - For a table, compute the COMPLETE requested table, including changes and comparisons, in query_sql. Earlier tabular tool results are
   available as their result_view names on the same connection. Set table_from_tool to the final result_view and omit table: code copies
   the executed rows into the answer. Never transcribe or calculate a numeric table in your final text.
+- For aggregate questions, keep totals, comparisons and candidate explanations at their requested grain. To show the full populations
+  behind totals, use inspect_populations on the actual aggregate result views. The saved answer retains every proved member and exposes
+  native population browsing and follow-up. Inspect unavailable reasons and repair the relevant patient-count calculation when necessary.
+  Do not manufacture patient-level interpretations just to display population membership. Requested individual findings still require
+  their complete patient/source review; a population proof cannot certify those findings, eligibility, a financial amount or an event count.
 - To explain individual rows, add row_prose alongside table_from_tool. It adds new text columns without overwriting native evidence.
   First read the evidence needed for the interpretation using query_sql with read_all_rows=true. Select the relevant values,
   source findings, dates and record IDs from existing result_views. A preview, finding count or collection manifest cannot
@@ -547,7 +554,7 @@ class Tools:
                 'patient_profile_reader':hashlib.sha256((Path(__file__).resolve().parents[1]/'deliverables'/'patient_evidence.py').read_bytes()).hexdigest(),
                 'explicit_tool_quota':MAX_TOOLS, 'native_sql_contract':NATIVE_SQL_CONTRACT,
                 'executor_code':{name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-                                 for name in ('backstop_agent.py','clarification.py','analyst_context.py','semantic_docs.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','drug_classes.py','note_evidence.py','source_navigation.py')},
+                                 for name in ('backstop_agent.py','clarification.py','analyst_context.py','semantic_docs.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','membership.py','dose.py','drug_classes.py','note_evidence.py','source_navigation.py')},
                 'analytical_code':analysis_graph.code_identity(),'component_releases':component_learning.active_identity()}
 
     def _call(self, use):
@@ -558,6 +565,9 @@ class Tools:
                 raise ValueError('The user already clarified this intent slot. Use the retained response; do not ask the same question again.')
             return result
         name, args = use.get('name'), use.get('input') or {}
+        if name == 'inspect_populations':
+            if set(args)!={'result_views'}:raise ValueError('inspect_populations requires only result_views')
+            return inspect_native_populations(self,args['result_views'])
         if name == 'read_patient_profiles':return self.read_patient_profiles(**args)
         if name in ('list_analyses','describe_analysis','execute_analysis'):
             from . import analysis_tools
@@ -1001,6 +1011,37 @@ def materialize_table(answer, calls):
         raise ValueError('The table source row count differs from its complete receipt; retrieve all rows before binding it')
     answer['table'] = [dict(zip(columns, row)) for row in rows]
     answer['table_binding'] = {'result_view': name, 'rows': len(rows), 'columns': columns, 'query': call.get('sql'), 'copied_from_executed_result': True}
+
+
+def inspect_native_populations(tools, result_views):
+    """Expose the existing exact membership proof to the ordinary investigator."""
+    import json
+    from ..deliverables.answer_context import source_identity
+    from .membership import native_populations
+    if (not isinstance(result_views,list)or not result_views
+        or any(not isinstance(v,str)or not v for v in result_views)
+        or len(set(result_views))!=len(result_views)):
+        raise ValueError('Distinct executed aggregate result views required')
+    calls=tools.native_calls
+    available={c['result']['result_view']for c in calls if isinstance(c.get('result'),dict)
+               and c['result'].get('result_view')and not c['result'].get('error')}
+    if not set(result_views)<=available:raise ValueError('Unknown native population result view')
+    source=source_identity(tools.stack.path)
+    if source['as_of']!=str(tools.as_of)[:10]:raise ValueError('Population source date differs from the question')
+    checks=0
+    def execute(query,parameters):
+        nonlocal checks
+        checks+=1
+        cursor=tools.semantic.db.execute(query,parameters)
+        return [c[0]for c in cursor.description],[list(row)for row in cursor]
+    known={r[0]for r in tools.semantic.db.execute('SELECT patient_id FROM patient')}
+    result=native_populations(calls,result_views,execute,known,source)
+    if source_identity(tools.stack.path)!=source:raise ValueError('Population sources changed during inspection')
+    return {**result,'columns':['population_id','label','patient_count','patient_ids'],
+        'rows':[{'population_id':s['id'],'label':s['label'],'patient_count':s['patient_count'],
+                 'patient_ids':json.dumps(s['patient_ids'])}for s in result['scopes']],
+        'new_paid_api_calls':0,'native_sql_checks':checks,'original_analytical_engine_replays':0,
+        'meaning':'These same native population proofs are attached to the saved aggregate answer. Complete member lists can be opened without a model call. Their scope is membership, not patient interpretation.'}
 
 
 def verified_received_field(source, tools):

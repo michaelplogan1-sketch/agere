@@ -633,6 +633,19 @@ def prepare_population_scopes(path, request):
         'native_sql_checks':checks,'cache_hit':False,'clinical_eligibility_established':False}
 
 
+def open_population_members(path, request):
+    """Read all members of one current saved native population, without inference."""
+    if set(request)!={'context_id','population_id'}:raise ValueError('Exact saved answer and population required')
+    context=load(path,request['context_id'],current=True)
+    scope=next((s for s in _current_population_scopes(context)if s['id']==request['population_id']),None)
+    if scope is None:raise ValueError('Population is unavailable for this current answer')
+    return {'context_id':context['id'],'population_id':scope['id'],'label':scope['label'],
+        'patient_count':scope['patient_count'],'patient_ids':scope['patient_ids'],
+        'source':context['source'],'binding':scope['proof']['binding'],
+        'selection_query':scope['proof']['selection_query'],'parameters':scope['proof']['parameters'],
+        'new_paid_api_calls':0,'clinical_eligibility_established':False,'actionable_cohort':False}
+
+
 def require_patient_reference(context):
     """An empty summary membership is not an observed empty patient cohort."""
     if not scope_options(context)['result_scope_available']:

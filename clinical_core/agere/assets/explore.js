@@ -87,6 +87,7 @@ function syncScope(t){
 }
 function updateScopeNote(){
  const scope=$('#question-scope').value;
+ $('#population-members').hidden=!activeContext||!scope.startsWith('population:')||!!state.turns[state.active]?.archiveBlocked;
  $('#scope-note').textContent=scope==='input'?'Uses the original question’s saved input patients. These are not necessarily patients selected by its answer, and this choice does not authorize work.':scope==='saved'?'This follow-up keeps the exact saved patient set. Choose “Entire warehouse” to start a broader question.':scope==='auto'?'Ask about this analysis. For a patient follow-up, choose the population behind the count you mean.':scope.startsWith('population:')?'Follows this source-defined population, keeping its original period and filters.':'Use your own words. Add a date range, comparison, or filter.';
 }
 async function openSavedContext(id){
@@ -142,6 +143,22 @@ function setupExplorer(){
  $('#q').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();$('#askf').requestSubmit()}});
  $('#saved-search').addEventListener('input',renderSaved);$('#source-search').addEventListener('input',()=>loadSources());
  $('#question-scope').addEventListener('change',updateScopeNote);
+ $('#population-members').addEventListener('click',async()=>{
+  const selection=$('#question-scope').value,parent=activeContext?.id,epoch=conversationEpoch;
+  if(!parent||!selection.startsWith('population:')||state.busy)return;
+  const button=$('#population-members');button.disabled=true;
+  try{
+   const response=await fetch('/api/stack/action-population-members',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({context_id:parent,population_id:selection.slice('population:'.length)})});
+   const members=await response.json();if(!response.ok||members.error)throw Error(members.error||'Population unavailable.');
+   if(epoch!==conversationEpoch||activeContext?.id!==parent||$('#question-scope').value!==selection)return;
+   $('#population-description').textContent=members.label+' · '+fmt(members.patient_count)+' patients';
+   const table=document.createElement('table'),head=document.createElement('thead'),header=document.createElement('tr'),th=document.createElement('th');th.textContent='Patient ID';header.append(th);head.append(header);table.append(head);
+   const body=document.createElement('tbody');for(const id of members.patient_ids){const row=document.createElement('tr'),cell=document.createElement('td');cell.textContent=id;row.append(cell);body.append(row)}table.append(body);$('#population-list').replaceChildren(table);
+   $('#population-method').textContent=JSON.stringify({as_of:members.source.as_of,binding:members.binding,selection:members.selection_query,parameters:members.parameters},null,2);
+   openAppDialog('population-dialog');
+  }catch(error){if(epoch===conversationEpoch)$('#scope-note').textContent=error.message}
+  finally{button.disabled=false}
+ });
  $('#population-scopes').addEventListener('click',async()=>{
   if(!activeContext||state.busy)return;
   const button=$('#population-scopes'),parent=activeContext.id,epoch=conversationEpoch,t=state.turns[state.active];
@@ -151,7 +168,7 @@ function setupExplorer(){
    const prepared=await response.json();if(!response.ok||prepared.error)throw Error(prepared.error||'The populations could not be opened.');
    if(epoch!==conversationEpoch||activeContext?.id!==parent)return;
    t.data.action_context=prepared.action_context;syncScope(t);
-   $('#scope-note').textContent=prepared.population_scopes.length?'Choose the population behind your count, then ask to list, group or compare those patients.':'No exact patient population could be established for these results.';
+   $('#scope-note').textContent=prepared.population_scopes.length?'Choose a population to view every member or ask a follow-up.':'No exact patient population could be established for these results.';
   }catch(error){if(epoch===conversationEpoch)$('#scope-note').textContent=error.message}
   finally{state.busy=false;button.disabled=false;button.textContent='Explore patient populations';$('#askb').disabled=false;$('#q').readOnly=false}
  });

@@ -569,7 +569,7 @@ class Harness(unittest.TestCase):
 
     def test_failed_source_meaning_is_restored_without_reexecuting_provider_work(self):
         from clinical_core.agere.clinical import backstop_agent as B,document_review as D
-        tools=B.Tools.__new__(B.Tools);tools.continuation_identity=lambda:{'source':'v1'}
+        tools=B.Tools.__new__(B.Tools);tools.continuation_identity=lambda:{'source':'v1'};tools.question=self.q
         tools.document_field_contracts={};tools.document_reviews=[]
         with H.owned_recovery([],self.q,field_contracts={'reason':'What original reason was requested?'}):
             out=H.recover_actions(tools,self.q)

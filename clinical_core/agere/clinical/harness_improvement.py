@@ -94,7 +94,7 @@ def owned_recovery(actions,question=None,feedback=None,document_reviews=None,fie
 
 
 VERSION='recursive-harness/3'
-READ_ONLY={'query_sql','compose_table','read_patient_profiles','list_documents','read_document','review_documents','execute_metric','list_metrics',
+READ_ONLY={'query_sql','compose_table','inspect_populations','read_patient_profiles','list_documents','read_document','review_documents','execute_metric','list_metrics',
            'list_analyses','describe_analysis','execute_analysis','search_documents'}
 NATIVE_VALIDATION_TOOLS={'query_sql','compose_table'}
 VOLATILE={'accounting','seconds','elapsed_s','elapsed_seconds','cache_hit','compute','new_paid_api_calls','known_api_estimate_usd',

@@ -3,6 +3,25 @@ import copy,sqlite3,unittest
 from clinical_core.agere.clinical import membership as M,backstop_agent as B
 
 class NativePopulations(unittest.TestCase):
+    def test_investigator_population_inspection_reuses_exact_native_calculations(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from clinical_core.agere.deliverables import answer_context as A
+        query="SELECT kind,COUNT(*) events,COUNT(DISTINCT patient_id) patients FROM agere_result_1 GROUP BY kind"
+        calls=[self.producer,self.call(query)];before=copy.deepcopy(calls)
+        tools=SimpleNamespace(native_calls=calls,semantic=SimpleNamespace(db=self.db),
+                              stack=SimpleNamespace(path='authored'),as_of=self.source['as_of'])
+        with patch.object(A,'source_identity',return_value=self.source):
+            out=B.inspect_native_populations(tools,['agere_result_2'])
+            self.assertEqual({s['label']:s['patient_ids']for s in out['scopes']},{'x':['A'],'y':['B'],'patients':['C']})
+            self.assertEqual(out['new_paid_api_calls'],0)
+            self.assertEqual(out['original_analytical_engine_replays'],0)
+            self.assertEqual(calls,before)
+            for views in ([],['foreign'],['agere_result_2','agere_result_2']):
+                with self.subTest(views=views),self.assertRaises(ValueError):B.inspect_native_populations(tools,views)
+        with patch.object(A,'source_identity',side_effect=[self.source,{**self.source,'source_digest':'changed'}]):
+            with self.assertRaises(ValueError):B.inspect_native_populations(tools,['agere_result_2'])
+
     def setUp(self):
         self.db=sqlite3.connect(':memory:');self.addCleanup(self.db.close)
         self.db.executescript("CREATE TABLE patient(patient_id);INSERT INTO patient VALUES('A'),('B'),('C');CREATE TABLE agere_result_1(patient_id,kind,flag);INSERT INTO agere_result_1 VALUES('A','x',0),('A','x',0),('B','y',0),('C',NULL,1);")
