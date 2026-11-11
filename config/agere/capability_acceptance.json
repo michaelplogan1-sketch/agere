@@ -6,5 +6,5 @@
   "evidence_change_reassessment": "artifacts/agere-complete-roster-2026-11-10/dependencies-compact-v6/evidence_change_reassessment.json",
   "source_and_adapter_conformance": "artifacts/agere-complete-roster-2026-11-10/adapter-current-v1/source_and_adapter_conformance.json",
   "economical_role_routing": "artifacts/agere-complete-roster-2026-11-10/role-routing-current-v1/economical_role_routing.json",
-  "portable_local_operations": "artifacts/agere-complete-roster-2026-11-10/operations-current-v1/portable_local_operations.json"
+  "portable_local_operations": "artifacts/agere-complete-roster-2026-11-10/operations-current-v2/portable_local_operations.json"
 }
