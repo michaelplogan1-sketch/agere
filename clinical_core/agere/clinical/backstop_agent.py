@@ -3030,6 +3030,12 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         prior_review=answer.get('investigation_review')
         prior_reference=review_reference(prior_review,tools) if isinstance(prior_review,dict) else None
         native_table=native_table_copy_review(answer,calls,getattr(tools,'document_reviews',[]),as_of)
+        if native_table is None and native_audit is None and native_interpretation is None:
+            native_table,triage=triage_native_program(question,answer,calls,
+                getattr(tools,'document_reviews',[]),as_of,decider=gate.s1().decide,ledger=ledger)
+            assessment['work_triage']=triage
+            n,usd=gate.cost(triage)
+            assessment['calls']+=n;assessment['cost_usd']+=usd
         # Row prose is compiled after the initial native-origin check. Its
         # actual interpretations must remain visible to coverage and support.
         if (answer.get('table_binding')or{}).get('interpreted_columns'):native_audit=None
@@ -3133,7 +3139,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         packets=support_packets(request,answer,calls,getattr(tools,'document_reviews',[]),as_of,
                                 source_documents=getattr(tools,'read',{}),prior_review_reference=prior_reference,
                                 native_audit=native_audit,source_records=getattr(tools,'source_records',{}),
-                                assertion_observations=assertion_observations,native_interpretation=native_interpretation)
+                                assertion_observations=assertion_observations,native_interpretation=native_interpretation,
+                                native_program=native_table if (native_table or{}).get('schema')=='native-program-copy/1'else None)
         program_repairs=native_program_repairs(packets)
         if program_repairs:
             return {**assessment,'status':'repair','repair_kind':'native_program_verification',
@@ -3173,7 +3180,9 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         # A typed abstention is a routing signal, never a license to lower its
         # threshold. The distinct frontier reviewer owns one complete aggregate
         # meaning judgment; its categorical verdict has no invented probability.
-        aggregate_route=os.environ.get('AGERE_FRONTIER_AGGREGATE_REVIEW','off')=='on'and len(packets)==1
+        aggregate_route=(os.environ.get('AGERE_FRONTIER_AGGREGATE_REVIEW','off')=='on'or
+            (native_table or{}).get('schema')=='native-program-copy/1'and
+            os.environ.get('AGERE_FRONTIER_SOURCE_REVIEW','off')=='on')and len(packets)==1
         composed_route=os.environ.get('AGERE_FRONTIER_SOURCE_REVIEW','off')=='on'and len(packets)>1
         if ((aggregate_route or composed_route)
             and packets[0]['id']=='summary'and packets[0].get('dependency_complete')is True
@@ -3453,6 +3462,134 @@ def documentary_sources(value):
     return list(found.values())
 
 
+def native_program_candidate(answer,calls,document_reviews,as_of):
+    """Prove complete native execution/assembly fidelity before choosing a reader.
+
+    This is a candidate for program-level semantic review, never answer support.
+    No disease, cohort size or provider limit determines the route. Documentary
+    fields and model-produced rows retain source-level review even if SQL copied
+    them faithfully. All selected programs, source definitions and join contracts
+    remain available to the typed router and subsequent meaning reviewer.
+    """
+    from ...contracts import digest
+    from . import result_assembly as assembly
+    from .. import narrative_sources
+    from .sql_query import native_query_model_projection
+    import sqlglot
+    from sqlglot import exp
+    if (document_reviews or answer.get('sources')or answer.get('row_prose')is not None
+        or (answer.get('table_binding')or{}).get('interpreted_columns')
+        or any(p.get('entity_key')for p in answer.get('computed_prose',[]))):return None
+    table=answer.get('table');root=answer.get('table_from_tool')
+    if not root or not isinstance(table,list)or not table:return None
+    roots=[root,*computed_prose_views(answer.get('computed_prose',[]))]
+    dependencies=native_result_dependencies(calls,list(dict.fromkeys(roots)))
+    if not dependencies:return None
+    by={};native={};contracts=[];receipts={};source_digest=None;relations={};definitions={}
+    narrative=set(narrative_sources.WAREHOUSE_TEXT)|set(narrative_sources.FORBIDDEN)
+    narrative.update(field for fields in narrative_sources.EXTRA.values()for field in fields)
+    narrative.update(('note_text','document_text','report_text','ocr_text'))
+    for call in calls:
+        result=call.get('result')or{};view=result.get('result_view')if isinstance(result,dict)else None
+        if not view:continue
+        if view in by:return None
+        by[view]=call;native[view]=result
+    if not dependencies<=set(by):return None
+    try:
+        for view in sorted(dependencies):
+            call=by[view];result=call['result']
+            if result.get('error')or assembly.incomplete_reason(result):return None
+            columns,rows=assembly._rows(result)
+            if call.get('name')=='compose_table':
+                replay=assembly.compose(native,**call['input'])
+                if digest(replay)!=digest({k:v for k,v in result.items()if k!='result_view'}):return None
+                contracts.append({'result_view':view,'operation':'compose_table',
+                    'input':call['input'],'assembly':result['assembly']})
+            elif call.get('name')=='query_sql':
+                source=result.get('source_contracts')or{}
+                if(result.get('native_sql_contract')!=NATIVE_SQL_CONTRACT or
+                    source.get('as_of')!=as_of or not source.get('source_digest')):return None
+                if source_digest is not None and source_digest!=source['source_digest']:return None
+                source_digest=source['source_digest']
+                query=result.get('declared_executed_query')or result.get('executed_query')
+                if not isinstance(query,str)or not query.strip():return None
+                projection=native_query_model_projection(query,native)
+                program=projection['query']if projection else query
+                tree=sqlglot.parse_one(program,read='sqlite')
+                # Read the original source field, not an alias claiming that a
+                # free-text interpretation is structured. Exact code matching
+                # is different work from matching words inside a clinical note.
+                for node in tree.walk():
+                    if isinstance(node,exp.Column):
+                        if node.name.lower()in narrative:return None
+                        if node.name.lower()=='payload'and not isinstance(node.parent,
+                            (exp.JSONExtract,exp.JSONExtractScalar,exp.JSONType)):
+                            if not(isinstance(node.parent,exp.Anonymous)and node.parent.name.lower()=='json_type'):return None
+                    if isinstance(node,exp.JSONPathKey)and str(node.this).lower()in narrative:return None
+                    if isinstance(node,(exp.Like,exp.ILike,exp.RegexpLike)):
+                        column=node.this
+                        if(not isinstance(column,exp.Column)or not(column.name.lower().endswith('_code')or
+                            column.name.lower()in ('code','icd10','snomed','loinc','cpt','hcpcs','ndc'))):return None
+                for key,target in [('relations',relations),('definitions',definitions)]:
+                    for entry in source.get(key)or[]:
+                        name=entry['name']
+                        if name in target and digest(target[name])!=digest(entry):return None
+                        target[name]=entry
+                contracts.append({'result_view':view,'operation':'query_sql','query':program,
+                    'executed_query_digest':digest(result.get('executed_query')),
+                    'source_contract_digest':digest(source),
+                    **({'native_source_projection':projection}if projection else{})})
+            else:return None  # a model interpretation cannot be laundered by a downstream SQL copy
+            receipts[view]=digest(result)
+        columns,rows=assembly._rows(native[root])
+        if digest(rows)!=digest(table)or not source_digest or not relations:return None
+        def shapes(value,path=()):
+            if isinstance(value,dict):
+                return [s for key,item in value.items()for s in shapes(item,(*path,key))]
+            if isinstance(value,list):return [s for item in value for s in shapes(item,(*path,'[]'))]
+            return [{'path':list(path),'type':type(value).__name__}]
+        shape={json.dumps(s,sort_keys=True):s for row in table for s in shapes(row)}
+        return {'schema':'native-program-copy/1','result_view':root,'rows':len(rows),'columns':columns,
+            'table_digest':digest(table),'native_receipt_digests':receipts,'source_digest':source_digest,'as_of':as_of,
+            'calculation_contracts':contracts,'source_relations':list(relations.values()),
+            'executed_source_definitions':list(definitions.values()),'field_shapes':list(shape.values()),
+            'scope':'Every final cell exactly copies complete native execution and replayed assembly. '
+                'Code proves fidelity and join membership, not correct query semantics, clinical eligibility, absence of care or source completeness. '
+                'System One must choose program versus source interpretation; the complete program and all global claims still require meaning review.'}
+    except (ValueError,KeyError,TypeError,IndexError,sqlglot.errors.SqlglotError):return None
+
+
+def triage_native_program(question,answer,calls,document_reviews,as_of,*,decider,ledger):
+    """Route the remaining obligation, rather than model-checking every row."""
+    from ...contracts import digest
+    from ..deliverables.receipts import readable_json
+    candidate=native_program_candidate(answer,calls,document_reviews,as_of)
+    if candidate is None:return None,{'status':'source_review_required','steps':[],
+        'reason':'No complete native-only execution/assembly proof; preserve source-bound interpretation.'}
+    options={
+        'program_meaning':'The proposed table is entirely structured received values, SQL calculations/categories and exact native joins. Its meaning can be checked from the full program, source definitions, clocks, units and missing-value rules. No row-specific narrative interpretation is needed to verify these table fields. This does NOT mean the program or answer is correct.',
+        'source_reading':'At least one table field requires interpreting individual source text, a model-proposed assertion, an unexplained clinical label, or a relationship not established by these structured source definitions. Review those source dependencies.',
+        'unknown':'The complete program and declared source meanings do not establish which review is sufficient.'}
+    payload={'question':question,'native_program':candidate,
+        'task':'Choose the remaining verification work for the TABLE. Do not accept its answer or judge headline/coverage here. A SQL CASE over structured fields needs review of that CASE once, not a model recount of each result row. If narrative or unbound semantic inputs are required, choose source_reading. Proposed downstream work does not turn received data into clinical eligibility.'}
+    text=json.dumps(readable_json(payload),ensure_ascii=False,separators=(',',':'))
+    result=decider('Which verification tool fits this complete executed program?',options,
+        [{'id':'native_program','date':as_of,'text':text}],as_of=as_of,ledger=ledger,allow_live=True,
+        select_source=False,long_context=None,task_key='agere_execution_work_triage',threshold=.8)
+    receipt={'schema':'execution-work-triage/1',**result,'candidate_digest':digest(candidate),
+        'question_digest':digest(question),'answer_accepted':False,'clinical_qualification':False}
+    probabilities=result.get('calibrated_probabilities')or result.get('probabilities')or{}
+    probability=probabilities.get('program_meaning',0)
+    if(result.get('label')!='program_meaning'or not result.get('decided_by')or
+        type(probability)not in(int,float)or not .8<=probability<=1):return None,receipt
+    # Cache/latency/cost changes are not new evidence. Keep every attempt in the
+    # assessment, but bind downstream review to the stable decision only.
+    bound={k:receipt[k]for k in ('schema','label','decided_by','candidate_digest',
+        'question_digest','answer_accepted','clinical_qualification')}
+    bound['calibrated_probabilities']=probabilities
+    return {**candidate,'work_triage':bound},receipt
+
+
 def native_table_copy_review(answer,calls,document_reviews,as_of):
     """Prove primitive SQL table copying, never financial/clinical semantics.
 
@@ -3616,7 +3753,7 @@ def global_dependency_request(answer,calls):
     return missing if native_column_projections(calls,roots,dependencies)else []
 
 
-def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None,native_audit=None,source_records=None,assertion_observations=None,native_interpretation=None):
+def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None,native_audit=None,source_records=None,assertion_observations=None,native_interpretation=None,native_program=None):
     """Final clinical claims, deduplicated and grouped by patient dependency.
 
     Raw operational receipts remain intact. SQL elapsed time is excluded only
@@ -3647,6 +3784,18 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
                 'packet_sha256':hashlib.sha256(text.encode()).hexdigest(),'global_meaning_review_required':True,
                 'clinical_qualification':False}}]
     copy_review=native_table_copy_review(answer,calls,document_reviews,as_of)
+    if native_program is not None:
+        from ...contracts import digest
+        candidate=native_program_candidate(answer,calls,document_reviews,as_of)
+        triage=native_program.get('work_triage')or{}
+        probabilities=triage.get('calibrated_probabilities')or triage.get('probabilities')or{}
+        p=probabilities.get('program_meaning',0)
+        if(candidate is None or digest(candidate)!=triage.get('candidate_digest')or
+            {k:v for k,v in native_program.items()if k!='work_triage'}!=candidate or
+            triage.get('label')!='program_meaning'or not triage.get('decided_by')or
+            type(p)not in(int,float)or not .8<=p<=1 or triage.get('answer_accepted')is not False):
+            raise ValueError('Native program route changed or lacks a deciding work judgment')
+        copy_review=native_program
     if copy_review is not None:
         from .evidence_projection import coverage_answer
         from ...contracts import digest
@@ -3663,7 +3812,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         text=json.dumps(readable_json(state),ensure_ascii=False,separators=(',',':'),default=str)
         # Oversized contracts retain the conservative complete-evidence path;
         # no row/contract is trimmed to make the projection fit.
-        if len(text.encode())<=230000:
+        if len(text.encode())<=230000 or native_program is not None:
             return [{'id':'summary','date':as_of,'text':text,'bytes':len(text.encode()),
                 'dependency_complete':True,'source_context_complete':True,'claim_manifest':claims,
                 'result_view':copy_review['result_view'],'representation':'native_table_copy_and_meaning_review',

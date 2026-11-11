@@ -29,7 +29,8 @@ class Stack:
                 'local_student_runtime':active_student()[0],
                 'source_verification_runtime':{
                     'frontier_fallback_enabled':os.environ.get('AGERE_FRONTIER_SOURCE_REVIEW','off')=='on',
-                    'scope':'Complete unresolved source dependencies only; native defects and deciding faults require repair.',
+                    'scope':'Native execution and joins first; System One chooses program-meaning or source-reading work. Frontier reviews unresolved meaning; native defects and deciding faults require repair.',
+                    'work_triage':'execution-work-triage/1',
                     'authority':'machine_judgment','clinical_qualification':False},
                 'execution_wire_encoding':os.environ.get('AGERE_EXECUTION_WIRE_ENCODING','off')=='on',
                 'local_retrieval_runtime':{
