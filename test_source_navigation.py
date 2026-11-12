@@ -77,6 +77,37 @@ class Navigation(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'changed'): N.load(self.tools, plan['id'])
                 self.docs, self.records = old_docs, old_records
 
+    def test_explicit_recovery_revalidates_old_address_without_inheriting_acceptance(self):
+        with patch.object(N, 'identity', return_value='prior-implementation'):
+            old = self.plan()
+        old_bytes = N._file(self.tools, old['id']).read_bytes()
+        self.tools.continuation_identity = lambda: {'source': 1, 'executor': 'corrected'}
+        with self.assertRaisesRegex(ValueError, 'changed'):
+            N.load(self.tools, old['id'])
+        current = self.plan()
+        proof = N.revalidate_recovery(self.tools, old, current)
+        self.assertTrue(proof['native_reexecuted'])
+        self.assertFalse(proof['prior_verdict_accepted'])
+        self.assertEqual(N.load(self.tools, old['id'])[0]['id'], old['id'])
+        self.assertEqual(N._file(self.tools, old['id']).read_bytes(), old_bytes)
+        self.docs[1] = (*self.docs[1][:5], 'Changed source.', '')
+        with self.assertRaisesRegex(ValueError, 'changed'):
+            N.load(self.tools, old['id'])
+
+    def test_recovery_cannot_alias_changed_inventory_or_survive_another_guard_change(self):
+        old = self.plan()
+        self.tools.continuation_identity = lambda: {'source': 1, 'executor': 'corrected'}
+        docs = copy.deepcopy(self.docs)
+        self.docs[1] = (*self.docs[1][:5], 'Changed source.', '')
+        self.assertIsNone(N.revalidate_recovery(self.tools, old, self.plan()))
+        with self.assertRaisesRegex(ValueError, 'changed'):
+            N.load(self.tools, old['id'])
+        self.docs = docs
+        self.assertIsNotNone(N.revalidate_recovery(self.tools, old, self.plan()))
+        self.tools.continuation_identity = lambda: {'source': 'different'}
+        with self.assertRaisesRegex(ValueError, 'changed'):
+            N.load(self.tools, old['id'])
+
     def test_changed_question_or_field_contract_cannot_reuse_plan(self):
         plan = self.plan(); self.tools.question = 'A different question'
         with self.assertRaisesRegex(ValueError, 'scope'): N.load(self.tools, plan['id'])

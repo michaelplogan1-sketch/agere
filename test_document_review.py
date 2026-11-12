@@ -10,6 +10,26 @@ from clinical_core.agere.clinical import document_review as D, workflow_contract
 
 
 class Review(unittest.TestCase):
+    def test_saved_exact_record_read_preserves_native_scope_and_skips_provider(self):
+        import copy
+        from clinical_core.agere.clinical import harness_improvement as H
+        question={'barriers':'What financial barriers and changes are documented?'}
+        with patch('clinical_core.agere.clinical.together._ledgered_send',side_effect=self.sender),patch(
+                'clinical_core.agere.clinical.system_one.decide',return_value={'label':'supported','decided_by':'fixture','steps':[]}):
+            original=D.review(self.tools,['A'],question,record_ids=['r1'],source_scope='focused')
+        old=copy.deepcopy(self.tools.document_reviews)
+        with H.owned_recovery([],question='fixture',document_reviews=old),patch(
+                'clinical_core.agere.clinical.together._ledgered_send',side_effect=AssertionError('An exact source reading must be retained')):
+            recovered=D.review(self.tools,['A'],question,record_ids=['r1'],source_scope='focused')
+        self.assertEqual(recovered['source_scope'],'focused')
+        self.assertEqual(recovered['record_ids_filter'],['r1'])
+        self.assertEqual(H.comparison_result('review_documents',original,[]),
+                         H.comparison_result('review_documents',recovered,[]))
+        self.assertFalse(recovered['observation_reuse']['clinical_acceptance_inherited'])
+        changed=copy.deepcopy(recovered);changed['rows'][0]['review_json']='{}'
+        self.assertNotEqual(H.comparison_result('review_documents',original,[]),
+                            H.comparison_result('review_documents',changed,[]))
+
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.root=Path(self.temp.name);self.db=sqlite3.connect(':memory:');self.addCleanup(self.db.close)

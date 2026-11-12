@@ -5,6 +5,27 @@ from clinical_core.agere.clinical import backstop_agent as B,document_review as 
 from clinical_core.agere.deliverables.receipts import uncompact_json
 
 class Composition(unittest.TestCase):
+ def test_recovered_reading_cannot_bypass_source_suspension(self):
+  q,m,docs,old=self.fixture();found=json.loads(old['rows'][0]['review_json'])
+  found['therapy_reason'][0]['assertion']={'id':'retained-assertion'}
+  old['rows'][0]['review_json']=json.dumps(found)
+  for status in ('current','suspended','unavailable'):
+   with self.subTest(status=status),H.owned_recovery([],question='q',document_reviews=[old]),patch(
+       'clinical_core.agere.clinical.typed_document_review.assertion_disposition',return_value={'status':status})as check:
+    out=H.recover_document_observations(q,m,docs,path='fixture')
+    check.assert_called_once_with('fixture',['retained-assertion'])
+    self.assertEqual(out is not None,status=='current')
+
+ def test_focused_recovery_compares_selection_but_not_how_many_prior_seeds_found_it(self):
+  q,m,docs,old=self.fixture()
+  m[0]['source_selection']={'schema':'focused-document-retrieval/1','prior_source_seeds':{'matched':1},
+                            'sources':[{'record_id':'r','selected_fields':['therapy_reason']}]}
+  old['manifest']=copy.deepcopy(m);m[0]['source_selection']['prior_source_seeds']['matched']=2
+  with H.owned_recovery([],question='q',document_reviews=[old]):
+   self.assertIsNotNone(H.recover_document_observations(q,m,docs))
+   m[0]['source_selection']['sources'][0]['selected_fields']=[]
+   self.assertIsNone(H.recover_document_observations(q,m,docs))
+
  def test_literal_signature_is_historical_not_current_assignment(self):
   text='Provider: Jane Doe, MD\nDear Amir Jones, MD,\nSincerely,\nJane Doe, MD\nPulmonology\ncc: Amir Jones, MD\n'
   rows=D.correspondence_roles([{'record_id':'r','date':'2030-01-01','text':text}]);self.assertTrue(rows)

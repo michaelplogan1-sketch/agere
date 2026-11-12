@@ -245,6 +245,11 @@ def comparison_result(name,value,prior_calls,*,_memo=None):
     comparison representation, and the original receipt is never rewritten.
     """
     result=semantic_result(value)
+    if name=='review_documents' and isinstance(result,dict):
+        # How an exact reading was obtained is operational provenance. Keep it
+        # in the raw receipt, but compare source scope, records, quotes, findings
+        # and uncertainty, including any business cells with this same name.
+        result.pop('observation_reuse',None)
     if name=='inspect_populations' and isinstance(value,dict):
         return _population_comparison(value,result,prior_calls,_memo)
     if name!='query_sql' or not isinstance(value,dict):return result
@@ -543,6 +548,17 @@ def recover_actions(tools,question,context=None):
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed during owned recovery')
         if checkpoint:
             same=digest(comparison_result(action['name'],value,out['calls'][:-1]))==provenance['expected_result']
+            if not same and action['name']=='plan_evidence_expansion':
+                from .source_navigation import revalidate_recovery
+                original=saved['origin_calls'][index]['result']
+                proof=revalidate_recovery(tools,original,value)
+                if proof:
+                    # Only the guarded operational address is retained. The
+                    # current plan was executed and every source/meaning field
+                    # compared; later reads still validate through that plan.
+                    value=copy.deepcopy(original)
+                    out['calls'][-1].update(result=value,navigation_recovery=proof)
+                    same=digest(comparison_result(action['name'],value,out['calls'][:-1]))==provenance['expected_result']
             if not same:
                 original=saved['origin_calls'][index]['result'];view=value.get('result_view')
                 removed=(_suspended_review_refresh(tools.stack.path,original,value,as_of=checkpoint['source'].get('as_of') or context.get('as_of'))
@@ -697,7 +713,7 @@ def recover_document_fields(questions,manifest,packages):
     return {'fields':matched,'rows':rows,'limitations':limitations,'prior_receipt_digests':prior,
         'clinical_acceptance_inherited':False,'all_quotes_revalidated':True}
 
-def recover_document_observations(questions,manifest,packages):
+def recover_document_observations(questions,manifest,packages,*,path=None):
     """Revalidate exact-source, exact-question machine observations during explicit recovery.
 
     Code/policy changes do not authorize reusing a conclusion. These are source
@@ -705,15 +721,26 @@ def recover_document_observations(questions,manifest,packages):
     """
     saved=_OWNED_RECOVERY.get()
     if not saved:return None
+    def manifest_meaning(value):
+        if not isinstance(value,list):return value
+        return [{**m,'source_selection':_retrieval_meaning(m['source_selection'])}
+                if isinstance(m,dict)and 'source_selection'in m else m for m in value]
     for old in saved.get('document_reviews',[]):
-        if old.get('questions')!=questions or old.get('manifest')!=manifest:continue
+        if old.get('questions')!=questions or manifest_meaning(old.get('manifest'))!=manifest_meaning(manifest):continue
         ids=[m['patient_id']for m in manifest]
         rows=old.get('rows')or[]
         if [r.get('patient_id')for r in rows]!=ids:raise ValueError('Recovered review population differs')
+        assertion_ids=[]
         for row in rows:
             docs=[d for batch in packages[row['patient_id']]for d in batch]
             found=json.loads(row['review_json'])
             validate_saved_source_fields(found,questions,docs,patient_id=row['patient_id'])
+            assertion_ids.extend(v['assertion']['id']for values in found.values()for v in values
+                if isinstance(v.get('assertion'),dict)and isinstance(v['assertion'].get('id'),str))
+        if path is not None and assertion_ids:
+            from .typed_document_review import assertion_disposition
+            disposition=assertion_disposition(path,assertion_ids)
+            if disposition['status']!='current':continue
         return {**old,'observation_reuse':{'kind':'explicit_owned_run_source_observations',
             'source_manifest_digest':digest(manifest),'question_digest':digest(questions),
             'finding_digest':digest(rows),'all_quotes_revalidated':True,

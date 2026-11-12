@@ -326,10 +326,58 @@ def prepare(tools, review_result_view, branch_ids=None, basis_navigation_id=None
             if selected else None}
 
 
+def _navigation_meaning(saved):
+    # Runtime identities are addresses. Every source, field, population,
+    # branch, selected document and prior reading must still match exactly.
+    return {k: v for k, v in saved.items()
+            if k not in {'id', 'implementation', 'continuation_identity'}}
+
+
+def revalidate_recovery(tools, previous, current):
+    """Keep an owned saved address only after executing the same plan today.
+
+    Called by explicit checkpoint recovery after its source/context and action
+    provenance checks. The current native result proves navigation equivalence,
+    never an answer verdict. Aliases live only in this guarded Tools instance;
+    immutable historical receipts are not rewritten or made generally current.
+    """
+    if not isinstance(previous, dict) or not isinstance(current, dict):return None
+    old = {k: v for k, v in previous.items() if k not in {'branch_selection', 'review_next'}}
+    new = {k: v for k, v in current.items() if k not in {'branch_selection', 'review_next'}}
+    if (old.get('schema') != VERSION or new.get('schema') != VERSION
+            or old.get('id') == new.get('id') or _navigation_meaning(old) != _navigation_meaning(new)):
+        return None
+    for saved in (old, new):
+        if (digest({k: v for k, v in saved.items() if k != 'id'}) != saved.get('id')
+                or json.loads(_file(tools, saved['id']).read_text()) != saved):return None
+    active, _, _, _ = load(tools, new['id'])
+    if active != new:return None
+    aliases = dict(getattr(tools, '_recovered_navigation_addresses', {}))
+    if new['id'] in aliases:return None  # no alias chains
+    proof = {'schema': 'native-navigation-revalidation/1', 'saved_id': old['id'],
+             'current_id': new['id'], 'current_guard': digest(tools.continuation_identity()),
+             'navigation_meaning_digest': digest(_navigation_meaning(new)),
+             'native_reexecuted': True, 'prior_verdict_accepted': False}
+    aliases[old['id']] = proof
+    tools._recovered_navigation_addresses = aliases
+    return proof
+
+
 def load(tools, key):
     saved = json.loads(_file(tools, key).read_text())
-    if (saved.get('id') != key or digest({k: v for k, v in saved.items() if k != 'id'}) != key
-            or saved.get('implementation') != identity()
+    if saved.get('id') != key or digest({k: v for k, v in saved.items() if k != 'id'}) != key:
+        raise ValueError('Navigation receipt identity changed')
+    aliases = getattr(tools, '_recovered_navigation_addresses', {})
+    proof = aliases.get(key)
+    if proof is not None:
+        if (proof['current_id'] in aliases or proof['current_guard'] != digest(tools.continuation_identity())
+                or proof['navigation_meaning_digest'] != digest(_navigation_meaning(saved))):
+            raise ValueError('Recovered navigation scope or meaning changed')
+        current, call, questions, rows = load(tools, proof['current_id'])
+        if _navigation_meaning(current) != _navigation_meaning(saved):
+            raise ValueError('Recovered navigation evidence changed')
+        return saved, call, questions, rows
+    if (saved.get('implementation') != identity()
             or saved.get('question') != tools.question or saved.get('as_of') != tools.as_of
             or saved.get('continuation_identity') != digest(tools.continuation_identity())):
         raise ValueError('Navigation scope, source or implementation changed')

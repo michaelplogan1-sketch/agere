@@ -519,9 +519,19 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                     tools.read.setdefault(doc['record_id'],{'patient_id':pid,'date':doc['date'],'text':doc['text'],
                         'available':doc.get('available_date')})
     from .harness_improvement import recover_document_observations
-    recovered=recover_document_observations(questions,manifest,packages)if not focused and not field_patient_queries else None
+    method=('Focused whole-document candidates for each bound field; unmatched sources and unresolved findings require explicit expansion. No chart-wide absence or independent clinical qualification.'if focused else
+            candidate_receipt['scope']+' Not independent clinical qualification.'if candidate_receipt else
+            'Every scoped whole document/block checked for native entity binding before typed source decisions; missing links remain unresolved. Only eligible unresolved source fields use Claude; exact source spans retained; not independent clinical qualification'
+            if os.environ.get('AGERE_DOCUMENT_REVIEW')=='typed_spans' else
+            'All scoped whole documents supplied; exact quotes checked, typed support reviewed; not independent clinical qualification')
+    # Focused selection has already been rebuilt against every current source.
+    # Exact field/manifest/span recovery preserves machine observations only;
+    # it must not purchase the same reading because unrelated code changed.
+    # Conditional field cohorts still use their own native execution path.
+    recovered=recover_document_observations(questions,manifest,packages,path=tools.stack.path)if not field_patient_queries else None
     if recovered is not None:
-        recovered={**recovered,'rows':with_correspondence(recovered['rows'],packages,questions,tools.as_of)}
+        recovered={**recovered,'rows':with_correspondence(recovered['rows'],correspondence_packages,questions,tools.as_of),
+            'source_scope':source_scope,'field_patient_queries':field_patient_queries,'exhaustive_reason':exhaustive_reason}
         if candidate_receipt:
             recovered['candidate_observation_review']=candidate_receipt
             scopes={m['patient_id']:candidate_row_scope(candidate_receipt,m)for m in manifest}
@@ -529,9 +539,11 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
         tools.document_reviews.append(recovered)
         return {'columns':list(recovered['rows'][0])if recovered['rows']else ['patient_id','review_status','documents_reviewed','review_json','review_limitations'],
             'rows':recovered['rows'],'coverage':manifest,'accounting':{'new_paid_api_calls':0,'known_api_estimate_usd':0,'api_cost_known':True},
+            'record_ids_filter':record_ids,'source_scope':source_scope,
+            'field_patient_queries':field_patient_queries,'exhaustive_reason':exhaustive_reason,
             **({'candidate_observation_review':candidate_receipt}if candidate_receipt else {}),
             'observation_reuse':recovered['observation_reuse'],
-            'method':'Exact-source/question machine observations revalidated during explicit owned-run recovery. SQL and interpretation rerun; no clinical acceptance inherited.'}
+            'method':method}
     from .harness_improvement import recover_document_fields
     reused=recover_document_fields(questions,manifest,packages)if candidates is None and not focused and not field_patient_queries else None
     all_questions=questions
@@ -754,8 +766,4 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
             'source_scope':source_scope,'field_patient_queries':field_patient_queries,'exhaustive_reason':exhaustive_reason,
             **({'candidate_observation_review':candidate_receipt}if candidate_receipt else {}),
             'accounting':{'new_paid_api_calls':new_calls,'known_api_estimate_usd':known,'api_cost_known':cost_known},
-            'method':('Focused whole-document candidates for each bound field; unmatched sources and unresolved findings require explicit expansion. No chart-wide absence or independent clinical qualification.'if focused else
-                      candidate_receipt['scope']+' Not independent clinical qualification.'if candidate_receipt else
-                      'Every scoped whole document/block checked for native entity binding before typed source decisions; missing links remain unresolved. Only eligible unresolved source fields use Claude; exact source spans retained; not independent clinical qualification'
-                      if os.environ.get('AGERE_DOCUMENT_REVIEW')=='typed_spans' else
-                      'All scoped whole documents supplied; exact quotes checked, typed support reviewed; not independent clinical qualification')}
+            'method':method}
