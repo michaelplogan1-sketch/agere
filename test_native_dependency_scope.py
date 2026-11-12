@@ -53,6 +53,30 @@ class NativeDependencyScope(unittest.TestCase):
             else:altered[1]['input']['sql']='SELECT * FROM another_received_source'
             self.assertNotEqual(before,self.packets(answer,altered)['patient_A'][0]['text'])
 
+    def test_candidate_keeps_superseded_composed_drafts_out_of_the_patient_packet(self):
+        import os
+        from unittest.mock import patch
+        answer,calls=self.fixture()
+        draft=[{'patient_id':'A','claims':3,'documentary_findings':'superseded draft statement'}]
+        calls.insert(2,{'name':'compose_table','input':{'base':'provider_base','keys':['patient_id'],'joins':[]},
+            'result':{'result_view':'old_draft','columns':list(draft[0]),'rows':copy.deepcopy(draft)}})
+        original=copy.deepcopy(calls)
+        with patch.dict(os.environ,{'AGERE_PACKET_COMPOSE_CLOSURE':'off'}):before=self.packets(answer,calls)['patient_A']
+        with patch.dict(os.environ,{'AGERE_PACKET_COMPOSE_CLOSURE':'on'}):after=self.packets(answer,calls)['patient_A']
+        self.assertIn('superseded draft statement',json.dumps(before[1]['evidence']))   # today's behavior
+        self.assertEqual(after[1]['evidence'],answer['table'])
+        self.assertNotIn('old_draft',json.dumps(after[1]))
+        # Same claims, final rows and completeness; the draft stays in its native receipt.
+        for key in ('claim_manifest','source_context_complete','dependency_complete','result_view'):self.assertEqual(before[0][key],after[0][key])
+        self.assertEqual(before[1]['answer_rows'],after[1]['answer_rows']);self.assertEqual(calls,original)
+        # A composed table inside the final view's lineage is still supplied.
+        chained=copy.deepcopy(calls);chained[3]['input']['sql']='SELECT * FROM old_draft'
+        with patch.dict(os.environ,{'AGERE_PACKET_COMPOSE_CLOSURE':'on'}):
+            self.assertIn('superseded draft statement',json.dumps(self.packets(answer,chained)['patient_A'][1]['evidence']))
+            # Unknown final lineage stays conservative.
+            unknown=dict(answer,table_from_tool='unavailable')
+            self.assertIn('superseded draft statement',json.dumps(self.packets(unknown,calls)['patient_A'][1]['evidence']))
+
     def test_unknown_final_lineage_conservatively_retains_all_observations(self):
         answer,calls=self.fixture();answer['table_from_tool']='unavailable'
         local=self.packets(answer,calls)['patient_A'][1]
