@@ -5161,6 +5161,55 @@ def quarantine_support_faults(faults,source_observation_path):
                     fault_row['typed_source_observation_quarantine_error']=type(exc).__name__+': '+str(exc)
 
 
+def documentary_absence_faults(packet):
+    """Native, model-free: an empty documentary field cannot stand for absence.
+
+    A field collected from a document-review result is located through the
+    packet's own executed contract. When it is empty, the patient's review row
+    is not a complete review, and no other cell of the same answer row carries
+    that review status, the row presents an unresolved review as a bare empty
+    list. Every such claim the frontier reviewer saw in the 2026-11-12 sample
+    was faulted. This only locates that fault; it accepts nothing, reads no
+    document and says nothing about a non-empty finding.
+    """
+    from ..deliverables.receipts import uncompact_json
+    if (packet.get('id')=='summary'or packet.get('patient_dependency_bound')is not True
+            or packet.get('dependency_complete')is not True or not packet.get('claim_manifest')):return []
+    try:
+        state=uncompact_json(json.loads(packet['text']))
+        contracts={c.get('result_view'):c for c in state.get('native_calculation_contracts')or[]}
+        final=contracts.get(state.get('final_result_view'))or{}
+        if final.get('tool')!='compose_table':return []
+        produced={j['as']:j for j in (final.get('input')or{}).get('joins')or[]if j.get('as')and j.get('items_from')}
+        origins={b['row_digest']:b['origins']for b in state.get('evidence_provenance')or[]}
+        from ...contracts import digest
+        faults=[]
+        for claim in packet['claim_manifest']:
+            path=claim.get('path')or[];field=claim.get('field');join=produced.get(field)
+            if (not join or len(path)!=3 or path[0]!='answer_rows'or path[2]!=field
+                    or (contracts.get(join['result'])or{}).get('tool')!='review_documents'):continue
+            row=state['answer_rows'][path[1]];value=row[field]
+            if isinstance(value,str):
+                try:value=json.loads(value)
+                except ValueError:continue
+            if value!=[]:continue
+            statuses={e.get('review_status')for e in state.get('evidence')or[]if isinstance(e,dict)and'review_status'in e
+                and any(o.get('result_view')==join['result']for o in origins.get(digest(e),[]))}
+            if len(statuses)!=1:continue  # no single received status for this patient: leave to the existing review
+            status=next(iter(statuses))
+            if not isinstance(status,str)or status in ('reviewed','no_documents'):continue
+            if any(status in json.dumps(cell,default=str)for key,cell in row.items()if key not in ('patient_id',field)):continue
+            faults.append({'packet_id':packet['id'],'claim_id':claim['id'],'field':field,'path':path,'label':'missing_evidence',
+                'reason':'Empty documentary list from review status '+status+'; the row does not state that status, so absence is not established.',
+                'decided_by':'native_documentary_absence_check',
+                'verification_observation':{'schema':'native-documentary-absence/1','state':'native_located_fault',
+                    'review_result_view':join['result'],'review_status':status,'authority':'native_review_status_and_contract_lineage',
+                    'clinical_qualification':False},
+                'source_record_ids':[],'result_view':packet.get('result_view')})
+        return faults
+    except (KeyError,IndexError,TypeError,ValueError):return []
+
+
 def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,source_observation_path=None,long_context_decider=None,long_context_field_decider=None,frontier_decider=None,prior_field_reviews=None):
     """Repair a local source family while continuing proven independent families.
 
@@ -5180,6 +5229,33 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         scheduled.append(packet)
     by_id={p['id']:p for p in scheduled}
     if len(by_id)!=len(scheduled):raise ValueError('Duplicate source dependency packet identity')
+    # Candidate (AGERE_NATIVE_DOCUMENTARY_ABSENCE=on): locate bare empty documentary
+    # fields for every patient natively, before any System One or frontier request.
+    # A located fault returns to the analyst; no packet is accepted by this pass.
+    if os.environ.get('AGERE_NATIVE_DOCUMENTARY_ABSENCE','off')=='on':
+        from ...contracts import digest
+        located={p['id']:f for p in scheduled if (f:=documentary_absence_faults(p))}
+        if located:
+            results=[]
+            for packet in scheduled:
+                identity={k:packet[k]for k in ('id','parent_packet_id')if k in packet}
+                if packet['id']in located:
+                    results.append({**identity,'label':'not_established','decided_by':'native_documentary_absence_check',
+                        'claim_feedback':located[packet['id']],'packet_digest':digest(packet['text']),
+                        'reason':'A documentary field is an empty list although its document review is not a complete review and the row does not state that. Carry the review status with the field or complete the review; no model was asked.'})
+                else:
+                    results.append({**identity,'label':'unknown','decided_by':None,'status':'awaiting_dependency_repair',
+                        'reason':'Not sent: repair the natively located documentary fields first. This packet has not been accepted or rejected.'})
+            feedback=[f for r in results for f in r.get('claim_feedback',[])]
+            return {'label':'not_established','decided_by':'all_dependency_checks','steps':[],'packets':results,
+                'complete_dependency_packets':logical_count,'scheduled_source_packets':len(scheduled),
+                'checked_source_packets':len(located),'unchecked_packet_ids':[p['id']for p in scheduled if p['id']not in located],
+                'packet_manifest_complete':True,'blocked_family_ids':[],'global_stop':True,
+                'all_dependencies_checked':False,'failed_packet_ids':sorted(located),
+                'claim_feedback':feedback,'field_review_states':{'native_located_fault':len(feedback)},
+                'frontier_review_calls':0,'frontier_review_cost_known':True,'frontier_review_cost_usd':0,
+                'joint_verification_wait':[],'native_documentary_absence':{'schema':'native-documentary-absence/1',
+                    'packets_with_located_faults':len(located),'claims':len(feedback),'provider_requests':0}}
     for packet in scheduled:
         required=packet.get('required_source_packet_ids')
         if required is not None:
