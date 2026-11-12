@@ -31,6 +31,54 @@ class QuestionOwnership(unittest.TestCase):
         self.addCleanup(lambda: probe.finish() if probe._token is not None else None)
         return probe
 
+    def test_saved_continuation_owns_worker_attempts_and_records_failure(self):
+        from clinical_core.agere.clinical import proposers as P
+        from clinical_core.agere.deliverables import answer_context as A
+        stack=SimpleNamespace(path=self.root,ledger_path=self.path)
+        context={'question':'Inspect dated relationships'}
+        for failed in (False,True):
+            key='resume-failed' if failed else 'resume-returned'
+            def continuation(*args):
+                bound=T.bind_ledger_path(self.path)
+                def worker():
+                    ledger=BudgetLedger(bound)
+                    try:paid(ledger,key,'jev-1.13.0','{}',provider='jev')
+                    finally:ledger.close()
+                with ThreadPoolExecutor(max_workers=1) as pool:pool.submit(worker).result()
+                if failed:
+                    exc=ValueError('Unresolved source evidence')
+                    exc.planner_receipt={'new_paid_api_calls':1}
+                    raise exc
+                return {'answer':{'status':'partial'},'new_paid_api_calls':1}
+            with patch.object(A,'load_unfinished_for_review',return_value=context),patch.object(P,'_continue_artifact_context',side_effect=continuation):
+                if failed:
+                    with self.assertRaises(ValueError) as caught:P.continue_from_artifact(stack,'retained')
+                    telemetry=caught.exception.cost_telemetry;receipt=caught.exception.cost_receipt
+                else:
+                    out=P.continue_from_artifact(stack,'retained')
+                    telemetry=out['cost_telemetry'];receipt=out['cost_receipt']
+            self.assertEqual(telemetry['attempt_ids'],[key])
+            self.assertTrue(telemetry['accounting_complete'])
+            self.assertEqual(receipt['paid_calls'],1)
+            self.assertEqual(receipt['windowed_attempts'],0)
+            self.assertIsNone(T.CURRENT.get())
+        self.assertEqual(len(T.rows(self.root)),2)
+
+    def test_nested_saved_continuation_keeps_existing_question_owner(self):
+        from clinical_core.agere.clinical import proposers as P
+        from clinical_core.agere.deliverables import answer_context as A
+        probe=self.owned('outer-question');seen=[]
+        def continuation(*args):
+            seen.append(T.CURRENT.get())
+            paid(self.ledger,'nested','jev-1.13.0','{}',provider='jev')
+            return {'answer':{'status':'partial'}}
+        with patch.object(A,'load_unfinished_for_review',return_value={'question':'same'}),patch.object(P,'_continue_artifact_context',side_effect=continuation):
+            out=P.continue_from_artifact(SimpleNamespace(path=self.root),'retained')
+        self.assertEqual(seen,['outer-question'])
+        self.assertNotIn('cost_telemetry',out)
+        self.assertEqual(T.CURRENT.get(),'outer-question')
+        self.assertEqual(probe.finish()['attempt_ids'],['nested'])
+
     def test_two_concurrent_questions_through_real_patient_workers(self):
         from clinical_core.agere.clinical import document_review as D, typed_document_review as R
         from clinical_core.agere.clinical import harness_improvement as H

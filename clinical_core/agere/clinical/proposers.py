@@ -1639,12 +1639,37 @@ def continue_from_artifact(stack, context_id, feedback=None):
     prior answer nor machine artifact criticism becomes a trusted clinical label.
     """
     from ..deliverables import answer_context as A
-    from . import harness_improvement as H, decision_context as D
     # This path re-investigates source objections; it does not authorize work.
     # Keep current source/policy checks while allowing the existing read-only
     # review mode to inspect the very assertion that needs repair.
     context=(A.load_unfinished_for_review(stack.path,context_id)if feedback is None else
              A.load(stack.path,context_id,current=True,source_review=True))
+    from . import cost_telemetry as T, together
+    # An artifact continuation inside an existing question keeps its owner.
+    # A direct resume owns its attempts, including downstream worker ledgers.
+    if T.CURRENT.get():
+        return _continue_artifact_context(stack,context_id,feedback,context)
+    probe=T.start(context['question'],ledger_path=together._ledger_path(stack))
+    try:
+        out=_continue_artifact_context(stack,context_id,feedback,context)
+    except Exception as exc:
+        partial=getattr(exc,'partial_result',None)
+        exc.cost_telemetry=probe.finish(partial,error=f'{type(exc).__name__}: {exc}')
+        exc.cost_receipt=T.receipt(exc.cost_telemetry,getattr(exc,'planner_receipt',None),failed=True)
+        T.record(stack.path,exc.cost_telemetry)
+        raise
+    else:
+        telemetry=probe.finish(out);T.record(stack.path,telemetry)
+        return {**out,'cost_telemetry':telemetry,'cost_receipt':T.receipt(telemetry,out)}
+    finally:
+        # Process interruption must not leak a question owner into later work.
+        if probe._token is not None:
+            T.record(stack.path,probe.finish(error='Continuation interrupted before return'))
+
+
+def _continue_artifact_context(stack,context_id,feedback,context):
+    from ..deliverables import answer_context as A
+    from . import harness_improvement as H, decision_context as D
     question=context['question'];population=context['input_patient_ids']
     actions=[]
     for call in (context.get('investigation') or {}).get('tool_calls') or []:
