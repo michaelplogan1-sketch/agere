@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-12T04:29:26.608671+00:00",
+  "updated_at": "2026-11-12T04:59:03.689567+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -1031,7 +1031,7 @@
       "scope_impact": "No acceptance area removed, no lowered source thresholds, no unknown result promoted."
     },
     "latest_resume_observation": {
-      "at": "2026-11-12T04:29:26.608671+00:00",
+      "at": "2026-11-12T04:59:03.689567+00:00",
       "gate": "G5",
       "status": "unchanged_recorded_dependencies",
       "product_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
@@ -7490,7 +7490,7 @@
     "notification_policy": "failed_runs_only"
   },
   "continuation_observation": {
-    "at": "2026-11-12T04:29:26.608671+00:00",
+    "at": "2026-11-12T04:59:03.689567+00:00",
     "gate": "G5",
     "status": "unchanged_recorded_dependencies",
     "product_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
