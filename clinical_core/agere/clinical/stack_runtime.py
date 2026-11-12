@@ -32,6 +32,7 @@ class Stack:
                     'scope':'Native execution and joins first; System One chooses program-meaning or source-reading work. Frontier reviews unresolved meaning; native defects and deciding faults require repair.',
                     'work_triage':'execution-work-triage/1',
                     'source_obligations':'source-fields-first/1',
+                    'mixed_native_work':'mixed-native-work/1; shared program meaning once, exact field copies, remaining documentary obligations separately',
                     'actor_role_routing':'role-scoped-escalation/1',
                     'binding_inputs':'native-binding-input/1; prior complete readings stay queryable, newly requested values remain visible, source interpretation retains full readings',
                     'coverage_order':'System One requested-work coverage, focused frontier fallback if undecided, then source verification. Unresolved coverage retains the partial before patient dispatch.',
