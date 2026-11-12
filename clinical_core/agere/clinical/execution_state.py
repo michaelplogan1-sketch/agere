@@ -1415,6 +1415,8 @@ def loaded_documentation(calls, identity):
 
 def catalog(calls,*,readings_start=0):
     entries=[];native={};duplicate_views=set()
+    from .source_navigation import settled_navigations,settled_reading
+    settled=settled_navigations(calls)
     for index,call in enumerate(calls):
         out=call.get('result')
         entry={'call':index,'tool':call.get('name'),'input_digest':digest(call.get('input')),
@@ -1501,10 +1503,18 @@ def catalog(calls,*,readings_start=0):
                 # are not silently summarized by a language model or dropped.
                 if str(out.get('schema','')).startswith('residual-evidence-navigation/'):
                     from .semantic_analyst import actor_result
-                    # Use the same complete branch-selection interface as the
-                    # immediate tool response. Per-field inventory stays in the
-                    # immutable navigation object; replay must not inline it.
-                    entry['observation']=actor_result(out)
+                    used=settled.get(out.get('id'))
+                    if used is not None and used[0]>index:
+                        # The selection this plan offered was already made and
+                        # used by a later successful call. Resending every
+                        # branch on each later turn adds no decision input;
+                        # the complete plan stays in its immutable receipt.
+                        entry['navigation_reference']=settled_reading(out,by_call=used[0],how=used[1])
+                    else:
+                        # Use the same complete branch-selection interface as the
+                        # immediate tool response. Per-field inventory stays in the
+                        # immutable navigation object; replay must not inline it.
+                        entry['observation']=actor_result(out)
                 else:entry['observation']=out
         entries.append(entry)
     return entries
@@ -1553,6 +1563,14 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
     selected_keys={digest(t['key'])for t in focus['targets']}if focus else set()
     def recent(call):
         out = call.get('result')
+        if (isinstance(out,dict) and not out.get('error') and str(out.get('schema','')).startswith('residual-evidence-navigation/')
+                and any(c.get('result') is out or c.get('result')==out for c in calls)):
+            # executed_results already carries this plan's complete actor view
+            # (or its settled reference) for the same call; do not send every
+            # branch a second time in the same message.
+            return {'name':call.get('name'),'input':call.get('input'),
+                    'result':{'schema':out['schema'],'id':out.get('id'),'status':out.get('status'),
+                              'complete_reading_in':'executed_results entry for this navigation id; all branch choices are retained there once'}}
         if complete_actor_reading(out):
             return {'name':call.get('name'),'input':call.get('input'),
                     'result':{'result_view':out.get('result_view'),

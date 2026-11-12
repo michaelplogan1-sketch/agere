@@ -237,6 +237,66 @@ def actor_reading(saved):
     return shown
 
 
+SETTLED = 'settled-evidence-navigation/1'
+
+
+def settled_navigations(calls):
+    """-> {navigation id: (call index, how)} for plans a later successful call used.
+
+    A plan is settled once a later plan refines it (basis_navigation_id) or a
+    document review consumes it (navigation_id). Its branch choices were made;
+    the successor result carries the current state. Failed calls settle nothing.
+    """
+    settled = {}
+    for index, call in enumerate(calls):
+        out = call.get('result')
+        if not isinstance(out, dict) or out.get('error'):
+            continue
+        if call.get('name') == 'plan_evidence_expansion' and isinstance(out.get('basis_navigation_id'), str):
+            settled.setdefault(out['basis_navigation_id'], (index, 'refined_by_later_plan'))
+        elif (call.get('name') == 'review_documents' and isinstance(call.get('input'), dict)
+              and set(call['input']) == {'navigation_id'} and isinstance(call['input']['navigation_id'], str)):
+            settled.setdefault(call['input']['navigation_id'], (index, 'consumed_by_document_review'))
+    return settled
+
+
+def settled_reading(saved, *, by_call, how):
+    """Actor view of a plan whose selection step is finished.
+
+    The complete branch list and per-record reference issues exist to choose
+    branches. After that choice was used they are execution bookkeeping: every
+    later turn would otherwise resend hundreds of unchanged branch rows. Keep
+    what later reasoning needs (what was selected, what stayed unexamined by
+    source, issue counts, all limits) and reference the immutable receipt for
+    the rest. Counts only; no relevance judgment, sampling or model summary.
+    """
+    from collections import Counter
+    full = actor_reading(saved)
+
+    def tally(items, keys):
+        found = Counter(tuple(i.get(k) for k in keys) for i in items)
+        return [{**dict(zip(keys, key)), 'count': n} for key, n in sorted(found.items(), key=repr)]
+    branches = saved['source_branches']
+    out = {k: saved[k] for k in ('prior_result_view', 'basis_navigation_id', 'questions', 'selected_branch_ids',
+                                 'branch_selection_basis', 'selection_sufficiency', 'absence_established',
+                                 'clinical_qualified', 'status', 'limits') if k in saved}
+    return {'schema': SETTLED, 'navigation_schema': saved['schema'], 'navigation_id': saved['id'],
+            'settlement': how, 'settled_by_call': by_call, **out,
+            'selected_branches': [b for b in branches if b.get('selection') != 'unexamined'],
+            'source_level_accounting': [{k: b.get(k) for k in ('source', 'stream', 'documents', 'patients',
+                                                                 'selected_documents', 'selection')}
+                                        for b in branches if b['level'] == 'source'],
+            'branch_counts': tally(branches, ('level', 'selection')),
+            'reference_issue_counts': tally(full['reference_issues'], ('field', 'reason', 'target_source_type')),
+            'linked_structured_source_counts': tally(full['linked_structured_sources'], ('field', 'source_table', 'status')),
+            'native_inventory': full['native_inventory'],
+            'complete_reading_digest': digest(full), 'complete_native_result_retained': True,
+            'meaning': 'This source-selection plan was already used by the named later call, whose result carries the current state. '
+                       'The complete branch list, reference issues and memberships remain in the immutable native receipt. '
+                       'Unselected branches remain unexamined; this reference establishes no source support, absence or relevance. '
+                       'For a further expansion, call plan_evidence_expansion on the current review result_view to get the complete current branches.'}
+
+
 def _continuation_coverage(saved):
     """Carry source versions and completed reading scope into another expansion.
 

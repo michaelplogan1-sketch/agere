@@ -225,6 +225,41 @@ class Navigation(unittest.TestCase):
         combined = B.Tools._call(self.tools, selected['review_next'])
         combined['result_view']='agere_result_2'
         self.tools.native_calls.append({'name': 'review_documents', 'input': {'navigation_id': selected['id']}, 'result': combined})
+        # A plan whose selection was used is retained by reference in later
+        # actor state; an unused or failed-to-use plan keeps every branch.
+        from clinical_core.agere.clinical.execution_state import messages
+        first={'name':'plan_evidence_expansion','input':{'review_result_view':'agere_result_1'},'result':plan}
+        second={'name':'plan_evidence_expansion','input':{'review_result_view':'agere_result_1','basis_navigation_id':plan['id'],'branch_ids':[branch['id']]},'result':selected}
+        used={'name':'review_documents','input':{'navigation_id':selected['id']},'result':combined}
+        failed={**used,'result':{'error':'reader unavailable'}}
+        self.assertEqual(catalog([first])[0]['observation'],actor_result(plan))
+        open_state=catalog([first,second,failed])
+        self.assertIn('navigation_reference',open_state[0]);self.assertEqual(open_state[1]['observation'],shown)
+        settled=catalog([first,second,failed,used])
+        self.assertEqual([e.get('observation')for e in settled[:2]],[None,None])
+        reference=settled[1]['navigation_reference']
+        self.assertEqual((reference['navigation_id'],reference['settlement'],reference['settled_by_call']),
+                         (selected['id'],'consumed_by_document_review',3))
+        self.assertEqual(settled[0]['navigation_reference']['settlement'],'refined_by_later_plan')
+        self.assertEqual(reference['selected_branch_ids'],selected['selected_branch_ids'])
+        self.assertEqual(reference['selected_branches'],[b for b in selected['source_branches']if b['selection']!='unexamined'])
+        self.assertEqual(sum(r['count']for r in reference['branch_counts']),len(selected['source_branches']))
+        self.assertEqual(sum(r['documents']for r in reference['source_level_accounting']),
+                         sum(b['documents']for b in selected['source_branches']if b['level']=='source'))
+        self.assertEqual(sum(r['count']for r in reference['reference_issue_counts']),len(shown['reference_issues']))
+        self.assertEqual(reference['complete_reading_digest'],digest(shown))
+        self.assertFalse(reference['absence_established']);self.assertEqual(reference['limits'],selected['limits'])
+        # Compiled entries before the settling call are unchanged apart from
+        # the settled plan itself, and the immediate result is not sent twice.
+        self.assertEqual(settled[2],open_state[2])
+        state=json.loads(messages('{}',[first,second],recent_results=[second])[0]['content'])
+        self.assertEqual(state['executed_results'][1]['observation'],shown)
+        self.assertEqual(state['latest_results'][0]['result']['id'],selected['id'])
+        self.assertNotIn('source_branches',state['latest_results'][0]['result'])
+        viewed=actor_result({**combined,'rows':combined['rows']*1,'padding':'x'*13000})
+        self.assertNotIn('navigation_coverage',viewed)
+        self.assertEqual(viewed['navigation_coverage_summary']['native_digest'],digest(combined['navigation_coverage']))
+        self.assertEqual(viewed['navigation_coverage_summary']['patients'],1)
         # The next expansion starts from the combined native result. Earlier
         # evidence is not re-read or discarded, even when it is unresolved.
         next_plan = N.prepare(self.tools, 'agere_result_2')

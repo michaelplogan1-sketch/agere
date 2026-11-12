@@ -569,6 +569,17 @@ def actor_result(value):
                                        'unique_whole_documents':sum(x.get('unique_whole_documents',0) for x in coverage),
                                        'inventory_whole_documents':sum(x.get('inventory_whole_documents',x.get('unique_whole_documents',0))for x in coverage),
                                        'source_scope':shown.get('source_scope'),'chart_wide_absence_established':False}
+        if isinstance(shown.get('navigation_coverage'),list):
+            # Per-record source versions carried for a later native expansion.
+            # Code consumes them from the receipt; the model needs the totals.
+            from ...contracts import digest
+            carried=shown.pop('navigation_coverage')
+            listed=[s for p in carried for s in ((p.get('source_selection')or{}).get('sources')or[])]
+            shown['navigation_coverage_summary']={'patients':len(carried),'source_records_listed':len(listed),
+                'source_records_read_for_a_field':sum(1 for s in listed if s.get('selected_fields')),
+                'complete_chart_review':all((p.get('source_selection')or{}).get('complete_chart_review')is True for p in carried)if carried else False,
+                'native_digest':digest(carried),
+                'meaning':'Complete per-record source versions and selected fields remain in the native receipt for a later expansion. Listed-but-unread records remain unexamined; these counts establish no absence.'}
         # A row preview must not repeat the complete free-text dataset through
         # its category-frequency metadata. Keep full native rows and counts;
         # condense the largest lists only until the existing preview envelope fits.
