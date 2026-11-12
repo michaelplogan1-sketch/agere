@@ -97,6 +97,12 @@ unfinished_fields:p.recorded_fields.unresolved,service_dependency:p.service_depe
         context=A.load(self.path,self.key);context['answer']['answer_type']='count'
         self.assertFalse(A.supports_evidence_review(context))
 
+    def test_saved_request_without_generated_id_still_renders_its_computation(self):
+        page=ask_view.page();start=page.index('function requestPlan(');end=page.index('function renderTurn(',start)
+        script="const esc=v=>String(v??'');\n"+page[start:end]+"\nconst assert=require('node:assert/strict'); const out=requestPlan({planner_receipt:{request_contract:{kind:'checked_graph',graph:{nodes:[]}}}}); assert.match(out,/Request Not recorded/); assert.match(out,/nodes/);"
+        result=subprocess.run([shutil.which('node'),'-e',script],text=True,capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+
     def test_legacy_error_is_visible_without_borrowing_earlier_field_judgments(self):
         context=A.load(self.path,self.key)
         context['investigation']['answer_reviews'][-1].pop('review_stop_reason')
