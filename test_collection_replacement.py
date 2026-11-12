@@ -89,5 +89,22 @@ class CollectionReplacement(unittest.TestCase):
             if change == 'promise':by['agere_result_6']['result']['assembly']['joins'][0]['retain_in_final'] = False
             with self.subTest(change=change):self.assertEqual(self.check(calls)[0], [])
 
+    def test_equivalent_corrected_assembly_rebinds_only_unchanged_proposed_values(self):
+        args={'base':'agere_result_3','keys':['entity'],'joins':[
+            {'result':'agere_result_5','as':'corrected_roles','on':{'entity':'entity'},
+             'mode':'collect','retain_in_final':True}]}
+        self.add('agere_result_9','compose_table',args,R.compose(self.native,**args))
+        args={'base':'agere_result_9','keys':['entity'],'base_columns':['entity','corrected_roles'],
+              'rename_columns':{'corrected_roles':'roles'}}
+        self.add('agere_result_10','compose_table',args,R.compose(self.native,**args))
+        rows=self.native['agere_result_10']['rows'];before=copy.deepcopy(self.calls)
+        proposal=R.equivalent_retained_assembly(self.calls,'agere_result_10',rows)
+        self.assertEqual(proposal['candidate_result_view'],'agere_result_6')
+        self.assertIsNone(proposal['compose']);self.assertTrue(proposal['full_current_review_required'])
+        self.assertEqual(self.calls,before)
+        changed=copy.deepcopy(rows);changed[0]['roles'][0]['record_id']='foreign'
+        self.assertIsNone(R.equivalent_retained_assembly(self.calls,'agere_result_10',changed))
+        self.assertIsNone(R.equivalent_retained_assembly(self.calls,'agere_result_9',self.native['agere_result_9']['rows']))
+
 
 if __name__ == '__main__':unittest.main()

@@ -2900,6 +2900,21 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                               'native_presentation_binding':'Explicit unique retained items_from contracts; values unchanged'})
                 answer['table_from_tool']=bound['result_view']
                 materialize_table(answer,calls)
+        if not (answer.get('table_binding')or{}).get('interpreted_columns'):
+            from .result_assembly import equivalent_retained_assembly
+            rebinding=equivalent_retained_assembly(calls,answer.get('table_from_tool'),answer.get('table')or[])
+            if rebinding:
+                target=rebinding['candidate_result_view']
+                if rebinding['compose']:
+                    args=rebinding['compose'];bound=tools({'name':'compose_table','input':args})
+                    calls.append({'name':'compose_table','input':args,'result':bound,
+                                  'native_retention_rebinding':rebinding})
+                    target=bound['result_view']
+                answer['table_from_tool']=target
+                materialize_table(answer,calls)
+                if digest(answer['table'])!=rebinding['exact_rows_digest']:
+                    raise ValueError('Native retention rebinding changed proposed values')
+                assessment['native_retention_rebinding']={**rebinding,'result_view':target}
     except ValueError as exc:
         return {**assessment, 'status': 'repair', 'feedback': str(exc)}
     from .decision_context import population_scope_issues

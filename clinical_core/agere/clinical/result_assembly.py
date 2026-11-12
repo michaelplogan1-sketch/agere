@@ -511,3 +511,57 @@ def collection_retention_issues(results,final_rows,dependencies,*,replacements=(
         text+='. Keep the intact collection. Redundant source join keys may be carried by the identically bound parent row; other fields remain exact. Use an executed compose_table.rename_columns mapping to move broader evidence to a clearly labelled context field; a narrower clinical projection does not remove an earlier retain_in_final promise.'
         messages.append(text)
     return messages
+
+
+def equivalent_retained_assembly(calls, root, final_rows):
+    """Find an already executed correction with exactly the proposed values.
+
+    A final projection can carry obsolete retention ancestry even though its
+    complete values equal a corrected assembly. Rebind only exact rows/fields;
+    JSON text -> collection differences require a real native collect operation.
+    This selects execution lineage, never edits a claimed fact or accepts it.
+    """
+    native={c['result']['result_view']:c['result'] for c in calls
+            if isinstance(c.get('result'),dict) and c['result'].get('result_view')}
+    if root not in native:return None
+    columns, rows = _rows(native[root])
+    if digest(rows)!=digest(final_rows):return None
+    prior=collection_retention_plan(calls,root)
+    if not collection_retention_issues(native,rows,prior['dependencies'],replacements=prior['replacements']):return None
+    for call in reversed(calls):
+        result=call.get('result')or{};view=result.get('result_view')
+        if call.get('name')!='compose_table' or not view or view==root:continue
+        candidate_columns,candidate_rows=_rows(result)
+        if columns!=candidate_columns or len(rows)!=len(candidate_rows):continue
+        plan=collection_retention_plan(calls,view)
+        if not plan['replacements'] or collection_retention_issues(native,candidate_rows,
+                plan['dependencies'],replacements=plan['replacements']):continue
+        converted=[];valid=True;keys=result['assembly']['keys']
+        for field in columns:
+            if all(digest(a[field])==digest(b[field])for a,b in zip(candidate_rows,rows)):continue
+            if field in keys:valid=False;break
+            try:
+                for source,target in zip(candidate_rows,rows):
+                    value=source[field]
+                    if isinstance(value,str):value=json.loads(value)
+                    if value is not None and not isinstance(value,list):raise ValueError('Not a collection')
+                    if digest(value)!=digest(target[field]):raise ValueError('Changed collection')
+            except (ValueError,TypeError):valid=False;break
+            converted.append(field)
+        if not valid:continue
+        spec=None
+        if converted:
+            spec={'base':view,'keys':keys,'base_columns':[c for c in columns if c not in converted],
+                'joins':[{'result':view,'as':c,'on':{k:k for k in keys},'mode':'collect',
+                          'items_from':c,'retain_in_final':True}for c in converted]}
+            try:rebased=compose(native,**spec)
+            except (ValueError,TypeError,KeyError):continue
+            if digest(rebased['rows'])!=digest(rows):continue
+        elif digest(candidate_rows)!=digest(rows):continue
+        return {'schema':'equivalent-retained-assembly/1','previous_result_view':root,
+            'previous_result_digest':digest(native[root]),'candidate_result_view':view,
+            'candidate_result_digest':digest(result),'compose':spec,
+            'exact_rows_digest':digest(rows),'original_columns':columns,
+            'replacement_lineage':plan['replacements'],'values_and_population_unchanged':True,
+            'full_current_review_required':True,'whole_answer_accepted':False}
+    return None
