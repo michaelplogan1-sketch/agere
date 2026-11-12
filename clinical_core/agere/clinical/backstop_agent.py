@@ -2299,6 +2299,17 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
             return match.group('every')
         text=re.sub(r'\b(?P<every>every\s+)one(?=\s+of\s+(?:these|those|the)\s+[A-Za-z])',
                     distributive,text,flags=re.I)
+        # "No one has checked" uses an indefinite personal pronoun, not
+        # the cardinal one. Only the pronoun before a finite auxiliary is
+        # grammatical evidence: "no one patient"/"no one hundred" and
+        # every actual quantity elsewhere must still bind. The unchanged
+        # negative assertion remains subject to source/meaning review.
+        def personal_pronoun(match):
+            parameter_proofs.append({'kind':'indefinite_personal_pronoun','literal':match.group(),
+                'scope':'Grammar only; no measured count, negative source assertion or review completion established.'})
+            return ''
+        text=re.sub(r'\bno(?:\s+|-)one(?=\s+(?:has|had|is|was|does|did|can|could|will|would|shall|should|may|might|must)\b)',
+                    personal_pronoun,text,flags=re.I)
         # Explicit multiline ordered-list markers are layout, not measures.
         # Require a complete consecutive sequence beginning at one; inline
         # parenthesized quantities, doses and numbers inside items still bind.

@@ -7,6 +7,20 @@ from clinical_core.agere.clinical import backstop_agent as B,system_one_gate as 
 
 
 class ComputedProse(unittest.TestCase):
+    def test_indefinite_personal_pronoun_keeps_source_assertion_without_scalar_repair(self):
+        for text in ('No one has checked whether the listed owner is responsible.',
+                     'No-one was assigned to review the account.'):
+            answer={'table_binding':{'result_view':'table'},'headline':text}
+            B.bind_computed_prose(answer,[])
+            self.assertEqual(answer['headline'],text)
+            self.assertEqual(answer['computed_prose'][0]['parameters'][0]['kind'],
+                             'indefinite_personal_pronoun')
+            self.assertNotIn('verification',answer)
+        for text in ('No one patient has a review.', 'No one hundred records were reviewed.',
+                     'No one has reviewed two records.', 'One has checked the records.'):
+            with self.subTest(text=text),self.assertRaises(B.ComputedProseError):
+                B.bind_computed_prose({'table_binding':{'result_view':'table'},'headline':text},[])
+
     def test_initial_row_prose_example_compiles_and_cannot_borrow_another_entitys_scalar(self):
         import json
         rules=B.RULES.format(tool_quota='No fixed quota.')
