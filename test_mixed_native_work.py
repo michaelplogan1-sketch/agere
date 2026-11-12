@@ -71,6 +71,28 @@ class MixedNativeWork(unittest.TestCase):
         p['text']+=' '
         self.assertIsNone(M.field_proof(p,claim,uncompact_json(json.loads(p['text']))))
 
+    def test_reexecuted_program_reuses_exact_meaning_despite_executor_timing(self):
+        a,c=mixed()
+        def rebind():
+            native={}
+            for call in c:
+                view=call['result']['result_view']
+                if call['name']=='compose_table':call['result']={**R.compose(native,**call['input']),'result_view':view}
+                native[view]=call['result']
+            a['table']=copy.deepcopy(c[-1]['result']['rows'])
+        c[0]['result']['elapsed_s']=.1;rebind()
+        first=M.candidates(a,c,ASOF);cache={}
+        M.review('Show sources',first,judge=judge,ledger=None,cache=cache)
+        c[0]['result']['elapsed_s']=9.5;rebind()
+        second=M.candidates(a,c,ASOF)
+        self.assertNotEqual(first[0]['program'],second[0]['program'])
+        self.assertEqual(M.review_packet('Show sources',first[0])['text'],M.review_packet('Show sources',second[0])['text'])
+        reused=M.review('Show sources',second,judge=lambda *a,**k:self.fail('elapsed time triggered another review'),ledger=None,cache=cache)
+        self.assertTrue(reused[0]['reused'])
+        c[0]['result']['rows'][0][-1]=100;rebind()
+        changed=M.candidates(a,c,ASOF)
+        self.assertNotEqual(M.review_packet('Show sources',first[0])['text'],M.review_packet('Show sources',changed[0])['text'])
+
     def test_bound_row_prose_keeps_unchanged_native_fields_separate(self):
         a,c=fixture()
         a['table']=copy.deepcopy(a['table'])

@@ -6,6 +6,7 @@ column is never made native by a matching value. Native fidelity is conditional
 on an explicit, input-bound machine judgment of the program's field meaning.
 """
 import collections
+import copy
 import json
 
 from ...contracts import digest
@@ -150,13 +151,28 @@ def candidates(answer, calls, as_of):
         return out
 
     traced = trace(root)
+    from .evidence_projection import native_timing_projection
+    timing = native_timing_projection(calls)
+    indices = {c['result']['result_view']: i for i,c in enumerate(calls)
+        if isinstance(c.get('result'),dict) and c['result'].get('result_view')}
+    review_programs = {}
+    for view, proof in proofs.items():
+        program = copy.deepcopy(proof)
+        for dependency in program['native_receipt_digests']:
+            program['native_receipt_digests'][dependency] = timing['current'][indices[dependency]]
+        for contract in program['calculation_contracts']:
+            if contract['operation']=='compose_table':
+                normalized=timing['assemblies'].get(indices[contract['result_view']])
+                if normalized is not None:contract['assembly']=normalized
+        review_programs[view]=program
     groups = {}
     for field, lineage in traced.items():
         if field in interpreted or field == 'patient_id':
             continue
         origin = lineage['origin']
         group = groups.setdefault(origin, {'schema': VERSION, 'as_of': as_of,
-            'result_view': root, 'table_digest': digest(final_rows), 'program': proofs[origin], 'fields': {}})
+            'result_view': root, 'table_digest': digest(final_rows), 'program': proofs[origin],
+            'review_program': review_programs[origin], 'fields': {}})
         group['fields'][field] = lineage
     # Whole-table native routing already has its own connected path.
     return list(groups.values()) if groups and (interpreted or any(f not in traced for f in final_rows[0])) else []
@@ -169,7 +185,7 @@ def review_packet(question, candidate, *, pending=None):
     # source definitions, row/field shapes and final field labels/ancestry.
     state = {'id': 'summary', 'question': question, 'as_of': candidate['as_of'],
         'scope': 'Shared program meaning for the named fields only. This is NOT whole-answer coverage, documentary interpretation or clinical qualification.',
-        'native_program': candidate['program'],
+        'native_program': candidate['review_program'],
         'program_fields': {name: {**{k: v for k, v in fields[name].items() if k not in ('row_indices','path')},
             'path': [{k: v for k, v in step.items() if k != 'result_digest'} for step in fields[name]['path']]} for name in fields},
         'final_result_view': candidate['result_view'],
