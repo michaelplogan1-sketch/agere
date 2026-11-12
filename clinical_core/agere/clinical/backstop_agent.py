@@ -250,6 +250,10 @@ has already declined this question, so it is yours to answer completely and corr
   with items_from=source_clinicians_json and retain_in_final=true. Code then rejects dropped or changed objects in a final
   descendant patient table. For any explicitly requested native collection, use this retention contract. Keep dated objects alongside structured care-team relationships;
   authors/addressees are not current assignments. The same collection join retains native contract clauses or episode evidence.
+  When a retained collection's derivation is wrong, reassemble from the corrected native query and collect the corrected source
+  under the same field contract with retain_in_final=true. A replacement may supersede an old collection only when code proves
+  every intervening consumer left that old field unread and the entity keys/population are unchanged. Original receipts stay in history.
+  Cloning the bad collection and then hiding or relabelling it is not a correction. Prefer an existing corrected assembly if available.
   source_findings_json is a flat collection of every review finding with its requested field, record, date and quote intact.
   Use a retained collect join into documentary_findings; keep the main patient assessment concise and point to this source evidence.
   Do not rebuild evidence fields as concatenated quote strings; intact objects keep entity, record and date relationships inspectable.
@@ -2962,11 +2966,13 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     static_feedback.extend(cash_source_issues(question,answer,calls))
     from .adjudication_history import development_source_issues
     static_feedback.extend(development_source_issues(question,answer,calls))
-    from .result_assembly import collection_retention_issues,RETENTION_CONTRACT
+    from .result_assembly import collection_retention_issues,collection_retention_plan,RETENTION_CONTRACT
     assessment['collection_retention_contract']=RETENTION_CONTRACT
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and c['result'].get('result_view')}
+    retention=collection_retention_plan(calls,(answer.get('table_binding')or{}).get('result_view'))
+    assessment['collection_replacements']=retention['replacements']
     static_feedback.extend(collection_retention_issues(native,answer.get('table')or[],
-        native_result_dependencies(calls,[(answer.get('table_binding')or{}).get('result_view')])))
+        retention['dependencies'],replacements=retention['replacements']))
     def compile_prose():
         try:
             bind_computed_prose(answer,calls,verified_quotes=kept,question=question,native_structure=native_audit)
@@ -3301,9 +3307,25 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         if branch_reviews:
             pending_program=mixed_native_work.pending_program_work(branches,branch_reviews)
             if pending_program['faults']:
+                # Existing corrected native work is a repair option, not a new
+                # model answer or an accepted verdict. Expose its exact address
+                # so the actor need not regenerate an already executed join.
+                fault_views={f['result_view'] for f in pending_program['faults']}
+                corrected=[]
+                for c in calls:
+                    r=c.get('result')or{}
+                    if c.get('name')!='compose_table' or not r.get('result_view'):continue
+                    plan=collection_retention_plan(calls,r['result_view'])
+                    replacements=[p for p in plan['replacements'] if p['previous_result_view'] in fault_views]
+                    if replacements and not collection_retention_issues(native,r.get('rows')or[],
+                            plan['dependencies'],replacements=plan['replacements']):
+                        corrected.append({'result_view':r['result_view'],
+                            'replaced_collections':[{k:p[k] for k in ('previous_result_view','field')} for p in replacements],
+                            'current_full_verification_required':True})
                 return {**assessment,'status':'repair','repair_kind':'shared_program_meaning',
                     'progress_state':pending_program,
-                    'feedback':'Repair these shared program/field meanings once, preserving native rows and remaining documentary obligations: '+json.dumps(pending_program['faults'])}
+                    'feedback':'Repair these shared program/field meanings once, preserving native rows and remaining documentary obligations: '+json.dumps(pending_program['faults'])+
+                        (' Existing native corrected assemblies may supply the repair without repeating source work. Inspect their fields and use the appropriate retained result; current full verification is still required: '+json.dumps(corrected) if corrected else '')}
             if pending_program['unresolved']:
                 return {**assessment,'status':'unavailable','review_stop_reason':'unresolved_shared_program_meaning',
                     'retry_disposition':'retain_partial_until_new_evidence','progress_state':pending_program,

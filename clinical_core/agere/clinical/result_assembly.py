@@ -9,7 +9,7 @@ import json
 from ...contracts import digest
 
 VERSION='result-assembly/1'
-RETENTION_CONTRACT='collection-retention/2'
+RETENTION_CONTRACT='collection-retention/3'
 
 
 def incomplete_dependencies(result, *, result_view=None):
@@ -357,11 +357,78 @@ def collection_contract_renames(results,root,required,*,keys):
     return output
 
 
-def collection_retention_issues(results,final_rows,dependencies):
+def collection_retention_plan(calls, root):
+    """Keep collection versions separate from unrelated upstream column reads.
+
+    A corrected assembly may explicitly collect a new version under the same
+    field contract. Its predecessor remains history only when EVERY live
+    consumer proves it did not read that old collection. Mere omission, a
+    rename, changed population or unknown read metadata cannot replace it.
+    This proves value lineage, never correctness of the replacement's meaning.
+    """
+    from collections import Counter
+    from .backstop_agent import native_result_dependencies, NATIVE_SQL_CONTRACT
+    from .evidence_projection import assembly_column_dependencies, _native_column_consumers
+    dependencies = native_result_dependencies(calls, [root])
+    by = {}
+    for call in calls:
+        result = call.get('result') or {}
+        if not isinstance(result, dict) or not result.get('result_view'):continue
+        view = result['result_view']
+        if view in by:return {'dependencies': dependencies, 'replacements': []}
+        by[view] = call
+    replacements = []
+    if dependencies is None:return {'dependencies': None, 'replacements': []}
+    proofs = assembly_column_dependencies(calls, dependencies, by)
+    for view in sorted(dependencies - {root}):
+        if view not in proofs:continue
+        result = by[view]['result']; contract = result['assembly']; keys = contract['keys']
+        columns, rows = _rows(result)
+        used = _native_column_consumers(view, columns,
+            digest({k:v for k,v in result.items() if k != 'result_view'}), by, dependencies, proofs)
+        if not used:continue
+        needed, consumers = used
+        if any(by[c['result_view']]['result'].get('error') or
+               incomplete_reason(by[c['result_view']]['result']) or
+               (by[c['result_view']]['name']=='query_sql' and
+                by[c['result_view']]['result'].get('native_sql_contract')!=NATIVE_SQL_CONTRACT)
+               for c in consumers):continue
+        population = Counter(digest([row[k] for k in keys]) for row in rows)
+        for join in contract['joins']:
+            alias = (contract.get('column_renames') or {}).get(join['as'], join['as'])
+            if not join.get('retain_in_final') or alias in needed:continue
+            for successor in sorted(dependencies - {view}):
+                if successor not in proofs:continue
+                newer = by[successor]['result']; assembly = newer['assembly']
+                if assembly['keys'] != keys:continue
+                # The new assembly must descend from this version, rather than
+                # an unrelated same-named collection elsewhere in the graph.
+                ancestors = native_result_dependencies(calls, [successor])
+                if ancestors is None or view not in ancestors:continue
+                _, newrows = _rows(newer)
+                if Counter(digest([row[k] for k in keys]) for row in newrows) != population:continue
+                for replacement in assembly['joins']:
+                    destination = (assembly.get('column_renames') or {}).get(replacement['as'], replacement['as'])
+                    if (not replacement.get('retain_in_final') or destination != alias
+                            or replacement['on'] != join['on']):continue
+                    replacements.append({'previous_result_view': view, 'field': alias,
+                        'previous_result_digest': digest(result), 'replacement_result_view': successor,
+                        'replacement_result_digest': digest(newer), 'keys': keys,
+                        'population_digest': digest(sorted(population.items())),
+                        'consumers': consumers, 'original_receipt_preserved': True,
+                        'current_source_review_required': True})
+                    break
+                else:continue
+                break
+    return {'dependencies': dependencies, 'replacements': replacements}
+
+
+def collection_retention_issues(results,final_rows,dependencies,*,replacements=()):
     """Check explicitly promised source collections in descendant final tables."""
     from collections import Counter
     issues={}
     if dependencies is None:return []
+    replaced={(r['previous_result_view'],r['field']) for r in replacements}
     def decoded(value):
         if isinstance(value,str) and value[:1] in ('{','['):
             try:return json.loads(value)
@@ -399,6 +466,7 @@ def collection_retention_issues(results,final_rows,dependencies):
             target=final[ident]
             for join in required:
                 original=join['as'];source_alias=(assembly.get('column_renames')or{}).get(original,original)
+                if (view,source_alias) in replaced:continue
                 expected=decoded(row[source_alias]) or []
                 addresses=sorted(aliases(source_alias)&set(target))
                 # An explicitly renamed context can retain the old objects
