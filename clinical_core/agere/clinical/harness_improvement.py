@@ -22,7 +22,7 @@ from contextlib import contextmanager
 _OWNED_RECOVERY = ContextVar('agere_owned_investigation_recovery',default=None)
 
 @contextmanager
-def owned_recovery(actions,question=None,feedback=None,document_reviews=None,field_contracts=None,origin=None,checkpoint=None,prior_review_notes=None):
+def owned_recovery(actions,question=None,feedback=None,document_reviews=None,field_contracts=None,origin=None,checkpoint=None,prior_review_notes=None,verification_candidates=None):
     """Explicit unfinished-run recovery; never inherit acceptance or select a learned configuration."""
     from .document_review import validate_questions
     contracts=validate_questions(field_contracts)if field_contracts is not None else{}
@@ -87,9 +87,24 @@ def owned_recovery(actions,question=None,feedback=None,document_reviews=None,fie
                 or not isinstance(r['context_id'],str)or type(r['review_index'])is not int or r['review_index']<0
                 or not isinstance(r['review'],dict) for r in prior_review_notes)):
         raise ValueError('Prior review annotations require a bound owned draft and exact review references')
+    if verification_candidates is not None and (retained is None or not isinstance(verification_candidates,list)
+            or any(not isinstance(r,dict) for r in verification_candidates)):
+        raise ValueError('Verification candidates require an exact owned draft/source recovery')
+    # Carry only the proof candidates/dispositions, not another copy of the
+    # complete review history, source packets, provider output and transcripts.
+    candidate_history=[]
+    for assessment in verification_candidates or []:
+        packets=[]
+        for result in (assessment.get('support')or{}).get('packets')or[]:
+            if not isinstance(result,dict):continue
+            packets.append({k:result.get(k)for k in ('label','decided_by','field_review')} | {
+                'typed_review':{'field_review':(result.get('typed_review')or{}).get('field_review')}})
+        candidate_history.append({'support':{'packets':packets},
+            'shared_program_reviews':assessment.get('shared_program_reviews')or[]})
     token=_OWNED_RECOVERY.set({'actions':actions,'question':question,'feedback':feedback,'document_reviews':document_reviews or [],
         'field_contracts':json.loads(json.dumps(contracts)),'call_provenance':provenance,'checkpoint':retained,
         'prior_review_notes':copy.deepcopy(prior_review_notes or []),
+        'verification_candidates':copy.deepcopy(candidate_history),
         'origin_calls':copy.deepcopy(origin['calls']) if origin is not None else []} if actions is not None else None)
     try: yield
     finally: _OWNED_RECOVERY.reset(token)
@@ -570,6 +585,10 @@ def recover_actions(tools,question,context=None):
         if annotations:out['draft_recovery']['prior_review_annotations']=annotations
         out['resume_draft'].update(status='partial',verification='unverified')
         out['draft_recovery']['status']='revalidated_for_review'
+        if not source_refresh:
+            out['draft_recovery']['verification_candidates']=restore_verification_candidates(
+                tools,saved.get('verification_candidates')or[])
+
         if source_refresh:
             out['draft_recovery']['source_refresh']=out['source_refresh']
             out['reason']='Suspended readings excluded in current native results; unchanged entity/scalar draft bindings permit full current re-review only.'
@@ -578,6 +597,61 @@ def recover_actions(tools,question,context=None):
         out['feedback_instruction']='Investigate these prior presentation-review error reports against current sources and existing engines. Repair upstream facts/calculations here, not by rewording a dashboard. The reports are machine observations, not clinical truth. Do not invent eligibility, enrollment or shipment to satisfy a proposed design.'
     return out
 
+
+
+def restore_verification_candidates(tools, reviews):
+    """Seed exact-input candidates only; current consumers must validate again.
+
+    Called after owned source/scope/native replay succeeds, never on a changed
+    or suspended source. No answer verdict, clinical label or action permission
+    is restored. The final verifier still checks every current packet binding.
+    """
+    from .backstop_agent import field_review_task_identity
+    from .mixed_native_work import task_identity as program_task_identity
+    current_task=field_review_task_identity();legacy_unbound=0
+    fields, programs = {}, {}
+    retired = set();retired_programs=set()
+    for assessment in reviews:
+        for result in (assessment.get('support') or {}).get('packets') or []:
+            if not isinstance(result,dict):continue
+            candidates=[result.get('field_review'),(result.get('typed_review')or{}).get('field_review')]
+            for review in candidates:
+                if not isinstance(review,dict) or review.get('schema')!='localized-field-review/1':continue
+                if review.get('task_identity')!=current_task:
+                    legacy_unbound+=1;continue
+                key=review.get('packet_digest')
+                if not isinstance(key,str)or not key:continue
+                # Later adverse evidence wins. A prior positive must never
+                # override a deciding fault on that identical complete input.
+                if result.get('decided_by') and result.get('label') in ('contradicted','not_established'):
+                    fields.pop(key,None);retired.add(key);continue
+                if key in retired or not review.get('supported_claims'):continue
+                fields[key]=copy.deepcopy(review)
+        for review in assessment.get('shared_program_reviews')or[]:
+            if (not isinstance(review,dict) or review.get('schema')!='mixed-native-work/1'
+                or not isinstance(review.get('key'),str)):continue
+            if review.get('task_identity')!=program_task_identity():
+                legacy_unbound+=1;continue
+            key=review['key'];typed=(review.get('typed_review')or{}).get('judgments')or{}
+            old_typed=((programs.get(key)or{}).get('typed_review')or{}).get('judgments')or{}
+            adverse=any(j.get('decided_by') and (j.get('label')=='wrong_program' or
+                j.get('label')=='source_reading' and (old_typed.get(ident)or{}).get('label')=='supported')
+                for ident,j in typed.items() if isinstance(j,dict))
+            adverse=adverse or ((review.get('frontier_review')or{}).get('verdict')or{}).get('joint_support') in ('contradicted','not_established')
+            if adverse:programs.pop(key,None);retired_programs.add(key);continue
+            if key in retired_programs or not review.get('supported_fields'):continue
+            # The current native candidate rebuilds the complete semantic input
+            # key, and each supported field revalidates its original authority.
+            programs[key]=copy.deepcopy(review)
+    current=getattr(tools,'support_field_reviews',{})
+    tools.support_field_reviews={k:v for k,v in {**fields,**current}.items() if k not in retired}
+    current_programs=getattr(tools,'program_field_reviews',{})
+    tools.program_field_reviews={k:v for k,v in {**programs,**current_programs}.items() if k not in retired_programs}
+    return {'schema':'restored-verification-candidates/1','source_packet_candidates':len(fields),
+        'shared_program_candidates':len(programs),'retired_packet_candidates':len(retired),
+        'retired_program_candidates':len(retired_programs),
+        'legacy_or_changed_task_candidates_withheld':legacy_unbound,
+        'current_input_validation_required':True,'whole_answer_accepted':False,'clinical_qualification':False}
 
 
 def recovering(question):

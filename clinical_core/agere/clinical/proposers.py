@@ -1694,7 +1694,8 @@ def _continue_artifact_context(stack,context_id,feedback,context):
                 contracts[name]=contract
         recovery={'checkpoint':checkpoint,'origin':{'question':question,'calls':investigation['tool_calls']},
                   'document_reviews':investigation.get('document_reviews') or [],'field_contracts':contracts or None,
-                  'prior_review_notes':prior_recovery_review_notes(stack.path,context_id,context)}
+                  'prior_review_notes':prior_recovery_review_notes(stack.path,context_id,context),
+                  'verification_candidates':investigation.get('answer_reviews')or[]}
     c=Cascade(stack,request_plan.Catalog.load(stack.path),question,population=population)
     before={row[0] for row in c.ledger.db.execute('SELECT id FROM calls')}
     try:

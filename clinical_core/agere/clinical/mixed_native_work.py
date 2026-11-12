@@ -8,6 +8,7 @@ on an explicit, input-bound machine judgment of the program's field meaning.
 import collections
 import copy
 import json
+from functools import lru_cache
 
 from ...contracts import digest
 from . import result_assembly as assembly
@@ -200,12 +201,22 @@ def review_packet(question, candidate, *, pending=None):
         'representation': VERSION, 'dependency_complete': True, 'source_context_complete': True}
 
 
+@lru_cache(maxsize=1)
+def task_identity():
+    """An unchanged packet cannot reuse a changed question/meaning-review task."""
+    import inspect
+    from .backstop_agent import frontier_packet_review
+    return digest({'schema':'shared-program-task/1',
+        'packet':inspect.getsource(review_packet),'review':inspect.getsource(review),
+        'frontier':inspect.getsource(frontier_packet_review)})
+
+
 def review(question, branches, *, judge, ledger, cache, frontier=None):
     from .backstop_agent import field_review_observation
     reviews = []
     for branch in branches:
         packet = review_packet(question, branch)
-        key = digest([VERSION, question, packet['text']])
+        key = digest([VERSION, task_identity(), question, packet['text']])
         if key in cache:
             reviews.append({**cache[key], 'candidate_digest': digest(branch), 'reused': True, 'steps': [], 'frontier_calls': 0, 'frontier_cost_usd': 0})
             continue
@@ -237,7 +248,7 @@ def review(question, branches, *, judge, ledger, cache, frontier=None):
             try:
                 extra = frontier(remaining, ledger)
             except Exception as exc:
-                cache[key] = {'schema': VERSION, 'key': key, 'candidate_digest': digest(branch),
+                cache[key] = {'schema': VERSION, 'task_identity':task_identity(), 'key': key, 'candidate_digest': digest(branch),
                     'question_digest': digest(question), 'supported_fields': supported,
                     'typed_review': result, 'steps': result.get('steps') or [],
                     'frontier_review': None, 'frontier_calls': 0, 'frontier_cost_usd': None,
@@ -251,7 +262,7 @@ def review(question, branches, *, judge, ledger, cache, frontier=None):
                         'authority': 'frontier_machine_program_judgment',
                         'review_packet_digest': digest(remaining['text']), 'review_digest': digest(extra),
                         'clinical_qualification': False}
-        record = {'schema': VERSION, 'key': key, 'candidate_digest': digest(branch),
+        record = {'schema': VERSION, 'task_identity':task_identity(), 'key': key, 'candidate_digest': digest(branch),
             'question_digest': digest(question), 'supported_fields': supported,
             'typed_review': result, 'steps': result.get('steps') or [], 'frontier_review': extra,
             'frontier_calls': (extra or {}).get('calls', 0),

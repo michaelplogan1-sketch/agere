@@ -30,6 +30,7 @@ import re
 import sqlite3
 import time
 from pathlib import Path
+from functools import lru_cache
 from .document_review import QUESTION_SCHEMA
 from .clarification import TOOL as CLARIFICATION_TOOL
 
@@ -5379,6 +5380,17 @@ def field_review_observation(reading,steps,claim_id):
     return {'schema':'typed-field-review-observation/1','state':state,'model_judgment':judgment,'attempts':attempts},reason
 
 
+@lru_cache(maxsize=1)
+def field_review_task_identity():
+    """Bind reusable field judgments to the exact local task and acceptance code."""
+    from ...contracts import digest
+    import inspect
+    return digest({'schema':'source-field-task/1',
+        'localizer':inspect.getsource(localize_support_failure),
+        'observation':inspect.getsource(field_review_observation),
+        'acceptance':inspect.getsource(bound_field_support)})
+
+
 def field_review_binding(packet):
     from ...contracts import digest
     return digest({k:packet.get(k)for k in ('id','date','result_view','patient_dependency_bound',
@@ -5399,6 +5411,7 @@ def bound_field_support(packet,review):
     try:
         claims=packet['claim_manifest'];state=uncompact_json(json.loads(packet['text']))
         if (review.get('schema')!='localized-field-review/1'
+            or review.get('task_identity')!=field_review_task_identity()
             or review.get('packet_digest')!=digest(packet['text'])
             or review.get('review_binding')!=field_review_binding(packet)
             or review.get('manifest_digest')!=digest(claims)
@@ -5527,7 +5540,8 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None,prior_review
     supported.sort(key=lambda reading:positions[reading['claim_id']])
     native_count=sum('native_provenance'in reading['verification_observation']for reading in supported)
     return {'feedback':feedback,'steps':steps,'field_review':{
-        'schema':'localized-field-review/1','authority':'native_provenance_and_machine_review'if native_count else'machine_review',
+        'schema':'localized-field-review/1','task_identity':field_review_task_identity(),
+        'authority':'native_provenance_and_machine_review'if native_count else'machine_review',
         'packet_digest':digest(packet['text']),'manifest_digest':digest(claims),
         'review_binding':field_review_binding(packet),
         'expected_count':len(claims),'supported_count':len(supported),
