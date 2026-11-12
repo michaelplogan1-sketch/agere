@@ -92,6 +92,40 @@ class ProseRepairs(unittest.TestCase):
                 review=review,compact_execution_state=True,binding_system='BINDING ROLE')
         self.assertEqual(len(sent),2);self.assertEqual(self.base,original)
 
+    def test_binding_model_promotion_does_not_promote_source_interpretation(self):
+        feedback=self.located_failure();seen=[];sent=[];original=copy.deepcopy(self.base)
+        class SourceBoundary(BaseException):pass
+        def review(candidate,calls):
+            seen.append(copy.deepcopy(candidate))
+            if len(seen)==1:return feedback
+            self.compile(candidate)
+            packet,support=self.source_review()
+            # Bind this new source assessment to the complete compiled draft.
+            with patch.object(self,'base',candidate):packet,support=self.source_review()
+            target=E.source_prose_repair(candidate,support,[packet],{})
+            self.assertTrue(target)
+            return {'status':'repair','repair_kind':'unresolved_verification','feedback':'Inspect the dated source.',
+                    'prose_repair':target}
+        def send(body):
+            sent.append(copy.deepcopy(body));state=json.loads(body['messages'][0]['content'])
+            self.assertEqual(state['original_request'],'Explain both entities')
+            self.assertEqual(state['focused_prose_repair']['native_answer_rows'],2)
+            if len(sent)<=3:
+                self.assertEqual(body['model'],M.SONNET if len(sent)<=2 else M.OPUS)
+                self.assertIn('BINDING ROLE',str(body['system']));self.assertNotIn('FULL ANALYST',str(body['system']))
+                return {'content':[{'type':'text','text':json.dumps(self.patch(review={'bind_literals':[
+                    {'literal':'two','binding':{'result_view':'missing'if len(sent)<=2 else'agere_result_1','where':[],'column':'events'}}]}))}]},0.,False
+            self.assertEqual(body['model'],M.SONNET)
+            self.assertIn('FULL ANALYST',str(body['system']));self.assertNotIn('BINDING ROLE',str(body['system']))
+            self.assertEqual(state['focused_prose_repair']['intent'],'source_meaning_review')
+            self.assertNotIn('output_config',body)
+            raise SourceBoundary()
+        with self.assertRaises(SourceBoundary):
+            S.tool_loop('Explain both entities','FULL ANALYST',[],lambda use:self.fail('Unexpected native action'),
+                send=send,model=M.SONNET,escalation_model=M.OPUS,max_tools=None,initial_calls=self.calls,initial_answer=self.base,
+                review=review,compact_execution_state=True,binding_system='BINDING ROLE')
+        self.assertEqual(len(sent),4);self.assertEqual(self.base,original)
+
     def test_binding_output_continuation_keeps_its_exact_system_and_draft(self):
         feedback=self.located_failure();seen=[];sent=[]
         proposal=json.dumps(self.patch(review={'bind_literals':[

@@ -30,6 +30,26 @@ class AnswerProseRepair(unittest.TestCase):
             {'path':path or ['headline'],'bind_literals':[{'literal':'2',
                 'binding':{'result_view':'agere_result_2','row':0,'column':'clinics'}}]}]}}
 
+    def test_binding_context_uses_native_references_but_keeps_new_requested_readings(self):
+        feedback=self.review(self.draft);calls=copy.deepcopy(self.calls)
+        # A prior explicitly read table is useful for interpretation but is
+        # not needed again to bind the existing headline's scalar count.
+        for c in calls:
+            c['result']['actor_reading']={'mode':'complete_rows','rows_digest':digest(c['result']['rows']),'columns_digest':digest(c['result']['columns'])}
+        before=copy.deepcopy(calls)
+        state=json.loads(E.messages('Explain clinics',calls,feedback=feedback,candidate=self.draft)[0]['content'])
+        self.assertIn('binding_input_projection',state)
+        self.assertTrue(all('complete_reading'not in e for e in state['executed_results']))
+        self.assertEqual(state['executed_results'][1]['computed_rows'],[[2]])
+        self.assertTrue(all(e['binding_reading_reference']['complete_native_result_retained']for e in state['executed_results']))
+        state=json.loads(E.messages('Explain clinics',calls,recent_results=[calls[0]],feedback=feedback,candidate=self.draft)[0]['content'])
+        self.assertIn('complete_reading',state['executed_results'][0])
+        self.assertNotIn('complete_reading',state['executed_results'][1])
+        full=json.loads(E.messages('Explain clinics',calls,candidate=self.draft)[0]['content'])
+        self.assertNotIn('binding_input_projection',full)
+        self.assertTrue(all('complete_reading'in e for e in full['executed_results']))
+        self.assertEqual(calls,before)
+
     def test_existing_governed_scalar_survives_unrelated_year_binding_repair(self):
         calls=[*self.calls,{'name':'execute_metric','input':{'metric_id':'received_paid'},
             'result':{'result_view':'metric','metric_id':'received_paid','unit':'dollars','value':17.25}},

@@ -1619,6 +1619,28 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
     if focus and focus.get('scope')=='answer':
         state['focused_prose_repair']=focus
         state['instruction']+=' Only the producer-located headline/facts fields are editable now under their exact patch contract; the complete native answer, any entity prose and all row repair obligations remain retained.'
+        if binding_repair_schema(focus) is not None:
+            # Binding an exact scalar is not a fresh source-reading task. Old
+            # complete patient/chart readings stay native and queryable; carry
+            # their schema, provenance and identity rather than resending every
+            # row on each compiler repair. A newly requested complete reading
+            # remains visible for the next edit, and source-meaning work above
+            # never enters this projection.
+            requested={digest(c.get('result'))for c in recent_results}
+            referenced=[]
+            for entry in state['executed_results']:
+                reading=entry.get('complete_reading')
+                if reading is None or entry['result_digest']in requested:continue
+                entry.pop('complete_reading')
+                entry['binding_reading_reference']={
+                    'result_digest':entry['result_digest'],'reading_digest':digest(reading),
+                    'complete_native_result_retained':True,
+                    'scope':'Binding-only lookup. Read the needed native columns with query_sql and read_all_rows=true; this reference establishes no source support.'}
+                referenced.append(entry['result_view'])
+            state['binding_input_projection']={'schema':'native-binding-input/1',
+                'referenced_result_views':referenced,'complete_native_results_retained':True,
+                'new_requested_readings_retained':True,'clinical_source_acceptance':False}
+            state['instruction']+=' In this binding-only operation, prior complete readings are referenced by their unchanged native result views. Exact computed scalar rows and newly requested readings remain visible. Query the needed value or source column instead of reconstructing it from a reference. Complete source interpretation resumes with its original readings after this repair.'
     elif focus:
         # This subset is a repair view, never complete population evidence.
         from .result_assembly import _rows

@@ -5705,6 +5705,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                'new_paid_api_calls': run.get('new_paid_api_calls', 0) + sum(r.get('calls') or 0 for r in reviews),
                'answer_reviews': reviews, 'review_stopped': run.get('review_stopped'),
                'model_escalations':run.get('model_escalations',[]),
+               'model_role_transitions':run.get('model_role_transitions',[]),
                'runtime_dependency':run.get('runtime_dependency'),
                'runtime_pause':run.get('runtime_pause'),
                'actor_prompt_receipts':run.get('actor_prompt_receipts',[]),

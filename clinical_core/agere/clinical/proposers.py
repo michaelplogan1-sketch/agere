@@ -1026,6 +1026,7 @@ class Cascade:
                                     'error':run.get('error'),
                                     'document_reviews':run.get('document_reviews') or [],
                                     'model_escalations':run.get('model_escalations') or [],
+                                    'model_role_transitions':run.get('model_role_transitions') or [],
                                     'actor_prompt_receipts':run.get('actor_prompt_receipts') or [],
                                     'prose_repairs':run.get('prose_repairs') or [],
                                     'protocol_repairs':run.get('protocol_repairs') or [],

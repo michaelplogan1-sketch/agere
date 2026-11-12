@@ -616,13 +616,19 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     # "prior" readings as that caller-owned list grows across turns.
     initial_calls=list(initial_calls or [])
     result = new_result(model)
+    # A failed binding edit is evidence about that role, not every later
+    # analytical task. Keep promotion within the role that required it.
+    role_models={'analyst':model,'binding_repair':model}
+    active_role='analyst'
     def escalate(reason):
         nonlocal model
         if not escalation_model or model == escalation_model:
             return False
         result.setdefault('model_escalations', []).append({'from':model,'to':escalation_model,'reason':reason,
+                                                          'role':active_role,
                                                           'retained_tool_calls':len(result['tool_calls'])})
         model = escalation_model
+        role_models[active_role]=model
         result['model'] = model
         return True
     messages = [{'role': 'user', 'content': user}]
@@ -774,6 +780,15 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 body['tool_choice']=pending_output['tool_choice']
                 body['system']=pending_output['system']
                 binding_role=pending_output['binding_role']
+            next_role='binding_repair'if binding_role else'analyst'
+            if next_role!=active_role:
+                next_model=role_models[next_role]
+                result.setdefault('model_role_transitions',[]).append({
+                    'from_role':active_role,'to_role':next_role,'from':model,'to':next_model,
+                    'reason':'Use this role\'s own recorded model promotion; retain other role promotions separately.',
+                    'retained_tool_calls':len(result['tool_calls'])})
+                active_role=next_role;model=next_model;result['model']=model
+            body['model']=model
             completion_schema=None
             if compact_execution_state and not focused_repair:
                 from .execution_state import composition_output_schema
