@@ -30,6 +30,34 @@ def transport_messages(messages):
     return encoded,proofs
 
 
+def cache_blocks(text):
+    """One compiled-state message -> text blocks whose exact concatenation is that message, or None.
+
+    The executed_results catalog only grows between turns, so each entry is its
+    own block and the last entry carries the single cache boundary: the next
+    turn's longer catalog reads the unchanged entries from the provider's prompt
+    cache instead of writing the whole state again (probe 2026-11-12: 39.7K
+    read / 4.6K written on the second turn, against 7K / 33K for one string).
+    This is a wire segmentation only. No value is added, dropped or reordered;
+    anything that does not reproduce byte-for-byte stays one string.
+    """
+    try:state=json.loads(text)if isinstance(text,str)else None
+    except ValueError:return None
+    if not isinstance(state,dict)or not str(state.get('schema','')).startswith('execution-state/'):return None
+    entries=state.get('executed_results')
+    if not isinstance(entries,list)or not entries:return None
+    def item(key):return json.dumps(key)+': '+json.dumps(state[key],default=str,allow_nan=False)
+    keys=list(state);at=keys.index('executed_results')
+    head='{'+''.join(item(k)+', 'for k in keys[:at])+'"executed_results": ['
+    tail=']'+''.join(', '+item(k)for k in keys[at+1:])+'}'
+    parts=[('' if i else head)+(', 'if i else'')+json.dumps(e,default=str,allow_nan=False)for i,e in enumerate(entries)]
+    if ''.join(parts)+tail!=text:return None
+    blocks=[{'type':'text','text':part}for part in parts]
+    # The CLI's own markers are one-hour; a shorter one after them is rejected.
+    blocks[-1]['cache_control']={'type':'ephemeral','ttl':'1h'}
+    return [*blocks,{'type':'text','text':tail}]
+
+
 REFERENCE_CLARIFICATION_VERSION = 'noun-reference-clarification/4'
 
 

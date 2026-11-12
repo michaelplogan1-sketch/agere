@@ -76,7 +76,7 @@ def main():
                 a = run(plain, first + '\n' + ask1, system + 'flat', args.model)
                 b = run(plain, first + '\n' + second + '\n' + ask2, system + 'flat', args.model)
             elif variant == 'blocks':
-                mark = {'cache_control': {'type': 'ephemeral'}}
+                mark = {'cache_control': {'type': 'ephemeral', 'ttl': '1h'}}  # the CLI's own markers are 1h; a 5m marker after them is a 400
                 a = run([*stream, '--no-session-persistence'],
                         user_line([{'type': 'text', 'text': first, **mark}, {'type': 'text', 'text': ask1}]), system + 'blocks', args.model)
                 b = run([*stream, '--no-session-persistence'],

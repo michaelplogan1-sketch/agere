@@ -111,6 +111,16 @@ def build_prompt(body):
     return system, user
 
 
+def prefix_cache_blocks(body, user):
+    """Candidate, off unless AGERE_SUBSCRIPTION_PREFIX_CACHE=on: the one compiled execution-state message as exact text blocks
+    with a cache boundary after the stable catalog, else None (every other prompt keeps today's single string)."""
+    if os.environ.get('AGERE_SUBSCRIPTION_PREFIX_CACHE', 'off').strip().lower() != 'on': return None
+    messages = body.get('messages') or []
+    if len(messages) != 1 or messages[0].get('role') != 'user' or not isinstance(messages[0].get('content'), str): return None
+    from .clinical.execution_state import cache_blocks
+    return cache_blocks(user)
+
+
 def output_schema(body):
     config=body.get('output_config')or{}
     if not isinstance(config,dict):raise ValueError('output_config must be an object')
@@ -189,8 +199,11 @@ def _tool_call(text, tools):
     return None
 
 
-def run_cli(model, system, user, timeout=None, *, max_tokens=None, effort=None, json_schema=None):
-    """-> the CLI's JSON result (dict). Raises RuntimeError on a CLI or authentication failure."""
+def run_cli(model, system, user, timeout=None, *, max_tokens=None, effort=None, json_schema=None, user_blocks=None):
+    """-> the CLI's JSON result (dict). Raises RuntimeError on a CLI or authentication failure.
+
+    user_blocks (text blocks equal to `user` when concatenated) are sent as one stream-json user message, so a block's
+    cache boundary reaches the provider; the result is the same final JSON object, read from the last stream line."""
     env = cli_env()  # never the API account: the subscription login / token only
     # Mike's explicit subscription policy: no custom response ceiling. Legacy
     # API callers still include max_tokens; validate and record it but do not
@@ -216,6 +229,12 @@ def run_cli(model, system, user, timeout=None, *, max_tokens=None, effort=None, 
         f.write(system); path = f.name
     cmd = [cli_path(), '-p', '--model', model, '--system-prompt-file', path, '--output-format', 'json', '--tools', '',
            '--strict-mcp-config', '--no-session-persistence']
+    if user_blocks is not None:
+        if ''.join(b['text'] for b in user_blocks) != user:
+            raise ValueError('Prefix-cache blocks must reproduce the prompt exactly')
+        cmd[cmd.index('--output-format')+1] = 'stream-json'
+        cmd += ['--input-format', 'stream-json', '--verbose']
+        user = json.dumps({'type': 'user', 'message': {'role': 'user', 'content': user_blocks}}) + '\n'
     if json_schema is not None:cmd+=['--json-schema',json.dumps(json_schema)]
     try:
         done = subprocess.run(cmd, input=user, capture_output=True, text=True, timeout=timeout, env=env)
@@ -391,6 +410,7 @@ def respond(body, *, timeout=None):
     """A Messages API body -> a Messages API response dict, answered by the CLI."""
     model = body.get('model') or 'claude-haiku-5-5'
     system, user = build_prompt(body)
+    blocks = prefix_cache_blocks(body, user)
     # Preserve the caller's timeout instead of silently imposing a shorter CLI
     # limit. An explicit environment override remains available. A timeout is
     # reported once: replaying an interrupted generation can duplicate usage.
@@ -403,10 +423,12 @@ def respond(body, *, timeout=None):
     try:
         schema=decision_output_schema(body)
         schema_kw={'json_schema':schema} if schema is not None else {}
+        structured=bool(schema_kw)
+        if blocks is not None:schema_kw['user_blocks']=blocks
         wrapped_decision=bool(schema is not None and allowed_tools(body.get('tools'),body.get('tool_choice')))
         if wrapped_decision:
             system+='\nFor the native StructuredOutput response, put the final value or permitted tool envelope under its decision property. This transport wrapper does not authorize any extra tool or mixed action.'
-        if schema_kw:
+        if structured:
             system+='\nNative output transport: submit the required value once through the provided StructuredOutput tool. Do not print the complete value in assistant text first or repeat it afterwards. The tool is the serialization channel for this response; all declared tool permissions and evidence requirements still apply.'
         out = run_cli(model, system, user, timeout=timeout,
                       max_tokens=body.get('max_tokens'), effort=output_config.get('effort'),**schema_kw)
@@ -421,7 +443,7 @@ def respond(body, *, timeout=None):
                 'subscription_cli_result':raw,'status':'failed'}
         raise
     text = out.get('result') or ''
-    if schema_kw and out.get('stop_reason')!='max_tokens'and 'structured_output'in out:
+    if structured and out.get('stop_reason')!='max_tokens'and 'structured_output'in out:
         structured=out['structured_output']
         if wrapped_decision and isinstance(structured,dict)and set(structured)=={'decision'}:
             structured=structured['decision']
@@ -447,9 +469,10 @@ def respond(body, *, timeout=None):
                 'caller_max_tokens_enforced':False,
                 'output_policy':'Service boundary only; no custom output ceiling',
                 'caller_effort': output_config.get('effort'),
-                'structured_output_mode':'native_cli_decision_schema'if wrapped_decision else 'native_cli_schema'if schema_kw else None,
+                'structured_output_mode':'native_cli_decision_schema'if wrapped_decision else 'native_cli_schema'if structured else None,
+                **({'prefix_cache':{'candidate':True,'text_blocks':len(blocks),'boundary_block':len(blocks)-2,'ttl':'1h'}}if blocks is not None else {}),
                 'cli': {k: out[k] for k in ('num_turns', 'duration_ms', 'duration_api_ms', 'subtype', 'stop_reason', 'modelUsage','structured_output') if k in out},
-                **({'native_text':out['result']}if schema_kw and out.get('result')and 'structured_output'in out else {}),
+                **({'native_text':out['result']}if structured and out.get('result')and 'structured_output'in out else {}),
                 'usage_scope': 'CLI aggregate, including reported internal recovery requests; internal API attempt count is unknown unless explicitly reported. No subscription allocation or invoice inferred.'}}
 
 

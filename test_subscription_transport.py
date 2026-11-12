@@ -10,6 +10,40 @@ from clinical_core.agere import subscription_transport as T
 
 
 class Translation(unittest.TestCase):
+    def test_compiled_state_is_sent_as_exact_blocks_with_one_boundary_only_when_enabled(self):
+        from clinical_core.agere.clinical import execution_state as E
+        def state(n):
+            return json.dumps({'schema':E.VERSION,'original_request':'Keep every patient; né 2030-01-01.',
+                'executed_results':[{'call':i,'observation':{'rows':[{'patient_id':str(i),'unknown':None}]}}for i in range(n)],
+                'latest_results':[{'name':'query_sql','turn':n}],'instruction':'unchanged'},default=str,allow_nan=False)
+        first,second=E.cache_blocks(state(3)),E.cache_blocks(state(5))
+        for text,blocks in ((state(3),first),(state(5),second)):
+            self.assertEqual(''.join(b['text']for b in blocks),text)
+            self.assertEqual([i for i,b in enumerate(blocks)if'cache_control'in b],[len(blocks)-2])
+        # A longer catalog starts with the earlier turn's blocks up to its boundary: that prefix is what the provider reads from cache.
+        self.assertEqual([b['text']for b in second[:3]],[b['text']for b in first[:3]])
+        for other in ('not JSON',json.dumps({'schema':'other/1','executed_results':[{}]}),json.dumps({'schema':E.VERSION,'executed_results':[]}),
+                      json.dumps(json.loads(state(2)),separators=(',',':'))):
+            self.assertIsNone(E.cache_blocks(other))
+        body={'model':'claude-sonnet-5-5','messages':[{'role':'user','content':state(3)}]}
+        raw={'result':'done','usage':{'input_tokens':2,'output_tokens':1,'cache_read_input_tokens':9}}
+        with patch.object(T,'run_cli',return_value=raw)as call:
+            off=T.respond(body)
+            self.assertNotIn('user_blocks',call.call_args.kwargs);self.assertNotIn('prefix_cache',off['transport_details'])
+            with patch.dict(os.environ,{'AGERE_SUBSCRIPTION_PREFIX_CACHE':'on'}):
+                on=T.respond(body)
+                self.assertEqual(call.call_args.kwargs['user_blocks'],first);self.assertEqual(call.call_args.args[2],state(3))
+                self.assertEqual(on['transport_details']['prefix_cache']['text_blocks'],4);self.assertEqual(on['usage']['cache_read_input_tokens'],9)
+                T.respond({**body,'messages':[*body['messages'],{'role':'assistant','content':'x'},{'role':'user','content':'y'}]})
+                self.assertNotIn('user_blocks',call.call_args.kwargs)
+        done=subprocess.CompletedProcess([],0,'{"type":"system"}\n'+json.dumps({'type':'result','result':'done'})+'\n','')
+        with patch.object(T,'cli_path',return_value='scripted-cli'),patch.object(T,'cli_env',return_value={}),patch.object(T.subprocess,'run',return_value=done)as call:
+            self.assertEqual(T.run_cli('claude-sonnet-5-5','rules',state(3),user_blocks=first)['result'],'done')
+            args=call.call_args.args[0];self.assertEqual(args[args.index('--output-format')+1],'stream-json')
+            self.assertEqual(args[args.index('--input-format')+1],'stream-json')
+            sent=json.loads(call.call_args.kwargs['input']);self.assertEqual(sent['message']['content'],first)
+            with self.assertRaisesRegex(ValueError,'reproduce'):T.run_cli('claude-sonnet-5-5','rules',state(3)+' ',user_blocks=first)
+
     def test_native_json_schema_is_forwarded_without_an_output_ceiling(self):
         schema={'type':'object','properties':{'label':{'enum':['supported','unknown']}},'required':['label']}
         done=subprocess.CompletedProcess([],0,json.dumps({'structured_output':{'label':'supported'},'result':''}),'')
