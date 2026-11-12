@@ -37,11 +37,18 @@ def candidates(answer, calls, as_of):
             by[result['result_view']] = call
     native = {view: c['result'] for view, c in by.items()}
     root = answer.get('table_from_tool')
-    if root not in by or answer.get('row_prose') is not None:
+    if root not in by:
         return []
+    interpreted = set((answer.get('table_binding') or {}).get('interpreted_columns') or [])
+    final_rows = answer.get('table')
     try:
-        _, rows = assembly._rows(native[root])
-        if digest(rows) != digest(answer.get('table')):
+        root_columns, rows = assembly._rows(native[root])
+        if (not isinstance(final_rows,list) or len(final_rows)!=len(rows) or 'patient_id' in interpreted
+                or any(not isinstance(r,dict) for r in final_rows)):
+            return []
+        exact_columns = [c for c in root_columns if c not in interpreted]
+        if any(any(c not in final or digest(final[c])!=digest(row[c]) for c in exact_columns)
+                for row,final in zip(rows,final_rows)):
             return []
     except (ValueError, TypeError, KeyError):
         return []
@@ -143,17 +150,16 @@ def candidates(answer, calls, as_of):
         return out
 
     traced = trace(root)
-    interpreted = set((answer.get('table_binding') or {}).get('interpreted_columns') or [])
     groups = {}
     for field, lineage in traced.items():
         if field in interpreted or field == 'patient_id':
             continue
         origin = lineage['origin']
         group = groups.setdefault(origin, {'schema': VERSION, 'as_of': as_of,
-            'result_view': root, 'table_digest': digest(rows), 'program': proofs[origin], 'fields': {}})
+            'result_view': root, 'table_digest': digest(final_rows), 'program': proofs[origin], 'fields': {}})
         group['fields'][field] = lineage
     # Whole-table native routing already has its own connected path.
-    return list(groups.values()) if groups and any(f not in traced for f in rows[0]) else []
+    return list(groups.values()) if groups and (interpreted or any(f not in traced for f in final_rows[0])) else []
 
 
 def review_packet(question, candidate, *, pending=None):

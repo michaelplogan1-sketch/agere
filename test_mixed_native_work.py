@@ -71,6 +71,18 @@ class MixedNativeWork(unittest.TestCase):
         p['text']+=' '
         self.assertIsNone(M.field_proof(p,claim,uncompact_json(json.loads(p['text']))))
 
+    def test_bound_row_prose_keeps_unchanged_native_fields_separate(self):
+        a,c=fixture()
+        a['table']=copy.deepcopy(a['table'])
+        for row in a['table']:row['interpretation']='Unreviewed narrative statement'
+        a['row_prose']={'rows':[]}
+        a['table_binding']['interpreted_columns']=['interpretation']
+        bs=M.candidates(a,c,ASOF)
+        self.assertEqual(len(bs),1);self.assertIn('value',bs[0]['fields'])
+        self.assertNotIn('interpretation',bs[0]['fields'])
+        a['table'][0]['value']=999
+        self.assertEqual(M.candidates(a,c,ASOF),[])
+
     def test_shared_fault_and_unknown_do_not_become_patient_review_campaigns(self):
         a,c=mixed();bs=M.candidates(a,c,ASOF)
         for label in ('wrong_program','unknown','source_reading'):
