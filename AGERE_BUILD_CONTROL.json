@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-12T02:01:34.905829+00:00",
+  "updated_at": "2026-11-12T02:33:01.341874+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -860,50 +860,52 @@
           "path": "artifacts/agere-source-obligations-2026-11-11/mixed-native-delivery-receipt.json",
           "sha256": "55b91ca06510b50da7869bcd7bcb9a508b33c749bac7dd81643a2b2059f82a18",
           "scope": "Shared native branch/field wiring, retained65-patient workflow, no live model qualification."
+        },
+        {
+          "path": "artifacts/agere-source-obligations-2026-11-11/mixed-native-reuse-receipt.json",
+          "sha256": "c2d5e23203c0d3848fe9c97c674fad8928e25329fea07f7b72ab36a89633c36f",
+          "scope": "Exact native semantic input stability across executor timing; no live model qualification."
+        },
+        {
+          "path": "artifacts/agere-source-obligations-2026-11-11/verification-recovery-receipt.json",
+          "sha256": "9497e85dba213ebf6b340a449e334e1ed19587756f03b4ba8d35d186b8d1a2f9",
+          "scope": "Exact task-bound field/program restoration; independent qualification remains open."
         }
       ],
-      "blocker": "The original65-patient answer remains partial. This delivery proves native field decomposition and verifier wiring with retained source data and authored reviewer callbacks, not live semantic acceptance or total-cost savings. Provider work remains stopped on the observed account rate limit; reset/balance unknown. Accepted review reuse across saved continuations and native re-execution still needs stable evidence identities. Independent source-family/model/clinical qualification, all25 semantic acceptance and customer deployment dependencies remain explicit.",
+      "blocker": "Original65-patient answer remains partial. Existing41 field review entries lack current task identity and are not reactivated. No live cost/accuracy improvement is established. Provider account limit remains unresolved without probes. Independent model/source-family/clinical qualification, all25 semantic acceptance and customer deployment prerequisites remain open.",
       "previous_blocker": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim.",
-      "next_action": "G5: Continue economical source-verification integration on the retained65-patient workflow. First carry accepted shared-program and source-field judgments across saved continuation and native re-execution using exact question, source version, entity, date, task and value identities; elapsed timing or unrelated documentary repairs must not trigger another judgment. Reuse existing native_timing_projection and source-observation contracts; do not introduce another cache/catalog or accept raw argmax labels. Keep every clinical/documentary obligation unresolved unless its existing qualified role supplies a deciding observation. Extend only an actually missing consumer connection, then demonstrate the changed continuation with retained data and focused offline boundaries. Do not repeat the passed mixed-table packet campaign. No provider probes while the recorded account limit is unresolved. Preserve all ten areas/all25/principal review/October11 baseline, no Git pushes/new services/real care; quiet overnight continuation is authorized.",
+      "next_action": "G5: Preserve completed source-field judgments when a later source reviewer is interrupted. check_support_packets currently writes its reuse store only after all work returns, and review_final rethrows rate limits before its partial assessment reaches answer_reviews; initial saved-draft review is outside the actor exception boundary. Connect partial typed/source/program receipts through these existing boundaries, stop new dispatch on provider failure while collecting already-started results, and retain the exact draft/native work with unknown total costs. Demonstrate the changed connected interruption/recovery path with authored provider failures, not another cohort/provider campaign. Legacy41 task-unbound field entries remain withheld;120 source-reader findings are applicability/axes annotations, not whole-field clinical proof. Preserve the full original question and all ten areas/all25/current principal/October11 baseline. Provider work remains stopped on observed account limit with no probes; quiet overnight continuation ACTIVE; no pushes/services/real care.",
       "current_engineering_delivery": {
-        "receipt": "artifacts/agere-source-obligations-2026-11-11/mixed-native-delivery-receipt.json",
-        "product_commit": "c608ba156297b7ee8caa97ed0dfb477c0f2df68a",
-        "scope": "Mixed tables and compiled row prose now separate shared native program meaning from documentary claims. System One checks native branch field meanings once; only its undecided fields can reach one targeted frontier program review. Exact native copies inherit that bounded judgment. Shared faults get one program repair; unresolved program meaning retains the partial instead of launching a patient retry campaign. Remaining narrative fields retain source review and unchanged thresholds."
+        "receipt": "artifacts/agere-source-obligations-2026-11-11/verification-recovery-receipt.json",
+        "product_commit": "920a330e756824d1e6c2064816f3faa51e473dfc",
+        "scope": "Saved continuation now restores exact task-bound source-field and shared native-program candidates only after complete native/source revalidation. Current consumers validate again and reuse deciding fields without a repeated reader call. Changed tasks, sources, values, thresholds and later adverse reviews cannot inherit support. Only compact candidate proofs/dispositions are copied; whole answers remain partial."
       },
-      "latest_engineering_connection": "artifacts/agere-source-obligations-2026-11-11/mixed-native-delivery-receipt.json"
+      "latest_engineering_connection": "artifacts/agere-source-obligations-2026-11-11/verification-recovery-receipt.json"
     }
   ],
   "checkpoint": {
-    "kind": "shared_native_program_fields",
+    "kind": "saved_task_bound_verification_recovery",
     "gate_id": "G5",
     "current_gate_id": "G5",
     "last_delivered_gate": "G5",
-    "product_commit": "c608ba156297b7ee8caa97ed0dfb477c0f2df68a",
-    "updated_at": "2026-11-12T02:01:34.905829+00:00",
-    "user_behavior_delta": "Mixed tables and compiled row prose now separate shared native program meaning from documentary claims. System One checks native branch field meanings once; only its undecided fields can reach one targeted frontier program review. Exact native copies inherit that bounded judgment. Shared faults get one program repair; unresolved program meaning retains the partial instead of launching a patient retry campaign. Remaining narrative fields retain source review and unchanged thresholds.",
+    "product_commit": "920a330e756824d1e6c2064816f3faa51e473dfc",
+    "updated_at": "2026-11-12T02:33:01.341874+00:00",
+    "user_behavior_delta": "Saved continuation now restores exact task-bound source-field and shared native-program candidates only after complete native/source revalidation. Current consumers validate again and reuse deciding fields without a repeated reader call. Changed tasks, sources, values, thresholds and later adverse reviews cannot inherit support. Only compact candidate proofs/dispositions are copied; whole answers remain partial.",
     "measured_failure_reduction": {
-      "retained_patient_rows": 65,
-      "retained_native_actions": 46,
-      "shared_native_programs": 1,
-      "shared_fields_per_patient": 7,
-      "conditional_native_field_copies": 455,
-      "remaining_documentary_field_obligations": 455,
-      "native_fields_resent_to_source_judge": 0,
+      "authored_reader_repeats_on_exact_recovery": 0,
+      "restored_field_and_program_consumers": true,
+      "retained_legacy_entries_withheld": 41,
       "provider_calls": 0,
-      "meaning_review_callback": "authored fixture only",
-      "live_cost_improvement_verified": false,
-      "final_program_wire_bytes": 33978
+      "live_cost_improvement_verified": false
     },
     "evidence": [
-      "artifacts/agere-source-obligations-2026-11-11/mixed-native-work-receipt.json",
-      "artifacts/agere-source-obligations-2026-11-11/mixed-native-focused-checks.log",
-      "artifacts/agere-source-obligations-2026-11-11/mixed-native-consumer-check.log",
-      "artifacts/agere-source-obligations-2026-11-11/mixed-native-prose-followthrough.log",
-      "artifacts/agere-source-obligations-2026-11-11/mixed-native-live-runtime.json",
-      "artifacts/agere-source-obligations-2026-11-11/mixed-native-delivery-receipt.json"
+      "artifacts/agere-source-obligations-2026-11-11/verification-recovery-receipt.json",
+      "artifacts/agere-source-obligations-2026-11-11/verification-recovery-runtime.json",
+      "artifacts/agere-source-obligations-2026-11-11/verification-recovery-task-final-checks.log",
+      "artifacts/agere-source-obligations-2026-11-11/verification-recovery-final-checks.log"
     ],
-    "remaining_gap": "The original65-patient answer remains partial. This delivery proves native field decomposition and verifier wiring with retained source data and authored reviewer callbacks, not live semantic acceptance or total-cost savings. Provider work remains stopped on the observed account rate limit; reset/balance unknown. Accepted review reuse across saved continuations and native re-execution still needs stable evidence identities. Independent source-family/model/clinical qualification, all25 semantic acceptance and customer deployment dependencies remain explicit.",
-    "next_action": "G5: Continue economical source-verification integration on the retained65-patient workflow. First carry accepted shared-program and source-field judgments across saved continuation and native re-execution using exact question, source version, entity, date, task and value identities; elapsed timing or unrelated documentary repairs must not trigger another judgment. Reuse existing native_timing_projection and source-observation contracts; do not introduce another cache/catalog or accept raw argmax labels. Keep every clinical/documentary obligation unresolved unless its existing qualified role supplies a deciding observation. Extend only an actually missing consumer connection, then demonstrate the changed continuation with retained data and focused offline boundaries. Do not repeat the passed mixed-table packet campaign. No provider probes while the recorded account limit is unresolved. Preserve all ten areas/all25/principal review/October11 baseline, no Git pushes/new services/real care; quiet overnight continuation is authorized.",
+    "remaining_gap": "Original65-patient answer remains partial. Existing41 field review entries lack current task identity and are not reactivated. No live cost/accuracy improvement is established. Provider account limit remains unresolved without probes. Independent model/source-family/clinical qualification, all25 semantic acceptance and customer deployment prerequisites remain open.",
+    "next_action": "G5: Preserve completed source-field judgments when a later source reviewer is interrupted. check_support_packets currently writes its reuse store only after all work returns, and review_final rethrows rate limits before its partial assessment reaches answer_reviews; initial saved-draft review is outside the actor exception boundary. Connect partial typed/source/program receipts through these existing boundaries, stop new dispatch on provider failure while collecting already-started results, and retain the exact draft/native work with unknown total costs. Demonstrate the changed connected interruption/recovery path with authored provider failures, not another cohort/provider campaign. Legacy41 task-unbound field entries remain withheld;120 source-reader findings are applicability/axes annotations, not whole-field clinical proof. Preserve the full original question and all ten areas/all25/current principal/October11 baseline. Provider work remains stopped on observed account limit with no probes; quiet overnight continuation ACTIVE; no pushes/services/real care.",
     "last_observation": {
       "status": "failed",
       "started_at": "2026-11-12T00:18:37.057519+00:00",
@@ -6862,20 +6864,38 @@
       ],
       "scope_impact": "All ten acceptance areas and all25 cases retained. No new providers, lowered thresholds, caps, data or Git pushes.",
       "next_action": "G5: Continue economical source-verification integration on the retained65-patient workflow. First carry accepted shared-program and source-field judgments across saved continuation and native re-execution using exact question, source version, entity, date, task and value identities; elapsed timing or unrelated documentary repairs must not trigger another judgment. Reuse existing native_timing_projection and source-observation contracts; do not introduce another cache/catalog or accept raw argmax labels. Keep every clinical/documentary obligation unresolved unless its existing qualified role supplies a deciding observation. Extend only an actually missing consumer connection, then demonstrate the changed continuation with retained data and focused offline boundaries. Do not repeat the passed mixed-table packet campaign. No provider probes while the recorded account limit is unresolved. Preserve all ten areas/all25/principal review/October11 baseline, no Git pushes/new services/real care; quiet overnight continuation is authorized."
+    },
+    {
+      "at": "2026-11-12T02:06:59.405737+00:00",
+      "gate": "G5",
+      "decision": "Shared native program judgments now retain exact model input/cache identity across re-execution timing and replayed assembly. Raw receipts remain unchanged in history; source values, questions, dates, source versions and semantics continue to invalidate reuse. This completes the timing-stability follow-through to the mixed native/documentary field boundary.",
+      "evidence": [
+        "artifacts/agere-source-obligations-2026-11-11/mixed-native-reuse-receipt.json"
+      ],
+      "scope_impact": "Existing timing projection reused; no separate cache, threshold changes or acceptance-area removal.",
+      "next_action": "G5: Complete exact reusable field-proof restoration in saved continuation. Inspect the existing harness checkpoint, source-observation and typed field-review contracts, then connect already deciding source-local judgments to the final documentary-field consumer under the original question/source/entity/date/task/value identities. Shared native program input stability across timing is now delivered; do not repeat its passed65-patient campaign. Never carry raw argmax, unknown or unqualified findings as accepted facts. If the retained observations have no deciding support, record that concrete dependency and move to remaining fixed acceptance wiring rather than inventing another review campaign. Keep the full original answer/work context, source guards and allattempt accounting. No provider probes while the observed account limit is unresolved. All ten areas/all25/current principal/October11 baseline remain; quiet overnight continuation ACTIVE, no Git pushes/new services/real care."
+    },
+    {
+      "at": "2026-11-12T02:33:01.341874+00:00",
+      "gate": "G5",
+      "decision": "Finish interruption-safe reuse after saved restoration; avoid another source campaign.",
+      "evidence": "artifacts/agere-source-obligations-2026-11-11/verification-recovery-receipt.json",
+      "reason": "A completed typed judgment can be lost from the saved review boundary if a later reviewer raises; source dispatcher and initial actor review boundaries show this missing behavior. Existing source-reading annotations are not a shortcut to a complete different field judgment.",
+      "scope_impact": "No new capability or qualification claim; protects completed work in the same promised continuation path."
     }
   ],
   "unsealed_work": {
     "status": "no_active_run_qualification_and_provider_dependencies_remain",
     "source_frozen": false,
     "active_jobs": [],
-    "last_completed_receipt": "artifacts/agere-source-obligations-2026-11-11/mixed-native-delivery-receipt.json",
+    "last_completed_receipt": "artifacts/agere-source-obligations-2026-11-11/verification-recovery-receipt.json",
     "paths_outside_backend_seal": [
       "AGERE_STORAGE_PLAN.md",
       "docs/agere/reviews/2026-11-10-audit-response.md"
     ],
-    "remaining_verification": "The original65-patient answer remains partial. This delivery proves native field decomposition and verifier wiring with retained source data and authored reviewer callbacks, not live semantic acceptance or total-cost savings. Provider work remains stopped on the observed account rate limit; reset/balance unknown. Accepted review reuse across saved continuations and native re-execution still needs stable evidence identities. Independent source-family/model/clinical qualification, all25 semantic acceptance and customer deployment dependencies remain explicit.",
+    "remaining_verification": "Original65-patient answer remains partial. Existing41 field review entries lack current task identity and are not reactivated. No live cost/accuracy improvement is established. Provider account limit remains unresolved without probes. Independent model/source-family/clinical qualification, all25 semantic acceptance and customer deployment prerequisites remain open.",
     "separate_presentation_commit_preserved": "9efe9b37d1ccd36cd0b8cb2197d12d9b8c0b5bae",
-    "candidate_commit": "c608ba156297b7ee8caa97ed0dfb477c0f2df68a",
+    "candidate_commit": "920a330e756824d1e6c2064816f3faa51e473dfc",
     "admission_receipt": "artifacts/agere-source-obligations-2026-11-11/bound-question-continuation/admission-receipt.json",
     "last_attempt": "artifacts/agere-source-obligations-2026-11-11/bound-question-continuation/run-receipt.json",
     "latest_saved_partial": "ANS-87eb0982baaef39dd759d519"
@@ -6914,7 +6934,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G5: Continue economical source-verification integration on the retained65-patient workflow. First carry accepted shared-program and source-field judgments across saved continuation and native re-execution using exact question, source version, entity, date, task and value identities; elapsed timing or unrelated documentary repairs must not trigger another judgment. Reuse existing native_timing_projection and source-observation contracts; do not introduce another cache/catalog or accept raw argmax labels. Keep every clinical/documentary obligation unresolved unless its existing qualified role supplies a deciding observation. Extend only an actually missing consumer connection, then demonstrate the changed continuation with retained data and focused offline boundaries. Do not repeat the passed mixed-table packet campaign. No provider probes while the recorded account limit is unresolved. Preserve all ten areas/all25/principal review/October11 baseline, no Git pushes/new services/real care; quiet overnight continuation is authorized.",
+  "next_action": "G5: Preserve completed source-field judgments when a later source reviewer is interrupted. check_support_packets currently writes its reuse store only after all work returns, and review_final rethrows rate limits before its partial assessment reaches answer_reviews; initial saved-draft review is outside the actor exception boundary. Connect partial typed/source/program receipts through these existing boundaries, stop new dispatch on provider failure while collecting already-started results, and retain the exact draft/native work with unknown total costs. Demonstrate the changed connected interruption/recovery path with authored provider failures, not another cohort/provider campaign. Legacy41 task-unbound field entries remain withheld;120 source-reader findings are applicability/axes annotations, not whole-field clinical proof. Preserve the full original question and all ten areas/all25/current principal/October11 baseline. Provider work remains stopped on observed account limit with no probes; quiet overnight continuation ACTIVE; no pushes/services/real care.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6923,7 +6943,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-source-obligations-2026-11-11/binding-role-receipt.json",
+  "latest_checkpoint": "artifacts/agere-source-obligations-2026-11-11/verification-recovery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -7003,8 +7023,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 96958,
-  "owned_server_session": 38476,
+  "owned_server_pid": 97521,
+  "owned_server_session": 54788,
   "last_run_observation": {
     "schema": "agere-continuation-observation/1",
     "at": "2026-11-11T22:04:24.808765+00:00",
@@ -7264,7 +7284,7 @@
     ]
   },
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
-  "latest_receipt": "artifacts/agere-source-obligations-2026-11-11/mixed-native-delivery-receipt.json",
+  "latest_receipt": "artifacts/agere-source-obligations-2026-11-11/verification-recovery-receipt.json",
   "code_only_storage_exception": {
     "authorization": "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
     "scope": "One code-only archive and fresh-code rehearsal from the linked proposal; existing source/model/Python/work/ledger stores referenced, never copied. General60GBguard unchanged.",
@@ -7368,7 +7388,7 @@
     "evidence": "artifacts/agere-source-obligations-2026-11-11/bound-question-continuation/run-receipt.json",
     "latest_saved_partial": "ANS-87eb0982baaef39dd759d519"
   },
-  "latest_continuity_receipt": "artifacts/agere-source-obligations-2026-11-11/mixed-native-delivery-receipt.json",
+  "latest_continuity_receipt": "artifacts/agere-source-obligations-2026-11-11/verification-recovery-receipt.json",
   "usage_diagnosis": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/usage-diagnosis.json",
   "continuation_session": "Quiet overnight continuation ACTIVE by latest user authorization; no Git pushes."
 }
