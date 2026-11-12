@@ -134,6 +134,38 @@ class StoragePrevention(unittest.TestCase):
                 Control.warehouse_read_preflight(self.root)
         self.assertEqual(default.read_bytes(), before)
 
+    def test_saved_continuation_reserves_space_without_copying_warehouse(self):
+        from clinical_core.agere.deliverables import answer_context as A
+        config = self.root / 'candidate.json'
+        config.write_text(json.dumps({'build': str(self.root)}))
+        before = self.db.read_bytes()
+        with patch.object(S, 'policy_identity', return_value='pinned'), \
+             patch.object(L.shutil, 'disk_usage', return_value=SimpleNamespace(free=68_000_000_000)), \
+             patch.object(L, 'copy_file', side_effect=AssertionError('No database copy')), \
+             patch.object(A, 'load_unfinished_for_review', return_value={'id': 'ANS-authored', 'source': {'release': 'authored'}}) as load:
+            result = Control.saved_continuation_preflight(self.root, config, 'ANS-authored')
+        self.assertEqual(result['storage']['required_free_bytes'], 60_000_000_000)
+        self.assertEqual(result['database_copy_bytes'], 0)
+        load.assert_called_once_with(self.stack.resolve(), 'ANS-authored')
+        self.assertEqual(self.db.read_bytes(), before)
+
+    def test_saved_continuation_keeps_reserve_and_saved_source_checks(self):
+        from clinical_core.agere.deliverables import answer_context as A
+        config = self.root / 'candidate.json'
+        config.write_text(json.dumps({'build': str(self.root)}))
+        with patch.object(L.shutil, 'disk_usage', return_value=SimpleNamespace(free=59_999_999_999)), \
+             patch.object(A, 'load_unfinished_for_review') as load:
+            with self.assertRaisesRegex(OSError, 'Insufficient storage'):
+                Control.saved_continuation_preflight(self.root, config, 'ANS-authored')
+            load.assert_not_called()
+        with patch.object(S, 'policy_identity', return_value='pinned'), \
+             patch.object(L.shutil, 'disk_usage', return_value=SimpleNamespace(free=68_000_000_000)), \
+             patch.object(A, 'load_unfinished_for_review', side_effect=ValueError('Source changed')):
+            with self.assertRaisesRegex(ValueError, 'Source changed'):
+                Control.saved_continuation_preflight(self.root, config, 'ANS-authored')
+        with self.assertRaisesRegex(ValueError, 'explicit warehouse'):
+            Control.saved_continuation_preflight(self.root, None, 'ANS-authored')
+
 
 class PackedBundleStorage(unittest.TestCase):
     def setUp(self):
