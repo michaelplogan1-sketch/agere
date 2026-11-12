@@ -4405,7 +4405,13 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,original_ques
             # Direct documents and any unknown lineage remain conservative.
             def required_origin(origin):
                 if patient_dependencies is None:return True
-                if origin.get('tool')in ('query_sql','review_documents'):
+                # Candidate (AGERE_PACKET_COMPOSE_CLOSURE=on): a composed table is an executed
+                # native result with the same proven view lineage as SQL. Retained 65-patient
+                # packets carried each patient's rows from eight superseded composed drafts
+                # outside the final view's closure. Those rows stay in their native receipts.
+                closed=(('query_sql','review_documents','compose_table')
+                    if os.environ.get('AGERE_PACKET_COMPOSE_CLOSURE','off')=='on'else('query_sql','review_documents'))
+                if origin.get('tool')in closed:
                     return not origin.get('result_view')or origin['result_view']in patient_dependencies
                 if origin.get('kind')=='machine_document_observation':
                     views=origin.get('native_result_views')
