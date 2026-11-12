@@ -68,6 +68,21 @@ class ReferenceClarification(unittest.TestCase):
             self.assertIsNone(after);self.assertEqual(receipt['edits'],[])
             with self.assertRaises(B.ComputedProseError):B.bind_computed_prose(self.answer,self.calls)
 
+    def test_prepositional_entity_references_use_diagnosis_without_waiving_counts(self):
+        for noun in ('cardiology referral','received invoice','sensor record'):
+            answer=copy.deepcopy(self.answer)
+            answer['headline']['template']='{n} records link to a '+noun+', and the other received records link to one.'
+            request=self.request(answer)
+            after,receipt=E.apply_reference_clarification(answer,request,self.judgment(request,noun))
+            self.assertEqual(after['headline']['template'],answer['headline']['template'].replace('to one.','to a '+noun+'.'))
+            self.assertEqual(after['headline']['bindings'],answer['headline']['bindings'])
+            self.assertFalse(receipt['quantity_binding_waived'])
+            B.bind_computed_prose(after,self.calls)
+            for role in ('quantity','unknown'):
+                unchanged,_=E.apply_reference_clarification(answer,request,self.judgment(request,role=role))
+                self.assertIsNone(unchanged)
+                with self.assertRaises(B.ComputedProseError):B.bind_computed_prose(answer,self.calls)
+
     def test_distributive_every_one_preserves_text_and_universal_source_obligation(self):
         for phrase in ('Every one of these accounts','every one of those invoices','Not every one of the accounts'):
             answer=copy.deepcopy(self.answer)

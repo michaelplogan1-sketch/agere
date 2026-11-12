@@ -30,14 +30,15 @@ def transport_messages(messages):
     return encoded,proofs
 
 
-REFERENCE_CLARIFICATION_VERSION = 'noun-reference-clarification/3'
+REFERENCE_CLARIFICATION_VERSION = 'noun-reference-clarification/4'
 
 
 def reference_clarification_request(candidate, targets, question):
     """Locate a narrow language ambiguity; do not waive quantity binding.
 
-    Sentence-final ``as one`` can denote either cardinality or an earlier
-    category. A model may identify the latter. Code then permits only an exact
+    Clause-final ``as one`` or a prepositional ``to/from/with one`` can denote
+    cardinality or an earlier entity/category. A model may identify the latter.
+    Code then permits only an exact
     antecedent expansion, preserving every other character and scalar binding.
     Ordinary counts, doses, and incomplete/row-level producer targets stay on
     the existing numeric path.
@@ -55,7 +56,7 @@ def reference_clarification_request(candidate, targets, question):
         if target.get('value_digest')!=digest(value):continue
         text=value.get('template') if isinstance(value,dict) else value
         if not isinstance(text,str):continue
-        pattern=r'\b(?:treated|regarded|classified|interpreted|reported|considered)\s+as\s+(one)(?=\s*(?:[,.;:!?]|$))'
+        pattern=r'\b(?:(?:treated|regarded|classified|interpreted|reported|considered)\s+as|to|from|for|with|without)\s+(one)(?=\s*(?:[,.;:!?]|$))'
         for match in re.finditer(pattern,text,re.I):
             start,end=match.span(1)
             references['reference_'+str(len(references))]={
