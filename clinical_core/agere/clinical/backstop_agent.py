@@ -3490,7 +3490,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         if partial is not None or assessment.get('shared_program_reviews') or getattr(exc,'kind',None)is not None:
             import copy
             exc.agere_partial_answer_review=copy.deepcopy(assessment)
-        if getattr(exc,'kind',None)=='rate_limit':raise
+        if partial is not None or getattr(exc,'kind',None)is not None:raise
         assessment['reason'] = f'{type(exc).__name__}: {exc}'[:300]
     assessment['feedback'] = ' '.join(feedback) or None
     return assessment
