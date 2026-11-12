@@ -28,4 +28,18 @@ class StateTransport(unittest.TestCase):
         receipt=result['actor_prompt_receipts'][0]
         self.assertEqual(receipt['status'],'failed');self.assertGreater(receipt['message_bytes'],0)
 
+    def test_prefix_cache_candidate_keeps_the_native_prefix_stable_state_on_the_wire(self):
+        # The re-encoded state shares little prefix between turns; the cache candidate therefore sends the native form.
+        seen=[]
+        def capture(body):seen.append(body);raise RuntimeError('stop after capture')
+        big={'schema':E.VERSION,'rows':[{'source':'Complete source statement. '*100}for _ in range(20)]}
+        self.assertLess(len(E.transport_messages([{'role':'user','content':json.dumps(big)}])[0][0]['content']),len(json.dumps(big)))
+        for flag,encoded in (('off',True),('on',False)):
+            with patch.dict(os.environ,{'AGERE_EXECUTION_WIRE_ENCODING':'on','AGERE_SUBSCRIPTION_PREFIX_CACHE':flag}),\
+                 patch.object(E,'transport_messages',wraps=E.transport_messages)as wire:
+                result=S.tool_loop('Original question','Instructions',[],lambda _:None,send=capture,model='authored',compact_execution_state=True,max_tools=None)
+            self.assertEqual(wire.called,encoded)
+            self.assertEqual(result['actor_prompt_receipts'][0]['prefix_cache_candidate'],not encoded)
+            self.assertEqual(json.loads(seen[-1]['messages'][0]['content'])['schema'],E.VERSION)
+
 if __name__=='__main__':unittest.main()

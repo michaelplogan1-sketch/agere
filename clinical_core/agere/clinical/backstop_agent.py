@@ -5118,6 +5118,35 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
     worker_ledger=getattr(ledger,'path',ledger)if parallel_safe else ledger
     from .cost_telemetry import bind_ledger_path,inherit_context
     if parallel_safe and worker_ledger is not None:worker_ledger=bind_ledger_path(worker_ledger)
+    # Candidate (AGERE_FRONTIER_REVIEW_LEAD=on). A deciding frontier fault already stops
+    # the schedule, but with concurrent workers every in-flight packet has been sent by
+    # then: the 2026-11-12 retained run paid for 9 and then 10 complete patient reviews
+    # that each returned the same field faults. The first frontier escalation therefore
+    # finishes alone. A fault or interruption leaves the waiting packets unsent with
+    # their typed work retained; any other outcome releases them concurrently. No
+    # verdict is inferred for an unsent packet.
+    import threading
+    lead={'lock':threading.Lock(),'claimed':False,'settled':threading.Event(),'stop':False};frontier_deferred=set()
+    frontier_review=frontier_decider
+    if frontier_decider is not None and os.environ.get('AGERE_FRONTIER_REVIEW_LEAD','off')=='on':
+        def frontier_review(target,*,ledger):
+            with lead['lock']:
+                first=not lead['claimed'];lead['claimed']=True
+            if first:
+                try:
+                    review=frontier_decider(target,ledger=ledger)
+                    lead['stop']=(review.get('status')=='reviewed'and
+                        (review.get('verdict')or{}).get('joint_support')in ('contradicted','not_established'))
+                    return review
+                except ValueError:raise  # not applicable to this packet: no stop
+                except BaseException:
+                    lead['stop']=True;raise
+                finally:lead['settled'].set()
+            lead['settled'].wait()
+            if lead['stop']:
+                frontier_deferred.add(target['id'])
+                raise ValueError('Not sent: the first frontier review of this schedule located a fault or was interrupted. Repair that dependency first; this packet has not been accepted or rejected.')
+            return frontier_decider(target,ledger=ledger)
     def typed_check(packet):
         steps=[]
         identity={k:packet[k]for k in ('id','parent_packet_id')if k in packet}
@@ -5273,7 +5302,10 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         from ...contracts import digest
         try:
             checked,steps=typed_check(packet)
-            checked,review=resolve_source_abstention(packet,checked,frontier_decider,ledger=worker_ledger)
+            checked,review=resolve_source_abstention(packet,checked,frontier_review,ledger=worker_ledger)
+            if packet['id']in frontier_deferred:
+                checked={**checked,'status':'awaiting_dependency_repair',
+                    'reason':(checked.get('frontier_review')or{}).get('reason')}
         except Exception as exc:
             localized=getattr(exc,'agere_partial_field_review',None)
             if isinstance(localized,dict):
@@ -5360,6 +5392,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             results.append({**{k:packet[k]for k in ('id','parent_packet_id')if k in packet},'label':'unknown','decided_by':None,'status':'awaiting_dependency_repair',
                 **({'blocked_family_id':source_packet_family(packet,by_id)}if source_packet_family(packet,by_id)in blocked else {}),
                 'reason':'Not sent: repair the diagnosed dependency first. This packet has not been accepted or rejected.'})
+    unchecked.extend(packet['id']for packet in scheduled if packet['id']in frontier_deferred)
     failed=[r for r in results if r['label']in ('contradicted','not_established')and r.get('decided_by')]
     settled=bool(results)and all(r['label']=='supported'and r.get('decided_by')for r in results)
     feedback=[f for r in results for f in r.get('claim_feedback',[])]

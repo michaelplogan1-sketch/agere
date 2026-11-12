@@ -111,10 +111,17 @@ def build_prompt(body):
     return system, user
 
 
+def prefix_cache_enabled():
+    """The opt-in candidate flag. Callers that would re-encode the compiled state for the wire skip that when this is on:
+    measured on the retained 65-patient run, the re-encoded state is 43% smaller but only 7-25% of it is an unchanged prefix
+    of the previous turn, against 93-99% for the native form, so the encoding defeats the cache it would otherwise use."""
+    return os.environ.get('AGERE_SUBSCRIPTION_PREFIX_CACHE', 'off').strip().lower() == 'on'
+
+
 def prefix_cache_blocks(body, user):
     """Candidate, off unless AGERE_SUBSCRIPTION_PREFIX_CACHE=on: the one compiled execution-state message as exact text blocks
     with a cache boundary after the stable catalog, else None (every other prompt keeps today's single string)."""
-    if os.environ.get('AGERE_SUBSCRIPTION_PREFIX_CACHE', 'off').strip().lower() != 'on': return None
+    if not prefix_cache_enabled(): return None
     messages = body.get('messages') or []
     if len(messages) != 1 or messages[0].get('role') != 'user' or not isinstance(messages[0].get('content'), str): return None
     from .clinical.execution_state import cache_blocks

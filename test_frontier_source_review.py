@@ -37,6 +37,43 @@ class SourceReview(unittest.TestCase):
             self.assertEqual(out['frontier_review_calls'],1);self.assertFalse(out['frontier_review_cost_known'])
             self.assertIsNone(out['frontier_review_cost_usd'])
 
+    def test_lead_candidate_sends_one_frontier_review_before_the_rest(self):
+        import threading
+        from clinical_core.agere.gateway import BudgetLedger
+        base=packet();summary={**base,'id':'summary','claim_manifest':[],'patient_dependency_bound':False}
+        patients=[{**base,'id':'patient_'+str(i)}for i in range(6)]
+        def typed(q,options,evidence,**kw):
+            label='supported'if evidence[0]['id']=='summary'else'unknown'
+            return {'label':label,'decided_by':'authored'if label=='supported'else None,'steps':[]}
+        def run(first_label,flag):
+            # Patches are entered once around the whole schedule: entering them inside worker threads is not thread-safe.
+            sent=[];guard=threading.Lock()
+            def loop(user,*a,**kw):
+                claims=json.loads(user)['claim_manifest']
+                with guard:sent.append(1);label=first_label if len(sent)==1 else'supported'
+                verdict={'supported_claim_ids':[c['id']for c in claims],'findings':[],'joint_support':'supported','joint_reason':'Authored'}
+                if label!='supported':
+                    verdict.update(supported_claim_ids=[c['id']for c in claims][1:],joint_support=label,findings=[{
+                        'claim_id':claims[0]['id'],'label':label,'reason':'Authored fault','evidence_paths':['/source_contexts/0/text']}])
+                return {'answer':verdict,'model':'authored-reviewer','new_paid_api_calls':1,'estimated_cost_usd':None}
+            def frontier(p,ledger=None):return B.frontier_source_review(SimpleNamespace(),'Report dated care roles and medication statements.',p,ledger=ledger)
+            with tempfile.TemporaryDirectory()as folder,patch.dict(os.environ,{'AGERE_FRONTIER_REVIEW_LEAD':flag,
+                    'AGERE_CLAUDE_TRANSPORT':'subscription','ANTHROPIC_API_KEY':'subscription-transport'}),patch(
+                    'clinical_core.agere.clinical.legacy_proposers._send',return_value=lambda _:None),patch(
+                    'clinical_core.agere.clinical.semantic_analyst.tool_loop',side_effect=loop):
+                ledger=BudgetLedger(Path(folder)/'attempts.sqlite3')
+                try:return B.check_support_packets([summary,*patients],typed,as_of=base['date'],ledger=ledger,frontier_decider=frontier),sent
+                finally:ledger.close()
+        out,sent=run('not_established','on')
+        self.assertEqual(len(sent),1);self.assertEqual(len(out['failed_packet_ids']),1)
+        self.assertFalse(out['all_dependencies_checked']);self.assertEqual(len(out['unchecked_packet_ids']),5)
+        waiting=[r for r in out['packets']if r.get('status')=='awaiting_dependency_repair']
+        self.assertEqual(len(waiting),5);self.assertTrue(all(r['label']=='unknown'and not r.get('decided_by')for r in waiting))
+        out,sent=run('supported','on')
+        self.assertEqual(len(sent),6);self.assertEqual(out['label'],'supported');self.assertEqual(out['unchecked_packet_ids'],[])
+        out,sent=run('not_established','off')
+        self.assertGreater(len(sent),1)  # today's behavior: in-flight packets are already sent
+
     def test_deciding_fault_missing_evidence_native_repair_and_partition_do_not_escalate(self):
         base={'id':'patient_A','label':'unknown','decided_by':None}
         changes=[({}, {'label':'contradicted','decided_by':'jev'}),({}, {'label':'supported','decided_by':'jev'}),

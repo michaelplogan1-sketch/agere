@@ -835,7 +835,9 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
             if deadline is not None and deadline - time.monotonic() <= 0:
                 raise TimeoutError('Wall-clock limit reached')
             wire_proofs=[]
-            if compact_execution_state and pending_output is None and os.environ.get('AGERE_EXECUTION_WIRE_ENCODING','off')=='on':
+            from ..subscription_transport import prefix_cache_enabled
+            if (compact_execution_state and pending_output is None and os.environ.get('AGERE_EXECUTION_WIRE_ENCODING','off')=='on'
+                    and not prefix_cache_enabled()):
                 from .execution_state import transport_messages
                 body['messages'],wire_proofs=transport_messages(body['messages'])
             prompt_receipt={'turn':turns,'execution_state':compact_execution_state,
@@ -843,7 +845,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 'native_tool_calls_retained':len(result['tool_calls']),
                 'role':'binding_repair'if binding_role else'analyst',
                 'system_bytes':len(json.dumps(body['system'],default=str).encode()),
-                'wire_encoding':wire_proofs,'status':'prepared'}
+                'wire_encoding':wire_proofs,'prefix_cache_candidate':prefix_cache_enabled(),'status':'prepared'}
             result.setdefault('actor_prompt_receipts',[]).append(prompt_receipt)
             try:
                 response, cost, cache_hit = send(body)
