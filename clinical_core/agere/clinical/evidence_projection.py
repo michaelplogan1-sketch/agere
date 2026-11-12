@@ -183,6 +183,26 @@ def restore_table(rows,edges,patient_rows):
     return restored
 
 
+def _coverage_prose_view(answer):
+    """Coverage reads claims and bindings; source support reads the source rows.
+
+    Global prose can bind the same complete cohort to several statements. Those
+    native rows belong to the support stage, not another copy in each coverage
+    proof. Preserve scalar values, addresses and exact row digests here. Never
+    modify the original proof consumed by support_packets.
+    """
+    for proof in answer.get('computed_prose') or []:
+        for source in (proof.get('sources') or {}).values():
+            if isinstance(source,dict) and 'source_row' in source:
+                row=source.pop('source_row')
+                source['source_row_reference']={
+                    'binding':copy.deepcopy(source.get('binding')),
+                    'row_digest':digest(row),
+                    'required_stage':'source_support',
+                    'source_support_established':False}
+    return answer
+
+
 def coverage_answer(answer, *, native_table=None, native_audit=None, native_interpretation=None):
     """Coverage-only projection; support receives every complete native value."""
     if native_interpretation is not None:
@@ -201,7 +221,7 @@ def coverage_answer(answer, *, native_table=None, native_audit=None, native_inte
         if prior is not None:out['prior_review_native_digest']=digest(prior)
         out['coverage_contract']={'schema':'source-interpreted-native-result/1','scope':
             'Code reproduced every original account, source/task/tuple binding, existing machine judgment and conditional documentary transformation without a provider dispatch. Received proposals and source-supported machine interpretations are distinct fields. Only columns/field_roles and native_projection.fields are delivered fields; source_role_definitions describes ancestor data and does not supply omitted final columns. Review requested scope, dates, fields, unresolved reports, new prose and workflow meaning. This is neither independent clinical qualification nor proof of complete question coverage.'}
-        return out
+        return _coverage_prose_view(out)
     if native_audit is not None:
         if(native_audit.get('schema')!='native-qualifier-coverage/1'
             or native_audit.get('table_digest')!=digest(answer.get('table'))
@@ -217,7 +237,7 @@ def coverage_answer(answer, *, native_table=None, native_audit=None, native_inte
         if prior is not None:out['prior_review_native_digest']=digest(prior)
         out['coverage_contract']={'schema':'native-qualifier-coverage/1',
             'scope':'Every native audit account/cell was checked by code against the complete original receipt set. A native_projection also preserves every account/patient identity, the exact received-field roles and an independently replayed output; its complete SQL and computed label meanings are supplied for review. Review the original request against the full parameter, field and conditional-effect contracts. These are received-label effects, not clinically validated conclusions. Do not treat faithful copying, a machine label, a computed literal or an unresolved requested interpretation as clinical acceptance or complete work. Separate source support remains mandatory.'}
-        return out
+        return _coverage_prose_view(out)
     if native_table is not None:
         # The producer has checked every primitive cell against a complete
         # native SQL result. Coverage reviews the requested fields and method,
@@ -232,7 +252,7 @@ def coverage_answer(answer, *, native_table=None, native_audit=None, native_inte
         if prior is not None:out['prior_review_native_digest']=digest(prior)
         out['coverage_contract']={'schema':'native-table-coverage/1',
             'scope':'Every declared native row is retained in the answer. Check requested outputs, source selection, calculation, dates, units and unknowns against the complete calculation contracts and field manifest. Exact copying is checked by code; it does not establish correct meaning or complete requested interpretation.'}
-        return out
+        return _coverage_prose_view(out)
     out=copy.deepcopy(answer);rows=answer.get('table')or[]
     view,edges=table_view(rows,defer_native_cells=True);out['table']=view
     # Coverage must read the actual native explanations and proposed actions.
@@ -278,7 +298,7 @@ def coverage_answer(answer, *, native_table=None, native_audit=None, native_inte
         'dependency_encoding':'Each integer clinical_evidence_dependency indexes dependency_edges in order. '
             'Its row and column locate the exact source cell in the corresponding patient support packet.',
         'scope':'Check requested scope, computation, fields and explicit unknowns. Source-finding cells are references to separate required full clinical-support packets. Do not infer clinical truth from a reference or a finding count. Clinical support is confirmed only if every dependency is supported.'}
-    return out
+    return _coverage_prose_view(out)
 
 
 def native_observation_view(groups):

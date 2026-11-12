@@ -9,6 +9,32 @@ def finding(record,quote):
 
 
 class Projection(unittest.TestCase):
+    def test_coverage_references_global_basis_without_changing_source_support(self):
+        from clinical_core.contracts import digest
+        row={'patient_id':'A','record_id':'r1','date':'2030-01-02',
+             'text':'Received consultation; continuing responsibility unknown.'}
+        call={'name':'query_sql','input':{'sql':'SELECT * FROM record'},'result':{
+            'result_view':'received','columns':list(row),'rows':[row]}}
+        answer={'headline':'Received consultation; continuing responsibility unknown.',
+            'table':[row], 'table_from_tool':'received','table_binding':{'result_view':'received'},
+            'computed_prose':[{'field':'headline','template':'Received consultation; continuing responsibility unknown.',
+                'rendered':'Received consultation; continuing responsibility unknown.',
+                'bindings':{},'basis':[{'result_view':'received','row':0}],
+                'sources':{'basis':{'binding':{'result_view':'received','row':0},'source_row':row}}}]}
+        before=copy.deepcopy(answer)
+        support_before=B.support_packets('Show received consultation and responsibility.',answer,[call],[],'2030-01-02')
+        projected=E.coverage_answer(answer)
+        source=projected['computed_prose'][0]['sources']['basis']
+        self.assertNotIn('source_row',source)
+        self.assertEqual(source['source_row_reference']['row_digest'],digest(row))
+        self.assertFalse(source['source_row_reference']['source_support_established'])
+        self.assertEqual(source['binding'],{'result_view':'received','row':0})
+        self.assertEqual(projected['headline'],answer['headline'])
+        self.assertEqual(answer,before)
+        self.assertEqual(B.support_packets('Show received consultation and responsibility.',answer,[call],[],'2030-01-02'),support_before)
+        changed=copy.deepcopy(answer);changed['computed_prose'][0]['sources']['basis']['source_row']['date']='2029-01-02'
+        self.assertNotEqual(E.coverage_answer(changed)['computed_prose'][0]['sources']['basis']['source_row_reference'],source['source_row_reference'])
+
     def test_readable_native_json_keeps_field_names_and_checks_integrity(self):
         from clinical_core.agere.deliverables.receipts import readable_json
         native={'patient_id':'A','reason':[finding('r','MRA held.')]};encoded=readable_json(native)

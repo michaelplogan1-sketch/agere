@@ -1900,7 +1900,7 @@ def frontier_coverage_review(stack,question,request,graph,answer,*,ledger,as_of)
     from .. import model_policy
     from .legacy_proposers import _send
     from ..gateway import ProviderUnavailable,classify_provider_error
-    from ..deliverables.receipts import readable_json
+    from ..deliverables.receipts import readable_json,compact_json
     from ...contracts import digest
     if (os.environ.get('AGERE_CLAUDE_TRANSPORT')!='subscription'or
         os.environ.get('ANTHROPIC_API_KEY')!='subscription-transport'):
@@ -1922,8 +1922,10 @@ def frontier_coverage_review(stack,question,request,graph,answer,*,ledger,as_of)
         'exact unmet words of original_question. Full coverage requires no unmet request quotes. '
         'If the supplied execution/answer cannot establish coverage, return unknown. Return JSON only.')
     receipts=[]
+    readable=readable_json(payload);compact=compact_json(payload,expand_json_strings=True)
+    encoded=min((readable,compact),key=lambda v:len(json.dumps(v,ensure_ascii=False)))
     with model_policy.first_rung():
-        run=semantic_analyst.tool_loop(json.dumps(readable_json(payload),ensure_ascii=False),rules,[],lambda use:None,
+        run=semantic_analyst.tool_loop(json.dumps(encoded,ensure_ascii=False),rules,[],lambda use:None,
             send=as_tool_calls(_send(stack,ledger,receipts)),model=model_policy.first('reviewer'),
             max_tools=None,format_retries=0,extra={'output_config':{'format':{'type':'json_schema','schema':schema}}})
     if run.get('error')and classify_provider_error(RuntimeError(run['error']))=='rate_limit':

@@ -1628,7 +1628,24 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
             # never enters this projection.
             requested={digest(c.get('result'))for c in recent_results}
             referenced=[]
+            navigation_references=[]
             for entry in state['executed_results']:
+                observation=entry.get('observation')
+                if (entry['result_digest'] not in requested and isinstance(observation,dict)
+                        and str(observation.get('schema','')).startswith('residual-evidence-navigation/')):
+                    # Branch selection is operational planning, not an input to
+                    # binding a compiler-located scalar. The full branch list,
+                    # reference issues and exact memberships remain in the native
+                    # call and return on the next analyst/source-reading turn.
+                    entry.pop('observation')
+                    entry['binding_navigation_reference']={
+                        'navigation_id':observation.get('id'),
+                        'prior_result_view':observation.get('prior_result_view'),
+                        'observation_digest':digest(observation),
+                        'complete_native_result_retained':True,
+                        'source_support_established':False,
+                        'scope':'Retained source-selection plan, not scalar evidence. Complete choices return outside binding-only repair.'}
+                    navigation_references.append(entry['call'])
                 reading=entry.get('complete_reading')
                 if reading is None or entry['result_digest']in requested:continue
                 entry.pop('complete_reading')
@@ -1639,6 +1656,7 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
                 referenced.append(entry['result_view'])
             state['binding_input_projection']={'schema':'native-binding-input/1',
                 'referenced_result_views':referenced,'complete_native_results_retained':True,
+                'referenced_navigation_calls':navigation_references,
                 'new_requested_readings_retained':True,'clinical_source_acceptance':False}
             state['instruction']+=' In this binding-only operation, prior complete readings are referenced by their unchanged native result views. Exact computed scalar rows and newly requested readings remain visible. Query the needed value or source column instead of reconstructing it from a reference. Complete source interpretation resumes with its original readings after this repair.'
     elif focus:

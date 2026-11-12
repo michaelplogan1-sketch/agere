@@ -70,6 +70,26 @@ class AnswerProseRepair(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'another entity'):
             E.resolve_prose_binding(original['bindings']['paid'],native,{'patient_id':'A'})
 
+    def test_binding_repairs_reference_navigation_but_analyst_keeps_all_choices(self):
+        from clinical_core.agere.clinical import source_navigation as N
+        navigation={'schema':N.VERSION,'id':'navigation','prior_result_view':'received',
+            'inventory':[],'patient_ids':[],'additional_documents':[],
+            'source_branches':[{'id':'branch-'+str(i),'source_type':'received_note',
+                'source_ids':['record-'+str(i)]}for i in range(40)]}
+        calls=[*copy.deepcopy(self.calls),{'name':'plan_evidence_expansion',
+            'input':{'review_result_view':'received'},'result':navigation}]
+        before=copy.deepcopy(calls);feedback=self.review(self.draft)
+        def state(**kwargs):return json.loads(E.messages('Explain clinics',calls,**kwargs)[0]['content'])
+        binding=state(feedback=feedback,candidate=self.draft)['executed_results'][-1]
+        self.assertNotIn('observation',binding)
+        self.assertEqual(binding['binding_navigation_reference']['navigation_id'],'navigation')
+        self.assertFalse(binding['binding_navigation_reference']['source_support_established'])
+        full=state(candidate=self.draft)['executed_results'][-1]['observation']
+        self.assertEqual(full['source_branches'],navigation['source_branches'])
+        fresh=state(feedback=feedback,candidate=self.draft,recent_results=[calls[-1]])
+        self.assertEqual(fresh['executed_results'][-1]['observation'],full)
+        self.assertEqual(calls,before)
+
     def test_mixed_errors_locate_both_scopes_and_repair_headline_without_replacing_patient_prose(self):
         feedback=self.review(self.draft);before=copy.deepcopy(self.draft)
         self.assertEqual(len(feedback['prose_repair']['targets']),1)
