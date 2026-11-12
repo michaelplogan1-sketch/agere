@@ -178,7 +178,8 @@ async function run(fn) {
   finally { busy = false; }
 }
 function canCreate(program = intent || $('program').value) {
-  if (!data || data.context.supports_patient_work === false || data.context.stale || data.context.invalidated) return false;
+  if (!data || data.context.stale || data.context.invalidated) return false;
+  if (program === 'evidence_review' ? data.context.supports_evidence_review === false : data.context.supports_patient_work === false) return false;
   if (!canChangeWork(program)) return false;
   const answer = data.context.answer;
   return program === 'evidence_review'
@@ -345,7 +346,7 @@ function showPatients() {
 document.addEventListener('click',e=>{const b=e.target.closest('[data-cohort-layout]');if(b){cohortTableView=b.dataset.cohortLayout==='table';showPatients()}});
 function updateSelection() {
   $('selection').textContent = selected.size ? num(selected.size)+' patient'+(selected.size===1?'':'s')+' selected' : 'No patients selected';
-  $('selection-hint').textContent = data.context.supports_patient_work === false ? 'This summary is for analysis. Ask which patients should receive follow-up first.' : !canCreate() ? 'This answer needs updating before review work can be created.' : intent ? programNames[intent]+' · ready when you are' : 'Select patients to prepare their next step.';
+  $('selection-hint').textContent = data.context.supports_patient_work === false && !data.context.supports_evidence_review ? 'This summary is for analysis. Ask which patients should receive follow-up first.' : !canCreate() ? 'This answer needs updating before review work can be created.' : intent ? programNames[intent]+' · ready when you are' : 'Select patients to prepare their next step.';
   $('continue').innerHTML = (intent ? 'Continue with selection' : 'Choose next step') + ' '+icon('arrow');
   $('continue').disabled = !selected.size || !canCreate();
   $('clear').disabled = !selected.size;
@@ -357,6 +358,9 @@ function renderOverview() {
   $('question').textContent = c.question;
   $('headline').textContent = c.answer.headline || '';
   $('snapshot').textContent = 'Snapshot · '+date(c.source.as_of);
+  let progress = $('verification-progress');
+  if (!progress) { progress=document.createElement('div'); progress.id='verification-progress'; $('scope-warning').after(progress); }
+  progress.innerHTML = verificationProgressHTML(c.verification_progress);
   $('cohort-total').textContent = num(c.patient_rows.length);
   $('coverage-ring').style.setProperty('--coverage', (c.patient_rows.length ? assigned/c.patient_rows.length*100 : 0)+'%');
   $('coverage-caption').textContent = num(assigned)+' with review work · '+num(c.patient_rows.length)+' total';
@@ -446,10 +450,11 @@ function render() {
   if (c.stale) warnings.push('Source data has changed. The saved answer remains visible. Source-bound evidence reviews show which inputs need reassessment; refresh the answer before other work.');
   if (c.source_review_required) warnings.push('This saved answer relies on a suspended source reading. Its original findings remain inspectable; open source-evidence review or ask again before preparing program work. The answer has not been recalculated.');
   if (c.source_disposition?.status === 'unavailable') warnings.push('Source-reading status is unavailable. Restore source verification before changing work. The saved evidence remains inspectable.');
-  if (c.answer.status !== 'answered' || c.answer.missing?.length) warnings.push('This answer has unresolved evidence. You can prepare source-evidence review; clinical program work requires a complete answer.');
+  if (c.verification_progress?.status === 'interrupted') warnings.push('Verification stopped with work saved. Inspect the recorded checks and service dependency below. Patient evidence can be assigned for internal review; this draft does not establish a clinical action population.');
+  else if (c.answer.status !== 'answered' || c.answer.missing?.length) warnings.push('Verification or requested work remains incomplete. Internal evidence review is available where patient records were returned; program work requires a complete answer.');
   const gaps = c.answer.missing || [];
   const gapDetails = gaps.length ? '<details><summary>Original analytical gaps and limitations ('+gaps.length+')</summary><ul>'+gaps.map(gap=>'<li>'+esc(gap)+'</li>').join('')+'</ul></details>' : '';
-  if (c.supports_patient_work === false) warnings.push('This is an analytical summary. Build a view or monitor it; ask for a specific patient cohort before preparing follow-up work.');
+  if (c.supports_patient_work === false && !c.supports_evidence_review) warnings.push('This is an analytical summary. Build a view or monitor it; ask for a specific patient cohort before preparing follow-up work.');
   const accepted = data.independent_review?.accepted === true && !c.source_review_required && c.source_disposition?.status !== 'unavailable';
   if (accepted) {
     $('scope-warning').innerHTML = '<strong>Independent review accepted by '+esc(data.independent_review.reviewer)+'.</strong> No additional clinician review of these accepted findings is requested.'+
@@ -522,6 +527,10 @@ function editWork(id) {
   $('detail-kicker').textContent = 'REVIEW WORK / '+(programNames[item.program] || item.program).toUpperCase();
   $('detail-title').textContent = item.patient_id;
   $('detail-content').innerHTML = '<form id="edit-work-form"><p class="muted">Keep the next step, owner, and progress together.</p><label for="task-state">Staff review status</label><select id="task-state" '+(!canChangeWork(item.program, item)?'disabled':'')+'>'+data.states.map(s=>'<option value="'+esc(s)+'" '+(s===item.state?'selected':'')+'>'+esc(states[s]||pretty(s))+'</option>').join('')+'</select><label for="task-owner">Who’s taking the lead?</label><input id="task-owner" required maxlength="120" value="'+esc(item.owner)+'"><label for="task-note">What’s the next step?</label><textarea id="task-note" maxlength="2000">'+esc(item.note)+'</textarea><details class="requirements-box"><summary>Review requirements</summary><ul>'+item.requirements.map(r=>'<li>'+esc(r)+'</li>').join('')+'</ul></details><button type="button" class="text-button" data-inspect="'+esc(item.patient_id)+'">Open patient evidence '+icon('arrow')+'</button><p class="cost-note">Updates the staff review status. Simulated agent outcomes remain in the journey history. No outreach, enrollment, or care delivery occurs.</p><p id="work-error" class="form-error" role="alert"></p><div class="sheet-actions"><button type="button" class="button" data-close="detail-dialog">Cancel</button><button id="save-work" class="button primary" '+(!canChangeWork(item.program, item)?'disabled':'')+'>Save progress '+icon('check')+'</button></div></form>';
+  if (item.evidence_review?.verification_progress) {
+    const progress=document.createElement('div'); progress.innerHTML=verificationProgressHTML(item.evidence_review.verification_progress);
+    $('detail-content').append(progress);
+  }
   const dependencies = item.review_dependency_status || [];
   if (dependencies.length) {
     const section = document.createElement('section'); section.className = 'requirements-box';

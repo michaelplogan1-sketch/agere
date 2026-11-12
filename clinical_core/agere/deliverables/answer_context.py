@@ -145,6 +145,70 @@ def investigation_evidence(investigation):
             'document_reviews':[{k:v for k,v in r.items() if k not in metadata} for r in source.get('document_reviews') or []]}
 
 
+def verification_progress(context):
+    """Recorded progress of the latest interrupted attempt, never acceptance.
+
+    Read only that attempt: summing history would count repaired/repeated claims
+    more than once. Its native reference remains available after UI projection.
+    Recorded machine judgments are not current clinical truth or reuse authority.
+    """
+    investigation = context.get('investigation') or {}
+    reviews = investigation.get('answer_reviews') or []
+    review = reviews[-1] if reviews else (context.get('answer') or {}).get('investigation_review') or {}
+    path = ['investigation', 'answer_reviews', len(reviews)-1] if reviews else ['answer', 'investigation_review']
+    if not isinstance(review, dict) or review.get('review_stop_reason') != 'source_review_interrupted':
+        # Older saves retained the actual provider error but not the interrupted
+        # review. Display that dependency without borrowing an earlier verdict
+        # or reconstructing missing progress counts.
+        from ..gateway import classify_provider_error
+        error = investigation.get('error')
+        kind = classify_provider_error(RuntimeError(error)) if isinstance(error, str) else None
+        if (kind not in ('billing','rate_limit','overloaded','server','timeout')
+                or (context.get('answer') or {}).get('status') != 'partial'
+                or isinstance(review, dict) and review.get('status') == 'confirmed'):
+            return None
+        review = {'interruption': {'kind':kind,'error':error}, 'cost_known':False, 'calls_known':False}
+        path = ['investigation','error']
+    support = review.get('support') or {}
+    packets = support.get('packets') or []
+    fields = {'supported': 0, 'unresolved': 0, 'faults': 0, 'unchecked': 0, 'native_supported': 0}
+    field_packets = 0
+    for packet in packets:
+        # A frontier result can contain the preceding typed result. It is one
+        # attempt at the same packet, not a second set of fields to count.
+        candidates = [packet.get('field_review'), (packet.get('typed_review') or {}).get('field_review')]
+        found = next((f for f in candidates if isinstance(f, dict) and f.get('schema') == 'localized-field-review/1'), None)
+        if found is None:
+            continue
+        names = {'supported': 'supported_count', 'unresolved': 'unresolved_count', 'faults': 'fault_count',
+                 'unchecked': 'unchecked_count', 'native_supported': 'native_supported_count'}
+        if any(type(found.get(k)) is not int or found[k] < 0 for k in names.values()):
+            continue  # Older/incomplete receipts must not invent zero counts.
+        field_packets += 1
+        for name, key in names.items():
+            fields[name] += found[key]
+    interruptions = support.get('interruptions') or [review.get('interruption') or {
+        'kind': None, 'error': review.get('reason') or 'Review stopped; no service diagnosis was recorded.'}]
+    dependencies = [{'kind': i.get('kind') or 'unknown', 'error': i.get('error'),
+                     'packet_id': i.get('packet_id'), 'status': 'recovery_not_verified',
+                     'provider_attempts': i.get('provider_attempts') or [], 'reset_at': None}
+                    for i in interruptions if isinstance(i, dict)]
+    return {'schema': 'saved-verification-progress/1', 'status': 'interrupted',
+            'scope': 'Latest saved review attempt; recorded checks do not verify the whole answer.',
+            'saved_execution_steps': len(investigation.get('tool_calls') or []),
+            'shared_program_reviews': len(review.get('shared_program_reviews') or []),
+            'recorded_fields': fields if field_packets else None,
+            'field_packets_with_counts': field_packets,
+            'unchecked_packet_ids': support.get('unchecked_packet_ids'),
+            'interrupted_packet_ids': [i['packet_id'] for i in dependencies if i.get('packet_id')],
+            'all_dependencies_checked': False, 'service_dependencies': dependencies,
+            'calls_known': review.get('calls_known'), 'cost_known': review.get('cost_known'),
+            'known_cost_usd': review.get('known_cost_usd'), 'cost_usd': review.get('cost_usd'),
+            'native_reference': {'native_context_id': context.get('id'), 'path': path},
+            'clinical_qualification': False, 'whole_answer_accepted': False,
+            'clinical_execution_authorized': False}
+
+
 def capture(path, question, result, *, original_question=None, _population_scopes=None):
     """Persist a server-produced result; no client-provided IDs enter this boundary."""
     answer = result.get('answer') or {}
@@ -227,6 +291,11 @@ def capture(path, question, result, *, original_question=None, _population_scope
                                'answer_policy_identity': (result.get('planner_receipt') or {}).get('policy_identity'),
                                'cohort_transform': data.get('cohort_transform'),
                                'investigation_evidence': investigation_evidence(data.get('investigation')),
+                               **({'interrupted_verification_attempt': fingerprint({
+                                   'review': data['investigation']['answer_reviews'][-1],
+                                   'error': data['investigation'].get('error'),
+                                   'draft': data['investigation'].get('interrupted_review_draft')})}
+                                  if verification_progress(data) and (data.get('investigation') or {}).get('answer_reviews') else {}),
                                **({'native_population_scopes':data['native_population_scopes']}if 'native_population_scopes'in data else{}),
                                **({'unfinished_draft_digest': recovery['draft_digest']} if recovery else {}),
                                'observation_dependencies': data['dependencies']['observation']})[:24]
@@ -360,7 +429,9 @@ def load(path, key, *, current=False, follow_up=False, source_review=False, loca
             'source_disposition': disposition, 'source_review_required': bool(suspended),
             'dependency_validation': dependency_checks,
             **scope_options(data),
-            'supports_patient_work': supports_patient_work(data)}
+            'supports_patient_work': supports_patient_work(data),
+            'supports_evidence_review': supports_evidence_review(data),
+            'verification_progress': verification_progress(data)}
 
 
 def listing_row(data):
@@ -511,6 +582,24 @@ def supports_patient_work(context):
     return (answer.get('actionable_cohort') is True or answer.get('answer_type') == 'patient_set'
             or any(isinstance(r, dict) and (r.get('patient_id') or r.get('patient'))
                    for r in answer.get('table') or []))
+
+
+def supports_evidence_review(context):
+    """Inspection of returned patient evidence does not grant a clinical cohort.
+
+    Summary input membership alone still cannot create patient work. An
+    interrupted, explicitly nonactionable draft may retain patient rows to
+    inspect, with all normal source/version/roster checks at create_work.
+    """
+    if supports_patient_work(context):
+        return True
+    if not verification_progress(context):
+        return False
+    answer = context['answer']
+    if answer.get('answer_type') in ('count', 'value'):
+        return False
+    returned = {r.get('patient_id') for r in answer.get('table') or [] if isinstance(r, dict) and r.get('patient_id')}
+    return bool(returned) and returned == set(context.get('patient_ids') or [])
 
 
 def scope_options(context):
@@ -782,7 +871,7 @@ def create_work(path, request):
             (program != 'evidence_review' and
              (c['answer'].get('status') != 'answered' or c['answer'].get('missing')))):
         raise ValueError('Resolve the incomplete answer before preparing program work')
-    if not supports_patient_work(c):
+    if not (supports_evidence_review(c) if program == 'evidence_review' else supports_patient_work(c)):
         raise ValueError('This analytical summary does not select an action population; ask for the intended patient cohort.')
     ids = request['patient_ids']
     if not isinstance(ids, list) or not ids or any(not isinstance(p, str) for p in ids) or len(set(ids)) != len(ids):
@@ -835,6 +924,8 @@ def create_work(path, request):
                         'suspended_source_readings': c['source_disposition']['suspended_assertions'],
                         'source_disposition': c['source_disposition']['status'],
                     }
+                    if c.get('verification_progress'):
+                        assessment['evidence_review']['verification_progress'] = c['verification_progress']
                     if declared is not None:
                         assessment['evidence_review']['dependencies']=dependencies[pid]
                 aid = fingerprint(assessment)

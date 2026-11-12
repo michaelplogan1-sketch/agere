@@ -3487,6 +3487,9 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         if getattr(tools,'program_field_reviews',None) and 'shared_program_reviews'not in assessment:
             assessment['shared_program_reviews']=list(tools.program_field_reviews.values())
         assessment['reason']=f'{type(exc).__name__}: {exc}'[:300]
+        if assessment.get('review_stop_reason') == 'source_review_interrupted':
+            assessment['interruption'] = {'kind': getattr(exc,'kind',None), 'error': assessment['reason'],
+                'provider_attempts': getattr(exc,'attempts',[])}
         if partial is not None or assessment.get('shared_program_reviews') or getattr(exc,'kind',None)is not None:
             import copy
             exc.agere_partial_answer_review=copy.deepcopy(assessment)
