@@ -3795,6 +3795,58 @@ def global_dependency_request(answer,calls):
     return missing if native_column_projections(calls,roots,dependencies)else []
 
 
+def navigation_support_rows(result,question,as_of):
+    """Project navigation bookkeeping by entity; retain its immutable receipt.
+
+    A navigation inventory contains addresses and selection state, never a
+    clinical reading. All source documents and findings remain in their normal
+    evidence paths. Exact native counts expose unexamined/unknown-date scope.
+    """
+    from collections import Counter
+    from ...contracts import digest
+    from .source_navigation import VERSION
+    if not isinstance(result,dict)or result.get('schema')!=VERSION:return None
+    try:
+        saved={k:v for k,v in result.items()if k not in ('id','branch_selection','review_next')}
+        if (digest(saved)!=result.get('id')or result.get('question')!=question
+            or result.get('as_of')!=as_of or result.get('absence_established')is not False
+            or result.get('clinical_qualified')is not False):return None
+        inventory=result['inventory'];patients=result['patient_ids'];additional=result['additional_documents']
+        if (not isinstance(inventory,list)or len(set(patients))!=len(patients)
+            or [p['patient_id']for p in inventory]!=patients
+            or any(a['patient_id']not in patients for a in additional)):return None
+        rows=[];receipt_digest=digest(result)
+        for patient in inventory:
+            fields={}
+            for field,account in patient['fields'].items():
+                units=account['units']
+                fields[field]={'inventory_documents':len(units),
+                    'selection_counts':dict(sorted(Counter(u['selection']for u in units).items())),
+                    'time_strata_counts':dict(sorted(Counter(u['stratum']for u in units).items())),
+                    'interpretation_counts':dict(sorted(Counter(u['interpretation']for u in units).items())),
+                    'complete_inventory_digest':digest(account),
+                    'reference_issues':account['reference_issues'],
+                    'linked_structured_sources':account['linked_no_document'],
+                    'selection_sufficiency':account['selection_sufficiency'],
+                    'absence_established':account['absence_established']}
+            rows.append({'patient_id':patient['patient_id'],'source_navigation_scope':{
+                'schema':'native-source-navigation-scope/1','navigation_id':result['id'],
+                'complete_receipt_digest':receipt_digest,'as_of':as_of,'questions':result['questions'],
+                'prior_result_view':result['prior_result_view'],
+                'prior_call_digest':result['prior_call_digest'],
+                'field_applicability':patient['field_applicability'],
+                'received_source_digest':patient['received_source_digest'],
+                'document_inventory_digest':patient['document_inventory_digest'],
+                'fields':fields,'selected_additional_record_ids':[a['record_id']for a in additional
+                    if a['patient_id']==patient['patient_id']],
+                'selection_sufficiency':result['selection_sufficiency'],
+                'absence_established':False,'clinical_qualified':False,
+                'authority':'native_source_selection_bookkeeping',
+                'meaning':'Addresses and exact selection counts only. Selected documents still require reading. Unexamined or unknown-date documents and reference issues remain unresolved; no clinical assertion or absence is established. Full inventory and branch membership remain in the immutable navigation receipt.'}})
+        return rows
+    except (KeyError,TypeError,ValueError):return None
+
+
 def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None,native_audit=None,source_records=None,assertion_observations=None,native_interpretation=None,native_program=None):
     """Final clinical claims, deduplicated and grouped by patient dependency.
 
@@ -3921,6 +3973,15 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         origin={'kind':'executed_native_result','result_view':view,'tool':c.get('name'),'input_digest':digest(c.get('input'))}
         native.append({'tool_index':i,'tool':c.get('name'),'result_view':view,'input_digest':digest(c.get('input')),'result_digest':timing['current'][i]})
         legacy_native.append({**native[-1],'result_digest':timing['legacy'][i]})
+        if c.get('name')=='plan_evidence_expansion':
+            navigation=navigation_support_rows(observed,question,as_of)
+            if navigation is not None:
+                native[-1]['operational_inputs']={'authority':'native_source_selection_bookkeeping',
+                    'complete_receipt_digest':digest(observed),'patients':len(navigation),
+                    'projection':'per_patient_selection_counts_and_source_gaps','clinical_evidence':False}
+                legacy_native[-1]['operational_inputs']=dict(native[-1]['operational_inputs'])
+                for row in navigation:add(row,view,origin)
+                continue
         if view in excluded_operational:
             native[-1]['operational_inputs']={'authority':'unverified_review_feedback',
                 'rows':len(observed.get('rows')or[]),'excluded_from_clinical_evidence':True}

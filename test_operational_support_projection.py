@@ -40,6 +40,34 @@ class OperationalSupport(unittest.TestCase):
         self.assertNotIn('agere_result_2',[v['result_view'] for v in state['native_calculation_contracts']])
         self.assertTrue(all(p['dependency_complete'] for p in packets))
 
+    def test_navigation_inventory_is_bound_bookkeeping_not_repeated_clinical_evidence(self):
+        from clinical_core.agere.clinical.source_navigation import VERSION
+        question='Review received observations'
+        account={'units':[{'record_id':'doc1','selection':'unexamined','stratum':'unknown_date',
+            'interpretation':'unexamined'}], 'reference_issues':[{'record_id':'missing','reason':'unresolved'}],
+            'linked_no_document':[], 'selection_sufficiency':'unassessed','absence_established':False}
+        inventory=[{'patient_id':pid,'fields':{'relationship':copy.deepcopy(account)},
+            'field_applicability':{'relationship':True},'received_source_digest':'source-'+pid,
+            'document_inventory_digest':'documents-'+pid}for pid in ('P1','P2')]
+        nav={'schema':VERSION,'question':question,'as_of':'2030-05-27','patient_ids':['P1','P2'],
+            'inventory':inventory,'questions':{'relationship':'What relationship is documented?'},
+            'prior_result_view':'review1','prior_call_digest':'old-review','additional_documents':[],
+            'selection_sufficiency':'unassessed','absence_established':False,'clinical_qualified':False}
+        nav['id']=digest(nav);original=copy.deepcopy(nav)
+        calls=[self.normal,{'name':'plan_evidence_expansion','input':{'review_result_view':'review1'},'result':nav}]
+        packets=self.packets(calls);state=uncompact_json(json.loads(packets[1]['text']))
+        self.assertEqual(state['answer_rows'],self.answer['table'])
+        self.assertEqual(nav,original)
+        self.assertFalse(state['shared_evidence'])
+        navigation=[x for x in state['evidence']if 'source_navigation_scope'in x]
+        self.assertEqual(len(navigation),1);self.assertEqual(navigation[0]['patient_id'],'P1')
+        scope=navigation[0]['source_navigation_scope'];self.assertEqual(scope['complete_receipt_digest'],digest(nav))
+        self.assertEqual(scope['fields']['relationship']['time_strata_counts'],{'unknown_date':1})
+        self.assertEqual(scope['fields']['relationship']['reference_issues'],account['reference_issues'])
+        self.assertFalse(scope['absence_established']);self.assertFalse(scope['clinical_qualified'])
+        self.assertIsNone(B.navigation_support_rows({**nav,'question':'changed'},question,'2030-05-27'))
+        self.assertIsNone(B.navigation_support_rows(nav,question,'2029-01-01'))
+
     def test_unmarked_other_and_mixed_authorities_are_retained(self):
         for markers in [None,[],[{'authority':'missing_source'}],OP+[{'authority':'missing_source'}]]:
             with self.subTest(markers=markers):
