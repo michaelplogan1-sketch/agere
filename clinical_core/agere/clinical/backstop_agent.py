@@ -1601,7 +1601,58 @@ def native_field_proof(packet,claim,state,*,audit_context=None):
                     'scope':('Exact native audit field, conditional on the received proposed qualifiers and versioned native transformation. Repetition, structural flags, grouping and counting effects are not established clinical meaning, independent corroboration or clinical contradictions.'if field in AUDIT_CONDITIONAL_FIELDS else
                         'Literal received metadata/quote fidelity only. Entity, relation, value, subject, polarity and clinical time still require complete-source judgments.')}
     from .mixed_native_work import field_proof
-    return field_proof(packet,claim,state) or native_profile_field_proof(packet,claim,state)
+    return (field_proof(packet,claim,state) or native_profile_field_proof(packet,claim,state)
+        or (document_review_copy_proof(packet,claim,state)if os.environ.get('AGERE_NATIVE_DOCUMENTARY_COPY','off')=='on'else None))
+
+
+def document_review_copy_proof(packet,claim,state):
+    """Candidate: a field that is an exact native copy of the document review needs no second reading.
+
+    System One judged each finding when the document review read the sources.
+    A final field that the executed contract collects from that review, and
+    whose cells equal the patient's single review row item for item, repeats
+    that judgment; a frontier review of the same cells is a second opinion on
+    the same material. The proof requires the review's status to be a complete
+    review or to be stated in another cell of the same row, so an unfinished
+    review is never presented as a bare result. It proves copy fidelity and
+    status disclosure only: no clinical acceptance, no completeness of the
+    chart, and nothing about fields built through SQL, a domain filter or a
+    rename, which keep the existing review.
+    """
+    from ...contracts import digest
+    try:
+        pid=packet.get('source_dependency_patient_id');path=claim.get('path')or[];field=claim.get('field')
+        if (packet.get('patient_dependency_bound')is not True or packet.get('dependency_complete')is not True or not pid
+                or state.get('patient_id')!=pid or len(path)!=3 or path[0]!='answer_rows'or type(path[1])is not int or path[2]!=field):return None
+        contracts={c.get('result_view'):c for c in state.get('native_calculation_contracts')or[]}
+        final=contracts.get(state.get('final_result_view'))or{};spec=final.get('input')or{}
+        if final.get('tool')!='compose_table'or spec.get('rename_columns'):return None
+        joins=[j for j in spec.get('joins')or[]if j.get('as')==field]
+        if len(joins)!=1:return None
+        join=joins[0];review_view=join.get('result');column=join.get('items_from')
+        if (join.get('mode')!='collect'or not column or join.get('domain')or'columns'in join
+                or (contracts.get(review_view)or{}).get('tool')!='review_documents'):return None
+        origins={b['row_digest']:b['origins']for b in state.get('evidence_provenance')or[]}
+        reviews=[e for e in state.get('evidence')or[]if isinstance(e,dict)and e.get('patient_id')==pid and column in e and'review_status'in e
+            and any(o.get('result_view')==review_view and o.get('tool')=='review_documents'for o in origins.get(digest(e),[]))]
+        if len(reviews)!=1:return None
+        def items(value):
+            if isinstance(value,str):value=json.loads(value)
+            if not isinstance(value,list):raise ValueError('Not a collection')
+            return value
+        row=state['answer_rows'][path[1]]
+        if row.get('patient_id')!=pid or items(row[field])!=items(reviews[0][column]):return None
+        status=reviews[0]['review_status']
+        if not isinstance(status,str)or not status:return None
+        carried=sorted(k for k,cell in row.items()if k not in ('patient_id',field)and status in json.dumps(cell,default=str))
+        if status not in ('reviewed','no_documents')and not carried:return None
+        return {'schema':'native-document-review-copy/1','patient_id':pid,'as_of':packet.get('date'),
+            'result_view':state.get('final_result_view'),'review_result_view':review_view,'items_from':column,
+            'field':field,'path':path,'value_digest':digest(row[field]),'review_row_digest':digest(reviews[0]),
+            'review_status':status,'review_status_stated_in':carried,
+            'authority':'native_exact_copy_of_system_one_document_review','clinical_qualification':False,
+            'scope':'Every item of this field equals the patient\'s document-review result through the executed collect join, and the review status is complete or stated in the same row. The source meaning of each item rests on the document review\'s own machine judgments; no chart-wide absence, clinical validity or second reading is established.'}
+    except (KeyError,IndexError,TypeError,ValueError):return None
 
 
 def source_tuple_field_observation(packet,claim,state,*,audit_context=None):

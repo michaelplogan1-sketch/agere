@@ -62,4 +62,42 @@ class NativeAbsence(unittest.TestCase):
             self.assertNotIn('native_documentary_absence',out);self.assertEqual(out['label'],'supported')
 
 
+class NativeCopy(unittest.TestCase):
+    CARRIER='{"review_status": "needs_review", "documents_reviewed": 3}'
+    def proof(self,p,index=1):
+        from clinical_core.agere.deliverables.receipts import uncompact_json
+        return B.document_review_copy_proof(p,p['claim_manifest'][index],uncompact_json(json.loads(p['text'])))
+
+    def test_exact_copy_with_disclosed_or_complete_status_is_proven_and_nothing_else(self):
+        found='[{"record_id": "R1", "quote": "attended cardiology clinic"}]'
+        for case in (packet(carrier=self.CARRIER),packet(status='reviewed'),packet(status='no_documents'),packet(findings=found,carrier=self.CARRIER)):
+            proof=self.proof(case)
+            self.assertEqual(proof['schema'],'native-document-review-copy/1');self.assertFalse(proof['clinical_qualification'])
+            self.assertEqual(proof,self.proof(case))  # deterministic: the composition re-derives and compares it
+        self.assertEqual(self.proof(packet(carrier=self.CARRIER))['review_status_stated_in'],['document_review'])
+        self.assertIsNone(self.proof(packet()))                                     # unfinished review not stated in the row
+        self.assertIsNone(self.proof(packet(carrier=self.CARRIER),index=0))         # a structured field is not a review copy
+        self.assertIsNone(self.proof(packet(carrier=self.CARRIER,producer='query_sql')))
+        self.assertIsNone(self.proof({**packet(carrier=self.CARRIER),'dependency_complete':False}))
+        def altered(change):
+            p=packet(findings=found,carrier=self.CARRIER)
+            from clinical_core.agere.deliverables.receipts import uncompact_json,readable_json
+            state=uncompact_json(json.loads(p['text']));change(state)
+            return B.document_review_copy_proof(p,p['claim_manifest'][1],state)
+        def edited(state):state['answer_rows'][0]['documentary_findings']='[{"record_id": "R1", "quote": "attended"}]'
+        def domain(state):state['native_calculation_contracts'][1]['input']['joins'][0]['domain']={'column':'x'}
+        def renamed(state):state['native_calculation_contracts'][1]['input']['rename_columns']={'documentary_findings':'other'}
+        def second_review(state):
+            extra={**state['evidence'][0],'documents_reviewed':9};state['evidence'].append(extra)
+            state['evidence_provenance'].append({'row_digest':digest(extra),'origins':[{'kind':'executed_native_result','result_view':'review','tool':'review_documents'}]})
+        for change in (edited,domain,renamed,second_review):self.assertIsNone(altered(change))
+
+    def test_flag_gates_the_proof_inside_the_existing_native_field_proof(self):
+        from clinical_core.agere.deliverables.receipts import uncompact_json
+        p=packet(carrier=self.CARRIER);state=uncompact_json(json.loads(p['text']));claim=p['claim_manifest'][1]
+        with patch.dict(os.environ,{'AGERE_NATIVE_DOCUMENTARY_COPY':'off'}):self.assertIsNone(B.native_field_proof(p,claim,state))
+        with patch.dict(os.environ,{'AGERE_NATIVE_DOCUMENTARY_COPY':'on'}):
+            self.assertEqual(B.native_field_proof(p,claim,state)['authority'],'native_exact_copy_of_system_one_document_review')
+            self.assertIsNone(B.native_field_proof(p,p['claim_manifest'][0],state))
+
 if __name__=='__main__':unittest.main()
