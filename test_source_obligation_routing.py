@@ -37,7 +37,7 @@ class SourceObligations(unittest.TestCase):
             with self.subTest(kind=kind):self.assertEqual(B.bound_field_support(q,r),[])
 
     def test_frontier_receives_only_unresolved_claim_with_all_sources_unchanged(self):
-        p=packet();seen=[]
+        p=packet();seen=[];memory={}
         def partial(task,named,evidence,**kw):
             r=fields(task,named,evidence,**kw)
             r['judgments']['claim_1'].update(label='unknown',decided_by=None,probability=.5)
@@ -53,12 +53,13 @@ class SourceObligations(unittest.TestCase):
                 'model':'authored','verdict':{'supported_claim_ids':['claim_1'],'findings':[],
                 'joint_support':'supported','joint_reason':'All dated fields remain consistent.'}}
         out=B.check_support_packets([p],Mock(side_effect=AssertionError('Redundant joint vote')),
-            as_of=p['date'],ledger=None,field_decider=partial,frontier_decider=frontier)
+            as_of=p['date'],ledger=None,field_decider=partial,frontier_decider=frontier,prior_field_reviews=memory)
         self.assertEqual(len(seen),1);self.assertEqual(out['label'],'supported')
         self.assertEqual(out['packets'][0]['supported_claim_count'],2)
         self.assertEqual(out['packets'][0]['frontier_review']['reused_supported_claim_ids'],['claim_0'])
         self.assertFalse(out['frontier_review_cost_known'])
         self.assertFalse(out['packets'][0]['clinical_qualification'])
+        self.assertEqual(len(B.bound_field_support(p,memory[digest(p['text'])])),1)
 
     def test_located_fault_and_incomplete_source_cannot_escalate_to_acceptance(self):
         for incomplete in (False,True):

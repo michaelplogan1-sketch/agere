@@ -32,6 +32,7 @@ class Stack:
                     'scope':'Native execution and joins first; System One chooses program-meaning or source-reading work. Frontier reviews unresolved meaning; native defects and deciding faults require repair.',
                     'work_triage':'execution-work-triage/1',
                     'source_obligations':'source-fields-first/1',
+                    'coverage_order':'System One requested-work coverage, focused frontier fallback if undecided, then source verification. Unresolved coverage retains the partial before patient dispatch.',
                     'field_reuse':'Exact input-bound supported fields; remaining claims only escalate with full source context.',
                     'authority':'machine_judgment','clinical_qualification':False},
                 'execution_wire_encoding':os.environ.get('AGERE_EXECUTION_WIRE_ENCODING','off')=='on',

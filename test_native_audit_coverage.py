@@ -9,6 +9,33 @@ import test_documentary_tool_handoff as fixtures
 
 
 class NativeAuditCoverage(unittest.TestCase):
+    def test_undecided_coverage_routes_before_patient_review_without_accepting_sources(self):
+        import os
+        from contextlib import ExitStack
+        for label in ('answers_fully','answers_partially','unknown'):
+            with self.subTest(label=label),ExitStack() as ctx:
+                ctx.enter_context(patch.dict(os.environ,{'AGERE_FRONTIER_SOURCE_REVIEW':'on'}))
+                ctx.enter_context(patch.object(G,'ready',return_value=True))
+                ctx.enter_context(patch.object(G,'check',return_value={'label':'unknown','decided_by':None,'calls':0,'cost_usd':0.}))
+                ctx.enter_context(patch.object(G,'check_pending_work',return_value={'targets':[],'calls':0,'cost_usd':0.}))
+                ctx.enter_context(patch.object(G,'check_composition',return_value={'targets':[],'calls':0,'cost_usd':0.}))
+                frontier=ctx.enter_context(patch.object(B,'frontier_coverage_review',return_value={
+                    'status':'reviewed','calls':1,'cost_usd':None,'verdict':{'label':label,
+                    'reason':'Authored coverage judgment only.','unaddressed_request_quotes':['Interpret source accounts']if label=='answers_partially'else[]}}))
+                support=ctx.enter_context(patch.object(B,'check_support_packets',return_value={
+                    'label':'unknown','decided_by':None,'steps':[],'packets':[],'all_dependencies_checked':False}))
+                ctx.enter_context(patch.object(B,'frontier_composed_review',return_value={'status':'not_applicable','calls':0,'cost_usd':0.}))
+                review=B.review_final(self.fixture.stack,'Interpret source accounts',copy.deepcopy(self.answer),
+                    self.tools.native_calls,self.tools,ledger=None,as_of=AS_OF)
+                self.assertEqual(frontier.call_count,1)
+                self.assertEqual(support.call_count,1 if label=='answers_fully'else 0)
+                self.assertNotEqual(review['status'],'confirmed')
+                self.assertNotIn('TypeError',str(review.get('reason')))
+                if label=='answers_fully':self.assertIn('support',review)
+                self.assertIsNone(review['cost_usd'])
+                if label=='unknown':self.assertEqual(review['retry_disposition'],'retain_partial_until_new_evidence')
+                if label=='answers_partially':self.assertEqual(review['repair_kind'],'incomplete_coverage')
+
     def setUp(self):
         self.fixture=fixtures.DocumentaryHandoff();self.fixture.setUp();self.addCleanup(self.fixture.doCleanups)
         self.tools=self.fixture.tools()
