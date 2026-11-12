@@ -2192,6 +2192,79 @@ def frontier_packet_review(stack,question,packet,*,ledger,scope):
     return result
 
 
+def claim_scoped_state(state,pending):
+    """Candidate (AGERE_FRONTIER_CLAIM_SCOPE=on): supply only what the unsettled claims read.
+
+    Column reads are followed through the packet's own executed contracts. A
+    composed table names the exact source column of each output; SQL is not
+    parsed, so every column of every result it names is kept. Rows with no
+    executed-result lineage (navigation scope, document observations) are kept
+    whole. Settled fields keep their recorded authority in
+    resolved_source_claims; their unrelated inputs stay in native receipts.
+    Returns None whenever the lineage is not fully explicit, leaving the
+    complete packet in place.
+    """
+    import re
+    from ...contracts import digest
+    final=state.get('final_result_view');contracts={c.get('result_view'):c for c in state.get('native_calculation_contracts')or[]}
+    fields={c['field']for c in pending}
+    if (not final or final not in contracts or not fields or any(c.get('path')!=['answer_rows',c['path'][1],c['field']]for c in pending)
+            or state.get('source_contexts')or state.get('computed_claims')):return None
+    ALL=None;needed={};work=[(final,f)for f in sorted(fields)]
+    def want(view,column):
+        if view not in contracts:raise ValueError('Unknown producer')
+        have=needed.get(view,set())
+        if view in needed and have is ALL:return
+        if column is ALL:needed[view]=ALL;work.append((view,ALL))
+        elif column not in have:needed.setdefault(view,set()).add(column);work.append((view,column))
+    for view,column in work:needed.setdefault(view,set()).add(column)
+    try:
+        while work:
+            view,column=work.pop();contract=contracts[view];spec=contract.get('input')or{}
+            if contract.get('tool')=='compose_table':
+                joins=spec.get('joins')or[];base=spec['base']
+                produced={j['as']:j for j in joins if j.get('as')and j.get('items_from')}
+                if any(not (j.get('as')and j.get('items_from'))for j in joins)or column is ALL:
+                    want(base,ALL)
+                    for j in joins:want(j['result'],j['items_from']if j.get('items_from')else ALL)
+                elif column in produced:want(produced[column]['result'],produced[column]['items_from'])
+                elif column not in (spec.get('keys')or[]):want(base,column)
+            elif contract.get('tool')=='query_sql':
+                text=str(spec.get('sql')or'')
+                for name in contracts:
+                    if name!=view and re.search(r'(?<![\w])'+re.escape(name)+r'(?![\w])',text):want(name,ALL)
+            elif contract.get('tool')!='review_documents':return None
+    except (KeyError,TypeError,ValueError):return None
+    origins={b['row_digest']:b['origins']for b in state.get('evidence_provenance')or[]}
+    evidence=[];provenance=[];omitted=set()
+    for row in state.get('evidence')or[]:
+        ident=digest(row);sources=origins.get(ident)
+        if (not isinstance(row,dict)or not sources or any(o.get('kind')!='executed_native_result'or o.get('result_view')not in contracts
+                or o.get('tool')not in ('query_sql','compose_table','review_documents')for o in sources)):
+            evidence.append(row)
+            if sources:provenance.append({'row_digest':ident,'origins':sources})
+            continue
+        used=[o for o in sources if o['result_view']in needed]
+        if not used:omitted.update(o['result_view']for o in sources);continue
+        columns=ALL if any(needed[o['result_view']]is ALL for o in used)else set().union(*(needed[o['result_view']]for o in used))
+        if columns is not ALL and any(o['tool']=='review_documents'for o in used):columns|={'review_status','documents_reviewed'}
+        kept=row if columns is ALL else {k:v for k,v in row.items()if k in columns or k=='patient_id'}
+        if set(kept)<={'patient_id'}:omitted.update(o['result_view']for o in sources);continue
+        evidence.append(kept)
+        provenance.append({'row_digest':digest(kept),'origins':used,**({'projected_from_row_digest':ident}if kept is not row else{})})
+    # A settled field's value is not under review here; carry its exact digest
+    # so the row keeps every column and the settled binding stays checkable.
+    rows=[{k:(v if k in fields or k=='patient_id'else{'settled_field_value_digest':digest(v)})for k,v in row.items()}
+          for row in state['answer_rows']]
+    scoped={**state,'answer_rows':rows,'evidence':evidence,'evidence_provenance':provenance,
+        'native_calculation_contracts':[c for c in state['native_calculation_contracts']if c.get('result_view')in needed],
+        'claim_scope':{'schema':'frontier-claim-scope/1','fields':sorted(fields),
+            'reads':{view:(sorted(columns)if columns is not ALL else'all columns')for view,columns in sorted(needed.items())},
+            'omitted_result_views':sorted(omitted),'complete_native_packet_retained':True,
+            'meaning':'Only the executed inputs the listed unsettled fields read are supplied, by explicit contract lineage; rows without executed-result lineage are supplied whole. Inputs and values of already settled fields remain in the complete native packet (each settled answer cell carries its value digest) and are not evidence here. Judge the listed fields and their consistency with the supplied rows; do not infer anything from an omitted input.'}}
+    return scoped
+
+
 def unresolved_source_packet(packet,checked):
     """Keep all source context, asking the frontier only for unsettled fields.
 
@@ -2211,6 +2284,9 @@ def unresolved_source_packet(packet,checked):
         'supported_claims':supported,'clinical_qualification':False,
         'scope':'These exact fields retain their native or deciding machine authority against this identical full source input. Review remaining claim_manifest entries and joint consistency. Do not infer clinical qualification or new source facts.'}
     state['claim_manifest']=pending
+    if os.environ.get('AGERE_FRONTIER_CLAIM_SCOPE','off')=='on':
+        scoped=claim_scoped_state(state,pending)
+        if scoped is not None:state=scoped
     text=json.dumps(compact_json(state),ensure_ascii=False,separators=(',',':'),default=str)
     return {**packet,'text':text,'bytes':len(text.encode()),'claim_manifest':pending},sorted(resolved)
 

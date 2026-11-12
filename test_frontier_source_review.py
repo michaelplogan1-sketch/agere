@@ -74,6 +74,51 @@ class SourceReview(unittest.TestCase):
         out,sent=run('not_established','off')
         self.assertGreater(len(sent),1)  # today's behavior: in-flight packets are already sent
 
+    def test_claim_scope_candidate_supplies_only_inputs_the_unsettled_fields_read(self):
+        from clinical_core.contracts import digest
+        row=lambda **k:{'patient_id':'A',**k}
+        final=row(referral_json='structured referral',author_json='structured authors',findings='no attendance statement found')
+        evidence=[row(referral_json='structured referral',author_json='structured authors'),          # sql base
+                  row(review_status='needs_review',documents_reviewed=3,source_findings_json='[]',source_clinicians_json='[x]',diagnostic='unused'),
+                  final,row(source_navigation_scope='30 documents unexamined')]
+        views=['base','review','final',None];tools=['query_sql','review_documents','compose_table','plan_evidence_expansion']
+        state={'id':'patient_A','patient_id':'A','final_result_view':'final','answer_rows':[final],'evidence':evidence,
+            'evidence_provenance':[{'row_digest':digest(e),'origins':[{'kind':'executed_native_result','result_view':v,'tool':t}]}for e,v,t in zip(evidence,views,tools)],
+            'native_calculation_contracts':[{'result_view':'base','tool':'query_sql','input':{'sql':'SELECT * FROM referral'}},
+                {'result_view':'review','tool':'review_documents','input':{'questions':'{}'}},
+                {'result_view':'final','tool':'compose_table','input':{'base':'base','keys':['patient_id'],
+                    'joins':[{'result':'review','as':'findings','items_from':'source_findings_json','mode':'collect','on':{'patient_id':'patient_id'}}]}}],
+            'source_contexts':[],'review_scope':[{'questions':{'q':'attendance'}}]}
+        pending=[{'id':'claim_2','field':'findings','path':['answer_rows',0,'findings']}]
+        scoped=B.claim_scoped_state(copy.deepcopy(state),pending)
+        self.assertEqual(scoped['claim_scope']['reads'],{'final':['findings'],'review':['source_findings_json']})
+        self.assertEqual(scoped['claim_scope']['omitted_result_views'],['base'])
+        self.assertEqual(scoped['evidence'],[row(review_status='needs_review',documents_reviewed=3,source_findings_json='[]'),
+            row(findings='no attendance statement found'),row(source_navigation_scope='30 documents unexamined')])
+        self.assertEqual(scoped['answer_rows'],[row(referral_json={'settled_field_value_digest':digest('structured referral')},
+            author_json={'settled_field_value_digest':digest('structured authors')},findings='no attendance statement found')])
+        self.assertEqual([c['result_view']for c in scoped['native_calculation_contracts']],['review','final'])
+        self.assertEqual(scoped['review_scope'],state['review_scope'])
+        self.assertNotIn('structured authors',json.dumps(scoped));self.assertNotIn('unused',json.dumps(scoped))
+        # A field copied from SQL keeps every column of every result that SQL names.
+        chained=copy.deepcopy(state);chained['native_calculation_contracts'][0]['input']['sql']='SELECT * FROM review'
+        sql_scoped=B.claim_scoped_state(chained,[{'id':'claim_0','field':'referral_json','path':['answer_rows',0,'referral_json']}])
+        self.assertEqual(sql_scoped['claim_scope']['reads'],{'base':['referral_json'],'final':['referral_json'],'review':'all columns'})
+        self.assertIn('unused',json.dumps(sql_scoped['evidence']))
+        # Anything not fully explicit leaves the complete packet in place.
+        for change in ({'final_result_view':'unavailable'},{'source_contexts':[{'text':'raw document'}]},{'computed_claims':[{'field':'x'}]}):
+            self.assertIsNone(B.claim_scoped_state({**copy.deepcopy(state),**change},pending))
+        unknown=copy.deepcopy(state);unknown['native_calculation_contracts'][2]['tool']='execute_analysis'
+        self.assertIsNone(B.claim_scoped_state(unknown,pending))
+        # The flag gates the whole behavior and the dispatched manifest stays the unsettled claims.
+        p=packet();checked={'field_review':{}}
+        with patch.object(B,'bound_field_support',return_value=[{'claim_id':p['claim_manifest'][0]['id']}]):
+            with patch.dict(os.environ,{'AGERE_FRONTIER_CLAIM_SCOPE':'off'}),patch.object(B,'claim_scoped_state')as scope:
+                B.unresolved_source_packet(p,checked);scope.assert_not_called()
+            with patch.dict(os.environ,{'AGERE_FRONTIER_CLAIM_SCOPE':'on'}):
+                target,resolved=B.unresolved_source_packet(p,checked)
+        self.assertEqual(resolved,[p['claim_manifest'][0]['id']]);self.assertEqual(target['claim_manifest'],p['claim_manifest'][1:])
+
     def test_deciding_fault_missing_evidence_native_repair_and_partition_do_not_escalate(self):
         base={'id':'patient_A','label':'unknown','decided_by':None}
         changes=[({}, {'label':'contradicted','decided_by':'jev'}),({}, {'label':'supported','decided_by':'jev'}),
