@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-12T03:27:27.847076+00:00",
+  "updated_at": "2026-11-12T03:41:14.139421+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -211,6 +211,13 @@
         "product_commit": "ac6c3c3050e76da11cd87940e64d4bc79097f248",
         "receipt": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
         "status": "committed_and_live_local; preceding_package_retained_for_recovery"
+      },
+      "latest_current_code_recovery": {
+        "receipt": "artifacts/agere-source-obligations-2026-11-11/current-integrated-release-v2/receipt.json",
+        "product_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
+        "archive": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-source-obligations-2026-11-11/current-integrated-release-v2/agere-current-code.tar.gz",
+        "scope": "Same-machine archived code and current configuration. Existing Python, models, warehouse, work and ledger remain external. No standalone customer deployment or model qualification.",
+        "new_provider_calls": 0
       }
     },
     {
@@ -880,55 +887,67 @@
           "path": "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-delivery-receipt.json",
           "sha256": "a9d2e0f78cec5881d44d96fc2aec20b3284a96a74efecff9cdf948764d9f2c54",
           "scope": "Saved interrupted review and internal review-work consumers; independent qualification remains open."
+        },
+        {
+          "path": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
+          "sha256": "a0eaf3458dbfc595f3b29eb26aafcc00ed5e9f0d3f7a75973753e2a3bbfdf443",
+          "scope": "Current integrated code recovery and runtime prompt/definition fidelity; qualification remains open."
         }
       ],
-      "blocker": "Original65-patient answer remains partial/unverified. Its legacy interruption did not record latest field counts, which stay unknown. Real cost/accuracy improvement and all25 semantic acceptance remain unmeasured. Claude account rate-limit reset remains unknown; no probes. Independent source-family/model/clinical qualification, viable outcome labels, full compute/reviewer economics and customer deployment authority remain open. Authenticated rendering is checked as delivered JavaScript; no new authenticated-browser or pixel-quality claim.",
+      "blocker": "G5 remains blocked for independent source-family/model/method/clinical qualification and actual end-to-end accuracy/cost evidence. Original65-patient answer remains partial/unverified; Claude account-limit reset is unknown and no probe was made. Preliminary student runs but has no accepted automatic-decision threshold; diverse independent source-bound reference outcomes are missing. Selected prediction targets and exact program/contract/capacity inputs remain data-dependent; no fabricated fit or definition. Historical fixed25 outcomes are preserved, not restamped as current whole-case passes. The archive references existing Python, models and mutable stores on this machine; customer deployment and full backup are separate. OWASP/HHS remains deferred.",
       "previous_blocker": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim.",
-      "next_action": "G5: Complete the current engineering-versus-qualification disposition in the existing canonical acceptance state, using current-25case-assessment.json and later sealed November11 integration receipts. The ordinary_curriculum_progress Q06 pointer is stale: Q06 already has the retained83-patient temporal repair; Q24 presentation was subsequently delivered in both entry points. Do not rerun those campaigns or unqualified Q19 verifier attempts. Reconcile those existing pointers without altering historical receipts or removing any of the ten areas/all25. Identify a concrete remaining missing consumer from that evidence and implement it if one remains; otherwise explicitly record the remaining qualification/input/service dependencies instead of inventing more components or audits. The mixed native/source routing, exact reuse, interruption persistence and saved-progress consumer are now connected. No provider attempt until actual recovery evidence arrives; do not probe the recorded rate limit. Keep the original65-patient answer partial. Quiet overnight continuation ACTIVE; no routine questions, Git pushes, new services or real care.",
+      "next_action": "G5: The identified current engineering consumers and same-machine recovery artifact are now connected. At the next resume inspect owned receipts and any genuinely new provider-availability or reviewed-source evidence. Do not probe the recorded Claude account rate limit, rerun passed workflows, regenerate this archive, or start another inventory/audit while evidence is unchanged. With actual recovery evidence, continue the saved65-patient investigation ANS-87eb0982baaef39dd759d519 through the current mixed native/documentary routing and exact restored judgments, retaining every partial/attempt and stopping again on an actual limit; then assess its unfinished source/work coverage and all-attempt cost, without replaying the original native cohort. Independent source-bound reviews with diverse outcomes are required before student threshold promotion; leave its preliminary role active. No additional missing consumer was established by this scoped reconciliation; concrete newly observed defects can reopen implementation. All ten areas/all25 and principal/October11baseline remain. Keep quiet continuation active through the authorized overnight period, with no routine notifications, questions, Git pushes or real care.",
       "current_engineering_delivery": {
-        "receipt": "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-delivery-receipt.json",
-        "product_commit": "eb3a848b12541d01502cec06984575e75f90e8da",
-        "scope": "Saved interrupted investigations now show preserved execution steps, recorded supported/unfinished fields when present, and the actual unresolved service dependency in ordinary and authenticated answers and the review workspace. Internal evidence-review work carries the same status without promoting clinical eligibility or machine verification. Later interrupted checks receive distinct immutable snapshots. Legacy source errors remain visible without borrowing old field counts. Older request records without generated IDs now reopen instead of crashing."
+        "receipt": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
+        "product_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
+        "scope": "The current integrated runtime now has a same-machine code-only recovery archive containing routing, typed learning, source navigation, exact reuse and interruption handling. A fresh archived interpreter reopens the unchanged65-patient partial and preserves its service-progress details; the archived authenticated app reopens existing saved work with no analysis replay. A demonstrated packaging defect was repaired: all14question starters now travel as prompt-only runtime configuration instead of depending on development documents. A starter match no longer labels an answer as having an executed definition; that display uses its actual response contract. Stale Q06/Q24/student continuation pointers are reconciled to existing delivery evidence without rerunning cases."
       },
-      "latest_engineering_connection": "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-delivery-receipt.json"
+      "latest_engineering_connection": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json"
     }
   ],
   "checkpoint": {
-    "kind": "saved_interruption_progress_and_review_work",
+    "kind": "current_integrated_recovery_and_case_disposition",
     "gate_id": "G5",
     "current_gate_id": "G5",
     "last_delivered_gate": "G5",
-    "product_commit": "eb3a848b12541d01502cec06984575e75f90e8da",
-    "updated_at": "2026-11-12T03:27:27.847076+00:00",
-    "user_behavior_delta": "Saved interrupted investigations now show preserved execution steps, recorded supported/unfinished fields when present, and the actual unresolved service dependency in ordinary and authenticated answers and the review workspace. Internal evidence-review work carries the same status without promoting clinical eligibility or machine verification. Later interrupted checks receive distinct immutable snapshots. Legacy source errors remain visible without borrowing old field counts. Older request records without generated IDs now reopen instead of crashing.",
+    "product_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
+    "updated_at": "2026-11-12T03:41:14.139421+00:00",
+    "user_behavior_delta": "The current integrated runtime now has a same-machine code-only recovery archive containing routing, typed learning, source navigation, exact reuse and interruption handling. A fresh archived interpreter reopens the unchanged65-patient partial and preserves its service-progress details; the archived authenticated app reopens existing saved work with no analysis replay. A demonstrated packaging defect was repaired: all14question starters now travel as prompt-only runtime configuration instead of depending on development documents. A starter match no longer labels an answer as having an executed definition; that display uses its actual response contract. Stale Q06/Q24/student continuation pointers are reconciled to existing delivery evidence without rerunning cases.",
     "measured_failure_reduction": {
-      "authored_supported_fields_visible": 1,
-      "authored_undecided_fields_visible": 1,
-      "saved_request_without_generated_id_before": "browser render failure",
-      "after": "original65-patient saved answer opens",
-      "saved_execution_steps_in_actual_answer": 46,
-      "original_answer_changed": false,
+      "question_starters_in_first_archive": 5,
+      "question_starters_in_corrected_archive": 14,
+      "both_archived_entry_pages_match_current_source": true,
+      "retained_partial_patient_count": 65,
+      "archived_authenticated_reopen_http": 200,
       "provider_calls": 0,
-      "whole_answer_promoted": false,
-      "actual_cost_improvement_verified": false
+      "analysis_replays": 0,
+      "original_saved_answer_changed": false,
+      "archive_bytes": 6389785,
+      "database_copy_bytes": 0,
+      "model_copy_bytes": 0,
+      "runtime_copy_bytes": 0,
+      "full25_ordinary_acceptance": false,
+      "independent_qualification_established": false
     },
     "evidence": [
-      "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-delivery-receipt.json",
-      "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-first-check.log",
-      "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-fixture-diagnosis.log",
-      "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-connected-check.log",
-      "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-consumer-checks.log",
-      "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-final-check.log",
-      "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-browser-repair-check.log",
-      "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-authenticated-check.log",
-      "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-authenticated-final-check.log",
-      "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-saved-answer-ax.txt",
-      "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-review-ax.txt",
-      "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-runtime.json",
-      "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-final-runtime.json"
+      "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
+      "artifacts/agere-analytical-completion-2026-11-11/current-25case-disposition.json",
+      "artifacts/agere-Q06-current-original-2026-11-07/source-transport-completion.json",
+      "artifacts/agere-output-design-2026-11-11/delivery-receipt.json",
+      "artifacts/agere-output-decision-design-2026-11-11/delivery-receipt.json",
+      "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
+      "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
+      "artifacts/agere-Q19-retained-2026-11-08/verification-role-assessment.json",
+      "artifacts/agere-source-obligations-2026-11-11/current-integrated-release/receipt.json",
+      "artifacts/agere-source-obligations-2026-11-11/current-integrated-release/error.txt",
+      "artifacts/agere-source-obligations-2026-11-11/current-integrated-release/page-difference.json",
+      "artifacts/agere-source-obligations-2026-11-11/current-release-preflight.json",
+      "artifacts/agere-source-obligations-2026-11-11/question-starter-consumer-check.log",
+      "artifacts/agere-source-obligations-2026-11-11/current-integrated-release-v2/receipt.json",
+      "artifacts/agere-source-obligations-2026-11-11/current-integrated-release-v2/live-runtime.json"
     ],
-    "remaining_gap": "Original65-patient answer remains partial/unverified. Its legacy interruption did not record latest field counts, which stay unknown. Real cost/accuracy improvement and all25 semantic acceptance remain unmeasured. Claude account rate-limit reset remains unknown; no probes. Independent source-family/model/clinical qualification, viable outcome labels, full compute/reviewer economics and customer deployment authority remain open. Authenticated rendering is checked as delivered JavaScript; no new authenticated-browser or pixel-quality claim.",
-    "next_action": "G5: Complete the current engineering-versus-qualification disposition in the existing canonical acceptance state, using current-25case-assessment.json and later sealed November11 integration receipts. The ordinary_curriculum_progress Q06 pointer is stale: Q06 already has the retained83-patient temporal repair; Q24 presentation was subsequently delivered in both entry points. Do not rerun those campaigns or unqualified Q19 verifier attempts. Reconcile those existing pointers without altering historical receipts or removing any of the ten areas/all25. Identify a concrete remaining missing consumer from that evidence and implement it if one remains; otherwise explicitly record the remaining qualification/input/service dependencies instead of inventing more components or audits. The mixed native/source routing, exact reuse, interruption persistence and saved-progress consumer are now connected. No provider attempt until actual recovery evidence arrives; do not probe the recorded rate limit. Keep the original65-patient answer partial. Quiet overnight continuation ACTIVE; no routine questions, Git pushes, new services or real care.",
+    "remaining_gap": "G5 remains blocked for independent source-family/model/method/clinical qualification and actual end-to-end accuracy/cost evidence. Original65-patient answer remains partial/unverified; Claude account-limit reset is unknown and no probe was made. Preliminary student runs but has no accepted automatic-decision threshold; diverse independent source-bound reference outcomes are missing. Selected prediction targets and exact program/contract/capacity inputs remain data-dependent; no fabricated fit or definition. Historical fixed25 outcomes are preserved, not restamped as current whole-case passes. The archive references existing Python, models and mutable stores on this machine; customer deployment and full backup are separate. OWASP/HHS remains deferred.",
+    "next_action": "G5: The identified current engineering consumers and same-machine recovery artifact are now connected. At the next resume inspect owned receipts and any genuinely new provider-availability or reviewed-source evidence. Do not probe the recorded Claude account rate limit, rerun passed workflows, regenerate this archive, or start another inventory/audit while evidence is unchanged. With actual recovery evidence, continue the saved65-patient investigation ANS-87eb0982baaef39dd759d519 through the current mixed native/documentary routing and exact restored judgments, retaining every partial/attempt and stopping again on an actual limit; then assess its unfinished source/work coverage and all-attempt cost, without replaying the original native cohort. Independent source-bound reviews with diverse outcomes are required before student threshold promotion; leave its preliminary role active. No additional missing consumer was established by this scoped reconciliation; concrete newly observed defects can reopen implementation. All ten areas/all25 and principal/October11baseline remain. Keep quiet continuation active through the authorized overnight period, with no routine notifications, questions, Git pushes or real care.",
     "last_observation": {
       "status": "failed",
       "started_at": "2026-11-12T00:18:37.057519+00:00",
@@ -6921,20 +6940,95 @@
       "evidence": "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-delivery-receipt.json",
       "reason": "Actual saved answer failed on a legacy missing request ID; repaired. Completed/unfinished checks and service dependencies are now visible without inventing clinical missingness. Current assessment and later delivery receipts supersede old Q06/Q24 pointers; another unchanged campaign would not advance qualification.",
       "scope_impact": "All ten acceptance areas/all25, principal review and October11 baseline retained. No new provider call, clinical authority, full readiness or cost-superiority claim."
+    },
+    {
+      "at": "2026-11-12T03:33:00.217272+00:00",
+      "gate": "G5",
+      "decision": "Complete the identified release-consumer gap after reconciling current case history: archive current integrated source and reopen saved evidence in a fresh archived process.",
+      "reason": "Latest declared recovery archive is a4826b21, preceding combined research, active preliminary student, source navigation, work triage, mixed native fields, exact reuse and interruption persistence/presentation. Current free space68965474304bytes passes unchanged60GBguard; no old one-time exception reused.",
+      "evidence": [
+        "artifacts/agere-output-design-2026-11-11/combined-release-final/receipt.json",
+        "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-delivery-receipt.json"
+      ],
+      "scope_impact": "Existing same-machine packaging requirement; no new capability, copied warehouse/model/runtime, provider campaign, threshold change or whole-release qualification claim."
+    },
+    {
+      "at": "2026-11-12T03:37:18.124355+00:00",
+      "gate": "G5",
+      "decision": "Repair the demonstrated current archive consumer failure before repeating the archive attempt.",
+      "evidence": "artifacts/agere-source-obligations-2026-11-11/current-integrated-release/page-difference-details.json",
+      "reason": "Archived hosted page exposes5starters versus14in checkout: hosted.brand reads docs/agere/gold10/questions.jsonl, outside runtime archive. Its matching prompt is also treated as a typed-definition indicator even without an executed definition. Move only already displayed prompt IDs/categories/text into versioned runtime config; no development definitions/answers or protected material packaged. Derive displayed definition status from actual response contract only.",
+      "scope_impact": "Existing UI/portable release consumer; no new examples, question handlers, clinical semantics or acceptance areas."
+    },
+    {
+      "at": "2026-11-12T03:41:14.139421+00:00",
+      "gate": "G5",
+      "decision": "Seal current integrated recovery and reconcile stale case pointers. Remaining G5 evidence dependencies remain explicit; no additional missing consumer identified in this scoped review.",
+      "evidence": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
+      "preceding_curriculum_progress": {
+        "total_fixed_cases": 25,
+        "standalone_question_cases": 21,
+        "connected_cases": 4,
+        "original_frozen_pairs_scored": {
+          "Q01": "failed_both",
+          "Q02": "failed_both",
+          "Q04": "failed_both",
+          "Q05": "frontier_failed_partial_stack_cancelled_misroute",
+          "Q06": "frontier_failed_partial_stack_cancelled_incapable_scope_order_deviation",
+          "Q07": "both_partial_failed_preserved_native_scope_repair_separate",
+          "Q08": "both_partial_failed_native_chain_followthrough_separate",
+          "Q09": "stack_passed_supported_unknown_frontier_failed_schema_count",
+          "Q10": "stack_literal_quantities_pass_source_semantics_unassessed_frontier_failed_false_zero",
+          "Q11": "both_failed_original_stack_native_cells_reconciled_compiler_recovery_separate",
+          "Q12": "both_failed_signed_history_development_and_stack_prose_compiler",
+          "Q13": "both_failed_account_conservation_stack_native_table_reconciles_verifier_fanout",
+          "Q15": "stack_failed_annual_quantity_frontier_unassessed_due_evaluator_source_policy_conflict",
+          "Q16": "both_incomplete_baseline_observations_true_missing_service_times_retained",
+          "Q17": "both_partial_failed_eligible_exposure_and_unfinished_method_reconciliation"
+        },
+        "separate_pilot": "Q03, not pooled/repeated",
+        "authored_generic_core": "Q25, scoped8engineering checks passed",
+        "next_case": "Q06retained scope/source/prose completion; no full repeat",
+        "clinical_qualification": false,
+        "completion_percent": null,
+        "connected_workflows": {
+          "Q22": "8scoped engineering checks passed on copied-source overlay,0providers; clinical qualification false",
+          "Q25": "8scoped generic core engineering checks previously passed"
+        },
+        "Q23_dependency": "Exact parent diabetes/BP definitions absent from installed registries; no invented nomination delta",
+        "latest_targeted_qualification": "Q16/Q17nativeformatrepair0providers/0.55s;positivepunctuationandcalendaraddressesfixed,169checks; substantiveanswersremainfailed/unqualified.",
+        "interrupted_case": "Q14stack11attemptspartial/1pendingunpriced;frontierunstarted",
+        "Q18_status": "Original admission failure and later independently scored failed provider confirmation both retained",
+        "current_assessment": "artifacts/agere-core-completion-2026-11-09/current-25case-assessment.json",
+        "current_assessment_status": "current_scoped_engineering_candidate_packaged_full25_ordinary_qualification_unestablished",
+        "all25_cases_reconciled": true,
+        "all10_areas_retained": true,
+        "Q19_status": "Original target mismatch failed; predictor qualification remains separate dependency",
+        "Q20_status": "Current hard shape/native premises/20scopedfollowups verified; publicpartial/unknowncoverage retained, no newproviders",
+        "Q21_status": "Full source/native/save processing demonstrated; coverage/support undecided without located fault; no unchanged repeat",
+        "Q24_status": "Current native brief fidelity passed4115patients/6326rows/21checks; visual QA unavailable, no full clinical/parent acceptance",
+        "Q12_status": "Full signed-history observed arithmetic and current native persistence demonstrated; publicpartial/unverified retained; current whole-case acceptance not inferred.",
+        "Q13_status": "Current complete account output/save/followup and native browser view qualified;gzip reduced63.64%withallrows;not a newly frozen whole-release pass",
+        "Q02_status": "Original question plus localized source-definition/producer-draft completion verified; final source/coverage and current app save/reopen exact.18rows/16payergroups/2exceptions; no newly frozen ordinary-release pass inferred.",
+        "Q04_status": "Actual source precision access and23row native/current app fixed; coverage undecided/publicpartial retained. No repeat until new evidence, no clinicaltaxonomy or physicalreceipt qualification.",
+        "Q05_status": "Current37patientanswer/107machinefindings exact. Dependency transport qualified:three prior overflows now supported,6attempts/9.468s/$0.01531411,0errors; other prior source/coverage uncertainty remains. No full original-case acceptance inherited.",
+        "Q06_status": "Current ordinary request returned81rowpartial after36.7min/$76.424399468;9storage failures and premature Opus escalation diagnosed. Native snapshot/stop repair qualified0providers; cohort83-vs81 diagnostic and source/prose recovery still require correction. No whole-case acceptance."
+      },
+      "scope_impact": "Allten/all25 retained without restamping dated cases; no model promotion, provider probe, new comparison campaign or customer-readiness claim."
     }
   ],
   "unsealed_work": {
-    "status": "no_active_run_qualification_and_provider_dependencies_remain",
+    "status": "no_active_run_remaining_qualification_and_availability_dependencies",
     "source_frozen": false,
     "active_jobs": [],
-    "last_completed_receipt": "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-delivery-receipt.json",
+    "last_completed_receipt": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
     "paths_outside_backend_seal": [
       "AGERE_STORAGE_PLAN.md",
       "docs/agere/reviews/2026-11-10-audit-response.md"
     ],
-    "remaining_verification": "Original65-patient answer remains partial/unverified. Its legacy interruption did not record latest field counts, which stay unknown. Real cost/accuracy improvement and all25 semantic acceptance remain unmeasured. Claude account rate-limit reset remains unknown; no probes. Independent source-family/model/clinical qualification, viable outcome labels, full compute/reviewer economics and customer deployment authority remain open. Authenticated rendering is checked as delivered JavaScript; no new authenticated-browser or pixel-quality claim.",
+    "remaining_verification": "G5 remains blocked for independent source-family/model/method/clinical qualification and actual end-to-end accuracy/cost evidence. Original65-patient answer remains partial/unverified; Claude account-limit reset is unknown and no probe was made. Preliminary student runs but has no accepted automatic-decision threshold; diverse independent source-bound reference outcomes are missing. Selected prediction targets and exact program/contract/capacity inputs remain data-dependent; no fabricated fit or definition. Historical fixed25 outcomes are preserved, not restamped as current whole-case passes. The archive references existing Python, models and mutable stores on this machine; customer deployment and full backup are separate. OWASP/HHS remains deferred.",
     "separate_presentation_commit_preserved": "9efe9b37d1ccd36cd0b8cb2197d12d9b8c0b5bae",
-    "candidate_commit": "eb3a848b12541d01502cec06984575e75f90e8da",
+    "candidate_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
     "admission_receipt": "artifacts/agere-source-obligations-2026-11-11/bound-question-continuation/admission-receipt.json",
     "last_attempt": "artifacts/agere-source-obligations-2026-11-11/bound-question-continuation/run-receipt.json",
     "latest_saved_partial": "ANS-87eb0982baaef39dd759d519"
@@ -6973,7 +7067,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G5: Complete the current engineering-versus-qualification disposition in the existing canonical acceptance state, using current-25case-assessment.json and later sealed November11 integration receipts. The ordinary_curriculum_progress Q06 pointer is stale: Q06 already has the retained83-patient temporal repair; Q24 presentation was subsequently delivered in both entry points. Do not rerun those campaigns or unqualified Q19 verifier attempts. Reconcile those existing pointers without altering historical receipts or removing any of the ten areas/all25. Identify a concrete remaining missing consumer from that evidence and implement it if one remains; otherwise explicitly record the remaining qualification/input/service dependencies instead of inventing more components or audits. The mixed native/source routing, exact reuse, interruption persistence and saved-progress consumer are now connected. No provider attempt until actual recovery evidence arrives; do not probe the recorded rate limit. Keep the original65-patient answer partial. Quiet overnight continuation ACTIVE; no routine questions, Git pushes, new services or real care.",
+  "next_action": "G5: The identified current engineering consumers and same-machine recovery artifact are now connected. At the next resume inspect owned receipts and any genuinely new provider-availability or reviewed-source evidence. Do not probe the recorded Claude account rate limit, rerun passed workflows, regenerate this archive, or start another inventory/audit while evidence is unchanged. With actual recovery evidence, continue the saved65-patient investigation ANS-87eb0982baaef39dd759d519 through the current mixed native/documentary routing and exact restored judgments, retaining every partial/attempt and stopping again on an actual limit; then assess its unfinished source/work coverage and all-attempt cost, without replaying the original native cohort. Independent source-bound reviews with diverse outcomes are required before student threshold promotion; leave its preliminary role active. No additional missing consumer was established by this scoped reconciliation; concrete newly observed defects can reopen implementation. All ten areas/all25 and principal/October11baseline remain. Keep quiet continuation active through the authorized overnight period, with no routine notifications, questions, Git pushes or real care.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -6982,7 +7076,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -7062,8 +7156,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 99018,
-  "owned_server_session": 68705,
+  "owned_server_pid": 99468,
+  "owned_server_session": 87481,
   "last_run_observation": {
     "schema": "agere-continuation-observation/1",
     "at": "2026-11-11T22:04:24.808765+00:00",
@@ -7133,7 +7227,7 @@
     },
     "separate_pilot": "Q03, not pooled/repeated",
     "authored_generic_core": "Q25, scoped8engineering checks passed",
-    "next_case": "Q06retained scope/source/prose completion; no full repeat",
+    "next_case": "No unchanged case queued; unresolved G5 evidence/service dependencies govern continuation.",
     "clinical_qualification": false,
     "completion_percent": null,
     "connected_workflows": {
@@ -7141,23 +7235,53 @@
       "Q25": "8scoped generic core engineering checks previously passed"
     },
     "Q23_dependency": "Exact parent diabetes/BP definitions absent from installed registries; no invented nomination delta",
-    "latest_targeted_qualification": "Q16/Q17nativeformatrepair0providers/0.55s;positivepunctuationandcalendaraddressesfixed,169checks; substantiveanswersremainfailed/unqualified.",
-    "interrupted_case": "Q14stack11attemptspartial/1pendingunpriced;frontierunstarted",
-    "Q18_status": "Original admission failure and later independently scored failed provider confirmation both retained",
-    "current_assessment": "artifacts/agere-core-completion-2026-11-09/current-25case-assessment.json",
-    "current_assessment_status": "current_scoped_engineering_candidate_packaged_full25_ordinary_qualification_unestablished",
+    "latest_targeted_qualification": "Student preliminary-reading activation is delivered;5/8machine-label agreement does not establish an automatic acceptance threshold. Source-family/model/clinical qualification remains open.",
+    "interrupted_case": "Current source investigation ANS-87eb0982baaef39dd759d519 partial after recorded account rate limit; earlier Q14 interruption remains historical evidence.",
+    "Q18_status": "Retained243-account follow-up native reconstruction and current save/reopen delivered; index/censoring unknowns remain, no fitted risk or ordinary full-case qualification.",
+    "current_assessment": "artifacts/agere-analytical-completion-2026-11-11/current-25case-disposition.json",
+    "current_assessment_status": "dated_fixed25_history_with_current_scoped_delivery_supplements_no_whole_case_restamp",
     "all25_cases_reconciled": true,
     "all10_areas_retained": true,
-    "Q19_status": "Original target mismatch failed; predictor qualification remains separate dependency",
+    "Q19_status": "Current native output and fallback retained; measured verifier qualification failed/unsettled. No unchanged repeat or reduced threshold; predictor qualification remains separate.",
     "Q20_status": "Current hard shape/native premises/20scopedfollowups verified; publicpartial/unknowncoverage retained, no newproviders",
     "Q21_status": "Full source/native/save processing demonstrated; coverage/support undecided without located fault; no unchanged repeat",
-    "Q24_status": "Current native brief fidelity passed4115patients/6326rows/21checks; visual QA unavailable, no full clinical/parent acceptance",
+    "Q24_status": "Original4115patient/6326row native brief fidelity remains. Later ordinary/authenticated presentation and desktop/mobile evidence are delivered and integrated; current archive now reproduces both entry pages. Original full-Q24/parent clinical acceptance is not inferred.",
     "Q12_status": "Full signed-history observed arithmetic and current native persistence demonstrated; publicpartial/unverified retained; current whole-case acceptance not inferred.",
     "Q13_status": "Current complete account output/save/followup and native browser view qualified;gzip reduced63.64%withallrows;not a newly frozen whole-release pass",
     "Q02_status": "Original question plus localized source-definition/producer-draft completion verified; final source/coverage and current app save/reopen exact.18rows/16payergroups/2exceptions; no newly frozen ordinary-release pass inferred.",
     "Q04_status": "Actual source precision access and23row native/current app fixed; coverage undecided/publicpartial retained. No repeat until new evidence, no clinicaltaxonomy or physicalreceipt qualification.",
     "Q05_status": "Current37patientanswer/107machinefindings exact. Dependency transport qualified:three prior overflows now supported,6attempts/9.468s/$0.01531411,0errors; other prior source/coverage uncertainty remains. No full original-case acceptance inherited.",
-    "Q06_status": "Current ordinary request returned81rowpartial after36.7min/$76.424399468;9storage failures and premature Opus escalation diagnosed. Native snapshot/stop repair qualified0providers; cohort83-vs81 diagnostic and source/prose recovery still require correction. No whole-case acceptance."
+    "Q06_status": "83patients including subsequent deaths retained;84sourcepackets checked with80deciding supported and4undecided, no transport failure. Current save/reopen/native/browser evidence retained. Publicpartial/unverified; no whole-case or clinical qualification.",
+    "latest_delivery_supplements": [
+      {
+        "path": "artifacts/agere-Q06-current-original-2026-11-07/source-transport-completion.json",
+        "sha256": "8576ab1344eed27fc313fe14056cf5794999f1b51d2bb62870dca2c44f398d3a"
+      },
+      {
+        "path": "artifacts/agere-output-design-2026-11-11/delivery-receipt.json",
+        "sha256": "b8381f5fc80161e34cc86c4476d5e7ccdd86462170b1a1374d8876dd2aec1198"
+      },
+      {
+        "path": "artifacts/agere-output-decision-design-2026-11-11/delivery-receipt.json",
+        "sha256": "d1e910590fba1e5f121a1524bf0cad3ec65f942531dfd3a3379d512b06aca51e"
+      },
+      {
+        "path": "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
+        "sha256": "dfbd1648250dc78b7abab7c26fad7f351fe35612a8d9f98ab7c6b997c8d3f511"
+      },
+      {
+        "path": "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
+        "sha256": "0d426f9cc89b633917a85b58dac13dceec9281632ae5292727b51e68c9612947"
+      },
+      {
+        "path": "artifacts/agere-Q19-retained-2026-11-08/verification-role-assessment.json",
+        "sha256": "7ae75b54dd40e847e063f41a079b9ef8b0f0e06c1c1acf95ad9e25a40539720e"
+      },
+      {
+        "path": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
+        "sha256": "a0eaf3458dbfc595f3b29eb26aafcc00ed5e9f0d3f7a75973753e2a3bbfdf443"
+      }
+    ]
   },
   "research_lane": {
     "thread_id": "01a1b0c3-39c3-7993-95f5-8404d6fec61e",
@@ -7323,7 +7447,7 @@
     ]
   },
   "resumed_at": "2026-11-09T19:10:06.211706+00:00",
-  "latest_receipt": "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-delivery-receipt.json",
+  "latest_receipt": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
   "code_only_storage_exception": {
     "authorization": "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
     "scope": "One code-only archive and fresh-code rehearsal from the linked proposal; existing source/model/Python/work/ledger stores referenced, never copied. General60GBguard unchanged.",
@@ -7427,7 +7551,7 @@
     "evidence": "artifacts/agere-source-obligations-2026-11-11/bound-question-continuation/run-receipt.json",
     "latest_saved_partial": "ANS-87eb0982baaef39dd759d519"
   },
-  "latest_continuity_receipt": "artifacts/agere-source-obligations-2026-11-11/interrupted-workspace-delivery-receipt.json",
+  "latest_continuity_receipt": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
   "usage_diagnosis": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/usage-diagnosis.json",
   "continuation_session": "Quiet overnight continuation ACTIVE by latest user authorization; no Git pushes."
 }
