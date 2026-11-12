@@ -682,7 +682,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-12T03:59:22.258075+00:00",
+  "updated_at": "2026-11-12T04:29:26.608671+00:00",
   "last_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -863,7 +863,7 @@
     "approved": true
   },
   "continuation_observation": {
-    "at": "2026-11-12T03:59:22.258075+00:00",
+    "at": "2026-11-12T04:29:26.608671+00:00",
     "gate": "G5",
     "status": "unchanged_recorded_dependencies",
     "product_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
@@ -884,7 +884,12 @@
     "provider_probes": 0,
     "product_edits": 0,
     "product_tests": 0,
-    "next_action": "G5: The identified current engineering consumers and same-machine recovery artifact are now connected. At the next resume inspect owned receipts and any genuinely new provider-availability or reviewed-source evidence. Do not probe the recorded Claude account rate limit, rerun passed workflows, regenerate this archive, or start another inventory/audit while evidence is unchanged. With actual recovery evidence, continue the saved65-patient investigation ANS-87eb0982baaef39dd759d519 through the current mixed native/documentary routing and exact restored judgments, retaining every partial/attempt and stopping again on an actual limit; then assess its unfinished source/work coverage and all-attempt cost, without replaying the original native cohort. Independent source-bound reviews with diverse outcomes are required before student threshold promotion; leave its preliminary role active. No additional missing consumer was established by this scoped reconciliation; concrete newly observed defects can reopen implementation. All ten areas/all25 and principal/October11baseline remain. Keep quiet continuation active through the authorized overnight period, with no routine notifications, questions, Git pushes or real care."
+    "next_action": "G5: The identified current engineering consumers and same-machine recovery artifact are now connected. At the next resume inspect owned receipts and any genuinely new provider-availability or reviewed-source evidence. Do not probe the recorded Claude account rate limit, rerun passed workflows, regenerate this archive, or start another inventory/audit while evidence is unchanged. With actual recovery evidence, continue the saved65-patient investigation ANS-87eb0982baaef39dd759d519 through the current mixed native/documentary routing and exact restored judgments, retaining every partial/attempt and stopping again on an actual limit; then assess its unfinished source/work coverage and all-attempt cost, without replaying the original native cohort. Independent source-bound reviews with diverse outcomes are required before student threshold promotion; leave its preliminary role active. No additional missing consumer was established by this scoped reconciliation; concrete newly observed defects can reopen implementation. All ten areas/all25 and principal/October11baseline remain. Keep quiet continuation active through the authorized overnight period, with no routine notifications, questions, Git pushes or real care.",
+    "receipts_observed": {
+      "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json": "local_engineering_delivery_qualification_dependencies_remain",
+      "artifacts/agere-source-obligations-2026-11-11/bound-question-continuation/run-receipt.json": "failed",
+      "artifacts/agere-source-obligations-2026-11-11/current-integrated-release-v2/receipt.json": "passed"
+    }
   },
   "storage_maintenance": {
     "at": "2026-11-11T11:22:13.795383+00:00",
