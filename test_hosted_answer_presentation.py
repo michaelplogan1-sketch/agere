@@ -62,6 +62,21 @@ const grouped={table:[{keys:['North practice'],value:10}]};
 const shown=answerRows(grouped,{});assert.equal(shown[0].group,'North practice');
 assert.match(ResultView.table(shown,{table:shown}),/North practice/);
 assert.deepEqual(grouped,{table:[{keys:['North practice'],value:10}]});
+ME={role:'viewer'};
+const interrupted={...d,reopened:true,action_context:{id:'ANS-authored'},saved_context:{
+ invalidated:true,verification_progress:{schema:'saved-verification-progress/1',status:'interrupted',
+ saved_execution_steps:1,recorded_fields:{supported:1,unresolved:1,faults:0,unchecked:0,native_supported:0},
+ shared_program_reviews:0,unchecked_packet_ids:[],cost_known:false,known_cost_usd:.03,
+ service_dependencies:[{kind:'rate_limit',error:'Authored limit <script>'}]}}};
+const interruptedBefore=JSON.stringify(interrupted),paused=showAnswer(interrupted,'Saved question',0);
+assert.match(paused,/Saved evidence needs review/);
+assert.match(paused,/Review interrupted. Your progress is saved/);
+assert.match(paused,/Fields with recorded support/);
+assert.match(paused,/Fields still undecided/);
+assert.match(paused,/does not establish missing clinical evidence/);
+assert.match(paused,/API-equivalent subtotal: \$0.0300/);
+assert.match(paused,/Authored limit &lt;script&gt;/);
+assert.equal(JSON.stringify(interrupted),interruptedBefore);
 console.log(JSON.stringify({records:237,late_column_retained:true,unknown_zero_distinct:true,original_answer_unchanged:true}));
 '''
         result = subprocess.run([node, '-e', probe], text=True, capture_output=True)

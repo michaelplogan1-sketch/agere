@@ -189,10 +189,11 @@ def app():
         'const isNum=v=>typeof v==="number"&&Number.isFinite(v);'
         'const cols=rows=>[...new Set(rows.flatMap(r=>Object.keys(r)))];\n'
         + (assets/'answer_presentation.js').read_text()
-        + '\nreturn {summary:answerSummary,table:presentationTable,limits:resultLimitations,sources:sourceDetails,columns:cols};})();\n')
+        + '\n' + (assets/'verification_progress.js').read_text()
+        + '\nreturn {summary:answerSummary,table:presentationTable,limits:resultLimitations,sources:sourceDetails,columns:cols,progress:verificationProgressHTML};})();\n')
     page = _page(f'{NAME}', body, boot + presentation + APP_JS + '\nloadMe().then(route).catch(e=>{if(e.status!==401)document.getElementById("view").innerHTML=\'<p class="err wrap">\'+esc(e.message)+\'</p>\'});')
     return page.replace('<html lang="en">', '<html lang="en" data-theme="light">').replace('</head>',
-        '<style>' + (assets/'answer_presentation.css').read_text() + HOSTED_ANSWER_CSS + '</style></head>')
+        '<style>' + (assets/'answer_presentation.css').read_text() + (assets/'verification_progress.css').read_text() + HOSTED_ANSWER_CSS + '</style></head>')
 
 
 HOSTED_ANSWER_CSS = r'''
@@ -330,7 +331,7 @@ function bindAnswerRecords(d){const a=d.answer,rows=answerRows(a,d),box=$('hoste
 }
 function answerState(d){const c=d.saved_context;
  const warning=d.context_error||(c&&(c.stale||c.invalidated||c.source_review_required||((c.source_disposition||{}).status==='unavailable'))?'Saved evidence needs review. This is the original answer; data or verification has changed.':'');
- return (warning?`<div class="notice err">${esc(warning)}</div>`:'')+(d.action_context?`<p class="small">Saved answer <span class="mono">${esc(d.action_context.id)}</span> <button class="chip" data-reopen="${esc(d.action_context.id)}">Reopen evidence</button></p>`:'')+
+ return (warning?`<div class="notice err">${esc(warning)}</div>`:'')+ResultView.progress(c?.verification_progress||d.verification_progress)+(d.action_context?`<p class="small">Saved answer <span class="mono">${esc(d.action_context.id)}</span> <button class="chip" data-reopen="${esc(d.action_context.id)}">Reopen evidence</button></p>`:'')+
  (c?`<details><summary>Saved scope and source status</summary><pre>${esc(JSON.stringify({question:c.original_question,source:c.source,stale:c.stale,invalidated:c.invalidated,source_disposition:c.source_disposition,dependency_validation:c.dependency_validation,input_patient_ids:c.input_patient_ids,population_scopes:c.population_scopes},null,2))}</pre></details>`:'')}
 function rememberConversation(d){if(d.conversation)STATE.conversationId=d.conversation.id;if(d.action_context)STATE.answerContext=d.action_context.id;else if(d.clarification)STATE.answerContext=null}
 function clarificationView(c){return `<div class="notice"><p>${esc(c.reason)}</p><p class="small">Your choice clarifies the request; source evidence remains unchanged.</p>${c.options.map(o=>`<button class="chip" data-intent-option="${esc(o.id)}" title="${esc(o.meaning)}">${esc(o.label)}</button>`).join('')}<label for="intentText">Clarify your intent</label><input id="intentText" placeholder="Or describe what you mean"><button id="sendIntent" class="chip">Continue this analysis</button><p id="intentMessage" class="small"></p></div>`}
