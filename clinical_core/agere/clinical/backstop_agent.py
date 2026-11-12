@@ -3177,6 +3177,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         from .assertion_source_review import qualified_observations
         assertion_observations=qualified_observations(tools,answer,calls,native_audit)
         packets=support_packets(request,answer,calls,getattr(tools,'document_reviews',[]),as_of,
+                                original_question=question,
                                 source_documents=getattr(tools,'read',{}),prior_review_reference=prior_reference,
                                 native_audit=native_audit,source_records=getattr(tools,'source_records',{}),
                                 assertion_observations=assertion_observations,native_interpretation=native_interpretation,
@@ -3847,7 +3848,7 @@ def navigation_support_rows(result,question,as_of):
     except (KeyError,TypeError,ValueError):return None
 
 
-def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None,native_audit=None,source_records=None,assertion_observations=None,native_interpretation=None,native_program=None):
+def support_packets(question,answer,calls,document_reviews,as_of,*,original_question=None,source_documents=None,prior_review_reference=None,native_audit=None,source_records=None,assertion_observations=None,native_interpretation=None,native_program=None):
     """Final clinical claims, deduplicated and grouped by patient dependency.
 
     Raw operational receipts remain intact. SQL elapsed time is excluded only
@@ -3974,7 +3975,9 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         native.append({'tool_index':i,'tool':c.get('name'),'result_view':view,'input_digest':digest(c.get('input')),'result_digest':timing['current'][i]})
         legacy_native.append({**native[-1],'result_digest':timing['legacy'][i]})
         if c.get('name')=='plan_evidence_expansion':
-            navigation=navigation_support_rows(observed,question,as_of)
+            # Reviewer instructions enrich `question`; immutable navigation is
+            # bound to the original user question, supplied by review_final.
+            navigation=navigation_support_rows(observed,question if original_question is None else original_question,as_of)
             if navigation is not None:
                 native[-1]['operational_inputs']={'authority':'native_source_selection_bookkeeping',
                     'complete_receipt_digest':digest(observed),'patients':len(navigation),

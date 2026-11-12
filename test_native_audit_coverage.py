@@ -238,10 +238,13 @@ class NativeAuditCoverage(unittest.TestCase):
         with patch.object(G,'ready',return_value=True),\
              patch.object(G,'check',return_value={'label':'answers_fully','decided_by':'authored-routing','calls':0,'cost_usd':0.}),\
              patch.object(G,'check_pending_work',return_value={'targets':[],'calls':0,'cost_usd':0.}),\
+             patch.object(B,'support_packets',wraps=B.support_packets) as build_packets,\
              patch.object(B,'check_support_packets',side_effect=support):
             review=B.review_final(self.fixture.stack,'Interpret source-bound assertions',self.answer,
                 self.tools.native_calls,self.tools,ledger=None,as_of=AS_OF)
         self.assertGreater(len(seen),1);self.assertTrue(self.tools.source_records)
+        self.assertEqual(build_packets.call_args.kwargs['original_question'],'Interpret source-bound assertions')
+        self.assertNotEqual(build_packets.call_args.args[0],build_packets.call_args.kwargs['original_question'])
         self.assertNotEqual(review['status'],'accepted')
 
     def test_audit_support_contract_rejects_stale_forged_or_interpreted_tables(self):

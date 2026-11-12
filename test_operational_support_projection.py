@@ -67,6 +67,14 @@ class OperationalSupport(unittest.TestCase):
         self.assertFalse(scope['absence_established']);self.assertFalse(scope['clinical_qualified'])
         self.assertIsNone(B.navigation_support_rows({**nav,'question':'changed'},question,'2030-05-27'))
         self.assertIsNone(B.navigation_support_rows(nav,question,'2029-01-01'))
+        enriched=question+'\nGoverned review definitions and request context'
+        live=B.support_packets(enriched,self.answer,calls,[],'2030-05-27',original_question=question)
+        live_state=uncompact_json(json.loads(live[1]['text']))
+        self.assertEqual(live_state['question'],enriched)
+        self.assertEqual(live_state['evidence'],state['evidence'])
+        self.assertFalse(live_state['shared_evidence'])
+        wrong=B.support_packets(enriched,self.answer,calls,[],'2030-05-27',original_question='Different request')
+        self.assertTrue(uncompact_json(json.loads(wrong[1]['text']))['shared_evidence'])
 
     def test_unmarked_other_and_mixed_authorities_are_retained(self):
         for markers in [None,[],[{'authority':'missing_source'}],OP+[{'authority':'missing_source'}]]:
