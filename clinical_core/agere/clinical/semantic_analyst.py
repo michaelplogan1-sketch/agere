@@ -680,10 +680,29 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 'or the required answer/repair contract. Preserve useful draft work; all existing review checks still apply.'}
         result.setdefault('protocol_repair_responses', []).append(copy.deepcopy(pending_protocol_response))
         if earlier:pending_protocol_response['earlier_rejected_responses']=earlier
+    def retain_review_failure(exc,candidate):
+        """A reviewer interruption cannot erase completed checks or native work."""
+        import copy
+        partial=getattr(exc,'agere_partial_answer_review',None)
+        if isinstance(partial,dict):
+            result.setdefault('answer_reviews',[]).append(copy.deepcopy(partial))
+        # Keep the proposal explicitly unaccepted, alongside the prior complete
+        # answer. Source-phase receipts establish that this proposal compiled.
+        if isinstance(candidate,dict):
+            result['interrupted_review_draft']=copy.deepcopy(candidate)
+            retained=(candidate if isinstance(partial,dict) and (partial.get('evidence_coverage') or partial.get('compiled_draft_retained'))
+                else last_complete_candidate or initial_answer or result.get('answer'))
+            if isinstance(retained,dict):
+                result['answer']={**copy.deepcopy(retained),'status':'partial','verification':'unverified',
+                    'actionable_cohort':False}
+        result.update(error=type(exc).__name__+': '+str(exc),review_stopped='review_interrupted')
+        return result
+
     if initial_answer is not None and review is not None:
         import copy
         candidate=copy.deepcopy(initial_answer)
-        assessment=review(candidate,result['tool_calls'])
+        try:assessment=review(candidate,result['tool_calls'])
+        except Exception as exc:return retain_review_failure(exc,candidate)
         state_feedback=assessment;state_candidate=candidate
         if assessment.get('repair_kind')!='deterministic_compiler':last_complete_candidate=copy.deepcopy(candidate)
         result.setdefault('answer_reviews',[]).append(assessment)
@@ -1080,7 +1099,8 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         'rejected_fields':binding_rejections,
                         'complete_review_required':True})
                 if review is not None:
-                    assessment = review(candidate, result['tool_calls'])
+                    try:assessment = review(candidate, result['tool_calls'])
+                    except Exception as exc:return retain_review_failure(exc,candidate)
                     from .execution_state import continue_source_prose_repair
                     assessment=continue_source_prose_repair(state_candidate,state_feedback,candidate,assessment)
                     state_feedback=assessment;state_candidate=candidate

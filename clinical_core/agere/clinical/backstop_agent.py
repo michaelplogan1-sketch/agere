@@ -3472,6 +3472,24 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             targeted=source_prose_repair(answer,support,packets,coverage)
             if targeted:assessment['prose_repair']=targeted
     except Exception as exc:  # a reviewer outage does not fabricate a successful check or erase the observed evidence
+        partial=getattr(exc,'agere_partial_source_review',None)
+        if isinstance(partial,dict):
+            assessment['support']=partial
+            n,usd=gate.cost(partial)
+            frontier_steps=[s for s in partial.get('steps',[])if s.get('kind')=='frontier_source_review']
+            assessment['calls']+=n+sum(s.get('calls',0)for s in frontier_steps)
+            if assessment.get('cost_usd')is not None:
+                assessment['cost_usd']+=usd+sum(s.get('cost_usd')or 0 for s in frontier_steps)
+        if partial is not None or getattr(exc,'kind',None)is not None:
+            assessment.update(status='unavailable',cost_known=False,compiled_draft_retained=True,
+                known_cost_usd=assessment.get('cost_usd'),cost_usd=None,calls_known=False,
+                review_stop_reason='source_review_interrupted',retry_disposition='retain_partial_until_provider_recovery')
+        if getattr(tools,'program_field_reviews',None) and 'shared_program_reviews'not in assessment:
+            assessment['shared_program_reviews']=list(tools.program_field_reviews.values())
+        assessment['reason']=f'{type(exc).__name__}: {exc}'[:300]
+        if partial is not None or assessment.get('shared_program_reviews') or getattr(exc,'kind',None)is not None:
+            import copy
+            exc.agere_partial_answer_review=copy.deepcopy(assessment)
         if getattr(exc,'kind',None)=='rate_limit':raise
         assessment['reason'] = f'{type(exc).__name__}: {exc}'[:300]
     assessment['feedback'] = ' '.join(feedback) or None
@@ -5198,23 +5216,42 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         steps.extend(result.get('steps')or[])
         return checked,steps
     def check(packet):
-        checked,steps=typed_check(packet)
-        checked,review=resolve_source_abstention(packet,checked,frontier_decider,ledger=worker_ledger)
+        checked={k:packet[k]for k in ('id','parent_packet_id')if k in packet};steps=[]
+        from ...contracts import digest
+        try:
+            checked,steps=typed_check(packet)
+            checked,review=resolve_source_abstention(packet,checked,frontier_decider,ledger=worker_ledger)
+        except Exception as exc:
+            localized=getattr(exc,'agere_partial_field_review',None)
+            if isinstance(localized,dict):
+                checked.update(field_review=localized['field_review'],claim_feedback=localized['feedback'])
+                steps.extend(localized['steps'])
+            checked.update(label='unknown',decided_by=None,status='interrupted',packet_digest=digest(packet['text']),
+                reason=f'{type(exc).__name__}: {exc}'[:300])
+            exc.agere_source_packet_review=(checked,steps)
+            raise
         if review is not None:
             # Count actual transport attempts separately; one logical review
             # may be cached, unavailable, or have multiple recorded attempts.
             steps.append({'kind':'frontier_source_review','packet_id':packet['id'],
                 'status':review['status'],'calls':review.get('calls',0),'cost_usd':review.get('cost_usd'),
                 'authority':'frontier_machine_judgment'})
-        from ...contracts import digest
         checked['packet_digest']=digest(packet['text'])
         return checked,steps
     def fault(result):
         return result.get('label')in ('contradicted','not_established')and bool(result.get('decided_by'))
-    observed={};blocked=set();stopped=False
+    observed={};blocked=set();stopped=False;interruptions=[];first_error=None
     def accept(index,result):
         nonlocal stopped
         observed[index]=result
+        if prior_field_reviews is not None:
+            from ...contracts import digest
+            packet=scheduled[index];checked=result[0];key=digest(packet['text'])
+            if fault(checked):prior_field_reviews.pop(key,None)
+            else:
+                for review in (checked.get('field_review'),(checked.get('typed_review')or{}).get('field_review')):
+                    if bound_field_support(packet,review):
+                        prior_field_reviews[key]=review;break
         if fault(result[0]):
             family=source_fault_family(scheduled[index],result[0],by_id)if index else None
             if family:blocked.add(family);result[0]['blocked_family_id']=family
@@ -5222,10 +5259,24 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
     def eligible(index):
         family=source_packet_family(scheduled[index],by_id)
         return not stopped and family not in blocked and(not blocked or family is not None)
-    if scheduled:accept(0,check(scheduled[0]))
+    def interrupted(index,exc):
+        nonlocal stopped,first_error
+        stopped=True
+        if first_error is None:first_error=exc
+        packet=scheduled[index]
+        interruptions.append({'packet_id':packet['id'],'kind':getattr(exc,'kind',None),
+            'error':f'{type(exc).__name__}: {exc}'[:300],
+            'provider_attempts':getattr(exc,'attempts',[]),'cost_known':False})
+        accept(index,getattr(exc,'agere_source_packet_review',(
+            {'id':packet['id'],'label':'unknown','decided_by':None,'status':'interrupted'},[])))
+    if scheduled:
+        try:accept(0,check(scheduled[0]))
+        except Exception as exc:interrupted(0,exc)
     if len(scheduled)>1 and not stopped and not parallel_safe:
         for index in range(1,len(scheduled)):
-            if eligible(index):accept(index,check(scheduled[index]))
+            if eligible(index):
+                try:accept(index,check(scheduled[index]))
+                except Exception as exc:interrupted(index,exc)
             if stopped:break
     elif len(scheduled)>1 and not stopped:
         from concurrent.futures import ThreadPoolExecutor,wait,FIRST_COMPLETED
@@ -5243,7 +5294,9 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             while pending:
                 completed,_=wait(pending,return_when=FIRST_COMPLETED)
                 for future in completed:
-                    index=pending.pop(future);accept(index,future.result())
+                    index=pending.pop(future)
+                    try:accept(index,future.result())
+                    except Exception as exc:interrupted(index,exc)
                 fill()
     results=[];steps=[];unchecked=[]
     for index,packet in enumerate(scheduled):
@@ -5254,14 +5307,6 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             results.append({**{k:packet[k]for k in ('id','parent_packet_id')if k in packet},'label':'unknown','decided_by':None,'status':'awaiting_dependency_repair',
                 **({'blocked_family_id':source_packet_family(packet,by_id)}if source_packet_family(packet,by_id)in blocked else {}),
                 'reason':'Not sent: repair the diagnosed dependency first. This packet has not been accepted or rejected.'})
-    if prior_field_reviews is not None:
-        from ...contracts import digest
-        for packet,result in zip(scheduled,results):
-            # Frontier composition adds its own disposition, but the original
-            # calibrated field proofs must remain available for exact reuse.
-            for review in (result.get('field_review'),(result.get('typed_review')or{}).get('field_review')):
-                if bound_field_support(packet,review):
-                    prior_field_reviews[digest(packet['text'])]=review;break
     failed=[r for r in results if r['label']in ('contradicted','not_established')and r.get('decided_by')]
     settled=bool(results)and all(r['label']=='supported'and r.get('decided_by')for r in results)
     feedback=[f for r in results for f in r.get('claim_feedback',[])]
@@ -5269,7 +5314,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
     review_states=Counter((f.get('verification_observation')or{}).get('state','undetermined')for f in feedback)
     frontier=[s for s in steps if s.get('kind')=='frontier_source_review']
     cost_known=all(s.get('cost_usd')is not None for s in frontier)
-    return {'label':'supported'if settled else failed[0]['label']if failed else 'unknown',
+    summary={'label':'supported'if settled else failed[0]['label']if failed else 'unknown',
         'decided_by':'all_dependency_checks'if settled or failed else None,'steps':steps,'packets':results,
         'complete_dependency_packets':logical_count,'scheduled_source_packets':len(scheduled),
         'checked_source_packets':len(observed),'unchecked_packet_ids':unchecked,
@@ -5280,6 +5325,13 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         'frontier_review_cost_known':cost_known,
         'frontier_review_cost_usd':sum(s['cost_usd']for s in frontier)if cost_known else None,
         'joint_verification_wait':joint_dependency_wait(scheduled,results)if not unchecked and not failed and not feedback else []}
+    if first_error is not None:
+        summary.update(label='unknown',decided_by=None,all_dependencies_checked=False,
+            interruptions=interruptions,frontier_review_cost_known=False,frontier_review_cost_usd=None,
+            calls_known=False,joint_verification_wait=[])
+        first_error.agere_partial_source_review=summary
+        raise first_error
+    return summary
 
 
 def joint_dependency_wait(packets,results):
@@ -5486,6 +5538,25 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None,prior_review
     feedback=[];steps=[];supported=[];claims=packet['claim_manifest'];semantic_claims=[]
     audit_context=audit_field_context(packet,state)or{}
     reused={r['claim_id']:r for r in bound_field_support(packet,prior_review)}
+    def snapshot():
+        positions={claim['id']:i for i,claim in enumerate(claims)}
+        supported.sort(key=lambda reading:positions[reading['claim_id']])
+        native_count=sum('native_provenance'in reading['verification_observation']for reading in supported)
+        return {'feedback':feedback,'steps':steps,'field_review':{
+            'schema':'localized-field-review/1','task_identity':field_review_task_identity(),
+            'authority':'native_provenance_and_machine_review'if native_count else'machine_review',
+            'packet_digest':digest(packet['text']),'manifest_digest':digest(claims),
+            'review_binding':field_review_binding(packet),
+            'expected_count':len(claims),'supported_count':len(supported),
+            'native_supported_count':native_count,'reused_supported_count':len(reused),
+            'source_tuple_supported_count':sum('source_tuple_support'in r['verification_observation']for r in supported),
+            'unresolved_count':sum(not f.get('decided_by')for f in feedback),
+            'fault_count':sum(bool(f.get('decided_by'))for f in feedback),
+            'unchecked_count':len(claims)-len(supported)-len(feedback),
+            'all_fields_supported':bool(claims)and len(supported)==len(claims),
+            'supported_claims':supported,'complete_dependency_accepted':False,
+            'clinical_qualification':False}}
+
     for claim in claims:
         if claim['id']in reused:
             supported.append(reused[claim['id']]);continue
@@ -5511,11 +5582,15 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None,prior_review
                 named[claim['id']]['instructions']['value']=value;size+=extra
             # Otherwise the complete value is already present at its exact path
             # in the same source packet. No source bytes or fields are cut.
-        with component('claim_local_source_review',packet_id=packet['id'],fields=len(named)):
-            result=judge('Localize the source-supported failure in each named answer field',named,
-                [{'id':packet['id'],'date':packet['date'],'text':source_text}],as_of=as_of,ledger=ledger,allow_live=True,long_context=len(source_text.encode())>32768,
-                **({'order':order}if order is not None else{}),
-                **({'cache_evidence':compatibility}if compatibility else{}))
+        try:
+            with component('claim_local_source_review',packet_id=packet['id'],fields=len(named)):
+                result=judge('Localize the source-supported failure in each named answer field',named,
+                    [{'id':packet['id'],'date':packet['date'],'text':source_text}],as_of=as_of,ledger=ledger,allow_live=True,long_context=len(source_text.encode())>32768,
+                    **({'order':order}if order is not None else{}),
+                    **({'cache_evidence':compatibility}if compatibility else{}))
+        except Exception as exc:
+            exc.agere_partial_field_review=snapshot()
+            raise
         steps.extend(result.get('steps')or[])
         for claim in chunk:
             reading=result.get('judgments',{}).get(claim['id'],{})
@@ -5536,22 +5611,7 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None,prior_review
                 'verification_observation':observation,
                 **({'source_assertion_id':source_assertion['id']}if isinstance(source_assertion.get('id'),str)else {}),
                 'source_record_ids':sorted(source_ids(value) or cited_ids or source_ids(state.get('evidence',[]))),'result_view':packet.get('result_view')})
-    positions={claim['id']:i for i,claim in enumerate(claims)}
-    supported.sort(key=lambda reading:positions[reading['claim_id']])
-    native_count=sum('native_provenance'in reading['verification_observation']for reading in supported)
-    return {'feedback':feedback,'steps':steps,'field_review':{
-        'schema':'localized-field-review/1','task_identity':field_review_task_identity(),
-        'authority':'native_provenance_and_machine_review'if native_count else'machine_review',
-        'packet_digest':digest(packet['text']),'manifest_digest':digest(claims),
-        'review_binding':field_review_binding(packet),
-        'expected_count':len(claims),'supported_count':len(supported),
-        'native_supported_count':native_count,'reused_supported_count':len(reused),
-        'source_tuple_supported_count':sum('source_tuple_support'in r['verification_observation']for r in supported),
-        'unresolved_count':sum(not f.get('decided_by')for f in feedback),
-        'fault_count':sum(bool(f.get('decided_by'))for f in feedback),
-        'all_fields_supported':bool(claims)and len(supported)==len(claims),
-        'supported_claims':supported,'complete_dependency_accepted':False,
-        'clinical_qualification':False}}
+    return snapshot()
 
 
 def complete_claim_scope(packet):
@@ -5746,14 +5806,12 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
         reviewable_proposal=harness.draft_proposal_evidence(run)is not None
         unresolved_intent=any(c.get('name')=='request_clarification'and (c.get('result')or{}).get('intent_unresolved')
                               for c in run.get('tool_calls')or[])
-        from ..gateway import classify_provider_error
-        request_cancelled=bool(run.get('error')) and classify_provider_error(RuntimeError(run['error']))=='cancelled'
         # Fresh-executor validation can replay expensive native actions. An
         # interrupted request saves its recovery checkpoint below, without
         # automatically validating or selecting a reuse candidate.
         # A reply's intent is scoped to this investigation. It has not been
         # qualified as a parameter of a reusable workflow or training label.
-        if continuation is None and not request_cancelled and not run.get('runtime_dependency') and not run.get('clarification_pause') and not unresolved_intent and (reviewable_proposal or partial_prefix or isinstance(run.get('answer'),dict) and run['answer'].get('status')=='answered' and (run.get('answer_reviews') or [{}])[-1].get('status')=='confirmed'):
+        if continuation is None and not run.get('error') and not run.get('runtime_dependency') and not run.get('clarification_pause') and not unresolved_intent and (reviewable_proposal or partial_prefix or isinstance(run.get('answer'),dict) and run['answer'].get('status')=='answered' and (run.get('answer_reviews') or [{}])[-1].get('status')=='confirmed'):
             def fresh_executor():
                 fresh=semantic_analyst.SemanticWarehouse(path);fresh.define(as_of)
                 if discover_context: install_context(fresh, full_docs)
@@ -5768,8 +5826,12 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
         model=run.get('model') or model
         reviews = run.get('answer_reviews') or []
         review_cost = sum(r.get('cost_usd') or 0.0 for r in reviews)
+        review_known_cost=sum(r.get('known_cost_usd') if r.get('known_cost_usd')is not None else r.get('cost_usd')or 0.0 for r in reviews)
+        review_cost_known=all(r.get('cost_usd')is not None and r.get('cost_known')is not False for r in reviews)
         out = {'answer': run.get('answer') if isinstance(run.get('answer'), dict) else None, 'tool_calls': run.get('tool_calls') or [],
-               'model': model, 'estimated_cost_usd': run['estimated_cost_usd'] + review_cost if run.get('estimated_cost_usd') is not None else None,
+               'model': model, 'estimated_cost_usd': run['estimated_cost_usd'] + review_cost if run.get('estimated_cost_usd') is not None and review_cost_known else None,
+               'calls_known':all(r.get('calls_known')is not False for r in reviews),
+               'interrupted_review_draft':run.get('interrupted_review_draft'),
                'new_paid_api_calls': run.get('new_paid_api_calls', 0) + sum(r.get('calls') or 0 for r in reviews),
                'answer_reviews': reviews, 'review_stopped': run.get('review_stopped'),
                'model_escalations':run.get('model_escalations',[]),
@@ -5786,7 +5848,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                'completed_output_continuations':run.get('completed_output_continuations',0),
                'error': run.get('error'), 'final_text': run.get('final_text'), 'seconds': round(time.perf_counter() - started, 1), 'version': VERSION}
         out['new_paid_api_calls'] += tools.subtool_accounting['new_paid_api_calls']
-        out['known_cost_usd']=(run.get('known_cost_usd') if run.get('known_cost_usd') is not None else run.get('estimated_cost_usd') or 0)+review_cost+tools.subtool_accounting['estimated_cost_usd']
+        out['known_cost_usd']=(run.get('known_cost_usd') if run.get('known_cost_usd') is not None else run.get('estimated_cost_usd') or 0)+review_known_cost+tools.subtool_accounting['estimated_cost_usd']
         if out['estimated_cost_usd'] is not None:out['estimated_cost_usd'] += tools.subtool_accounting['estimated_cost_usd']
         if not tools.subtool_accounting.get('api_cost_known',True):out['estimated_cost_usd']=None
         if any(r.get('cost_known') is False for r in reviews):out['estimated_cost_usd']=None

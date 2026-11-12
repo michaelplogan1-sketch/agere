@@ -1021,6 +1021,8 @@ class Cascade:
                                     'runtime_dependency':run.get('runtime_dependency'),
                                     'runtime_pause':run.get('runtime_pause'),
                                     'unaccepted_draft':run.get('unaccepted_draft'),
+                                    'interrupted_review_draft':run.get('interrupted_review_draft'),
+                                    'calls_known':run.get('calls_known',True),
                                     'recovery_checkpoint':run.get('recovery_checkpoint'),
                                     'recovery_checkpoint_unavailable':run.get('recovery_checkpoint_unavailable'),
                                     'error':run.get('error'),
