@@ -1,0 +1,76 @@
+{
+  "schema": "question-starters/1",
+  "scope": "Navigation prompts only. Execution definitions must come from the actual answer contract.",
+  "questions": [
+    {
+      "id": "HF-GDMT",
+      "category": "Quality",
+      "question": "Which heart failure patients are not on all four GDMT pillars?"
+    },
+    {
+      "id": "LBP-PT",
+      "category": "Quality",
+      "question": "Which patients went to the ED with low back pain, were discharged home, and had no physical therapy within 60 days?"
+    },
+    {
+      "id": "A1C-9",
+      "category": "Quality",
+      "question": "Which diabetic patients have an A1c above 9 with no visit after it?"
+    },
+    {
+      "id": "ED-HIGH",
+      "category": "Quality",
+      "question": "Which patients had 4 or more ED visits in the last 12 months?"
+    },
+    {
+      "id": "TCM-GAP",
+      "category": "Quality",
+      "question": "Which patients discharged from the hospital had no follow-up visit within 14 days?"
+    },
+    {
+      "id": "SPD",
+      "category": "Quality",
+      "question": "Which diabetic patients aged 40 to 75 are not on a statin?"
+    },
+    {
+      "id": "PHQ-FU",
+      "category": "Quality",
+      "question": "Which patients with a PHQ-9 of 10 or more had no follow-up within 30 days?"
+    },
+    {
+      "id": "BCS",
+      "category": "Quality",
+      "question": "Which women are overdue for breast cancer screening?"
+    },
+    {
+      "id": "PDC",
+      "category": "Quality",
+      "question": "Which patients have statin adherence below 80% last year?"
+    },
+    {
+      "id": "POP-HF",
+      "category": "Population",
+      "question": "How many patients have heart failure with reduced ejection fraction?"
+    },
+    {
+      "id": "POP-EGFR",
+      "category": "Forecast",
+      "question": "Which eGFR series are projected below 30 at the one-year horizon?"
+    },
+    {
+      "id": "FIN-IP",
+      "category": "Finance",
+      "question": "What was the total paid amount for inpatient claims in the last 12 months?"
+    },
+    {
+      "id": "FIN-ED",
+      "category": "Finance",
+      "question": "What is the ED cost per member per month by payer product?"
+    },
+    {
+      "id": "FIN-PMPM",
+      "category": "Finance",
+      "question": "What is total cost of care per member per month for heart failure patients?"
+    }
+  ]
+}

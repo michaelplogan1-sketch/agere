@@ -284,12 +284,12 @@ async function ask(){const q=$('q').value.trim();if(!q||$('ask').disabled)return
  const t0=Date.now();
  try{const body={question:q,conversation_id:STATE.conversationId,interaction_mode:'interactive'};if(STATE.answerContext){body.answer_context_id=STATE.answerContext;body.answer_scope='auto'}const d=await api(W('/ask'),body);rememberConversation(d);$('ans').innerHTML=showAnswer(d,q,(Date.now()-t0)/1000);bindAnswer(d);loadHist()}
  catch(e){$('ans').innerHTML=`<div class="notice err">${esc(e.message)}</div>`}finally{if($('ask'))$('ask').disabled=false;if($('newQuestion'))$('newQuestion').disabled=false;if($('asking'))$('asking').textContent=''}}
-function contractOf(d){const c=Object.values(d.contracts||{}).find(Boolean);if(c)return c;const r=d.result||{};return (r.answer||{}).definition||(r.answer||{}).contract||null}
-function definitionText(d,q){const ex=APP.examples.find(x=>x.question===q);const c=contractOf(d);
+function contractOf(d){const c=Object.values(d.contracts||{}).find(Boolean);if(c)return c;const a=d.answer||(d.result||{}).answer||{};return a.definition||a.contract||null}
+function definitionText(d,q){const c=contractOf(d);
  if(c&&typeof c==='object'){const parts=['population','numerator','denominator','window','exclusions','grain'].filter(k=>c[k]).map(k=>`<b>${k}</b>: ${esc(typeof c[k]==='string'?c[k]:JSON.stringify(c[k]))}`);if(parts.length)return parts.join('<br>')}
- if(typeof c==='string')return esc(c);const a=(d.result||{}).answer||{};
- if(a.definition_text)return esc(a.definition_text);if(ex&&ex.definition)return esc(ex.definition)+' <span class="muted">(reference definition)</span>';
- return esc(d.headline||d.interpretation||'—')}
+ if(typeof c==='string')return esc(c);const a=d.answer||(d.result||{}).answer||{};
+ if(a.definition_text)return esc(a.definition_text);
+ return 'No execution definition was recorded with this answer.'}
 function methodOf(d){const sql=Object.values(d.runs||{}).map(r=>r&&r.sql).find(Boolean);if(sql)return {kind:'SQL',text:sql};
  const r=d.result||{};const a=r.answer||{};if(a.sql)return {kind:'SQL',text:a.sql};
  const g=r.graph;if(g&&(g.nodes||[]).length)return {kind:'Cohort-family / analysis spec',text:JSON.stringify(g,null,1)};
@@ -299,7 +299,7 @@ function layerOf(d){const t=(d.result||{}).together||{};const dec=d.decision||t.
  const spec=/special|bottled|cascade|cohort|engine|compiler|local|governed|metric/i.test(dec+' '+route+' '+(d.operations||[]).join(' '));
  return {name:d.pipeline==='plan'?'Deterministic router':(spec?'Specialist layer':(d.pipeline==='hybrid'||/unanim|major|analyst/i.test(dec)?'Analysts (independent, cross-checked)':'Full pipeline')),detail:[d.pipeline,route,dec].filter(Boolean).join(' · ')}}
 function traceCells(d,q){const w=STATE.ws||{};const m=methodOf(d);const ans=d.answer;const cert=d.certified;
- return [['01','Connect',w.name||'',`as of ${w.as_of||'—'}`],['02','Define',contractOf(d)||APP.examples.find(x=>x.question===q)?'typed definition':'question read','population, window, grain'],
+ return [['01','Connect',w.name||'',`as of ${w.as_of||'—'}`],['02','Define',contractOf(d)?'recorded definition':'definition not recorded','population, window, grain'],
   ['03','Compile',m?m.kind:'—',(d.operations||[]).slice(0,3).join(', ')||d.route||''],['04','Compute',ans?(('count' in ans)?'count':('value' in ans)?'value':ans.patient_ids?ans.patient_ids.length+' patients':'table'):'no answer',d.pipeline||''],
   ['05','Check',cert?'certified':(d.confidence!=null?'confidence '+fmt(d.confidence):(d.decision||'—')),cert&&typeof cert==='object'?(cert.tier||cert.route||'')+(cert.error_bound!=null?' ± '+cert.error_bound:''):''],
   ['06','Save',d.action_context?'saved with evidence':'question history',d.cost_usd==null?'cost unknown':'$'+Number(d.cost_usd).toFixed(3)]]}

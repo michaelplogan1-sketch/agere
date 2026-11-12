@@ -62,6 +62,14 @@ const grouped={table:[{keys:['North practice'],value:10}]};
 const shown=answerRows(grouped,{});assert.equal(shown[0].group,'North practice');
 assert.match(ResultView.table(shown,{table:shown}),/North practice/);
 assert.deepEqual(grouped,{table:[{keys:['North practice'],value:10}]});
+assert.equal(APP.examples.length,14);
+assert.ok(APP.examples.every(x=>!('definition' in x)));
+const starter=APP.examples[0].question;
+assert.match(definitionText({answer:{count:1}},starter),/No execution definition was recorded/);
+assert.equal(traceCells({answer:{count:1}},starter)[1][2],'definition not recorded');
+const defined={answer:{count:1,definition:{population:'Explicit source population',window:'Recorded interval'}}};
+assert.match(definitionText(defined,starter),/Explicit source population/);
+assert.equal(traceCells(defined,starter)[1][2],'recorded definition');
 ME={role:'viewer'};
 const interrupted={...d,reopened:true,action_context:{id:'ANS-authored'},saved_context:{
  invalidated:true,verification_progress:{schema:'saved-verification-progress/1',status:'interrupted',
