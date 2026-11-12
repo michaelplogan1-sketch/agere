@@ -682,7 +682,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-12T03:41:14.139421+00:00",
+  "updated_at": "2026-11-12T03:59:22.258075+00:00",
   "last_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -863,45 +863,28 @@
     "approved": true
   },
   "continuation_observation": {
-    "at": "2026-11-12T01:20:47.997668+00:00",
-    "status": "role_routing_activated_no_provider_calls",
-    "receipt": "artifacts/agere-source-obligations-2026-11-11/binding-role-receipt.json",
-    "runtime": {
-      "at": "2026-11-12T01:20:47.997668+00:00",
-      "pid": 95160,
-      "session": 24871,
-      "port": 8908,
-      "url": "http://127.0.0.1:8908/ask",
-      "status": "running",
-      "product_commit": "28ecfadc2027d6c91b8ffa79078b7ed5173eaded",
-      "request_locks": {
-        "schema": "request-locks/1",
-        "global_lock": false,
-        "locks": 2,
-        "active": 0,
-        "counters": {
-          "read": 0,
-          "question": 0,
-          "state": 1,
-          "max_concurrent": 1
-        }
-      },
-      "source_verification_runtime": {
-        "frontier_fallback_enabled": true,
-        "scope": "Native execution and joins first; System One chooses program-meaning or source-reading work. Frontier reviews unresolved meaning; native defects and deciding faults require repair.",
-        "work_triage": "execution-work-triage/1",
-        "source_obligations": "source-fields-first/1",
-        "actor_role_routing": "role-scoped-escalation/1",
-        "binding_inputs": "native-binding-input/1; prior complete readings stay queryable, newly requested values remain visible, source interpretation retains full readings",
-        "coverage_order": "System One requested-work coverage, focused frontier fallback if undecided, then source verification. Unresolved coverage retains the partial before patient dispatch.",
-        "field_reuse": "Exact input-bound supported fields; remaining claims only escalate with full source context.",
-        "authority": "machine_judgment",
-        "clinical_qualification": false
-      },
-      "source_frozen": false,
-      "provider_calls": 0,
-      "provider_work": "Stopped on actual account rate limit; balance/reset unknown; no probes."
-    }
+    "at": "2026-11-12T03:59:22.258075+00:00",
+    "gate": "G5",
+    "status": "unchanged_recorded_dependencies",
+    "product_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
+    "owned_server_pid": 99468,
+    "runtime_status": "running_idle",
+    "active_requests": 0,
+    "owned_jobs": [],
+    "source_frozen": false,
+    "last_sealed_receipt": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
+    "last_provider_attempt": "artifacts/agere-source-obligations-2026-11-11/bound-question-continuation/run-receipt.json",
+    "provider_status_recorded": "subscription_rate_limit",
+    "provider_reset_known": false,
+    "new_recovery_evidence_in_canonical_state": false,
+    "workflow_change": null,
+    "measured_failure_removed": null,
+    "reason_no_implementation": "Current next action prohibits unchanged campaigns or another inventory; no new concrete defect, source-review or provider-recovery evidence is recorded. Prior integrated code recovery is sealed.",
+    "provider_calls": 0,
+    "provider_probes": 0,
+    "product_edits": 0,
+    "product_tests": 0,
+    "next_action": "G5: The identified current engineering consumers and same-machine recovery artifact are now connected. At the next resume inspect owned receipts and any genuinely new provider-availability or reviewed-source evidence. Do not probe the recorded Claude account rate limit, rerun passed workflows, regenerate this archive, or start another inventory/audit while evidence is unchanged. With actual recovery evidence, continue the saved65-patient investigation ANS-87eb0982baaef39dd759d519 through the current mixed native/documentary routing and exact restored judgments, retaining every partial/attempt and stopping again on an actual limit; then assess its unfinished source/work coverage and all-attempt cost, without replaying the original native cohort. Independent source-bound reviews with diverse outcomes are required before student threshold promotion; leave its preliminary role active. No additional missing consumer was established by this scoped reconciliation; concrete newly observed defects can reopen implementation. All ten areas/all25 and principal/October11baseline remain. Keep quiet continuation active through the authorized overnight period, with no routine notifications, questions, Git pushes or real care."
   },
   "storage_maintenance": {
     "at": "2026-11-11T11:22:13.795383+00:00",
