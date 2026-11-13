@@ -10,7 +10,8 @@ ALL_TIERS = ('bottles', 'recipes', 'system1', 'slm', 'llm')
 TOKEN_CEILING = 60000
 
 
-def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_ceiling=TOKEN_CEILING, s1_ledger=None):
+def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_ceiling=TOKEN_CEILING, s1_ledger=None,
+           bottle_statuses=('promoted',)):
     """-> {'status','final_tier','columns','rows','recipe','validation','steps','seconds','escalations'}."""
     started = time.monotonic()
     steps, escalations = [], []
@@ -39,13 +40,14 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
 
     # Tier 0: bottles
     if 'bottles' in tiers and bottles is not None:
-        hit = bottles.match(question, statuses=('promoted',))  # a provisional bottle is never used to answer
+        hit = bottles.match(question, statuses=bottle_statuses)  # by default a provisional bottle is never used to answer
         if hit:
             bottle, params = hit
             got = attempt('bottles', bottle['sql'], params, grain=bottle['grain'])
             if got and got[3]:
                 bottles.used(bottle['id'])
                 return done('answered', 'bottles', {'bottle_id': bottle['id'], 'sql': bottle['sql'], 'params': params}, *got[:3])
+            steps[-1]['bottle_id'] = bottle['id'] if steps else None
         else:
             steps.append({'tier': 'bottles', 'outcome': 'no_match', 'tokens': 0, 'usd': 0.0})
             escalations.append({'from': 'bottles', 'reason': 'no bottle matches this question shape'})
