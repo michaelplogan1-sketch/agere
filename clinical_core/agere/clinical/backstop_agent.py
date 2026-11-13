@@ -55,7 +55,6 @@ class ComputedProseError(ValueError):
         self.answer_repair_targets = list(answer_targets)
 
 
-READING_ENVELOPE_BYTES = 230000  # same envelope as whole dependency packets sent to a provider
 NATIVE_ROUTING = {
     'review_documents': ' ROUTING: this tool answers only what document text states. Whether something happened after a referral, order, '
         'result or recommendation (a visit with the receiving clinician or specialty, a consult report, a delivered service, a linked result) '
@@ -667,17 +666,8 @@ class Tools:
             out = bind_loaded(self.semantic, args['sql'], out)
             if args.get('read_all_rows') and isinstance(out.get('rows'),list):
                 from ...contracts import digest
-                size=len(json.dumps(out['rows'],default=str))
-                if size>READING_ENVELOPE_BYTES:
-                    # A complete reading is resent on every later turn. One larger than the provider
-                    # envelope already used for dependency packets (live run 2026-11-12: single readings
-                    # of 250K-975K tokens, $15 of a $22.68 run) stays native and queryable instead.
-                    out['reading_not_retained']={'reason':'complete rows exceed the model context envelope','bytes':size,
-                        'envelope_bytes':READING_ENVELOPE_BYTES,'rows':len(out['rows']),
-                        'next':'Every row is retained natively in this result_view. Select only the columns and rows needed for the interpretation (aggregate or extract JSON fields in SQL), or compose it with compose_table; do not reread the whole view.'}
-                else:
-                    out['actor_reading']={'mode':'complete_rows','rows_digest':digest(out['rows']),
-                                          'columns_digest':digest(out.get('columns'))}
+                out['actor_reading']={'mode':'complete_rows','rows_digest':digest(out['rows']),
+                                      'columns_digest':digest(out.get('columns'))}
             return out
         if name == 'plan_evidence_expansion':
             from .source_navigation import prepare
@@ -2472,35 +2462,6 @@ def resolve_source_abstention(packet,checked,reviewer,*,ledger):
     return result,review
 
 
-def relocate_unbound_fact_notes(answer,exc,tools):
-    """Keep a method note that fails quantity binding as a labelled limitation.
-
-    The compiler requires every number in a facts entry to be bound to an executed cell. That
-    protects counts, but the repair is a patch protocol the analyst often cannot complete:
-    definitional wording has no cell to bind, source-free constants are refused, and runs ended
-    there before any source review (Q02, Q03, Q05, Q12, Q16 on 2026-11-13, most after an Opus
-    escalation). A facts entry with unbound literals is therefore moved, unchanged, to
-    limitations with a label saying its numbers are not tied to computed values. The table keeps
-    the computed values themselves. Headline and row prose are never moved and still go back to
-    the analyst.
-    """
-    facts=answer.get('facts')
-    fields=sorted(set(re.findall(r'(?:Quantitative|placeholders at) facts\.([A-Za-z0-9_]+)[^"]*?unbound literals',str(exc))))
-    moved=[]
-    for field in fields:
-        if not isinstance(facts,dict)or field not in facts:continue
-        value=facts.pop(field)
-        text=value if isinstance(value,str)else(value.get('template')if isinstance(value,dict)else None)
-        if not isinstance(text,str):text=json.dumps(value,default=str)
-        answer['limitations']=[*(answer.get('limitations')or[]),'Method note ('+field.replace('_',' ')+'), numbers not tied to computed values: '+text]
-        if isinstance(answer.get('global_prose_basis'),list):
-            answer['global_prose_basis']=[b for b in answer['global_prose_basis']if not(isinstance(b,dict)and b.get('path')==['facts',field])]
-        if isinstance(answer.get('computed_prose'),list):
-            answer['computed_prose']=[c for c in answer['computed_prose']if not(isinstance(c,dict)and c.get('field')=='facts.'+field)]
-        moved.append({'field':'facts.'+field,'moved_to':'limitations','reason':'unbound literals'})
-    return moved
-
-
 def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_structure=None):
     """Compile quantitative table prose from actual native scalar cells.
 
@@ -2520,12 +2481,6 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')}
     old={p.get('field'):p for p in answer.get('computed_prose',[]) if isinstance(p,dict)}
     request_years=set(re.findall(r'\b(?:19|20|21)\d{2}\b',question or ''))
-    # A parameter the request itself states ("a 10% increase", "over the next 90 days") may be
-    # repeated in summary prose: it is the user's own input, not a computed observation, and the
-    # acceptance contract separately checks that each request literal is carried by the plan
-    # (Q16 2026-11-13 stalled on "10"). Dates and years keep their own temporal rules.
-    undated=re.sub(r'\d{4}-\d{2}(?:-\d{2})?','',question or '')
-    request_numbers={n.replace(',','')for n in re.findall(r'(?<![\w.])\d+(?:,\d{3})*(?:\.\d+)?(?![\w])',undated)}-request_years
     def numeric(text):
         if not row_mode:text=mask_prose_parameters(text,parameters,parameter_proofs)
         # Distributive "every one of these accounts" means every member,
@@ -2592,14 +2547,6 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
                 return temporal(m)
             text=re.sub(rf'\b{year}(?=[\s-]+(?:coverage|view|data|exposure)\b|-time-matched\b)|(?<=time-matched to ){year}\b|(?<=age at ){year}\b',
                         contextual_year,text,flags=re.I)
-            # A year the request itself names, used to qualify a noun ("a 2029 inpatient discharge",
-            # "each 2029 referral"), is the same temporal anchor. Every live run on 2026-11-12 spent a
-            # repair round on it. contextual_year still keeps a year-sized count ("were 2029",
-            # "2029 patients") as a quantity that needs a binding.
-            # A unit after the number makes it a measurement, and a named clock is a
-            # separate executed-window claim with its own proof; neither is exempt here.
-            units=r'(?:mg|mcg|g|kg|ml|l|units?|iu|mmhg|bpm|days?|weeks?|months?|years?|hours?|minutes?|dollars?|cents?|usd|percent)'
-            text=re.sub(rf'(?<![\w.,$%-]){year}(?=\s+[A-Za-z])(?!\s+{units}\b)(?!\s+total\b)(?!\s+[\w-]+\s+clock\b)',contextual_year,text,flags=re.I)
             def previous_year(m):
                 prior=int(m['year'])
                 if str(prior+1)not in request_years:return m.group()
@@ -2617,9 +2564,6 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
                     r'(?=$|\s*[,.;:)]|\s+(?:the|is|are|was|were|has|had|have|that|which|who|and|or|in|on|at|to|with|for|from|by|shows?|lists?|keeps?)\b)',
                     r'\1',text,flags=re.I)
         text=re.sub(r'\bone\s+another\b','another',text,flags=re.I)
-        if request_numbers and not row_mode:
-            text=re.sub(r'(?<![\w.])\d+(?:,\d{3})*(?:\.\d+)?(?![\w])',
-                        lambda m:''if m.group().replace(',','')in request_numbers else m.group(),text)
         return list(dict.fromkeys(m.group() for m in re.finditer(r'(?<!\w)[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?!\w)|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|hundred|thousand|million|billion)\b',text,re.I)))
     def compile_value(field,value,basis=None):
         parameter_proofs.clear()
@@ -3250,11 +3194,6 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     # decide whether the evidence supports the unchanged statement.
     bind_explicit_global_views(answer,calls)
     prose_exception=compile_prose()
-    if prose_exception is not None:
-        moved=relocate_unbound_fact_notes(answer,prose_exception,tools)
-        if moved:
-            assessment['unbound_fact_notes']=moved
-            prose_exception=compile_prose()
     if (prose_exception is not None and not static_feedback and getattr(stack,'allow_live',False) and
             os.environ.get('AGERE_REFERENCE_CLARIFICATION_CHECK','on')=='on'):
         from .execution_state import reference_clarification_request,apply_reference_clarification
