@@ -373,6 +373,8 @@ def hf(s1_ledger=None, only=None, path='eval/tiered/hf_reasons.json'):
         ids = [r[0] for r in db.execute('SELECT record_id FROM document WHERE patient_id = ? ORDER BY event_date, record_id', (pt['id'],))]
         texts = store.texts(ids, db)
         mine = [{'quote': d.get('quote'), 'text': d.get('value'), 'record_id': d['record_id']} for d in outcomes[2].get('documents') or [] if d.get('label') == 'yes']
+        if len(outcomes) > 3:  # barrier records the earlier extraction stored
+            mine += [{'quote': r[2], 'text': f'{r[0]} {r[1]}', 'record_id': r[4]} for r in outcomes[3].get('rows') or [] if r[1] != 'none']
         found, unsupported, extra = _score_reasons(mine, pt['required'], data['optional_everywhere'], texts)
         stack = {'statuses': [o['status'] for o in outcomes], 'found': found, 'unsupported': len(unsupported), 'extra': [e['quote'] for e in extra][:6], 'reasons_reported': len(mine),
                  'correct': all(o['status'] == 'answered' for o in outcomes) and len(found) == len(pt['required']) and not unsupported and not extra,

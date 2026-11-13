@@ -42,7 +42,8 @@ def known(question):
     pid = m.group('patient')
     return ([f"What is patient {pid}'s fill status for each guideline heart failure medication pillar?",
              f"What are patient {pid}'s latest potassium, eGFR, creatinine, blood pressure and heart rate?",
-             f"What reason does each of patient {pid}'s documents give for a heart failure medication not being taken?"],
+             f"What reason does each of patient {pid}'s documents give for a heart failure medication not being taken?",
+             f"What barrier records are stored for patient {pid}'s guideline heart failure medications?"],
             {'method': 'heart_failure_therapy_question_split_by_code', 'usd': 0.0, 'tokens': 0, 'seconds': 0.0})
 
 

@@ -339,7 +339,7 @@ class Core(unittest.TestCase):
             cols,rows,val,steps,ev=RS.execute('q','SELECT record_id FROM document WHERE patient_id=:p',{'p':'x'},{'mode':'medication_reasons'},None)
         self.assertEqual([(r[1],r[2],r[6]) for r in rows],[('carvedilol','cost_or_supply',1),('mra','lab_or_vital_limit',2)]);self.assertEqual((val['ok'],model.call_count),(True,1))  # only the undecided passage reached a model
         self.assertTrue(all(any(r[3] in ' '.join(t['text'].split()) for t in texts.values()) for r in rows))  # every passage is the record's own words
-        parts,how=SP.known("Why isn't patient P-HF07 on all four GDMT pillars?");self.assertEqual((len(parts),how['usd']),(3,0.0));self.assertIsNone(SP.known('Why is the sky blue?'))
+        parts,how=SP.known("Why isn't patient P-HF07 on all four GDMT pillars?");self.assertEqual((len(parts),how['usd']),(4,0.0));self.assertIsNone(SP.known('Why is the sky blue?'))
 
     def test_narrative_numbers_come_only_from_the_result_and_a_bad_text_is_discarded(self):
         from clinical_core.agere.tiered import narrative as N

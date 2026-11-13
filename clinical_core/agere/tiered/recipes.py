@@ -165,6 +165,15 @@ RECIPES = {
                "WHERE patient_id = :patient_id AND concept IN ('potassium', 'egfr', 'creatinine', 'systolic_bp', 'heart_rate') ORDER BY concept",
         'grain': ['concept'],
         'patterns': [r"what are patient (?P<patient_id>[a-z0-9-]+)'s latest potassium, egfr, creatinine, blood pressure and heart rate"]},
+    'hf_stored_barrier_records': {
+        'title': 'For one patient, barrier records already extracted from notes for guideline heart-failure medications (stored by the earlier extraction pipeline)',
+        'params': {'patient_id': {'type': 'patient'}},
+        'sql': "SELECT COALESCE(gdmt_pillar, drug_class) AS pillar_or_class, barrier_type, evidence_text, event_date, record_id, method AS extracted_by FROM therapy_barrier "
+               "WHERE patient_id = :patient_id AND (gdmt_pillar IS NOT NULL OR drug_class IN ('ace_inhibitor', 'arb', 'arni', 'hf_evidence_based_beta_blocker', 'beta_blocker', 'mra', 'sglt2_inhibitor')) "
+               "UNION ALL SELECT 'no stored record', 'none', 'The earlier extraction stored no barrier record for these medications', '', '', '' "
+               "WHERE NOT EXISTS (SELECT 1 FROM therapy_barrier WHERE patient_id = :patient_id AND (gdmt_pillar IS NOT NULL OR drug_class IN "
+               "('ace_inhibitor', 'arb', 'arni', 'hf_evidence_based_beta_blocker', 'beta_blocker', 'mra', 'sglt2_inhibitor'))) ORDER BY 4, 5",
+        'patterns': [r"what barrier records are stored for patient (?P<patient_id>[a-z0-9-]+)'s guideline heart failure medications"]},
     'hf_medication_reasons_in_notes': {
         'title': 'For one patient, the reason each document states for a heart-failure medication not being taken, held, stopped or not started (each document is read)',
         'params': {'patient_id': {'type': 'patient'}},
