@@ -2553,6 +2553,10 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
             for m in reversed(inline):text=text[:m.start(1)]+text[m.end(1):]
         text=re.sub(r'\b[A-Za-z][A-Za-z0-9]*(?:[.-][A-Za-z0-9]+)*\b',
                     lambda m:'' if any(c.isdigit() for c in m.group()) else m.group(),text)
+        # "one" as a pronoun ("for each one", "which one", "one another") states no quantity
+        # (live Q10 and Q05 2026-11-13 stalled on it). "one patient", "one of the" still bind.
+        text=re.sub(r'\b(each|every|any|which|no|this|that|another|either|neither|some)\s+one\b(?!\s+of\b)',r'\1',text,flags=re.I)
+        text=re.sub(r'\bone\s+another\b','another',text,flags=re.I)
         return list(dict.fromkeys(m.group() for m in re.finditer(r'(?<!\w)[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?!\w)|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|hundred|thousand|million|billion)\b',text,re.I)))
     def compile_value(field,value,basis=None):
         parameter_proofs.clear()

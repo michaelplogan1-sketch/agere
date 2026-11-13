@@ -149,6 +149,30 @@ def structured_source_links(db,pid,as_of):
     return links
 
 
+def collapse_unlinked_documents(unlinked):
+    """One entry per document and field when the whole document lacks the requested entity.
+
+    The entity-link refusal is decided per document and field, so one entry per
+    statement repeats the same fact (live Q05 2026-11-13: 8.9 MB of a 14.6 MB
+    review result, later sent whole to reviewers). The entry keeps the document
+    identity, the covered span range and the number of statements it stands for.
+    Refusals decided per statement (ambiguous subject, context only) stay as they are.
+    """
+    keys=('field','record_id','reason','document_text_digest','span_start','span_end','native_binding_issue')
+    out=[];groups={}
+    for u in unlinked:
+        if u.get('native_binding_issue')!='source_entity_unlinked':
+            out.append({k:u.get(k)for k in keys});continue
+        key=(u.get('field'),u.get('record_id'),u.get('document_text_digest'))
+        if key not in groups:
+            groups[key]={**{k:u.get(k)for k in keys},'unlinked_source_blocks':0,'scope':'whole document for this field'}
+            out.append(groups[key])
+        entry=groups[key];entry['unlinked_source_blocks']+=1
+        if type(u.get('span_start'))is int and type(entry['span_start'])is int:entry['span_start']=min(entry['span_start'],u['span_start'])
+        if type(u.get('span_end'))is int and type(entry['span_end'])is int:entry['span_end']=max(entry['span_end'],u['span_end'])
+    return out
+
+
 def subject_source_link_issue(question,span):
     """An explicitly alternative actor cannot become one particular person.
 
@@ -632,8 +656,9 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                             # No model can repair a missing source/entity link by
                             # rereading the same unchanged source. Keep the gap
                             # addressable for new evidence or corrected aliases.
-                            deferred_fields[pid].extend({k:u.get(k)for k in ('field','record_id','reason','document_text_digest','span_start','span_end','native_binding_issue')}for u in unlinked)
-                            failures.append('Source relation not established; no repeated frontier reading: '+json.dumps([{'field':u['field'],'record_id':u['record_id']}for u in unlinked]))
+                            deferred_fields[pid].extend(collapse_unlinked_documents(unlinked))
+                            failures.append('Source relation not established; no repeated frontier reading: '+json.dumps(
+                                [{'field':f,'record_id':r}for f,r in dict.fromkeys((u['field'],u['record_id'])for u in unlinked)]))
                             unresolved=[u for u in unresolved if u.get('native_binding_issue')not in nonrepairable]
                         if focused:
                             # A suspected positive needs disambiguation. An
