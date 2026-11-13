@@ -1,3 +1,4 @@
+import json
 """Tiered core, no model calls: recipe matching, validation, bottle matching and promotion status, eval scoring,
 and the document-reading tier with its readers replaced by fixed judgments."""
 import os,sqlite3,tempfile,unittest
@@ -276,6 +277,24 @@ class Core(unittest.TestCase):
             self.assertIn('cohort(patient_id)',out['graph']['nodes'][0]['parameters']['query']);self.assertIn('only over the 1 selected patients',out['answer']['limitations'][0])
             self.assertIsNone(A.try_in_cohort(stack,'x',{'patient_ids':[]},'ANS-1'))
             with said('{"standalone": null}'):self.assertIsNone(A.try_in_cohort(stack,'why are they in this group?',parent,'ANS-1'))
+
+    def test_batch_learning_confirms_a_recipe_only_when_a_second_model_reproduces_its_rows(self):
+        from clinical_core.agere.tiered import curriculum as C,bottles as BS,models as M
+        with tempfile.TemporaryDirectory() as d:
+            home=Path(d);names={'HOME':home,'QUESTIONS':home/'q.jsonl','BOTTLES':home/'b.sqlite3','LEDGER':home/'l.sqlite3','S1':home/'s.sqlite3'}
+            with mock.patch.multiple(C,**names),mock.patch.object(C,'_keys'),mock.patch.dict(os.environ,{'AGERE_TIERED_BOTTLES':d+'/main.sqlite3'}):
+                wrote=lambda qs:mock.patch.object(M,'_claude',return_value=(json.dumps({'questions':qs}),{'usd':0.001,'tokens':10}))
+                with wrote(['How many ED visits were there in 2029?','how many ed visits were there in 2029','Show monthly ED visits in 2029','x']):
+                    self.assertEqual(C.generate(2)['new'],2)  # duplicates and unusable lines dropped
+                b=BS.Bottles(C.BOTTLES);sql="SELECT COUNT(*) AS n FROM utilization_event WHERE kind = 'ed_visit' AND substr(event_date, 1, 4) = :year"
+                plan=lambda q,t,s:b.add(q,{'sql':s,'params':{'year':{'type':'year','value':'2029'}},'grain':[],'question_template':t},{'ok':True},{'tier':'llm','question':q})[0]
+                good=plan('Count ED events in 2029','Count ED events in {year}',sql);bad=plan('Count the ED events of 2029','Count the ED events of {year}',sql)
+                second=lambda s:(({'sql':s,'params':{'year':{'type':'year','value':'2029'}},'grain':[],'question_template':'x'},{'usd':0.0}))
+                with mock.patch.object(M,'llm_recipe',side_effect=[second("SELECT COUNT(*) FROM utilization_event WHERE kind='ed_visit' AND event_date LIKE :year || '%'"),second("SELECT COUNT(*) FROM utilization_event WHERE substr(event_date,1,4) = :year")]):
+                    self.assertEqual(C.confirm(),{'confirmed':1,'unconfirmed':1})
+                status={x['id']:x['status'] for x in BS.Bottles(C.BOTTLES).full()};self.assertEqual((status[good],status[bad]),('confirmed','provisional'))
+                self.assertEqual(C.merge(),{'merged as provisional':1})
+                main=BS.Bottles().full();self.assertEqual((len(main),main[0]['status'],main[0]['provenance']['confirmed_by_second_model']),(1,'provisional',True))
 
     def test_narrative_numbers_come_only_from_the_result_and_a_bad_text_is_discarded(self):
         from clinical_core.agere.tiered import narrative as N

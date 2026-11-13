@@ -103,6 +103,12 @@ class Bottles:
                                                                                  'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())})
         self.db.execute('UPDATE bottle SET status=?, provenance_json=? WHERE id=?', (status, json.dumps(prov), bottle_id)); self.db.commit()
 
+    def full(self):
+        """Every bottle with its recipe, for the learning tools."""
+        cur = self.db.execute('SELECT id, template, status, sql, params_json, grain_json, read_json, validation_json, provenance_json FROM bottle ORDER BY id')
+        return [{'id': r[0], 'template': r[1], 'status': r[2], 'sql': r[3], 'params': json.loads(r[4] or '{}'), 'grain': json.loads(r[5] or '[]'),
+                 'read': json.loads(r[6]) if r[6] else None, 'validation': json.loads(r[7] or '{}'), 'provenance': json.loads(r[8] or '{}')} for r in cur.fetchall()]
+
     def all(self):
         cur = self.db.execute('SELECT id, template, status, uses, schema_version FROM bottle ORDER BY id')
         return [dict(zip(('id', 'template', 'status', 'uses', 'schema_version'), r)) for r in cur.fetchall()]

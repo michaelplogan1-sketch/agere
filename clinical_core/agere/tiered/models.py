@@ -96,12 +96,13 @@ symptom, dyspnea, follow_up, edema, imaging_finding, social_need, smoking_status
 Patient identifiers look like WHP-66F4B476DECF or P-1001.'''
 
 
-def llm_recipe(question, error=None):
-    """Tier 4. -> (recipe dict or None, step). error: one SQL execution error to correct, if any."""
+def llm_recipe(question, error=None, model=None):
+    """Tier 4. -> (recipe dict or None, step). error: one SQL execution error to correct, if any.
+    model: a different model for an independent second query (curriculum.confirm); the frontier model by default."""
     conditions = ', '.join(r[0] for r in store.run("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition' ORDER BY 1")[1])
     system = LLM_SYSTEM % (store.schema_text(), definitions(), conditions)
     user = 'Question: ' + question + ('\n\nYour previous SQL failed to execute: ' + error + '\nReturn a corrected JSON object.' if error else '')
-    text, step = _claude(LLM, system, user)
+    text, step = _claude(model or LLM, system, user)
     try:
         out = _json(text)
         if out.get('cannot_answer'):

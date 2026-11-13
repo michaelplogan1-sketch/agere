@@ -50,16 +50,20 @@ def promote():
     used_wrong = sorted({r['bottle_id'] for r in cand if r['bottle_id'] in ids and not r['correct']})
     used_right = sorted({r['bottle_id'] for r in cand if r['bottle_id'] in ids and r['correct']} - set(used_wrong))
     passed = c['correct'] >= b['correct'] and c['frontier_calls'] <= b['frontier_calls']
+    confirmed = {b['id']: bool((b['provenance'] or {}).get('confirmed_by_second_model')) for b in bottles.full()}
     decisions = []
     for bottle in candidates:
         if bottle['id'] in used_wrong:
             status, reason = 'rejected', 'gave a wrong answer to an eval question'
+        elif bottle['id'] not in used_right and not confirmed.get(bottle['id']):
+            # No eval question exercises this shape and no second model reproduced its result: nothing shows it is right.
+            status, reason = 'provisional', 'not promoted: no eval question exercises this shape and it is not confirmed by a second model'
         elif not passed:
             status, reason = 'rejected', f"full eval got worse with the candidates: correct {b['correct']}->{c['correct']}, frontier calls {b['frontier_calls']}->{c['frontier_calls']}"
         else:
             status, reason = 'promoted', ('answered an eval question correctly; ' if bottle['id'] in used_right else 'no eval question exercises this shape; ') + \
                 f"full eval no worse: correct {b['correct']}->{c['correct']}, frontier calls {b['frontier_calls']}->{c['frontier_calls']}"
-        bottles.set_status(bottle['id'], status, reason)
+        if status != 'provisional': bottles.set_status(bottle['id'], status, reason)
         decisions.append({'bottle': bottle['id'], 'template': bottle['template'], 'status': status, 'reason': reason})
     out = {'decision': 'promoted' if passed else 'rejected', 'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'current': {'run': base_id, **b},
            'with_candidates': {'run': cand_id, **c}, 'candidates': decisions}
