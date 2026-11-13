@@ -206,6 +206,29 @@ class Core(unittest.TestCase):
             with tie,mock.patch.object(F,'rewrite',return_value=('Show the denial rate by payer in 2029',{'method':'small_model_rewrite_confirmed_by_system_one','usd':0.0,'tokens':0})):
                 self.assertEqual(F.complete_question('just the denial rate',prev,True)[0],'Show the denial rate by payer in 2029')  # a near-tie is not "complete"
 
+    def test_a_message_with_separate_questions_is_split_and_answered_in_sections_only_when_confirmed(self):
+        from clinical_core.agere.tiered import app as A,split as S
+        q='How many ED visits were there in 2029, and also show monthly ED visits in 2029?'
+        self.assertFalse(S.candidate('How many ED visits were there in 2029?'));self.assertTrue(S.candidate(q))
+        said=lambda text:mock.patch.object(S.models,'_claude',return_value=(text,{'usd':0.001,'tokens':50}))
+        s1=lambda label:mock.patch('clinical_core.agere.clinical.system_one.choice',return_value={'label':label,'probabilities':{label:0.95},'cost_usd':0.0})
+        two='{"parts": ["How many ED visits were there in 2029?", "Show monthly ED visits in 2029"]}'
+        with said(two),s1('yes'):self.assertEqual(S.parts(q)[1]['method'],'small_model_split_confirmed_by_system_one')
+        with said(two),s1('no'):self.assertEqual(S.parts(q),(None,mock.ANY));self.assertEqual(S.parts(q)[1]['method'],'split_not_confirmed')
+        with said('{"parts": null}'):self.assertEqual(S.parts(q)[1]['method'],'one_question')
+        with said('{"parts": ["How many ED visits were there in 2029?", "Show monthly ED visits in 2028"]}'):self.assertEqual(S.parts(q)[1]['method'],'parts_add_values')
+        with said('{"parts": ["How many ED visits were there in 2029?"]}'):self.assertEqual(S.parts(q)[1]['method'],'parts_unusable')
+        stack=mock.Mock(spec=[])
+        with tempfile.TemporaryDirectory() as d,mock.patch.dict(os.environ,{'AGERE_TIERED_CORE':'on','AGERE_TIERED_BOTTLES':d+'/b.sqlite3','AGERE_TIERED_LEDGER':d+'/l.sqlite3'}):
+            with said(two),s1('yes'):out=A.try_answer(stack,q)
+            a=out['answer'];self.assertEqual((a['answer_type'],[x['title'] for x in a['sections']],a['sections'][0]['answer']['answer_type'],len(out['graph']['nodes'])),
+                                             ('composite',['How many ED visits were there in 2029?','Show monthly ED visits in 2029'],'count',2))
+            self.assertEqual(out['planner_receipt']['split']['parts'][1],'Show monthly ED visits in 2029')
+            with said('{"parts": ["How many ED visits were there in 2029?", "What is the meaning of it all in 2029?"]}'),s1('yes'),mock.patch.object(A.router,'answer',wraps=A.router.answer) as ran:
+                with mock.patch.object(A,'_single',side_effect=lambda st,part:None if 'meaning' in part or part==q else {'answer':{}}) as single:
+                    self.assertIsNone(A.try_answer(stack,q))  # one part unanswered: not answered in pieces; tried once more as one question
+                    self.assertEqual([c.args[1] for c in single.call_args_list][-1],q)
+
     def test_narrative_numbers_come_only_from_the_result_and_a_bad_text_is_discarded(self):
         from clinical_core.agere.tiered import narrative as N
         cols,rows=['month','events'],[['2029-01',120],['2029-02',95],['2029-03',1430]]

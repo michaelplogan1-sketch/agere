@@ -193,7 +193,58 @@ def chains(s1_ledger=None, path='eval/tiered/followup_chains.json'):
     return text
 
 
+def multi(s1_ledger=None):
+    """Messages that ask several separate questions. Mirrors the app: a candidate is split, each part goes through all
+    tiers and the message counts as answered in parts only when every part is answered; otherwise it is tried as one."""
+    from . import split
+    items = json.loads(Path('eval/tiered/multi_part.json').read_text())['items']
+    run_id = f"multi-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
+    led, bottles, results = ledger_store.Ledger(), bottle_store.Bottles(), []
+    for it in items:
+        found, how = split.parts(it['question'], s1_ledger) if split.candidate(it['question'], bottles) else (None, {'method': 'not_a_candidate', 'usd': 0.0})
+        outcomes = []
+        for part in found or []:
+            outcomes.append(router.answer(part, bottles=bottles, s1_ledger=s1_ledger))
+            led.write(run_id, part, outcomes[-1], eval_id=it['id'], config={'message': it['question'], 'split': how})
+            if outcomes[-1]['status'] != 'answered': break
+        in_parts = bool(found) and all(o['status'] == 'answered' for o in outcomes)
+        if not in_parts:
+            whole = router.answer(it['question'], bottles=bottles, s1_ledger=s1_ledger)
+            led.write(run_id, it['question'], whole, eval_id=it['id'], config={'split': how})
+            outcomes.append(whole)
+        if it['kind'] == 'several':
+            left, ok = list(outcomes), in_parts and len(outcomes) == len(it['parts'])
+            for ref in it['parts'] if ok else []:
+                hit = next((o for o in left if correct(ref['reference_rows'], o.get('rows'))), None)
+                if hit is None: ok = False; break
+                left.remove(hit)
+        else:
+            ok = not in_parts and outcomes[-1]['status'] == 'answered' and correct(it['reference_rows'], outcomes[-1].get('rows'))
+        usd = how['usd'] + sum(s.get('usd', 0.0) for o in outcomes for s in o['steps'])
+        results.append({'id': it['id'], 'kind': it['kind'], 'split': how['method'], 'parts': found, 'answered_in_parts': in_parts, 'correct': ok, 'usd': usd,
+                        'tiers': [o['final_tier'] for o in outcomes], 'statuses': [o['status'] for o in outcomes],
+                        'frontier_calls': sum(s.get('tier') == 'llm' and 'model' in s for o in outcomes for s in o['steps'])})
+        print(f"{it['id']} {it['kind']:7} {how['method'][:36]:36} {'parts' if in_parts else 'whole':5} {'correct' if ok else 'WRONG':7} ${usd:.4f} {results[-1]['tiers']} | {found or it['question']}", flush=True)
+    n = len(results)
+    lines = [f'MULTI-PART EVAL  run {run_id}', f'items: {n}', f"correct: {sum(r['correct'] for r in results)}/{n}",
+             *(f"  {kind}: {sum(r['correct'] for r in results if r['kind'] == kind)}/{sum(r['kind'] == kind for r in results)}" for kind in ('several', 'one')),
+             f"cost: ${sum(r['usd'] for r in results):.4f} total, ${sum(r['usd'] for r in results) / n:.4f} per item",
+             f"frontier model called on: {sum(r['frontier_calls'] > 0 for r in results)}/{n}", f"split outcomes: {dict(Counter(r['split'] for r in results))}"]
+    wrong = [r for r in results if not r['correct']]
+    if wrong: lines += ['not correct:'] + [f"  {r['id']} [{r['split']}] in parts: {r['answered_in_parts']} statuses {r['statuses']} tiers {r['tiers']} -> {r['parts']}" for r in wrong]
+    text = '\n'.join(lines)
+    (OUT / f'{run_id}.report.txt').write_text(text + '\n'); (OUT / f'{run_id}.results.json').write_text(json.dumps(results, indent=1))
+    return text
+
+
 def main(argv):
+    if argv[0] == 'multi':
+        import os
+        os.environ.pop('ANTHROPIC_API_KEY', None)
+        from run_integrated_stack import keys
+        keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+        print('\n' + multi(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3')))
+        return
     if argv[0] == 'chains':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)

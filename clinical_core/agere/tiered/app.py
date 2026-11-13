@@ -53,8 +53,55 @@ def try_in_conversation(stack, question, previous, looks_like_follow_up):
 
 
 def try_answer(stack, question):
-    """-> the app's result dict, or None to continue on the existing path."""
+    """-> the app's result dict, or None to continue on the existing path.
+    A message that asks several separate questions is split (split.parts) and each part goes through the tiers; it
+    is answered as one composite only when every part is answered. Otherwise it is tried as one question."""
     if not enabled(): return None
+    from . import split
+    s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
+    if split.candidate(question, bottle_store.Bottles()):
+        try:
+            found, how = split.parts(question, s1_ledger)
+        except Exception as exc:
+            if 'limit' in str(exc).lower(): raise
+            found, how = None, None
+        if found:
+            results = []
+            for part in found:
+                results.append(_single(stack, part))
+                if results[-1] is None: break  # one unanswered part: the message is not answered in pieces
+            if all(results): return _combine(question, found, results, how)
+    return _single(stack, question)
+
+
+def _combine(question, parts, results, how):
+    """One composite result from the parts' results. The existing answer view draws each section."""
+    answers = [r['answer'] for r in results]
+    usd = sum(r['planner_receipt']['known_api_estimate_usd'] for r in results) + how['usd']
+    calls = sum(r['new_paid_api_calls'] for r in results) + 1
+    tier = max((r['planner_receipt']['final_tier'] for r in results), key=TIERS.index)
+    limitations = list(dict.fromkeys(line for a in answers for line in a.get('limitations') or []))
+    answer = {'status': 'answered', 'answer_type': 'composite', 'headline': ' '.join(str(a.get('headline') or '') for a in answers)[:1200],
+              'sections': [{'title': part, 'answer': a} for part, a in zip(parts, answers)],
+              'table': [], 'sources': [], 'missing': [], 'patient_ids': [],
+              'verification': 'checked' if all(a.get('verification') == 'checked' for a in answers) else 'unverified',
+              'limitations': [f'The message was read as {len(parts)} separate questions (split by the small model, confirmed by System One); each was answered on its own.', *limitations],
+              'facts': {'read_as': f'{len(parts)} separate questions: ' + ' | '.join(parts),
+                        **{f'part_{i}': f"{part} — {a['facts'].get('answered_by', '')}" for i, (part, a) in enumerate(zip(parts, answers), 1)}},
+              'grounding': [line for a in answers for line in a.get('grounding') or []]}
+    nodes = [{**r['graph']['nodes'][0], 'id': f'tiered_{i}', 'purpose': f'Tiered core recipe (executed) for: {part}'} for i, (part, r) in enumerate(zip(parts, results))]
+    return {'answer': answer, 'results': [], 'new_paid_api_calls': calls, 'workflow': [], 'question': question, 'route': 'tiered_core',
+            'graph': {'interpretation': question, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': nodes},
+            'planner_receipt': {'route': 'tiered_core', 'version': VERSION, 'final_tier': tier, 'split': {**how, 'parts': parts},
+                                'parts': [r['planner_receipt'] for r in results], 'new_paid_api_calls': calls, 'known_api_estimate_usd': usd,
+                                'api_cost_known': True, 'frontier_called': any(r['planner_receipt']['frontier_called'] for r in results)},
+            'planning_economics': {'new_api_estimate_usd': usd, 'known_api_estimate_usd': usd, 'total_cost_known': True, 'scope': 'Tiered core model calls only.'},
+            'tiered_core': {'final_tier': tier, 'seconds': round(sum(r['tiered_core']['seconds'] for r in results) + how['seconds'], 2), 'parts': len(parts),
+                            'escalations': [e for r in results for e in r['tiered_core']['escalations']]}}
+
+
+def _single(stack, question):
+    """One question through the tiers. -> the app's result dict, or None."""
     s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
     bottles = bottle_store.Bottles()
     try:
