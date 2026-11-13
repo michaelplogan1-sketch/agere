@@ -169,10 +169,10 @@ RECIPES = {
         'title': 'For one patient, the reason each document states for a heart-failure medication not being taken, held, stopped or not started (each document is read)',
         'params': {'patient_id': {'type': 'patient'}},
         'sql': "SELECT record_id, event_date, source FROM document WHERE patient_id = :patient_id ORDER BY event_date, record_id",
-        'read': {'statement': 'The document states a reason why a heart failure medication (a beta blocker, ACE inhibitor, ARB, ARNI, MRA or SGLT2 inhibitor) '
-                              'is not being taken, was held, was stopped or was not started.',
-                 'value': 'the stated reason, together with the medication it is about', 'mode': 'extract'},
-        'columns': ['record_id', 'event_date', 'source', 'value'],
+        # Typed judgments on passages (reasons.py): code finds each passage about a pillar medication, System One picks the kind of reason.
+        'read': {'statement': 'The passage states a reason a guideline heart failure medication is not being taken, was held, stopped, not started or not increased.',
+                 'mode': 'medication_reasons'},
+        'columns': ['pillar', 'medication', 'reason_kind', 'passage', 'first_date', 'last_date', 'documents'],
         'patterns': [r"what reason does each of patient (?P<patient_id>[a-z0-9-]+)'s documents give for a heart failure medication not being taken"]},
 }
 ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS}

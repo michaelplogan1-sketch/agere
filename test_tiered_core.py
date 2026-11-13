@@ -323,6 +323,24 @@ class Core(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d,mock.patch.object(LN,'OUT',Path(d)),mock.patch.object(LN,'LOCK',Path(d)/'lock'):
             (Path(d)/'lock').write_text('1');self.assertEqual(LN.auto(),{'decision':'already_running'});self.assertFalse(LN.spawn_auto())
 
+    def test_medication_reasons_are_typed_judgments_on_passages_code_finds(self):
+        from clinical_core.agere.tiered import reasons as RS,split as SP
+        texts={'d1':{'text':'Meds reviewed. carvedilol 12.5 mg tablet: No replacement prescription authorized at this review. Reports running out. furosemide 40 mg tablet: taking daily.','event_date':'2029-10-01'},
+               'd2':{'text':'Prior entry dated 2026-06-15: MRA held for K 5.2 — CKD3 complicates the pillar math. History on file.','event_date':'2029-11-01'},
+               'd3':{'text':'Prior entry dated 2026-06-15: MRA held for K 5.2 — CKD3 complicates the pillar math. History on file.','event_date':'2029-12-01'},
+               'd4':{'text':'Ankle sprain. Ice and elevation.','event_date':'2029-12-02'}}
+        found=RS.passages(texts);self.assertEqual(sorted((p['drug'],len(p['record_ids'])) for p in found),[('carvedilol',1),('mra',2)])  # a repeated passage is judged once
+        self.assertNotIn('furosemide',next(p['text'] for p in found if p['drug']=='carvedilol'))  # the next drug's entry ends this one's
+        answers={'carvedilol':'cost_or_supply','mra':None}
+        s1=lambda passage,ledger,as_of:{'by':'system1','label':answers[passage['drug']],'usd':0.0,'tokens':0}
+        slm=lambda tier,passage:{'by':tier,'label':'lab_or_vital_limit' if tier=='slm' else None,'usd':0.001,'tokens':20}
+        with mock.patch.object(RS,'_system_one',side_effect=s1),mock.patch.object(RS,'_model',side_effect=slm) as model,mock.patch.object(RS.store,'run',return_value=(['record_id'],[[k] for k in texts])),\
+             mock.patch.object(RS.store,'texts',return_value=texts),mock.patch.object(RS.store,'as_of',return_value='2030-01-01'):
+            cols,rows,val,steps,ev=RS.execute('q','SELECT record_id FROM document WHERE patient_id=:p',{'p':'x'},{'mode':'medication_reasons'},None)
+        self.assertEqual([(r[1],r[2],r[6]) for r in rows],[('carvedilol','cost_or_supply',1),('mra','lab_or_vital_limit',2)]);self.assertEqual((val['ok'],model.call_count),(True,1))  # only the undecided passage reached a model
+        self.assertTrue(all(any(r[3] in ' '.join(t['text'].split()) for t in texts.values()) for r in rows))  # every passage is the record's own words
+        parts,how=SP.known("Why isn't patient P-HF07 on all four GDMT pillars?");self.assertEqual((len(parts),how['usd']),(3,0.0));self.assertIsNone(SP.known('Why is the sky blue?'))
+
     def test_narrative_numbers_come_only_from_the_result_and_a_bad_text_is_discarded(self):
         from clinical_core.agere.tiered import narrative as N
         cols,rows=['month','events'],[['2029-01',120],['2029-02',95],['2029-03',1430]]

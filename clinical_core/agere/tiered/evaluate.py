@@ -358,10 +358,10 @@ def _score_reasons(items, required, optional, texts):
     return found, unsupported, extra
 
 
-def hf(s1_ledger=None, only=None):
+def hf(s1_ledger=None, only=None, path='eval/tiered/hf_reasons.json'):
     """Why is a heart-failure patient not on every guideline medication: the stack against a frontier model handed the chart."""
     from . import models, split
-    data = json.loads(Path('eval/tiered/hf_reasons.json').read_text())
+    data = json.loads(Path(path).read_text())
     run_id = f"hf-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
     led, bottles, results, db = ledger_store.Ledger(), bottle_store.Bottles(), [], store.connect()
     for pt in data['patients']:
@@ -416,7 +416,8 @@ def main(argv):
         os.environ.pop('ANTHROPIC_API_KEY', None)
         from run_integrated_stack import keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
-        print('\n' + hf(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'), set(argv[1].split(',')) if len(argv) > 1 else None))
+        paths = [x for x in argv[1:] if x.endswith('.json')]; pick = [x for x in argv[1:] if not x.endswith('.json')]
+        print('\n' + hf(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'), set(pick[0].split(',')) if pick else None, *paths[:1]))
         return
     if argv[0] == 'compare':
         import os

@@ -148,6 +148,9 @@ def judge(statement, doc, *, readers=READERS, s1_ledger=None, as_of=None):
 def execute(question, sql, params, read, db, *, readers=READERS, s1_ledger=None):
     """Run one reading plan. -> (columns, rows, validation, steps, evidence). Raises store.RecipeError when the plan cannot run."""
     statement, mode = str((read or {}).get('statement') or '').strip(), (read or {}).get('mode') or 'count'
+    if mode == 'medication_reasons':
+        from . import reasons
+        return reasons.execute(question, sql, params, read, db, readers=readers, s1_ledger=s1_ledger)
     for name, value in (params or {}).items():
         statement = statement.replace('{' + name + '}', str(value))
     wanted = str((read or {}).get('value') or '').strip()
