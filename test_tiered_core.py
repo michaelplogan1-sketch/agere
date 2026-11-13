@@ -165,6 +165,29 @@ class Core(unittest.TestCase):
             with a,c:out=router.answer("Which of patient P-1's scans report an infiltrate?",tiers=('bottles',),bottles=b)
             self.assertEqual((out['status'],out['final_tier'],sorted(r[0]for r in out['rows'])),('answered','bottles',['d1','d3','d5']))
 
+    def test_follow_up_is_made_complete_cheapest_first_and_an_unconfirmed_rewrite_is_not_used(self):
+        from clinical_core.agere.tiered import app as A,followup as F
+        prev='How many ED visits were there in 2029?'
+        with mock.patch.object(F.models,'_claude',side_effect=AssertionError('no model for a period swap')):
+            self.assertEqual(F.rewrite('and in 2028?',prev)[0],'How many ED visits were there in 2028?')
+            self.assertEqual(F.rewrite('what about 2028',prev)[1]['method'],'period_swapped_by_code')
+        self.assertIsNone(F.rewrite('and in 2028?',None)[0])
+        said=lambda text:mock.patch.object(F.models,'_claude',return_value=(text,{'usd':0.001,'tokens':50}))
+        s1=lambda label:mock.patch('clinical_core.agere.clinical.system_one.choice',return_value={'label':label,'probabilities':{label:0.95},'cost_usd':0.0})
+        with said('{"standalone": "How many hospital admissions were there in 2029?"}'),s1('yes'):
+            text,how=F.rewrite('what about hospital admissions?',prev);self.assertEqual((text,how['method']),('How many hospital admissions were there in 2029?','small_model_rewrite_confirmed_by_system_one'))
+        with said('{"standalone": "How many hospital admissions were there in 2028?"}'),s1('no'):
+            self.assertEqual(F.rewrite('what about hospital admissions?',prev)[1]['method'],'rewrite_not_confirmed')
+        with said('{"standalone": null}'):self.assertEqual(F.rewrite('why is that?',prev)[1]['method'],'not_an_edit_of_the_previous_question')
+        stack=mock.Mock(spec=[])
+        with tempfile.TemporaryDirectory() as d,mock.patch.dict(os.environ,{'AGERE_TIERED_CORE':'on','AGERE_TIERED_BOTTLES':d+'/b.sqlite3','AGERE_TIERED_LEDGER':d+'/l.sqlite3'}):
+            result,standalone,note=A.try_in_conversation(stack,'and in 2028?',prev,True)
+            self.assertEqual((standalone,result['answer']['count']),('How many ED visits were there in 2028?',1));self.assertIn('swapped',result['answer']['facts']['follow_up'])
+            result,standalone,note=A.try_in_conversation(stack,'Show monthly ED visits in 2029',prev,True)  # complete on its own: never rewritten
+            self.assertEqual((standalone,len(result['answer']['table'])),('Show monthly ED visits in 2029',2))
+            with said('{"standalone": "How many hospital admissions were there in 2028?"}'),s1('no'):
+                self.assertIsNone(A.try_in_conversation(stack,'what about hospital admissions?',prev,True))
+
     def test_eval_scoring_ignores_names_and_order_but_not_values_or_row_count(self):
         ref=[['a',1],['b',2]]
         self.assertTrue(EV.correct(ref,[[2,'b','extra'],[1.0,'a','x']]))

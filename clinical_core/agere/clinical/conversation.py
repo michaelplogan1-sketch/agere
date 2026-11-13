@@ -1018,6 +1018,7 @@ def _handle_compose(stack, body, hosted_factory=None):
         else:
             prior = None if body.get('scope') == 'warehouse' else prior_context(stack.path, conv)
             explicit_context = body.get('answer_context_id')
+            selected_answer = None
             if explicit_context and body.get('answer_scope')=='auto'and not(refers or is_followup(question)or answer_context.saved_followup_edit(question)):
                 # A complete independent question remains independent. A bare
                 # saved-set edit keeps the context and must resolve its scope.
@@ -1025,7 +1026,7 @@ def _handle_compose(stack, body, hosted_factory=None):
             if explicit_context:
                 # The UI may reopen a saved answer or select an earlier turn.
                 # Resolve the server-owned immutable membership, never client IDs.
-                answer_context.load(stack.path, explicit_context, current=True)
+                selected_answer = answer_context.load(stack.path, explicit_context, current=True)
                 prior = {'action_context': {'id': explicit_context}}
             saved = (prior or {}).get('action_context')
             bound = None
@@ -1050,11 +1051,21 @@ def _handle_compose(stack, body, hosted_factory=None):
             used_temporal = False
             if explicit_context and not shared:
                 raise QuestionNotUnderstood('This service cannot apply an explicitly selected saved cohort. The saved population was preserved; no warehouse-wide query was run.')
-            rescoped = ((rescope(stack, question, saved) or regroup(stack, question, saved)) if shared and saved and not explicit_context
+            # Cheapest tier first inside a conversation too: a follow-up is made complete from the previous question and
+            # goes through the tiered core. Saved-cohort references and explicit contexts stay on the existing path.
+            from ..tiered import app as tiered_app
+            # The app sends the answer a follow-up was typed under. When that answer is a number or table with no patient
+            # cohort, the follow-up edits its question; a selected patient cohort stays on the existing path.
+            cohort_selected = bool(explicit_context) and bool((selected_answer or {}).get('patient_ids'))
+            previous_question = (selected_answer or {}).get('question') if explicit_context else (prior or {}).get('resolved_question')
+            tiered = (tiered_app.try_in_conversation(stack, question, previous_question, is_followup(question))
+                      if planning == 'auto' and not cohort_selected and not refers and not reference else None)
+            rescoped = tiered or ((rescope(stack, question, saved) or regroup(stack, question, saved)) if shared and saved and not explicit_context
                         and body.get('scope') != 'warehouse' else None)
             if rescoped:
                 result, standalone, note = rescoped
-                resolution = {'standalone': standalone, 'method': 'rescoped', 'frame': None, 'follow_up': True,
+                resolution = {'standalone': standalone, 'method': 'tiered_core' if tiered else 'rescoped', 'frame': None,
+                              'follow_up': standalone != question if tiered else True,
                               'edits': [note], 'reason': note, 'hosted_receipt': None}
             else:
                 shared_edit = bool(explicit_context) or (body.get('scope') != 'warehouse' and

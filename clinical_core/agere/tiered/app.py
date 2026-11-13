@@ -23,6 +23,37 @@ def _headline(columns, rows):
     return f"{len(rows)} rows by {columns[0].replace('_', ' ')}; see the table."
 
 
+def try_in_conversation(stack, question, previous, looks_like_follow_up):
+    """A question asked inside a conversation. -> (result, complete question, note) or None for the existing path.
+    A question the zero-cost tiers recognise is complete. Otherwise a follow-up is first made complete from the
+    previous question (followup.rewrite); words that are not an edit of the previous question are tried as they are."""
+    if not enabled(): return None
+    from . import followup, recipes
+    complete = recipes.match(question) is not None or bottle_store.Bottles().match(question, statuses=('promoted',)) is not None
+    standalone, how = question, None
+    if not complete and looks_like_follow_up and previous:
+        s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
+        try:
+            rewritten, how = followup.rewrite(question, previous, s1_ledger)
+        except Exception as exc:
+            if 'limit' in str(exc).lower(): raise
+            return None
+        if how['method'] == 'rewrite_not_confirmed': return None  # an edit we could not make safely: leave it to the existing path
+        standalone = rewritten or question
+    result = try_answer(stack, standalone)
+    if result is None: return None
+    note = 'Complete question answered by the tiered core'
+    if how and standalone != question:
+        by = {'period_swapped_by_code': 'the period was swapped into the previous question by code',
+              'small_model_rewrite_confirmed_by_system_one': 'rewritten from the previous question by the small model and confirmed by System One'}[how['method']]
+        note = f'Follow-up read as: "{standalone}" ({by}).'
+        result['answer']['facts'] = {'follow_up': note, **(result['answer'].get('facts') or {})}
+        result['planner_receipt']['follow_up'] = {**how, 'previous': previous, 'standalone': standalone}
+        for key in ('new_api_estimate_usd', 'known_api_estimate_usd'): result['planning_economics'][key] += how['usd']
+        result['planner_receipt']['known_api_estimate_usd'] += how['usd']
+    return result, standalone, note
+
+
 def try_answer(stack, question):
     """-> the app's result dict, or None to continue on the existing path."""
     if not enabled(): return None
