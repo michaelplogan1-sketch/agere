@@ -1,0 +1,1865 @@
+{
+ "schema": "tiered-eval/1",
+ "authored": "2026-11-13",
+ "authored_by": "build owner, by hand-written reference SQL executed on the semantic layer; structured questions only",
+ "semantic_layer": "semantic-layer/20:de1e487344c2c566",
+ "questions": [
+  {
+   "id": "A01",
+   "shape": "canonical",
+   "question": "How many ED visits were there in 2029?",
+   "reference_sql": "SELECT COUNT(*) FROM utilization_event WHERE kind='ed_visit' AND substr(event_date,1,4)='2029'",
+   "reference_rows": [
+    [
+     1501
+    ]
+   ]
+  },
+  {
+   "id": "A02",
+   "shape": "canonical",
+   "question": "How many inpatient admissions were there in 2028?",
+   "reference_sql": "SELECT COUNT(*) FROM utilization_event WHERE kind='inpatient' AND substr(event_date,1,4)='2028'",
+   "reference_rows": [
+    [
+     578
+    ]
+   ]
+  },
+  {
+   "id": "A03",
+   "shape": "canonical",
+   "question": "Show monthly ED visits in 2029",
+   "reference_sql": "SELECT substr(event_date,1,7), COUNT(*) FROM utilization_event WHERE kind='ed_visit' AND substr(event_date,1,4)='2029' GROUP BY 1",
+   "reference_rows": [
+    [
+     "2029-01",
+     127
+    ],
+    [
+     "2029-02",
+     142
+    ],
+    [
+     "2029-03",
+     134
+    ],
+    [
+     "2029-04",
+     137
+    ],
+    [
+     "2029-05",
+     124
+    ],
+    [
+     "2029-06",
+     122
+    ],
+    [
+     "2029-07",
+     114
+    ],
+    [
+     "2029-08",
+     110
+    ],
+    [
+     "2029-09",
+     115
+    ],
+    [
+     "2029-10",
+     138
+    ],
+    [
+     "2029-11",
+     111
+    ],
+    [
+     "2029-12",
+     127
+    ]
+   ]
+  },
+  {
+   "id": "A04",
+   "shape": "canonical",
+   "question": "List inpatient stays admitted in 2029 by organization",
+   "reference_sql": "SELECT organization_id, COUNT(*), SUM(discharge_known), COUNT(*)-SUM(discharge_known) FROM stay WHERE type='inpatient' AND substr(admit_date,1,4)='2029' GROUP BY 1",
+   "reference_rows": [
+    [
+     "1018288179",
+     1,
+     1,
+     0
+    ],
+    [
+     "1035285075",
+     2,
+     2,
+     0
+    ],
+    [
+     "1075352488",
+     10,
+     10,
+     0
+    ],
+    [
+     "1152124669",
+     1,
+     1,
+     0
+    ],
+    [
+     "1180188330",
+     1,
+     1,
+     0
+    ],
+    [
+     "1192245904",
+     8,
+     8,
+     0
+    ],
+    [
+     "1264477518",
+     2,
+     2,
+     0
+    ],
+    [
+     "1329862167",
+     12,
+     12,
+     0
+    ],
+    [
+     "1334261199",
+     3,
+     3,
+     0
+    ],
+    [
+     "1426394395",
+     2,
+     2,
+     0
+    ],
+    [
+     "1459919043",
+     1,
+     1,
+     0
+    ],
+    [
+     "1485065845",
+     7,
+     7,
+     0
+    ],
+    [
+     "1543095958",
+     3,
+     3,
+     0
+    ],
+    [
+     "1569663663",
+     3,
+     3,
+     0
+    ],
+    [
+     "1583747641",
+     5,
+     5,
+     0
+    ],
+    [
+     "1783766904",
+     4,
+     4,
+     0
+    ],
+    [
+     "1848219253",
+     10,
+     10,
+     0
+    ],
+    [
+     "1863210492",
+     2,
+     2,
+     0
+    ],
+    [
+     "1893168629",
+     2,
+     2,
+     0
+    ],
+    [
+     "1929182206",
+     9,
+     9,
+     0
+    ],
+    [
+     "1941356556",
+     7,
+     7,
+     0
+    ],
+    [
+     "1984011779",
+     4,
+     4,
+     0
+    ],
+    [
+     "WH-HOSPITAL-0",
+     34,
+     27,
+     7
+    ],
+    [
+     "WH-HOSPITAL-1",
+     23,
+     18,
+     5
+    ],
+    [
+     "WH-HOSPITAL-2",
+     34,
+     28,
+     6
+    ],
+    [
+     "WH-HOSPITAL-3",
+     31,
+     26,
+     5
+    ],
+    [
+     "WHN-HOSPITAL-AK-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-AL-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-AR-0",
+     3,
+     3,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-AZ-0",
+     15,
+     15,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-CA-0",
+     2,
+     2,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-CA-1",
+     4,
+     4,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-CA-2",
+     8,
+     8,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-CA-3",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-CA-5",
+     5,
+     5,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-CA-6",
+     12,
+     12,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-CA-7",
+     4,
+     4,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-CO-0",
+     8,
+     7,
+     1
+    ],
+    [
+     "WHN-HOSPITAL-CT-0",
+     2,
+     2,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-FL-0",
+     3,
+     3,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-FL-1",
+     15,
+     14,
+     1
+    ],
+    [
+     "WHN-HOSPITAL-FL-2",
+     9,
+     9,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-FL-3",
+     5,
+     5,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-FL-4",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-GA-0",
+     4,
+     4,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-GA-1",
+     8,
+     8,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-IL-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-IL-1",
+     2,
+     2,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-IL-2",
+     5,
+     5,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-IN-0",
+     5,
+     5,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-KS-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-KY-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-LA-0",
+     3,
+     3,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-MA-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-MI-0",
+     9,
+     9,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-MI-1",
+     4,
+     4,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-MN-0",
+     9,
+     8,
+     1
+    ],
+    [
+     "WHN-HOSPITAL-MO-0",
+     6,
+     6,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-MS-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-NC-0",
+     8,
+     8,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-NC-1",
+     8,
+     8,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-ND-0",
+     2,
+     2,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-NE-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-NJ-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-NJ-1",
+     7,
+     7,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-NM-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-NV-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-NY-1",
+     6,
+     6,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-NY-2",
+     11,
+     11,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-NY-3",
+     8,
+     8,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-OH-1",
+     6,
+     6,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-OK-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-OR-0",
+     5,
+     5,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-PA-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-PA-1",
+     9,
+     8,
+     1
+    ],
+    [
+     "WHN-HOSPITAL-PA-2",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-RI-0",
+     2,
+     2,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-SC-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-SD-0",
+     3,
+     3,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-TN-0",
+     9,
+     9,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-TX-0",
+     5,
+     5,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-TX-1",
+     8,
+     8,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-TX-3",
+     2,
+     2,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-TX-4",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-TX-5",
+     7,
+     7,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-UT-0",
+     6,
+     6,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-VA-0",
+     17,
+     17,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-VA-1",
+     11,
+     11,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-WA-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-WA-1",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-WI-0",
+     1,
+     1,
+     0
+    ],
+    [
+     "WHN-HOSPITAL-WV-0",
+     1,
+     1,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "A05",
+   "shape": "canonical",
+   "question": "What was the 30-day readmission rate in 2029?",
+   "reference_sql": "SELECT COUNT(*), SUM(readmitted_30d), ROUND(1.0*SUM(readmitted_30d)/COUNT(*),4) FROM stay WHERE type='inpatient' AND discharge_known=1 AND substr(discharge_date,1,4)='2029'",
+   "reference_rows": [
+    [
+     505,
+     106,
+     0.2099
+    ]
+   ]
+  },
+  {
+   "id": "A06",
+   "shape": "canonical",
+   "question": "Show appointments scheduled in 2029 by final status",
+   "reference_sql": "SELECT final_status, COUNT(*) FROM appointment WHERE substr(scheduled_date,1,4)='2029' GROUP BY 1",
+   "reference_rows": [
+    [
+     "arrived",
+     332
+    ],
+    [
+     "attended",
+     579
+    ],
+    [
+     "booked",
+     425
+    ],
+    [
+     "cancelled",
+     420
+    ],
+    [
+     "fulfilled",
+     8192
+    ],
+    [
+     "no_show",
+     522
+    ],
+    [
+     "rescheduled",
+     2
+    ]
+   ]
+  },
+  {
+   "id": "A07",
+   "shape": "canonical",
+   "question": "How many patients have heart failure?",
+   "reference_sql": "SELECT COUNT(DISTINCT patient_id) FROM concept_patient WHERE kind='condition' AND concept='heart_failure'",
+   "reference_rows": [
+    [
+     387
+    ]
+   ]
+  },
+  {
+   "id": "A08",
+   "shape": "canonical",
+   "question": "What are the 5 most common conditions?",
+   "reference_sql": "SELECT concept, COUNT(DISTINCT patient_id) FROM concept_patient WHERE kind='condition' GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 5",
+   "reference_rows": [
+    [
+     "hypertension",
+     1229
+    ],
+    [
+     "obesity",
+     1203
+    ],
+    [
+     "diabetes",
+     990
+    ],
+    [
+     "hyperlipidemia",
+     899
+    ],
+    [
+     "prediabetes",
+     831
+    ]
+   ]
+  },
+  {
+   "id": "A09",
+   "shape": "canonical",
+   "question": "Show medication fills in 2029 by drug class",
+   "reference_sql": "SELECT drug_class, COUNT(*), COUNT(DISTINCT patient_id) FROM fill WHERE substr(fill_date,1,4)='2029' AND drug_class IS NOT NULL GROUP BY 1",
+   "reference_rows": [
+    [
+     "ace_inhibitor",
+     1912,
+     392
+    ],
+    [
+     "acetaminophen",
+     24,
+     24
+    ],
+    [
+     "adhd_stimulant",
+     356,
+     58
+    ],
+    [
+     "alpha1_blocker",
+     156,
+     28
+    ],
+    [
+     "anticoagulant",
+     355,
+     63
+    ],
+    [
+     "antiemetic_5ht3",
+     45,
+     45
+    ],
+    [
+     "antiplatelet",
+     729,
+     169
+    ],
+    [
+     "antipsychotic",
+     35,
+     7
+    ],
+    [
+     "antiretroviral",
+     29,
+     5
+    ],
+    [
+     "arb",
+     1281,
+     258
+    ],
+    [
+     "arni",
+     74,
+     15
+    ],
+    [
+     "benzodiazepine",
+     135,
+     11
+    ],
+    [
+     "beta_blocker",
+     848,
+     173
+    ],
+    [
+     "bisphosphonate",
+     138,
+     23
+    ],
+    [
+     "calcium_channel_blocker",
+     1476,
+     296
+    ],
+    [
+     "cephalosporin",
+     93,
+     89
+    ],
+    [
+     "cholinesterase_inhibitor",
+     129,
+     22
+    ],
+    [
+     "csdmard",
+     73,
+     13
+    ],
+    [
+     "dpp4_inhibitor",
+     61,
+     15
+    ],
+    [
+     "fluoroquinolone",
+     68,
+     67
+    ],
+    [
+     "gabapentinoid",
+     122,
+     23
+    ],
+    [
+     "glp1_agonist",
+     1229,
+     139
+    ],
+    [
+     "hf_evidence_based_beta_blocker",
+     573,
+     121
+    ],
+    [
+     "hormonal_contraceptive",
+     704,
+     109
+    ],
+    [
+     "inhaled_corticosteroid",
+     627,
+     111
+    ],
+    [
+     "insulin",
+     336,
+     54
+    ],
+    [
+     "iron_supplement",
+     899,
+     73
+    ],
+    [
+     "laba",
+     352,
+     63
+    ],
+    [
+     "lama",
+     147,
+     33
+    ],
+    [
+     "leukotriene_modifier",
+     92,
+     16
+    ],
+    [
+     "levothyroxine",
+     663,
+     117
+    ],
+    [
+     "lithium",
+     24,
+     5
+    ],
+    [
+     "loop_diuretic",
+     706,
+     171
+    ],
+    [
+     "macrolide",
+     81,
+     79
+    ],
+    [
+     "metformin",
+     1299,
+     179
+    ],
+    [
+     "mra",
+     520,
+     67
+    ],
+    [
+     "ndri",
+     240,
+     45
+    ],
+    [
+     "nitrate",
+     101,
+     5
+    ],
+    [
+     "nitrofuran",
+     79,
+     76
+    ],
+    [
+     "nsaid",
+     559,
+     33
+    ],
+    [
+     "opioid",
+     76,
+     56
+    ],
+    [
+     "opioid_antagonist",
+     24,
+     5
+    ],
+    [
+     "penicillin",
+     187,
+     182
+    ],
+    [
+     "proton_pump_inhibitor",
+     708,
+     114
+    ],
+    [
+     "sari_antidepressant",
+     171,
+     30
+    ],
+    [
+     "second_generation_antihistamine",
+     48,
+     15
+    ],
+    [
+     "sglt2_inhibitor",
+     1056,
+     143
+    ],
+    [
+     "short_acting_beta_agonist",
+     1612,
+     66
+    ],
+    [
+     "skeletal_muscle_relaxant",
+     66,
+     66
+    ],
+    [
+     "smoking_cessation",
+     95,
+     2
+    ],
+    [
+     "snri",
+     174,
+     37
+    ],
+    [
+     "ssri",
+     1343,
+     243
+    ],
+    [
+     "statin",
+     3380,
+     665
+    ],
+    [
+     "sulfonamide_antibiotic",
+     86,
+     85
+    ],
+    [
+     "sulfonylurea",
+     173,
+     29
+    ],
+    [
+     "systemic_corticosteroid",
+     35,
+     31
+    ],
+    [
+     "tetracycline_antibiotic",
+     83,
+     82
+    ],
+    [
+     "thiazide_diuretic",
+     973,
+     173
+    ],
+    [
+     "thiazolidinedione",
+     52,
+     11
+    ],
+    [
+     "tnf_inhibitor",
+     12,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "A10",
+   "shape": "canonical",
+   "question": "How many statin fills were there in 2029?",
+   "reference_sql": "SELECT COUNT(*), COUNT(DISTINCT patient_id) FROM fill WHERE drug_class='statin' AND substr(fill_date,1,4)='2029'",
+   "reference_rows": [
+    [
+     3380,
+     665
+    ]
+   ]
+  },
+  {
+   "id": "A11",
+   "shape": "canonical",
+   "question": "How many members did each payer have in 2029-06?",
+   "reference_sql": "SELECT payer_id, COUNT(DISTINCT patient_id) FROM member_month WHERE month='2029-06' GROUP BY 1",
+   "reference_rows": [
+    [
+     "WH-PAYER-0",
+     524
+    ],
+    [
+     "WH-PAYER-1",
+     541
+    ],
+    [
+     "WH-PAYER-2",
+     340
+    ],
+    [
+     "WH-PAYER-C1",
+     361
+    ],
+    [
+     "WH-PAYER-C2",
+     326
+    ],
+    [
+     "WH-PAYER-C3",
+     367
+    ],
+    [
+     "WH-PAYER-DSNP1",
+     65
+    ],
+    [
+     "WH-PAYER-MA1",
+     90
+    ],
+    [
+     "WH-PAYER-MA2",
+     96
+    ],
+    [
+     "WH-PAYER-MA3",
+     75
+    ],
+    [
+     "WH-PAYER-MCD1",
+     227
+    ],
+    [
+     "WH-PAYER-MCD2",
+     215
+    ],
+    [
+     "WH-PAYER-MSSP",
+     198
+    ],
+    [
+     "WH-PAYER-SUP1",
+     11
+    ],
+    [
+     "WH-PAYER-SUP2",
+     10
+    ],
+    [
+     "WH-PAYER-X1",
+     126
+    ]
+   ]
+  },
+  {
+   "id": "A12",
+   "shape": "canonical",
+   "question": "How many patients are there by sex?",
+   "reference_sql": "SELECT sex_reported, COUNT(*) FROM patient GROUP BY 1",
+   "reference_rows": [
+    [
+     "F",
+     2124
+    ],
+    [
+     "M",
+     1991
+    ]
+   ]
+  },
+  {
+   "id": "B01",
+   "shape": "paraphrase",
+   "question": "Count of emergency department visits during 2028",
+   "reference_sql": "SELECT COUNT(*) FROM utilization_event WHERE kind='ed_visit' AND substr(event_date,1,4)='2028'",
+   "reference_rows": [
+    [
+     1465
+    ]
+   ]
+  },
+  {
+   "id": "B02",
+   "shape": "paraphrase",
+   "question": "Give me the number of hospital admissions in 2029",
+   "reference_sql": "SELECT COUNT(*) FROM utilization_event WHERE kind='inpatient' AND substr(event_date,1,4)='2029'",
+   "reference_rows": [
+    [
+     533
+    ]
+   ]
+  },
+  {
+   "id": "B03",
+   "shape": "paraphrase",
+   "question": "Month-by-month counts of inpatient admissions for 2029",
+   "reference_sql": "SELECT substr(event_date,1,7), COUNT(*) FROM utilization_event WHERE kind='inpatient' AND substr(event_date,1,4)='2029' GROUP BY 1",
+   "reference_rows": [
+    [
+     "2029-01",
+     57
+    ],
+    [
+     "2029-02",
+     39
+    ],
+    [
+     "2029-03",
+     37
+    ],
+    [
+     "2029-04",
+     59
+    ],
+    [
+     "2029-05",
+     45
+    ],
+    [
+     "2029-06",
+     45
+    ],
+    [
+     "2029-07",
+     41
+    ],
+    [
+     "2029-08",
+     39
+    ],
+    [
+     "2029-09",
+     32
+    ],
+    [
+     "2029-10",
+     48
+    ],
+    [
+     "2029-11",
+     39
+    ],
+    [
+     "2029-12",
+     52
+    ]
+   ]
+  },
+  {
+   "id": "B04",
+   "shape": "paraphrase",
+   "question": "Break down the appointments scheduled in 2028 by their final status",
+   "reference_sql": "SELECT final_status, COUNT(*) FROM appointment WHERE substr(scheduled_date,1,4)='2028' GROUP BY 1",
+   "reference_rows": [
+    [
+     "booked",
+     59
+    ],
+    [
+     "cancelled",
+     303
+    ],
+    [
+     "fulfilled",
+     6928
+    ],
+    [
+     "no_show",
+     476
+    ],
+    [
+     "rescheduled",
+     1
+    ]
+   ]
+  },
+  {
+   "id": "B05",
+   "shape": "paraphrase",
+   "question": "How many people have diabetes on record?",
+   "reference_sql": "SELECT COUNT(DISTINCT patient_id) FROM concept_patient WHERE kind='condition' AND concept='diabetes'",
+   "reference_rows": [
+    [
+     990
+    ]
+   ]
+  },
+  {
+   "id": "B06",
+   "shape": "paraphrase",
+   "question": "Top 10 conditions ranked by number of patients",
+   "reference_sql": "SELECT concept, COUNT(DISTINCT patient_id) FROM concept_patient WHERE kind='condition' GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 10",
+   "reference_rows": [
+    [
+     "hypertension",
+     1229
+    ],
+    [
+     "obesity",
+     1203
+    ],
+    [
+     "diabetes",
+     990
+    ],
+    [
+     "hyperlipidemia",
+     899
+    ],
+    [
+     "prediabetes",
+     831
+    ],
+    [
+     "type_2_diabetes",
+     831
+    ],
+    [
+     "anxiety",
+     627
+    ],
+    [
+     "anemia",
+     531
+    ],
+    [
+     "depression",
+     498
+    ],
+    [
+     "coronary_artery_disease",
+     418
+    ]
+   ]
+  },
+  {
+   "id": "B07",
+   "shape": "paraphrase",
+   "question": "Number of metformin fills in 2028 and how many patients had them",
+   "reference_sql": "SELECT COUNT(*), COUNT(DISTINCT patient_id) FROM fill WHERE drug_class='metformin' AND substr(fill_date,1,4)='2028'",
+   "reference_rows": [
+    [
+     1398,
+     200
+    ]
+   ]
+  },
+  {
+   "id": "B08",
+   "shape": "paraphrase",
+   "question": "For services in 2028, give claims and billed, allowed and paid amounts for each payer",
+   "reference_sql": "SELECT payer, COUNT(*), SUM(billed_cents), SUM(allowed_cents), SUM(net_payer_paid_cents) FROM claim WHERE substr(service_date,1,4)='2028' GROUP BY 1",
+   "reference_rows": [
+    [
+     "WH-HOSPITAL-0",
+     11,
+     23299603,
+     7322798,
+     6229697
+    ],
+    [
+     "WH-HOSPITAL-1",
+     6,
+     10459842,
+     3202881,
+     2306493
+    ],
+    [
+     "WH-HOSPITAL-2",
+     7,
+     13377231,
+     4086590,
+     3241866
+    ],
+    [
+     "WH-HOSPITAL-3",
+     6,
+     16634181,
+     5757728,
+     4871242
+    ],
+    [
+     "WH-PAYER-0",
+     3865,
+     119735501,
+     69375032,
+     45158883
+    ],
+    [
+     "WH-PAYER-1",
+     4524,
+     133503362,
+     79628707,
+     52862217
+    ],
+    [
+     "WH-PAYER-2",
+     2821,
+     82430171,
+     48464567,
+     33233579
+    ],
+    [
+     "WH-PAYER-C1",
+     4357,
+     457588194,
+     137371493,
+     116178736
+    ],
+    [
+     "WH-PAYER-C2",
+     4367,
+     614903026,
+     179631029,
+     143666124
+    ],
+    [
+     "WH-PAYER-C3",
+     4107,
+     621315757,
+     196620499,
+     162563023
+    ],
+    [
+     "WH-PAYER-DSNP1",
+     1583,
+     144948361,
+     43773396,
+     43342026
+    ],
+    [
+     "WH-PAYER-MA1",
+     2227,
+     280257855,
+     84807324,
+     77234171
+    ],
+    [
+     "WH-PAYER-MA2",
+     2567,
+     332133800,
+     101503268,
+     91774676
+    ],
+    [
+     "WH-PAYER-MA3",
+     2139,
+     414928671,
+     130139533,
+     118344667
+    ],
+    [
+     "WH-PAYER-MCD1",
+     2989,
+     142584893,
+     44300003,
+     43902713
+    ],
+    [
+     "WH-PAYER-MCD2",
+     2868,
+     161310769,
+     49331522,
+     48747386
+    ],
+    [
+     "WH-PAYER-MSSP",
+     6762,
+     992603698,
+     323166855,
+     270181222
+    ],
+    [
+     "WH-PAYER-SUP1",
+     536,
+     81257239,
+     27675726,
+     5989655
+    ],
+    [
+     "WH-PAYER-SUP2",
+     756,
+     57765260,
+     19814713,
+     3870180
+    ],
+    [
+     "WH-PAYER-X1",
+     1325,
+     156916834,
+     48465033,
+     36799730
+    ]
+   ]
+  },
+  {
+   "id": "B09",
+   "shape": "paraphrase",
+   "question": "Per-payer share of claims that were ever denied, for services in 2029",
+   "reference_sql": "SELECT payer, COUNT(*), SUM(ever_denied), ROUND(1.0*SUM(ever_denied)/COUNT(*),4) FROM claim WHERE substr(service_date,1,4)='2029' GROUP BY 1",
+   "reference_rows": [
+    [
+     "WH-HOSPITAL-0",
+     8,
+     0,
+     0.0
+    ],
+    [
+     "WH-HOSPITAL-1",
+     2,
+     0,
+     0.0
+    ],
+    [
+     "WH-HOSPITAL-2",
+     7,
+     0,
+     0.0
+    ],
+    [
+     "WH-HOSPITAL-3",
+     4,
+     0,
+     0.0
+    ],
+    [
+     "WH-PAYER-0",
+     4666,
+     186,
+     0.0399
+    ],
+    [
+     "WH-PAYER-1",
+     5381,
+     209,
+     0.0388
+    ],
+    [
+     "WH-PAYER-2",
+     3279,
+     116,
+     0.0354
+    ],
+    [
+     "WH-PAYER-C1",
+     4111,
+     399,
+     0.0971
+    ],
+    [
+     "WH-PAYER-C2",
+     3843,
+     393,
+     0.1023
+    ],
+    [
+     "WH-PAYER-C3",
+     3943,
+     377,
+     0.0956
+    ],
+    [
+     "WH-PAYER-DSNP1",
+     1657,
+     183,
+     0.1104
+    ],
+    [
+     "WH-PAYER-MA1",
+     2304,
+     255,
+     0.1107
+    ],
+    [
+     "WH-PAYER-MA2",
+     2638,
+     325,
+     0.1232
+    ],
+    [
+     "WH-PAYER-MA3",
+     2269,
+     247,
+     0.1089
+    ],
+    [
+     "WH-PAYER-MCD1",
+     3252,
+     376,
+     0.1156
+    ],
+    [
+     "WH-PAYER-MCD2",
+     2975,
+     351,
+     0.118
+    ],
+    [
+     "WH-PAYER-MSSP",
+     6230,
+     406,
+     0.0652
+    ],
+    [
+     "WH-PAYER-SUP1",
+     574,
+     0,
+     0.0
+    ],
+    [
+     "WH-PAYER-SUP2",
+     788,
+     0,
+     0.0
+    ],
+    [
+     "WH-PAYER-X1",
+     1409,
+     212,
+     0.1505
+    ]
+   ]
+  },
+  {
+   "id": "B10",
+   "shape": "paraphrase",
+   "question": "Enrolled members per payer for the month 2029-03",
+   "reference_sql": "SELECT payer_id, COUNT(DISTINCT patient_id) FROM member_month WHERE month='2029-03' GROUP BY 1",
+   "reference_rows": [
+    [
+     "WH-PAYER-0",
+     525
+    ],
+    [
+     "WH-PAYER-1",
+     543
+    ],
+    [
+     "WH-PAYER-2",
+     340
+    ],
+    [
+     "WH-PAYER-C1",
+     370
+    ],
+    [
+     "WH-PAYER-C2",
+     341
+    ],
+    [
+     "WH-PAYER-C3",
+     370
+    ],
+    [
+     "WH-PAYER-DSNP1",
+     65
+    ],
+    [
+     "WH-PAYER-MA1",
+     89
+    ],
+    [
+     "WH-PAYER-MA2",
+     95
+    ],
+    [
+     "WH-PAYER-MA3",
+     75
+    ],
+    [
+     "WH-PAYER-MCD1",
+     220
+    ],
+    [
+     "WH-PAYER-MCD2",
+     210
+    ],
+    [
+     "WH-PAYER-MSSP",
+     197
+    ],
+    [
+     "WH-PAYER-SUP1",
+     11
+    ],
+    [
+     "WH-PAYER-SUP2",
+     10
+    ],
+    [
+     "WH-PAYER-X1",
+     124
+    ]
+   ]
+  },
+  {
+   "id": "B11",
+   "shape": "paraphrase",
+   "question": "Deaths recorded during 2028",
+   "reference_sql": "SELECT COUNT(*) FROM death WHERE substr(death_date,1,4)='2028'",
+   "reference_rows": [
+    [
+     47
+    ]
+   ]
+  },
+  {
+   "id": "B12",
+   "shape": "paraphrase",
+   "question": "Patient counts split by coverage type",
+   "reference_sql": "SELECT coverage_type, COUNT(*) FROM patient GROUP BY 1",
+   "reference_rows": [
+    [
+     null,
+     60
+    ],
+    [
+     "cob_secondary",
+     19
+    ],
+    [
+     "commercial",
+     2183
+    ],
+    [
+     "dual",
+     118
+    ],
+    [
+     "medicaid",
+     798
+    ],
+    [
+     "medicare",
+     774
+    ],
+    [
+     "medigap",
+     24
+    ],
+    [
+     "uninsured",
+     139
+    ]
+   ]
+  },
+  {
+   "id": "C01",
+   "shape": "novel",
+   "question": "How many appointments scheduled in 2029 had a final status of no_show?",
+   "reference_sql": "SELECT COUNT(*) FROM appointment WHERE substr(scheduled_date,1,4)='2029' AND final_status='no_show'",
+   "reference_rows": [
+    [
+     522
+    ]
+   ]
+  },
+  {
+   "id": "C02",
+   "shape": "novel",
+   "question": "How many patients have condition evidence of both hypertension and diabetes?",
+   "reference_sql": "SELECT COUNT(*) FROM (SELECT patient_id FROM concept_patient WHERE kind='condition' AND concept IN ('hypertension','diabetes') GROUP BY 1 HAVING COUNT(DISTINCT concept)=2)",
+   "reference_rows": [
+    [
+     632
+    ]
+   ]
+  },
+  {
+   "id": "C03",
+   "shape": "novel",
+   "question": "How many distinct patients had at least 3 inpatient utilization events in 2029?",
+   "reference_sql": "SELECT COUNT(*) FROM (SELECT patient_id FROM utilization_event WHERE kind='inpatient' AND substr(event_date,1,4)='2029' GROUP BY 1 HAVING COUNT(*)>=3)",
+   "reference_rows": [
+    [
+     50
+    ]
+   ]
+  },
+  {
+   "id": "C04",
+   "shape": "novel",
+   "question": "Which month of 2029 had the most ED visits, and how many were there?",
+   "reference_sql": "SELECT substr(event_date,1,7), COUNT(*) FROM utilization_event WHERE kind='ed_visit' AND substr(event_date,1,4)='2029' GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 1",
+   "reference_rows": [
+    [
+     "2029-02",
+     142
+    ]
+   ]
+  },
+  {
+   "id": "C05",
+   "shape": "novel",
+   "question": "How many immunization records have an event date in 2029?",
+   "reference_sql": "SELECT COUNT(*) FROM immunization WHERE substr(event_date,1,4)='2029'",
+   "reference_rows": [
+    [
+     1476
+    ]
+   ]
+  },
+  {
+   "id": "C06",
+   "shape": "novel",
+   "question": "How many patients had a statin fill in 2029 but no statin fill in 2028?",
+   "reference_sql": "SELECT COUNT(*) FROM (SELECT DISTINCT patient_id FROM fill WHERE drug_class='statin' AND substr(fill_date,1,4)='2029' EXCEPT SELECT DISTINCT patient_id FROM fill WHERE drug_class='statin' AND substr(fill_date,1,4)='2028')",
+   "reference_rows": [
+    [
+     43
+    ]
+   ]
+  },
+  {
+   "id": "C07",
+   "shape": "novel",
+   "question": "How many claims for services in 2029 have a final status of paid?",
+   "reference_sql": "SELECT COUNT(*) FROM claim WHERE substr(service_date,1,4)='2029' AND final_status='paid'",
+   "reference_rows": [
+    [
+     45431
+    ]
+   ]
+  },
+  {
+   "id": "C08",
+   "shape": "novel",
+   "question": "How many enrolled member-month rows are there for months in 2029?",
+   "reference_sql": "SELECT COUNT(*) FROM member_month WHERE substr(month,1,4)='2029'",
+   "reference_rows": [
+    [
+     42851
+    ]
+   ]
+  },
+  {
+   "id": "C09",
+   "shape": "novel",
+   "question": "Show recorded deaths in 2029 by death source",
+   "reference_sql": "SELECT death_source, COUNT(*) FROM death WHERE substr(death_date,1,4)='2029' GROUP BY 1",
+   "reference_rows": [
+    [
+     "payer",
+     40
+    ]
+   ]
+  },
+  {
+   "id": "C10",
+   "shape": "novel",
+   "question": "How many observation utilization events in 2029 were followed by a readmission within 30 days?",
+   "reference_sql": "SELECT COUNT(*) FROM utilization_event WHERE kind='observation' AND substr(event_date,1,4)='2029' AND readmitted_30d=1",
+   "reference_rows": [
+    [
+     2
+    ]
+   ]
+  },
+  {
+   "id": "C11",
+   "shape": "novel",
+   "question": "For appointments scheduled in 2029, how many were kept and how many were not kept? Use the outcome column and show each outcome with its count.",
+   "reference_sql": "SELECT outcome, COUNT(*) FROM appointment WHERE substr(scheduled_date,1,4)='2029' GROUP BY 1",
+   "reference_rows": [
+    [
+     "cancelled",
+     457
+    ],
+    [
+     "kept",
+     9194
+    ],
+    [
+     "no_show",
+     537
+    ],
+    [
+     "scheduled",
+     284
+    ]
+   ]
+  },
+  {
+   "id": "C12",
+   "shape": "novel",
+   "question": "How many distinct patients had any medication fill in 2029?",
+   "reference_sql": "SELECT COUNT(DISTINCT patient_id) FROM fill WHERE substr(fill_date,1,4)='2029'",
+   "reference_rows": [
+    [
+     2057
+    ]
+   ]
+  }
+ ]
+}
