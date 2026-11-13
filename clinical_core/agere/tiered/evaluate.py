@@ -139,7 +139,7 @@ def followups(s1_ledger=None):
         if outcome: led.write(run_id, it['follow_up'], outcome, eval_id=it['id'], correct=ok, config={'previous': it['previous'], 'standalone': standalone, 'how': how})
         results.append({'id': it['id'], 'kind': it['kind'], 'method': how['method'], 'standalone': standalone, 'final_tier': outcome and outcome['final_tier'],
                         'status': outcome['status'] if outcome else 'not_sent', 'correct': ok, 'usd': usd,
-                        'frontier_calls': sum(s.get('tier') == 'llm' and 'model' in s for s in outcome['steps']) if outcome else 0})
+                        'frontier_calls': (sum(s.get('tier') == 'llm' and 'model' in s for s in outcome['steps']) if outcome else 0) + bool(how.get('frontier_called'))})
         print(f"{it['id']} {it['kind']:9} {how['method'][:34]:34} {str(results[-1]['final_tier']):8} {results[-1]['status']:10} {'correct' if ok else 'WRONG':7} ${usd:.4f} | {standalone}", flush=True)
     n = len(results)
     lines = [f'FOLLOW-UP EVAL  run {run_id}', f'items: {n}', f"correct: {sum(r['correct'] for r in results)}/{n}",
@@ -174,7 +174,7 @@ def chains(s1_ledger=None):
             results.append({'id': f"{chain['id']}.{n}", 'first': n == 1, 'decline': bool(turn.get('decline')), 'method': how['method'], 'say': turn['say'],
                             'standalone': standalone, 'final_tier': outcome and outcome['final_tier'], 'status': outcome['status'] if outcome else 'not_sent',
                             'correct': ok, 'usd': usd, 'seconds': (outcome['seconds'] if outcome else 0) + how.get('seconds', 0),
-                            'frontier_calls': sum(s.get('tier') == 'llm' and 'model' in s for s in outcome['steps']) if outcome else 0})
+                            'frontier_calls': (sum(s.get('tier') == 'llm' and 'model' in s for s in outcome['steps']) if outcome else 0) + bool(how.get('frontier_called'))})
             print(f"{results[-1]['id']} {how['method'][:30]:30} {str(results[-1]['final_tier']):8} {results[-1]['status']:10} {'correct' if ok else 'WRONG':7} ${usd:.4f} | {turn['say']} -> {standalone}", flush=True)
             if answered: previous = standalone
     later = [r for r in results if not r['first']]

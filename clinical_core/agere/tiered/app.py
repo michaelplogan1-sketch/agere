@@ -41,7 +41,8 @@ def try_in_conversation(stack, question, previous, looks_like_follow_up):
     note = 'Complete question answered by the tiered core'
     if how and standalone != question:
         by = {'period_swapped_by_code': 'the period was swapped into the previous question by code',
-              'small_model_rewrite_confirmed_by_system_one': 'rewritten from the previous question by the small model and confirmed by System One'}[how['method']]
+              'small_model_rewrite_confirmed_by_system_one': 'rewritten from the previous question by the small model and confirmed by System One',
+              'small_model_rewrite_matched_by_frontier_model': 'rewritten from the previous question by the small model; System One did not confirm it, and the frontier model independently wrote the same question'}[how['method']]
         note = f'Follow-up read as: "{standalone}" ({by}).'
         result['answer']['facts'] = {'follow_up': note, **(result['answer'].get('facts') or {})}
         result['planner_receipt']['follow_up'] = {**how, 'previous': previous, 'standalone': standalone}

@@ -4,7 +4,9 @@ question, cheapest way first, and that complete question then goes through the t
   System One    first says whether the words are a complete question on their own; if so nothing is rewritten
   code          the follow-up is only a period: swap it into the previous question (no model)
   small model   rewrites the previous question with the change the follow-up asks for
-  System One    confirms the rewrite is the previous question with only that change; unconfirmed is not used
+  System One    confirms the rewrite is the previous question with only that change
+  frontier      only when System One does not confirm: rewrites the follow-up independently; the small model's
+                rewrite is used only if code finds both rewrites have the same words, otherwise it is not used
 
 A follow-up that is not an edit of the previous question (it refers to the returned patients, asks why, or stands
 on its own) is returned as None and the caller treats the words as a complete question or leaves them to the
@@ -62,7 +64,26 @@ def rewrite(question, previous, s1_ledger=None):
         if label and p >= models.S1_THRESHOLD: break
     if label == 'yes' and p >= models.S1_THRESHOLD:
         return done(' '.join(standalone.split()), 'small_model_rewrite_confirmed_by_system_one', usd, step['tokens'], confidence=round(p, 4))
-    return done(None, 'rewrite_not_confirmed', usd, step['tokens'], rejected=standalone[:200], confidence=round(p, 4))
+    # Second opinion. The frontier model rewrites the follow-up on its own, without seeing the small model's rewrite.
+    # The rewrite is used only when code finds the two say the same thing word for word; anything else is declined.
+    tokens, second = step['tokens'], None
+    try:
+        text, again = models._claude(models.LLM, SYSTEM, 'Previous question: ' + previous + '\nFollow-up: ' + question)
+        usd += again['usd']; tokens += again['tokens']
+        second = models._json(text).get('standalone')
+    except ValueError:
+        second = None
+    except Exception as exc:
+        if 'limit' in str(exc).lower(): raise
+    if isinstance(second, str) and _words(second) == _words(standalone):
+        return done(' '.join(standalone.split()), 'small_model_rewrite_matched_by_frontier_model', usd, tokens,
+                    system_one={'label': label, 'confidence': round(p, 4)}, frontier_called=True)
+    return done(None, 'rewrite_not_confirmed', usd, tokens, rejected=standalone[:200], confidence=round(p, 4),
+                second_opinion=(second[:200] if isinstance(second, str) else None), frontier_called=True)
+
+
+def _words(text):
+    return re.findall(r'[a-z0-9]+(?:[-.][a-z0-9]+)*', str(text).lower())
 
 
 def complete_question(question, previous, looks_like_follow_up, bottles=None, s1_ledger=None):
