@@ -245,8 +245,8 @@ class FrontierDelivery(unittest.TestCase):
         self.assertTrue(all(b['tool_choice']=={'type':'none'} for b in writers))
         self.assertTrue(all('Omitted available exception' in b['messages'][0]['content'] for b in writers[1:]))
         ws=A.workspace(self.path,A.load(self.path,self.key));spec,bundle,_,_=C.load(ws,r['steps'][0]['deliverable_id'])
-        self.assertEqual([a['passed'] for a in spec['render_attempts']],[False,False,True])
-        self.assertEqual(spec['costs']['known_api_estimate_usd'],.78)
+        self.assertEqual([a['passed'] for a in spec['render_attempts']],[False]*(len(C.RENDER_MODELS)-1)+[True])  # only the top rung's candidate passed
+        self.assertEqual(spec['costs']['known_api_estimate_usd'],round(.26*len(C.RENDER_MODELS),2))  # one writer (.25) and one review (.01) per rung
 
     def test_explicit_writer_override_is_honored(self):
         with patch.dict(__import__('os').environ,{'AGERE_DELIVERABLE_MODEL':'claude-sonnet-5-5'}):
