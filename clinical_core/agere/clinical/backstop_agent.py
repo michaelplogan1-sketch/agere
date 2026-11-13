@@ -5944,8 +5944,13 @@ def complete_claim_scope(packet):
         state=uncompact_json(json.loads(packet['text']));pid=packet['source_dependency_patient_id']
         rows=state.get('answer_rows');contexts=state.get('source_contexts');claims=packet.get('claim_manifest')
         audit_context=audit_field_context(packet,state)or{}
+        # Candidate (AGERE_SETTLED_PACKET_COMPOSE): a complete patient row built only from executed
+        # results has no documents to attach. Its fields can still each be settled natively or by
+        # System One and conjoined; nothing here marks a field supported.
+        without_documents=os.environ.get('AGERE_SETTLED_PACKET_COMPOSE','off')=='on'and not contexts
+        if without_documents:contexts=[]
         if (not pid or state.get('patient_id')!=pid or state.get('as_of')!=packet.get('date')
-            or not rows or not contexts or state.get('source_context_gaps')or
+            or not rows or not contexts and not without_documents or state.get('source_context_gaps')or
             state.get('claim_manifest')!=claims or not all(isinstance(r,dict)and r.get('patient_id')==pid for r in rows)or
             not all(isinstance(c,dict)and c.get('patient_id')==pid and c.get('record_id')and(
                 isinstance(c.get('text'),str)and c.get('date')or audit_context and
