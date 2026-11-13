@@ -154,12 +154,12 @@ def followups(s1_ledger=None):
     return text
 
 
-def chains(s1_ledger=None):
+def chains(s1_ledger=None, path='eval/tiered/followup_chains.json'):
     """Multi-turn eval. The first turn of a chain is a complete question; each later turn is made complete from the
     last answered turn's complete question, as the app does, then sent through all tiers and scored."""
     from . import followup
     from ..clinical.conversation import is_followup
-    data = json.loads(Path('eval/tiered/followup_chains.json').read_text())['chains']
+    data = json.loads(Path(path).read_text())['chains']
     run_id = f"chains-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
     led, bottles, results = ledger_store.Ledger(), bottle_store.Bottles(), []
     for chain in data:
@@ -199,7 +199,7 @@ def main(argv):
         os.environ.pop('ANTHROPIC_API_KEY', None)
         from run_integrated_stack import keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
-        print('\n' + chains(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3')))
+        print('\n' + chains(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'), *argv[1:2]))
         return
     if argv[0] == 'followups':
         import os
