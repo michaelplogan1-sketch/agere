@@ -121,6 +121,27 @@ class Core(unittest.TestCase):
             shown=A.try_answer(mock.Mock(spec=[]),q)
         self.assertEqual((shown['answer']['verification'],shown['answer']['table'][0]['documents_stating'],len(shown['tiered_core']['documents'])),('unverified',2,3))
 
+    def test_extraction_returns_only_the_documents_own_words_and_escalates_what_is_unconfirmed(self):
+        db=store.connect();plan={'statement':'The report gives an impression.','value':'the impression','mode':'extract'}
+        sql="SELECT record_id FROM document WHERE substr(event_date,1,7)='2029-06' ORDER BY 1"
+        def s1(statement,doc,ledger,as_of):
+            label='no' if doc['record_id']=='d2' and doc['text'].startswith('IMPRESSION') else 'yes'
+            if 'rigbt' in doc['text'] and not doc['text'].startswith('IMPRESSION'):label='no'  # refuses to confirm the garbled value
+            return {'label':label,'by':'system1','model':'stub','usd':0.0,'tokens':0}
+        def claude(model,system,user):
+            text=user.split('Document:\n')[1];value=text.split(': ')[1].rstrip('.')
+            if model=='frontier':return '{"found": true, "value": "%s", "quote": "%s"}'%(value,text),{'usd':0.0,'tokens':0}
+            if 'rigbt' in text:value=value.replace('rigbt','right')  # the small model "corrects" the scan: not the document's words
+            return '{"found": true, "value": "%s", "quote": "%s"}'%(value,text),{'usd':0.0,'tokens':0}
+        with mock.patch.object(RD,'_system_one',s1),mock.patch.object(RD.models,'_claude',claude),mock.patch.object(RD.models,'LLM','frontier'):
+            columns,rows,validation,steps,docs=RD.execute('q',sql,{},plan,db)
+        db.close()
+        self.assertEqual(columns,['record_id','value']);self.assertTrue(validation['ok'])
+        self.assertEqual(rows,[['d1','Possible early right lower lobe infiltrate'],['d3','Possible early rigbt l0wer lobe infltrate']])
+        self.assertEqual({d['record_id']:(d['label'],d['by'])for d in docs},{'d1':('yes','slm'),'d2':('no','system1'),'d3':('yes','llm')})
+        self.assertIsNotNone(R.match("What discharge disposition does each of patient P-1's HIE discharge summaries give?"))
+        self.assertIsNone(R.match("What discharge disposition does each of patient P-999's HIE discharge summaries give?"))
+
     def test_reading_plans_are_bounded_never_select_text_and_bottle_with_case_kept(self):
         for sql in ("SELECT text FROM scanned_document_text","SELECT payload FROM record"):
             with self.assertRaises(store.RecipeError):store.run(sql)

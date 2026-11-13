@@ -2004,6 +2004,190 @@
      16
     ]
    ]
+  },
+  {
+   "id": "E01",
+   "shape": "ext_canonical",
+   "question": "What discharge disposition does each of patient WHP-B4E976A6BC06's HIE discharge summaries give?",
+   "reference_method": "Reference set by hand from the document text: one row per document that gives the value, [record_id, value as written].",
+   "reference_rows": [
+    [
+     "WHN-R-e4fcecbb91a76e273b5185",
+     "home"
+    ],
+    [
+     "WHN-R-6528a8a9301a2053f1bbf8",
+     "home"
+    ],
+    [
+     "WHN-R-3efec7150a3b6ae2cbde57",
+     "home"
+    ],
+    [
+     "WHN-R-7b5d685f2f52f48deae280",
+     "home"
+    ],
+    [
+     "WHN-R-7e27688c5279cf7e0136b0",
+     "home"
+    ],
+    [
+     "WHN-R-27352b3a24ccfaae903720",
+     "home"
+    ],
+    [
+     "WHN-R-dab7325a2835da66f40785",
+     "home"
+    ],
+    [
+     "WHN-R-0156c2520c66d1452e1e4f",
+     "home"
+    ],
+    [
+     "WHN-R-3f97e32980232eb398414b",
+     "home"
+    ],
+    [
+     "WHN-R-1469f14cfbb9cc16663ace",
+     "snf"
+    ],
+    [
+     "WHN-R-9f26570a64d8a23c768a27",
+     "snf"
+    ],
+    [
+     "WHN-R-b3fb715340fbe4c422f0df",
+     "home health"
+    ]
+   ]
+  },
+  {
+   "id": "E02",
+   "shape": "ext_canonical",
+   "question": "What principal diagnosis does each of patient WHP-1D09E959D6C3's HIE discharge summaries give?",
+   "reference_method": "Reference set by hand from the document text: one row per document that gives the value, [record_id, value as written].",
+   "reference_rows": [
+    [
+     "WHN-R-c931fd8f124e3a53a131cc",
+     "Community-acquired pneumonia"
+    ],
+    [
+     "WHN-R-fb5f0f0d085faec2a67874",
+     "Community-acquired pneumonia"
+    ],
+    [
+     "WHN-R-8073d653f647a4f259348c",
+     "Community-acquired pneumonia"
+    ],
+    [
+     "WHN-R-cf9e91527fc5bed1532917",
+     "Type 2 diabetes with hyperglycemia"
+    ],
+    [
+     "WHN-R-320b2acce4ad13927fec5d",
+     "Type 2 diabetes with hyperglycemia"
+    ],
+    [
+     "WHN-R-c23e51f821d63b61d05f41",
+     "Type 2 diabetes with hyperglycemia"
+    ],
+    [
+     "WHN-R-7779443c79f1394c3767f6",
+     "Acute on chronic heart failure"
+    ],
+    [
+     "WHN-R-384b8b009cf5d25ae73ec1",
+     "Acute on chronic heart failure"
+    ],
+    [
+     "WHN-R-98bffc295d9615bf8fddeb",
+     "Acute on chronic heart failure"
+    ],
+    [
+     "WHN-R-ce69827f85a13260b3578c",
+     "Acute on chronic heart failure"
+    ]
+   ]
+  },
+  {
+   "id": "E03",
+   "shape": "ext_paraphrase",
+   "question": "For patient WHP-F8BE1B187FFF, list the disposition stated in each HIE discharge summary.",
+   "reference_method": "Reference set by hand from the document text: one row per document that gives the value, [record_id, value as written].",
+   "reference_rows": [
+    [
+     "WHN-R-cd3f454a96ba8a64be4b54",
+     "home"
+    ],
+    [
+     "WHN-R-6916d6475e500aa2bda9a2",
+     "home"
+    ],
+    [
+     "WHN-R-c2e47c5698dd795642dfd0",
+     "home"
+    ],
+    [
+     "WHN-R-626b6f2001663a5916d8bb",
+     "home"
+    ],
+    [
+     "WHN-R-871911e7763ef2018e836b",
+     "irf"
+    ],
+    [
+     "WHN-R-d3c33b00476ad9acf79a1d",
+     "home health"
+    ],
+    [
+     "WHN-R-99e1bea2ac5a3217255992",
+     "home health"
+    ],
+    [
+     "WHN-R-6af890b9fae7864cf5abca",
+     "home health"
+    ],
+    [
+     "WHN-R-a32219d1f44d6c6e773ab8",
+     "snf"
+    ],
+    [
+     "WHN-R-b28bd949c0cdcfb287426b",
+     "snf"
+    ]
+   ]
+  },
+  {
+   "id": "E04",
+   "shape": "ext_novel",
+   "question": "What left ventricular ejection fraction does each of patient WHP-66F4B476DECF's scanned documents report?",
+   "reference_method": "Reference set by hand from the document text: one row per document that gives the value, [record_id, value as written].",
+   "reference_rows": [
+    [
+     "WHN-R-283fd8d395b897bad5db57",
+     "55-60%"
+    ]
+   ]
+  },
+  {
+   "id": "E05",
+   "shape": "ext_novel",
+   "question": "What BI-RADS category number does each scanned radiology report dated in 2028-03 give?",
+   "reference_method": "Reference set by hand from the document text: one row per document that gives the value, [record_id, value as written].",
+   "reference_rows": [
+    [
+     "WHN-R-4e8d88acfeda98b6f16879",
+     "2"
+    ],
+    [
+     "WHN-R-67233faeb4d330be2ec653",
+     "1"
+    ],
+    [
+     "WHN-R-9cc644643cb270a9d72813",
+     "2"
+    ]
+   ]
   }
  ]
 }

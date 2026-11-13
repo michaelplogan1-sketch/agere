@@ -124,6 +124,14 @@ RECIPES = {
         'columns': ['documents_read', 'documents_stating', 'documents_not_stating', 'documents_undecided'],
         'patterns': [r'how many scanned (?P<document_type>[a-z /-]+?)s? dated in ' + MONTH +
                      r' (?:state|mention|report|describe|say|show|document) (?:that )?(?P<statement>.{3,200})']},
+    'hie_discharge_summary_value': {
+        'title': 'For one patient, one stated value read out of each exchange (HIE) discharge summary, one row per summary',
+        'params': {'patient_id': {'type': 'patient'}, 'value': {'type': 'text'}},
+        'sql': "SELECT record_id, event_date FROM document WHERE source = 'hie_document' AND document_type = 'Discharge summary' "
+               "AND patient_id = :patient_id ORDER BY event_date, record_id",
+        'read': {'statement': 'The discharge summary gives {value}.', 'value': '{value}', 'mode': 'extract'},
+        'columns': ['record_id', 'event_date', 'value'],
+        'patterns': [r"what (?P<value>.{3,80}?) does each of patient (?P<patient_id>[a-z0-9-]+)'s hie discharge summaries (?:give|state|report|list)"]},
 }
 ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS}
 _vocab = {}
@@ -160,6 +168,10 @@ def normalize(recipe_id, raw, db=None):
             words = {v.replace('_', ' ').lower(): v for v in vocabulary(spec, db)}
             if text not in words: return None
             out[name] = words[text]
+        elif kind == 'patient':  # an identifier that exists, returned as stored; never a near match
+            found = store.run('SELECT patient_id FROM document WHERE lower(patient_id) = lower(:p) LIMIT 1', {'p': str(value).strip()}, db)[1]
+            if not found: return None
+            out[name] = found[0][0]
         elif kind == 'text':  # free words from the question, kept as written; used only as a reading statement
             words = ' '.join(str(value).split()).rstrip('?.')
             if not 3 <= len(words) <= 200: return None

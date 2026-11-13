@@ -101,7 +101,7 @@ def report(stage, tiers, run_id, results):
     if reads:
         lines.append('documents read, by reader (calls / decided / cost):')
         lines += [f"  {name:8} {a['calls']:4d} / {a['decided']:4d} / ${a['usd']:.4f}" for name, a in reads.items()]
-    for shape in ('canonical', 'paraphrase', 'novel', 'doc_canonical', 'doc_paraphrase', 'doc_novel'):
+    for shape in ('canonical', 'paraphrase', 'novel', 'doc_canonical', 'doc_paraphrase', 'doc_novel', 'ext_canonical', 'ext_paraphrase', 'ext_novel'):
         rows = [r for r in results if r['shape'] == shape]
         if rows:
             lines.append(f"  {shape:14} correct {sum(r['correct'] for r in rows)}/{len(rows)}  tiers {dict(Counter(str(r['final_tier']) for r in rows))}")

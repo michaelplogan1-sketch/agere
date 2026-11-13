@@ -7,6 +7,11 @@ counts the judgments and validates the result. Models only judge one document ag
                                      that the quoted words state it, else the document goes to the frontier reader
   frontier model (Sonnet)            the same, for documents the cheaper readers could not decide
 
+In extract mode the plan also names a value to read out of each document. System One first screens out documents
+that do not give it; the small model copies the value and the words around it; System One confirms that those words
+give that value; the frontier model extracts from documents left unconfirmed. A value is always words found in the
+document, never a model's paraphrase.
+
 A document no reader decides stays undecided and the answer is returned as partial, never guessed.
 """
 import re
@@ -23,6 +28,13 @@ READER_SYSTEM = '''Decide whether one document states one thing. Return exactly 
 {"answer": "yes" or "no", "quote": "<for yes: the exact words copied from the document that state it; for no: empty>"}
 Judge meaning, not spelling: scanned text can contain character-recognition errors. A finding that is negated, ruled
 out, absent, or only about someone other than the patient is "no". Copy the quote character for character.'''
+
+
+EXTRACT_SYSTEM = '''Read one value out of one document. Return exactly one JSON object and nothing else:
+{"found": true or false, "value": "<the value, copied from the document, as short as possible: no label, no sentence>",
+ "quote": "<the exact words copied from the document that give the value, including its label>"}
+If the document does not give the value for the patient, return {"found": false}. Never infer, convert, correct or
+complete a value: copy it character for character, even when scanned text looks misspelled.'''
 
 
 def _flat(text):
@@ -66,6 +78,50 @@ def _model(tier, statement, doc):
     return {**base, 'label': None, 'reason': 'a yes without a verbatim quote from the document' if label == 'yes' else 'no usable answer'}
 
 
+def _extract(tier, wanted, doc):
+    model = models.SLM if tier == 'slm' else models.LLM
+    try:
+        text, step = models._claude(model, EXTRACT_SYSTEM, 'Value wanted: ' + wanted + '\n\nDocument:\n' + doc['text'])
+    except Exception as exc:
+        if 'limit' in str(exc).lower(): raise
+        return {'label': None, 'by': tier, 'model': model, 'usd': 0.0, 'tokens': 0, 'reason': f'{type(exc).__name__}: {exc}'[:160]}
+    base = {'by': tier, 'model': model, 'usd': step['usd'], 'tokens': step['tokens']}
+    try:
+        out = models._json(text)
+    except ValueError as exc:
+        return {**base, 'label': None, 'reason': str(exc)[:120]}
+    if out.get('found') is False: return {**base, 'label': 'no'}
+    value, quote = ' '.join(str(out.get('value') or '').split()).rstrip('.;,'), str(out.get('quote') or '').strip()
+    if out.get('found') is True and value and quote and _flat(quote) in _flat(doc['text']) and _flat(value) in _flat(quote):
+        return {**base, 'label': 'yes', 'value': value, 'quote': quote}
+    return {**base, 'label': None, 'reason': 'the value or its quote is not the document\'s own words'}
+
+
+def extract(statement, wanted, doc, *, readers=READERS, s1_ledger=None, as_of=None):
+    """One value out of one document. -> {'label': yes|no|None, 'value', 'quote', 'by', 'attempts'}."""
+    attempts, clock, screened = [], as_of or time.strftime('%Y-%m-%d'), None
+    for tier in readers:
+        if tier == 'system1':
+            got = screened = _system_one(statement, doc, s1_ledger, clock)
+            if got['label'] == 'yes': got = {**got, 'label': None, 'reason': 'gives the value; a model must copy it out'}
+        else:
+            got = _extract(tier, wanted, doc)
+            if tier == 'slm' and 'system1' in readers and 'llm' in readers:
+                if got['label'] == 'yes':
+                    check = _system_one(f'The quoted words give {wanted}, and it is: {got["value"]}',
+                                        {'record_id': doc['record_id'], 'text': got['quote'], 'event_date': doc.get('event_date')}, s1_ledger, clock)
+                    got['usd'] += check['usd']
+                    if check['label'] != 'yes':
+                        got = {**got, 'label': None, 'reason': 'System One did not confirm that the quoted words give this value'}
+                elif got['label'] == 'no' and screened and screened['label'] == 'yes':
+                    got = {**got, 'label': None, 'reason': 'System One read the document as giving the value; the small model found none'}
+        attempts.append(got)
+        if got['label']: break
+    last = attempts[-1] if attempts else {'label': None, 'by': None}
+    return {'record_id': doc['record_id'], 'label': last['label'], 'by': last['by'] if last['label'] else None,
+            **({'value': last['value'], 'quote': last['quote']} if last['label'] == 'yes' else {}), 'attempts': attempts}
+
+
 def judge(statement, doc, *, readers=READERS, s1_ledger=None, as_of=None):
     """One document against one statement, cheapest reader first. -> {'label': yes|no|None, 'by', 'attempts': [...]}."""
     attempts = []
@@ -91,7 +147,11 @@ def execute(question, sql, params, read, db, *, readers=READERS, s1_ledger=None)
     statement, mode = str((read or {}).get('statement') or '').strip(), (read or {}).get('mode') or 'count'
     for name, value in (params or {}).items():
         statement = statement.replace('{' + name + '}', str(value))
-    if len(statement) < 3 or mode not in ('count', 'list'): raise store.RecipeError('A reading plan needs a statement and mode count or list')
+    wanted = str((read or {}).get('value') or '').strip()
+    for name, value in (params or {}).items():
+        wanted = wanted.replace('{' + name + '}', str(value))
+    if len(statement) < 3 or mode not in ('count', 'list', 'extract'): raise store.RecipeError('A reading plan needs a statement and mode count, list or extract')
+    if mode == 'extract' and len(wanted) < 3: raise store.RecipeError('An extract plan names the value to read out')
     used = set(re.findall(r'(?<![:\w]):([a-z_][a-z0-9_]*)', sql))
     columns, selected = store.run(sql, {k: v for k, v in (params or {}).items() if k in used}, db)
     if 'record_id' not in columns: raise store.RecipeError('A reading plan must select record_id')
@@ -103,7 +163,9 @@ def execute(question, sql, params, read, db, *, readers=READERS, s1_ledger=None)
     docs = [{'record_id': i, **texts[i]} for i in ids if i in texts and texts[i]['text'].strip()]
     clock = store.as_of(db)
     with ThreadPoolExecutor(WORKERS) as pool:
-        evidence = list(pool.map(lambda d: judge(statement, d, readers=readers, s1_ledger=s1_ledger, as_of=clock), docs)) if docs else []
+        one = (lambda d: extract(statement, wanted, d, readers=readers, s1_ledger=s1_ledger, as_of=clock)) if mode == 'extract' else \
+              (lambda d: judge(statement, d, readers=readers, s1_ledger=s1_ledger, as_of=clock))
+        evidence = list(pool.map(one, docs)) if docs else []
     steps = []
     for tier in readers:
         tries = [a for e in evidence for a in e['attempts'] if a['by'] == tier]
@@ -118,6 +180,9 @@ def execute(question, sql, params, read, db, *, readers=READERS, s1_ledger=None)
     if mode == 'count':
         out_columns = ['documents_read', 'documents_stating', 'documents_not_stating', 'documents_undecided']
         rows = [[len(evidence), len(yes), len(evidence) - len(yes) - len(undecided), len(undecided)]]
+    elif mode == 'extract':
+        values = {e['record_id']: e['value'] for e in yes}
+        out_columns, rows = columns + ['value'], [r + [values[r[at]]] for r in selected if r[at] in values]
     else:
         keep = {e['record_id'] for e in yes}
         out_columns, rows = columns, [r for r in selected if r[at] in keep]
@@ -128,10 +193,13 @@ def execute(question, sql, params, read, db, *, readers=READERS, s1_ledger=None)
     add('every_document_decided', not undecided, f'{len(undecided)} undecided')
     add('quotes_verbatim', all(recipes_flat(e['quote']) in recipes_flat(texts[e['record_id']]['text']) for e in yes if e.get('quote')),
         f"{sum(1 for e in yes if e.get('quote'))} quoted")
-    wanted = set(re.findall(r'(?<![\d-])20\d{2}(?:-\d{2})?(?![\d])', question))
+    if mode == 'extract':
+        add('values_are_document_words', all(recipes_flat(e['value']) in recipes_flat(e['quote']) for e in yes), f'{len(yes)} values')
+        add('value_column_free', 'value' not in columns, 'the plan must not select a column named value')
+    periods = set(re.findall(r'(?<![\d-])20\d{2}(?:-\d{2})?(?![\d])', question))
     seen = sql + ' ' + ' '.join(str(v) for v in (params or {}).values())
-    absent = sorted(w for w in wanted if w not in seen and w[:4] not in seen)
-    add('time_window_bound', not absent, 'question periods not in the plan: ' + ', '.join(absent) if absent else ', '.join(sorted(wanted)))
+    absent = sorted(w for w in periods if w not in seen and w[:4] not in seen)
+    add('time_window_bound', not absent, 'question periods not in the plan: ' + ', '.join(absent) if absent else ', '.join(sorted(periods)))
     slim = [{k: v for k, v in e.items() if k != 'attempts'} | {'readers_tried': [a['by'] for a in e['attempts']]} for e in evidence]
     return out_columns, rows, {'ok': all(c['ok'] for c in checks), 'checks': checks}, steps, slim
 

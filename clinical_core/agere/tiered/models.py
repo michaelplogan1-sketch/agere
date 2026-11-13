@@ -55,9 +55,12 @@ the documents must be read. Return a reading plan instead; code will read every 
 {"sql": "<one SELECT from the document table whose first column is record_id, selecting exactly the documents the question is about>",
  "params": {"<name>": {"type": "year|month|int|text", "value": "<value from the question>"}},
  "read": {"statement": "<one self-contained sentence that is true of a document exactly when the question wants it counted or listed>",
-          "mode": "count" or "list"},
+          "mode": "count" or "list" or "extract",
+          "value": "<extract only: a short name of the one value to copy out of each document, such as the discharge disposition>"},
  "question_template": "<the question with each parameter value replaced by {name}>"}
-A reading plan may select at most 150 documents, so filter by patient, document type and period as the question does.
+Use count for how many documents say something, list for which documents say it, and extract when the question asks
+what each document says (one row per document that gives the value); for extract the statement is that the document
+gives that value. A reading plan may select at most 150 documents, so filter by patient, document type and period as the question does.
 Never match document content with LIKE on type or title columns, and never select document text.
 
 If neither one SELECT nor one reading plan can fully answer every part of the question (it needs several separate
@@ -106,9 +109,11 @@ def llm_recipe(question, error=None):
                   'grain': [g for g in out.get('grain') or [] if isinstance(g, str)], 'question_template': out.get('question_template')}
         if out.get('read') is not None:
             read = out['read'] if isinstance(out['read'], dict) else {}
-            if not isinstance(read.get('statement'), str) or read.get('mode') not in ('count', 'list'):
-                raise ValueError('A reading plan needs a statement and mode count or list')
-            recipe['read'], recipe['grain'] = {'statement': read['statement'], 'mode': read['mode']}, []
+            if not isinstance(read.get('statement'), str) or read.get('mode') not in ('count', 'list', 'extract'):
+                raise ValueError('A reading plan needs a statement and mode count, list or extract')
+            if read['mode'] == 'extract' and not isinstance(read.get('value'), str): raise ValueError('An extract plan names its value')
+            recipe['read'], recipe['grain'] = {'statement': read['statement'], 'mode': read['mode'],
+                                               **({'value': read['value']} if read['mode'] == 'extract' else {})}, []
         return recipe, {**step, 'tier': 'llm', 'outcome': 'proposed'}
     except (ValueError, json.JSONDecodeError) as exc:
         return None, {**step, 'tier': 'llm', 'outcome': 'invalid_output', 'reason': str(exc)[:200]}
@@ -127,7 +132,8 @@ def slm_slots(question, recipe_id, db=None):
         spec[name] = {'type': p['type'], **({'allowed': p['values']} if 'values' in p else {}),
                       **({'allowed': recipes.vocabulary(p, db)} if p['type'] == 'vocabulary' else {}),
                       **({'format': 'YYYY'} if p['type'] == 'year' else {'format': 'YYYY-MM'} if p['type'] == 'month' else
-                         {'format': 'the thing each document must state, in the words of the question'} if p['type'] == 'text' else {})}
+                         {'format': 'the thing each document must state or give, in the words of the question'} if p['type'] == 'text' else
+                         {'format': 'the patient identifier exactly as written'} if p['type'] == 'patient' else {})}
     user = json.dumps({'recipe': recipe['title'], 'parameters': spec, 'question': question})
     text, step = _claude(SLM, SLM_SYSTEM, user)
     try:
@@ -153,7 +159,7 @@ def slm_choose_and_fill(question, db=None):
     for rid, r in recipes.RECIPES.items():
         catalog[rid] = {'computes': r['title'], 'parameters': {
             n: ({'allowed': p['values']} if 'values' in p else {'vocabulary': 'lower-case name'} if p['type'] == 'vocabulary'
-                else {'format': {'year': 'YYYY', 'month': 'YYYY-MM', 'int': 'integer', 'text': 'words from the question'}[p['type']]})
+                else {'format': {'year': 'YYYY', 'month': 'YYYY-MM', 'int': 'integer', 'text': 'words from the question', 'patient': 'identifier as written'}[p['type']]})
             for n, p in r['params'].items()}}
     text, step = _claude(SLM, SLM_CHOOSE_SYSTEM, json.dumps({'recipes': catalog, 'question': question}))
     try:
