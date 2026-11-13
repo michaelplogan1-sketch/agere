@@ -601,6 +601,25 @@ def actor_result(value):
     return shown
 
 
+def dependency_verification(assessment):
+    """Per-dependency outcome of the last source review, for an answer delivered with open faults.
+
+    Each patient row (and the shared summary) is its own dependency. A row whose every claim was
+    supported by a deciding check is verified; every other row is listed with its located fields and
+    stays unverified. Nothing here corrects or accepts a flagged row.
+    """
+    support=assessment.get('support')or{};packets=[p for p in support.get('packets')or[]if isinstance(p,dict)and p.get('id')]
+    verified=[p['id']for p in packets if p.get('label')=='supported'and p.get('decided_by')]
+    flagged=[{'id':p['id'],**({'patient_id':p['patient_id']}if p.get('patient_id')else{}),
+              'state':p.get('status')or(p.get('label')if p.get('decided_by')else'unchecked'),
+              'fields':sorted({f['field']for f in p.get('claim_feedback')or[]if isinstance(f,dict)and f.get('field')})}
+             for p in packets if p['id']not in verified]
+    return {'schema':'dependency-verification/1','verified':verified,'flagged':flagged,
+            'all_dependencies_checked':support.get('all_dependencies_checked')is True,
+            'coverage':(assessment.get('coverage')or{}).get('label'),
+            'meaning':'Machine source checks per dependency. Flagged rows are delivered unverified, not corrected; no clinical acceptance is inferred.'}
+
+
 SOURCE_REPAIR_ROUNDS = 2  # source-review repairs before the retained answer is delivered as partial
 
 
@@ -1182,6 +1201,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                             source_repairs+=1
                             if source_repairs>SOURCE_REPAIR_ROUNDS:
                                 result['review_stopped']='source_repair_rounds_spent'
+                                result['dependency_verification']=dependency_verification(assessment)
                                 return result
                         force_text = False  # the repair may need more evidence, even after a JSON-format repair
                         messages.append({'role': 'assistant', 'content': blocks})
