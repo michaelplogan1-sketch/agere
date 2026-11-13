@@ -1009,7 +1009,12 @@ def _handle_compose(stack, body, hosted_factory=None):
         if conv is False:
             if refers:
                 raise QuestionNotUnderstood('This question refers to a previous cohort. Open that conversation or ask a complete question; no whole-population substitution was run.')
-            result = stack.compose(question) if planning == 'auto' else stack.compose(question, planning=planning)
+            # Cheapest tier first (Mike 2026-11-13): bottles, deterministic recipes, System One and the small model,
+            # then a frontier-written recipe. Only a question that core cannot answer continues to the existing path.
+            from ..tiered import app as tiered_app
+            result = tiered_app.try_answer(stack, question) if planning == 'auto' else None
+            if result is None:
+                result = stack.compose(question) if planning == 'auto' else stack.compose(question, planning=planning)
         else:
             prior = None if body.get('scope') == 'warehouse' else prior_context(stack.path, conv)
             explicit_context = body.get('answer_context_id')

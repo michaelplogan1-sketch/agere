@@ -116,6 +116,9 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
         return done('partial', None, missing=f'Token ceiling {token_ceiling} reached before the frontier model was called')
     recipe, step = models.llm_recipe(question)
     steps.append(step)
+    if recipe is None and step.get('outcome') == 'cannot_answer':
+        escalations.append({'from': 'llm', 'reason': 'one query over the semantic tables cannot answer this: ' + str(step.get('reason'))[:200]})
+        return done('unanswered', None, missing=step.get('reason'))
     if recipe is None:
         return done('partial', 'llm', missing='The frontier model returned no usable recipe: ' + str(step.get('reason')))
     params = {k: (int(v['value']) if v.get('type') == 'int' else str(v.get('value'))) for k, v in recipe['params'].items()}

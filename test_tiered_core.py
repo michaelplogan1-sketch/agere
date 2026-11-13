@@ -60,6 +60,23 @@ class Core(unittest.TestCase):
             self.assertEqual(b.add('How many admissions happened in 2029?',bad,{},{})[0],None)
             with mock.patch.object(store,'schema_version',return_value='t/2:other'):self.assertIsNone(b.match('How many admissions happened in 2029?'))
 
+    def test_app_bridge_answers_in_the_app_shape_and_otherwise_steps_aside(self):
+        from clinical_core.agere.tiered import app as A
+        stack=mock.Mock(spec=[])
+        with mock.patch.dict(os.environ,{'AGERE_TIERED_CORE':'off'}):self.assertIsNone(A.try_answer(stack,'How many ED visits were there in 2029?'))
+        with tempfile.TemporaryDirectory() as d,mock.patch.dict(os.environ,{'AGERE_TIERED_CORE':'on','AGERE_TIERED_BOTTLES':d+'/b.sqlite3','AGERE_TIERED_LEDGER':d+'/l.sqlite3'}):
+            out=A.try_answer(stack,'How many ED visits were there in 2029?')
+            self.assertEqual((out['route'],out['answer']['status'],out['answer']['verification'],out['answer']['table']),('tiered_core','answered','checked',[{'events':2}]))
+            self.assertEqual((out['new_paid_api_calls'],out['planner_receipt']['final_tier']),(0,'recipes'))
+            for status in ('unanswered','partial'):
+                with mock.patch.object(router,'answer',return_value={'status':status,'final_tier':None,'steps':[],'escalations':[],'seconds':0.1}):
+                    self.assertIsNone(A.try_answer(stack,'something else'))
+            llm={'status':'answered','final_tier':'llm','columns':['n'],'rows':[[1]],'steps':[{'tier':'llm','model':'m','usd':0.02,'tokens':9}],
+                 'escalations':[],'seconds':1.0,'recipe':{'sql':'SELECT 1 AS n'},'validation':{'ok':True,'checks':[{'name':'rows_returned','ok':True}]}}
+            with mock.patch.object(router,'answer',return_value=llm):
+                self.assertEqual(A.try_answer(stack,'new shape')['answer']['verification'],'unverified')
+            with mock.patch.object(router,'answer',side_effect=RuntimeError('boom')):self.assertIsNone(A.try_answer(stack,'x'))
+
     def test_eval_scoring_ignores_names_and_order_but_not_values_or_row_count(self):
         ref=[['a',1],['b',2]]
         self.assertTrue(EV.correct(ref,[[2,'b','extra'],[1.0,'a','x']]))

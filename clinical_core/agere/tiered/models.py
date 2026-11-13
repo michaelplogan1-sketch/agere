@@ -50,6 +50,10 @@ Return exactly one JSON object and nothing else:
  "grain": ["<columns that uniquely identify a result row; [] for a single-row result>"],
  "question_template": "<the question with each parameter value replaced by {name}>"}
 
+If one SELECT over the listed tables cannot fully answer every part of the question (it needs document or note text,
+several separate result tables, a statistical method, a judgment, or data that is not in these tables), do not
+approximate. Return instead: {"cannot_answer": "<what is needed that these tables or one query cannot give>"}
+
 Rules:
 - Exactly one SELECT (WITH is allowed). No semicolons. Only the listed tables and columns.
 - Dates are ISO text; filter a calendar year with substr(date_col, 1, 4) = :year and a month with substr(date_col, 1, 7) = :month.
@@ -77,6 +81,8 @@ def llm_recipe(question, error=None):
     text, step = _claude(LLM, system, user)
     try:
         out = _json(text)
+        if out.get('cannot_answer'):
+            return None, {**step, 'tier': 'llm', 'outcome': 'cannot_answer', 'reason': str(out['cannot_answer'])[:300]}
         if not isinstance(out.get('sql'), str) or not isinstance(out.get('params', {}), dict): raise ValueError('Recipe needs sql and params')
         recipe = {'sql': out['sql'], 'params': {k: v for k, v in (out.get('params') or {}).items()},
                   'grain': [g for g in out.get('grain') or [] if isinstance(g, str)], 'question_template': out.get('question_template')}
