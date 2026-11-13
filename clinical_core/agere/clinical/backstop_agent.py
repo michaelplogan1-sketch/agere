@@ -2538,7 +2538,10 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
             # "each 2029 referral"), is the same temporal anchor. Every live run on 2026-11-12 spent a
             # repair round on it. contextual_year still keeps a year-sized count ("were 2029",
             # "2029 patients") as a quantity that needs a binding.
-            text=re.sub(rf'(?<![\w.,$%-]){year}(?=\s+[A-Za-z])',contextual_year,text)
+            # A unit after the number makes it a measurement, and a named clock is a
+            # separate executed-window claim with its own proof; neither is exempt here.
+            units=r'(?:mg|mcg|g|kg|ml|l|units?|iu|mmhg|bpm|days?|weeks?|months?|years?|hours?|minutes?|dollars?|cents?|usd|percent)'
+            text=re.sub(rf'(?<![\w.,$%-]){year}(?=\s+[A-Za-z])(?!\s+{units}\b)(?!\s+[\w-]+\s+clock\b)',contextual_year,text,flags=re.I)
             def previous_year(m):
                 prior=int(m['year'])
                 if str(prior+1)not in request_years:return m.group()
@@ -3386,7 +3389,17 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                 native_interpretation=native_interpretation)
             assessment.update(declared_work=work,calls=assessment['calls']+work['calls'],
                 cost_usd=assessment['cost_usd']+work['cost_usd'])
-            if work.get('targets'):
+            # Ask once. If the analyst has already been sent back for declared unfinished work and still
+            # declares it, the answer goes on to its source review carrying those declarations, so it is
+            # never delivered without one (Q05 2026-11-12 stalled here before any source check; Q07 run 8
+            # alternated three such rounds with three source reviews).
+            asked=getattr(tools,'pending_work_requests',0)
+            if work.get('targets')and asked:
+                assessment['declared_work_retained']={'targets':work['targets'],'earlier_requests':asked,
+                    'meaning':'Declared unfinished work stays in the answer as missing; source review proceeds.'}
+            if work.get('targets')and not asked:
+                try:tools.pending_work_requests=asked+1
+                except AttributeError:pass
                 return {**assessment,'status':'repair','repair_kind':'incomplete_work',
                     'progress_state':{'pending_work':work['targets']},
                     'support':{'label':'not_run','decided_by':None,'packets':[],
