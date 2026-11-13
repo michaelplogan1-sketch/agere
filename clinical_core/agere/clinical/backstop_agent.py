@@ -2534,6 +2534,11 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
                 return temporal(m)
             text=re.sub(rf'\b{year}(?=[\s-]+(?:coverage|view|data|exposure)\b|-time-matched\b)|(?<=time-matched to ){year}\b|(?<=age at ){year}\b',
                         contextual_year,text,flags=re.I)
+            # A year the request itself names, used to qualify a noun ("a 2029 inpatient discharge",
+            # "each 2029 referral"), is the same temporal anchor. Every live run on 2026-11-12 spent a
+            # repair round on it. contextual_year still keeps a year-sized count ("were 2029",
+            # "2029 patients") as a quantity that needs a binding.
+            text=re.sub(rf'(?<![\w.,$%-]){year}(?=\s+[A-Za-z])',contextual_year,text)
             def previous_year(m):
                 prior=int(m['year'])
                 if str(prior+1)not in request_years:return m.group()
