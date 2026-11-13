@@ -6,7 +6,7 @@ fails) returns None and the caller continues on its existing path, so nothing th
 """
 import os
 
-from . import VERSION, bottles as bottle_store, ledger as ledger_store, router
+from . import VERSION, bottles as bottle_store, ledger as ledger_store, router, store
 
 TIERS = ('bottles', 'recipes', 'system1', 'slm', 'llm')
 TIER_NAMES = {'bottles': 'a saved recipe for this question shape', 'recipes': 'a built-in recipe matched by wording',
@@ -59,7 +59,27 @@ def try_answer(stack, question):
                               f'Deterministic checks passed: {checks}. These check structure, period and totals, not clinical meaning.',
                               *(['This recipe was written by the frontier model for this question and is not yet confirmed against a reference answer.']
                                 if tier == 'llm' else [])]}
-    sql = recipe.get('sql', '')
+    sql = store.portable(recipe.get('sql', ''))  # saved with the answer, so it must run on the semantic layer as it is
+    # Shown by the existing answer view with no view change: facts as key findings, grounding as evidence used,
+    # table_binding as the computation.
+    models_used = ', '.join(dict.fromkeys(str(s['model']) for s in outcome['steps'] if s.get('model'))) or 'none'
+    answer['facts'] = {'answered_by': f"{TIER_NAMES[tier][0].upper() + TIER_NAMES[tier][1:]}. {outcome['seconds']} seconds, "
+                                      f"${usd:.4f} in model calls (models used: {models_used})."}
+    if documents:
+        said = {'yes': 'gives it' if (recipe.get('read') or {}).get('mode') == 'extract' else 'states it', 'no': 'does not', None: 'undecided'}
+        answer['facts']['documents_read'] = (f'{len(documents)} documents were selected by SQL and each was read against: "{statement}" '
+                                             + 'Read by ' + ', '.join(f'{reader_names.get(k, k)} ({n})' for k, n in read_by.items()) + '.')
+        answer['grounding'] = [f"{d['record_id']}: {said[d.get('label')]}" + (f" (read by {reader_names.get(d.get('by'), d.get('by'))})" if d.get('by') else '')
+                               + (f" — value \"{d['value']}\"" if d.get('value') else '') + (f" — \"{' '.join(d['quote'].split())[:200]}\"" if d.get('quote') else '')
+                               for d in documents]
+    # A one-number answer is shown as that number, not as "1 returned row".
+    if len(rows) == 1 and (recipe.get('read') or {}).get('mode') == 'count':
+        answer.update({'answer_type': 'count', 'count': rows[0][1], 'unit': f' documents stating it, of {rows[0][0]} read'})
+    elif len(rows) == 1 and len(columns) == 1 and isinstance(rows[0][0], (int, float)) and not isinstance(rows[0][0], bool):
+        answer.update({'answer_type': 'count' if isinstance(rows[0][0], int) else 'value', 'count' if isinstance(rows[0][0], int) else 'value': rows[0][0],
+                       'unit': ' ' + columns[0].replace('_', ' ')})  # the view prints the unit straight after the number
+    answer['table_binding'] = {'computation': sql, 'parameters': recipe.get('params') or {}, **({'reading': recipe['read']} if recipe.get('read') else {}),
+                               'checks_passed': [c['name'] for c in outcome['validation']['checks']]}
     return {'answer': answer, 'results': [], 'new_paid_api_calls': calls, 'workflow': [], 'question': question, 'route': 'tiered_core',
             'graph': {'interpretation': question, 'coverage': 'supported_observation', 'unmet_requirements': [],
                       'nodes': [{'id': 'tiered_0', 'operation': 'sql', 'inputs': [], 'parameters': {'query': sql, 'returns': 'table'},

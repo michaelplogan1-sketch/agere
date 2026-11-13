@@ -31,6 +31,17 @@ UNION ALL SELECT record_id, patient_id, 'scanned_document', document_type, event
 UNION ALL SELECT record_id, patient_id, 'hie_document', document_type, event_date, author_organization_id, text_chars FROM hie_document"""
 
 
+def portable(sql):
+    """The same SELECT runnable on the semantic layer by anyone: the document catalog is inlined as a CTE,
+    because the view exists only on this module's connections."""
+    text = sql.strip().rstrip(';')
+    if not re.search(r'(?i)\bdocument\b(?!_)', text): return text
+    body = DOCUMENT_VIEW.split(' AS\n', 1)[1]
+    if re.match(r'(?is)^\s*with\b', text):
+        return re.sub(r'(?is)^\s*with\b', 'WITH document AS (' + body + '),', text, count=1)
+    return 'WITH document AS (' + body + ') ' + text
+
+
 def texts(record_ids, db):
     """Document text for the reading tier. -> {record_id: {'text', 'event_date', 'source'}}. Only catalogued documents."""
     out, ids = {}, list(dict.fromkeys(record_ids))

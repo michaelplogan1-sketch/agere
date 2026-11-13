@@ -79,6 +79,7 @@ class Core(unittest.TestCase):
             out=A.try_answer(stack,'How many ED visits were there in 2029?')
             self.assertEqual((out['route'],out['answer']['status'],out['answer']['verification'],out['answer']['table']),('tiered_core','answered','checked',[{'events':2}]))
             self.assertEqual((out['new_paid_api_calls'],out['planner_receipt']['final_tier']),(0,'recipes'))
+            self.assertEqual((out['answer']['answer_type'],out['answer']['count'],out['answer']['unit']),('count',2,' events'))
             for status in ('unanswered','partial'):
                 with mock.patch.object(router,'answer',return_value={'status':status,'final_tier':None,'steps':[],'escalations':[],'seconds':0.1}):
                     self.assertIsNone(A.try_answer(stack,'something else'))
@@ -120,6 +121,10 @@ class Core(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d,mock.patch.dict(os.environ,{'AGERE_TIERED_CORE':'on','AGERE_TIERED_BOTTLES':d+'/b.sqlite3','AGERE_TIERED_LEDGER':d+'/l.sqlite3'}),a,b:
             shown=A.try_answer(mock.Mock(spec=[]),q)
         self.assertEqual((shown['answer']['verification'],shown['answer']['table'][0]['documents_stating'],len(shown['tiered_core']['documents'])),('unverified',2,3))
+        self.assertIn('System One (2), the small model (1)',shown['answer']['facts']['documents_read'])  # what the answer view shows
+        self.assertIn('built-in recipe',shown['answer']['facts']['answered_by'].lower())
+        self.assertEqual((shown['answer']['count'],shown['answer']['unit']),(2,' documents stating it, of 3 read'))
+        self.assertEqual([g.split(':')[0]for g in shown['answer']['grounding']],['d1','d2','d3']);self.assertIn('rigbt',shown['answer']['grounding'][2])
 
     def test_extraction_returns_only_the_documents_own_words_and_escalates_what_is_unconfirmed(self):
         db=store.connect();plan={'statement':'The report gives an impression.','value':'the impression','mode':'extract'}
