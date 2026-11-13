@@ -43,7 +43,10 @@ class CompilerProgress(unittest.TestCase):
         b = self.candidate('0 people')
         c = self.candidate({'template': '{n} people', 'bindings': {'n': {'result_view': 'agere_result_99', 'row': 0, 'column': 'patients'}}})
         first = self.review(a, self.calls); second = self.review(b, self.calls); third = self.review(c, self.calls)
-        self.assertNotEqual(first['progress_state'], second['progress_state'])
+        # An unbound method note is kept as a labelled limitation (2026-11-13), so only the headline failure remains.
+        self.assertEqual(first['progress_state'], second['progress_state'])
+        self.assertNotIn('count', a['facts'])
+        self.assertTrue(any('numbers not tied to computed values: 4 groups' in l for l in a['limitations']))
         self.assertNotEqual(second['progress_state'], third['progress_state'])
         self.assertEqual(third['progress_state']['prose'][0]['code'], 'missing_native_result')
 

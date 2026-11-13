@@ -2450,35 +2450,31 @@ def resolve_source_abstention(packet,checked,reviewer,*,ledger):
 
 
 def relocate_unbound_fact_notes(answer,exc,tools):
-    """Keep a method note that twice failed quantity binding as a labelled limitation.
+    """Keep a method note that fails quantity binding as a labelled limitation.
 
     The compiler requires every number in a facts entry to be bound to an executed cell. That
-    protects counts, but definitional wording ("never as 0 days", "zero baseline") has no cell to
-    bind and source-free constants are refused, so runs stalled on it (Q02, Q03, Q05 2026-11-13).
-    A facts entry that fails for unbound literals in two consecutive reviews is moved, unchanged,
-    to limitations with a label saying its wording is not tied to a computed value. The first
-    failure still goes back to the analyst; headline and row prose are never moved.
+    protects counts, but the repair is a patch protocol the analyst often cannot complete:
+    definitional wording has no cell to bind, source-free constants are refused, and runs ended
+    there before any source review (Q02, Q03, Q05, Q12, Q16 on 2026-11-13, most after an Opus
+    escalation). A facts entry with unbound literals is therefore moved, unchanged, to
+    limitations with a label saying its numbers are not tied to computed values. The table keeps
+    the computed values themselves. Headline and row prose are never moved and still go back to
+    the analyst.
     """
     facts=answer.get('facts')
     fields=sorted(set(re.findall(r'(?:Quantitative|placeholders at) facts\.([A-Za-z0-9_]+)[^"]*?unbound literals',str(exc))))
-    seen=getattr(tools,'unbound_fact_fields',None)
-    if seen is None:
-        seen=set()
-        try:tools.unbound_fact_fields=seen
-        except AttributeError:return []
-    repeat=[f for f in fields if f in seen and isinstance(facts,dict)and f in facts]
-    seen.clear();seen.update(fields)
     moved=[]
-    for field in repeat:
+    for field in fields:
+        if not isinstance(facts,dict)or field not in facts:continue
         value=facts.pop(field)
         text=value if isinstance(value,str)else(value.get('template')if isinstance(value,dict)else None)
         if not isinstance(text,str):text=json.dumps(value,default=str)
-        answer['limitations']=[*(answer.get('limitations')or[]),'Method note ('+field.replace('_',' ')+'), wording not tied to a computed value: '+text]
+        answer['limitations']=[*(answer.get('limitations')or[]),'Method note ('+field.replace('_',' ')+'), numbers not tied to computed values: '+text]
         if isinstance(answer.get('global_prose_basis'),list):
             answer['global_prose_basis']=[b for b in answer['global_prose_basis']if not(isinstance(b,dict)and b.get('path')==['facts',field])]
         if isinstance(answer.get('computed_prose'),list):
             answer['computed_prose']=[c for c in answer['computed_prose']if not(isinstance(c,dict)and c.get('field')=='facts.'+field)]
-        moved.append({'field':'facts.'+field,'moved_to':'limitations','reason':'unbound literals in two consecutive reviews'})
+        moved.append({'field':'facts.'+field,'moved_to':'limitations','reason':'unbound literals'})
     return moved
 
 
@@ -2501,6 +2497,12 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')}
     old={p.get('field'):p for p in answer.get('computed_prose',[]) if isinstance(p,dict)}
     request_years=set(re.findall(r'\b(?:19|20|21)\d{2}\b',question or ''))
+    # A parameter the request itself states ("a 10% increase", "over the next 90 days") may be
+    # repeated in summary prose: it is the user's own input, not a computed observation, and the
+    # acceptance contract separately checks that each request literal is carried by the plan
+    # (Q16 2026-11-13 stalled on "10"). Dates and years keep their own temporal rules.
+    undated=re.sub(r'\d{4}-\d{2}(?:-\d{2})?','',question or '')
+    request_numbers={n.replace(',','')for n in re.findall(r'(?<![\w.])\d+(?:,\d{3})*(?:\.\d+)?(?![\w])',undated)}-request_years
     def numeric(text):
         if not row_mode:text=mask_prose_parameters(text,parameters,parameter_proofs)
         # Distributive "every one of these accounts" means every member,
@@ -2590,6 +2592,9 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
         # (live Q10 and Q05 2026-11-13 stalled on it). "one patient", "one of the" still bind.
         text=re.sub(r'\b(each|every|any|which|no|this|that|another|either|neither|some)\s+one\b(?!\s+of\b)',r'\1',text,flags=re.I)
         text=re.sub(r'\bone\s+another\b','another',text,flags=re.I)
+        if request_numbers and not row_mode:
+            text=re.sub(r'(?<![\w.])\d+(?:,\d{3})*(?:\.\d+)?(?![\w])',
+                        lambda m:''if m.group().replace(',','')in request_numbers else m.group(),text)
         return list(dict.fromkeys(m.group() for m in re.finditer(r'(?<!\w)[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?!\w)|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|hundred|thousand|million|billion)\b',text,re.I)))
     def compile_value(field,value,basis=None):
         parameter_proofs.clear()
