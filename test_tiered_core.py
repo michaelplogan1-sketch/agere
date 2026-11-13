@@ -174,6 +174,11 @@ class Core(unittest.TestCase):
             self.assertEqual(F.rewrite('and in 2028?',prev)[0],'How many ED visits were there in 2028?')
             self.assertEqual(F.rewrite('what about 2028',prev)[1]['method'],'period_swapped_by_code')
         self.assertIsNone(F.rewrite('and in 2028?',None)[0])
+        with mock.patch.object(F.models,'_claude',side_effect=AssertionError('no model for a relative period')):
+            self.assertEqual(F.rewrite('next year',prev)[0],'How many ED visits were there in 2030?');self.assertEqual(F.rewrite('the year before?',prev)[0],'How many ED visits were there in 2028?')
+            self.assertEqual(F.rewrite('and the year after?',prev)[1]['method'],'relative_period_by_code');self.assertEqual(F.rewrite('two years earlier',prev)[0],'How many ED visits were there in 2027?')
+            self.assertEqual(F.relative_period('three months later','Members per payer in 2029-11'),'Members per payer in 2030-02');self.assertEqual(F.relative_period('the month before','Members per payer in 2029-01'),'Members per payer in 2028-12')
+            self.assertIsNone(F.relative_period('next month',prev));self.assertIsNone(F.relative_period('next year','ED visits in 2028 and 2029'));self.assertIsNone(F.relative_period('next year for women',prev))
         said=lambda text:mock.patch.object(F.models,'_claude',return_value=(text,{'usd':0.001,'tokens':50}))
         s1=lambda label:mock.patch('clinical_core.agere.clinical.system_one.choice',return_value={'label':label,'probabilities':{label:0.95},'cost_usd':0.0})
         with said('{"standalone": "How many hospital admissions were there in 2029?"}'),s1('yes'):
@@ -197,6 +202,9 @@ class Core(unittest.TestCase):
                 self.assertIsNone(A.try_in_conversation(stack,'what about hospital admissions?',prev,True))
             with s1('complete'),mock.patch.object(F,'rewrite',side_effect=AssertionError('a complete question is never rewritten')):
                 self.assertEqual(F.complete_question('List the 5 most common conditions',prev,True)[1]['method'],'complete_by_system_one')
+            tie=mock.patch('clinical_core.agere.clinical.system_one.choice',return_value={'label':'complete','probabilities':{'complete':0.485,'depends':0.468},'cost_usd':0.0})
+            with tie,mock.patch.object(F,'rewrite',return_value=('Show the denial rate by payer in 2029',{'method':'small_model_rewrite_confirmed_by_system_one','usd':0.0,'tokens':0})):
+                self.assertEqual(F.complete_question('just the denial rate',prev,True)[0],'Show the denial rate by payer in 2029')  # a near-tie is not "complete"
 
     def test_narrative_numbers_come_only_from_the_result_and_a_bad_text_is_discarded(self):
         from clinical_core.agere.tiered import narrative as N

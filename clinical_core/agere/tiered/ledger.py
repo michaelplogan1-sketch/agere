@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 DEFAULT = 'artifacts/agere-tiered-core/ledger.sqlite3'
+MAX_ROWS_KEPT = 200
 # USD per million tokens, from config/agere/pricing.json (checked 2026-10-12).
 PRICES = {
     'claude-sonnet-5-5': {'in': 2.0, 'out': 10.0, 'cache_write': 4.0, 'cache_read': 0.1},
@@ -33,16 +34,19 @@ class Ledger:
             id INTEGER PRIMARY KEY, at TEXT, run TEXT, question TEXT, final_tier TEXT, status TEXT, validation TEXT,
             tiers_json TEXT, tokens INTEGER, usd REAL, seconds REAL, recipe_json TEXT, result_rows INTEGER,
             eval_id TEXT, correct INTEGER, config_json TEXT)''')
+        if 'rows_json' not in [c[1] for c in self.db.execute('PRAGMA table_info(question)')]:
+            self.db.execute('ALTER TABLE question ADD COLUMN rows_json TEXT')  # the answer itself, so a miss can be explained later
         self.db.commit()
 
     def write(self, run, question, outcome, *, eval_id=None, correct=None, config=None):
         steps = outcome['steps']
         self.db.execute('INSERT INTO question(at,run,question,final_tier,status,validation,tiers_json,tokens,usd,seconds,recipe_json,'
-                        'result_rows,eval_id,correct,config_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                        'result_rows,eval_id,correct,config_json,rows_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                         (time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), run, question, outcome.get('final_tier'), outcome['status'],
                          json.dumps(outcome.get('validation')), json.dumps(steps), sum(s.get('tokens', 0) for s in steps),
                          sum(s.get('usd', 0.0) for s in steps), outcome['seconds'], json.dumps(outcome.get('recipe'), default=str),
-                         len(outcome.get('rows') or []), eval_id, None if correct is None else int(correct), json.dumps(config or {})))
+                         len(outcome.get('rows') or []), eval_id, None if correct is None else int(correct), json.dumps(config or {}),
+                         json.dumps({'columns': outcome.get('columns'), 'rows': (outcome.get('rows') or [])[:MAX_ROWS_KEPT]}, default=str)))
         self.db.commit()
 
     def rows(self, run):
