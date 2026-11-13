@@ -169,8 +169,22 @@ def _local(passage, leaning):
             **({} if agreed else {'reason': f'local model chose {label}; System One was leaning to {leaning}'})}
 
 
+USE_REPORT = re.compile(r'reports? use on \d+ (?:of|/) ?\d+ days|\d+ ?/ ?\d+ days used|tablets? counted in the presented container', re.I)
+REASON_WORDS = re.compile(r'because|running out|ran out|declin|does not agree|adverse|side effect|did not like|unsure|cost|afford|pillbox|held|hold|limits?\b|stopp|not increase|intoler|allerg|hypotens|potassium|\bK \d', re.I)
+
+
+def by_code(passage):
+    """A dated use report ("reports use on 0 of 14 days; 0 tablets left") with no reason word is not a reason: code
+    labels it without asking any model."""
+    if USE_REPORT.search(passage['text']) and not REASON_WORDS.search(passage['text']):
+        return {'by': 'code', 'label': 'not_taken_no_reason', 'usd': 0.0, 'tokens': 0}
+    return None
+
+
 def judge(passage, readers, s1_ledger, as_of):
     attempts, leaning = [], None
+    fixed = by_code(passage)
+    if fixed: return {**passage, 'label': fixed['label'], 'by': 'code', 'attempts': [fixed]}
     for tier in readers:
         if tier == 'local' and not leaning: continue  # nothing to agree with
         got = _system_one(passage, s1_ledger, as_of) if tier == 'system1' else _local(passage, leaning) if tier == 'local' else _model(tier, passage)
@@ -199,6 +213,8 @@ def execute(question, sql, params, read, db, *, readers=('system1', 'slm', 'llm'
     with ThreadPoolExecutor(8) as pool:
         judged = list(pool.map(lambda p: judge(p, readers, s1_ledger, clock), found)) if found else []
     steps = []
+    coded = sum(1 for j in judged if j['by'] == 'code')
+    if coded: steps.append({'tier': 'read', 'reader': 'code', 'calls': coded, 'decided': coded, 'tokens': 0, 'usd': 0.0, 'outcome': 'read', 'model': 'none (rule)'})
     for tier in readers:
         tries = [a for j in judged for a in j['attempts'] if a['by'] == tier]
         if tries: steps.append({'tier': 'read', 'reader': tier, 'calls': len(tries), 'decided': sum(bool(a['label']) for a in tries), 'tokens': sum(a['tokens'] for a in tries),
