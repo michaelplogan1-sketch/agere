@@ -253,6 +253,30 @@ class Core(unittest.TestCase):
             self.assertEqual(b.add(q,plan("SELECT 2 WHERE :year = '2029'"),{'ok':True},{'tier':'llm'}),(bid,None))  # a rejected plan is replaced
             hit=b.match(q);self.assertEqual((hit[0]['sql'],b.match(q,statuses=('promoted',))),("SELECT 2 WHERE :year = '2029'",None))
 
+    def test_a_follow_up_on_selected_patients_runs_inside_that_group_by_code(self):
+        from clinical_core.agere.tiered import app as A,followup as F,store as ST
+        whole=router.answer('How many ED visits were there in 2029?',tiers=('recipes',))['rows'][0][0]
+        db=ST.connect();ids=[r[0] for r in db.execute("SELECT DISTINCT patient_id FROM utilization_event WHERE kind='ed_visit' AND substr(event_date,1,4)='2029' ORDER BY 1 LIMIT 1")]
+        sql="SELECT COUNT(*) FROM utilization_event WHERE kind='ed_visit' AND substr(event_date,1,4)='2029'"
+        own=db.execute(sql+' AND patient_id=?',ids).fetchone()[0];self.assertTrue(0<own<=whole)
+        inside=router.answer('How many ED visits were there in 2029?',tiers=('recipes',),cohort=ids)
+        self.assertEqual((inside['status'],inside['rows']),('answered',[[own]]))
+        self.assertEqual(db.execute(ST.portable(sql,ids)).fetchall(),[(own,)])  # the saved SQL gives the group's number on a plain connection
+        self.assertEqual(db.execute(ST.portable(sql,[])).fetchall(),[(0,)]);self.assertEqual(router.answer('How many ED visits were there in 2029?',tiers=('recipes',),cohort=[])['rows'],[[0]])
+        with mock.patch.object(F.models,'_claude',side_effect=AssertionError('no model when code removes the pointing words')):
+            self.assertEqual(F.group_question('how many ED visits were there in 2029 among them?')[1]['method'],'group_words_removed_by_code')
+        said=lambda text:mock.patch.object(F.models,'_claude',return_value=(text,{'usd':0.001,'tokens':50}))
+        s1=lambda label:mock.patch('clinical_core.agere.clinical.system_one.choice',return_value={'label':label,'probabilities':{label:0.95},'cost_usd':0.0})
+        with said('{"standalone": null}'):self.assertEqual(F.group_question('why are they in this group?'),(None,mock.ANY))
+        with said('{"standalone": "How many ED visits were there in 2028?"}'),s1('no'):self.assertEqual(F.group_question('and their ED visits the year before?')[1]['method'],'rewrite_not_confirmed')
+        stack=mock.Mock(spec=[]);parent={'patient_ids':ids,'source':{'x':1}}
+        with tempfile.TemporaryDirectory() as d,mock.patch.dict(os.environ,{'AGERE_TIERED_CORE':'on','AGERE_TIERED_BOTTLES':d+'/b.sqlite3','AGERE_TIERED_LEDGER':d+'/l.sqlite3'}):
+            out=A.try_in_cohort(stack,'how many ED visits were there in 2029 among them?',parent,'ANS-1')
+            self.assertEqual((out['answer']['count'],out['cohort_transform']['parent_context_id'],out['cohort_transform']['input_patient_ids'],out['question']),(own,'ANS-1',ids,'how many ED visits were there in 2029 among them?'))
+            self.assertIn('cohort(patient_id)',out['graph']['nodes'][0]['parameters']['query']);self.assertIn('only over the 1 selected patients',out['answer']['limitations'][0])
+            self.assertIsNone(A.try_in_cohort(stack,'x',{'patient_ids':[]},'ANS-1'))
+            with said('{"standalone": null}'):self.assertIsNone(A.try_in_cohort(stack,'why are they in this group?',parent,'ANS-1'))
+
     def test_narrative_numbers_come_only_from_the_result_and_a_bad_text_is_discarded(self):
         from clinical_core.agere.tiered import narrative as N
         cols,rows=['month','events'],[['2029-01',120],['2029-02',95],['2029-03',1430]]

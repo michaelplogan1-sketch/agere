@@ -180,3 +180,59 @@ def complete_question(question, previous, looks_like_follow_up, bottles=None, s1
     how['usd'] += usd
     if how['method'] == 'rewrite_not_confirmed': return None, how
     return rewritten or question, how
+
+
+# --- follow-ups on a selected patient group -------------------------------------------------------------------------
+# Code restricts the data to the group (store.connect(cohort)); the words only need to become a complete question
+# with the group as the whole population.
+GROUP_WORDS = [(re.compile(r"\bhow many (?:of|among) (?:them|those|these)(?:\s+(?:patients|members|people))?\b", re.I), 'how many patients'),
+               (re.compile(r"\b(?:of|among|for|in|within)\s+(?:them|those|these|this group|this cohort|this population|the (?:selected|same|saved) (?:patients|members|people|group|cohort))(?:\s+(?:patients|members|people))?\b", re.I), ''),
+               (re.compile(r"\b(?:those|these|the selected|the same|the saved)\s+(patients|members|people)\b", re.I), r'\1'),
+               (re.compile(r"\b(?:they|them)\b", re.I), 'patients')]
+GROUP_SYSTEM = '''A user selected a group of patients and then typed a follow-up about that group. Code will restrict all data to
+that group, so rewrite the follow-up as ONE complete standalone question that treats the group as the entire
+population: remove the words that point back to the group ("of them", "those patients", "in this cohort") and say
+"patients" where a noun is needed. Keep every other word, period and value; add nothing.
+Return exactly one JSON object: {"standalone": "<the complete question>"}.
+Return {"standalone": null} when the follow-up is not a question that data about those patients can answer with a
+count, a table or document readings: it asks why, asks for advice or a judgment, asks to change who is in the group,
+or asks for work to be done.'''
+GROUP_OPTIONS = {'yes': 'Asked about only the selected patients, the rewritten question asks exactly what the follow-up asks: nothing is dropped, added or changed.',
+                 'no': 'The rewritten question changes, drops or adds something, or the follow-up was not a question about the selected patients\' data.'}
+
+
+def group_question(question, s1_ledger=None, bottles=None):
+    """A follow-up about a selected patient group -> (complete question with the group as the population, how) or (None, how)."""
+    from . import recipes
+    started = time.monotonic()
+    def done(text, method, usd=0.0, tokens=0, **extra):
+        return text, {'method': method, 'usd': usd, 'tokens': tokens, 'seconds': round(time.monotonic() - started, 2), **extra}
+    known = lambda text: recipes.match(text) is not None or (bottles is not None and bottles.match(text, statuses=('promoted',)) is not None)
+    plain = ' '.join(question.split())
+    for pattern, put in GROUP_WORDS: plain = pattern.sub(put, plain)
+    plain = ' '.join(plain.split()).replace(' ?', '?')
+    if not POINTS_BACK.search(plain) and known(plain):  # code removed the pointing words and a zero-cost tier knows the result
+        return done(plain, 'group_words_removed_by_code')
+    text, step = models._claude(models.SLM, GROUP_SYSTEM, 'Follow-up: ' + question)
+    try:
+        standalone = models._json(text).get('standalone')
+    except ValueError:
+        return done(None, 'small_model_unusable', step['usd'], step['tokens'])
+    if not isinstance(standalone, str) or len(standalone.strip()) < 8:
+        return done(None, 'not_a_data_question_about_the_group', step['usd'], step['tokens'])
+    standalone = ' '.join(standalone.split())
+    from ..clinical import system_one
+    usd, label, p = step['usd'], None, 0.0
+    for name in ('perplexity', 'jev'):
+        try:
+            out = system_one.choice('Follow-up typed about a selected group of patients: ' + question + '\nRewritten question, to be asked about only those patients: ' + standalone +
+                                    '\nAsked about only the selected patients, does the rewritten question ask exactly what the follow-up asks?',
+                                    GROUP_OPTIONS, [], as_of=time.strftime('%Y-%m-%d'), provider=name, ledger=s1_ledger)
+        except Exception:
+            continue
+        usd += out.get('cost_usd') or 0.0
+        label = out.get('label'); p = float((out.get('probabilities') or {}).get(label, 0.0)) if label else 0.0
+        if label and p >= models.S1_THRESHOLD: break
+    if label == 'yes' and p >= models.S1_THRESHOLD:
+        return done(standalone, 'small_model_rewrite_confirmed_by_system_one', usd, step['tokens'], confidence=round(p, 4))
+    return done(None, 'rewrite_not_confirmed', usd, step['tokens'], rejected=standalone[:200], confidence=round(p, 4))

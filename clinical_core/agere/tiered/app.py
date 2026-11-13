@@ -53,6 +53,39 @@ def try_in_conversation(stack, question, previous, looks_like_follow_up):
     return result, standalone, note
 
 
+def try_in_cohort(stack, question, parent, key, scope='result'):
+    """A follow-up about a selected patient group (parent: the saved answer whose patients were selected).
+    -> the app's result dict bound to that group, or None for the existing path. Code restricts every table to the
+    group's patients; the tiers answer the question as if the group were the whole population."""
+    if not enabled(): return None
+    from . import followup
+    ids = sorted(set(parent.get('patient_ids') or []))
+    if not ids or len(ids) > store.MAX_COHORT: return None
+    s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
+    try:
+        standalone, how = followup.group_question(question, s1_ledger, bottle_store.Bottles())
+    except Exception as exc:
+        if 'limit' in str(exc).lower(): raise
+        return None
+    if standalone is None: return None
+    result = _single(stack, standalone, cohort=ids)
+    if result is None: return None
+    note = f'Asked about only the {len(ids)} selected patients, as: "{standalone}". Code restricted every patient table to those patients.'
+    answer = result['answer']
+    answer['facts'] = {'selected_patients': note, **(answer.get('facts') or {})}
+    answer['limitations'] = [f'Computed only over the {len(ids)} selected patients; this is not a whole-population figure. '
+                             'The selection itself was not re-checked.', *(answer.get('limitations') or [])]
+    answer['inherited_evidence_context'] = {'id': key, 'source': parent.get('source')}
+    result['question'] = question
+    result['planner_receipt']['cohort'] = {**how, 'patients': len(ids), 'parent_context_id': key, 'standalone': standalone}
+    for name in ('new_api_estimate_usd', 'known_api_estimate_usd'): result['planning_economics'][name] += how['usd']
+    result['planner_receipt']['known_api_estimate_usd'] += how['usd']
+    policy = ((parent.get('selected_population') or {}).get('proof') or {}).get('membership_policy') or (parent.get('cohort_transform') or {}).get('population_policy')
+    result['cohort_transform'] = {'parent_context_id': key, 'input_patient_ids': ids, 'scope': scope, 'operations': [note],
+                                  **({'population_policy': policy} if policy else {})}
+    return result
+
+
 def try_answer(stack, question):
     """-> the app's result dict, or None to continue on the existing path.
     A message that asks several separate questions is split (split.parts) and each part goes through the tiers; it
@@ -101,16 +134,16 @@ def _combine(question, parts, results, how):
                             'escalations': [e for r in results for e in r['tiered_core']['escalations']]}}
 
 
-def _single(stack, question):
-    """One question through the tiers. -> the app's result dict, or None."""
+def _single(stack, question, cohort=None):
+    """One question through the tiers, inside a patient cohort when one is given. -> the app's result dict, or None."""
     s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
     bottles = bottle_store.Bottles()
     try:
-        outcome = router.answer(question, tiers=TIERS, bottles=bottles, bottle_new=True, s1_ledger=s1_ledger)
+        outcome = router.answer(question, tiers=TIERS, bottles=bottles, bottle_new=True, s1_ledger=s1_ledger, cohort=cohort)
     except Exception as exc:  # the bridge never blocks a question: any failure falls through to the existing path
         if 'limit' in str(exc).lower(): raise
         return None
-    ledger_store.Ledger().write('app', question, outcome, config={'tiers': list(TIERS)})
+    ledger_store.Ledger().write('app', question, outcome, config={'tiers': list(TIERS), **({'cohort_patients': len(cohort)} if cohort is not None else {})})
     if outcome['status'] != 'answered': return None
     columns, rows, tier = outcome['columns'], outcome['rows'], outcome['final_tier']
     usd = sum(s.get('usd', 0.0) for s in outcome['steps'])
@@ -139,7 +172,7 @@ def _single(stack, question):
                               f'Deterministic checks passed: {checks}. These check structure, period and totals, not clinical meaning.',
                               *(['This recipe was written by the frontier model for this question and is not yet confirmed against a reference answer.']
                                 if tier == 'llm' else [])]}
-    sql = store.portable(recipe.get('sql', ''))  # saved with the answer, so it must run on the semantic layer as it is
+    sql = store.portable(recipe.get('sql', ''), cohort)  # saved with the answer, so it must run on the semantic layer as it is
     # Shown by the existing answer view with no view change: facts as key findings, grounding as evidence used,
     # table_binding as the computation.
     models_used = ', '.join(dict.fromkeys(str(s['model']) for s in outcome['steps'] if s.get('model'))) or 'none'

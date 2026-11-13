@@ -11,14 +11,16 @@ TOKEN_CEILING = 60000
 
 
 def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_ceiling=TOKEN_CEILING, s1_ledger=None,
-           bottle_statuses=('promoted',), readers=reader.READERS):
+           bottle_statuses=('promoted',), readers=reader.READERS, cohort=None):
     """-> {'status','final_tier','columns','rows','recipe','validation','steps','seconds','escalations'}."""
     started = time.monotonic()
     steps, escalations = [], []
-    db = store.connect()
+    db = store.connect(cohort)        # recipes execute here: inside the cohort when one is given
+    lookup = store.connect() if cohort is not None else db  # vocabularies and identifiers are looked up in the whole layer
     def spent(): return sum(s.get('tokens', 0) for s in steps)
     def done(status, tier, recipe=None, columns=None, rows=None, validation=None, **extra):
         db.close()
+        if lookup is not db: lookup.close()
         if evidence: extra = {**extra, 'documents': evidence['documents']}
         return {'status': status, 'final_tier': tier, 'recipe': recipe, 'columns': columns, 'rows': rows, 'validation': validation,
                 'steps': steps, 'escalations': escalations, 'seconds': round(time.monotonic() - started, 2), **extra}
@@ -28,7 +30,7 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
         t0 = time.monotonic()
         try:
             if tier == 'llm':
-                narrowed = recipes.narrowed_vocabulary(question, params, db)
+                narrowed = recipes.narrowed_vocabulary(question, params, lookup)
                 if narrowed: raise store.RecipeError(narrowed)
             if read:
                 columns, rows, validation, read_steps, evidence['documents'] = reader.execute(
@@ -90,7 +92,7 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
 
     # Tier 1: deterministic pattern match onto a recipe
     if 'recipes' in tiers:
-        hit = recipes.match(question, db)
+        hit = recipes.match(question, lookup)
         if hit:
             out = run_recipe('recipes', *hit)
             if out: return out
@@ -107,7 +109,7 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
             escalations.append({'from': 'system1', 'reason': step['outcome'] + f" (confidence {step.get('confidence')})"})
     if 'slm' in tiers and 'recipes' in tiers and spent() < token_ceiling:
         if chosen is not None:
-            params, step = models.slm_slots(question, chosen, db)
+            params, step = models.slm_slots(question, chosen, lookup)
             steps.append(step)
             if params is not None:
                 fits, step = models.s1_fit(question, chosen, params, s1_ledger)
@@ -120,7 +122,7 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
             else:
                 escalations.append({'from': 'slm', 'reason': step['outcome'] + ': ' + str(step.get('reason'))[:120]})
         elif 'system1' not in tiers:
-            rid, params, step = models.slm_choose_and_fill(question, db)
+            rid, params, step = models.slm_choose_and_fill(question, lookup)
             steps.append(step)
             if rid is not None:
                 out = run_recipe('slm', rid, params)

@@ -1080,6 +1080,10 @@ def _handle_compose(stack, body, hosted_factory=None):
                     # Legacy finite transforms remain useful for literal list/count and
                     # grouping. They operate on immutable membership, never text rewrites.
                     bound = answer_context.followup(stack.path, saved['id'], question, scope=selected_scope)
+                    if bound is None and planning == 'auto' and not temporal:
+                        # Cheapest tier first for the selected patients too: code restricts every table to the saved
+                        # membership and the tiers answer inside it. Anything they cannot answer continues below.
+                        bound = tiered_app.try_in_cohort(stack, question, parent, saved['id'], selected_scope)
                     if bound is None:
                         bound = stack.compose(effective_question, population=parent['patient_ids'], parent=parent, planning=planning)
                         used_temporal = temporal is not None

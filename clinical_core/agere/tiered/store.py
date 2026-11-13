@@ -18,8 +18,22 @@ def path():
     return Path(os.environ.get('AGERE_TIERED_DB', DEFAULT_DB))
 
 
-def connect():
+# Tables whose rows belong to one patient. Restricting these restricts every recipe: the document catalog is built
+# from the three document tables, so it is restricted with them.
+PATIENT_TABLES = tuple(t for t in TABLES if t not in ('document', 'organization', 'clinician')) + ('clinical_note', 'scanned_document', 'hie_document')
+MAX_COHORT = 5000
+
+
+def connect(cohort=None):
+    """cohort: patient ids. When given, every patient table on this connection holds only those patients' rows
+    (a temporary view of the same name over the real table), so any recipe runs inside the cohort with no change
+    to its SQL and no model involved."""
     db = sqlite3.connect(path().resolve().as_uri() + '?mode=ro', uri=True)
+    if cohort is not None:
+        db.execute('CREATE TEMP TABLE cohort(patient_id TEXT PRIMARY KEY)')
+        db.executemany('INSERT OR IGNORE INTO cohort VALUES(?)', [(str(p),) for p in cohort])
+        for table in PATIENT_TABLES:
+            db.execute(f'CREATE TEMP VIEW {table} AS SELECT * FROM main.{table} WHERE patient_id IN (SELECT patient_id FROM cohort)')
     db.execute(DOCUMENT_VIEW)
     db.execute('PRAGMA query_only=ON')
     return db
@@ -31,15 +45,26 @@ UNION ALL SELECT record_id, patient_id, 'scanned_document', document_type, event
 UNION ALL SELECT record_id, patient_id, 'hie_document', document_type, event_date, author_organization_id, text_chars FROM hie_document"""
 
 
-def portable(sql):
-    """The same SELECT runnable on the semantic layer by anyone: the document catalog is inlined as a CTE,
-    because the view exists only on this module's connections."""
+def portable(sql, cohort=None):
+    """The same SELECT runnable on the semantic layer by anyone: the document catalog is inlined as a CTE, because
+    the view exists only on this module's connections. With a cohort, the patient ids and the restricted tables are
+    inlined the same way, so the saved SQL returns the cohort's result and not the whole population's."""
     text = sql.strip().rstrip(';')
-    if not re.search(r'(?i)\bdocument\b(?!_)', text): return text
-    body = DOCUMENT_VIEW.split(' AS\n', 1)[1]
+    uses_documents = bool(re.search(r'(?i)\bdocument\b(?!_)', text))
+    ctes = []
+    if cohort is not None:
+        ids = sorted({str(p) for p in cohort})
+        values = 'VALUES ' + ', '.join("('" + p.replace("'", "''") + "')" for p in ids) if ids else 'SELECT NULL WHERE 0'
+        ctes.append(f'cohort(patient_id) AS ({values})')
+        for table in PATIENT_TABLES:
+            if re.search(rf'(?i)\b{table}\b(?!_)', text) or (uses_documents and table in ('clinical_note', 'scanned_document', 'hie_document')):
+                ctes.append(f'{table} AS (SELECT * FROM main.{table} WHERE patient_id IN (SELECT patient_id FROM cohort))')
+    if uses_documents: ctes.append('document AS (' + DOCUMENT_VIEW.split(' AS\n', 1)[1] + ')')
+    if not ctes: return text
+    if re.match(r'(?is)^\s*with\s+recursive\b', text): raise RecipeError('A recursive recipe cannot be saved with a cohort or the document catalog')
     if re.match(r'(?is)^\s*with\b', text):
-        return re.sub(r'(?is)^\s*with\b', 'WITH document AS (' + body + '),', text, count=1)
-    return 'WITH document AS (' + body + ') ' + text
+        return re.sub(r'(?is)^\s*with\b', 'WITH ' + ', '.join(ctes) + ',', text, count=1)
+    return 'WITH ' + ', '.join(ctes) + ' ' + text
 
 
 def texts(record_ids, db):
