@@ -28,18 +28,14 @@ def try_in_conversation(stack, question, previous, looks_like_follow_up):
     A question the zero-cost tiers recognise is complete. Otherwise a follow-up is first made complete from the
     previous question (followup.rewrite); words that are not an edit of the previous question are tried as they are."""
     if not enabled(): return None
-    from . import followup, recipes
-    complete = recipes.match(question) is not None or bottle_store.Bottles().match(question, statuses=('promoted',)) is not None
-    standalone, how = question, None
-    if not complete and looks_like_follow_up and previous:
-        s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
-        try:
-            rewritten, how = followup.rewrite(question, previous, s1_ledger)
-        except Exception as exc:
-            if 'limit' in str(exc).lower(): raise
-            return None
-        if how['method'] == 'rewrite_not_confirmed': return None  # an edit we could not make safely: leave it to the existing path
-        standalone = rewritten or question
+    from . import followup
+    s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
+    try:
+        standalone, how = followup.complete_question(question, previous, looks_like_follow_up, bottle_store.Bottles(), s1_ledger)
+    except Exception as exc:
+        if 'limit' in str(exc).lower(): raise
+        return None
+    if standalone is None: return None  # an edit we could not make safely: leave it to the existing path
     result = try_answer(stack, standalone)
     if result is None: return None
     note = 'Complete question answered by the tiered core'

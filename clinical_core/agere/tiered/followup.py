@@ -1,6 +1,7 @@
 """Follow-up questions. A follow-up such as "and in 2028?" is turned into one complete question from the previous
 question, cheapest way first, and that complete question then goes through the tiers like any other.
 
+  System One    first says whether the words are a complete question on their own; if so nothing is rewritten
   code          the follow-up is only a period: swap it into the previous question (no model)
   small model   rewrites the previous question with the change the follow-up asks for
   System One    confirms the rewrite is the previous question with only that change; unconfirmed is not used
@@ -23,6 +24,10 @@ Return {"standalone": null} when the follow-up is not an edit of the previous qu
 question, it refers to the patients or rows that were returned, or it asks for an explanation.'''
 OPTIONS = {'yes': 'The rewritten question is the previous question with only the change the follow-up asks for.',
            'no': 'The rewritten question changes something else, drops something, adds something, or the follow-up was not an edit of the previous question.'}
+
+
+STANDS_ALONE = {'complete': 'The text is a complete question or request: it names what to count, list or show, and can be answered without knowing what was asked before.',
+                'depends': 'The text only makes sense as a change to an earlier question: it leaves out what is being counted, listed or shown, or points back with words like that, same, instead, what about.'}
 
 
 def rewrite(question, previous, s1_ledger=None):
@@ -58,3 +63,33 @@ def rewrite(question, previous, s1_ledger=None):
     if label == 'yes' and p >= models.S1_THRESHOLD:
         return done(' '.join(standalone.split()), 'small_model_rewrite_confirmed_by_system_one', usd, step['tokens'], confidence=round(p, 4))
     return done(None, 'rewrite_not_confirmed', usd, step['tokens'], rejected=standalone[:200], confidence=round(p, 4))
+
+
+def complete_question(question, previous, looks_like_follow_up, bottles=None, s1_ledger=None):
+    """What to send through the tiers for a question asked inside a conversation.
+    -> (complete question, how) or (None, how) when the words are an edit that could not be made safely.
+    A question the zero-cost tiers recognise is complete as it is. Otherwise a follow-up is made complete from the
+    previous question; words that are not an edit of the previous question are tried as they are."""
+    from . import recipes
+    if recipes.match(question) is not None or (bottles is not None and bottles.match(question, statuses=('promoted',)) is not None):
+        return question, {'method': 'complete_as_asked', 'usd': 0.0, 'tokens': 0}
+    if not (looks_like_follow_up and previous):
+        return question, {'method': 'not_a_follow_up', 'usd': 0.0, 'tokens': 0}
+    # Wording alone ("List ...", "Show ...") does not make a follow-up. System One says whether the words stand on
+    # their own; only words that depend on the earlier question are rewritten.
+    usd = 0.0
+    try:
+        if ONLY_PERIOD.match(' '.join(question.split())): raise LookupError('a bare period is never a complete question; code handles it')
+        from ..clinical import system_one
+        out = system_one.choice('Text typed by a user in an analytics conversation: "' + question + '"\nIs it a complete question on its own?',
+                                STANDS_ALONE, [], as_of=time.strftime('%Y-%m-%d'), provider='perplexity', ledger=s1_ledger)
+        usd = out.get('cost_usd') or 0.0
+        if out.get('label') == 'complete':
+            return question, {'method': 'complete_by_system_one', 'usd': usd, 'tokens': 0,
+                              'confidence': round(float((out.get('probabilities') or {}).get('complete', 0.0)), 4)}
+    except Exception:  # an outage: fall through to the rewrite, which has its own confirmation
+        pass
+    rewritten, how = rewrite(question, previous, s1_ledger)
+    how['usd'] += usd
+    if how['method'] == 'rewrite_not_confirmed': return None, how
+    return rewritten or question, how

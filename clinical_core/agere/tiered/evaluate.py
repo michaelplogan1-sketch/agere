@@ -121,7 +121,47 @@ def report(stage, tiers, run_id, results):
     return text
 
 
+def followups(s1_ledger=None):
+    """Follow-up eval: each item is a previous question and what the user typed next. The typed words are made
+    complete exactly as the app does it (followup.complete_question), sent through all tiers, and scored against the
+    reference. An item marked decline is correct only when the core returns no answer."""
+    from . import followup
+    from ..clinical.conversation import is_followup
+    items = json.loads(Path('eval/tiered/followups.json').read_text())['items']
+    run_id = f"followups-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
+    led, bottles, results = ledger_store.Ledger(), bottle_store.Bottles(), []
+    for it in items:
+        standalone, how = followup.complete_question(it['follow_up'], it['previous'], is_followup(it['follow_up']), bottles, s1_ledger)
+        outcome = router.answer(standalone, bottles=bottles, s1_ledger=s1_ledger) if standalone else None
+        answered = bool(outcome) and outcome['status'] == 'answered'
+        ok = (not answered) if it.get('decline') else answered and correct(it['reference_rows'], outcome.get('rows'))
+        usd = how['usd'] + (sum(s.get('usd', 0.0) for s in outcome['steps']) if outcome else 0.0)
+        if outcome: led.write(run_id, it['follow_up'], outcome, eval_id=it['id'], correct=ok, config={'previous': it['previous'], 'standalone': standalone, 'how': how})
+        results.append({'id': it['id'], 'kind': it['kind'], 'method': how['method'], 'standalone': standalone, 'final_tier': outcome and outcome['final_tier'],
+                        'status': outcome['status'] if outcome else 'not_sent', 'correct': ok, 'usd': usd,
+                        'frontier_calls': sum(s.get('tier') == 'llm' and 'model' in s for s in outcome['steps']) if outcome else 0})
+        print(f"{it['id']} {it['kind']:9} {how['method'][:34]:34} {str(results[-1]['final_tier']):8} {results[-1]['status']:10} {'correct' if ok else 'WRONG':7} ${usd:.4f} | {standalone}", flush=True)
+    n = len(results)
+    lines = [f'FOLLOW-UP EVAL  run {run_id}', f'items: {n}', f"correct: {sum(r['correct'] for r in results)}/{n}",
+             f"cost: ${sum(r['usd'] for r in results):.4f} total, ${sum(r['usd'] for r in results) / n:.4f} per item",
+             f"frontier model called on: {sum(r['frontier_calls'] > 0 for r in results)}/{n}", 'by kind:']
+    for kind in dict.fromkeys(r['kind'] for r in results):
+        rows = [r for r in results if r['kind'] == kind]
+        lines.append(f"  {kind:9} correct {sum(r['correct'] for r in rows)}/{len(rows)}  methods {dict(Counter(r['method'] for r in rows))}")
+    lines += ['not correct:'] + [f"  {r['id']} {r['method']} -> {r['standalone']} ({r['status']}, tier {r['final_tier']})" for r in results if not r['correct']] if any(not r['correct'] for r in results) else []
+    text = '\n'.join(lines)
+    (OUT / f'{run_id}.report.txt').write_text(text + '\n'); (OUT / f'{run_id}.results.json').write_text(json.dumps(results, indent=1))
+    return text
+
+
 def main(argv):
+    if argv[0] == 'followups':
+        import os
+        os.environ.pop('ANTHROPIC_API_KEY', None)
+        from run_integrated_stack import keys
+        keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+        print('\n' + followups(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3')))
+        return
     stage, tiers = argv[0], tuple(argv[1].split(','))
     bottle_new = '--bottle-new' in argv
     bottles_path = argv[argv.index('--bottles') + 1] if '--bottles' in argv else None

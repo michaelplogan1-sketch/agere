@@ -183,12 +183,14 @@ class Core(unittest.TestCase):
         with said('{"standalone": null}'):self.assertEqual(F.rewrite('why is that?',prev)[1]['method'],'not_an_edit_of_the_previous_question')
         stack=mock.Mock(spec=[])
         with tempfile.TemporaryDirectory() as d,mock.patch.dict(os.environ,{'AGERE_TIERED_CORE':'on','AGERE_TIERED_BOTTLES':d+'/b.sqlite3','AGERE_TIERED_LEDGER':d+'/l.sqlite3'}):
-            result,standalone,note=A.try_in_conversation(stack,'and in 2028?',prev,True)
+            with s1('depends'):result,standalone,note=A.try_in_conversation(stack,'and in 2028?',prev,True)
             self.assertEqual((standalone,result['answer']['count']),('How many ED visits were there in 2028?',1));self.assertIn('swapped',result['answer']['facts']['follow_up'])
             result,standalone,note=A.try_in_conversation(stack,'Show monthly ED visits in 2029',prev,True)  # complete on its own: never rewritten
             self.assertEqual((standalone,len(result['answer']['table'])),('Show monthly ED visits in 2029',2))
             with said('{"standalone": "How many hospital admissions were there in 2028?"}'),s1('no'):
                 self.assertIsNone(A.try_in_conversation(stack,'what about hospital admissions?',prev,True))
+            with s1('complete'),mock.patch.object(F,'rewrite',side_effect=AssertionError('a complete question is never rewritten')):
+                self.assertEqual(F.complete_question('List the 5 most common conditions',prev,True)[1]['method'],'complete_by_system_one')
 
     def test_narrative_numbers_come_only_from_the_result_and_a_bad_text_is_discarded(self):
         from clinical_core.agere.tiered import narrative as N
