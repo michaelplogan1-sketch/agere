@@ -55,6 +55,25 @@ class ComputedProseError(ValueError):
         self.answer_repair_targets = list(answer_targets)
 
 
+NATIVE_ROUTING = {
+    'review_documents': ' ROUTING: this tool answers only what document text states. Whether something happened after a referral, order, '
+        'result or recommendation (a visit with the receiving clinician or specialty, a consult report, a delivered service, a linked result) '
+        'is recorded structurally: call execute_analysis operation=loop_closure (focus=referrals for referral attendance) on the same '
+        'patients first, and report its closure evidence with its type and date as the evidence of attendance. A dated visit record by the '
+        'referred clinician counts as attendance; it does not establish an ongoing role. Ask documents only for statements the structured '
+        'records cannot give, and keep the two kinds of evidence in separate columns.',
+    'execute_analysis': ' ROUTING: operation=loop_closure is the native source for attendance, completion or follow-up after a referral, '
+        'order, result or recommendation; use it before any document review of the same fact.',
+}
+
+
+def routed_tools():
+    """Candidate (AGERE_NATIVE_ROUTING): tell the analyst which existing native engine owns follow-up facts,
+    so document review is asked only for what text states. Off: the tool list is unchanged."""
+    if os.environ.get('AGERE_NATIVE_ROUTING', 'off') != 'on': return TOOLS
+    return [{**tool, 'description': tool['description'] + NATIVE_ROUTING[tool['name']]} if tool['name'] in NATIVE_ROUTING else tool for tool in TOOLS]
+
+
 MAX_TOOLS = int(os.environ['AGERE_BACKSTOP_TOOLS']) if os.environ.get('AGERE_BACKSTOP_TOOLS') else None
 DOC_SOURCES = ('clinical_note', 'hie_document', 'scanned_document_text', 'other_text')
 READ_CHARS = 9000
@@ -6083,7 +6102,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
             rung=model_policy.escalation() if body['model']==model_policy.ladder('analyst')[1] else model_policy.first_rung()
             with model_policy.question_path(), rung:
                 return raw_send(body)
-        run = semantic_analyst.tool_loop(user, system, TOOLS, tools, send=actor_send, model=model,
+        run = semantic_analyst.tool_loop(user, system, routed_tools(), tools, send=actor_send, model=model,
                                          max_tools=MAX_TOOLS, extra={'cache_control': {'type': 'ephemeral'},
                                              'output_config': semantic_analyst.INVESTIGATOR_OUTPUT_CONFIG}, format_retries=1, max_tokens=8192,
                                          review=review, continuation_guard=tools.continuation_identity,initial_calls=replay['calls'],
