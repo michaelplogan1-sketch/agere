@@ -2449,6 +2449,39 @@ def resolve_source_abstention(packet,checked,reviewer,*,ledger):
     return result,review
 
 
+def relocate_unbound_fact_notes(answer,exc,tools):
+    """Keep a method note that twice failed quantity binding as a labelled limitation.
+
+    The compiler requires every number in a facts entry to be bound to an executed cell. That
+    protects counts, but definitional wording ("never as 0 days", "zero baseline") has no cell to
+    bind and source-free constants are refused, so runs stalled on it (Q02, Q03, Q05 2026-11-13).
+    A facts entry that fails for unbound literals in two consecutive reviews is moved, unchanged,
+    to limitations with a label saying its wording is not tied to a computed value. The first
+    failure still goes back to the analyst; headline and row prose are never moved.
+    """
+    facts=answer.get('facts')
+    fields=sorted(set(re.findall(r'(?:Quantitative|placeholders at) facts\.([A-Za-z0-9_]+)[^"]*?unbound literals',str(exc))))
+    seen=getattr(tools,'unbound_fact_fields',None)
+    if seen is None:
+        seen=set()
+        try:tools.unbound_fact_fields=seen
+        except AttributeError:return []
+    repeat=[f for f in fields if f in seen and isinstance(facts,dict)and f in facts]
+    seen.clear();seen.update(fields)
+    moved=[]
+    for field in repeat:
+        value=facts.pop(field)
+        text=value if isinstance(value,str)else(value.get('template')if isinstance(value,dict)else None)
+        if not isinstance(text,str):text=json.dumps(value,default=str)
+        answer['limitations']=[*(answer.get('limitations')or[]),'Method note ('+field.replace('_',' ')+'), wording not tied to a computed value: '+text]
+        if isinstance(answer.get('global_prose_basis'),list):
+            answer['global_prose_basis']=[b for b in answer['global_prose_basis']if not(isinstance(b,dict)and b.get('path')==['facts',field])]
+        if isinstance(answer.get('computed_prose'),list):
+            answer['computed_prose']=[c for c in answer['computed_prose']if not(isinstance(c,dict)and c.get('field')=='facts.'+field)]
+        moved.append({'field':'facts.'+field,'moved_to':'limitations','reason':'unbound literals in two consecutive reviews'})
+    return moved
+
+
 def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_structure=None):
     """Compile quantitative table prose from actual native scalar cells.
 
@@ -3187,6 +3220,11 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     # decide whether the evidence supports the unchanged statement.
     bind_explicit_global_views(answer,calls)
     prose_exception=compile_prose()
+    if prose_exception is not None:
+        moved=relocate_unbound_fact_notes(answer,prose_exception,tools)
+        if moved:
+            assessment['unbound_fact_notes']=moved
+            prose_exception=compile_prose()
     if (prose_exception is not None and not static_feedback and getattr(stack,'allow_live',False) and
             os.environ.get('AGERE_REFERENCE_CLARIFICATION_CHECK','on')=='on'):
         from .execution_state import reference_clarification_request,apply_reference_clarification
