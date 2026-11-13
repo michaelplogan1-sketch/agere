@@ -1192,9 +1192,11 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         # the existing checked escalation above; no new quota.
                         history.add(key)
                         repairs += 1
-                        if not compiler and assessment.get('repair_kind')not in ('native_population_scope','global_source_dependencies','incomplete_work'):
-                            # Deliver in bounded time. Only reviews that checked the answer against its sources
-                            # count; binding and scope repairs that precede that check do not. Each source-review repair is a fresh round of
+                        if not compiler and assessment.get('repair_kind')not in ('native_population_scope','global_source_dependencies'):
+                            # Deliver in bounded time. Reviews that send the analyst back for more work count,
+                            # whether for a source fault or for work the answer itself lists as unfinished
+                            # (live run 8: three such rounds alternated with three source reviews). Binding
+                            # and scope repairs that precede the source check do not count. Each source-review repair is a fresh round of
                             # authoring that can introduce new faults (live runs 2026-11-12: seven
                             # rounds, each for a different reason, no accepted answer). After
                             # SOURCE_REPAIR_ROUNDS repairs the retained answer is returned as partial,
