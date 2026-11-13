@@ -1150,7 +1150,12 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                 result['review_stopped'] = 'no_progress'
                                 return result
                         elif assessment.get('status') == 'repair' and assessment.get('repair_kind')not in ('deterministic_compiler','native_population_scope','global_source_dependencies','unresolved_verification','incomplete_work'):
-                            escalate('Answer failed its existing evidence/coverage checks: '+str(feedback))
+                            # A review that located its faults in named patient claims needs that
+                            # located repair, not a costlier model (live run 2026-11-12: $18.48 of
+                            # $22.68 was Opus repair turns after one such review). Every other failed
+                            # check still escalates, as does a review repeating on unchanged evidence.
+                            located=any(p.get('claim_feedback')for p in((assessment.get('support')or{}).get('packets')or[])if isinstance(p,dict))
+                            if not located:escalate('Answer failed its existing evidence/coverage checks: '+str(feedback))
                         if not compiler and key not in reviewed:
                             # Passing the compiler and reaching a new source
                             # failure is real phase progress. Its correction

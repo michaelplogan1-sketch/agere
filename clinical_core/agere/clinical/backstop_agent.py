@@ -55,6 +55,7 @@ class ComputedProseError(ValueError):
         self.answer_repair_targets = list(answer_targets)
 
 
+READING_ENVELOPE_BYTES = 230000  # same envelope as whole dependency packets sent to a provider
 NATIVE_ROUTING = {
     'review_documents': ' ROUTING: this tool answers only what document text states. Whether something happened after a referral, order, '
         'result or recommendation (a visit with the receiving clinician or specialty, a consult report, a delivered service, a linked result) '
@@ -664,8 +665,17 @@ class Tools:
             out = bind_loaded(self.semantic, args['sql'], out)
             if args.get('read_all_rows') and isinstance(out.get('rows'),list):
                 from ...contracts import digest
-                out['actor_reading']={'mode':'complete_rows','rows_digest':digest(out['rows']),
-                                      'columns_digest':digest(out.get('columns'))}
+                size=len(json.dumps(out['rows'],default=str))
+                if size>READING_ENVELOPE_BYTES:
+                    # A complete reading is resent on every later turn. One larger than the provider
+                    # envelope already used for dependency packets (live run 2026-11-12: single readings
+                    # of 250K-975K tokens, $15 of a $22.68 run) stays native and queryable instead.
+                    out['reading_not_retained']={'reason':'complete rows exceed the model context envelope','bytes':size,
+                        'envelope_bytes':READING_ENVELOPE_BYTES,'rows':len(out['rows']),
+                        'next':'Every row is retained natively in this result_view. Select only the columns and rows needed for the interpretation (aggregate or extract JSON fields in SQL), or compose it with compose_table; do not reread the whole view.'}
+                else:
+                    out['actor_reading']={'mode':'complete_rows','rows_digest':digest(out['rows']),
+                                          'columns_digest':digest(out.get('columns'))}
             return out
         if name == 'plan_evidence_expansion':
             from .source_navigation import prepare
