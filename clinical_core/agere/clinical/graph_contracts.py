@@ -388,7 +388,8 @@ def parameter_schema(op, catalog):
                     'windows': {'type': 'object', 'description': 'Follow-up window override in days per item type, e.g. {"abnormal_result": 14}'},
                     'group_by': string(lc.GROUP_BY), 'evidence': string(lc.EVIDENCE, 'specific = visits/calls that do not cite the item do not close it'),
                     'abnormal_basis': string(lc.BASIS), 'concept': string(['', *sorted(lc.ACTIONABLE)], 'One lab, else empty'),
-                    'owner': {'type': 'string'}, 'practice': {'type': 'string'}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 1000}})
+                    'owner': {'type': 'string'}, 'practice': {'type': 'string'}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 1000},
+                    'items': string(lc.ITEMS, 'all = every item with status, closed_date, closed_by and closure_detail (use for per-patient follow-up or attendance); open = only open past-due items (default)')})
     if op == 'diagnostic_delay':
         from . import diagnostic_delay as dd
         return obj({'target': string(sorted(dd.TARGETS)), 'mode': string(dd.MODES, 'lookback: delays before diagnosis; undiagnosed: signals without a '

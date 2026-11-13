@@ -59,8 +59,10 @@ READING_ENVELOPE_BYTES = 230000  # same envelope as whole dependency packets sen
 NATIVE_ROUTING = {
     'review_documents': ' ROUTING: this tool answers only what document text states. Whether something happened after a referral, order, '
         'result or recommendation (a visit with the receiving clinician or specialty, a consult report, a delivered service, a linked result) '
-        'is recorded structurally: call execute_analysis operation=loop_closure (focus=referrals for referral attendance) on the same '
-        'patients first, and report its closure evidence with its type and date as the evidence of attendance. A dated visit record by the '
+        'is recorded structurally: call execute_analysis operation=loop_closure (focus=referrals for referral attendance) with items=all and '
+        'the same patient population (patient_ids or patient_query_sql) first, and report each item\'s status, closed_date and closed_by as '
+        'the evidence of attendance. The default items=open lists only open past-due items: an item missing from it is closed, declined or '
+        'not yet due, never unknown. A dated visit record by the '
         'referred clinician counts as attendance; it does not establish an ongoing role. Ask documents only for statements the structured '
         'records cannot give, and keep the two kinds of evidence in separate columns.',
     'execute_analysis': ' ROUTING: operation=loop_closure is the native source for attendance, completion or follow-up after a referral, '

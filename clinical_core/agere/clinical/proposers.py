@@ -1018,6 +1018,7 @@ class Cascade:
                   'investigation': {'model': run.get('model'), 'tool_calls': run.get('tool_calls') or [],
                                     'answer_reviews': run.get('answer_reviews') or [],
                                     'review_stopped':run.get('review_stopped'),
+                                    **({'dependency_verification':run['dependency_verification']}if run.get('dependency_verification')else{}),
                                     'runtime_dependency':run.get('runtime_dependency'),
                                     'runtime_pause':run.get('runtime_pause'),
                                     'unaccepted_draft':run.get('unaccepted_draft'),

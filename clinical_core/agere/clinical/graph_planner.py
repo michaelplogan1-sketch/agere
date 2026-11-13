@@ -290,7 +290,7 @@ CONTRACTS['trial_feasibility'] = {'inputs':['optional earlier_set'],'parameters'
               '(trailing 12 months, Poisson interval). Criteria come only from the question; uncomputable ones are listed as not applied.'}
 CONTRACTS['loop_closure'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|results|critical|screening|recommendations|orders|referrals|reports',
     'period':{'start':'','end':''},'window_days':365,'windows':{},'group_by':'practice|owner|item_type|none','evidence':'any|specific',
-    'abnormal_basis':'actionable|reference_range','concept':'','owner':'','practice':'','top':50},
+    'abnormal_basis':'actionable|reference_range','concept':'','owner':'','practice':'','top':50,'items':'open|all'},
     'meaning':'Closing the loop on results, orders, recommendations and referrals: each item (critical / abnormal lab result, positive mammogram or FIT, '
               'report or note follow-up recommendation, test order, referral, abnormal report) has an expected follow-up action and window; closure '
               'evidence is the earliest of a structured review citing the item (link table), the expected study / procedure / specialist visit / '

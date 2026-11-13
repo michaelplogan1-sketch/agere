@@ -45,7 +45,8 @@ EVIDENCE = ('any', 'specific')
 BASIS = ('actionable', 'reference_range')
 WINDOWS = {'critical_result': 7, 'abnormal_result': 30, 'positive_screen': 30, 'recommendation': 90, 'test_order': 30,
            'referral': 90, 'report_review': 30}
-FIELDS = {'focus', 'item_types', 'period', 'window_days', 'windows', 'group_by', 'evidence', 'abnormal_basis', 'concept', 'top', 'owner', 'practice'}
+FIELDS = {'focus', 'item_types', 'period', 'window_days', 'windows', 'group_by', 'evidence', 'abnormal_basis', 'concept', 'top', 'owner', 'practice', 'items'}
+ITEMS = ('open', 'all')  # all: every item with its status and closure evidence, not only the open ones
 EXPECTED = {'critical_result': 'acknowledgement or action: result review, repeat test, visit or call, medication change, or a note naming the test',
             'abnormal_result': 'acknowledgement or action: result review, repeat test, visit or call, medication change, or a note naming the test',
             'positive_screen': 'diagnostic follow-up: diagnostic mammography/ultrasound (BI-RADS 0/4/5) or colonoscopy (positive FIT)',
@@ -130,13 +131,16 @@ def validate(p):
     if basis not in BASIS: raise ValueError(f'abnormal_basis must be one of {BASIS}')
     concept = p.get('concept') or ''
     if concept and concept not in ACTIONABLE: raise ValueError(f'concept must be one of {sorted(ACTIONABLE)}')
+    listed = p.get('items') or 'open'
+    if listed not in ITEMS: raise ValueError(f'items must be one of {ITEMS}')
     top = p.get('top', 50)
     if type(top) is not int or not 1 <= top <= 1000: raise ValueError('top 1..1000')
     for k in ('owner', 'practice'):
         if not isinstance(p.get(k) or '', str) or len(p.get(k) or '') > 80: raise ValueError(f'{k}: one id')
     return {'focus': focus, 'item_types': [t for t in ITEM_TYPES if t in types], 'period': {'start': period.get('start', ''), 'end': period.get('end', '')},
             'window_days': wd, 'windows': {t: windows.get(t, WINDOWS[t]) for t in ITEM_TYPES}, 'group_by': group_by, 'evidence': evidence,
-            'abnormal_basis': basis, 'concept': concept, 'top': top, 'owner': p.get('owner') or '', 'practice': p.get('practice') or ''}
+            'abnormal_basis': basis, 'concept': concept, 'top': top, 'owner': p.get('owner') or '', 'practice': p.get('practice') or '',
+            **({'items': 'all'} if listed == 'all' else {})}
 
 
 # ---- pure rules ------------------------------------------------------------------------------------------------------------
@@ -664,6 +668,12 @@ def analyse(items, p, as_of, people, cap):
     keep = ('patient_id', 'item_type', 'tier', 'item', 'item_date', 'due_date', 'age_days', 'days_overdue', 'owner', 'practice', 'expected_action',
             'activity', 'item_id')
     table = [{k: ({**i, 'expected_action': EXPECTED[i['item_type']]}).get(k) for k in keep} for i in open_rows]
+    if p.get('items') == 'all':
+        # Every item, closed ones included, so a caller reporting follow-up per item sees what closed it and when.
+        # An item absent from the open list is not unknown: it may be closed, declined or not yet due.
+        every = sorted(items, key=lambda i: (i['patient_id'], i['item_date'], i['item_id']))
+        table = [{**{k: ({**i, 'expected_action': EXPECTED[i['item_type']]}).get(k) for k in keep}, 'status': i['status'],
+                  'closed_date': i.get('closed_date'), 'closed_by': i.get('closed_by'), 'closure_detail': i.get('closure_detail')} for i in every]
     by_type = []
     for t in p['item_types']:
         rows = [i for i in items if i['item_type'] == t]
@@ -677,7 +687,8 @@ def analyse(items, p, as_of, people, cap):
             'closure_evidence': [{'evidence': k, 'items': v, 'kind': 'text (note-derived)' if k == 'note_acknowledgement' else
                                   'contact (not specific to the item)' if k in ('visit', 'telephone_contact') else 'structured'}
                                  for k, v in evidence.most_common()],
-            'open_loops': table[:p['top']], 'open_loops_total': len(table), 'time_to_closure': km_by_type(items, as_of)}
+            'open_loops': table if p.get('items') == 'all' else table[:p['top']],
+            'open_loops_total': len(open_rows), 'time_to_closure': km_by_type(items, as_of)}
 
 
 # ---- entry points ----------------------------------------------------------------------------------------------------------
@@ -776,7 +787,7 @@ def summarize(report, limit=None):
         txt += f" Most open by {p['group_by'].replace('_', ' ')}: " + ', '.join(f"{r['group']} {r['open_overdue']}" + (f" ({r['close_rate']:.0%} on time)" if r['close_rate'] is not None else '') for r in worst) + '.'
     ev = report['closure_evidence']
     if ev: txt += ' Closure evidence: ' + ', '.join(f"{e['evidence'].replace('_', ' ')} {e['items']}" for e in ev[:6]) + '.'
-    return txt, report['open_loops'][:limit or p['top']]
+    return txt, report['open_loops'] if p.get('items') == 'all' else report['open_loops'][:limit or p['top']]
 
 
 def follow_up():
