@@ -1301,17 +1301,40 @@ def as_tool_calls(send):
     return wrapped
 
 
-def shaped(a):
+UNCONFIRMED_SUMMARY=('The written summary is the analyst\'s own wording. The check that ties each of its numbers to a computed '
+    'value did not pass, so read its numbers against the table.')
+
+
+def render_unconfirmed_prose(value,calls=()):
+    """Readable text of an uncompiled prose template: each placeholder shows the executed cell it names, or says it is unresolved."""
+    if not isinstance(value,dict)or'template'not in value:return value if isinstance(value,str)else json.dumps(value,default=str)
+    views={}
+    for call in calls or():
+        result=call.get('result')if isinstance(call,dict)else None
+        if isinstance(result,dict)and result.get('result_view')and not result.get('error'):views[result['result_view']]=result
+    def cell(match):
+        address=(value.get('bindings')or{}).get(match.group(1))
+        try:
+            result=views[address['result_view']];rows=result['rows'];row=rows[address['row']]
+            return str(row[address['column']]if isinstance(row,dict)else row[result['columns'].index(address['column'])])
+        except (KeyError,IndexError,TypeError,ValueError):return '[value not resolved]'
+    return re.sub(r'\{([A-Za-z_]\w*)\}',cell,str(value['template']))
+
+
+def shaped(a,calls=()):
     """The agent's JSON in the product's answer shape: a {columns, rows} table becomes row dicts; empty value / count / table / patient_ids are
     left out (a null value reads downstream as "the value is absent" and would replace a headline that states the numbers); an answer whose
     type promises a field it does not carry is a composite (headline + facts)."""
     if isinstance(a.get('headline'),dict) and 'template' in a['headline']:
-        # A rejected/uncompiled draft is retained in its provider receipt, not
-        # rendered as [object Object] or presented as verified clinical prose.
+        # The analyst answered; a failed prose check must not withhold that answer (Mike 2026-11-13:
+        # the LLM is the backstop that always answers). Show its summary as written, with placeholders
+        # filled from the executed cells they name, and say plainly that the summary check did not pass.
         from ..deliverables.receipts import fingerprint
         a['uncompiled_prose_fingerprint']=fingerprint({'headline':a['headline'],'facts':a.get('facts')})
-        a['headline']='The computed table is retained; its quantitative summary needs repair.'
-        a['facts']={}
+        a['headline']=render_unconfirmed_prose(a['headline'],calls)
+        if isinstance(a.get('facts'),dict):a['facts']={k:render_unconfirmed_prose(v,calls)for k,v in a['facts'].items()}
+        a['summary_check']='not_passed'
+        a['limitations']=[*(a.get('limitations')or[]),UNCONFIRMED_SUMMARY]
     t = a.get('table')
     if isinstance(t, dict) and isinstance(t.get('rows'), list):
         cols = t.get('columns') or []
@@ -2576,7 +2599,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
             # A unit after the number makes it a measurement, and a named clock is a
             # separate executed-window claim with its own proof; neither is exempt here.
             units=r'(?:mg|mcg|g|kg|ml|l|units?|iu|mmhg|bpm|days?|weeks?|months?|years?|hours?|minutes?|dollars?|cents?|usd|percent)'
-            text=re.sub(rf'(?<![\w.,$%-]){year}(?=\s+[A-Za-z])(?!\s+{units}\b)(?!\s+[\w-]+\s+clock\b)',contextual_year,text,flags=re.I)
+            text=re.sub(rf'(?<![\w.,$%-]){year}(?=\s+[A-Za-z])(?!\s+{units}\b)(?!\s+total\b)(?!\s+[\w-]+\s+clock\b)',contextual_year,text,flags=re.I)
             def previous_year(m):
                 prior=int(m['year'])
                 if str(prior+1)not in request_years:return m.group()
@@ -2590,7 +2613,9 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None,native_s
                     lambda m:'' if any(c.isdigit() for c in m.group()) else m.group(),text)
         # "one" as a pronoun ("for each one", "which one", "one another") states no quantity
         # (live Q10 and Q05 2026-11-13 stalled on it). "one patient", "one of the" still bind.
-        text=re.sub(r'\b(each|every|any|which|no|this|that|another|either|neither|some)\s+one\b(?!\s+of\b)',r'\1',text,flags=re.I)
+        text=re.sub(r'\b(each|every|any|which|this|that|another|either|neither)\s+one\b'
+                    r'(?=$|\s*[,.;:)]|\s+(?:the|is|are|was|were|has|had|have|that|which|who|and|or|in|on|at|to|with|for|from|by|shows?|lists?|keeps?)\b)',
+                    r'\1',text,flags=re.I)
         text=re.sub(r'\bone\s+another\b','another',text,flags=re.I)
         if request_numbers and not row_mode:
             text=re.sub(r'(?<![\w.])\d+(?:,\d{3})*(?:\.\d+)?(?![\w])',
@@ -3370,7 +3395,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                 if isinstance(doc,dict)and doc.get('record_id'):
                     try:tools._doc(doc['record_id'])
                     except (ValueError,KeyError):pass  # retain unknown identity conservatively
-    shaped(answer)
+    shaped(answer,calls)
     if not gate.ready(stack, 'AGERE_S1_CHECK'):
         return {**assessment, 'reason': 'System One answer review unavailable', 'feedback': ' '.join(feedback) or None}
     try:
@@ -6294,7 +6319,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                                       'final_decision_reused':bool(run.get('final_decision_reused')),'actor_metrics':actor_metrics}
         a = out['answer']
         if a is not None:
-            a = shaped(dict(a))
+            a = shaped(dict(a),run.get('tool_calls')or())
             kept, dropped = verified_sources(a, tools)
             a['sources'] = kept
             if reviews and not run.get('runtime_dependency'):

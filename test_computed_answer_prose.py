@@ -171,8 +171,10 @@ class ComputedProse(unittest.TestCase):
     def test_uncompiled_final_draft_has_a_readable_partial_fallback_and_keeps_native_rows(self):
         a={'status':'partial','headline':self.template(),'facts':{'bad':'13 visits'},'table':[{'visits':17}]}
         original=copy.deepcopy(a);out=B.shaped(copy.deepcopy(a))
-        self.assertIsInstance(out['headline'],str);self.assertIn('needs repair',out['headline'])
-        self.assertEqual(out['table'],original['table']);self.assertEqual(out['facts'],{})
+        # The analyst's summary is shown as written with a plain label, never withheld (2026-11-13).
+        self.assertIsInstance(out['headline'],str);self.assertEqual(out['summary_check'],'not_passed')
+        self.assertIn(B.UNCONFIRMED_SUMMARY,out['limitations'])
+        self.assertEqual(out['table'],original['table']);self.assertEqual(out['facts'],{'bad':'13 visits'})
         self.assertTrue(out['uncompiled_prose_fingerprint']);self.assertEqual(a,original)
 
     def test_numeric_repair_also_locates_unfinished_interpretation_before_regeneration(self):
