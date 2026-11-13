@@ -601,6 +601,9 @@ def actor_result(value):
     return shown
 
 
+SOURCE_REPAIR_ROUNDS = 2  # source-review repairs before the retained answer is delivered as partial
+
+
 def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None,
               format_retries=0, review=None, continuation_guard=None, initial_calls=None, initial_answer=None,
               escalation_model=None, compact_execution_state=False, binding_system=None, restored_messages=None,initial_readings=True):
@@ -631,6 +634,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     # analytical task. Keep promotion within the role that required it.
     role_models={'analyst':model,'binding_repair':model}
     active_role='analyst'
+    source_repairs=0
     def escalate(reason):
         nonlocal model
         if not escalation_model or model == escalation_model:
@@ -1169,6 +1173,16 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         # the existing checked escalation above; no new quota.
                         history.add(key)
                         repairs += 1
+                        if not compiler:
+                            # Deliver in bounded time. Each source-review repair is a fresh round of
+                            # authoring that can introduce new faults (live runs 2026-11-12: seven
+                            # rounds, each for a different reason, no accepted answer). After
+                            # SOURCE_REPAIR_ROUNDS repairs the retained answer is returned as partial,
+                            # with its located faults in answer_reviews, instead of another round.
+                            source_repairs+=1
+                            if source_repairs>SOURCE_REPAIR_ROUNDS:
+                                result['review_stopped']='source_repair_rounds_spent'
+                                return result
                         force_text = False  # the repair may need more evidence, even after a JSON-format repair
                         messages.append({'role': 'assistant', 'content': blocks})
                         from .execution_state import draft_state
