@@ -47,6 +47,8 @@ ECONOMICAL_RUNTIME = {
     # only for what remains. Recovery point before activation: commit 121dee40.
     'AGERE_TIERED_CORE': 'on',                    # questions try the tiered core first (clinical_core/agere/tiered)
     'AGERE_TIERED_AUTO_LEARN': 'on',              # a newly saved recipe is checked and promoted in the background
+    'AGERE_TIERED_LOCAL': 'on',                   # the local Qwen model decides passages System One leaves open, when the two agree (measured 2026-11-13)
+    'AGERE_TIERED_ENCODER': 'off',                # local encoder + reranker for passage finding: no gain on the 12-patient test, so off
     'AGERE_NATIVE_ROUTING': 'on',                 # follow-up facts go to the native loop-closure engine
     'AGERE_DOCUMENT_STRUCTURED_LINKS': 'on',      # reader links a note through its recorded author
     'AGERE_NATIVE_DOCUMENTARY_ABSENCE': 'on',     # bare empty documentary fields located by code
