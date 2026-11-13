@@ -33,7 +33,12 @@ ECONOMICAL_RUNTIME = {
     'AGERE_BOTTLED': 'off', 'AGERE_PROPOSER_ON': '',
     'AGERE_DOCUMENT_REVIEW': 'typed_spans', 'AGERE_DOCUMENT_RANKING': 'off',
     'AGERE_NOTE_NER': 'off', 'AGERE_THERAPY_BARRIERS_LLM': 'off',
-    'AGERE_SYSTEM_ONE_STUDENT': 'on', 'AGERE_NONFRONTIER_FIRST': 'adaptive',
+    'AGERE_SYSTEM_ONE_STUDENT': 'on',
+    # Designed order (Mike 2026-11-13): code, then System One choices, the System One spec path and
+    # System One evidence tiers, and only then the Claude analyst as the backstop. 'adaptive'
+    # (26118516, 2026-11-10) sent any question the free reuse tiers did not recognise straight to
+    # the Claude analyst, so every one of 23 live runs on 2026-11-12/13 was answered by it.
+    'AGERE_NONFRONTIER_FIRST': 'on',
     'AGERE_FRONTIER_AGGREGATE_REVIEW': 'off',
     'AGERE_FRONTIER_SOURCE_REVIEW': 'on',
     'AGERE_EXECUTION_WIRE_ENCODING': 'on',
