@@ -154,7 +154,53 @@ def followups(s1_ledger=None):
     return text
 
 
+def chains(s1_ledger=None):
+    """Multi-turn eval. The first turn of a chain is a complete question; each later turn is made complete from the
+    last answered turn's complete question, as the app does, then sent through all tiers and scored."""
+    from . import followup
+    from ..clinical.conversation import is_followup
+    data = json.loads(Path('eval/tiered/followup_chains.json').read_text())['chains']
+    run_id = f"chains-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
+    led, bottles, results = ledger_store.Ledger(), bottle_store.Bottles(), []
+    for chain in data:
+        previous = None
+        for n, turn in enumerate(chain['turns'], 1):
+            standalone, how = followup.complete_question(turn['say'], previous, is_followup(turn['say']), bottles, s1_ledger)
+            outcome = router.answer(standalone, bottles=bottles, s1_ledger=s1_ledger) if standalone else None
+            answered = bool(outcome) and outcome['status'] == 'answered'
+            ok = (not answered) if turn.get('decline') else answered and correct(turn['reference_rows'], outcome.get('rows'))
+            usd = how['usd'] + (sum(s.get('usd', 0.0) for s in outcome['steps']) if outcome else 0.0)
+            if outcome: led.write(run_id, turn['say'], outcome, eval_id=f"{chain['id']}.{n}", correct=ok, config={'previous': previous, 'standalone': standalone, 'how': how})
+            results.append({'id': f"{chain['id']}.{n}", 'first': n == 1, 'decline': bool(turn.get('decline')), 'method': how['method'], 'say': turn['say'],
+                            'standalone': standalone, 'final_tier': outcome and outcome['final_tier'], 'status': outcome['status'] if outcome else 'not_sent',
+                            'correct': ok, 'usd': usd, 'seconds': (outcome['seconds'] if outcome else 0) + how.get('seconds', 0),
+                            'frontier_calls': sum(s.get('tier') == 'llm' and 'model' in s for s in outcome['steps']) if outcome else 0})
+            print(f"{results[-1]['id']} {how['method'][:30]:30} {str(results[-1]['final_tier']):8} {results[-1]['status']:10} {'correct' if ok else 'WRONG':7} ${usd:.4f} | {turn['say']} -> {standalone}", flush=True)
+            if answered: previous = standalone
+    later = [r for r in results if not r['first']]
+    whole = {}
+    for r in results: whole[r['id'].split('.')[0]] = whole.get(r['id'].split('.')[0], True) and r['correct']
+    lines = [f'FOLLOW-UP CHAINS  run {run_id}', f'chains: {len(data)}; turns: {len(results)} ({len(later)} after the first)',
+             f"turns correct: {sum(r['correct'] for r in results)}/{len(results)}; later turns correct: {sum(r['correct'] for r in later)}/{len(later)}",
+             f"chains with every turn correct: {sum(whole.values())}/{len(whole)}",
+             f"cost: ${sum(r['usd'] for r in results):.4f} total, ${sum(r['usd'] for r in results) / len(results):.4f} per turn; mean {sum(r['seconds'] for r in results) / len(results):.1f}s per turn",
+             f"frontier model called on: {sum(r['frontier_calls'] > 0 for r in results)}/{len(results)} turns",
+             f"how later turns were read: {dict(Counter(r['method'] for r in later))}", f"final tier: {dict(Counter(str(r['final_tier']) for r in results))}"]
+    wrong = [r for r in results if not r['correct']]
+    if wrong: lines += ['not correct:'] + [f"  {r['id']} \"{r['say']}\" [{r['method']}] -> {r['standalone']} ({r['status']}, tier {r['final_tier']})" for r in wrong]
+    text = '\n'.join(lines)
+    (OUT / f'{run_id}.report.txt').write_text(text + '\n'); (OUT / f'{run_id}.results.json').write_text(json.dumps(results, indent=1))
+    return text
+
+
 def main(argv):
+    if argv[0] == 'chains':
+        import os
+        os.environ.pop('ANTHROPIC_API_KEY', None)
+        from run_integrated_stack import keys
+        keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+        print('\n' + chains(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3')))
+        return
     if argv[0] == 'followups':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
