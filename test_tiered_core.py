@@ -27,10 +27,12 @@ class Core(unittest.TestCase):
                 ('d3','IMPRESSION: Possible early rigbt l0wer lobe infltrate.'),('d5','IMPRESSION: Possible infiltrate.');''')
         db.commit();db.close()
         cls.env=mock.patch.dict(os.environ,{'AGERE_TIERED_DB':str(path)});cls.env.start();R._vocab.clear()
+        from clinical_core.agere.tiered import models as M  # any unpatched model call fails the suite's promise of no model calls
+        cls.no_model=mock.patch.object(M,'_claude',side_effect=RuntimeError('a test reached a model'));cls.no_model.start()
 
     @classmethod
     def tearDownClass(cls):
-        cls.env.stop();cls.dir.cleanup();R._vocab.clear()
+        cls.no_model.stop();cls.env.stop();cls.dir.cleanup();R._vocab.clear()
 
     def test_tier1_answers_a_matching_question_with_no_model_and_validates_it(self):
         out=router.answer('How many ED visits were there in 2029?',tiers=('recipes',))
@@ -187,6 +189,22 @@ class Core(unittest.TestCase):
             self.assertEqual((standalone,len(result['answer']['table'])),('Show monthly ED visits in 2029',2))
             with said('{"standalone": "How many hospital admissions were there in 2028?"}'),s1('no'):
                 self.assertIsNone(A.try_in_conversation(stack,'what about hospital admissions?',prev,True))
+
+    def test_narrative_numbers_come_only_from_the_result_and_a_bad_text_is_discarded(self):
+        from clinical_core.agere.tiered import narrative as N
+        cols,rows=['month','events'],[['2029-01',120],['2029-02',95],['2029-03',1430]]
+        f=N.facts(cols,rows);self.assertEqual((f['events']['total'],f['events']['highest'],f['events']['lowest']['row']),(1645,{'value':1430,'row':'2029-03'},'2029-02'))
+        with mock.patch.object(N.models,'_claude',side_effect=AssertionError('one row needs no model')):
+            self.assertEqual(N.write('How many?',['events'],[[1501]]),('events: 1,501.',{'by':'code','usd':0.0,'tokens':0}))
+            self.assertIn('2 of the 18 documents read state it',N.write('q',['a','b','c','d'],[[18,2,16,0]],{'mode':'count'},'X.')[0])
+        said=lambda text:mock.patch.object(N.models,'_claude',return_value=('{"summary": "%s"}'%text,{'usd':0.001,'tokens':40}))
+        with said('ED visits in 2029 totalled 1,645 across 3 months, peaking in 2029-03 at 1,430.'):
+            text,how=N.write('Show monthly ED visits in 2029',cols,rows);self.assertEqual(how['by'],'small_model');self.assertIn('1,645',text)
+        for bad in ('Visits rose 87% to 1,430 in 2029-03 after 120 in 2029-01.','About 1,600 visits in total were recorded across the three months shown.'):
+            with said(bad):
+                text,how=N.write('Show monthly ED visits in 2029',cols,rows)
+                self.assertEqual(how['by'],'code');self.assertIn('discarded',how['small_model']);self.assertIn('Total events: 1,645',text)
+        self.assertEqual(N.unsupported_numbers('rate 0.1234 over 2 rows','q',['p','rate'],[['a',0.1234],['b',0.2]],{'rows':2}),[])
 
     def test_eval_scoring_ignores_names_and_order_but_not_values_or_row_count(self):
         ref=[['a',1],['b',2]]

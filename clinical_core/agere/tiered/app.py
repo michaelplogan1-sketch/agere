@@ -78,7 +78,10 @@ def try_answer(stack, question):
     for name, value in (recipe.get('params') or {}).items():
         statement = statement.replace('{' + name + '}', str(value.get('value') if isinstance(value, dict) else value))
     reader_names = {'system1': 'System One', 'slm': 'the small model', 'llm': 'the frontier model'}
-    answer = {'status': 'answered', 'answer_type': 'table', 'headline': _headline(columns, rows),
+    from . import narrative
+    summary, wrote = narrative.write(question, columns, rows, recipe.get('read'), statement)
+    usd += wrote['usd']; calls += 1 if wrote['tokens'] else 0
+    answer = {'status': 'answered', 'answer_type': 'table', 'headline': summary,
               'table': [dict(zip(columns, r)) for r in rows], 'sources': [], 'missing': [], 'patient_ids': [],
               # A recipe the frontier model has just written passed structural checks only; it is not called checked.
               # Document judgments are model readings, so an answer that rests on them is not called checked either.
@@ -96,6 +99,9 @@ def try_answer(stack, question):
     models_used = ', '.join(dict.fromkeys(str(s['model']) for s in outcome['steps'] if s.get('model'))) or 'none'
     answer['facts'] = {'answered_by': f"{TIER_NAMES[tier][0].upper() + TIER_NAMES[tier][1:]}. {outcome['seconds']} seconds, "
                                       f"${usd:.4f} in model calls (models used: {models_used})."}
+    answer['facts']['summary_written_by'] = ('The small model worded the summary from facts computed by code; code checked that every number in it is in the result.'
+                                             if wrote['by'] == 'small_model' else 'Code wrote the summary; no model.' +
+                                             (' A small-model summary was ' + wrote['small_model'] + '.' if wrote.get('small_model') else ''))
     if documents:
         said = {'yes': 'gives it' if (recipe.get('read') or {}).get('mode') == 'extract' else 'states it', 'no': 'does not', None: 'undecided'}
         answer['facts']['documents_read'] = (f'{len(documents)} documents were selected by SQL and each was read against: "{statement}" '
@@ -117,7 +123,7 @@ def try_answer(stack, question):
                                  'purpose': 'Tiered core recipe (executed)'}]},
             'planner_receipt': {'route': 'tiered_core', 'version': VERSION, 'final_tier': tier, 'recipe': recipe, 'steps': outcome['steps'],
                                 'escalations': outcome['escalations'], 'validation': outcome['validation'], 'new_paid_api_calls': calls,
-                                'known_api_estimate_usd': usd, 'api_cost_known': True, 'frontier_called': tier == 'llm'},
+                                'known_api_estimate_usd': usd, 'api_cost_known': True, 'frontier_called': tier == 'llm', 'narrative': wrote},
             'planning_economics': {'new_api_estimate_usd': usd, 'known_api_estimate_usd': usd, 'total_cost_known': True,
                                    'scope': 'Tiered core model calls only.'},
             'tiered_core': {'final_tier': tier, 'seconds': outcome['seconds'], 'escalations': outcome['escalations'], 'bottled': outcome.get('bottled'),
