@@ -269,7 +269,79 @@ def cohort(s1_ledger=None):
     return text
 
 
+READER_SYSTEM = '''You are a clinical data assistant reading documents from a patient record system. Answer the question
+using only the documents given; each starts with its record id in square brackets. Read every document.
+Return exactly one JSON object and nothing else:
+- a "how many" question: {"count": <number of documents that state it>, "record_ids": [<ids of those documents>]}
+- a "which documents" question: {"record_ids": [<ids of the documents that state it>]}
+- a "what does each document give" question: {"values": {"<record_id>": "<the value as written>"}} with only the documents that give the value'''
+
+
+def _reader_correct(reference_rows, got):
+    """The chart reader's JSON against the reference. Lenient on values: one that contains the reference value passes."""
+    norm = lambda v: ' '.join(str(v).lower().strip(' .;:').split())
+    if len(reference_rows) == 1 and all(isinstance(v, int) for v in reference_rows[0]):
+        return got.get('count') == reference_rows[0][1]
+    if all(len(r) == 1 for r in reference_rows):
+        return set(got.get('record_ids') or []) == {r[0] for r in reference_rows}
+    values = {str(k): norm(v) for k, v in (got.get('values') or {}).items() if str(v).strip()}
+    return set(values) == {r[0] for r in reference_rows} and all(norm(r[1]) in values[r[0]] for r in reference_rows)
+
+
+def compare(s1_ledger=None, only=None):
+    """The stack against a frontier model that is simply handed the same documents (chart_reader_comparison.json)."""
+    from . import models
+    data = json.loads(Path('eval/tiered/chart_reader_comparison.json').read_text())
+    run_id = f"compare-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
+    led, bottles, results, db = ledger_store.Ledger(), bottle_store.Bottles(), [], store.connect()
+    for it in data['items']:
+        if only and it['id'] not in only: continue
+        outcome = router.answer(it['question'], bottles=bottles, s1_ledger=s1_ledger)
+        led.write(run_id, it['question'], outcome, eval_id=it['id'], correct=outcome['status'] == 'answered' and correct(it['reference_rows'], outcome.get('rows')))
+        docs = [d['record_id'] for d in outcome.get('documents') or []]
+        stack = {'status': outcome['status'], 'tier': outcome['final_tier'], 'rows': (outcome.get('rows') or [])[:30], 'seconds': outcome['seconds'],
+                 'correct': outcome['status'] == 'answered' and correct(it['reference_rows'], outcome.get('rows')),
+                 'usd': sum(s.get('usd', 0.0) for s in outcome['steps']), 'frontier_calls': sum(s.get('tier') == 'llm' and 'model' in s for s in outcome['steps'])}
+        texts = store.texts(docs, db)
+        prompt = 'Question: ' + it['question'] + '\n\nDocuments:\n\n' + '\n\n'.join(f"[{i}]\n{texts[i]['text'].strip()}" for i in docs if i in texts)
+        runs = []
+        for _ in range(it.get('repeats', 1) if docs else 0):
+            try:
+                text, step = models._claude(models.LLM, READER_SYSTEM, prompt)
+                try:
+                    got = models._json(text)
+                except ValueError:
+                    got = {'unusable': text[:200]}
+                runs.append({'correct': _reader_correct(it['reference_rows'], got), 'count': got.get('count'), 'ids_listed': len(got.get('record_ids') or []) if 'record_ids' in got else None,
+                             'values': got.get('values'), 'usd': step['usd'], 'tokens': step['tokens'], 'seconds': step['seconds'], **({'unusable': got['unusable']} if 'unusable' in got else {})})
+            except Exception as exc:
+                if 'limit' in str(exc).lower(): raise
+                runs.append({'correct': False, 'error': f'{type(exc).__name__}: {str(exc)[:160]}', 'usd': 0.0, 'tokens': 0, 'seconds': 0.0})
+        results.append({'id': it['id'], 'group': it['group'], 'question': it['question'], 'reference_rows': it['reference_rows'], 'documents': len(docs), 'characters': len(prompt), 'stack': stack, 'chart_reader': runs})
+        said = ', '.join(('ok' if r['correct'] else 'WRONG') + (f"({r['count']})" if r.get('count') is not None else '') for r in runs) or 'not run (no documents selected)'
+        print(f"{it['id']} {it['group'][:14]:14} docs {len(docs):4d} | stack {'ok' if stack['correct'] else 'WRONG':5} ${stack['usd']:.4f} {stack['seconds']:5.1f}s | reader {said} ${sum(r['usd'] for r in runs):.4f} {sum(r['seconds'] for r in runs):5.1f}s", flush=True)
+    lines = [f'CHART-READER COMPARISON  run {run_id}', 'arm A: the tiered stack.  arm B: Claude Sonnet handed the same documents in one prompt.', '']
+    for group in dict.fromkeys(r['group'] for r in results):
+        rows = [r for r in results if r['group'] == group]
+        runs = [x for r in rows for x in r['chart_reader']]
+        lines += [f"{group}: {len(rows)} questions, {sum(r['documents'] for r in rows)} documents",
+                  f"  stack         correct {sum(r['stack']['correct'] for r in rows)}/{len(rows)}   ${sum(r['stack']['usd'] for r in rows) / len(rows):.4f} per question   {sum(r['stack']['seconds'] for r in rows) / len(rows):.1f}s",
+                  f"  chart reader  correct {sum(x['correct'] for x in runs)}/{len(runs)} runs   ${sum(x['usd'] for x in runs) / max(1, len(runs)):.4f} per run   {sum(x['seconds'] for x in runs) / max(1, len(runs)):.1f}s"]
+    many = [r for r in results if len(r['chart_reader']) > 1]
+    if many: lines += ['', 'repeat runs of the chart reader on the same question (reference in brackets):'] + [f"  {r['id']} [{r['reference_rows'][0][1]}]: {[x.get('count') for x in r['chart_reader']]}" for r in many]
+    text = '\n'.join(lines)
+    (OUT / f'{run_id}.report.txt').write_text(text + '\n'); (OUT / f'{run_id}.results.json').write_text(json.dumps(results, indent=1))
+    return text
+
+
 def main(argv):
+    if argv[0] == 'compare':
+        import os
+        os.environ.pop('ANTHROPIC_API_KEY', None)
+        from run_integrated_stack import keys
+        keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+        print('\n' + compare(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'), set(argv[1].split(',')) if len(argv) > 1 else None))
+        return
     if argv[0] == 'cohort':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
