@@ -1,0 +1,75 @@
+{
+ "schema": "tiered-hf-reasons-comparison/1",
+ "authored": "2026-11-13",
+ "authored_by": "Claude (build owner)",
+ "question": "Why isn't patient {patient} on all four guideline heart failure medication pillars?",
+ "reference": "Two keyword sweeps over every document of each patient, with every matching sentence read by hand. Set and committed before the stack's reading recipe or the chart reader ran on any of these patients.",
+ "arms": {
+  "stack": "fill status and labs by SQL; reasons by the reading tier over the patient's documents",
+  "chart_reader": "Claude Sonnet given the same fill status and labs as text plus the full text of every document of the patient, in one prompt"
+ },
+ "rule": "A reported reason counts only with a quote. Required reasons must be found (the quote or reason text contains the phrase). A quote that is not in the patient's documents is unsupported. A supported reason that is neither required nor optional is an extra, listed for hand review. A patient is correct when every required reason is found and there is no unsupported and no extra reason. This is not a test of ChatGPT, Epic or any other product.",
+ "optional_everywhere": [
+  "0/14 days used",
+  "new dizziness or fatigue",
+  "unable to obtain medication",
+  "fills beta-blocker only"
+ ],
+ "patients": [
+  {
+   "id": "P-HF01",
+   "required": []
+  },
+  {
+   "id": "P-HF02",
+   "required": []
+  },
+  {
+   "id": "P-HF03",
+   "required": [
+    "did not like how it made them feel",
+    "unsure whether it was still needed"
+   ]
+  },
+  {
+   "id": "P-HF04",
+   "required": []
+  },
+  {
+   "id": "P-HF05",
+   "required": [
+    "cost and pillbox burden"
+   ]
+  },
+  {
+   "id": "P-HF06",
+   "required": []
+  },
+  {
+   "id": "P-HF07",
+   "required": [
+    "held for k 5.2"
+   ]
+  },
+  {
+   "id": "P-HF08",
+   "required": []
+  },
+  {
+   "id": "P-HF09",
+   "required": []
+  },
+  {
+   "id": "P-HF10",
+   "required": []
+  },
+  {
+   "id": "P-HF11",
+   "required": []
+  },
+  {
+   "id": "P-HF12",
+   "required": []
+  }
+ ]
+}

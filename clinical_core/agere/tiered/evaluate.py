@@ -334,7 +334,90 @@ def compare(s1_ledger=None, only=None):
     return text
 
 
+HF_READER_SYSTEM = '''You are a clinical assistant reviewing one patient's record: discrete fields first, then every document, each
+starting with its record id in square brackets. Answer the question from the record only.
+Return exactly one JSON object and nothing else:
+{"summary": "<two or three sentences answering the question>",
+ "reasons": [{"medication": "<drug or class>", "reason": "<the documented reason>", "record_id": "<id of the document that states it>",
+              "quote": "<the sentence from that document, copied exactly>"}]}
+List a reason only when a document states it. If the record documents no reason, return "reasons": [].'''
+
+
+def _norm_text(text):
+    return ' '.join(str(text or '').lower().split())
+
+
+def _score_reasons(items, required, optional, texts):
+    """items: [{'quote','text'}]. -> found, unsupported, extra (see hf_reasons.json rule)."""
+    corpus = [_norm_text(t['text']) for t in texts.values()]
+    supported = lambda it: len(_norm_text(it.get('quote'))) >= 12 and any(_norm_text(it['quote']) in doc for doc in corpus)
+    said = lambda it: _norm_text(str(it.get('quote')) + ' ' + str(it.get('text')))
+    found = [r for r in required if any(r in said(it) for it in items)]
+    unsupported = [it for it in items if not supported(it)]
+    extra = [it for it in items if supported(it) and not any(ph in said(it) for ph in required + optional)]
+    return found, unsupported, extra
+
+
+def hf(s1_ledger=None, only=None):
+    """Why is a heart-failure patient not on every guideline medication: the stack against a frontier model handed the chart."""
+    from . import models, split
+    data = json.loads(Path('eval/tiered/hf_reasons.json').read_text())
+    run_id = f"hf-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
+    led, bottles, results, db = ledger_store.Ledger(), bottle_store.Bottles(), [], store.connect()
+    for pt in data['patients']:
+        if only and pt['id'] not in only: continue
+        question = data['question'].format(patient=pt['id'])
+        parts, _ = split.known(question)
+        outcomes = [router.answer(part, bottles=bottles, s1_ledger=s1_ledger) for part in parts]
+        for part, o in zip(parts, outcomes): led.write(run_id, part, o, eval_id=pt['id'])
+        ids = [r[0] for r in db.execute('SELECT record_id FROM document WHERE patient_id = ? ORDER BY event_date, record_id', (pt['id'],))]
+        texts = store.texts(ids, db)
+        mine = [{'quote': d.get('quote'), 'text': d.get('value'), 'record_id': d['record_id']} for d in outcomes[2].get('documents') or [] if d.get('label') == 'yes']
+        found, unsupported, extra = _score_reasons(mine, pt['required'], data['optional_everywhere'], texts)
+        stack = {'statuses': [o['status'] for o in outcomes], 'found': found, 'unsupported': len(unsupported), 'extra': [e['quote'] for e in extra][:6], 'reasons_reported': len(mine),
+                 'correct': all(o['status'] == 'answered' for o in outcomes) and len(found) == len(pt['required']) and not unsupported and not extra,
+                 'usd': sum(s.get('usd', 0.0) for o in outcomes for s in o['steps']), 'seconds': round(sum(o['seconds'] for o in outcomes), 1),
+                 'frontier_calls': sum(s.get('model') == models.LLM for o in outcomes for s in o['steps']),
+                 'distinct_reasons': sorted({_norm_text(m['text'])[:120] for m in mine})[:8]}
+        table = lambda o: '\n'.join(' | '.join(str(v) for v in r) for r in [o.get('columns') or []] + (o.get('rows') or []))
+        prompt = ('Question: ' + question + '\n\nDISCRETE FIELDS\nPharmacy fills by guideline pillar:\n' + table(outcomes[0]) + '\n\nLatest measurements:\n' + table(outcomes[1]) +
+                  '\n\nDOCUMENTS\n\n' + '\n\n'.join(f"[{i}] {texts[i]['event_date']}\n{texts[i]['text'].strip()}" for i in ids if i in texts))
+        try:
+            text, step = models._claude(models.LLM, HF_READER_SYSTEM, prompt)
+            try:
+                got = models._json(text)
+            except ValueError:
+                got = {'reasons': [], 'unusable': text[:200]}
+            theirs = [{'quote': x.get('quote'), 'text': str(x.get('medication')) + ' ' + str(x.get('reason')), 'record_id': x.get('record_id')} for x in got.get('reasons') or [] if isinstance(x, dict)]
+            f2, u2, e2 = _score_reasons(theirs, pt['required'], data['optional_everywhere'], texts)
+            reader = {'found': f2, 'unsupported': len(u2), 'unsupported_quotes': [str(x['quote'])[:160] for x in u2][:4], 'extra': [str(e['quote'])[:160] for e in e2][:6], 'reasons_reported': len(theirs),
+                      'correct': 'unusable' not in got and len(f2) == len(pt['required']) and not u2 and not e2, 'usd': step['usd'], 'tokens': step['tokens'], 'seconds': step['seconds'],
+                      'summary': str(got.get('summary'))[:500], **({'unusable': got['unusable']} if 'unusable' in got else {})}
+        except Exception as exc:
+            if 'limit' in str(exc).lower(): raise
+            reader = {'found': [], 'unsupported': 0, 'extra': [], 'reasons_reported': 0, 'correct': False, 'usd': 0.0, 'tokens': 0, 'seconds': 0.0, 'error': f'{type(exc).__name__}: {str(exc)[:160]}'}
+        results.append({'patient': pt['id'], 'required': pt['required'], 'documents': len(ids), 'characters': len(prompt), 'stack': stack, 'chart_reader': reader})
+        show = lambda a: f"{'ok' if a['correct'] else 'MISS':4} found {len(a['found'])}/{len(pt['required'])} unsupported {a['unsupported']} extra {len(a['extra'])} ${a['usd']:.4f} {a['seconds']:5.1f}s"
+        print(f"{pt['id']} docs {len(ids):3d} | stack {show(stack)} | reader {show(reader)}", flush=True)
+    n, need = len(results), sum(len(r['required']) for r in results)
+    lines = [f'HEART-FAILURE REASONS COMPARISON  run {run_id}', f'{n} patients; {need} documented reasons to find; {sum(not r["required"] for r in results)} patients whose record documents none', '']
+    for arm, name in (('stack', 'stack       '), ('chart_reader', 'chart reader')):
+        rows = [r[arm] for r in results]
+        lines.append(f"{name}  patients correct {sum(a['correct'] for a in rows)}/{n}   reasons found {sum(len(a['found']) for a in rows)}/{need}   unsupported quotes {sum(a['unsupported'] for a in rows)}   "
+                     f"extra reasons {sum(len(a['extra']) for a in rows)}   ${sum(a['usd'] for a in rows) / n:.4f} per patient   {sum(a['seconds'] for a in rows) / n:.1f}s per patient")
+    text = '\n'.join(lines)
+    (OUT / f'{run_id}.report.txt').write_text(text + '\n'); (OUT / f'{run_id}.results.json').write_text(json.dumps(results, indent=1))
+    return text
+
+
 def main(argv):
+    if argv[0] == 'hf':
+        import os
+        os.environ.pop('ANTHROPIC_API_KEY', None)
+        from run_integrated_stack import keys
+        keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+        print('\n' + hf(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'), set(argv[1].split(',')) if len(argv) > 1 else None))
+        return
     if argv[0] == 'compare':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)

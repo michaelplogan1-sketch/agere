@@ -28,6 +28,24 @@ OPTIONS = {'yes': 'The listed questions together ask exactly what the original m
 _TOKEN = re.compile(r'[A-Z]{2,}-[A-Z0-9]{6,}|\d[\d,.]*(?:-\d{2})?')
 
 
+GDMT_WHY = re.compile(r"^why (?:isn't|is not|isnt|is) patient (?P<patient>[A-Za-z0-9-]+) (?:not )?on (?:all|full|every|each|maximum|max|maximal|optimal|complete|the|guideline|gdmt|four|4)\b.*"
+                      r"(?:gdmt|guideline|heart failure|hfref|pillar)", re.I)
+
+
+def known(question):
+    """A question whose parts code already knows. -> (parts, how) or None. No model.
+    "Why isn't patient X on all guideline heart-failure therapy?" is three questions the tiers can answer: what the
+    fill records show for each pillar, the latest safety labs, and what reason each note states. The stack reports
+    what is recorded and what is written; it does not judge what should be prescribed or what dose is tolerated."""
+    m = GDMT_WHY.match(' '.join(question.split()).rstrip('?. '))
+    if not m: return None
+    pid = m.group('patient')
+    return ([f"What is patient {pid}'s fill status for each guideline heart failure medication pillar?",
+             f"What are patient {pid}'s latest potassium, eGFR, creatinine, blood pressure and heart rate?",
+             f"What reason does each of patient {pid}'s documents give for a heart failure medication not being taken?"],
+            {'method': 'heart_failure_therapy_question_split_by_code', 'usd': 0.0, 'tokens': 0, 'seconds': 0.0})
+
+
 def candidate(question, bottles=None):
     """Code only: is it worth asking whether this is several questions?"""
     from . import recipes

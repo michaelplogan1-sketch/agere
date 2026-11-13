@@ -94,9 +94,10 @@ def try_answer(stack, question):
     if not enabled(): return None
     from . import split
     s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
-    if split.candidate(question, bottle_store.Bottles()):
+    fixed = split.known(question)
+    if fixed or split.candidate(question, bottle_store.Bottles()):
         try:
-            found, how = split.parts(question, s1_ledger)
+            found, how = fixed or split.parts(question, s1_ledger)
         except Exception as exc:
             if 'limit' in str(exc).lower(): raise
             found, how = None, None
@@ -113,14 +114,17 @@ def _combine(question, parts, results, how):
     """One composite result from the parts' results. The existing answer view draws each section."""
     answers = [r['answer'] for r in results]
     usd = sum(r['planner_receipt']['known_api_estimate_usd'] for r in results) + how['usd']
-    calls = sum(r['new_paid_api_calls'] for r in results) + 1
+    calls = sum(r['new_paid_api_calls'] for r in results) + (1 if how['tokens'] else 0)
     tier = max((r['planner_receipt']['final_tier'] for r in results), key=TIERS.index)
     limitations = list(dict.fromkeys(line for a in answers for line in a.get('limitations') or []))
     answer = {'status': 'answered', 'answer_type': 'composite', 'headline': ' '.join(str(a.get('headline') or '') for a in answers)[:1200],
               'sections': [{'title': part, 'answer': a} for part, a in zip(parts, answers)],
               'table': [], 'sources': [], 'missing': [], 'patient_ids': [],
               'verification': 'checked' if all(a.get('verification') == 'checked' for a in answers) else 'unverified',
-              'limitations': [f'The message was read as {len(parts)} separate questions (split by the small model, confirmed by System One); each was answered on its own.', *limitations],
+              'limitations': [f'The message was read as {len(parts)} separate questions ' + ('(a fixed split made by code); ' if how['method'].endswith('by_code') else '(split by the small model, confirmed by System One); ')
+                              + 'each was answered on its own.',
+                              *(['This reports what the fill records show and what the notes state. It does not judge what should be prescribed or what dose is tolerated.']
+                                if how['method'].startswith('heart_failure') else []), *limitations],
               'facts': {'read_as': f'{len(parts)} separate questions: ' + ' | '.join(parts),
                         **{f'part_{i}': f"{part} — {a['facts'].get('answered_by', '')}" for i, (part, a) in enumerate(zip(parts, answers), 1)}},
               'grounding': [line for a in answers for line in a.get('grounding') or []]}

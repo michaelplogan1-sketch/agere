@@ -142,6 +142,38 @@ RECIPES = {
         'read': {'statement': 'The discharge summary gives {value}.', 'value': '{value}', 'mode': 'extract'},
         'columns': ['record_id', 'event_date', 'value'],
         'patterns': [r"what (?P<value>.{3,80}?) does each of patient (?P<patient_id>[a-z0-9-]+)'s hie discharge summaries (?:give|state|report|list)"]},
+    # --- one patient's guideline heart-failure therapy: what the discrete fields show, and what the notes say ---
+    'hf_pillar_fill_status': {
+        'title': 'For one patient, pharmacy fill status of each guideline heart-failure medication pillar (discrete fill records)',
+        'params': {'patient_id': {'type': 'patient'}},
+        'sql': "WITH pillar(pillar, drug_class) AS (VALUES ('RAAS inhibitor (ACE inhibitor, ARB or ARNI)', 'ace_inhibitor'), "
+               "('RAAS inhibitor (ACE inhibitor, ARB or ARNI)', 'arb'), ('RAAS inhibitor (ACE inhibitor, ARB or ARNI)', 'arni'), "
+               "('Evidence-based beta blocker', 'hf_evidence_based_beta_blocker'), ('MRA', 'mra'), ('SGLT2 inhibitor', 'sglt2_inhibitor')), "
+               "clock(as_of) AS (SELECT substr(value, 1, 10) FROM meta WHERE key = 'as_of') "
+               "SELECT p.pillar, COUNT(f.fill_id) AS fills_on_record, COALESCE(MAX(f.fill_date), 'no fill on record') AS last_fill_date, "
+               "COALESCE(CAST(julianday((SELECT as_of FROM clock)) - julianday(MAX(f.fill_date)) AS INTEGER), -1) AS days_since_last_fill, "
+               "CASE WHEN MAX(f.fill_date) IS NULL THEN 'no fill on record' "
+               "WHEN julianday((SELECT as_of FROM clock)) - julianday(MAX(f.fill_date)) <= 120 THEN 'filled in the last 120 days' "
+               "ELSE 'no fill in the last 120 days' END AS status "
+               "FROM pillar p LEFT JOIN fill f ON f.drug_class = p.drug_class AND f.patient_id = :patient_id GROUP BY p.pillar ORDER BY p.pillar",
+        'grain': ['pillar'],
+        'patterns': [r"what is patient (?P<patient_id>[a-z0-9-]+)'s fill status for each guideline heart failure medication pillar"]},
+    'hf_safety_labs': {
+        'title': 'For one patient, the latest potassium, eGFR, creatinine, systolic blood pressure and heart rate (discrete measurements)',
+        'params': {'patient_id': {'type': 'patient'}},
+        'sql': "SELECT concept, value_canonical AS value, unit_canonical AS unit, event_date FROM measurement_latest "
+               "WHERE patient_id = :patient_id AND concept IN ('potassium', 'egfr', 'creatinine', 'systolic_bp', 'heart_rate') ORDER BY concept",
+        'grain': ['concept'],
+        'patterns': [r"what are patient (?P<patient_id>[a-z0-9-]+)'s latest potassium, egfr, creatinine, blood pressure and heart rate"]},
+    'hf_medication_reasons_in_notes': {
+        'title': 'For one patient, the reason each document states for a heart-failure medication not being taken, held, stopped or not started (each document is read)',
+        'params': {'patient_id': {'type': 'patient'}},
+        'sql': "SELECT record_id, event_date, source FROM document WHERE patient_id = :patient_id ORDER BY event_date, record_id",
+        'read': {'statement': 'The document states a reason why a heart failure medication (a beta blocker, ACE inhibitor, ARB, ARNI, MRA or SGLT2 inhibitor) '
+                              'is not being taken, was held, was stopped or was not started.',
+                 'value': 'the stated reason, together with the medication it is about', 'mode': 'extract'},
+        'columns': ['record_id', 'event_date', 'source', 'value'],
+        'patterns': [r"what reason does each of patient (?P<patient_id>[a-z0-9-]+)'s documents give for a heart failure medication not being taken"]},
 }
 ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS}
 _vocab = {}
