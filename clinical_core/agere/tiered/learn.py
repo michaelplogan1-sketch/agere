@@ -36,6 +36,38 @@ def ask(question):
     return outcome
 
 
+LOCK = OUT / 'auto-learn.lock'
+
+
+def auto():
+    """The whole loop with no manual step: a second model checks each provisional recipe, then the promotion gate runs.
+    One run at a time (lock file); a lock older than two hours is treated as abandoned."""
+    import os
+    OUT.mkdir(parents=True, exist_ok=True)
+    if LOCK.exists() and time.time() - LOCK.stat().st_mtime < 7200: return {'decision': 'already_running'}
+    LOCK.write_text(str(os.getpid()))
+    try:
+        from . import curriculum
+        checked = curriculum.confirm(main=True)
+        return {'second_model': checked, 'gate': promote()}
+    finally:
+        LOCK.unlink(missing_ok=True)
+
+
+def spawn_auto():
+    """Start auto() as a separate process so the question that triggered it is not held up. Never raises."""
+    import os, subprocess
+    try:
+        if LOCK.exists() and time.time() - LOCK.stat().st_mtime < 7200: return False
+        OUT.mkdir(parents=True, exist_ok=True)
+        env = {k: v for k, v in os.environ.items() if k != 'ANTHROPIC_API_KEY'}
+        with open(OUT / 'auto-learn.log', 'a') as log:
+            subprocess.Popen([sys.executable, '-B', '-m', 'clinical_core.agere.tiered.learn', 'auto'], stdout=log, stderr=log, env=env, start_new_session=True)
+        return True
+    except Exception:
+        return False
+
+
 def promote():
     bottles = bottle_store.Bottles()
     candidates = [b for b in bottles.all() if b['status'] == 'provisional']
@@ -91,3 +123,4 @@ if __name__ == '__main__':
                           'escalations': o['escalations'], 'usd': round(sum(s.get('usd', 0) for s in o['steps']), 4)}, indent=1))
     elif sys.argv[1] == 'promote': print(json.dumps(promote(), indent=1))
     elif sys.argv[1] == 'training': print(json.dumps(training()))
+    elif sys.argv[1] == 'auto': print(json.dumps(auto(), indent=1, default=str))

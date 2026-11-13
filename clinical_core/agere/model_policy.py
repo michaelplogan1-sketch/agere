@@ -46,6 +46,7 @@ ECONOMICAL_RUNTIME = {
     # One ordinary path (Mike, 2026-11-12): native code first, System One next, the frontier
     # only for what remains. Recovery point before activation: commit 121dee40.
     'AGERE_TIERED_CORE': 'on',                    # questions try the tiered core first (clinical_core/agere/tiered)
+    'AGERE_TIERED_AUTO_LEARN': 'on',              # a newly saved recipe is checked and promoted in the background
     'AGERE_NATIVE_ROUTING': 'on',                 # follow-up facts go to the native loop-closure engine
     'AGERE_DOCUMENT_STRUCTURED_LINKS': 'on',      # reader links a note through its recorded author
     'AGERE_NATIVE_DOCUMENTARY_ABSENCE': 'on',     # bare empty documentary fields located by code

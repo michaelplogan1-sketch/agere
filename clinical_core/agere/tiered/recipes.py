@@ -124,6 +124,16 @@ RECIPES = {
         'columns': ['documents_read', 'documents_stating', 'documents_not_stating', 'documents_undecided'],
         'patterns': [r'how many scanned (?P<document_type>[a-z /-]+?)s? dated in ' + MONTH +
                      r' (?:state|mention|report|describe|say|show|document) (?:that )?(?P<statement>.{3,200})']},
+    'scanned_documents_stating_in_year': {
+        'title': 'Number of scanned documents of one document type, dated in one calendar year, whose text states a given thing (each document is read)',
+        'params': {'document_type': {'type': 'vocabulary', 'query': "SELECT DISTINCT document_type FROM scanned_document WHERE readable = 1"},
+                   'year': {'type': 'year'}, 'statement': {'type': 'text'}},
+        'sql': "SELECT record_id, event_date FROM document WHERE source = 'scanned_document' AND document_type = :document_type "
+               "AND substr(event_date, 1, 4) = :year ORDER BY record_id",
+        'read': {'statement': 'The document states or reports {statement}.', 'mode': 'count'},
+        'columns': ['documents_read', 'documents_stating', 'documents_not_stating', 'documents_undecided'],
+        'patterns': [r'how many scanned (?P<document_type>[a-z /-]+?)s? dated in ' + YEAR +
+                     r' (?:state|mention|report|describe|say|show|document) (?:that )?(?P<statement>.{3,200})']},
     'hie_discharge_summary_value': {
         'title': 'For one patient, one stated value read out of each exchange (HIE) discharge summary, one row per summary',
         'params': {'patient_id': {'type': 'patient'}, 'value': {'type': 'text'}},

@@ -60,7 +60,7 @@ the documents must be read. Return a reading plan instead; code will read every 
  "question_template": "<the question with each parameter value replaced by {name}>"}
 Use count for how many documents say something, list for which documents say it, and extract when the question asks
 what each document says (one row per document that gives the value); for extract the statement is that the document
-gives that value. A reading plan may select at most 150 documents, so filter by patient, document type and period as the question does.
+gives that value. A count or list plan may select at most 3000 documents and an extract plan at most 150, so filter by patient, document type and period as the question does.
 Never match document content with LIKE on type or title columns, and never select document text.
 
 If neither one SELECT nor one reading plan can fully answer every part of the question (it needs several separate

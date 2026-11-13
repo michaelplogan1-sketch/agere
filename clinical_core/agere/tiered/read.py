@@ -20,7 +20,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 from . import models, recipes, store
 
-MAX_DOCUMENTS = 150
+MAX_DOCUMENTS = 150      # documents a question may send straight to every reader
+MAX_SCREENED = 3000      # count/list questions over more documents: System One reads all of them first ...
+MAX_MODEL_READS = 400    # ... and only the ones it cannot decide go on to the model readers, up to this many
+SCREEN_WORKERS = 16
 READERS = ('system1', 'slm', 'llm')
 WORKERS = 8
 OPTIONS = {'yes': 'The document states this.', 'no': 'The document does not state this, or states the opposite or its absence.'}
@@ -157,15 +160,27 @@ def execute(question, sql, params, read, db, *, readers=READERS, s1_ledger=None)
     if 'record_id' not in columns: raise store.RecipeError('A reading plan must select record_id')
     at = columns.index('record_id')
     ids = list(dict.fromkeys(r[at] for r in selected))
-    if len(ids) > MAX_DOCUMENTS:
-        raise store.RecipeError(f'The plan selects {len(ids)} documents; this tier reads at most {MAX_DOCUMENTS} per question')
+    large = len(ids) > MAX_DOCUMENTS
+    if large and (mode == 'extract' or len(ids) > MAX_SCREENED or 'system1' not in readers):
+        raise store.RecipeError(f'The plan selects {len(ids)} documents; this tier reads at most {MAX_DOCUMENTS} per question '
+                                f'({MAX_SCREENED} for a count or list, which System One screens first)')
     texts = store.texts(ids, db)
     docs = [{'record_id': i, **texts[i]} for i in ids if i in texts and texts[i]['text'].strip()]
     clock = store.as_of(db)
-    with ThreadPoolExecutor(WORKERS) as pool:
-        one = (lambda d: extract(statement, wanted, d, readers=readers, s1_ledger=s1_ledger, as_of=clock)) if mode == 'extract' else \
-              (lambda d: judge(statement, d, readers=readers, s1_ledger=s1_ledger, as_of=clock))
-        evidence = list(pool.map(one, docs)) if docs else []
+    if large:
+        # Cheapest reader over everything; the model readers only see what System One could not decide, within a budget.
+        with ThreadPoolExecutor(SCREEN_WORKERS) as pool:
+            evidence = list(pool.map(lambda d: judge(statement, d, readers=('system1',), s1_ledger=s1_ledger, as_of=clock), docs))
+        left = [d for d, e in zip(docs, evidence) if e['label'] is None]
+        if left and len(readers) > 1 and len(left) <= MAX_MODEL_READS:
+            with ThreadPoolExecutor(WORKERS) as pool:
+                again = dict(zip((d['record_id'] for d in left), pool.map(lambda d: judge(statement, d, readers=readers, s1_ledger=s1_ledger, as_of=clock), left)))
+            evidence = [again.get(e['record_id'], e) for e in evidence]
+    else:
+        with ThreadPoolExecutor(WORKERS) as pool:
+            one = (lambda d: extract(statement, wanted, d, readers=readers, s1_ledger=s1_ledger, as_of=clock)) if mode == 'extract' else \
+                  (lambda d: judge(statement, d, readers=readers, s1_ledger=s1_ledger, as_of=clock))
+            evidence = list(pool.map(one, docs)) if docs else []
     steps = []
     for tier in readers:
         tries = [a for e in evidence for a in e['attempts'] if a['by'] == tier]

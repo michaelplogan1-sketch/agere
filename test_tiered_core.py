@@ -155,7 +155,7 @@ class Core(unittest.TestCase):
             with self.assertRaises(store.RecipeError):store.run(sql)
         db=store.connect()
         with self.assertRaises(store.RecipeError):RD.execute('q','SELECT patient_id FROM document',{},{'statement':'anything at all','mode':'count'},db)
-        with mock.patch.object(RD,'MAX_DOCUMENTS',2),self.assertRaises(store.RecipeError):
+        with mock.patch.object(RD,'MAX_DOCUMENTS',2),mock.patch.object(RD,'MAX_SCREENED',2),self.assertRaises(store.RecipeError):  # the bound for a count is now the screening limit
             RD.execute('q','SELECT record_id FROM document',{},{'statement':'anything at all','mode':'count'},db)
         db.close()
         with tempfile.TemporaryDirectory() as d:
@@ -295,6 +295,33 @@ class Core(unittest.TestCase):
                 status={x['id']:x['status'] for x in BS.Bottles(C.BOTTLES).full()};self.assertEqual((status[good],status[bad]),('confirmed','provisional'))
                 self.assertEqual(C.merge(),{'merged as provisional':1})
                 main=BS.Bottles().full();self.assertEqual((len(main),main[0]['status'],main[0]['provenance']['confirmed_by_second_model']),(1,'provisional',True))
+
+    def test_a_large_document_set_is_screened_by_system_one_and_only_the_undecided_go_to_models(self):
+        from clinical_core.agere.tiered import read as RD,recipes as R,learn as LN
+        self.assertEqual(R.match('How many scanned radiology reports dated in 2029 report a nodule?')[0],'scanned_documents_stating_in_year')
+        self.assertEqual(R.match('How many scanned radiology reports dated in 2029-06 report a nodule?')[0],'scanned_documents_stating')
+        docs=[{'record_id':f'd{i}','text':'x','event_date':'2029-01-01','source':'scanned_document'} for i in range(6)]
+        calls=[]
+        def judge(statement,doc,*,readers,s1_ledger=None,as_of=None):
+            calls.append((doc['record_id'],readers));n=int(doc['record_id'][1:])
+            label='yes' if n<2 else 'no' if n<4 else ('yes' if len(readers)>1 else None)
+            return {'record_id':doc['record_id'],'label':label,'by':readers[-1] if label and len(readers)>1 and n>=4 else 'system1','attempts':[{'by':'system1','label':label if n<4 else None,'usd':0.0,'tokens':0}]}
+        common=[mock.patch.object(RD,'MAX_DOCUMENTS',3),mock.patch.object(RD,'judge',side_effect=judge),mock.patch.object(RD.store,'run',return_value=(['record_id'],[[d['record_id']] for d in docs])),
+                mock.patch.object(RD.store,'texts',return_value={d['record_id']:d for d in docs}),mock.patch.object(RD.store,'as_of',return_value='2030-01-01')]
+        for c in common:c.start()
+        try:
+            cols,rows,val,steps,ev=RD.execute('How many in 2029?','SELECT record_id FROM document WHERE substr(event_date,1,4)=:year',{'year':'2029'},{'statement':'It says x.','mode':'count'},None)
+            self.assertEqual(rows,[[6,4,2,0]]);self.assertEqual(sum(1 for c in calls if len(c[1])>1),2)  # only d4 and d5 went past System One
+            calls.clear()
+            with mock.patch.object(RD,'MAX_MODEL_READS',1):
+                rows=RD.execute('How many in 2029?','SELECT record_id FROM document WHERE substr(event_date,1,4)=:year',{'year':'2029'},{'statement':'It says x.','mode':'count'},None)
+                self.assertEqual((rows[1],rows[2]['ok']),([[6,2,2,2]],False))  # over the model budget: reported with its undecided documents, never guessed
+            with self.assertRaises(RD.store.RecipeError):RD.execute('q','SELECT record_id FROM document',{},{'statement':'It gives x.','mode':'extract','value':'the x'},None)
+            with mock.patch.object(RD,'MAX_SCREENED',5),self.assertRaises(RD.store.RecipeError):RD.execute('q','SELECT record_id FROM document',{},{'statement':'It says x.','mode':'count'},None)
+        finally:
+            for c in common:c.stop()
+        with tempfile.TemporaryDirectory() as d,mock.patch.object(LN,'OUT',Path(d)),mock.patch.object(LN,'LOCK',Path(d)/'lock'):
+            (Path(d)/'lock').write_text('1');self.assertEqual(LN.auto(),{'decision':'already_running'});self.assertFalse(LN.spawn_auto())
 
     def test_narrative_numbers_come_only_from_the_result_and_a_bad_text_is_discarded(self):
         from clinical_core.agere.tiered import narrative as N

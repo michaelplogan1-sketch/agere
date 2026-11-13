@@ -131,15 +131,16 @@ def run(limit=None):
     return report()
 
 
-def confirm(limit=None):
-    """Each provisional recipe from the run is checked by a different model writing its own query for the same question.
-    Equal rows (order and column names ignored) -> 'confirmed'. A reading plan is not confirmed this way and stays provisional."""
+def confirm(limit=None, main=False):
+    """Each provisional recipe is checked by a different model writing its own query for the same question.
+    Equal rows (order and column names ignored) -> 'confirmed'. A reading plan is not confirmed this way and stays provisional.
+    main=True checks the app's own store instead of the run's: a confirmed recipe stays provisional there, marked for the gate."""
     _keys(); _preload()
-    bottles, db, out = bottle_store.Bottles(BOTTLES), store.connect(), Counter()
+    bottles, db, out = bottle_store.Bottles(None if main else BOTTLES), store.connect(), Counter()
     for bottle in [b for b in bottles.full() if b['status'] == 'provisional'][:limit]:
         prov = bottle.get('provenance') or {}
         question = prov.get('question')
-        if prov.get('second_model') or not question: continue
+        if prov.get('second_model') or prov.get('confirmed_by_second_model') or not question: continue
         verdict, usd = 'unconfirmed: no second query', 0.0
         if bottle.get('read'):
             verdict = 'unconfirmed: reading plans are not checked by a second query'
@@ -163,7 +164,12 @@ def confirm(limit=None):
         bottles.db.execute('UPDATE bottle SET provenance_json=? WHERE id=?',
                            (json.dumps({**prov, 'second_model': {'model': models.SLM, 'verdict': verdict, 'usd': usd}}), bottle['id']))
         bottles.db.commit()
-        if verdict == 'confirmed': bottles.set_status(bottle['id'], 'confirmed', 'a second model wrote its own query for the question and it returned the same rows')
+        if verdict == 'confirmed' and main:
+            bottles.db.execute('UPDATE bottle SET provenance_json=? WHERE id=?', (json.dumps({**prov, 'second_model': {'model': models.SLM, 'verdict': verdict, 'usd': usd},
+                                                                                              'confirmed_by_second_model': True}), bottle['id']))
+            bottles.db.commit()
+        elif verdict == 'confirmed':
+            bottles.set_status(bottle['id'], 'confirmed', 'a second model wrote its own query for the question and it returned the same rows')
         out[verdict.split(':')[0]] += 1
         print(f"{bottle['id']} {verdict} | {bottle['template'][:110]}", flush=True)
     return dict(out)

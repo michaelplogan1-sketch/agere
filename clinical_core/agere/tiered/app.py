@@ -9,6 +9,7 @@ import os
 from . import VERSION, bottles as bottle_store, ledger as ledger_store, router, store
 
 TIERS = ('bottles', 'recipes', 'system1', 'slm', 'llm')
+MAX_GROUNDING = 200  # evidence lines shown for a document answer
 TIER_NAMES = {'bottles': 'a saved recipe for this question shape', 'recipes': 'a built-in recipe matched by wording',
               'slm': 'a built-in recipe chosen by System One and filled by the small model', 'llm': 'a recipe written by the frontier model and run by code'}
 
@@ -143,6 +144,9 @@ def _single(stack, question, cohort=None):
     except Exception as exc:  # the bridge never blocks a question: any failure falls through to the existing path
         if 'limit' in str(exc).lower(): raise
         return None
+    if isinstance(outcome.get('bottled'), int) and os.environ.get('AGERE_TIERED_AUTO_LEARN', 'off') == 'on':
+        from . import learn
+        learn.spawn_auto()  # a new recipe was saved: check and promote it in the background, with no manual step
     ledger_store.Ledger().write('app', question, outcome, config={'tiers': list(TIERS), **({'cohort_patients': len(cohort)} if cohort is not None else {})})
     if outcome['status'] != 'answered': return None
     columns, rows, tier = outcome['columns'], outcome['rows'], outcome['final_tier']
@@ -187,7 +191,9 @@ def _single(stack, question, cohort=None):
                                              + 'Read by ' + ', '.join(f'{reader_names.get(k, k)} ({n})' for k, n in read_by.items()) + '.')
         answer['grounding'] = [f"{d['record_id']}: {said[d.get('label')]}" + (f" (read by {reader_names.get(d.get('by'), d.get('by'))})" if d.get('by') else '')
                                + (f" — value \"{d['value']}\"" if d.get('value') else '') + (f" — \"{' '.join(d['quote'].split())[:200]}\"" if d.get('quote') else '')
-                               for d in documents]
+                               for d in (documents if len(documents) <= MAX_GROUNDING else sorted(documents, key=lambda d: d.get('label') != 'yes')[:MAX_GROUNDING])]
+        if len(documents) > MAX_GROUNDING:
+            answer['grounding'].append(f'... and {len(documents) - MAX_GROUNDING} more documents read, not listed here (documents that state it are listed first).')
     # A one-number answer is shown as that number, not as "1 returned row".
     if len(rows) == 1 and (recipe.get('read') or {}).get('mode') == 'count':
         answer.update({'answer_type': 'count', 'count': rows[0][1], 'unit': f' documents stating it, of {rows[0][0]} read'})
