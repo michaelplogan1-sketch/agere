@@ -114,6 +114,16 @@ RECIPES = {
         'sql': "SELECT {group} AS grp, COUNT(*) AS patients FROM patient GROUP BY 1 ORDER BY 1",
         'grain': ['grp'],
         'patterns': [r'how many patients are there by ' + _alt(PATIENT_GROUPS) % 'group']},
+    'scanned_documents_stating': {
+        'title': 'Number of scanned documents of one document type, dated in one month, whose text states a given thing (each document is read)',
+        'params': {'document_type': {'type': 'vocabulary', 'query': "SELECT DISTINCT document_type FROM scanned_document WHERE readable = 1"},
+                   'month': {'type': 'month'}, 'statement': {'type': 'text'}},
+        'sql': "SELECT record_id, event_date FROM document WHERE source = 'scanned_document' AND document_type = :document_type "
+               "AND substr(event_date, 1, 7) = :month ORDER BY record_id",
+        'read': {'statement': 'The document states or reports {statement}.', 'mode': 'count'},
+        'columns': ['documents_read', 'documents_stating', 'documents_not_stating', 'documents_undecided'],
+        'patterns': [r'how many scanned (?P<document_type>[a-z /-]+?)s? dated in ' + MONTH +
+                     r' (?:state|mention|report|describe|say|show|document) (?:that )?(?P<statement>.{3,200})']},
 }
 ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS}
 _vocab = {}
@@ -147,9 +157,13 @@ def normalize(recipe_id, raw, db=None):
             if key not in spec['values']: return None
             out[name] = key
         elif kind == 'vocabulary':
-            words = {v.replace('_', ' '): v for v in vocabulary(spec, db)}
+            words = {v.replace('_', ' ').lower(): v for v in vocabulary(spec, db)}
             if text not in words: return None
             out[name] = words[text]
+        elif kind == 'text':  # free words from the question, kept as written; used only as a reading statement
+            words = ' '.join(str(value).split()).rstrip('?.')
+            if not 3 <= len(words) <= 200: return None
+            out[name] = words
         else: return None
     return out
 
@@ -174,7 +188,8 @@ def execute(recipe_id, params, db=None):
         if spec['type'] == 'identifier':  # a whitelisted column name; never free text
             if bound[name] not in spec['values']: raise store.RecipeError('Unknown column')
             sql = sql.replace('{' + name + '}', bound.pop(name))
-    columns, rows = store.run(sql, bound, db)
+    used = set(re.findall(r'(?<![:\w]):([a-z_][a-z0-9_]*)', sql))
+    columns, rows = store.run(sql, {k: v for k, v in bound.items() if k in used}, db)
     return sql, columns, rows
 
 

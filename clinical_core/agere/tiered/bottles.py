@@ -42,6 +42,8 @@ class Bottles:
         self.db.execute('''CREATE TABLE IF NOT EXISTS bottle(
             id INTEGER PRIMARY KEY, created TEXT, template TEXT, pattern TEXT UNIQUE, params_json TEXT, sql TEXT, grain_json TEXT,
             validation_json TEXT, provenance_json TEXT, schema_version TEXT, status TEXT, uses INTEGER DEFAULT 0)''')
+        if 'read_json' not in [c[1] for c in self.db.execute('PRAGMA table_info(bottle)')]:
+            self.db.execute('ALTER TABLE bottle ADD COLUMN read_json TEXT')
         self.db.commit()
 
     def add(self, question, recipe, validation, provenance, *, status='provisional'):
@@ -57,11 +59,11 @@ class Bottles:
         if used != set(params): return None, 'SQL placeholders do not match the parameters'
         try:
             cur = self.db.execute('INSERT INTO bottle(created,template,pattern,params_json,sql,grain_json,validation_json,provenance_json,'
-                                  'schema_version,status) VALUES(?,?,?,?,?,?,?,?,?,?)',
+                                  'schema_version,status,read_json) VALUES(?,?,?,?,?,?,?,?,?,?,?)',
                                   (time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), template, rx,
                                    json.dumps({n: {'type': p['type']} for n, p in params.items()}), recipe['sql'],
                                    json.dumps(recipe.get('grain') or []), json.dumps(validation), json.dumps(provenance),
-                                   store.schema_version(), status))
+                                   store.schema_version(), status, json.dumps(recipe['read']) if recipe.get('read') else None))
             self.db.commit()
             return cur.lastrowid, None
         except sqlite3.IntegrityError:
@@ -69,16 +71,17 @@ class Bottles:
 
     def match(self, question, *, statuses=('promoted', 'provisional')):
         """-> (bottle dict, params) or None. Exact match only, current schema version only."""
-        text, version = _norm(question), store.schema_version()
+        # Matched without regard to case, but slot values keep the question's own case (identifiers are case-sensitive).
+        text, version = ' '.join(str(question).strip().rstrip('?.').split()), store.schema_version()
         marks = ','.join('?' * len(statuses))
-        for bid, rx, params_json, sql, grain_json in self.db.execute(
-                f'SELECT id, pattern, params_json, sql, grain_json FROM bottle WHERE schema_version=? AND status IN ({marks}) ORDER BY id',
+        for bid, rx, params_json, sql, grain_json, read_json in self.db.execute(
+                f'SELECT id, pattern, params_json, sql, grain_json, read_json FROM bottle WHERE schema_version=? AND status IN ({marks}) ORDER BY id',
                 (version, *statuses)):
-            m = re.fullmatch(rx, text)
+            m = re.fullmatch(rx, text, re.I)
             if not m: continue
             types = json.loads(params_json)
             params = {n: (int(v) if types[n]['type'] == 'int' else v) for n, v in m.groupdict().items()}
-            return {'id': bid, 'sql': sql, 'grain': json.loads(grain_json)}, params
+            return {'id': bid, 'sql': sql, 'grain': json.loads(grain_json), 'read': json.loads(read_json) if read_json else None}, params
         return None
 
     def used(self, bottle_id):

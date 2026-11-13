@@ -50,14 +50,25 @@ Return exactly one JSON object and nothing else:
  "grain": ["<columns that uniquely identify a result row; [] for a single-row result>"],
  "question_template": "<the question with each parameter value replaced by {name}>"}
 
-If one SELECT over the listed tables cannot fully answer every part of the question (it needs document or note text,
-several separate result tables, a statistical method, a judgment, or data that is not in these tables), do not
+If the question asks what documents, notes, reports or letters say, and no listed column already holds exactly that,
+the documents must be read. Return a reading plan instead; code will read every selected document:
+{"sql": "<one SELECT from the document table whose first column is record_id, selecting exactly the documents the question is about>",
+ "params": {"<name>": {"type": "year|month|int|text", "value": "<value from the question>"}},
+ "read": {"statement": "<one self-contained sentence that is true of a document exactly when the question wants it counted or listed>",
+          "mode": "count" or "list"},
+ "question_template": "<the question with each parameter value replaced by {name}>"}
+A reading plan may select at most 150 documents, so filter by patient, document type and period as the question does.
+Never match document content with LIKE on type or title columns, and never select document text.
+
+If neither one SELECT nor one reading plan can fully answer every part of the question (it needs several separate
+result tables, a statistical method, a judgment across documents, or data that is not in these tables), do not
 approximate. Return instead: {"cannot_answer": "<what is needed that these tables or one query cannot give>"}
 
 Rules:
 - Exactly one SELECT (WITH is allowed). No semicolons. Only the listed tables and columns.
 - Dates are ISO text; filter a calendar year with substr(date_col, 1, 4) = :year and a month with substr(date_col, 1, 7) = :month.
 - Every period or number the question states must be a parameter, never a literal in the SQL.
+- Compare a text parameter without regard to case: lower(col) = lower(:name).
 - Give each result column a clear name. Order the rows deterministically.
 - Reuse the existing definitions below where they fit, so totals agree with them.
 
@@ -71,7 +82,14 @@ Vocabulary: utilization_event.kind is one of ed_visit, inpatient, observation. s
 appointment.final_status is one of arrived, attended, booked, cancelled, fulfilled, no_show, rescheduled, unassigned_requires_review;
 appointment.outcome is one of kept, cancelled, no_show, scheduled, unassigned. concept_patient.kind is condition, encounter or measurement;
 concepts are lower snake case such as hypertension, type_2_diabetes, heart_failure. fill.drug_class is lower snake case such as statin,
-ace_inhibitor, metformin. Money columns are integer cents. Boolean columns are 0/1.'''
+ace_inhibitor, metformin. Money columns are integer cents. Boolean columns are 0/1.
+document.source is one of clinical_note, scanned_document, hie_document. For scanned_document, document_type is one of
+Radiology Report, Consult Note, Outside Records, Miscellaneous, Imaging - Outside, Correspondence, Specialist Letter,
+Procedure Report, Surgery/Procedure, Home Health Orders, Pathology, Discharge Summary; for hie_document it is ED summary or
+Discharge summary; for clinical_note it is a lower snake case note type such as office_followup, discharge_summary, ed_note.
+note_fact holds facts already extracted from notes by rules: fact_type is one of medication_days_used, medication_nonadherence,
+symptom, dyspnea, follow_up, edema, imaging_finding, social_need, smoking_status, goals_of_care, ejection_fraction, walk_distance.
+Patient identifiers look like WHP-66F4B476DECF or P-1001.'''
 
 
 def llm_recipe(question, error=None):
@@ -86,6 +104,11 @@ def llm_recipe(question, error=None):
         if not isinstance(out.get('sql'), str) or not isinstance(out.get('params', {}), dict): raise ValueError('Recipe needs sql and params')
         recipe = {'sql': out['sql'], 'params': {k: v for k, v in (out.get('params') or {}).items()},
                   'grain': [g for g in out.get('grain') or [] if isinstance(g, str)], 'question_template': out.get('question_template')}
+        if out.get('read') is not None:
+            read = out['read'] if isinstance(out['read'], dict) else {}
+            if not isinstance(read.get('statement'), str) or read.get('mode') not in ('count', 'list'):
+                raise ValueError('A reading plan needs a statement and mode count or list')
+            recipe['read'], recipe['grain'] = {'statement': read['statement'], 'mode': read['mode']}, []
         return recipe, {**step, 'tier': 'llm', 'outcome': 'proposed'}
     except (ValueError, json.JSONDecodeError) as exc:
         return None, {**step, 'tier': 'llm', 'outcome': 'invalid_output', 'reason': str(exc)[:200]}
@@ -103,7 +126,8 @@ def slm_slots(question, recipe_id, db=None):
     for name, p in recipe['params'].items():
         spec[name] = {'type': p['type'], **({'allowed': p['values']} if 'values' in p else {}),
                       **({'allowed': recipes.vocabulary(p, db)} if p['type'] == 'vocabulary' else {}),
-                      **({'format': 'YYYY'} if p['type'] == 'year' else {'format': 'YYYY-MM'} if p['type'] == 'month' else {})}
+                      **({'format': 'YYYY'} if p['type'] == 'year' else {'format': 'YYYY-MM'} if p['type'] == 'month' else
+                         {'format': 'the thing each document must state, in the words of the question'} if p['type'] == 'text' else {})}
     user = json.dumps({'recipe': recipe['title'], 'parameters': spec, 'question': question})
     text, step = _claude(SLM, SLM_SYSTEM, user)
     try:
@@ -129,7 +153,8 @@ def slm_choose_and_fill(question, db=None):
     for rid, r in recipes.RECIPES.items():
         catalog[rid] = {'computes': r['title'], 'parameters': {
             n: ({'allowed': p['values']} if 'values' in p else {'vocabulary': 'lower-case name'} if p['type'] == 'vocabulary'
-                else {'format': {'year': 'YYYY', 'month': 'YYYY-MM', 'int': 'integer'}[p['type']]}) for n, p in r['params'].items()}}
+                else {'format': {'year': 'YYYY', 'month': 'YYYY-MM', 'int': 'integer', 'text': 'words from the question'}[p['type']]})
+            for n, p in r['params'].items()}}
     text, step = _claude(SLM, SLM_CHOOSE_SYSTEM, json.dumps({'recipes': catalog, 'question': question}))
     try:
         raw = _json(text)
@@ -184,7 +209,7 @@ def s1_fit(question, recipe_id, params, ledger_path=None):
     started = time.monotonic()
     usd, p, provider, label, error = 0.0, 0.0, None, None, None
     prompt = ('Question: ' + question + '\nProposed computation: ' + recipe['title'] + '\nWith parameters: ' + json.dumps(params) +
-              '\nOutput columns: ' + ', '.join(re.findall(r'AS (\w+)', recipe['sql'])) + '\nIs this computation exactly what the question asks for?')
+              '\nOutput columns: ' + ', '.join(recipe.get('columns') or re.findall(r'AS (\w+)', recipe['sql'])) + '\nIs this computation exactly what the question asks for?')
     for name in ('perplexity', 'jev'):
         try:
             out = system_one.choice(prompt, FIT_OPTIONS, [], as_of=time.strftime('%Y-%m-%d'), provider=name, ledger=ledger_path)

@@ -9,7 +9,7 @@ import os
 from . import VERSION, bottles as bottle_store, ledger as ledger_store, router
 
 TIERS = ('bottles', 'recipes', 'system1', 'slm', 'llm')
-TIER_NAMES = {'bottles': 'a saved recipe for this question shape (no model)', 'recipes': 'a built-in recipe matched by wording (no model)',
+TIER_NAMES = {'bottles': 'a saved recipe for this question shape', 'recipes': 'a built-in recipe matched by wording',
               'slm': 'a built-in recipe chosen by System One and filled by the small model', 'llm': 'a recipe written by the frontier model and run by code'}
 
 
@@ -40,11 +40,22 @@ def try_answer(stack, question):
     calls = sum(1 for s in outcome['steps'] if s.get('model'))
     recipe = outcome['recipe'] or {}
     checks = ', '.join(c['name'].replace('_', ' ') for c in outcome['validation']['checks'])
+    documents = outcome.get('documents') or []
+    read_by = {}
+    for d in documents: read_by[d.get('by')] = read_by.get(d.get('by'), 0) + 1
+    statement = str((recipe.get('read') or {}).get('statement') or '')
+    for name, value in (recipe.get('params') or {}).items():
+        statement = statement.replace('{' + name + '}', str(value.get('value') if isinstance(value, dict) else value))
+    reader_names = {'system1': 'System One', 'slm': 'the small model', 'llm': 'the frontier model'}
     answer = {'status': 'answered', 'answer_type': 'table', 'headline': _headline(columns, rows),
               'table': [dict(zip(columns, r)) for r in rows], 'sources': [], 'missing': [], 'patient_ids': [],
               # A recipe the frontier model has just written passed structural checks only; it is not called checked.
-              'verification': 'unverified' if tier == 'llm' else 'checked',
-              'limitations': [f'Answered by the tiered core using {TIER_NAMES[tier]}. Every number was computed by SQL on the semantic layer.',
+              # Document judgments are model readings, so an answer that rests on them is not called checked either.
+              'verification': 'unverified' if tier == 'llm' or documents else 'checked',
+              'limitations': [f'Answered by the tiered core using {TIER_NAMES[tier]}. ' + (
+                                  f"{len(documents)} documents were selected by SQL and each was read against: \"{statement}\" "
+                                  + 'Read by ' + ', '.join(f'{reader_names.get(k, k)} ({n})' for k, n in read_by.items()) + '. Code counted the readings.'
+                                  if documents else 'Every number was computed by SQL on the semantic layer.'),
                               f'Deterministic checks passed: {checks}. These check structure, period and totals, not clinical meaning.',
                               *(['This recipe was written by the frontier model for this question and is not yet confirmed against a reference answer.']
                                 if tier == 'llm' else [])]}
@@ -58,4 +69,5 @@ def try_answer(stack, question):
                                 'known_api_estimate_usd': usd, 'api_cost_known': True, 'frontier_called': tier == 'llm'},
             'planning_economics': {'new_api_estimate_usd': usd, 'known_api_estimate_usd': usd, 'total_cost_known': True,
                                    'scope': 'Tiered core model calls only.'},
-            'tiered_core': {'final_tier': tier, 'seconds': outcome['seconds'], 'escalations': outcome['escalations'], 'bottled': outcome.get('bottled')}}
+            'tiered_core': {'final_tier': tier, 'seconds': outcome['seconds'], 'escalations': outcome['escalations'], 'bottled': outcome.get('bottled'),
+                            **({'documents': documents} if documents else {})}}

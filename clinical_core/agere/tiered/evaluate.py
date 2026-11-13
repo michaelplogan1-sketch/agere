@@ -42,14 +42,14 @@ def year_variants(questions):
     swap = lambda text: re.sub(r'2029|2028', lambda m: '2028' if m.group() == '2029' else '2029', text)
     out = []
     for q in questions:
-        if not re.search(r'2029|2028', q['question']): continue
+        if not q.get('reference_sql') or not re.search(r'2029|2028', q['question']): continue
         sql = swap(q['reference_sql'])
         out.append({**q, 'id': q['id'] + 'v', 'question': swap(q['question']), 'reference_sql': sql, 'reference_rows': store.run(sql)[1]})
     return out
 
 
 def run(stage, tiers, *, bottle_new=False, bottles_path=None, only=None, s1_ledger=None, variants=False, bottle_statuses=('promoted',),
-        promote_by_eval=True):
+        promote_by_eval=True, readers=None):
     questions = json.loads(EVAL.read_text())['questions']
     if only: questions = [q for q in questions if q['id'] in only]
     if variants: questions = year_variants(questions)
@@ -58,7 +58,8 @@ def run(stage, tiers, *, bottle_new=False, bottles_path=None, only=None, s1_ledg
     bottles = bottle_store.Bottles(bottles_path) if 'bottles' in tiers or bottle_new else None
     results = []
     for q in questions:
-        outcome = router.answer(q['question'], tiers=tiers, bottles=bottles, bottle_new=bottle_new, s1_ledger=s1_ledger, bottle_statuses=bottle_statuses)
+        outcome = router.answer(q['question'], tiers=tiers, bottles=bottles, bottle_new=bottle_new, s1_ledger=s1_ledger, bottle_statuses=bottle_statuses,
+                                **({'readers': readers} if readers else {}))
         ok = outcome['status'] in ('answered', 'partial') and correct(q['reference_rows'], outcome.get('rows'))
         if promote_by_eval and isinstance(outcome.get('bottled'), int):
             # Deterministic validation cannot tell a plausible wrong recipe from a right one, so a new bottle
@@ -71,8 +72,10 @@ def run(stage, tiers, *, bottle_new=False, bottles_path=None, only=None, s1_ledg
                         'seconds': outcome['seconds'], 'escalations': outcome['escalations'], 'bottled': outcome.get('bottled'),
                         'bottle_id': (outcome.get('recipe') or {}).get('bottle_id') if outcome['final_tier'] == 'bottles' else None,
                         'frontier_calls': sum(s.get('tier') == 'llm' and 'model' in s for s in outcome['steps']),
+                        'reads': {s['reader']: {'calls': s['calls'], 'decided': s['decided'], 'usd': round(s['usd'], 5)}
+                                  for s in outcome['steps'] if s.get('tier') == 'read'},
                         'validation_failed': [c['name'] for c in (outcome.get('validation') or {}).get('checks', []) if not c['ok']]})
-        print(f"{q['id']} {q['shape']:10} {str(outcome['final_tier']):8} {outcome['status']:10} {'correct' if ok else 'WRONG':7} "
+        print(f"{q['id']} {q['shape']:14} {str(outcome['final_tier']):8} {outcome['status']:10} {'correct' if ok else 'WRONG':7} "
               f"${results[-1]['usd']:.4f} {results[-1]['tokens']:6d} tok {outcome['seconds']:6.1f}s", flush=True)
     return run_id, results
 
@@ -90,10 +93,18 @@ def report(stage, tiers, run_id, results):
         rows = [r for r in results if str(r['final_tier']) == tier]
         lines.append(f"  {tier:8} {count:3d}  correct {sum(r['correct'] for r in rows):3d}  ${sum(r['usd'] for r in rows):.4f}")
     lines.append('by question shape:')
-    for shape in ('canonical', 'paraphrase', 'novel'):
+    reads = {}
+    for r in results:
+        for name, got in (r.get('reads') or {}).items():
+            agg = reads.setdefault(name, {'calls': 0, 'decided': 0, 'usd': 0.0})
+            for k in agg: agg[k] += got[k]
+    if reads:
+        lines.append('documents read, by reader (calls / decided / cost):')
+        lines += [f"  {name:8} {a['calls']:4d} / {a['decided']:4d} / ${a['usd']:.4f}" for name, a in reads.items()]
+    for shape in ('canonical', 'paraphrase', 'novel', 'doc_canonical', 'doc_paraphrase', 'doc_novel'):
         rows = [r for r in results if r['shape'] == shape]
         if rows:
-            lines.append(f"  {shape:10} correct {sum(r['correct'] for r in rows)}/{len(rows)}  tiers {dict(Counter(str(r['final_tier']) for r in rows))}")
+            lines.append(f"  {shape:14} correct {sum(r['correct'] for r in rows)}/{len(rows)}  tiers {dict(Counter(str(r['final_tier']) for r in rows))}")
     wrong = [r for r in results if not r['correct']]
     if wrong:
         lines.append('not correct:')
@@ -116,14 +127,15 @@ def main(argv):
     bottles_path = argv[argv.index('--bottles') + 1] if '--bottles' in argv else None
     only = set(argv[argv.index('--only') + 1].split(',')) if '--only' in argv else None
     s1_ledger = None
-    if 'system1' in tiers:
+    readers = tuple(argv[argv.index('--readers') + 1].split(',')) if '--readers' in argv else None
+    if 'system1' in tiers or 'system1' in (readers or ('system1',)):
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
         from run_integrated_stack import keys
         keys()  # System One provider keys only; Claude stays on the subscription transport
         os.environ.pop('ANTHROPIC_API_KEY', None)
         s1_ledger = os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3')
-    run_id, results = run(stage, tiers, bottle_new=bottle_new, bottles_path=bottles_path, only=only, variants='--variants' in argv, s1_ledger=s1_ledger)
+    run_id, results = run(stage, tiers, bottle_new=bottle_new, bottles_path=bottles_path, only=only, variants='--variants' in argv, s1_ledger=s1_ledger, readers=readers)
     print('\n' + report(stage, tiers, run_id, results))
 
 

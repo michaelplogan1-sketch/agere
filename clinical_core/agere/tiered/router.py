@@ -4,14 +4,14 @@ with its reason. The frontier model is the last rung; its answer is returned eve
 labelled partial with the failed checks."""
 import time
 
-from . import bottles as bottle_store, models, recipes, store
+from . import bottles as bottle_store, models, read as reader, recipes, store
 
 ALL_TIERS = ('bottles', 'recipes', 'system1', 'slm', 'llm')
 TOKEN_CEILING = 60000
 
 
 def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_ceiling=TOKEN_CEILING, s1_ledger=None,
-           bottle_statuses=('promoted',)):
+           bottle_statuses=('promoted',), readers=reader.READERS):
     """-> {'status','final_tier','columns','rows','recipe','validation','steps','seconds','escalations'}."""
     started = time.monotonic()
     steps, escalations = [], []
@@ -19,18 +19,25 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
     def spent(): return sum(s.get('tokens', 0) for s in steps)
     def done(status, tier, recipe=None, columns=None, rows=None, validation=None, **extra):
         db.close()
+        if evidence: extra = {**extra, 'documents': evidence['documents']}
         return {'status': status, 'final_tier': tier, 'recipe': recipe, 'columns': columns, 'rows': rows, 'validation': validation,
                 'steps': steps, 'escalations': escalations, 'seconds': round(time.monotonic() - started, 2), **extra}
-    def attempt(tier, sql, params, grain=None, total=None):
+    evidence = {}
+    def attempt(tier, sql, params, grain=None, total=None, read=None):
         """Execute and validate one proposal. -> (columns, rows, validation) or None with the escalation recorded."""
         t0 = time.monotonic()
         try:
-            columns, rows = store.run(sql, params, db)
+            if read:
+                columns, rows, validation, read_steps, evidence['documents'] = reader.execute(
+                    question, sql, params, read, db, readers=readers, s1_ledger=s1_ledger)
+                steps.extend(read_steps)
+            else:
+                columns, rows = store.run(sql, params, db)
         except store.RecipeError as exc:
             steps.append({'tier': tier, 'outcome': 'execution_error', 'reason': str(exc)[:200], 'tokens': 0, 'usd': 0.0})
             escalations.append({'from': tier, 'reason': 'execution error: ' + str(exc)[:160]})
             return None
-        validation = recipes.validate(question, sql, params, columns, rows, grain=grain, total=total, db=db)
+        if not read: validation = recipes.validate(question, sql, params, columns, rows, grain=grain, total=total, db=db)
         steps.append({'tier': tier, 'outcome': 'validated' if validation['ok'] else 'validation_failed', 'tokens': 0, 'usd': 0.0,
                       'seconds': round(time.monotonic() - t0, 3)})
         if not validation['ok']:
@@ -43,10 +50,13 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
         hit = bottles.match(question, statuses=bottle_statuses)  # by default a provisional bottle is never used to answer
         if hit:
             bottle, params = hit
-            got = attempt('bottles', bottle['sql'], params, grain=bottle['grain'])
+            got = attempt('bottles', bottle['sql'], params, grain=bottle['grain'], read=bottle.get('read'))
             if got and got[3]:
                 bottles.used(bottle['id'])
-                return done('answered', 'bottles', {'bottle_id': bottle['id'], 'sql': bottle['sql'], 'params': params}, *got[:3])
+                return done('answered', 'bottles', {'bottle_id': bottle['id'], 'sql': bottle['sql'], 'params': params,
+                                                    **({'read': bottle['read']} if bottle.get('read') else {})}, *got[:3])
+            if got and bottle.get('read') and evidence.get('documents'):  # the documents were read; undecided ones make it partial, never a second reading
+                return done('partial', 'bottles', {'bottle_id': bottle['id'], 'sql': bottle['sql'], 'params': params, 'read': bottle['read']}, *got[:3])
             steps[-1]['bottle_id'] = bottle['id'] if steps else None
         else:
             steps.append({'tier': 'bottles', 'outcome': 'no_match', 'tokens': 0, 'usd': 0.0})
@@ -54,6 +64,12 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
 
     def run_recipe(tier, recipe_id, params):
         recipe = recipes.RECIPES[recipe_id]
+        if recipe.get('read'):
+            got = attempt(tier, recipe['sql'], params, read=recipe['read'])
+            if got is None: return None
+            steps[-1].update({'recipe': recipe_id, 'chosen_by': tier})
+            return done('answered' if got[3] else 'partial', tier,
+                        {'recipe_id': recipe_id, 'sql': recipe['sql'], 'params': params, 'read': recipe['read']}, *got[:3])
         t0 = time.monotonic()
         try:
             sql, columns, rows = recipes.execute(recipe_id, params, db)
@@ -122,14 +138,14 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
     if recipe is None:
         return done('partial', 'llm', missing='The frontier model returned no usable recipe: ' + str(step.get('reason')))
     params = {k: (int(v['value']) if v.get('type') == 'int' else str(v.get('value'))) for k, v in recipe['params'].items()}
-    got = attempt('llm', recipe['sql'], params, grain=recipe.get('grain') or None)
+    got = attempt('llm', recipe['sql'], params, grain=recipe.get('grain') or None, read=recipe.get('read'))
     if got is None and spent() < token_ceiling:  # one correction for a SQL execution error; validation failures are not retried
         recipe2, step2 = models.llm_recipe(question, error=steps[-1].get('reason'))
         steps.append({**step2, 'retry': 'execution_error'})
         if recipe2 is not None:
             recipe = recipe2
             params = {k: (int(v['value']) if v.get('type') == 'int' else str(v.get('value'))) for k, v in recipe['params'].items()}
-            got = attempt('llm', recipe['sql'], params, grain=recipe.get('grain') or None)
+            got = attempt('llm', recipe['sql'], params, grain=recipe.get('grain') or None, read=recipe.get('read'))
     if got is None:
         return done('partial', 'llm', recipe, missing='The frontier model recipe did not execute')
     columns, rows, validation, ok = got
