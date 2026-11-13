@@ -112,7 +112,15 @@ def main(argv):
     bottle_new = '--bottle-new' in argv
     bottles_path = argv[argv.index('--bottles') + 1] if '--bottles' in argv else None
     only = set(argv[argv.index('--only') + 1].split(',')) if '--only' in argv else None
-    run_id, results = run(stage, tiers, bottle_new=bottle_new, bottles_path=bottles_path, only=only, variants='--variants' in argv)
+    s1_ledger = None
+    if 'system1' in tiers:
+        import os
+        os.environ.pop('ANTHROPIC_API_KEY', None)
+        from run_integrated_stack import keys
+        keys()  # System One provider keys only; Claude stays on the subscription transport
+        os.environ.pop('ANTHROPIC_API_KEY', None)
+        s1_ledger = os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3')
+    run_id, results = run(stage, tiers, bottle_new=bottle_new, bottles_path=bottles_path, only=only, variants='--variants' in argv, s1_ledger=s1_ledger)
     print('\n' + report(stage, tiers, run_id, results))
 
 

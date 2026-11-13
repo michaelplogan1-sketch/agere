@@ -89,8 +89,13 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
             params, step = models.slm_slots(question, chosen, db)
             steps.append(step)
             if params is not None:
-                out = run_recipe('slm', chosen, params)
-                if out: return out
+                fits, step = models.s1_fit(question, chosen, params, s1_ledger)
+                steps.append(step)
+                if fits:
+                    out = run_recipe('slm', chosen, params)
+                    if out: return out
+                else:
+                    escalations.append({'from': 'system1', 'reason': f"chosen recipe is not an exact fit (confidence {step.get('confidence')})"})
             else:
                 escalations.append({'from': 'slm', 'reason': step['outcome'] + ': ' + str(step.get('reason'))[:120]})
         elif 'system1' not in tiers:

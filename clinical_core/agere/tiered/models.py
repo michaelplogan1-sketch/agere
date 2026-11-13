@@ -162,3 +162,32 @@ def s1_classify(question, ledger_path=None):
     if not label or label == 'none' or p < S1_THRESHOLD or label not in recipes.RECIPES:
         return None, p, {**step, 'outcome': 'low_confidence' if label and label != 'none' and p < S1_THRESHOLD else 'no_matching_shape'}
     return label, p, {**step, 'outcome': 'classified'}
+
+
+FIT_OPTIONS = {
+    'exact': 'The computation returns exactly what the question asks for: the same measure, the same filters and the same rows. Nothing asked for is missing and nothing has to be picked out of, ranked within or added to its output.',
+    'not_exact': 'The question asks for something else or something more specific: a different measure, column, filter or grouping, only the top or a subset of the rows, a comparison, a combination, or any further step applied to the output.',
+}
+
+
+def s1_fit(question, recipe_id, params, ledger_path=None):
+    """Tier 2 check before a chosen recipe is executed: is it exactly what was asked? -> (bool, step).
+    A near-miss shape (the monthly table when the question asks which month was highest) must go up a tier."""
+    from ..clinical import system_one
+    recipe = recipes.RECIPES[recipe_id]
+    started = time.monotonic()
+    usd, p, provider, label, error = 0.0, 0.0, None, None, None
+    prompt = ('Question: ' + question + '\nProposed computation: ' + recipe['title'] + '\nWith parameters: ' + json.dumps(params) +
+              '\nOutput columns: ' + ', '.join(re.findall(r'AS (\w+)', recipe['sql'])) + '\nIs this computation exactly what the question asks for?')
+    for name in ('perplexity', 'jev'):
+        try:
+            out = system_one.choice(prompt, FIT_OPTIONS, [], as_of=time.strftime('%Y-%m-%d'), provider=name, ledger=ledger_path)
+        except Exception as exc:
+            error = f'{type(exc).__name__}: {exc}'[:160]
+            continue
+        usd += out.get('cost_usd') or 0.0
+        label = out.get('label'); p = float((out.get('probabilities') or {}).get(label, 0.0)) if label else 0.0; provider = name
+        if label and p >= S1_THRESHOLD: break
+    ok = label == 'exact' and p >= S1_THRESHOLD
+    return ok, {'tier': 'system1', 'check': 'exact_fit', 'model': provider, 'tokens': 0, 'usd': usd, 'seconds': round(time.monotonic() - started, 2),
+                'label': label, 'confidence': round(p, 4), 'outcome': 'fits' if ok else 'not_exact_fit', **({'error': error} if error and not provider else {})}
