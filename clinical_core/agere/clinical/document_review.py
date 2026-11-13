@@ -112,6 +112,12 @@ def entity_source_link_issue(question,doc):
     for alias in [entity['id'],*entity['aliases']]:
         words=re.findall(r'[^\W_]+',alias,re.UNICODE)
         if words and re.search(r'(?<!\w)'+r'[\W_]+'.join(re.escape(w)for w in words)+r's?(?!\w)',text,re.I):return None
+    # Candidate (AGERE_DOCUMENT_STRUCTURED_LINKS): a label the source itself records for
+    # this document through structured fields can supply the same necessary link.
+    for link in doc.get('structured_source_links')or[]:
+        for alias in [entity['id'],*entity['aliases']]:
+            words=re.findall(r'[^\W_]+',alias,re.UNICODE)
+            if words and re.search(r'(?<!\w)'+r'[\W_]+'.join(re.escape(w)for w in words)+r's?(?!\w)',str(link.get('label')or''),re.I):return None
     if entity['kind']=='medication_class':
         from .drug_classes import CLASSES,GROUPS,classify,brand_classes
         members={entity['id']}if entity['id']in CLASSES else set(GROUPS.get(entity['id'],[]))
@@ -120,6 +126,27 @@ def entity_source_link_issue(question,doc):
         # dose, current-use or tolerance judgment; those still need the reader.
         if members.intersection(classify(text)+brand_classes(text)):return None
     return 'Requested entity is not named by its ID or registered aliases in the complete source. Entity/relation attribution remains unresolved; provide a source-bound entity link or correct the requested aliases.'
+
+
+def structured_source_links(db,pid,as_of):
+    """{record_id: [link]} for documents whose recorded author is the receiving
+    clinician of one of this patient's own referrals; the label is that
+    referral's recorded specialty. Both sides are structured source fields: no
+    identifier is parsed and nothing is inferred from text. A link establishes
+    only which service the author was referred for. It states no attendance,
+    role, outcome or relation to a particular referral; the reader decides those.
+    """
+    rows=db.execute("SELECT n.record_id,r.record_id,substr(r.event_date,1,10),json_extract(r.payload,'$.specialty'),"
+        "json_extract(n.payload,'$.author_id') FROM record n JOIN record r ON r.patient_id=n.patient_id AND r.stream='referrals' "
+        "AND json_extract(r.payload,'$.receiving_clinician_id')=json_extract(n.payload,'$.author_id') "
+        "WHERE n.patient_id=? AND json_extract(n.payload,'$.author_id') IS NOT NULL AND json_extract(r.payload,'$.specialty') IS NOT NULL "
+        "AND substr(r.event_date,1,10)<=? ORDER BY n.record_id,r.record_id",(pid,str(as_of)[:10])).fetchall()
+    links={}
+    for rid,referral,day,specialty,author in rows:
+        links.setdefault(rid,[]).append({'label':specialty,'basis':'document_author_is_referral_receiving_clinician',
+            'document_field':'author_id','clinician_id':author,'referral_record_id':referral,'referral_date':day,
+            'meaning':'Recorded authorship by the clinician this patient was referred to for this specialty. Authorship alone states no attendance, role or outcome.'})
+    return links
 
 
 def subject_source_link_issue(question,span):
@@ -455,6 +482,13 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                 doc={'record_id':rid,'date':(day or '')[:10],'type':kind,'text':text,'duplicate_record_ids':[]}
                 if rid in arrivals:doc['available_date']=arrivals[rid]
                 seen[key]=doc;docs.append(doc)
+        if os.environ.get('AGERE_DOCUMENT_STRUCTURED_LINKS','off')=='on'and any(isinstance(q,dict)for q in questions.values()):
+            # Same schema source as the arrival clock: the governed connection denies PRAGMA.
+            schema=getattr(getattr(tools,'semantic',None),'columns',None)
+            columns=schema.get('record',[]) if schema is not None else [c[1] for c in tools.db.execute('PRAGMA table_info(record)')]
+            links=structured_source_links(tools.db,pid,tools.as_of)if{'record_id','patient_id','stream','event_date','payload'}<=set(columns)else{}
+            for doc in docs:
+                if doc['record_id']in links:doc['structured_source_links']=links[doc['record_id']]
         correspondence_packages[pid]=[docs]
         inventory_docs=docs
         if focused:
