@@ -84,8 +84,9 @@ Existing definitions (reference SQL):
 Vocabulary: utilization_event.kind is one of ed_visit, inpatient, observation. stay.type 'inpatient' or 'observation'.
 appointment.final_status is one of arrived, attended, booked, cancelled, fulfilled, no_show, rescheduled, unassigned_requires_review;
 appointment.outcome is one of kept, cancelled, no_show, scheduled, unassigned. concept_patient.kind is condition, encounter or measurement;
-concepts are lower snake case such as hypertension, type_2_diabetes, heart_failure. fill.drug_class is lower snake case such as statin,
-ace_inhibitor, metformin. Money columns are integer cents. Boolean columns are 0/1.
+condition concepts are exactly: %s. fill.drug_class is lower snake case such as statin,
+ace_inhibitor, metformin. Compare concept and drug_class with = or IN, never LIKE, and use the value that is the question's own
+word: "diabetes" is the concept diabetes, not type_2_diabetes or prediabetes. Money columns are integer cents. Boolean columns are 0/1.
 document.source is one of clinical_note, scanned_document, hie_document. For scanned_document, document_type is one of
 Radiology Report, Consult Note, Outside Records, Miscellaneous, Imaging - Outside, Correspondence, Specialist Letter,
 Procedure Report, Surgery/Procedure, Home Health Orders, Pathology, Discharge Summary; for hie_document it is ED summary or
@@ -97,7 +98,8 @@ Patient identifiers look like WHP-66F4B476DECF or P-1001.'''
 
 def llm_recipe(question, error=None):
     """Tier 4. -> (recipe dict or None, step). error: one SQL execution error to correct, if any."""
-    system = LLM_SYSTEM % (store.schema_text(), definitions())
+    conditions = ', '.join(r[0] for r in store.run("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition' ORDER BY 1")[1])
+    system = LLM_SYSTEM % (store.schema_text(), definitions(), conditions)
     user = 'Question: ' + question + ('\n\nYour previous SQL failed to execute: ' + error + '\nReturn a corrected JSON object.' if error else '')
     text, step = _claude(LLM, system, user)
     try:

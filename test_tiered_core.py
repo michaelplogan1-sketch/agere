@@ -229,6 +229,30 @@ class Core(unittest.TestCase):
                     self.assertIsNone(A.try_answer(stack,q))  # one part unanswered: not answered in pieces; tried once more as one question
                     self.assertEqual([c.args[1] for c in single.call_args_list][-1],q)
 
+    def test_known_wrong_answer_paths_are_closed_by_code(self):
+        from clinical_core.agere.tiered import followup as F,recipes as R,store as ST,bottles as BS
+        self.assertTrue(R.SECOND_QUESTION.search('a stress test was ordered, and how many recorded deaths occurred in 2029'))
+        self.assertFalse(R.SECOND_QUESTION.search('a fracture and a dislocation'))
+        for bad in ("SELECT COUNT(*) FROM concept_patient WHERE concept LIKE '%diabetes%'","SELECT 1 FROM fill WHERE lower(drug_class) LIKE 'stat%'"):
+            with self.assertRaises(ST.RecipeError):ST.run(bad)
+        vocab=mock.patch.object(R.store,'run',return_value=(['v'],[['diabetes'],['type_2_diabetes'],['hypertension']]))
+        with vocab:
+            self.assertIn('narrower',R.narrowed_vocabulary('patients with both hypertension and diabetes',{'a':'hypertension','b':'type_2_diabetes'}))
+            self.assertIsNone(R.narrowed_vocabulary('patients with type 2 diabetes',{'b':'type_2_diabetes'}));self.assertIsNone(R.narrowed_vocabulary('patients with sugar problems',{'b':'type_2_diabetes'}))
+        prev='List inpatient stays admitted in 2028 by organization'
+        self.assertEqual(F.borrowed_period('what was the 30-day readmission rate that year?',prev),'what was the 30-day readmission rate in 2028?')
+        self.assertIsNone(F.borrowed_period('how many of those were readmitted that year?',prev));self.assertIsNone(F.borrowed_period('deaths that month?',prev))
+        with mock.patch.object(F.models,'_claude',side_effect=AssertionError('no model')),mock.patch('clinical_core.agere.clinical.system_one.choice',side_effect=AssertionError('no System One')):
+            self.assertEqual(F.complete_question('what was the 30-day readmission rate that year?',prev,True),('what was the 30-day readmission rate in 2028?',{'method':'period_borrowed_by_code','usd':0.0,'tokens':0}))
+        with tempfile.TemporaryDirectory() as d:
+            b=BS.Bottles(Path(d)/'b.sqlite3');q='How many widgets in 2029?'
+            plan=lambda sql:{'sql':sql,'params':{'year':{'type':'year','value':'2029'}},'grain':[],'question_template':'How many widgets in {year}?'}
+            bid,why=b.add(q,plan("SELECT 1 WHERE :year = '2029'"),{'ok':True},{'tier':'llm'});self.assertIsNone(why)
+            self.assertEqual(b.add(q,plan("SELECT 2 WHERE :year = '2029'"),{'ok':True},{'tier':'llm'}),(None,'a bottle with this pattern already exists'))
+            b.set_status(bid,'rejected','test')
+            self.assertEqual(b.add(q,plan("SELECT 2 WHERE :year = '2029'"),{'ok':True},{'tier':'llm'}),(bid,None))  # a rejected plan is replaced
+            hit=b.match(q);self.assertEqual((hit[0]['sql'],b.match(q,statuses=('promoted',))),("SELECT 2 WHERE :year = '2029'",None))
+
     def test_narrative_numbers_come_only_from_the_result_and_a_bad_text_is_discarded(self):
         from clinical_core.agere.tiered import narrative as N
         cols,rows=['month','events'],[['2029-01',120],['2029-02',95],['2029-03',1430]]

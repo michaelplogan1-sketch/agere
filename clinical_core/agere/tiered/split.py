@@ -17,6 +17,8 @@ SIGNAL = re.compile(r'\b(and|also|plus|as well as|along with|then)\b|;|\?\s*\S',
 SYSTEM = '''A user typed one message into an analytics tool. Decide whether it asks two or more SEPARATE questions, each of
 which can be answered on its own with its own result. If so, write each as a complete standalone question, carrying
 over any shared words it needs (the period, the population, the document type). Change nothing else and add nothing.
+A list of separate counts or measures ("the number of A, the number of B and the number of C") is several questions,
+one per item.
 It is ONE question, not several, when: the "and" joins conditions on the same rows (patients with both X and Y), it
 lists columns of one result (billed, allowed and paid amounts by payer), it compares or combines things in one result
 (which month had the most, and how many), or one part cannot be answered without the other's answer.

@@ -67,7 +67,17 @@ class Bottles:
             self.db.commit()
             return cur.lastrowid, None
         except sqlite3.IntegrityError:
-            return None, 'a bottle with this pattern already exists'
+            old = self.db.execute('SELECT id, status FROM bottle WHERE pattern = ?', (rx,)).fetchone()
+            if not old or old[1] != 'rejected': return None, 'a bottle with this pattern already exists'
+            # A rejected plan is replaced by the new validated one, which starts again as provisional.
+            self.db.execute('UPDATE bottle SET created=?, template=?, params_json=?, sql=?, grain_json=?, validation_json=?, provenance_json=?, '
+                            'schema_version=?, status=?, read_json=? WHERE id=?',
+                            (time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), template, json.dumps({n: {'type': p['type']} for n, p in params.items()}),
+                             recipe['sql'], json.dumps(recipe.get('grain') or []), json.dumps(validation),
+                             json.dumps({**provenance, 'replaced_rejected': True}), store.schema_version(), status,
+                             json.dumps(recipe['read']) if recipe.get('read') else None, old[0]))
+            self.db.commit()
+            return old[0], None
 
     def match(self, question, *, statuses=('promoted', 'provisional')):
         """-> (bottle dict, params) or None. Exact match only, current schema version only."""

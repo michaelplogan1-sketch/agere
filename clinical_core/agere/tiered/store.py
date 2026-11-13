@@ -98,6 +98,8 @@ def run(sql, params=None, db=None):
         raise RecipeError('A recipe is exactly one SELECT statement')
     if re.search(r'(?i)\b(scanned_document_text|payload)\b', text):
         raise RecipeError('A recipe may not select document text; use a reading plan')
+    if re.search(r'(?i)\b(concept|drug_class)\s*\)?\s+(not\s+)?(like|glob)\b', text):
+        raise RecipeError('Compare concept and drug_class with = or IN against exact vocabulary values; LIKE would also match other values (diabetes matches prediabetes)')
     if re.search(r'(?i)\b(attach|pragma|insert|update|delete|drop|alter|create|replace|vacuum)\b', text):
         raise RecipeError('A recipe may only read')
     own = db is None

@@ -143,6 +143,23 @@ def vocabulary(spec, db=None):
     return _vocab[spec['query']]
 
 
+SECOND_QUESTION = re.compile(r'(?:[,;?]|\band\b|\balso\b|\bplus\b)\s*(?:and\s+|also\s+|then\s+)?(?:how many|how much|what|which|who|show|list|count|give|tell)\b', re.I)
+
+
+def narrowed_vocabulary(question, params, db=None):
+    """A recipe value that is a narrower vocabulary value than the question's own word ("type_2_diabetes" when the
+    question says "diabetes" and diabetes is itself a value). -> a message, or None."""
+    words = ' ' + ' '.join(re.findall(r'[a-z0-9]+', question.lower())) + ' '
+    for query in ("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition'", 'SELECT DISTINCT drug_class FROM fill WHERE drug_class IS NOT NULL'):
+        values = {str(r[0]).lower() for r in store.run(query, None, db)[1]}
+        for value in params.values():
+            used = str(value).lower()
+            if used not in values or f" {used.replace('_', ' ')} " in words: continue
+            said = [v for v in values if v != used and re.search(rf'(?:^|_){re.escape(v)}(?:_|$)', used) and f" {v.replace('_', ' ')} " in words]
+            if said: return f'The question says "{said[0]}", which is an exact vocabulary value; use it, not the narrower "{used}"'
+    return None
+
+
 def normalize(recipe_id, raw, db=None):
     """Typed parameters or None. Every value is checked against its type; nothing is guessed."""
     out = {}
@@ -175,6 +192,7 @@ def normalize(recipe_id, raw, db=None):
         elif kind == 'text':  # free words from the question, kept as written; used only as a reading statement
             words = ' '.join(str(value).split()).rstrip('?.')
             if not 3 <= len(words) <= 200: return None
+            if SECOND_QUESTION.search(words): return None  # the words run on into another question: not one statement
             out[name] = words
         else: return None
     return out

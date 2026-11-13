@@ -53,12 +53,30 @@ def relative_period(question, previous):
     return None
 
 
+BORROWED = re.compile(r"\b(?:(?:in|for|during|of)\s+)?(?:that|the same)\s+(year|month|period)\b", re.I)
+POINTS_BACK = re.compile(r"\b(those|them|they|these|it|its|that|this|same|instead)\b", re.I)
+
+
+def borrowed_period(question, previous):
+    """"what was the readmission rate that year?": the single period of the previous question is put in place of
+    "that year" by code. -> the complete question, or None when anything else in the words points back."""
+    m = BORROWED.search(question)
+    old = re.findall(r'(?<![\d-])' + PERIOD + r'(?![\d-])', previous or '')
+    if not m or len(old) != 1: return None
+    unit, is_month = m.group(1).lower(), len(old[0]) == 7
+    if (unit == 'year' and is_month) or (unit == 'month' and not is_month): return None  # "that year" needs a year, "that month" a month
+    text = ' '.join((question[:m.start()] + ' in ' + old[0] + question[m.end():]).split()).replace(' ?', '?')
+    return None if POINTS_BACK.search(text) else text
+
+
 SYSTEM = '''A user asked an analytics question and then a short follow-up. Rewrite the follow-up as ONE complete standalone
 question by changing in the previous question only what the follow-up changes; keep every other word of the previous
 question.
 A follow-up that names a new thing replaces the thing of the same kind in the previous question (a condition, a
 statement to look for, a value to report, a period, a grouping); it is not added to it. Ask for both only when the
 follow-up says so ("as well", "too", "both", "in addition").
+A follow-up that swaps what is reported ("show X instead", "just X") also drops the words that defined the old thing
+reported (for example "share of claims that were ever denied"); keep only the grouping, the population and the period.
 A follow-up that is a full question borrowing one detail ("that year", "they", "those reports") gets only that detail
 filled in from the previous question; carry over nothing else (no grouping, no filter).
 Return exactly one JSON object: {"standalone": "<the complete question>"}.
@@ -142,6 +160,9 @@ def complete_question(question, previous, looks_like_follow_up, bottles=None, s1
         return question, {'method': 'not_a_follow_up', 'usd': 0.0, 'tokens': 0}
     # Wording alone ("List ...", "Show ...") does not make a follow-up. System One says whether the words stand on
     # their own; only words that depend on the earlier question are rewritten.
+    filled = borrowed_period(question, previous)
+    if filled and (recipes.match(filled) is not None or (bottles is not None and bottles.match(filled, statuses=('promoted',)) is not None)):
+        return filled, {'method': 'period_borrowed_by_code', 'usd': 0.0, 'tokens': 0}
     usd = 0.0
     try:
         if ONLY_PERIOD.match(' '.join(question.split())) or relative_period(question, previous):

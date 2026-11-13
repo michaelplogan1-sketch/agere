@@ -27,6 +27,9 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
         """Execute and validate one proposal. -> (columns, rows, validation) or None with the escalation recorded."""
         t0 = time.monotonic()
         try:
+            if tier == 'llm':
+                narrowed = recipes.narrowed_vocabulary(question, params, db)
+                if narrowed: raise store.RecipeError(narrowed)
             if read:
                 columns, rows, validation, read_steps, evidence['documents'] = reader.execute(
                     question, sql, params, read, db, readers=readers, s1_ledger=s1_ledger)
