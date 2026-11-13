@@ -38,6 +38,17 @@ ECONOMICAL_RUNTIME = {
     'AGERE_FRONTIER_SOURCE_REVIEW': 'on',
     'AGERE_EXECUTION_WIRE_ENCODING': 'on',
     'AGERE_ANSWER_BUDGET_SECONDS': 'off', 'AGERE_BACKSTOP_SECONDS': 'off',
+    # One ordinary path (Mike, 2026-11-12): native code first, System One next, the frontier
+    # only for what remains. Recovery point before activation: commit 121dee40.
+    'AGERE_NATIVE_ROUTING': 'on',                 # follow-up facts go to the native loop-closure engine
+    'AGERE_DOCUMENT_STRUCTURED_LINKS': 'on',      # reader links a note through its recorded author
+    'AGERE_NATIVE_DOCUMENTARY_ABSENCE': 'on',     # bare empty documentary fields located by code
+    'AGERE_NATIVE_DOCUMENTARY_COPY': 'on',        # exact copies of a document review proven by code
+    'AGERE_PACKET_COMPOSE_CLOSURE': 'on',         # patient packets carry only their own dependencies
+    'AGERE_SETTLED_PACKET_COMPOSE': 'on',         # settled rows are composed, not sent to the frontier
+    'AGERE_FRONTIER_CLAIM_SCOPE': 'on',           # frontier sees only the unsettled claims
+    'AGERE_FRONTIER_REVIEW_LEAD': 'on',           # one frontier review finishes before the rest
+    'AGERE_SUBSCRIPTION_PREFIX_CACHE': 'on',      # analyst turns reuse the cached state prefix
 }
 APPLICATION_RUNTIME_KEYS = frozenset(ECONOMICAL_RUNTIME) | {
     'AGERE_CLAUDE', 'AGERE_ADAPTER_CANDIDATES', 'AGERE_SECOND_ENCODER',
