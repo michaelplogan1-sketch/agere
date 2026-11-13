@@ -38,7 +38,10 @@ from .receipts import Bundle, fingerprint, trim as rtrim, render_for_model
 
 FRONTIER_MODEL = os.environ.get('AGERE_DELIVERABLE_MODEL') or 'claude-opus-5-5'
 SMALL_MODEL = os.environ.get('AGERE_DELIVERABLE_SMALL_MODEL') or 'claude-haiku-5-5'
-RENDER_MODELS = ('claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5')
+# Writer ladder for built deliverables: each stronger writer repairs a candidate that failed its structural checks.
+# The top rung is Fable (Mike, 2026-11-13). Its price is not in config/agere/pricing.json yet, so a Fable attempt is
+# recorded as unpriced and the build's cost total is reported as unknown rather than estimated.
+RENDER_MODELS = ('claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-2')
 FRONTIER_MAX_TOKENS = 28000
 SMALL_MAX_TOKENS = 1200
 MAX_FRONTIER_TOOL_ROUNDS = 3

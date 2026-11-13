@@ -235,7 +235,7 @@ class FrontierDelivery(unittest.TestCase):
             seen.append(body)
             if 'Assess the COMPLETE artifact' in body['messages'][0]['content']:
                 writers=[b for b in seen if 'Assess the COMPLETE artifact' not in b['messages'][0]['content']]
-                if len(writers)<3:
+                if len(writers)<len(C.RENDER_MODELS):  # the reviewer rejects until the top of the writer ladder has written
                     return {'content':[{'type':'text','text':json.dumps({'coverage':'incomplete','support':'not_established','issues':[{'requirement':'Evidence detail','reason':'Omitted available exception'}]})}]},{'cost_estimate':{'estimated_usd':.01}}
             return self.sender(body)
         r=W.materialize(self.path,self.key,allow_live=True,send=sender)
@@ -291,8 +291,8 @@ class FrontierDelivery(unittest.TestCase):
         sender = Mock(return_value=(bad, {'cost_estimate': {'estimated_usd': 0.1}}))
         result = W.materialize(self.path, self.key, allow_live=True, send=sender)
         self.assertEqual(result['steps'][0]['status'], 'blocked')
-        self.assertEqual(result['new_paid_api_calls'], 3)
-        self.assertAlmostEqual(result['known_api_estimate_usd'], 0.3)
+        self.assertEqual(result['new_paid_api_calls'], len(C.RENDER_MODELS))  # one attempt per rung of the writer ladder
+        self.assertAlmostEqual(result['known_api_estimate_usd'], 0.1 * len(C.RENDER_MODELS))
         self.assertFalse(list(A.root(self.path).glob('*/deliverables/DLV-*/artifact.html')))
 
     def test_subscription_limit_preserves_failed_artifact_and_stops_later_deliverables(self):
@@ -357,7 +357,7 @@ class FrontierDelivery(unittest.TestCase):
         self.assertIsNone(C.load(ws, out['id'])[3])
         self.assertFalse(Path(out['path']).exists())
         self.assertTrue((Path(out['path']).parent / 'revisions/r1.html').exists())
-        self.assertAlmostEqual(rev['costs']['total_usd'], 0.3)
+        self.assertAlmostEqual(rev['costs']['total_usd'], 0.1 * len(C.RENDER_MODELS))
 
     def test_frozen_verifier_rejects_unbound_values_and_representative_network_cases(self):
         b = Bundle({'frozen_evidence': True})
