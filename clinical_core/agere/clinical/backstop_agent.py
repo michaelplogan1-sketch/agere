@@ -1661,6 +1661,25 @@ def document_review_copy_proof(packet,claim,state):
         joins=[j for j in spec.get('joins')or[]if j.get('as')==field]
         if len(joins)!=1:return None
         join=joins[0];review_view=join.get('result');column=join.get('items_from')
+        if (join.get('mode')=='one'and isinstance(join.get('columns'),list)and join['columns']and not column and not join.get('domain')
+                and (contracts.get(review_view)or{}).get('tool')=='review_documents'):
+            # The row's statement of the review itself (status, documents read, limitations): an exact
+            # projection of the patient's single review row through the executed one-to-one join.
+            columns=join['columns']
+            origins={b['row_digest']:b['origins']for b in state.get('evidence_provenance')or[]}
+            reviews=[e for e in state.get('evidence')or[]if isinstance(e,dict)and e.get('patient_id')==pid and'review_status'in e
+                and all(c in e for c in columns)
+                and any(o.get('result_view')==review_view and o.get('tool')=='review_documents'for o in origins.get(digest(e),[]))]
+            row=state['answer_rows'][path[1]];cell=row[field]
+            if isinstance(cell,str):cell=json.loads(cell)
+            if (len(reviews)!=1 or row.get('patient_id')!=pid or'review_status'not in columns
+                    or cell!={c:reviews[0][c]for c in columns}):return None
+            return {'schema':'native-document-review-carrier/1','patient_id':pid,'as_of':packet.get('date'),
+                'result_view':state.get('final_result_view'),'review_result_view':review_view,'columns':columns,
+                'field':field,'path':path,'value_digest':digest(row[field]),'review_row_digest':digest(reviews[0]),
+                'review_status':reviews[0]['review_status'],
+                'authority':'native_exact_projection_of_document_review_row','clinical_qualification':False,
+                'scope':'This field equals the named columns of the patient\'s single document-review row through the executed one-to-one join. It states what the review reported about itself; it establishes no finding and no chart-wide completeness.'}
         if (join.get('mode')!='collect'or not column or join.get('domain')or'columns'in join
                 or (contracts.get(review_view)or{}).get('tool')!='review_documents'):return None
         origins={b['row_digest']:b['origins']for b in state.get('evidence_provenance')or[]}

@@ -101,3 +101,26 @@ class NativeCopy(unittest.TestCase):
             self.assertIsNone(B.native_field_proof(p,p['claim_manifest'][0],state))
 
 if __name__=='__main__':unittest.main()
+
+
+class ReviewCarrierProof(unittest.TestCase):
+    def packet(self,carrier,columns=('review_status','documents_reviewed')):
+        final={'patient_id':'A','referral_json':'structured','document_review':carrier}
+        review={'patient_id':'A','review_status':'needs_review','documents_reviewed':3,'source_findings_json':'[]'}
+        state={'id':'patient_A','patient_id':'A','final_result_view':'final','answer_rows':[final],'evidence':[review,final],
+            'evidence_provenance':[{'row_digest':digest(e),'origins':[{'kind':'executed_native_result','result_view':v,'tool':t}]}
+                for e,v,t in ((review,'review','review_documents'),(final,'final','compose_table'))],
+            'native_calculation_contracts':[{'result_view':'review','tool':'review_documents','input':{}},
+                {'result_view':'final','tool':'compose_table','input':{'base':'base','keys':['patient_id'],
+                    'joins':[{'result':'review','as':'document_review','mode':'one','columns':list(columns),'on':{'patient_id':'patient_id'}}]}}]}
+        claims=[{'id':'claim_'+str(i),'field':k,'path':['answer_rows',0,k]}for i,k in enumerate(k for k in final if k!='patient_id')]
+        return ({'id':'patient_A','date':'2030-05-27','claim_manifest':claims,'patient_dependency_bound':True,'dependency_complete':True,
+                 'source_dependency_patient_id':'A'},claims[1],state)
+
+    def test_exact_projection_of_the_review_row_is_proven_and_any_difference_is_not(self):
+        proof=B.document_review_copy_proof(*self.packet({'review_status':'needs_review','documents_reviewed':3}))
+        self.assertEqual((proof['schema'],proof['review_status'],proof['columns']),('native-document-review-carrier/1','needs_review',['review_status','documents_reviewed']))
+        self.assertIsNotNone(B.document_review_copy_proof(*self.packet('{"review_status": "needs_review", "documents_reviewed": 3}')))
+        self.assertIsNone(B.document_review_copy_proof(*self.packet({'review_status':'reviewed','documents_reviewed':3})))
+        self.assertIsNone(B.document_review_copy_proof(*self.packet({'review_status':'needs_review'})))
+        self.assertIsNone(B.document_review_copy_proof(*self.packet({'documents_reviewed':3},columns=('documents_reviewed',))))

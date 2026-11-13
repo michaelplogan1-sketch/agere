@@ -47,7 +47,7 @@ ECONOMICAL_RUNTIME = {
     'AGERE_PACKET_COMPOSE_CLOSURE': 'on',         # patient packets carry only their own dependencies
     'AGERE_SETTLED_PACKET_COMPOSE': 'on',         # settled rows are composed, not sent to the frontier
     'AGERE_FRONTIER_CLAIM_SCOPE': 'on',           # frontier sees only the unsettled claims
-    'AGERE_FRONTIER_REVIEW_LEAD': 'on',           # one frontier review finishes before the rest
+    'AGERE_FRONTIER_REVIEW_LEAD': 'off',          # rounds are bounded, so every row is checked before delivery (run 8 left 38 held back)
     'AGERE_SUBSCRIPTION_PREFIX_CACHE': 'on',      # analyst turns reuse the cached state prefix
 }
 APPLICATION_RUNTIME_KEYS = frozenset(ECONOMICAL_RUNTIME) | {
