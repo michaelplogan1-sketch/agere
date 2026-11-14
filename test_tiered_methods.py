@@ -92,18 +92,18 @@ class Methods(unittest.TestCase):
     def test_system_one_saying_the_method_does_not_fit_declines_it(self):
         stack = Stack(self.dir.name)
         with mock.patch.object(methods, '_system_one', lambda prompt, options, ledger: ('no', 0.9, 0.0001)), \
-                mock.patch.object(methods, '_menu', lambda s: {'uses': {}, 'ops': {}, 'text': ''}):
+                mock.patch.object(methods, '_menu', lambda s: {'uses': {}, 'ops': {}, 'examples': {}, 'text': ''}):
             self.assertIsNone(app._method(stack, 'Forecast discharges for the next 7 days'))
         self.assertEqual(stack.ran, [])
 
     def test_system_one_outage_does_not_block_a_method_code_named(self):
         with mock.patch.object(methods, '_system_one', lambda prompt, options, ledger: (None, 0.0, 0.0)), \
-                mock.patch.object(methods, '_menu', lambda s: {'uses': {}, 'ops': {}, 'text': ''}):
+                mock.patch.object(methods, '_menu', lambda s: {'uses': {}, 'ops': {}, 'examples': {}, 'text': ''}):
             self.assertIsNotNone(app._method(Stack(self.dir.name), 'Forecast discharges for the next 7 days'))
 
     def _assist(self, reply, s1=('yes', 0.95, 0.0001)):
         step = {'model': 'm', 'tokens': 10, 'usd': 0.002, 'seconds': 0.1}
-        menu = {'ops': {'monitor': 'control charts', 'discharge_forecast': 'forecast'}, 'uses': {}, 'text': 'menu'}
+        menu = {'ops': {'monitor': 'control charts', 'discharge_forecast': 'forecast'}, 'uses': {}, 'examples': {'monitor': ['Detect anomalies in monthly ED visits'], 'discharge_forecast': ['Forecast discharges for the next 7 days']}, 'text': 'menu'}
         with mock.patch.object(models, '_claude', lambda m, s, u: (reply, dict(step))), mock.patch.object(methods, '_menu', lambda s: menu), \
                 mock.patch.object(methods, '_system_one', lambda prompt, options, ledger: s1):
             return methods.assisted(Stack(self.dir.name), 'Is anything odd going on with ED visits?')
@@ -140,11 +140,38 @@ class Methods(unittest.TestCase):
         with mock.patch.object(local_compiler, 'compile', compiled), mock.patch.object(recipes, 'match', lambda q, db=None: None):
             self.assertEqual(methods.needs(stack, 'Contract performance for MSSP'), wanted)
             self.assertIsNone(methods.plan(stack, 'Contract performance for MSSP'))
-            got = app._single(stack, 'Contract performance for MSSP')
+            from clinical_core.agere.clinical import clarification
+            with clarification.interaction('autonomous'):  # outside an interactive request the missing inputs are stated, not asked for
+                got = app._single(stack, 'Contract performance for MSSP')
         self.assertEqual(got['answer']['status'], 'unsupported'); self.assertEqual(got['tiered_core']['needs_input'], wanted)
         self.assertIn('benchmark_pmpm', got['answer']['headline']); self.assertEqual(got['new_paid_api_calls'], 0); self.assertEqual(stack.ran, [])
         with mock.patch.object(local_compiler, 'compile', compiled), mock.patch.object(recipes, 'match', lambda q, db=None: ('x', {})):
             methods._PLANS.clear(); self.assertIsNone(methods.needs(stack, 'Contract performance for MSSP'))
+
+    MENU = {'ops': {'transitions_of_care': 'post-discharge follow-up visit within 7 days, medication reconciliation', 'program_effect': 'did a program reduce admissions or readmissions: estimated effect',
+                    'network': 'patient-sharing graph of clinicians', 'network_adequacy': 'specialty access by county: members per provider'},
+            'uses': {}, 'text': 'menu',
+            'examples': {'transitions_of_care': ['Which discharges did not get a follow-up visit within 7 days?'], 'program_effect': ['What was the effect of the care management program on readmissions?'],
+                         'network': ['Which clinicians share the most patients?'], 'network_adequacy': ['which counties have thin specialist networks for our members']}}
+
+    def test_shortlist_ranks_by_distinctive_words_and_keeps_a_preferred_method(self):
+        with mock.patch.object(methods, '_menu', lambda s: self.MENU):
+            self.MENU.pop('index', None)
+            self.assertEqual(methods.shortlist(None, 'Which counties have too few specialists for our members?', k=1), ['network_adequacy'])
+            self.assertEqual(methods.shortlist(None, 'Did the program reduce admissions?', k=2, keep=('network',))[0], 'network')
+            self.assertEqual(len(methods.shortlist(None, 'anything', k=0)), 4)
+
+    def test_fit_check_offers_neighbours_and_none_and_reports_the_neighbour_system_one_picks(self):
+        seen = {}
+        def s1(prompt, options, ledger): seen.update(options); return 'program_effect', 0.9, 0.0001
+        with mock.patch.object(methods, '_menu', lambda s: self.MENU), mock.patch.object(methods, '_system_one', s1):
+            self.MENU.pop('index', None)
+            ok, step = methods.fits(None, 'Did the transitions of care program reduce admissions?', ['transitions_of_care'])
+        self.assertFalse(ok); self.assertEqual(step['other'], 'program_effect')
+        self.assertIn('none', seen); self.assertIn('transitions_of_care', seen); self.assertIn('program_effect', seen)
+        for label, want in (('transitions_of_care', True), ('none', False), (None, True)):
+            with mock.patch.object(methods, '_menu', lambda s: self.MENU), mock.patch.object(methods, '_system_one', lambda p, o, l: (label, 0.9, 0.0)):
+                self.assertEqual(methods.fits(None, 'q', ['transitions_of_care'])[0], want)
 
     def test_wording_gate(self):
         from clinical_core.agere.tiered import recipes

@@ -180,14 +180,23 @@ def _single(stack, question, cohort=None, takeover_ok=True):
     """One question through the tiers, inside a patient cohort when one is given. -> the app's result dict, or None."""
     s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
     bottles = bottle_store.Bottles()
-    assist = False
+    assist, prefer = False, None
     if cohort is None:
         from . import methods
         if methods.claims(stack, question, bottles):
-            done = _method(stack, question, s1_ledger=s1_ledger)
+            note = {}
+            done = _method(stack, question, s1_ledger=s1_ledger, note=note)
             if done is not None: return done
+            prefer = note.get('other')  # System One picked a neighbouring method over the one the compiler named
+            assist = bool(prefer) and methods.worth_asking(stack, question, bottles, redirected=True)
         else:
             wanted = methods.needs(stack, question, bottles)
+            if wanted and _interactive(stack):
+                return _clarify(stack, question, 'needs_input', 'This needs information that is not in the data: ' + '; '.join(wanted) + '. Type it below, or choose how to go on.',
+                                'Code recognised which analysis this asks for; it cannot run without these inputs, and no model was asked to guess them.',
+                                [{'id': 'without', 'label': 'Answer without it', 'meaning': 'Give the best answer the warehouse supports and say what could not be computed'},
+                                 {'id': 'explain', 'label': 'Explain what is needed', 'meaning': 'Describe each missing input and where it usually comes from'}],
+                                context={'wanted': wanted})
             if wanted: return _needs_input(question, wanted)
             assist = methods.worth_asking(stack, question, bottles)
     try:
@@ -197,7 +206,7 @@ def _single(stack, question, cohort=None, takeover_ok=True):
                                 s1_ledger=s1_ledger, cohort=cohort)
         if assist and outcome['status'] != 'answered':
             try:
-                restated, how = methods.assisted(stack, question, s1_ledger)
+                restated, how = methods.assisted(stack, question, s1_ledger, prefer=prefer)
             except Exception as exc:
                 if 'limit' in str(exc).lower(): raise
                 restated, how = None, None
@@ -218,7 +227,10 @@ def _single(stack, question, cohort=None, takeover_ok=True):
         learn.spawn_auto()  # a new recipe was saved: check and promote it in the background, with no manual step
     ledger_store.Ledger().write('app', question, outcome, config={'tiers': list(TIERS), **({'cohort_patients': len(cohort)} if cohort is not None else {})})
     if outcome['status'] != 'answered':
-        return _takeover(question, cohort, outcome) if takeover_ok else None
+        if not takeover_ok: return None
+        asking = cohort is None and _interactive(stack)
+        done = _takeover(question, cohort, outcome, stack=stack if asking else None)
+        return done if done is not None or not asking else _closest(stack, question)
     columns, rows, tier = outcome['columns'], outcome['rows'], outcome['final_tier']
     usd = sum(s.get('usd', 0.0) for s in outcome['steps'])
     calls = sum(1 for s in outcome['steps'] if s.get('model'))
@@ -285,7 +297,7 @@ def _single(stack, question, cohort=None, takeover_ok=True):
                             **({'documents': documents} if documents else {})}}
 
 
-def _method(stack, question, restated=None, how=None, s1_ledger=None):
+def _method(stack, question, restated=None, how=None, s1_ledger=None, note=None):
     """An analysis method of the wider application answers (methods.py). Code named the method from the question, or from
     a restatement the small model wrote and System One confirmed; code ran it. -> result or None."""
     from . import methods
@@ -295,6 +307,7 @@ def _method(stack, question, restated=None, how=None, s1_ledger=None):
         ok, step = methods.fits(stack, question, found[2], s1_ledger) if found else (False, None)
         if step and step.get('label'): steps.append(step)
         if not ok:
+            if note is not None and step and step.get('other'): note['other'] = step['other']
             ledger_store.Ledger().write('app_method', question, {'status': 'declined', 'final_tier': None, 'steps': steps, 'seconds': step['seconds'] if step else 0.0,
                                                                  'validation': {'ok': False, 'reason': 'system_one_says_method_does_not_fit'},
                                                                  'recipe': {'methods': found[2] if found else []}}, config={'tiers': list(ORDER)})
@@ -330,6 +343,14 @@ def _method(stack, question, restated=None, how=None, s1_ledger=None):
                              'The method states its own assumptions below. Forecasts, simulations and estimated effects are model outputs under those assumptions, not measured facts.',
                              *(answer.get('limitations') or [])]
     if restated: answer['verification'] = 'unverified'  # the choice of method rests on a model restatement, so it is not called checked
+    try:  # related analyses the stack can run next, offered as questions (code only)
+        menu = methods._menu(stack)
+        near = [op for op in methods.shortlist(stack, restated or question, k=4) if op not in got['methods'] and menu['examples'].get(op)][:2]
+        if near:
+            answer['next_questions'] = [menu['examples'][op][0] for op in near]
+            answer['facts']['you_could_ask_next'] = ' / '.join(answer['next_questions'])
+    except Exception:
+        pass
     return {**result, 'answer': answer, 'question': question, 'route': 'tiered_core', 'new_paid_api_calls': calls,
             'planner_receipt': {'route': 'tiered_core', 'version': VERSION, 'final_tier': 'methods', 'recipe': {'methods': got['methods'], **({'restated': restated} if restated else {})}, 'steps': steps,
                                 'escalations': [], 'validation': {'ok': True, 'checks': [{'name': 'method_named_by_code', 'ok': True}]},
@@ -337,6 +358,107 @@ def _method(stack, question, restated=None, how=None, s1_ledger=None):
                                 'compiler': {k: v for k, v in got['info'].items() if k in ('compiler', 'recognised', 'route', 'operation')}},
             'planning_economics': {'new_api_estimate_usd': usd, 'known_api_estimate_usd': usd, 'total_cost_known': True, 'scope': 'Tiered core model calls only.'},
             'tiered_core': {'final_tier': 'methods', 'seconds': got['seconds'], 'escalations': [], 'bottled': None, 'methods': got['methods']}}
+
+
+def _interactive(stack):
+    """May the stack put a question back to the user? Only in the local app (it holds the saved-question store), only
+    when the request is interactive, and not when switched off."""
+    if getattr(stack, 'path', None) is None or os.environ.get('AGERE_TIERED_CLARIFY', 'on') != 'on': return False
+    from ..clinical import clarification
+    return clarification.MODE.get() == 'interactive'
+
+
+def _clarify(stack, question, kind, ask, reason, options, context=None, steps=(), seconds=0.0):
+    """The stack asks the user one question instead of guessing. The app's existing clarification store saves it with
+    the conversation and shows it as a card with the options and a free-text box; the reply comes back to resume()."""
+    from ..clinical import clarification
+    usd, calls = sum(s.get('usd', 0.0) for s in steps), sum(1 for s in steps if s.get('model'))
+    slot = {'needs_input': 'missing_input', 'reading': 'intended_reading', 'closest': 'closest_analysis'}[kind]
+    spec = clarification.validate({'slot': slot, 'kind': 'input' if kind == 'needs_input' else 'goal', 'question': ask, 'reason': reason,
+                                   'options': [{'id': o['id'], 'label': o['label'], 'meaning': o['meaning']} for o in options]})
+    ledger_store.Ledger().write('app_clarify', question, {'status': 'clarify', 'final_tier': None, 'steps': list(steps), 'seconds': seconds,
+                                                          'validation': {'ok': True, 'reason': kind}, 'recipe': {'asked': ask, 'options': [o['label'] for o in options]}},
+                                config={'tiers': list(ORDER)})
+    checkpoint = {'schema': clarification.VERSION, 'kind': 'tiered', 'question': question, 'cohort': None, 'pause': {'request': spec}, 'calls': [],
+                  'tiered': {'kind': kind, 'earlier': [q for q in EARLIER.get() if q], **(context or {})}}
+    return {'answer': {'status': 'clarify', 'answer_type': 'unsupported', 'headline': ask, 'missing': [reason], 'patient_ids': [], 'actionable_cohort': False,
+                       'sources': [], 'table': [], 'limitations': ['Nothing has been computed for this question yet. The stack is waiting for your reply.'],
+                       'facts': {'answered_by': f'The stack asked a question instead of guessing. {seconds} seconds, ${usd:.4f} in model calls.'}},
+            'results': [], 'workflow': [], 'question': question, 'route': 'tiered_core', 'new_paid_api_calls': calls, 'synthetic': True,
+            'clinical_execution_authorized': False, 'clarification_checkpoint': checkpoint,
+            'graph': {'interpretation': question, 'coverage': 'unsupported', 'unmet_requirements': [reason], 'nodes': []},
+            'planner_receipt': {'route': 'tiered_core', 'version': VERSION, 'final_tier': 'clarify', 'recipe': None, 'steps': list(steps), 'escalations': [],
+                                'validation': {'ok': True, 'checks': []}, 'new_paid_api_calls': calls, 'known_api_estimate_usd': usd, 'api_cost_known': True,
+                                'frontier_called': kind == 'reading', 'clarification': {'kind': kind, 'asked': ask}},
+            'planning_economics': {'new_api_estimate_usd': usd, 'known_api_estimate_usd': usd, 'total_cost_known': True, 'scope': 'Tiered core model calls only.'},
+            'tiered_core': {'final_tier': 'clarify', 'seconds': seconds, 'escalations': [], 'bottled': None, 'asked': ask}}
+
+
+def _closest(stack, question):
+    """Nothing answered: offer the closest analyses the stack can run, as questions the user can pick, or let them rephrase."""
+    from . import methods
+    if not methods.enabled(): return None
+    try:
+        menu = methods._menu(stack)
+        near = [op for op in methods.shortlist(stack, question, k=3) if menu['examples'].get(op)][:3]
+    except Exception:
+        return None
+    if len(near) < 2: return None
+    options = [{'id': op, 'label': menu['examples'][op][0], 'meaning': ' '.join(menu['ops'][op].split())[:160]} for op in near]
+    return _clarify(stack, question, 'closest', 'I could not answer that as asked. Is one of these what you need, or can you say it another way?',
+                    'No method, recipe or the frontier model produced an answer inside the limits.', options,
+                    context={'questions': {op: menu['examples'][op][0] for op in near}})
+
+
+def _not_answered(question, note):
+    """A reply could not be turned into an answer: say so plainly, with what was tried. No model."""
+    return {'answer': {'status': 'unsupported', 'answer_type': 'unsupported', 'headline': 'That still could not be answered. ' + note, 'missing': [note], 'patient_ids': [],
+                       'sources': [], 'table': [], 'limitations': ['Nothing was computed.']},
+            'results': [], 'workflow': [], 'question': question, 'route': 'tiered_core', 'new_paid_api_calls': 0,
+            'graph': {'interpretation': question, 'coverage': 'unsupported', 'unmet_requirements': [note], 'nodes': []},
+            'planner_receipt': {'route': 'tiered_core', 'version': VERSION, 'final_tier': None, 'recipe': None, 'steps': [], 'escalations': [],
+                                'validation': {'ok': False, 'checks': []}, 'new_paid_api_calls': 0, 'known_api_estimate_usd': 0.0, 'api_cost_known': True, 'frontier_called': False},
+            'planning_economics': {'new_api_estimate_usd': 0.0, 'known_api_estimate_usd': 0.0, 'total_cost_known': True, 'scope': 'Tiered core model calls only.'},
+            'tiered_core': {'final_tier': None, 'seconds': 0.0, 'escalations': [], 'bottled': None}}
+
+
+def resume(stack, saved, reply):
+    """The user answered a question the stack asked (_clarify). -> the app's result dict. The reply is answered, never
+    met with a second question: an option that is itself a question runs through the ladder; added detail is joined to
+    the original question and tried through the ladder; otherwise the frontier model answers with the exchange in front of it."""
+    from ..clinical import clarification
+    context, original, request = saved.get('tiered') or {}, saved['question'], saved['pause']['request']
+    option, text = reply.get('option') or {}, ' '.join(str(reply.get('text') or '').split())
+    said = text or option.get('meaning') or option.get('label') or ''
+    EARLIER.set(tuple(context.get('earlier') or ())[-4:])
+    result, read_as = None, None
+    with clarification.interaction('autonomous'):
+        picked = (context.get('questions') or {}).get(option.get('id'))
+        if picked:
+            read_as = picked
+        elif text and context.get('kind') == 'closest':
+            read_as = text  # the user said it another way: that is the question now
+        elif text and context.get('kind') == 'needs_input':
+            read_as = original.rstrip(' ?.') + ', ' + text
+        if read_as:
+            result = try_answer(stack, read_as)
+            if result is not None and (result.get('tiered_core') or {}).get('needs_input'): result = None  # still short of an input: the frontier model answers
+        if result is None:
+            if context.get('kind') == 'needs_input' and option.get('id') == 'explain':
+                why = ('The user asked what these missing inputs are: ' + '; '.join(context.get('wanted') or []) + '. Explain in plain language what each one is and where an '
+                       'organisation usually finds it. Then say what the warehouse does hold that relates to the question. Do not invent any of the missing values.')
+            elif context.get('kind') == 'needs_input' and not text:
+                why = ('These inputs are not in the question or the warehouse: ' + '; '.join(context.get('wanted') or []) + '. The user asked for the best answer the warehouse '
+                       'supports without them. Compute what can be computed, and state plainly what cannot be computed without each input. Do not invent them.')
+            else:
+                why = f'The user was asked: "{request["question"]}" and answered: "{said}". Answer the original question on that basis. State the chosen reading as a caveat.'
+            result = _takeover(original, None, {'status': 'unanswered', 'steps': [], 'escalations': [{'from': 'clarification', 'reason': 'user replied'}],
+                                                'seconds': 0.0, 'missing': why})
+    if result is None: return _not_answered(original, 'Try a narrower question: one measure, one period, or one patient.')
+    note = f'You were asked: "{request["question"]}" and answered: "{said}".' + (f' Read as: "{read_as}".' if read_as and read_as != said else '')
+    result['answer']['facts'] = {'your_reply': note, **(result['answer'].get('facts') or {})}
+    result['planner_receipt']['clarification_reply'] = {'asked': request['question'], 'reply': said, 'read_as': read_as, 'authority': 'user_intent_only'}
+    return result
 
 
 def _needs_input(question, wanted):
@@ -360,7 +482,7 @@ def _needs_input(question, wanted):
             'tiered_core': {'final_tier': 'methods', 'seconds': 0.0, 'escalations': [], 'bottled': None, 'needs_input': wanted}}
 
 
-def _takeover(question, cohort, outcome):
+def _takeover(question, cohort, outcome, stack=None):
     """No tier answered: the frontier model takes over, bounded by turns and seconds (takeover.py). -> result or None."""
     from . import takeover
     if not takeover.enabled(): return None
@@ -369,13 +491,17 @@ def _takeover(question, cohort, outcome):
     if earlier and 'previous question in the conversation' not in why:
         why += ' | Earlier questions in this conversation, oldest first (use them only if this question refers to them): ' + ' / '.join(f'"{q}"' for q in earlier)
     try:
-        got = takeover.answer(question, cohort, why=why)
+        got = takeover.answer(question, cohort, why=why, **({'may_ask': True} if stack is not None else {}))
     except Exception as exc:
         if 'limit' in str(exc).lower(): raise
         import sys
         print(f'tiered takeover failed: {type(exc).__name__}: {str(exc)[:200]}', file=sys.stderr, flush=True)
         return None
     if got is None: return None
+    if got.get('ask'):  # the frontier model asked the user instead of guessing between readings
+        return _clarify(stack, question, 'reading', got['ask'], 'The question can be read in more than one way, or depends on something only you know; the answers would differ.',
+                        [{'id': f'r{i}', 'label': o[:120], 'meaning': o} for i, o in enumerate(got['options'], 1)],
+                        steps=outcome['steps'] + got['steps'], seconds=round(outcome['seconds'] + got['seconds'], 2))
     spent = sum(s.get('usd', 0.0) for s in outcome['steps'])
     usd, calls = spent + got['usd'], sum(1 for s in outcome['steps'] if s.get('model')) + len(got['steps'])
     seconds = round(outcome['seconds'] + got['seconds'], 2)
@@ -393,6 +519,9 @@ def _takeover(question, cohort, outcome):
               'facts': {'answered_by': f"{TIER_NAMES['takeover'][0].upper() + TIER_NAMES['takeover'][1:]}. {seconds} seconds, ${usd:.4f} in model calls (model: {got['model']})."},
               'grounding': [f'Query {i}: {q}' for i, q in enumerate(got['queries'], 1)] + [f'Document read: {d}' for d in got['documents']]}
     if sql: answer['table_binding'] = {'computation': sql, 'parameters': {}, 'checks_passed': []}
+    if got.get('next'):
+        answer['next_questions'] = got['next']
+        answer['facts']['you_could_ask_next'] = ' / '.join(got['next'])
     return {'answer': answer, 'results': [], 'new_paid_api_calls': calls, 'workflow': [], 'question': question, 'route': 'tiered_core',
             'graph': {'interpretation': question, 'coverage': 'supported_observation', 'unmet_requirements': [],
                       'nodes': [{'id': 'tiered_0', 'operation': 'sql', 'inputs': [], 'parameters': {'query': sql, 'returns': 'table'},

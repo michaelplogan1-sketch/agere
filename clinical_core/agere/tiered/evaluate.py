@@ -479,14 +479,15 @@ def methods_eval(path='eval/tiered/methods.json', config=None, workers=1):
         core = (result or {}).get('tiered_core') or {}
         ran = core.get('methods') or []
         cost = ((result or {}).get('planning_economics') or {}).get('known_api_estimate_usd') or 0.0
-        if item['method']:
-            kind = 'method_right' if item['method'] in ran else 'method_wrong' if ran else 'method_missed'
+        wanted = [item['method']] if isinstance(item['method'], str) else list(item['method'] or [])
+        if wanted:
+            kind = 'method_right' if set(wanted) & set(ran) else 'method_wrong' if ran else 'method_missed'
         else:
             kind = 'plain_taken' if ran else 'plain_kept'
         ok = kind in ('method_right', 'plain_kept')
         by[kind] += 1; right += ok; usd += cost; seconds += took
         restated = ((result or {}).get('planner_receipt') or {}).get('recipe', {}).get('restated') if ran else None
-        line = (f"{'ok  ' if ok else 'MISS'} {item['id']} want={item['method'] or 'tiers'} got={','.join(ran) or core.get('final_tier') or 'not answered'} "
+        line = (f"{'ok  ' if ok else 'MISS'} {item['id']} want={'/'.join(wanted) or 'tiers'} got={','.join(ran) or core.get('final_tier') or 'not answered'} "
                 f"{took}s ${cost:.4f}" + (' (restated)' if restated else '') + f" | {item['question']}")
         print(line, flush=True); lines.append(line)
     methods_n = sum(1 for i in items if i['method']); plain_n = len(items) - methods_n
@@ -494,7 +495,7 @@ def methods_eval(path='eval/tiered/methods.json', config=None, workers=1):
                f"{by['method_missed']} left to other rungs | plain questions {by['plain_kept']}/{plain_n} left to the tiers, {by['plain_taken']} taken by a method | "
                f"${usd:.4f}, {seconds:.0f}s total")
     out = Path('artifacts/agere-tiered-core'); out.mkdir(parents=True, exist_ok=True)
-    (out / f"methods-eval-{time.strftime('%Y%m%d-%H%M%S')}.txt").write_text('\n'.join(lines + [summary]) + '\n')
+    (out / f"methods-eval-{Path(path).stem}-{time.strftime('%Y%m%d-%H%M%S')}.txt").write_text('\n'.join(lines + [summary]) + '\n')
     return summary
 
 

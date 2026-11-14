@@ -105,6 +105,27 @@ def generate(n):
     return {'new': len(seen) - len(have), 'total': len(seen), 'usd': round(usd, 4)}
 
 
+def library(paths):
+    """Add questions from question-library files (JSON holding {"id", "question"} entries at any depth) to the run's
+    question list. Text only: nothing else in the file is used, and a question already listed is not added twice."""
+    HOME.mkdir(parents=True, exist_ok=True)
+    have = {_norm(q['question']) for q in _load()}
+    added = []
+    def walk(node, topic):
+        if isinstance(node, dict):
+            if isinstance(node.get('question'), str) and node.get('id'):
+                text = ' '.join(node['question'].split())
+                if len(text) >= 12 and _norm(text) not in have:
+                    have.add(_norm(text)); added.append({'id': f"LIB-{node['id']}", 'question': text, 'role': 'research question library', 'topic': topic})
+            for value in node.values(): walk(value, node.get('title') if isinstance(node.get('title'), str) else topic)
+        elif isinstance(node, list):
+            for value in node: walk(value, topic)
+    for path in paths: walk(json.loads(Path(path).read_text()), Path(path).stem)
+    with QUESTIONS.open('a') as out:
+        for q in added: out.write(json.dumps(q) + '\n')
+    return {'added': len(added), 'total': len(_load())}
+
+
 def run(limit=None):
     """Every not-yet-run question through all tiers. New frontier recipes are bottled as provisional in the run's own
     store. Stops cleanly on a usage limit; run again to continue."""
@@ -212,10 +233,11 @@ def report():
 
 def main(argv):
     command = argv[0] if argv else 'report'
-    number = int(argv[1]) if len(argv) > 1 else None
+    number = int(argv[1]) if len(argv) > 1 and argv[1].isdigit() else None
     if command == 'generate':
         os.environ.pop('ANTHROPIC_API_KEY', None)
         print(json.dumps(generate(number or 100)))
+    elif command == 'library': print(json.dumps(library(argv[1:])))
     elif command == 'run': print('\n' + run(number))
     elif command == 'confirm': print(json.dumps(confirm(number)))
     elif command == 'merge': print(json.dumps(merge()))

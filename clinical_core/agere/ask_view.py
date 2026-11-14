@@ -869,7 +869,7 @@ function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.ove
  const v=vizVBC(a);if(v)return v;if(a.answer_type==='table'){const t=vizTrajectory(a);if(t)return t;return vizTable(a)}return vizScalar(a)}
 
 /* ---------- answer card ---------- */
-function suggestions(a){if(!a)return [];if(a.answer_type==='count')return ['list them','by practice','by payer'];if(a.answer_type==='patient_set')return ['how many','by practice'];
+function suggestions(a){if(!a)return [];if(Array.isArray(a.next_questions)&&a.next_questions.length)return a.next_questions.slice(0,4);if(a.answer_type==='count')return ['list them','by practice','by payer'];if(a.answer_type==='patient_set')return ['how many','by practice'];
  if(a.answer_type==='value')return ['by practice','by payer'];return []}
 function details(a){let h='';
  if(a.computed&&String(a.headline||'').indexOf('Computed as')<0)h+='<div class="sec"><b>Computed as:</b> '+esc(a.computed)+'</div>';

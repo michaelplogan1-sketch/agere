@@ -1,0 +1,418 @@
+{
+ "about": "Second routing check for the methods rung, written 2026-11-14 before any of these wordings were run and before the shortlist and contrastive-confirm change. 'method' lists every method that answers the question; null means the recipe tiers or the takeover rung should answer. A few wordings are close to a method's own example phrasings (settlement bridge, change attribution, pathway, early signal), so this set is not harder than the first. Scored on which rung and method answered, not on the figures.",
+ "questions": [
+  {
+   "id": "N01",
+   "question": "How many beds will free up through discharges in the next 3 days?",
+   "method": [
+    "discharge_forecast",
+    "demand"
+   ]
+  },
+  {
+   "id": "N02",
+   "question": "What happens to ED boarding if we lose 4 inpatient beds?",
+   "method": [
+    "capacity_simulation"
+   ]
+  },
+  {
+   "id": "N03",
+   "question": "Did care coordination lower ED visits for the patients enrolled in it?",
+   "method": [
+    "program_effect"
+   ]
+  },
+  {
+   "id": "N04",
+   "question": "Are we above the minimum loss ratio on our marketplace business?",
+   "method": [
+    "mlr"
+   ]
+  },
+  {
+   "id": "N05",
+   "question": "Which measures are holding back our Medicare star rating?",
+   "method": [
+    "star_rating"
+   ]
+  },
+  {
+   "id": "N06",
+   "question": "Which claims should we fix before submission because they will probably bounce?",
+   "method": [
+    "denial_prediction"
+   ]
+  },
+  {
+   "id": "N07",
+   "question": "Is anyone taking two drugs together that should not be combined?",
+   "method": [
+    "ddi_screening"
+   ]
+  },
+  {
+   "id": "N08",
+   "question": "Which hospitals show creeping severity coding on their inpatient stays?",
+   "method": [
+    "upcoding_detection"
+   ]
+  },
+  {
+   "id": "N09",
+   "question": "Who is overdue for a mammogram?",
+   "method": [
+    "care_gap_closure"
+   ]
+  },
+  {
+   "id": "N10",
+   "question": "After discharge, how many patients had their medications reconciled within 30 days?",
+   "method": [
+    "transitions_of_care"
+   ]
+  },
+  {
+   "id": "N11",
+   "question": "How will our MSSP benchmark change if we stay to the end of the agreement?",
+   "method": [
+    "benchmark_rebasing"
+   ]
+  },
+  {
+   "id": "N12",
+   "question": "How much money are we leaving on the table from underpaid claims?",
+   "method": [
+    "contract_reimbursement",
+    "claims_review"
+   ]
+  },
+  {
+   "id": "N13",
+   "question": "Which payer pays the most for CPT 99214?",
+   "method": [
+    "price_benchmark"
+   ]
+  },
+  {
+   "id": "N14",
+   "question": "Are bloodstream infections picked up in hospital going up?",
+   "method": [
+    "hai_surveillance"
+   ]
+  },
+  {
+   "id": "N15",
+   "question": "Which sepsis bundle elements do we miss most often?",
+   "method": [
+    "bundle_compliance"
+   ]
+  },
+  {
+   "id": "N16",
+   "question": "How many days of antibiotic therapy per 1,000 days present did each facility have?",
+   "method": [
+    "antimicrobial_use"
+   ]
+  },
+  {
+   "id": "N17",
+   "question": "Was there an outbreak of respiratory illness in any ZIP code last winter?",
+   "method": [
+    "spatiotemporal_cluster"
+   ]
+  },
+  {
+   "id": "N18",
+   "question": "Do our members in each county have enough cardiologists nearby?",
+   "method": [
+    "network_adequacy"
+   ]
+  },
+  {
+   "id": "N19",
+   "question": "Do text messages or phone calls work better for getting patients to engage?",
+   "method": [
+    "outreach_bandit"
+   ]
+  },
+  {
+   "id": "N20",
+   "question": "We have 30 staff hours for outreach next week; who should get a call, a text or a letter?",
+   "method": [
+    "outreach_allocation"
+   ]
+  },
+  {
+   "id": "N21",
+   "question": "Is the denial rate out of statistical control?",
+   "method": [
+    "monitor"
+   ]
+  },
+  {
+   "id": "N22",
+   "question": "Why do some heart failure patients keep coming back to the hospital?",
+   "method": [
+    "explain"
+   ]
+  },
+  {
+   "id": "N23",
+   "question": "What is the median time from discharge to readmission for patients with COPD?",
+   "method": [
+    "survival"
+   ]
+  },
+  {
+   "id": "N24",
+   "question": "Which members are persuadable by nurse outreach?",
+   "method": [
+    "uplift"
+   ]
+  },
+  {
+   "id": "N25",
+   "question": "Project admissions for the next 6 months",
+   "method": [
+    "demand"
+   ]
+  },
+  {
+   "id": "N26",
+   "question": "Which referrals were sent but never completed?",
+   "method": [
+    "loop_closure"
+   ]
+  },
+  {
+   "id": "N27",
+   "question": "Were there missed opportunities to diagnose diabetes earlier?",
+   "method": [
+    "diagnostic_delay"
+   ]
+  },
+  {
+   "id": "N28",
+   "question": "What is the average RAF score of our Medicare Advantage members?",
+   "method": [
+    "risk_adjustment"
+   ]
+  },
+  {
+   "id": "N29",
+   "question": "What is each hospital's observed-to-expected readmission ratio?",
+   "method": [
+    "risk_outcomes"
+   ]
+  },
+  {
+   "id": "N30",
+   "question": "How long do admitted patients board in the ED before getting a bed?",
+   "method": [
+    "flow_decomposition"
+   ]
+  },
+  {
+   "id": "N31",
+   "question": "How many nursing shifts should we post for the ED next week?",
+   "method": [
+    "staffing_plan"
+   ]
+  },
+  {
+   "id": "N32",
+   "question": "Using Erlang C, how many triage nurses do we need per hour?",
+   "method": [
+    "queueing"
+   ]
+  },
+  {
+   "id": "N33",
+   "question": "How many extra appointments can each clinic book to offset no-shows?",
+   "method": [
+    "scheduling"
+   ]
+  },
+  {
+   "id": "N34",
+   "question": "Does our overbooking policy fall harder on older or Medicaid patients?",
+   "method": [
+    "overbooking_fairness"
+   ]
+  },
+  {
+   "id": "N35",
+   "question": "How should operating room blocks be divided among surgical services?",
+   "method": [
+    "or_block_optimization"
+   ]
+  },
+  {
+   "id": "N36",
+   "question": "Which inpatient stays are missing a complication or comorbidity code that the labs support?",
+   "method": [
+    "cdi_opportunity"
+   ]
+  },
+  {
+   "id": "N37",
+   "question": "Which fills qualify for 340B pricing?",
+   "method": [
+    "eligibility_340b"
+   ]
+  },
+  {
+   "id": "N38",
+   "question": "Which providers would qualify for gold-carding on prior authorization?",
+   "method": [
+    "prior_auth_rules"
+   ]
+  },
+  {
+   "id": "N39",
+   "question": "Do any referral patterns look like steering?",
+   "method": [
+    "provider_network_graph"
+   ]
+  },
+  {
+   "id": "N40",
+   "question": "Is SGLT2 prescribing spreading among clinicians who share patients?",
+   "method": [
+    "network_spread"
+   ]
+  },
+  {
+   "id": "N41",
+   "question": "Which patients have a documented food need and no referral?",
+   "method": [
+    "social_needs"
+   ]
+  },
+  {
+   "id": "N42",
+   "question": "What would closing our open care gaps be worth in shared savings?",
+   "method": [
+    "settlement_bridge"
+   ]
+  },
+  {
+   "id": "N43",
+   "question": "Is the fall in lab volume real or a feed problem?",
+   "method": [
+    "change_attribution"
+   ]
+  },
+  {
+   "id": "N44",
+   "question": "Which patients have an A1c that keeps rising?",
+   "method": [
+    "trajectory"
+   ]
+  },
+  {
+   "id": "N45",
+   "question": "Where do patients go after they leave the ED?",
+   "method": [
+    "pathway"
+   ]
+  },
+  {
+   "id": "N46",
+   "question": "Which patients look like they are heading for an admission?",
+   "method": [
+    "early_signal"
+   ]
+  },
+  {
+   "id": "N47",
+   "question": "Compare SGLT2 inhibitors with DPP-4 inhibitors on heart failure admission using target trial emulation",
+   "method": [
+    "target_trial"
+   ]
+  },
+  {
+   "id": "N48",
+   "question": "Which primary care doctors are truly high on ED use after adjusting for their patients?",
+   "method": [
+    "profile"
+   ]
+  },
+  {
+   "id": "N49",
+   "question": "Are heart failure discharges following the recommended follow-up pathway?",
+   "method": [
+    "guideline_conformance"
+   ]
+  },
+  {
+   "id": "N50",
+   "question": "Which patient charts were probably merged by mistake?",
+   "method": [
+    "identity_resolution",
+    "record_linkage"
+   ]
+  },
+  {
+   "id": "U01",
+   "question": "How many observation stays were there in 2028?",
+   "method": null
+  },
+  {
+   "id": "U02",
+   "question": "How many patients have hypertension?",
+   "method": null
+  },
+  {
+   "id": "U03",
+   "question": "List claims by payer for 2029",
+   "method": null
+  },
+  {
+   "id": "U04",
+   "question": "How many appointments were cancelled in 2029?",
+   "method": null
+  },
+  {
+   "id": "U05",
+   "question": "How many statin fills were there in 2029?",
+   "method": null
+  },
+  {
+   "id": "U06",
+   "question": "How many inpatient stays were there each month in 2028?",
+   "method": null
+  },
+  {
+   "id": "U07",
+   "question": "How many patients are in each age group?",
+   "method": null
+  },
+  {
+   "id": "U08",
+   "question": "What were the top five conditions?",
+   "method": null
+  },
+  {
+   "id": "U09",
+   "question": "How many deaths were recorded in 2028?",
+   "method": null
+  },
+  {
+   "id": "U10",
+   "question": "How many scanned radiology reports from 2029 mention pneumonia?",
+   "method": null
+  },
+  {
+   "id": "U11",
+   "question": "What is the denial rate for each payer in 2028?",
+   "method": null
+  },
+  {
+   "id": "U12",
+   "question": "How many members are enrolled with each payer?",
+   "method": null
+  }
+ ]
+}
