@@ -60,7 +60,8 @@ def spawn_auto():
     try:
         if LOCK.exists() and time.time() - LOCK.stat().st_mtime < 7200: return False
         OUT.mkdir(parents=True, exist_ok=True)
-        env = {k: v for k, v in os.environ.items() if k != 'ANTHROPIC_API_KEY'}
+        hosted_api = os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'api' and os.environ.get('AGERE_HOSTED') == '1'  # only the hosted server keeps its key
+        env = {k: v for k, v in os.environ.items() if k != 'ANTHROPIC_API_KEY' or hosted_api}
         with open(OUT / 'auto-learn.log', 'a') as log:
             subprocess.Popen([sys.executable, '-B', '-m', 'clinical_core.agere.tiered.learn', 'auto'], stdout=log, stderr=log, env=env, start_new_session=True)
         return True

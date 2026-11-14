@@ -412,7 +412,44 @@ def hf(s1_ledger=None, only=None, path='eval/tiered/hf_reasons.json'):
     return text
 
 
+def takeover_eval(shapes=('novel', 'paraphrase'), workers=4):
+    """The takeover rung alone on reference questions: the frontier model is handed each question with no cheaper tier
+    tried, and the table it chose is scored against the reference rows by the same rule as every other set. The
+    reference is never shown to it. These are questions the tiers already answer; this measures the fallback."""
+    from concurrent.futures import ThreadPoolExecutor
+    from . import takeover
+    items = [q for q in json.loads(EVAL.read_text())['questions'] if q['shape'] in shapes]
+    def one(q):
+        try:
+            got = takeover.answer(q['question'])
+        except Exception as exc:
+            return {'id': q['id'], 'ok': False, 'error': f'{type(exc).__name__}: {str(exc)[:160]}', 'usd': 0.0, 'seconds': 0.0, 'turns': 0}
+        if got is None: return {'id': q['id'], 'ok': False, 'error': 'no answer inside the limits', 'usd': 0.0, 'seconds': 0.0, 'turns': takeover.MAX_STEPS}
+        ref = json.loads(q['reference_rows']) if isinstance(q['reference_rows'], str) else q['reference_rows']
+        table_ok = correct(ref, got['rows'])
+        # the answer text may be right when the chosen table has extra rows: every reference number is in the written answer
+        said = {t.replace(',', '') for t in __import__('re').findall(r'\d[\d,]*(?:\.\d+)?', got['text'])}
+        text_ok = all(str(v if not isinstance(v, float) else round(v, 4)).rstrip('0').rstrip('.') in said or str(v) in said for r in ref for v in r if isinstance(v, (int, float)) and not isinstance(v, bool)) and len(ref) <= 3
+        return {'id': q['id'], 'shape': q['shape'], 'question': q['question'], 'ok': table_ok, 'text_has_reference_numbers': text_ok, 'unsupported': got['unsupported'],
+                'usd': round(got['usd'], 5), 'seconds': got['seconds'], 'turns': len(got['steps']), 'answer': got['text'][:400], 'sql': got['sql'][:600]}
+    with ThreadPoolExecutor(workers) as pool: results = list(pool.map(one, items))
+    run = 'takeover-' + time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())
+    n, ok = len(results), sum(r['ok'] for r in results)
+    either = sum(r['ok'] or r.get('text_has_reference_numbers', False) for r in results)
+    lines = [f'TAKEOVER RUNG EVAL  run {run}', f'items: {n} (shapes: {", ".join(shapes)}; the reference is never shown to the model)',
+             f'chosen table matches the reference: {ok}/{n}', f'table matches, or every reference number is in the written answer (1 to 3 row references only): {either}/{n}',
+             f'answers containing a number code could not find in what the model was shown: {sum(1 for r in results if r.get("unsupported"))}/{n}',
+             f'cost: ${sum(r["usd"] for r in results):.4f} total, ${sum(r["usd"] for r in results) / max(n, 1):.4f} per question; mean {sum(r["seconds"] for r in results) / max(n, 1):.1f}s; mean turns {sum(r["turns"] for r in results) / max(n, 1):.1f}',
+             'not matching:'] + [f"  {r['id']} table {r['ok']} text {r.get('text_has_reference_numbers')} {r.get('error') or r.get('answer', '')[:160]}" for r in results if not r['ok']]
+    OUT.mkdir(parents=True, exist_ok=True)
+    (OUT / f'{run}.results.json').write_text(json.dumps(results, indent=1, default=str)); (OUT / f'{run}.report.txt').write_text('\n'.join(lines) + '\n')
+    return '\n'.join(lines)
+
+
 def main(argv):
+    if argv[0] == 'takeover':
+        print('\n' + takeover_eval(tuple(argv[1].split(',')) if len(argv) > 1 else ('novel', 'paraphrase')))
+        return
     if argv[0] == 'hf':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)

@@ -4,10 +4,12 @@ try_answer() runs a fresh question through the tiers. A validated answer is retu
 Anything the core does not answer (no tier fits, the frontier tier says one query cannot answer it, validation
 fails) returns None and the caller continues on its existing path, so nothing the app could do before is lost.
 """
+import contextvars
 import os
 
 from . import VERSION, bottles as bottle_store, ledger as ledger_store, router, store
 
+EARLIER = contextvars.ContextVar('tiered_earlier_questions', default=())  # earlier questions of this conversation, for the takeover rung
 TIERS = ('bottles', 'recipes', 'system1', 'slm', 'llm')
 ORDER = TIERS + ('takeover',)  # takeover is not a router tier: it runs only after the router has not answered
 MAX_GROUNDING = 200  # evidence lines shown for a document answer
@@ -26,19 +28,29 @@ def _headline(columns, rows):
     return f"{len(rows)} rows by {columns[0].replace('_', ' ')}; see the table."
 
 
-def try_in_conversation(stack, question, previous, looks_like_follow_up):
+def try_in_conversation(stack, question, previous, looks_like_follow_up, earlier=None):
     """A question asked inside a conversation. -> (result, complete question, note) or None for the existing path.
     A question the zero-cost tiers recognise is complete. Otherwise a follow-up is first made complete from the
     previous question (followup.rewrite); words that are not an edit of the previous question are tried as they are."""
     if not enabled(): return None
     from . import followup
+    EARLIER.set(tuple(q for q in (earlier or [previous]) if q)[-4:])  # the takeover rung reads a question in its conversation
     s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
     try:
         standalone, how = followup.complete_question(question, previous, looks_like_follow_up, bottle_store.Bottles(), s1_ledger)
     except Exception as exc:
         if 'limit' in str(exc).lower(): raise
         return None
-    if standalone is None: return None  # an edit we could not make safely: leave it to the existing path
+    if standalone is None:
+        # An edit no cheap method could make safely. The frontier model takes over with both questions in front of it.
+        outcome = {'status': 'unanswered', 'steps': [], 'escalations': [{'from': 'followup', 'reason': str((how or {}).get('method'))}], 'seconds': 0.0,
+                   'missing': f'This is a follow-up to the previous question in the conversation: "{previous}". Work out what the user means by it and answer that.'}
+        result = _takeover(question, None, outcome)
+        if result is None: return None
+        note = 'The follow-up could not be turned into a complete question by the cheaper methods, so the frontier model answered it with the previous question as context.'
+        result['answer']['facts'] = {'follow_up': note, **(result['answer'].get('facts') or {})}
+        result['planner_receipt']['follow_up'] = {**(how or {}), 'previous': previous, 'standalone': None}
+        return result, question, note
     result = try_answer(stack, standalone)
     if result is None: return None
     note = 'Complete question answered by the tiered core'
@@ -70,8 +82,13 @@ def try_in_cohort(stack, question, parent, key, scope='result'):
     except Exception as exc:
         if 'limit' in str(exc).lower(): raise
         return None
-    if standalone is None: return None
-    result = _single(stack, standalone, cohort=ids)
+    if standalone is None:
+        # No cheap method could restate the question safely: the frontier model answers it inside the group.
+        outcome = {'status': 'unanswered', 'steps': [], 'escalations': [{'from': 'cohort', 'reason': str((how or {}).get('method'))}], 'seconds': 0.0,
+                   'missing': f'Words such as "those patients", "them" or "their" mean the {len(ids)} selected patients. Every patient table is already restricted to them, so query the tables directly.'}
+        result, standalone, how = _takeover(question, ids, outcome), question, {'method': 'frontier_takeover_in_group', 'usd': 0.0, 'tokens': 0, 'seconds': 0.0}
+    else:
+        result = _single(stack, standalone, cohort=ids)
     if result is None: return None
     note = f'Asked about only the {len(ids)} selected patients, as: "{standalone}". Code restricted every patient table to those patients.'
     answer = result['answer']
@@ -226,8 +243,12 @@ def _takeover(question, cohort, outcome):
     """No tier answered: the frontier model takes over, bounded by turns and seconds (takeover.py). -> result or None."""
     from . import takeover
     if not takeover.enabled(): return None
+    why = str(outcome.get('missing') or '; '.join(e.get('reason', '') for e in outcome.get('escalations') or [])[-400:])
+    earlier = [q for q in EARLIER.get() if q and q != question]
+    if earlier and 'previous question in the conversation' not in why:
+        why += ' | Earlier questions in this conversation, oldest first (use them only if this question refers to them): ' + ' / '.join(f'"{q}"' for q in earlier)
     try:
-        got = takeover.answer(question, cohort, why=outcome.get('missing') or '; '.join(e.get('reason', '') for e in outcome.get('escalations') or [])[-400:])
+        got = takeover.answer(question, cohort, why=why)
     except Exception as exc:
         if 'limit' in str(exc).lower(): raise
         import sys

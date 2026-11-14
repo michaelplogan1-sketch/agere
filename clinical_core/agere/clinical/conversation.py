@@ -1013,6 +1013,10 @@ def _handle_compose(stack, body, hosted_factory=None):
             # then a frontier-written recipe. Only a question that core cannot answer continues to the existing path.
             from ..tiered import app as tiered_app
             result = tiered_app.try_answer(stack, question) if planning == 'auto' else None
+            if result is None and planning == 'auto' and tiered_app.enabled() and os.environ.get('AGERE_DEEP_PATH', 'on') == 'off':
+                # Mike 2026-11-13: an unbounded run must never happen. Every tier and the bounded frontier takeover were
+                # tried; the older deep path (no time limit) runs only when it is switched on explicitly.
+                raise QuestionNotUnderstood('No method answered this inside the time limit, including the frontier model. Ask a narrower question (one measure, one period, or one patient).')
             if result is None:
                 result = stack.compose(question) if planning == 'auto' else stack.compose(question, planning=planning)
         else:

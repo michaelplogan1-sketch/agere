@@ -108,5 +108,74 @@ class HostedAsk(unittest.TestCase):
             self.assertEqual((code, out['answered']), (200, False))
 
 
+GOT = {'text': '44 patients.', 'columns': ['n'], 'rows': [[44]], 'sql': 'SELECT 44 AS n', 'queries': ['SELECT 44 AS n'], 'documents': [], 'caveats': [],
+       'unsupported': [], 'steps': [{'model': 'm', 'tokens': 1, 'usd': 0.01, 'seconds': 1.0, 'tier': 'takeover'}], 'usd': 0.01, 'tokens': 1, 'seconds': 1.0, 'model': 'm'}
+ON = {'AGERE_TIERED_CORE': 'on', 'AGERE_TIERED_TAKEOVER': 'on', 'AGERE_TIERED_AUTO_LEARN': 'off'}
+
+
+class TakeoverInContext(unittest.TestCase):
+    def test_follow_up_no_cheap_method_could_read_goes_to_the_frontier_model_with_the_previous_question(self):
+        from clinical_core.agere.tiered import followup
+        seen = {}
+        def fake(question, cohort=None, why=None): seen.update(question=question, cohort=cohort, why=why); return dict(GOT)
+        with mock.patch.dict(os.environ, ON), mock.patch.object(followup, 'complete_question', lambda *a, **k: (None, {'method': 'rewrite_not_confirmed', 'usd': 0.0})), \
+                mock.patch.object(takeover, 'answer', fake), mock.patch.object(app.ledger_store, 'Ledger'), mock.patch.object(app.bottle_store, 'Bottles'), \
+                mock.patch.object(app.store, 'portable', lambda sql, cohort=None: sql):
+            result, standalone, note = app.try_in_conversation(None, 'which looks worse?', 'How many ED visits were there in 2029?', True)
+        self.assertEqual(result['tiered_core']['final_tier'], 'takeover'); self.assertEqual(standalone, 'which looks worse?')
+        self.assertIn('How many ED visits were there in 2029?', seen['why']); self.assertIsNone(seen['cohort'])
+        self.assertEqual(result['answer']['verification'], 'unverified')
+
+    def test_group_follow_up_that_is_not_confirmed_is_answered_inside_the_group(self):
+        from clinical_core.agere.tiered import followup
+        seen = {}
+        def fake(question, cohort=None, why=None): seen.update(cohort=cohort, why=why); return dict(GOT)
+        with mock.patch.dict(os.environ, ON), mock.patch.object(followup, 'group_question', lambda *a, **k: (None, {'method': 'rewrite_not_confirmed', 'usd': 0.0})), \
+                mock.patch.object(takeover, 'answer', fake), mock.patch.object(app.ledger_store, 'Ledger'), mock.patch.object(app.bottle_store, 'Bottles'), \
+                mock.patch.object(app.store, 'portable', lambda sql, cohort=None: sql):
+            result = app.try_in_cohort(None, 'how many of those have CKD?', {'patient_ids': ['P-2', 'P-1', 'P-1']}, 'ctx')
+        self.assertEqual(seen['cohort'], ['P-1', 'P-2']); self.assertIn('2 selected patients', seen['why'])
+        self.assertEqual(result['cohort_transform']['input_patient_ids'], ['P-1', 'P-2'])
+        self.assertTrue(result['answer']['limitations'][0].startswith('Computed only over the 2 selected patients'))
+
+    def test_takeover_off_leaves_both_to_the_caller(self):
+        from clinical_core.agere.tiered import followup
+        with mock.patch.dict(os.environ, {**ON, 'AGERE_TIERED_TAKEOVER': 'off'}), mock.patch.object(followup, 'complete_question', lambda *a, **k: (None, {'method': 'x', 'usd': 0.0})), \
+                mock.patch.object(followup, 'group_question', lambda *a, **k: (None, {'method': 'x', 'usd': 0.0})), mock.patch.object(app.bottle_store, 'Bottles'):
+            self.assertIsNone(app.try_in_conversation(None, 'and?', 'How many?', True))
+            self.assertIsNone(app.try_in_cohort(None, 'those?', {'patient_ids': ['P-1']}, 'ctx'))
+
+
+class HostedGroups(unittest.TestCase):
+    def test_a_list_answer_becomes_the_group_for_those_patients(self):
+        from clinical_core.agere.hosted import ask
+        ctx = mock.Mock(); ctx.auth.allow.return_value = True
+        base = {'tiered_core': {'final_tier': 'recipes', 'seconds': 0.1}, 'planner_receipt': {'known_api_estimate_usd': 0.0}, 'new_paid_api_calls': 0}
+        listed = {**base, 'answer': {'headline': '2 rows.', 'table': [{'patient_id': 'P-2'}, {'patient_id': 'P-1'}], 'facts': {}, 'limitations': [], 'verification': 'checked'}}
+        counted = {**base, 'answer': {'headline': 'n: 1.', 'table': [{'n': 1}], 'facts': {}, 'limitations': [], 'verification': 'checked'}}
+        seen = {}
+        def cohort(stack, question, parent, key, scope='result'): seen['ids'] = parent['patient_ids']; return counted
+        with mock.patch.object(ask, 'available', lambda: True), mock.patch.object(app, 'try_answer', lambda s, q: listed), mock.patch.object(app, 'try_in_cohort', cohort), \
+                mock.patch.object(app, 'try_in_conversation', lambda *a, **k: None):
+            ask.answer(ctx, 'org-g', 7, {'question': 'List the patients with heart failure', 'conversation_id': 'g1'})
+            code, out = ask.answer(ctx, 'org-g', 7, {'question': 'How many of those patients have CKD?', 'conversation_id': 'g1'})
+            self.assertEqual((code, seen['ids'], out['rows']), (200, ['P-1', 'P-2'], [[1]]))
+            seen.clear()
+            ask.answer(ctx, 'org-other', 7, {'question': 'How many of those patients have CKD?', 'conversation_id': 'g1'})
+            self.assertEqual(seen, {})  # another organization never sees the group
+
+
+class DeepPathSwitch(unittest.TestCase):
+    def test_policy_turns_the_unbounded_path_off_and_the_takeover_on(self):
+        from clinical_core.agere import model_policy
+        env = model_policy.application_runtime({})['environment']
+        self.assertEqual((env['AGERE_DEEP_PATH'], env['AGERE_TIERED_TAKEOVER'], env['AGERE_TIERED_CORE']), ('off', 'on', 'on'))
+
+    def test_the_question_entry_checks_the_switch_before_the_old_path(self):
+        source = Path('clinical_core/agere/clinical/conversation.py').read_text()
+        gate, old = source.index("os.environ.get('AGERE_DEEP_PATH', 'on') == 'off'"), source.index('result = stack.compose(question) if planning')
+        self.assertLess(gate, old)
+
+
 if __name__ == '__main__':
     unittest.main()

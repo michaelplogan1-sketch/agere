@@ -19,7 +19,9 @@ from pathlib import Path
 PER_HOUR = int(os.environ.get('AGERE_ASK_PER_HOUR') or 120)
 _slots = threading.BoundedSemaphore(int(os.environ.get('AGERE_ASK_CONCURRENT') or 6))
 _lock = threading.Lock()
-_previous = {}  # (org, user, conversation) -> last complete question; memory only, bounded
+_previous = {}  # (org, user, conversation) -> last complete questions (up to 4, oldest first); memory only, bounded
+_groups = {}    # (org, user, conversation) -> patient ids of the last list answer, for "those patients" follow-ups
+GROUP_WORDS = __import__('re').compile(r'\b(them|those|these|they|their)\b', __import__('re').I)
 MAX_CONVERSATIONS = 5000
 MAX_ROWS = 300
 
@@ -83,15 +85,19 @@ def answer(ctx, org, uid, body, ip=None):
     conversation = str(body.get('conversation_id') or '')[:64] or secrets.token_urlsafe(9)
     key = (org, str(uid), conversation)
     with _lock:
-        previous = _previous.get(key)
+        previous, group = _previous.get(key), _groups.get(key)
     if not _slots.acquire(timeout=20):
         return 503, {'error': 'The server is busy. Try again in a moment.'}
     started = time.monotonic()
+    app.EARLIER.set(tuple(previous or ()))  # set per request: nothing carries over from another conversation
     try:
         result, standalone, note = None, question, None
-        if previous:
+        if group and GROUP_WORDS.search(question):
+            result = app.try_in_cohort(None, question, {'patient_ids': group}, f'{conversation}:group')
+            if result: note = f'Asked about only the {len(group)} patients in the previous list.'
+        if result is None and previous:
             follow = _looks_like_follow_up(question)
-            got = app.try_in_conversation(None, question, previous, follow)
+            got = app.try_in_conversation(None, question, previous[-1], follow, earlier=previous)
             if got: result, standalone, note = got
             elif follow:
                 return 200, {'answered': False, 'question': question, 'conversation_id': conversation,
@@ -113,7 +119,10 @@ def answer(ctx, org, uid, body, ip=None):
     out['conversation_id'] = conversation
     with _lock:
         if len(_previous) >= MAX_CONVERSATIONS: _previous.pop(next(iter(_previous)))
-        _previous[key] = standalone
+        _previous[key] = [*(previous or []), standalone][-4:]
+        ids = [r[out['columns'].index('patient_id')] for r in ((result['answer'].get('table') and [list(x.values()) for x in result['answer']['table']]) or [])] if 'patient_id' in out['columns'] else []
+        if ids: _groups[key] = sorted(set(map(str, ids)))
+        if len(_groups) > MAX_CONVERSATIONS: _groups.pop(next(iter(_groups)))
     ctx.auth.record_usage(org, 'ask', question[:80], out['usd'], seconds)
     ctx.auth.audit(org, uid, 'ask', {'question': question[:300], 'answered': True, 'tier': out['tier'], 'usd': out['usd']}, ip=ip)
     return 200, out

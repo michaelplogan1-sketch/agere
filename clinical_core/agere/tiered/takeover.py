@@ -40,6 +40,11 @@ Rules:
 - Dates are ISO text. The data's current date is %s; use it, not today's date. Money columns are integer cents.
 - Compare concept and drug_class with = or IN against exact values, never LIKE.
 - If the data cannot answer the question, say exactly what is missing in the answer; do not guess.
+- Answer exactly what was asked and nothing more: no extra comparisons, breakdowns or neighbouring figures.
+- The table you name must be the answer itself: a query that returns exactly the rows and columns the question asks
+  for. If your exploring queries returned more than that, run one final query that returns only the answer.
+- Keep the stored units so figures agree with the rest of the system: cents stay integer cents, and a rate or share
+  is a fraction between 0 and 1 rounded to 4 places, unless the question asks for dollars or percent.
 - You have at most %d turns. Finish as soon as you can answer.
 
 Tables and columns:
@@ -66,7 +71,7 @@ def answer(question, cohort=None, why=None):
     try:
         system = SYSTEM % (MAX_DOCUMENTS, store.as_of(db), MAX_STEPS, store.schema_text(db), models.definitions())
         log = ['Question: ' + question]
-        if why: log.append('Why the automatic methods stopped: ' + str(why)[:400])
+        if why: log.append('Why the automatic methods stopped: ' + str(why)[:1200])
         if cohort is not None: log.append(f'Every patient table is already restricted to the {len(cohort)} selected patients.')
         seen, results, documents, steps, corrected = [question], [], [], [], False
         for turn in range(1, MAX_STEPS + 1):
