@@ -1,7 +1,9 @@
 """Same-machine, offline checkpoints. Restores never activate or rewind provider state."""
 from contextlib import contextmanager
 from datetime import datetime, timezone
+import ctypes
 import fcntl
+from functools import lru_cache
 import hashlib
 import json
 import os
@@ -23,7 +25,9 @@ READ_POSTS = frozenset('/api/stack/' + name for name in (
     'decision/economics-open', 'reader-comparison/inspect', 'portable-intake/inspect'))
 READ_GETS = frozenset(('/health', '/stack', '/api/stack/meta', '/api/stack/decision',
     '/api/stack/work', '/api/stack/evidence-thread', '/api/stack/semantic',
-    '/api/stack/requirement-contracts'))
+    '/api/stack/requirement-contracts', '/action-center',
+    '/api/stack/action-contexts', '/api/stack/action-context',
+    '/api/stack/action-deliverables', '/api/stack/action-deliverable'))
 LOCAL_POSTS = frozenset('/api/stack/' + name for name in (
     'search', 'cohort', 'operator', 'execute-plan', 'compose',
     'context/prepare', 'context/from-question',
@@ -37,9 +41,9 @@ LOCAL_POSTS = frozenset('/api/stack/' + name for name in (
     'decision/population-execute', 'decision/population-accountability',
     'decision/population-prediction-options', 'decision/population-prediction',
     'decision/population-discovery-options', 'decision/population-discovery',
-    'decision/economics'))
+    'decision/economics', 'action-work/create', 'action-work/update', 'action-work/refresh'))
 LOCAL_GETS = frozenset('/api/stack/' + name for name in (
-    'context', 'decision/source', 'decision/population-config', 'outcome-contracts',
+    'context', 'case-synthesis', 'decision/source', 'decision/population-config', 'outcome-contracts',
     'source-atlas', 'source-records', 'capabilities', 'capabilities/catalog',
     'capabilities/availability', 'capabilities/tasks', 'capabilities/plan',
     'capabilities/assessment', 'learning-cohorts'))
@@ -120,12 +124,18 @@ def code_identity():
     # not optional documentation. Omitting them produces a runnable interpreter
     # whose saved decisions and workbench fail on first use.
     files = [p for p in (ROOT / 'clinical_core').rglob('*')
-             if p.is_file() and p.suffix in ('.py', '.js', '.json', '.css') and '__pycache__' not in p.parts]
-    files += list((ROOT / 'config/agere').glob('*.json'))
+             if p.is_file() and p.suffix in ('.py', '.js', '.json', '.css', '.html') and '__pycache__' not in p.parts]
+    # Versioned rules include nested coefficient tables and source mappings.
+    files += [p for p in (ROOT / 'config/agere').rglob('*')
+              if p.is_file() and p.suffix in ('.json', '.jsonl', '.csv', '.txt', '.cql')]
     files += list((ROOT / 'config').glob('*.json'))
     # The active build pointer is installation configuration, not release code.
     files = [p for p in files if p.name != 'active_warehouse.json']
-    files += [ROOT / 'serve_current_warehouse.py', ROOT / 'agere_checkpoint.py']
+    files += [ROOT / 'serve_current_warehouse.py', ROOT / 'serve_hosted.py', ROOT / 'agere_checkpoint.py']
+    # These modules provide runtime prompts/validation, even when fitting and
+    # hosted inference are disabled. Archive code only, never training data.
+    files += [ROOT / name for name in ('tools/training/datasets.py',
+              'tools/certify_gates.py', 'tools/normalization/jev_check.py')]
     files += list(ROOT.glob('requirements*.txt'))
     return {str(p.relative_to(ROOT)): sha(p) for p in sorted(files)}
 
@@ -134,6 +144,8 @@ def validate_config(path, *, build_override=None):
     c = read(path)
     if c.get('schema') != 'active-healthcare-warehouse/1' or c.get('synthetic') is not True:
         raise ValueError('Supported synthetic warehouse configuration required')
+    from .model_policy import application_runtime
+    application_runtime(c)  # validate without changing the process environment
     configured_build = Path(c['build']).resolve()
     build = Path(build_override).resolve() if build_override is not None else configured_build
     if not build.is_dir():
@@ -193,12 +205,45 @@ def dependencies(build, config):
     result = []
     for d in sorted(dirs):
         if not d.is_dir(): raise ValueError('External dependency missing: ' + str(d))
+        physical = d.resolve()
         # Existing result/model manifests define identity. This does not claim that
         # every external byte is archived or that mutable research stores are frozen.
         manifests = {str(p.relative_to(d)): file_entry(p) for p in sorted(d.glob('*.json')) if p.is_file()}
         if not manifests: raise ValueError('External dependency has no identity manifest: ' + str(d))
-        result.append({'path': str(d), 'verification': 'top_level_json_manifests', 'files': manifests})
-    ledger = ROOT / 'artifacts/agere-full/provider-budget.sqlite3'
+        item = {'path': str(physical), 'verification': 'top_level_json_manifests', 'files': manifests}
+        if d.is_relative_to(ROOT / 'models'):
+            item['application_mount'] = str(d.relative_to(ROOT))
+        result.append(item)
+    # A relocated learning registry stays external; retain only its exclusion
+    # metadata as dependencies, never enumerate other experiment files.
+    from .model_policy import application_runtime
+    environment = application_runtime(config)['environment']
+    plan = environment.get('AGERE_LEARNING_PROTECTION_PLAN')
+    pin = environment.get('AGERE_LEARNING_PROTECTION_PLAN_SHA256')
+    if plan or pin:
+        from .clinical.semantic_learning import protections
+        protections(plan_path=plan, plan_sha256=pin)
+        path = Path(plan).resolve()
+        result.append({'path': str(path.parent), 'verification': 'top_level_json_manifests',
+                       'files': {p.name: file_entry(p) for p in (path, path.parent/'reserved-sources.json')}})
+    lineage = environment.get('AGERE_TYPED_LEARNING_LINEAGE')
+    if lineage:
+        from .clinical.learning_queue import lineage as validate_lineage
+        validate_lineage(lineage, {'snapshot': config['snapshot']})
+        root = Path(lineage).resolve()
+        result.append({'path': str(root), 'verification': 'top_level_json_manifests',
+                       'files': {p.name: file_entry(p) for p in (root/'manifest.json', root/'policy.json')}})
+    students = environment.get('AGERE_SYSTEM_ONE_STUDENTS')
+    if students and Path(students).is_dir():
+        root = Path(students).resolve()
+        artifacts = sorted(root.glob('*.joblib'))
+        if artifacts:
+            files = [p for model in artifacts for p in (model, model.with_suffix('.json'))]
+            result.append({'path': str(root), 'verification': 'top_level_json_manifests',
+                           'files': {p.name: file_entry(p) for p in files},
+                           'scope': 'Configured local student weights and their declared qualification; no source data copied.'})
+    from .gateway import default_ledger_path
+    ledger = default_ledger_path().resolve()
     if not ledger.is_file(): raise ValueError('Current shared provider ledger required')
     result.append({'path': str(ledger), 'verification': 'current_shared_ledger_never_restored'})
     return result
@@ -237,26 +282,101 @@ def fresh_destination(path, *sources):
     return target
 
 
+@lru_cache(maxsize=1)
+def _clone_function():
+    if sys.platform != 'darwin': return None
+    try:
+        clone = ctypes.CDLL(None, use_errno=True).clonefile
+    except (AttributeError, OSError):
+        return None
+    clone.argtypes = (ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int)
+    clone.restype = ctypes.c_int
+    return clone
+
+
+def require_storage(destination, *, largest_file=0):
+    """Enforce the standing storage plan before package/large-copy writes.
+
+    Metadata only: no hashing, database opening or destination creation.
+    Small fixture copies need no package-sized reserve; package callers invoke
+    this explicitly even when their inventory is small.
+    """
+    destination = Path(destination).absolute()
+    while not destination.exists():
+        destination = destination.parent
+    free = shutil.disk_usage(destination).free
+    required = max(60_000_000_000, 3 * largest_file)
+    if free < required:
+        raise OSError(f'Insufficient storage: {free} bytes free; {required} required '
+                      'by the storage preservation plan. Nothing copied.')
+    return {'free_bytes': free, 'required_free_bytes': required}
+
+
 def copy_file(source, target):
+    source, target = Path(source), Path(target)
+    if source.stat().st_size > 100_000_000:
+        require_storage(target, largest_file=source.stat().st_size)
     target.parent.mkdir(parents=True, exist_ok=True)
-    if sys.platform == 'darwin':
-        # APFS clones have independent mutable data, unlike hard links.
-        cp = subprocess.run(['/bin/cp', '-c', str(source), str(target)], capture_output=True)
-        if cp.returncode == 0: return
+    clone = _clone_function()
+    # clonefile is atomic, follows source symlinks with flags=0 and requires a
+    # fresh destination. Both files remain independently mutable. Calling it
+    # directly also avoids a subprocess for every small interpreter/library file.
+    if clone is not None and source.is_file() and clone(os.fsencode(source), os.fsencode(target), 0) == 0:
+        shutil.copystat(source, target)
+        return
+    # Other filesystems/platforms and existing destinations retain copy2 behavior.
     shutil.copy2(source, target)
 
 
 def sqlite_copy(source, target):
+    source, target = Path(source), Path(target)
+    if source.stat().st_size > 100_000_000:
+        require_storage(target, largest_file=source.stat().st_size)
     target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists(): raise ValueError('SQLite destination already exists')
     src = sqlite3.connect(source.resolve().as_uri() + '?mode=ro', uri=True)
-    dst = sqlite3.connect(target)
     try:
-        src.backup(dst, pages=8192)
-        if dst.execute('PRAGMA quick_check').fetchall() != [('ok',)]:
-            raise ValueError('SQLite consistency check failed: ' + str(source))
-        dst.execute('PRAGMA journal_mode=DELETE')
+        # A cold APFS clone avoids rewriting large frozen databases. Hold a read
+        # transaction, refuse journals with frames, and fence concurrent changes.
+        # WAL databases with committed frames still use SQLite's online backup.
+        src.execute('BEGIN')
+        src.execute('SELECT count(*) FROM sqlite_schema').fetchone()
+        def stamp():
+            s = source.stat()
+            return (s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+        def hot():
+            return any(p.exists() and p.stat().st_size for p in
+                       (Path(str(source) + '-wal'), Path(str(source) + '-journal')))
+        before = stamp()
+        if sys.platform == 'darwin' and not hot():
+            cp = subprocess.run(['/bin/cp', '-c', str(source), str(target)], capture_output=True)
+            if cp.returncode == 0:
+                if hot() or stamp() != before:
+                    raise ValueError('Source changed during cold SQLite copy: ' + str(source))
+                with sqlite3.connect(target.resolve().as_uri() + '?mode=ro', uri=True) as check:
+                    if check.execute('PRAGMA quick_check').fetchall() != [('ok',)]:
+                        raise ValueError('SQLite consistency check failed: ' + str(source))
+                if hot() or stamp() != before:
+                    raise ValueError('Source changed during cold SQLite copy: ' + str(source))
+                shutil.copystat(source, target)
+                return 'cold_filesystem_clone'
+            if target.exists():
+                raise OSError('Cold SQLite clone failed with partial destination: ' + str(target))
+        dst = sqlite3.connect(target)
+        try:
+            src.backup(dst, pages=8192)
+            if dst.execute('PRAGMA quick_check').fetchall() != [('ok',)]:
+                raise ValueError('SQLite consistency check failed: ' + str(source))
+            dst.execute('PRAGMA journal_mode=DELETE')
+        finally:
+            dst.close()
     finally:
-        dst.close(); src.close()
+        src.close()
+    # A consistent backup retains the source observation clock. The enclosing
+    # checkpoint fences source changes and seals the backup bytes separately;
+    # saved answers must not become stale merely because the file was copied.
+    shutil.copystat(source, target)
+    return 'sqlite_online_backup'
 
 
 def sync_publish(stage, target):
@@ -281,6 +401,7 @@ def checkpoint(config_path, output):
     config_sha = sha(config_path)
     if config.get('recovery'): raise ValueError('Checkpoint the active build, not a recovery inspection')
     build = Path(config['build']).resolve()
+    require_storage(output, largest_file=max((p.stat().st_size for p in build.rglob('*') if p.is_file()), default=0))
     target = fresh_destination(output, build)
     stage = target.with_name('.' + target.name + '.partial-' + uuid.uuid4().hex)
     stage.mkdir()
@@ -289,13 +410,13 @@ def checkpoint(config_path, output):
         directories = sorted(p.relative_to(build).as_posix() for p in build.rglob('*') if p.is_dir())
         for name in directories: (stage / 'build' / name).mkdir(parents=True, exist_ok=True)
         code = code_identity(); deps = dependencies(build, config)
-        entries = {}; databases = []
+        entries = {}; databases = []; database_copy_methods = {}
         for name in before:
             if name.endswith(('-wal', '-journal')): continue
             source, dest = build / name, stage / 'build' / name
             with source.open('rb') as f: is_db = f.read(16) == b'SQLite format 3\x00'
             if is_db:
-                sqlite_copy(source, dest); databases.append(name)
+                database_copy_methods[name] = sqlite_copy(source, dest); databases.append(name)
             else: copy_file(source, dest)
             entries[name] = file_entry(dest)
         after = inventory(build)
@@ -308,6 +429,7 @@ def checkpoint(config_path, output):
         manifest = {'schema': VERSION, 'created_at': datetime.now(timezone.utc).isoformat(),
                     'original_build': str(build), 'configuration': config, 'files': entries,
                     'directories': directories, 'databases': databases, 'code': code, 'dependencies': deps,
+                    'database_copy_methods': database_copy_methods,
                     'scope': 'Same-machine inspection recovery; external manifest dependencies and current ledger required. Not clinical or production qualification.'}
         write(stage / 'manifest.json', manifest)
         write(stage / 'complete.json', {'manifest_sha256': sha(stage / 'manifest.json')})
@@ -336,6 +458,7 @@ def verify_checkpoint(path):
 
 def restore(checkpoint_path, output):
     source = Path(checkpoint_path).resolve()
+    require_storage(output, largest_file=max((p.stat().st_size for p in (source / 'build').rglob('*') if p.is_file()), default=0))
     m = verify_checkpoint(source)
     target = fresh_destination(output, source, m['original_build'])
     stage = target.with_name('.' + target.name + '.partial-' + uuid.uuid4().hex)

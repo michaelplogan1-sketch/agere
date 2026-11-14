@@ -19,6 +19,22 @@ from clinical_core.agere.clinical.stack_runtime import Stack
 ROOT = Path(__file__).resolve().parent
 
 
+class SenderPolicy(unittest.TestCase):
+    def test_no_default_sender_cutoff_and_explicit_caller_settings_are_preserved(self):
+        from types import SimpleNamespace
+        stack = SimpleNamespace(receipts=Path('/fixture'))
+        receipt = {'cost_estimate': {'estimated_usd': .001}}
+        with patch('clinical_core.agere.clinical.context_student.send', return_value=({'content': []}, receipt)) as paid:
+            together._ledgered_send(stack, object(), [])({'model': 'fixture'})
+            self.assertIsNone(paid.call_args.kwargs['timeout'])
+            self.assertIsNone(paid.call_args.kwargs['max_bytes'])
+            with patch.object(together, 'SEND_TIMEOUT_S', 17), patch.object(together, 'REQUEST_MAX_BYTES', 300):
+                together._ledgered_send(stack, object(), [])({'model': 'fixture'})
+            self.assertEqual(paid.call_count, 2)
+            self.assertEqual(paid.call_args.kwargs['timeout'], 17)
+            self.assertEqual(paid.call_args.kwargs['max_bytes'], 300)
+
+
 def answer(kind='count', status='answered', **values):
     out = {'status': status, 'answer_type': kind, 'count': None, 'patient_ids': None, 'value': None, 'table': None,
            'unknown_count': 0, 'missing': [], 'grounding': []}

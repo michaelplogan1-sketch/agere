@@ -1,0 +1,469 @@
+{
+ "schema": "tiered-followup-eval/1",
+ "authored": "2026-11-13",
+ "authored_by": "Claude (build owner); references by hand-written SQL or by reading the documents",
+ "items": [
+  {
+   "id": "F01",
+   "kind": "period",
+   "previous": "How many ED visits were there in 2029?",
+   "follow_up": "and in 2028?",
+   "reference_sql": "SELECT COUNT(*) FROM utilization_event WHERE kind='ed_visit' AND substr(event_date,1,4)='2028'",
+   "reference_rows": [
+    [
+     1465
+    ]
+   ]
+  },
+  {
+   "id": "F02",
+   "kind": "period",
+   "previous": "Show appointments scheduled in 2029 by status",
+   "follow_up": "what about 2028",
+   "reference_sql": "SELECT final_status, COUNT(*) FROM appointment WHERE substr(scheduled_date,1,4)='2028' GROUP BY 1",
+   "reference_rows": [
+    [
+     "booked",
+     59
+    ],
+    [
+     "cancelled",
+     303
+    ],
+    [
+     "fulfilled",
+     6928
+    ],
+    [
+     "no_show",
+     476
+    ],
+    [
+     "rescheduled",
+     1
+    ]
+   ]
+  },
+  {
+   "id": "F03",
+   "kind": "period",
+   "previous": "How many members did each payer have in 2029-06?",
+   "follow_up": "and 2029-03?",
+   "reference_sql": "SELECT payer_id, COUNT(DISTINCT patient_id) FROM member_month WHERE month='2029-03' GROUP BY 1",
+   "reference_rows": [
+    [
+     "WH-PAYER-0",
+     525
+    ],
+    [
+     "WH-PAYER-1",
+     543
+    ],
+    [
+     "WH-PAYER-2",
+     340
+    ],
+    [
+     "WH-PAYER-C1",
+     370
+    ],
+    [
+     "WH-PAYER-C2",
+     341
+    ],
+    [
+     "WH-PAYER-C3",
+     370
+    ],
+    [
+     "WH-PAYER-DSNP1",
+     65
+    ],
+    [
+     "WH-PAYER-MA1",
+     89
+    ],
+    [
+     "WH-PAYER-MA2",
+     95
+    ],
+    [
+     "WH-PAYER-MA3",
+     75
+    ],
+    [
+     "WH-PAYER-MCD1",
+     220
+    ],
+    [
+     "WH-PAYER-MCD2",
+     210
+    ],
+    [
+     "WH-PAYER-MSSP",
+     197
+    ],
+    [
+     "WH-PAYER-SUP1",
+     11
+    ],
+    [
+     "WH-PAYER-SUP2",
+     10
+    ],
+    [
+     "WH-PAYER-X1",
+     124
+    ]
+   ]
+  },
+  {
+   "id": "F04",
+   "kind": "rewrite",
+   "previous": "How many ED visits were there in 2029?",
+   "follow_up": "what about hospital admissions?",
+   "reference_sql": "SELECT COUNT(*) FROM utilization_event WHERE kind='inpatient' AND substr(event_date,1,4)='2029'",
+   "reference_rows": [
+    [
+     533
+    ]
+   ]
+  },
+  {
+   "id": "F05",
+   "kind": "rewrite",
+   "previous": "How many statin fills were there in 2029?",
+   "follow_up": "and for metformin?",
+   "reference_sql": "SELECT COUNT(*), COUNT(DISTINCT patient_id) FROM fill WHERE drug_class='metformin' AND substr(fill_date,1,4)='2029'",
+   "reference_rows": [
+    [
+     1299,
+     179
+    ]
+   ]
+  },
+  {
+   "id": "F06",
+   "kind": "rewrite",
+   "previous": "What was the claim denial rate by payer in 2029?",
+   "follow_up": "same for 2028 please",
+   "reference_sql": "SELECT payer, COUNT(*), SUM(ever_denied), ROUND(1.0*SUM(ever_denied)/COUNT(*),4) FROM claim WHERE substr(service_date,1,4)='2028' GROUP BY 1",
+   "reference_rows": [
+    [
+     "WH-HOSPITAL-0",
+     11,
+     0,
+     0.0
+    ],
+    [
+     "WH-HOSPITAL-1",
+     6,
+     0,
+     0.0
+    ],
+    [
+     "WH-HOSPITAL-2",
+     7,
+     0,
+     0.0
+    ],
+    [
+     "WH-HOSPITAL-3",
+     6,
+     0,
+     0.0
+    ],
+    [
+     "WH-PAYER-0",
+     3865,
+     131,
+     0.0339
+    ],
+    [
+     "WH-PAYER-1",
+     4524,
+     158,
+     0.0349
+    ],
+    [
+     "WH-PAYER-2",
+     2821,
+     86,
+     0.0305
+    ],
+    [
+     "WH-PAYER-C1",
+     4357,
+     458,
+     0.1051
+    ],
+    [
+     "WH-PAYER-C2",
+     4367,
+     429,
+     0.0982
+    ],
+    [
+     "WH-PAYER-C3",
+     4107,
+     361,
+     0.0879
+    ],
+    [
+     "WH-PAYER-DSNP1",
+     1583,
+     162,
+     0.1023
+    ],
+    [
+     "WH-PAYER-MA1",
+     2227,
+     226,
+     0.1015
+    ],
+    [
+     "WH-PAYER-MA2",
+     2567,
+     303,
+     0.118
+    ],
+    [
+     "WH-PAYER-MA3",
+     2139,
+     264,
+     0.1234
+    ],
+    [
+     "WH-PAYER-MCD1",
+     2989,
+     377,
+     0.1261
+    ],
+    [
+     "WH-PAYER-MCD2",
+     2868,
+     350,
+     0.122
+    ],
+    [
+     "WH-PAYER-MSSP",
+     6762,
+     442,
+     0.0654
+    ],
+    [
+     "WH-PAYER-SUP1",
+     536,
+     0,
+     0.0
+    ],
+    [
+     "WH-PAYER-SUP2",
+     756,
+     0,
+     0.0
+    ],
+    [
+     "WH-PAYER-X1",
+     1325,
+     176,
+     0.1328
+    ]
+   ]
+  },
+  {
+   "id": "F07",
+   "kind": "rewrite",
+   "previous": "How many patients have hypertension?",
+   "follow_up": "what about heart failure?",
+   "reference_sql": "SELECT COUNT(DISTINCT patient_id) FROM concept_patient WHERE kind='condition' AND concept='heart_failure'",
+   "reference_rows": [
+    [
+     387
+    ]
+   ]
+  },
+  {
+   "id": "F08",
+   "kind": "rewrite",
+   "previous": "Show monthly ED visits in 2029",
+   "follow_up": "now for observation stays",
+   "reference_sql": "SELECT substr(event_date,1,7), COUNT(*) FROM utilization_event WHERE kind='observation' AND substr(event_date,1,4)='2029' GROUP BY 1",
+   "reference_rows": [
+    [
+     "2029-01",
+     6
+    ],
+    [
+     "2029-02",
+     5
+    ],
+    [
+     "2029-03",
+     12
+    ],
+    [
+     "2029-04",
+     6
+    ],
+    [
+     "2029-05",
+     15
+    ],
+    [
+     "2029-06",
+     9
+    ],
+    [
+     "2029-07",
+     9
+    ],
+    [
+     "2029-08",
+     8
+    ],
+    [
+     "2029-09",
+     10
+    ],
+    [
+     "2029-10",
+     7
+    ],
+    [
+     "2029-11",
+     6
+    ],
+    [
+     "2029-12",
+     9
+    ]
+   ]
+  },
+  {
+   "id": "F09",
+   "kind": "rewrite",
+   "previous": "How many scanned radiology reports dated in 2029-05 report a thyroid nodule?",
+   "follow_up": "what about a pulmonary nodule?",
+   "reference_method": "Set by hand from the document text: [documents read, documents stating]",
+   "reference_rows": [
+    [
+     18,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "F10",
+   "kind": "rewrite",
+   "previous": "How many recorded deaths were there in 2029?",
+   "follow_up": "and the year before?",
+   "reference_sql": "SELECT COUNT(*) FROM death WHERE substr(death_date,1,4)='2028'",
+   "reference_rows": [
+    [
+     47
+    ]
+   ]
+  },
+  {
+   "id": "F11",
+   "kind": "complete",
+   "previous": "How many ED visits were there in 2029?",
+   "follow_up": "Show monthly ED visits in 2028",
+   "reference_sql": "SELECT substr(event_date,1,7), COUNT(*) FROM utilization_event WHERE kind='ed_visit' AND substr(event_date,1,4)='2028' GROUP BY 1",
+   "reference_rows": [
+    [
+     "2028-01",
+     136
+    ],
+    [
+     "2028-02",
+     146
+    ],
+    [
+     "2028-03",
+     147
+    ],
+    [
+     "2028-04",
+     132
+    ],
+    [
+     "2028-05",
+     128
+    ],
+    [
+     "2028-06",
+     98
+    ],
+    [
+     "2028-07",
+     101
+    ],
+    [
+     "2028-08",
+     114
+    ],
+    [
+     "2028-09",
+     107
+    ],
+    [
+     "2028-10",
+     112
+    ],
+    [
+     "2028-11",
+     115
+    ],
+    [
+     "2028-12",
+     129
+    ]
+   ]
+  },
+  {
+   "id": "F12",
+   "kind": "complete",
+   "previous": "How many ED visits were there in 2029?",
+   "follow_up": "List the 5 most common conditions",
+   "reference_sql": "SELECT concept, COUNT(DISTINCT patient_id) FROM concept_patient WHERE kind='condition' GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 5",
+   "reference_rows": [
+    [
+     "hypertension",
+     1229
+    ],
+    [
+     "obesity",
+     1203
+    ],
+    [
+     "diabetes",
+     990
+    ],
+    [
+     "hyperlipidemia",
+     899
+    ],
+    [
+     "prediabetes",
+     831
+    ]
+   ]
+  },
+  {
+   "id": "F13",
+   "kind": "decline",
+   "previous": "How many ED visits were there in 2029?",
+   "follow_up": "why is that?",
+   "decline": true
+  },
+  {
+   "id": "F14",
+   "kind": "decline",
+   "previous": "How many patients have hypertension?",
+   "follow_up": "is that good or bad?",
+   "decline": true
+  }
+ ]
+}

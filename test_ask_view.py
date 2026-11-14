@@ -37,9 +37,9 @@ class Page(unittest.TestCase):
 
     def test_single_self_contained_page(self):
         self.assertTrue(self.html.startswith('<!doctype html>'))
-        self.assertIn('<title>Agere Workspace</title>', self.html)
+        self.assertIn('<title>Wollstonecraft · Ask your data</title>', self.html)
         self.assertNotRegex(self.html, r'<script[^>]+\bsrc=|<link[^>]+stylesheet|@import')  # no external assets
-        self.assertIn('prefers-color-scheme:dark', self.html)
+        self.assertIn('color-scheme:light', self.html)
         self.assertIn('max-width:800px', self.html)  # single-column layout for phones
         for route in ('/api/stack/compose', '/api/stack/conversation', '/api/stack/briefing', '/api/stack/economics', '/api/stack/correct'):
             self.assertIn(route, self.html)
@@ -50,15 +50,15 @@ class Page(unittest.TestCase):
         raw = re.search(r'<script id="demo-script" type="application/json">(.*?)</script>', self.html, re.S).group(1)
         steps = json.loads(raw)
         self.assertEqual(steps, ask_view.DEMO_STEPS)
-        self.assertEqual(len(steps), 10)
-        self.assertEqual(steps[0]['kind'], 'briefing')
-        self.assertEqual(steps[-1]['kind'], 'followup')
-        self.assertEqual(len({s['id'] for s in steps}), 10)
+        self.assertEqual(steps[0]['kind'], 'input')
+        self.assertEqual(steps[-1]['kind'], 'work')
+        self.assertEqual(len({s['id'] for s in steps}), len(steps))
         for s in steps:
-            self.assertIn(s['kind'], ('briefing', 'ask', 'followup'))
+            self.assertIn(s['kind'], ('input', 'view', 'work'))
             self.assertTrue(s['label'] and s['note'])
-            if s['kind'] != 'briefing': self.assertTrue(s['question'].strip())
-        self.assertIn('40 slots', ' '.join(s.get('question', '') for s in steps))
+            if s['kind'] == 'view':
+                self.assertIn('data-contract-section="' + s['section'] + '"', self.html)
+        self.assertFalse(any('question' in s for s in steps))  # no unrelated rerun per view
 
     def test_script_has_no_closing_tag_injection(self):
         self.assertEqual(self.html.count('</script>'), 2)
@@ -184,25 +184,25 @@ assert.match(vizQueueing(a),/Arrivals \/ week<\/div><div class="v">0</);
         script = (Path(ask_view.__file__).parent/'assets/explore.js').read_text()
         code = script[script.index('function syncScope('):script.index('function updateScopeNote(')]
         setup = """
-let activeContext; const option={},input={},picker={querySelector:s=>s.includes('input')?input:option};
-const $=()=>picker, fmt=String, history={replaceState:()=>{}},updateScopeNote=()=>{};
+let activeContext; const option={},input={},auto={},picker={querySelector:s=>s.includes('input')?input:s.includes('auto')?auto:option,querySelectorAll:()=>[],options:[]};
+const $=()=>picker, fmt=String, history={replaceState:()=>{}},demo={on:false},updateScopeNote=()=>{},syncAppLinks=()=>{};
 """
         checks = r'''
 const assert=require('node:assert/strict');
 const t={data:{action_context:{id:'ANS-000000000000000000000001',patients:0},answer:{patient_ids:[],analysis_population_count:3,answer_type:'table'}}};
-syncScope(t);assert.equal(option.disabled,true);assert.equal(picker.value,'warehouse');
+syncScope(t);assert.equal(option.disabled,true);assert.equal(picker.value,'auto');
 assert.equal(option.textContent,'Analytical summary · no selected patients');
 assert.equal(input.disabled,true);
 t.data.action_context.input_patients=3;
 syncScope(t);assert.equal(input.disabled,false);assert.equal(input.textContent,'Original input · 3 patients');
-assert.equal(picker.value,'warehouse'); // Never silently change summary output into its input.
+assert.equal(picker.value,'auto'); // Discussion of the analysis never selects its input as an output cohort.
 t.data.action_context.input_patients=0;
 syncScope(t);assert.equal(input.disabled,false);assert.equal(input.textContent,'Original input · 0 patients');
 t.archiveBlocked=true;syncScope(t);assert.equal(input.disabled,true);
 t.archiveBlocked=false;
 t.data.action_context.result_scope_available=false;
 t.data.answer={patient_ids:[],answer_type:'count'};
-syncScope(t);assert.equal(option.disabled,true);assert.equal(picker.value,'warehouse');
+syncScope(t);assert.equal(option.disabled,true);assert.equal(picker.value,'auto');
 delete t.data.action_context.result_scope_available;
 const failed={error:'unsupported wording',scopeBefore:{context:{id:t.data.action_context.id,patients:0,input_patients:3,result_scope_available:false},value:'input'}};
 syncScope(failed);assert.equal(picker.value,'input');assert.equal(activeContext.id,t.data.action_context.id);
@@ -270,6 +270,12 @@ let model={new_paid_api_calls:4,planning_economics:{new_api_estimate_usd:.15},pl
 x=executionInfo(model);assert.equal(x.route,'Executed analyst SQL');assert.deepEqual(x.models,['claude-haiku-5-5','claude-opus-5-5']);assert.equal(x.decision,'escalated');
 assert.match(executionDetails(model),/How Agere answered/);assert.match(executionDetails(model),/\$0.1500/);
 assert.doesNotMatch(executionDetails({route:'<script>bad</script>'}),/<script>/);
+const resumed={planning_economics:{new_api_estimate_usd:0,scope:'Offline save only; earlier provider costs retained separately <script>'}};
+assert.equal(executionInfo(resumed).cost,'$0.0000');
+assert.match(executionDetails(resumed),/Cost coverage/);
+assert.match(executionDetails(resumed),/earlier provider costs retained separately &lt;script>/);
+assert.match(executionDetails(resumed),/not necessarily the full history/);
+assert.doesNotMatch(executionDetails(resumed),/<script>/);
 '''
         result = subprocess.run([node, '-e', setup+code+assertions], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr[:1600])

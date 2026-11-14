@@ -103,6 +103,17 @@ class SharedPlanner(unittest.TestCase):
     def test_new_received_table_is_queryable_without_source_handler(self):
         self.assertEqual(self.ask('Count new sensor feeds where battery_health < 20')['answer']['count'], 2)
 
+    def test_catalog_scope_composes_with_sources_filters_and_preserves_saved_scope(self):
+        for source, suffix in [('patients', ''), ('new sensor feeds', ' where battery_health < 20')]:
+            plain = 'Count '+source+suffix
+            scoped = 'Count '+source+' in the connected warehouse'+suffix
+            with self.subTest(source=source):
+                baseline = self.ask(plain)['answer']['count']
+                self.assertEqual(self.ask(scoped)['answer']['count'], baseline)
+                with self.assertRaises(R.PlanError): L.parse(self.catalog, scoped, bound=True)
+        with self.assertRaises(R.PlanError):
+            L.parse(self.catalog, 'Count patients in the other warehouse')
+
     def test_boolean_scope_and_exclusion_are_preserved(self):
         q = 'List patients with diabetes and (age > 65 or coverage = "commercial") and without ckd'
         self.assertEqual(self.ask(q)['answer']['patient_ids'], ['A', 'B'])

@@ -127,6 +127,27 @@ def classify(name):
     return found
 
 
+def group_member(name, group):
+    """Registered group membership, with unclassifiable names kept unknown."""
+    if group not in GROUPS:
+        raise ValueError('Unknown registered medication group: ' + str(group))
+    classes = classify(name)
+    return int(bool(set(classes) & set(GROUPS[group]))) if classes else None
+
+
+def classification_identity():
+    from ...contracts import digest
+    import hashlib
+    return digest({'contract': 'registered-drug-groups/1', 'classes': CLASSES, 'groups': GROUPS,
+                   'brands_sha256': hashlib.sha256(BRANDS_PATH.read_bytes()).hexdigest()
+                   if BRANDS_PATH.is_file() else None})
+
+
+def register(db):
+    db.create_function('drug_group_member', 2, group_member, deterministic=True)
+    return db
+
+
 # --- Brand -> generic (RxNorm naming: brand = BN, ingredient = IN) ---------------------------------------------------------
 import json as _json
 from functools import lru_cache as _lru_cache
@@ -206,3 +227,327 @@ def generic_name(name):
 
 _VALSARTAN = re.compile(r'\bvalsartan\b', re.I)
 _OTHER_ARB = _COMPILED['arb']
+
+
+SUBCLASS_PARENTS = {'hf_evidence_based_beta_blocker': 'beta_blocker'}
+
+def group_query_issues(question, calls, final_view=None):
+    """Audit named group coverage against literal class filters and native result lineage.
+
+    Read-only broader analyses remain available. A requested registered group
+    cannot be satisfied by a strict superset without an exact-membership repair
+    contributing to the final result. This is a contract check, not medical judgment.
+    """
+    import sqlglot
+    from sqlglot import exp
+    named={k:set(v) for k,v in GROUPS.items() if re.search(r'(?<!\w)'+re.escape(k).replace('_',r'[ _]+')+r's?(?!\w)',str(question),re.I)}
+    if not named:return []
+    # A raw dose collection can be broader than the requested group even when
+    # its query has no drug_class predicate to inspect. Keep that broader work
+    # available as explicitly labelled context; it cannot satisfy group doses.
+    collection_issues=[]
+    if final_view:
+        final=next((c.get('result')for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')==final_view),{})or{}
+        members=set().union(*named.values())
+        def dose_members(value,path):
+            if isinstance(value,str)and value[:1]in('[','{'):
+                try:value=_json.loads(value)
+                except ValueError:return
+            if isinstance(value,list):
+                for i,item in enumerate(value):dose_members(item,path+'['+str(i)+']')
+            elif isinstance(value,dict):
+                if value.get('drug_key')and any(k in value for k in('dose_status','reference_max_status','documented_daily_mg')):
+                    classes=set(classify(str(value['drug_key']).replace('_',' ')))
+                    if classes and not(classes&members):collection_issues.append(path+': '+str(value['drug_key'])+' is outside requested '+', '.join(named)+'. Filter the requested dose evidence by registered group membership; retain other medications only as separately labelled context.')
+                for k,item in value.items():
+                    if 'context'not in str(k).lower():dose_members(item,path+'.'+str(k))
+        cols=final.get('columns')or[]
+        for i,row in enumerate(final.get('rows')or[]):dose_members(dict(zip(cols,row))if isinstance(row,(list,tuple))else row,'table['+str(i)+']')
+    filters={};parents={};positions={};queries={};results={}
+    def projection(node):
+        while node.parent is not None and not isinstance(node.parent,exp.Select):node=node.parent
+        return (node.alias_or_name or '*') if isinstance(node.parent,exp.Select) and node in node.parent.expressions else None
+    for index,call in enumerate(calls):
+        result=call.get('result') or {}
+        if not isinstance(result,dict) or result.get('error'):continue
+        view=result.get('result_view')
+        if not view:continue
+        results[view]=result;positions[view]=index
+        assembly=result.get('assembly') or {}
+        if assembly:
+            parents[view]={assembly['base_result_view']}|{j['result_view']for j in assembly.get('joins',[])}
+            filters[view]=[]
+        sql=(call.get('input') or {}).get('sql')
+        if not isinstance(sql,str):continue
+        parents[view]=set(re.findall(r'\bagere_result_\d+\b',sql));positions[view]=index
+        try:
+            # Macros already executed successfully. For lineage, an opaque
+            # source preserves the surrounding native joins and membership
+            # predicates without re-expanding clinical SQL or inline rows.
+            tree=sqlglot.parse_one(re.sub(r'\{\{[^{}]+\}\}','__agere_macro_source__',sql),read='sqlite')
+        except sqlglot.errors.ParseError:continue
+        queries[view]=tree
+        values=[]
+        for node in tree.find_all(exp.In):
+            if isinstance(node.this,exp.Column) and node.this.name.lower()=='drug_class' and node.expressions and all(isinstance(v,exp.Literal) and v.is_string for v in node.expressions):
+                values.append(({v.this for v in node.expressions},projection(node)))
+        for node in tree.find_all(exp.Or):
+            terms=[]
+            def alternatives(n):
+                if isinstance(n,exp.Paren):return alternatives(n.this)
+                if isinstance(n,exp.Or):return alternatives(n.this) and alternatives(n.expression)
+                if isinstance(n,exp.EQ):
+                    col,lit=n.this,n.expression
+                    if isinstance(lit,exp.Column):col,lit=lit,col
+                    if isinstance(col,exp.Column) and col.name.lower()=='drug_class' and isinstance(lit,exp.Literal) and lit.is_string:
+                        terms.append(lit.this);return True
+                return False
+            if alternatives(node):values.append((set(terms),projection(node)))
+        filters[view]=values
+    reached=set()
+    def visit(view):
+        if view in reached:return
+        reached.add(view)
+        for parent in parents.get(view,()):visit(parent)
+    if final_view:visit(final_view)
+    else:reached.update(parents)
+    schema={v:dict.fromkeys(r.get('columns') or [],'UNKNOWN') for v,r in results.items()}
+    def membership_only(table):
+        select=table.find_ancestor(exp.Select)
+        if select is None or len(select.expressions)!=1:return False
+        value=select.expressions[0]
+        if not isinstance(value,exp.Column)or value.name!='patient_id':return False
+        if any(select.args.get(k)for k in('joins','where','group','having','qualify','limit','offset')):return False
+        holder=select.parent
+        if not isinstance(holder,exp.Subquery)or not isinstance(holder.parent,exp.In)or holder.parent.args.get('query')is not holder:return False
+        return list(select.find_all(exp.Table))==[table]
+
+    def consumed_columns(members, output_columns=None):
+        # Trace native output columns, rather than letting an exact filter on
+        # an unrelated joined result certify every contributing value.
+        from sqlglot.lineage import lineage
+        from sqlglot.optimizer.scope import Scope, traverse_scope
+        used={};visited=set()
+        def trace(view,column,measured=False):
+            key=(view,column,measured)
+            if key in visited:return
+            visited.add(key);used.setdefault(view,set()).add((column,measured))
+            if column=='*':
+                for name in results.get(view,{}).get('columns') or []:trace(view,name,measured)
+                return
+            assembly=results.get(view,{}).get('assembly') or {}
+            if assembly:
+                original=next((k for k,v in assembly.get('column_renames',{}).items()if v==column),column)
+                join=next((j for j in assembly.get('joins',[])if j['as']==original),None)
+                if join:
+                    for name in ([join['items_from']]if join.get('items_from')else join['selected_columns']):trace(join['result_view'],name,measured)
+                else:trace(assembly['base_result_view'],original,measured)
+                return
+            if not parents.get(view):return
+            tree=queries.get(view)
+            try:
+                if tree is None:raise ValueError('Native SQL lineage is unavailable')
+                root=lineage(column,tree,schema=schema,dialect='sqlite',trim_selects=False)
+                aggregate=measured or any(isinstance(n,exp.AggFunc)for n in root.expression.walk())
+                def row_filtered(source,table):
+                    # A CTE/subquery can narrow an earlier native result. The
+                    # predicate belongs to this lexical table reference, not
+                    # every alias of that result or a sibling SQL branch.
+                    if not isinstance(source,exp.Select):return False
+                    where=source.args.get('where')
+                    if where is None:return False
+                    tables=[t for t in source.find_all(exp.Table) if t.find_ancestor(exp.Select) is source]
+                    for predicate in where.find_all(exp.In):
+                        if predicate.find_ancestor(exp.Select) is not source:continue
+                        col=predicate.this
+                        if not isinstance(col,exp.Column) or col.name.lower()!='drug_class':continue
+                        if not predicate.expressions or not all(isinstance(v,exp.Literal) and v.is_string for v in predicate.expressions):continue
+                        if {v.this for v in predicate.expressions}!=members:continue
+                        parent=predicate.parent
+                        while isinstance(parent,(exp.Paren,exp.And)):parent=parent.parent
+                        if parent is not where:continue
+                        if col.table==table.alias_or_name or not col.table and len(tables)==1:return True
+                    return False
+                sources=[];resolved_inputs=False;resolving=set()
+                def collect(native):
+                    nonlocal resolved_inputs
+                    scopes=list(traverse_scope(native.source))
+                    counted=set()
+                    def branches(node,owner=None):
+                        yield node,owner
+                        for child in node.downstream:yield from branches(child,node)
+                    for node,owner in branches(native):
+                        for count in node.expression.find_all(exp.Count):
+                            if not isinstance(count.this,exp.Star)or id(count)in counted:continue
+                            counted.add(id(count))
+                            scope=next((s for s in scopes if s.expression is count.find_ancestor(exp.Select)),None)
+                            if scope is None:continue
+                            tables=[source for _,source in scope.selected_sources.values()]
+                            if not tables or not all(isinstance(t,exp.Table)for t in tables):continue
+                            # COUNT(*) consumes its own rows, not unrelated
+                            # output columns of the correlated outer table.
+                            for table in tables:
+                                if table.name in results and not row_filtered(scope.expression,table):sources.append((table.name,'*'))
+                            active=scope
+                            while active is not None:
+                                for clause in ('where','joins','group','having','qualify'):
+                                    values=active.expression.args.get(clause)or[]
+                                    for value in values if isinstance(values,list)else[values]:
+                                        for col in value.find_all(exp.Column):
+                                            if col.find_ancestor(exp.Select)is not active.expression:continue
+                                            selected=[t for _,t in active.selected_sources.values()]
+                                            if any(isinstance(t,exp.Table)and row_filtered(active.expression,t)and
+                                                   (col.table==t.alias_or_name or not col.table and len(selected)==1)for t in selected):continue
+                                            resolve(active,col)
+                                active=active.parent
+                            resolved_inputs=True
+                        table=node.expression
+                        if not isinstance(table,exp.Table):continue
+                        if table.name in results:
+                            resolved_inputs=True
+                            if owner is not None and row_filtered(owner.source,table):continue
+                            name=sqlglot.parse_one(node.name,into=exp.Column,read='sqlite').name
+                            sources.append((table.name,name))
+                        elif isinstance(table.this,exp.Anonymous) and table.this.name.lower() in {'json_each','json_tree'}:
+                            # SQLGlot stops at table functions. Follow their
+                            # arguments in the actual lexical scope, including
+                            # correlated outer references and CTE projections.
+                            scope=next((s for s in scopes if any(source is table for _,source in s.selected_sources.values())),None)
+                            if scope is None:raise ValueError('JSON input scope is unavailable')
+                            for argument in table.this.expressions:
+                                for col in argument.find_all(exp.Column):resolve(scope,col)
+                            resolved_inputs=True
+                    # A patient_id projection also consumes predicates that
+                    # decide which rows exist. SQLGlot's value lineage omits
+                    # these when no aggregate/output references their flags.
+                    visited_scopes=set()
+                    def conditions(scope):
+                        if id(scope) in visited_scopes:return
+                        visited_scopes.add(id(scope))
+                        selected=[source for _,source in scope.selected_sources.values()]
+                        for clause in ('where','joins','group','having','qualify'):
+                            values=scope.expression.args.get(clause)or[]
+                            for value in values if isinstance(values,list)else[values]:
+                                for col in value.find_all(exp.Column):
+                                    if col.find_ancestor(exp.Select)is not scope.expression:continue
+                                    if any(isinstance(t,exp.Table)and row_filtered(scope.expression,t)and
+                                           (col.table==t.alias_or_name or not col.table and len(selected)==1)for t in selected):continue
+                                    resolve(scope,col)
+                                for nested in value.find_all(exp.Select):
+                                    child=next((s for s in scopes if s.expression is nested),None)
+                                    if child is not None:conditions(child)
+                        for source in selected:
+                            if isinstance(source,Scope):conditions(source)
+                    if scopes:conditions(scopes[-1])
+                def resolve(scope,col):
+                    if scope is None:raise ValueError('JSON input column is unresolved')
+                    active={k.lower():source for k,(_,source) in scope.selected_sources.items()}
+                    if col.table:
+                        source=active.get(col.table.lower())
+                        if source is None:return resolve(scope.parent,col)
+                    else:
+                        candidates=[s for s in active.values() if
+                            isinstance(s,exp.Table) and col.name in schema.get(s.name,{}) or
+                            isinstance(s,Scope) and col.name in s.expression.named_selects]
+                        if len(candidates)!=1:raise ValueError('JSON input column is ambiguous')
+                        source=candidates[0]
+                    key=(id(source),col.name)
+                    if key in resolving:raise ValueError('Recursive JSON input lineage')
+                    if isinstance(source,exp.Table) and source.name in results:
+                        if col.name not in schema[source.name]:raise ValueError('JSON input column is unavailable')
+                        sources.append((source.name,col.name))
+                    elif isinstance(source,Scope):
+                        resolving.add(key)
+                        collect(lineage(col.name,source.expression,schema=schema,scope=source,dialect='sqlite',trim_selects=False,copy=False))
+                        resolving.remove(key)
+                    else:raise ValueError('JSON input has no native value lineage')
+                collect(root)
+                for parent,name in sources:trace(parent,name,aggregate)
+                if not sources and not resolved_inputs:
+                    # COUNT(*) and unresolved projections depend on row scope.
+                    for parent in parents[view]:
+                        references=[t for t in tree.find_all(exp.Table)if t.name==parent]
+                        if references and all(row_filtered(t.find_ancestor(exp.Select),t)for t in references):continue
+                        # IN(SELECT patient_id FROM native_view) uses membership,
+                        # not every historical medication flag in that view.
+                        key_only=bool(references)and all(membership_only(t)for t in references)
+                        trace(parent,'patient_id'if key_only else'*',True)
+            except (sqlglot.errors.SqlglotError,ValueError,RecursionError):
+                for parent in parents[view]:
+                    # An opaque macro's SELECT * has no external column schema.
+                    # Its explicit unfiltered native membership subquery still
+                    # consumes only patient IDs. Keep every other unresolved
+                    # native dependency conservative, including filtered IDs.
+                    references=[t for t in tree.find_all(exp.Table)if t.name==parent]if tree is not None else []
+                    key_only=bool(references)and all(membership_only(t)for t in references)
+                    trace(parent,'patient_id'if key_only else'*',True)
+        for view in ([final_view]if final_view else reached):
+            for column in (output_columns or ['*']):trace(view,column)
+        return used
+    used_cache={}
+    # Check the medication columns actually consumed by the final result.
+    # The same historical intermediate may legitimately supply patient IDs,
+    # source quotations or care records after its fill flags were replaced.
+    temporal_issues=[]
+    if 'gdmt'in named and not re.search(r'\b(?:history|historical|ever|any time)\b',str(question),re.I):
+        used=consumed_columns(named['gdmt'])
+        for call in calls:
+            out=call.get('result')or{};sql=(call.get('input')or{}).get('sql')
+            if not isinstance(out,dict)or out.get('result_view')not in reached or not isinstance(sql,str):continue
+            if not re.search(r'\{\{\s*drug_fill:',sql)or re.search(r'\bevent_date\b',sql,re.I):continue
+            flags=set(re.findall(r'\bAS\s+(on_\w+)',sql,re.I))
+            consumed={name.lower()for name,_ in used.get(out['result_view'],set())}
+            if flags and (flags&consumed or '*'in consumed):
+                affected=[]
+                if final_view:
+                    for column in results.get(final_view,{}).get('columns')or[]:
+                        inputs=consumed_columns(named['gdmt'],[column])
+                        names={name.lower()for name,_ in inputs.get(out['result_view'],set())}
+                        if flags&names or '*'in names:affected.append(final_view+'.'+column)
+                detail=(' Affected final fields: '+', '.join(affected)+'. Recompute those dependent fields from the corrected window; replacing only the displayed coverage flags leaves their earlier plan or interpretation stale.')if affected else ''
+                temporal_issues.append('Contributing query '+out['result_view']+' computed GDMT fill flags from all-history drug_fill membership without a fill-date predicate.'+detail+' Recompute from picked-up fills in the governed 12 months ending at the snapshot; historical patient membership cannot recover that window after aggregation. Keep historical evidence separately labelled.')
+    issues=[]
+    for group,members in named.items():
+        bad=[]
+        for view,sets in filters.items():
+            if view not in reached:continue
+            for selected,affected in sets:
+                # A CASE expression can widen one pillar without containing
+                # the entire registered group in any single IN filter.
+                widened={parent for child,parent in SUBCLASS_PARENTS.items()
+                         if child in members and child in selected and parent in selected and parent not in members}
+                extra=(selected-members) if selected>members else widened
+                if extra:bad.append((positions[view],view,extra,affected))
+        exact=[v for v,sets in filters.items() if v in reached and any(selected==members for selected,_ in sets)]
+        for position,view,extra,affected in bad:
+            group_key=tuple(sorted(members))
+            if group_key not in used_cache:used_cache[group_key]=consumed_columns(members)
+            used=used_cache[group_key]
+            columns=used.get(view,set())
+            if affected is not None:
+                if not any(name in (affected,'*')for name,_ in columns):continue
+            elif any(positions[v]>position and any(name!='patient_id' or counted for name,counted in used.get(v,set()))for v in exact):
+                if not any(name!='patient_id' or counted for name,counted in columns):continue
+            issues.append('Registered medication group '+group+' has exact members '+', '.join(sorted(members))+
+                '; contributing query '+view+' widened that set with '+', '.join(sorted(extra))+
+                '. Recompute the requested group using its exact members and bind the final table to that repaired result. '
+                'Broader therapies may be shown separately; do not count them as satisfying the registered group.')
+    return list(dict.fromkeys(issues+collection_issues+temporal_issues))
+
+
+def patient_scope_issues(question, calls, queries):
+    """Check the actual columns consumed by each conditional patient query.
+
+    Reuse final-result lineage rather than guessing from view names or patient
+    overlap. An all-history result may still supply unfiltered membership keys.
+    These synthetic empty projections are audit inputs, never executed evidence.
+    """
+    issues = []
+    for index, (field, sql) in enumerate(queries.items()):
+        view = 'agere_scope_patient_' + str(index)
+        projected = {'name': 'query_sql', 'input': {'sql': sql},
+                     'result': {'result_view': view, 'columns': ['patient_id'], 'rows': []}}
+        for issue in group_query_issues(question, [*calls, projected], view):
+            if 'all-history drug_fill membership' in issue:
+                issues.append(str(field) + ': ' + issue)
+    return issues

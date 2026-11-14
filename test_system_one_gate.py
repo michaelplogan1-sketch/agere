@@ -84,15 +84,47 @@ class Render(unittest.TestCase):
 
 
 class Checker(unittest.TestCase):
+    def test_coverage_dispatch_keeps_values_and_unsettled_authority_after_integrity_projection(self):
+        import copy,json
+        from clinical_core.agere.clinical.evidence_projection import coverage_answer
+        from clinical_core.agere.deliverables.receipts import uncompact_json
+        result={'answer':coverage_answer({'table':[{'patient_id':str(i),'amount':None,
+            'statement':[{'record_id':str(i),'quote':'Preference remains unknown.'}]}for i in range(20)]})}
+        original=copy.deepcopy(result);fake=FakeS1('unknown',.9,by=None)
+        with clean_env(),use(fake):out=G.check('Recorded values and preferences',GRAPH,result,stack=LIVE)
+        self.assertIsNone(out['decided_by']);self.assertEqual(result,original)
+        state=uncompact_json(json.loads(fake.calls[0]['evidence'][0]['text']))
+        self.assertEqual(state['result']['answer']['table'],result['answer']['table'])
+        proof=out['native_integrity_projection'];state.pop('native_integrity_projection')
+        for path in reversed(proof['proof_paths']):
+            parent=state
+            for key in path[:-1]:parent=parent[key]
+            parent[path[-1]]=proof['proofs'][parent[path[-1]]['native_receipt_reference']]
+        self.assertEqual(state,{'question':'Recorded values and preferences','executed_plan':GRAPH,'result':result})
+
     def test_confident_different_question_rejects(self):
         fake = FakeS1('answers_a_different_question', 0.9)
         with clean_env(), use(fake):
             out = G.check('How many patients have CKD?', GRAPH, RESULT, stack=LIVE)
         self.assertTrue(out['reject']); self.assertEqual(out['label'], 'answers_a_different_question')
         self.assertEqual((out['calls'], out['cost_usd'], out['provider']), (1, 0.0002, 'jev'))
-        self.assertIn('How many patients have CKD?', fake.calls[0]['question'])
+        self.assertEqual(out['decided_by'],'jev')
+        from clinical_core.agere.deliverables.receipts import uncompact_json
+        import json
+        self.assertEqual(uncompact_json(json.loads(fake.calls[0]['evidence'][0]['text']))['question'],'How many patients have CKD?')
         self.assertIn('42 patients', fake.calls[0]['evidence'][0]['text'])
         self.assertEqual(fake.calls[0]['task_key'], 's1_answer_check')
+
+    def test_large_original_question_and_definitions_stay_in_state_not_choice_instructions(self):
+        import json
+        from clinical_core.agere.deliverables.receipts import uncompact_json
+        question='Inspect the full source at 2030-05-27.\n'+('Complete registered definition, with its scope and dates. '*2000)
+        fake=FakeS1('unknown',.9)
+        with clean_env(),use(fake):G.check(question,GRAPH,RESULT,stack=LIVE)
+        request=fake.calls[0];state=uncompact_json(json.loads(request['evidence'][0]['text']))
+        self.assertEqual(state['question'],question);self.assertEqual(state['executed_plan'],GRAPH);self.assertEqual(state['result'],RESULT)
+        self.assertLess(len(request['question']),512)
+        self.assertNotIn('Complete registered definition',request['question'])
 
     def test_threshold_from_env(self):
         with clean_env(), use(FakeS1('answers_a_different_question', 0.8)):
@@ -104,6 +136,85 @@ class Checker(unittest.TestCase):
         with clean_env(), use(FakeS1('answers_fully', 0.7)):
             out = G.check('q', GRAPH, RESULT, stack=LIVE)
         self.assertAlmostEqual(out['addresses_question'], 0.8, places=3); self.assertFalse(out['reject'])
+
+    def test_reporting_provider_is_not_decision_authority(self):
+        fake=FakeS1('answers_partially',.95)
+        original=fake.decide
+        def unsettled(*args,**kwargs):
+            value=original(*args,**kwargs);value['decided_by']=None;return value
+        fake.decide=unsettled
+        with clean_env(),use(fake):out=G.check('q',GRAPH,RESULT,stack=LIVE)
+        self.assertEqual(out['provider'],'jev');self.assertIsNone(out['decided_by'])
+        self.assertFalse(out['reject'])
+
+    def test_unsettled_different_question_vote_cannot_reject(self):
+        mod=FakeS1('answers_a_different_question',.95)
+        original=mod.decide
+        def undecided(*args,**kwargs):
+            value=original(*args,**kwargs);value['decided_by']=None;return value
+        with patch.object(G,'s1',return_value=mod),patch.object(mod,'decide',side_effect=undecided):
+            out=G.check('q',GRAPH,RESULT,stack=LIVE)
+        self.assertEqual(out['label'],'answers_a_different_question')
+        self.assertIsNone(out['decided_by']);self.assertFalse(out['reject'])
+
+
+class Composition(unittest.TestCase):
+    def test_explicit_pending_work_is_distinct_from_missing_facts_and_undecided_votes(self):
+        import json
+        missing=['Contract review was not executed.','No applicable contract document supplied.',
+            'A second unperformed task.','A low-confidence possible omission.','Malformed probability.']
+        class Decider:
+            def judge_fields(self,subject,questions,evidence,**kwargs):
+                self.questions=questions;self.state=json.loads(evidence[0]['text'])
+                return {'judgments':{
+                    'missing_0':{'label':'pending_work','probability':.95,'decided_by':'jev'},
+                    'missing_1':{'label':'unavailable_fact','probability':.99,'decided_by':'jev'},
+                    'missing_2':{'label':'pending_work','probability':.99,'decided_by':None},
+                    'missing_3':{'label':'pending_work','probability':.1,'decided_by':'jev'},
+                    'missing_4':{'label':'pending_work','probability':float('nan'),'decided_by':'jev'}},
+                    'steps':[{'provider':'jev','cost_usd':.001}]}
+        decider=Decider()
+        with patch.object(G,'s1',return_value=decider):
+            result=G.check_pending_work('Review the contract requirements.',{'missing':missing},[],as_of_date='2030-01-01')
+        self.assertEqual(result['targets'],[{'path':['answer','missing',0],'text':missing[0]}])
+        self.assertEqual(decider.state['declared_missing'],missing)
+        self.assertIn('accountability_review',[r['operation']for r in decider.state['available_native_analyses']])
+        self.assertEqual((result['calls'],result['cost_usd']),(1,.001))
+
+    def test_pending_work_check_skips_absent_items_and_unavailable_judgment(self):
+        with patch.object(G,'s1',side_effect=AssertionError('No missing item needs a judge')):
+            self.assertEqual(G.check_pending_work('q',{},[],as_of_date='2030-01-01')['calls'],0)
+        with patch.object(G,'s1',return_value=object()):
+            out=G.check_pending_work('q',{'missing':['Unavailable source.']},[],as_of_date='2030-01-01')
+        self.assertEqual(out['targets'],[]);self.assertEqual(out['status'],'unavailable')
+
+    def test_row_judgments_share_state_and_only_confident_deferrals_trigger_repair(self):
+        import json
+        rows=[{'patient_id':'A','next':'Read the findings.','source':{'clinical_evidence_dependency':0}},
+              {'patient_id':'B','next':'Request the unavailable document.'},
+              {'patient_id':'C','next':'Uncertain wording.'}]
+        class Decider:
+            def judge_fields(self,subject,questions,evidence,**kwargs):
+                self.questions=questions;self.state=json.loads(evidence[0]['text'])
+                return {'judgments':{
+                    'row_0':{'label':'unfinished','probability':.96,'decided_by':'jev'},
+                    'row_1':{'label':'no_observed_omission','probability':.95,'decided_by':'jev'},
+                    'row_2':{'label':'unfinished','probability':.95,'decided_by':None}},
+                    'steps':[{'provider':'jev','cost_usd':.001}]}
+        decider=Decider()
+        with patch.object(G,'s1',return_value=decider):
+            result=G.check_composition('Explain each patient.',{'table':rows},as_of_date='2030-01-01')
+        self.assertEqual(list(decider.questions),['row_0','row_1','row_2'])
+        self.assertEqual(decider.state['rows'][0]['outputs']['next'],rows[0]['next'])
+        self.assertEqual(decider.state['rows'][0]['structured_evidence_fields'],['source'])
+        self.assertEqual([t['patient_id']for t in result['targets']],['A'])
+        self.assertEqual((result['calls'],result['cost_usd']),(1,.001))
+        self.assertNotIn('clinical_evidence_dependency',str(decider.state))
+
+    def test_empty_population_does_not_call_provider(self):
+        with patch.object(G,'s1',side_effect=AssertionError('No call')):
+            result=G.check_composition('Explain each patient.',{'table':[]},as_of_date='2030-01-01')
+        self.assertEqual(result['targets'],[]);self.assertEqual(result['calls'],0)
 
 
 class CheckHook(unittest.TestCase):

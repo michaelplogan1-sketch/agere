@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import html as _html
 import json
+from pathlib import Path
 
 from . import brand
 
@@ -113,7 +114,7 @@ async function loadMe(){ME=await api('/api/auth/me');const b=document.getElement
  b.innerHTML='<div class="wrap"><a class="brand" href="/app">'+_esc(PRODUCT)+'<small>/ '+_esc(TAGLINE)+'</small></a>'+
  '<span class="pill">'+_esc(ME.org)+' · '+_esc(ME.role)+'</span>'+
  (orgs.length>1?'<select id="orgsel" aria-label="Organization">'+orgs.map(o=>'<option value="'+_esc(o.slug)+'"'+(o.slug===ME.org?' selected':'')+'>'+_esc(o.name||o.slug)+'</option>').join('')+'</select>':'')+
- '<nav><a href="/app"'+(here==='/app'||here==='/'?' class="on"':'')+'>Workspaces</a>'+(['admin','owner'].includes(ME.role)?'<a href="/admin"'+(here==='/admin'?' class="on"':'')+'>Admin</a>':'')+
+ '<nav><a href="/ask"'+(here==='/ask'?' class="on"':'')+'>Ask</a><a href="/app"'+(here==='/app'||here==='/'?' class="on"':'')+'>Workspaces</a>'+(['admin','owner'].includes(ME.role)?'<a href="/admin"'+(here==='/admin'?' class="on"':'')+'>Admin</a>':'')+
  '<a href="/account"'+(here==='/account'?' class="on"':'')+'>'+_esc((ME.user||{}).email||'Account')+'</a><button class="ghost" id="logout" style="margin:0;padding:6px 14px">Sign out</button></nav></div>';
  document.getElementById('logout').onclick=async()=>{await api('/api/auth/logout',{});location.href='/login'};
  const s=document.getElementById('orgsel');if(s)s.onchange=async()=>{await api('/api/auth/switch',{org:s.value});location.reload()};return ME}
@@ -154,7 +155,7 @@ def login():
 <button type="submit" class="accent">Sign in</button><p id="msg" class="err" role="alert"></p></form>
 <p class="notice">This environment accepts synthetic data only. Do not upload patient information.</p></div></section></main>'''
     script = r'''document.getElementById('f').onsubmit=async e=>{e.preventDefault();const m=document.getElementById('msg');m.textContent='';
- try{await api('/api/auth/login',{email:document.getElementById('email').value,password:document.getElementById('password').value});location.href='/app'}
+ try{await api('/api/auth/login',{email:document.getElementById('email').value,password:document.getElementById('password').value});location.href='/'}
  catch(err){m.textContent=err.message}}'''
     return _page(f'{NAME} Sign In', body, script)
 
@@ -183,7 +184,29 @@ def app():
             'ask_title': brand.ASK_TITLE, 'oap': _oap_terms()}
     body = '<header class="top" id="orgbar"></header><main id="view"><section class="section"><div class="wrap muted">Loading…</div></section></main>'
     boot = 'const APP=' + json.dumps(data).replace('</', '<\\/') + ';\n'
-    return _page(f'{NAME}', body, boot + APP_JS + '\nloadMe().then(route).catch(e=>{if(e.status!==401)document.getElementById("view").innerHTML=\'<p class="err wrap">\'+esc(e.message)+\'</p>\'});')
+    assets = Path(__file__).parents[1] / 'assets'
+    presentation = ('const ResultView=(()=>{const state={seq:0};'
+        'const isNum=v=>typeof v==="number"&&Number.isFinite(v);'
+        'const cols=rows=>[...new Set(rows.flatMap(r=>Object.keys(r)))];\n'
+        + (assets/'answer_presentation.js').read_text()
+        + '\n' + (assets/'verification_progress.js').read_text()
+        + '\nreturn {summary:answerSummary,table:presentationTable,limits:resultLimitations,sources:sourceDetails,columns:cols,progress:verificationProgressHTML};})();\n')
+    page = _page(f'{NAME}', body, boot + presentation + APP_JS + '\nloadMe().then(route).catch(e=>{if(e.status!==401)document.getElementById("view").innerHTML=\'<p class="err wrap">\'+esc(e.message)+\'</p>\'});')
+    return page.replace('<html lang="en">', '<html lang="en" data-theme="light">').replace('</head>',
+        '<style>' + (assets/'answer_presentation.css').read_text() + (assets/'verification_progress.css').read_text() + HOSTED_ANSWER_CSS + '</style></head>')
+
+
+HOSTED_ANSWER_CSS = r'''
+.hosted-answer{--fg:#262633;--line:#e4e2e9;--muted:#625f6e;background:#fff;border-radius:16px;padding:28px;min-width:0}
+.hosted-answer h2{font-size:24px;line-height:1.3;margin:0 0 14px}.hosted-answer .answer-question{font-size:14px;color:#62576e;border-left:3px solid #c6b7df;padding-left:14px;line-height:1.7}
+.hosted-answer .answer-intro{font-size:16px;line-height:1.8;max-width:85ch}.hosted-answer .answer-status{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 24px}.hosted-answer .num{font-size:48px;color:#583b87}
+.hosted-answer .result-at-a-glance{margin-top:20px}.hosted-answer .answer-findings,.hosted-answer .result-limitations{margin-top:20px}
+.hosted-answer .result-records{margin:24px 0}.hosted-answer .result-records>summary{font-size:16px;min-height:44px}.hosted-answer #hostedRecords{min-width:0}
+.hosted-answer .result-search{margin-top:16px}.hosted-answer .column-toggle input{width:16px;margin:0}.hosted-answer [hidden]{display:none!important}
+.hosted-answer .trace{margin:20px 0}.hosted-answer .method-disclosure{margin:24px 0}.hosted-answer .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.hosted-answer details pre{max-height:420px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}.hosted-answer .card{background:#faf9fc}.hosted-answer .answer-state{margin:16px 0}
+@media(max-width:650px){.hosted-answer{padding:18px}.hosted-answer h2{font-size:21px}.hosted-answer .result-table:not(.all-columns) tr:has(>td:first-child) td:first-child{display:table-cell}.hosted-answer .result-search button{min-height:44px}}
+'''
 
 
 APP_JS = r'''
@@ -193,7 +216,7 @@ const money=n=>n==null?'—':(Number(n)<0?'-$':'$')+Math.abs(Number(n)).toLocale
 const pct=x=>x==null?'—':(Math.round(x*1000)/10)+'%';
 const label=s=>String(s||'').replace(/_/g,' ');
 const clip=(s,n)=>{s=String(s??'');return s.length>n?s.slice(0,n-1)+'…':s};
-let STATE={slug:null,ws:null,timer:null};
+let STATE={slug:null,ws:null,timer:null,conversationId:null,conversationWorkspace:null,answerContext:null};
 const TABS=[['ask','02','Ask','Intelligence'],['act','03','Plan & act','Knowledge'],['simulate','04','Simulate','Wisdom'],
  ['create','05','Create','Make anything'],['value','06','Physician value','VBC 3.0'],['data','07','Data','Connect & map']];
 window.addEventListener('hashchange',route);
@@ -246,58 +269,89 @@ const W=p=>'/api/workspaces/'+encodeURIComponent(STATE.slug)+p;
 
 // --- Ask ----------------------------------------------------------------------------------------------------------------
 function paneAsk(w){
+ if(STATE.conversationWorkspace!==STATE.slug){STATE.conversationId=null;STATE.answerContext=null;STATE.conversationWorkspace=STATE.slug}
  const cats={};APP.examples.forEach(q=>(cats[q.category]=cats[q.category]||[]).push(q));
  $('pane').innerHTML=`<section class="section"><div class="wrap">${head('02','INTELLIGENCE','ASK',esc(APP.ask_title)+'.','Ask in plain language. Every answer carries its definition, its method and the layer that answered, and is checked before it is shown.')}
  <div class="card" style="margin-top:28px"><label for="q" class="eyebrow" style="margin:0 0 8px">WHAT WOULD YOU LIKE TO KNOW?</label><textarea id="q" rows="2" placeholder="Which heart failure patients are not on all four GDMT pillars?" ${w.status!=='ready'?'disabled':''}></textarea>
- <div class="row"><button id="ask" class="accent" ${w.status!=='ready'?'disabled':''}>Ask</button><span id="asking" class="muted"></span></div>
+ <div class="row"><button id="ask" class="accent" ${w.status!=='ready'?'disabled':''}>Ask</button><button id="newQuestion" class="ghost">New conversation</button><span id="asking" class="muted"></span></div>
  <div style="margin-top:16px">${Object.entries(cats).map(([c,qs])=>`<p class="eyebrow" style="margin:14px 0 2px">${esc(c)}</p>${qs.map(q=>`<button class="chip" data-q="${esc(q.question)}">${esc(q.question)}</button>`).join('')}`).join('')}</div></div>
  <div id="ans"></div>
  <div style="margin-top:40px"><p class="eyebrow">RECENT QUESTIONS</p><div id="hist" class="muted">Loading…</div></div></div></section>`;
  document.querySelectorAll('button.chip[data-q]').forEach(b=>b.onclick=()=>{$('q').value=b.dataset.q;$('q').focus()});
- $('ask').onclick=ask;$('q').onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey))ask()};loadHist()}
-async function ask(){const q=$('q').value.trim();if(!q)return;$('ask').disabled=true;
+ $('newQuestion').onclick=()=>{STATE.conversationId=null;STATE.answerContext=null;$('q').value='';$('ans').innerHTML='';$('q').focus()};$('ask').onclick=ask;$('q').onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey))ask()};loadHist()}
+async function ask(){const q=$('q').value.trim();if(!q||$('ask').disabled)return;$('ask').disabled=true;$('newQuestion').disabled=true;
  $('asking').innerHTML='<span class="spin"></span> Connecting, defining, compiling, computing and checking…';$('ans').innerHTML='';
  const t0=Date.now();
- try{const d=await api(W('/ask'),{question:q});$('ans').innerHTML=showAnswer(d,q,(Date.now()-t0)/1000);bindAnswer(d);loadHist()}
- catch(e){$('ans').innerHTML=`<div class="notice err">${esc(e.message)}</div>`}finally{$('ask').disabled=false;$('asking').textContent=''}}
-function contractOf(d){const c=Object.values(d.contracts||{}).find(Boolean);if(c)return c;const r=d.result||{};return (r.answer||{}).definition||(r.answer||{}).contract||null}
-function definitionText(d,q){const ex=APP.examples.find(x=>x.question===q);const c=contractOf(d);
+ try{const body={question:q,conversation_id:STATE.conversationId,interaction_mode:'interactive'};if(STATE.answerContext){body.answer_context_id=STATE.answerContext;body.answer_scope='auto'}const d=await api(W('/ask'),body);rememberConversation(d);$('ans').innerHTML=showAnswer(d,q,(Date.now()-t0)/1000);bindAnswer(d);loadHist()}
+ catch(e){$('ans').innerHTML=`<div class="notice err">${esc(e.message)}</div>`}finally{if($('ask'))$('ask').disabled=false;if($('newQuestion'))$('newQuestion').disabled=false;if($('asking'))$('asking').textContent=''}}
+function contractOf(d){const c=Object.values(d.contracts||{}).find(Boolean);if(c)return c;const a=d.answer||(d.result||{}).answer||{};return a.definition||a.contract||null}
+function definitionText(d,q){const c=contractOf(d);
  if(c&&typeof c==='object'){const parts=['population','numerator','denominator','window','exclusions','grain'].filter(k=>c[k]).map(k=>`<b>${k}</b>: ${esc(typeof c[k]==='string'?c[k]:JSON.stringify(c[k]))}`);if(parts.length)return parts.join('<br>')}
- if(typeof c==='string')return esc(c);const a=(d.result||{}).answer||{};
- if(a.definition_text)return esc(a.definition_text);if(ex&&ex.definition)return esc(ex.definition)+' <span class="muted">(reference definition)</span>';
- return esc(d.headline||d.interpretation||'—')}
+ if(typeof c==='string')return esc(c);const a=d.answer||(d.result||{}).answer||{};
+ if(a.definition_text)return esc(a.definition_text);
+ return 'No execution definition was recorded with this answer.'}
 function methodOf(d){const sql=Object.values(d.runs||{}).map(r=>r&&r.sql).find(Boolean);if(sql)return {kind:'SQL',text:sql};
  const r=d.result||{};const a=r.answer||{};if(a.sql)return {kind:'SQL',text:a.sql};
  const g=r.graph;if(g&&(g.nodes||[]).length)return {kind:'Cohort-family / analysis spec',text:JSON.stringify(g,null,1)};
  if(d.plan)return {kind:'Routed plan',text:JSON.stringify(d.plan.summary,null,1)};return null}
 function layerOf(d){const t=(d.result||{}).together||{};const dec=d.decision||t.decision||'';const route=d.route||'';
+ if(route==='saved_cohort')return {name:'Native population calculation',detail:'Computed over the saved population; no language model call'};
  const spec=/special|bottled|cascade|cohort|engine|compiler|local|governed|metric/i.test(dec+' '+route+' '+(d.operations||[]).join(' '));
  return {name:d.pipeline==='plan'?'Deterministic router':(spec?'Specialist layer':(d.pipeline==='hybrid'||/unanim|major|analyst/i.test(dec)?'Analysts (independent, cross-checked)':'Full pipeline')),detail:[d.pipeline,route,dec].filter(Boolean).join(' · ')}}
 function traceCells(d,q){const w=STATE.ws||{};const m=methodOf(d);const ans=d.answer;const cert=d.certified;
- return [['01','Connect',w.name||'',`as of ${w.as_of||'—'}`],['02','Define',contractOf(d)||APP.examples.find(x=>x.question===q)?'typed definition':'question read','population, window, grain'],
+ return [['01','Connect',w.name||'',`as of ${w.as_of||'—'}`],['02','Define',contractOf(d)?'recorded definition':'definition not recorded','population, window, grain'],
   ['03','Compile',m?m.kind:'—',(d.operations||[]).slice(0,3).join(', ')||d.route||''],['04','Compute',ans?(('count' in ans)?'count':('value' in ans)?'value':ans.patient_ids?ans.patient_ids.length+' patients':'table'):'no answer',d.pipeline||''],
   ['05','Check',cert?'certified':(d.confidence!=null?'confidence '+fmt(d.confidence):(d.decision||'—')),cert&&typeof cert==='object'?(cert.tier||cert.route||'')+(cert.error_bound!=null?' ± '+cert.error_bound:''):''],
-  ['06','Compound',d.cost_usd===0?'reused, $0':'saved to history',d.cost_usd==null?'cost unknown':'$'+Number(d.cost_usd).toFixed(3)]]}
-function showAnswer(d,q,secs){const a=d.answer;let main='',list='';
- if(!a){main=`<div class="notice">No confident answer. ${esc((d.decline&&d.decline.kind)||'')} ${esc(d.headline||d.interpretation||'')}</div>${(d.decline&&d.decline.readings||[]).length?'<p class="muted">Possible readings:</p><ul>'+d.decline.readings.map(r=>'<li>'+esc(typeof r==='string'?r:JSON.stringify(r))+'</li>').join('')+'</ul>':''}`}
- else if('count' in a||'value' in a){const v=a.count??a.value;main=`<div class="num">${typeof v==='number'?v.toLocaleString(undefined,{maximumFractionDigits:2}):esc(v)}</div>`}
- else if(a.patient_ids){const ids=a.patient_ids,cid=d.customer_ids||{};main=`<div class="num">${ids.length.toLocaleString()}</div><p class="muted">patients</p>
-  `;const row=(p,i)=>`<tr><td class="mono">${i+1}</td><td class="mono">${esc(p)}</td><td class="mono">${esc(cid[p]||'')}</td></tr>`;
-  list=`<p class="eyebrow" style="margin-top:20px">PATIENTS</p><div class="tablewrap"><table><tr><th>#</th><th>Patient</th><th>Customer id</th></tr>${ids.slice(0,8).map(row).join('')}</table></div>
-  ${ids.length>8?`<details><summary>Show ${Math.min(ids.length,200)-8} more${ids.length>200?' (first 200 of '+ids.length.toLocaleString()+')':''}</summary><div class="tablewrap"><table>${ids.slice(8,200).map((p,i)=>row(p,i+8)).join('')}</table></div></details>`:''}`}
- else if(a.table){main=`<div class="tablewrap"><table><tr><th>Group</th><th class="r">Value</th></tr>${a.table.slice(0,200).map(r=>`<tr><td>${esc((r.keys||[]).join(' · '))}</td><td class="r mono">${fmt(r.value)}</td></tr>`).join('')}</table></div>`}
- const m=methodOf(d),L=layerOf(d);
- return `<section class="card" style="margin-top:24px"><p class="eyebrow">ANSWER EXPLORER</p>${d.headline?`<h3>${esc(d.headline)}</h3>`:''}${main}
- <div class="trace">${traceCells(d,q).map((c,i)=>`<div class="${i<4||d.answer?'on':''}"><small>${c[0]} / ${c[1]}</small><b>${esc(c[2])}</b><span>${esc(c[3])}</span></div>`).join('')}</div>
- <div class="grid g3"><div><p class="eyebrow">DEFINITION & SCOPE</p><p class="small">${definitionText(d,q)}</p></div>
- <div><p class="eyebrow">LAYER</p><p class="small"><b>${esc(L.name)}</b><br><span class="muted mono">${esc(L.detail)}</span></p></div>
- <div><p class="eyebrow">CONFIDENCE · COST</p><p class="small">${d.certified?'<span class="pill ok">certified</span> ':''}${d.confidence!=null?'confidence '+fmt(d.confidence)+'<br>':''}${d.cost_usd==null?'cost unknown':'$'+Number(d.cost_usd).toFixed(4)}${d.new_paid_api_calls!=null?' · '+fmt(d.new_paid_api_calls)+' paid calls':''} · ${secs.toFixed(1)} s</p></div></div>
- ${list}${m?`<details style="margin-top:12px"><summary>${esc(m.kind)}</summary><pre>${esc(m.text)}</pre></details>`:''}
- ${d.certified&&typeof d.certified==='object'?`<details><summary>Certificate</summary><pre>${esc(JSON.stringify(d.certified,null,1))}</pre></details>`:''}
- ${d.plan?`<p><a class="btn ghost" href="#/w/${encodeURIComponent(STATE.slug)}/act">Open the plan in Plan & act</a></p>`:''}
- <details><summary>Full response</summary><pre>${esc(JSON.stringify(Object.assign({},d,{plan:d.plan?'(see Plan & act)':undefined}),null,1).slice(0,20000))}</pre></details></section>`}
-function bindAnswer(d){}
-async function loadHist(){try{const d=await api(W('/questions'));$('hist').innerHTML=d.questions.slice(0,10).map(r=>`<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span style="flex:1;min-width:200px">${esc(clip(r.question,180))}</span><b class="mono">${esc(clip(r.answer?(r.answer.count??r.answer.value??(r.answer.patient_ids?r.answer.patient_ids.length+' patients':'table')):'no confident answer',60))}</b></div>`).join('')||'None yet.'}catch(e){$('hist').textContent=e.message}}
+  ['06','Save',d.action_context?'saved with evidence':'question history',d.cost_usd==null?'cost unknown':'$'+Number(d.cost_usd).toFixed(3)]]}
+function answerRows(a,d){
+ if(Array.isArray(a?.table))return a.table.some(r=>Array.isArray(r.keys)&&!('group' in r))?a.table.map(r=>Array.isArray(r.keys)&&!('group' in r)?{group:r.keys.map(v=>v==null?'Unknown':typeof v==='object'?JSON.stringify(v):String(v)).join(' · '),...r}:r):a.table;
+ return (a?.patient_ids||[]).map(id=>({patient_id:id,...(d.customer_ids?.[id]?{customer_id:d.customer_ids[id]}:{})}));
+}
+function answerCSV(rows){const keys=ResultView.columns(rows),cell=v=>'"'+String(v==null?'':typeof v==='object'?JSON.stringify(v):v).replace(/"/g,'""')+'"';return [keys.map(cell).join(','),...rows.map(row=>keys.map(k=>cell(row[k])).join(','))].join('\r\n')}
+function showAnswer(d,q,secs){const a=d.answer,rows=answerRows(a,d);let main='';
+ if(d.clarification?.status==='pending')main=clarificationView(d.clarification);
+ else if(!a)main=`<div class="notice">${esc(d.headline||d.interpretation||'More information is needed to answer this question.')}</div>${(d.decline?.readings||[]).length?'<p class="muted">Possible meanings:</p><ul>'+d.decline.readings.map(r=>'<li>'+esc(typeof r==='string'?r:JSON.stringify(r))+'</li>').join('')+'</ul>':''}`;
+ else {
+  if('count' in a||'value' in a){const v=a.count??a.value;main=`<div class="num">${v==null?'Unknown':esc(typeof v==='number'?v.toLocaleString():v)}</div><p class="muted">${esc(a.unit||('count' in a?'Count returned':'Computed value'))}</p>`}
+  main+=ResultView.summary({...a,table:rows})+ResultView.limits(a);
+  if(rows.length)main+=`<details class="result-records" id="hostedRecordSection"><summary>Explore all ${fmt(rows.length)} records</summary><div class="result-search"><input id="hostedRecordSearch" type="search" aria-label="Search returned records" placeholder="Search names, identifiers or any field"><label class="column-toggle"><input id="hostedAllColumns" type="checkbox">All columns</label><button class="chip" id="hostedCSV">Download all ${fmt(rows.length)} rows</button></div><p id="hostedRecordStatus" class="result-status" role="status"></p><div id="hostedRecords">${ResultView.table(rows,{...a,table:rows})}</div></details>`;
+ }
+ const m=methodOf(d),L=layerOf(d),status=d.status||d.decision||'Answer';
+ return `<section class="card hosted-answer" style="margin-top:24px"><p class="answer-question">${esc(q)}</p><h2>What the answer shows</h2>${a&&d.headline?`<p class="answer-intro">${esc(d.headline)}</p>`:''}<div class="answer-status"><span class="pill">${esc(label(status))}</span>${a?.verification==='unverified'?'<span class="pill">Verification incomplete</span>':''}<span class="small muted">${d.cost_usd==null?'API cost unknown':'API estimate $'+Number(d.cost_usd).toFixed(4)} · ${secs.toFixed(1)} s${d.reopened?' to reopen · no analysis replay':''}</span></div>${answerState(d)}${main}
+ <details class="method-disclosure"><summary>Method, sources &amp; scope</summary>${a?ResultView.sources(a):''}<div class="trace">${traceCells(d,q).map((c,i)=>`<div class="${i<4||d.answer?'on':''}"><small>${c[0]} / ${c[1]}</small><b>${esc(c[2])}</b><span>${esc(c[3])}</span></div>`).join('')}</div><div class="grid g3"><div><p class="eyebrow">DEFINITION &amp; SCOPE</p><p class="small">${definitionText(d,q)}</p></div><div><p class="eyebrow">EXECUTION</p><p class="small"><b>${esc(L.name)}</b><br>${esc(L.detail)}</p></div><div><p class="eyebrow">USAGE</p><p class="small">${d.new_paid_api_calls==null?'New model calls unknown':fmt(d.new_paid_api_calls)+' new model calls'}. Local compute and review costs are not included in the API estimate.</p></div></div>${m?`<details><summary>${esc(m.kind)}</summary><pre>${esc(m.text)}</pre></details>`:''}${d.certified?`<details><summary>Recorded certificate</summary><pre>${esc(JSON.stringify(d.certified,null,2))}</pre></details>`:''}</details>
+ ${savedFollowup(d)}${reportView(d)}${d.plan?`<p><a class="btn ghost" href="#/w/${encodeURIComponent(STATE.slug)}/act">Open the plan in Plan &amp; act</a></p>`:''}<details><summary>Original response</summary><pre>${esc(JSON.stringify(Object.assign({},d,{plan:d.plan?'(see Plan & act)':undefined}),null,1))}</pre></details></section>`;
+}
+function bindAnswerRecords(d){const a=d.answer,rows=answerRows(a,d),box=$('hostedRecords');if(!box)return;let page=0;
+ const render=()=>{const query=$('hostedRecordSearch').value.trim().toLocaleLowerCase(),found=query?rows.filter(row=>JSON.stringify(row).toLocaleLowerCase().includes(query)):rows;
+  box.innerHTML=ResultView.table(found,{...a,table:rows},{page,allColumns:$('hostedAllColumns').checked});$('hostedRecordStatus').textContent=fmt(found.length)+' of '+fmt(rows.length)+' records shown. Download includes every record.'};
+ $('hostedRecordSearch').oninput=()=>{page=0;render()};$('hostedAllColumns').onchange=render;
+ box.onclick=e=>{const toggle=e.target.closest('[data-record-toggle]'),pager=e.target.closest('[data-record-page]');if(toggle){const el=$(toggle.dataset.recordToggle);el.hidden=!el.hidden;toggle.setAttribute('aria-expanded',String(!el.hidden));toggle.textContent=el.hidden?'View details':'Hide details'}if(pager){page=Number(pager.dataset.recordPage);render()}};
+ document.querySelectorAll('#ans [data-open-answer-tab]').forEach(b=>b.onclick=()=>{const section=$('hostedRecordSection');section.open=true;section.scrollIntoView({block:'start',behavior:'smooth'});$('hostedRecordSearch').focus({preventScroll:true})});
+ $('hostedCSV').onclick=()=>{const blob=new Blob([answerCSV(a.table||rows)],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='wollstonecraft-results.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};render();
+}
+function answerState(d){const c=d.saved_context;
+ const warning=d.context_error||(c&&(c.stale||c.invalidated||c.source_review_required||((c.source_disposition||{}).status==='unavailable'))?'Saved evidence needs review. This is the original answer; data or verification has changed.':'');
+ return (warning?`<div class="notice err">${esc(warning)}</div>`:'')+ResultView.progress(c?.verification_progress||d.verification_progress)+(d.action_context?`<p class="small">Saved answer <span class="mono">${esc(d.action_context.id)}</span> <button class="chip" data-reopen="${esc(d.action_context.id)}">Reopen evidence</button></p>`:'')+
+ (c?`<details><summary>Saved scope and source status</summary><pre>${esc(JSON.stringify({question:c.original_question,source:c.source,stale:c.stale,invalidated:c.invalidated,source_disposition:c.source_disposition,dependency_validation:c.dependency_validation,input_patient_ids:c.input_patient_ids,population_scopes:c.population_scopes},null,2))}</pre></details>`:'')}
+function rememberConversation(d){if(d.conversation)STATE.conversationId=d.conversation.id;if(d.action_context)STATE.answerContext=d.action_context.id;else if(d.clarification)STATE.answerContext=null}
+function clarificationView(c){return `<div class="notice"><p>${esc(c.reason)}</p><p class="small">Your choice clarifies the request; source evidence remains unchanged.</p>${c.options.map(o=>`<button class="chip" data-intent-option="${esc(o.id)}" title="${esc(o.meaning)}">${esc(o.label)}</button>`).join('')}<label for="intentText">Clarify your intent</label><input id="intentText" placeholder="Or describe what you mean"><button id="sendIntent" class="chip">Continue this analysis</button><p id="intentMessage" class="small"></p></div>`}
+function bindClarification(d){const c=d.clarification;if(!c||c.status!=='pending')return;
+ const send=async(reply)=>{const controls=[...document.querySelectorAll('#ans [data-intent-option],#sendIntent,#ask,#newQuestion')];controls.forEach(b=>b.disabled=true);const t0=Date.now();try{const out=await api(W('/ask'),{conversation_id:c.conversation_id,clarification_response:{id:c.id,...reply},interaction_mode:'interactive'});rememberConversation(out);$('ans').innerHTML=showAnswer(out,out.question||c.original_question,(Date.now()-t0)/1000);bindAnswer(out);loadHist()}catch(e){$('intentMessage').textContent=e.message}finally{controls.forEach(b=>b.disabled=false)}};
+ document.querySelectorAll('#ans [data-intent-option]').forEach(b=>b.onclick=()=>send({option_id:b.dataset.intentOption}));$('sendIntent').onclick=()=>{const text=$('intentText').value.trim();if(text)send({text})}}
+async function openConversation(id){try{const d=await api(W('/conversations/'+encodeURIComponent(id)));STATE.conversationId=id;STATE.answerContext=null;const last=d.turns[d.turns.length-1],a=last.answer_summary||{};if(a.action_context){await reopenAnswer(a.action_context.id);return}$('q').value=last.question;const out={...a,answer:null,question:last.question,conversation:{id},cost_usd:null};$('ans').innerHTML=showAnswer(out,last.question,0);bindAnswer(out)}catch(e){$('ans').innerHTML=`<div class="notice err">${esc(e.message)}</div>`}}
+function reportView(d){if(!d.action_context)return '';const blocked=d.context_error||(d.saved_context&&(d.saved_context.stale||d.saved_context.invalidated||d.saved_context.source_review_required));
+ return `<div class="card" style="margin-top:16px"><h3>Report from this evidence</h3><p class="small muted">Uses the saved answer, its sources and limitations. No new analysis or model request.</p>${ME.role!=='viewer'?`<button id="createSavedReport" class="chip" ${blocked?'disabled':''}>Create evidence brief</button>`:''}<button id="listSavedReports" class="chip">Saved reports</button><p id="reportMessage" class="small"></p><div id="boundReports"></div><div id="boundReportPreview"></div>${(d.workflow||[]).length?'<details><summary>Requested work</summary><pre>'+esc(JSON.stringify(d.workflow,null,2))+'</pre></details>':''}</div>`}
+function bindReports(d){if(!d.action_context)return;const cid=d.action_context.id,base=W('/answers/'+encodeURIComponent(cid)),msg=$('reportMessage'),list=$('boundReports'),preview=$('boundReportPreview');if(!list)return;
+ const show=out=>{preview.innerHTML=`<h3>${esc(out.title||'Saved report')}</h3><p class="small">${esc(out.status)} · ${esc(out.generation||'')} · ${out.new_paid_api_calls==null?'model calls unknown':fmt(out.new_paid_api_calls)+' new model calls'}</p>${out.html?'<iframe class="deliverable" sandbox="allow-scripts" title="Saved evidence report"></iframe>':'<p>No report is ready. Its original result has been retained.</p>'}`;if(out.html)preview.querySelector('iframe').srcdoc=out.html};
+ const load=async()=>{try{const out=await api(base+'/deliverables');list.innerHTML=out.deliverables.map(r=>`<button class="chip" data-bound-report="${esc(r.id)}">${esc(r.title||r.id)} · ${esc(r.status)}</button>`).join('')||'<p class="small muted">No report has been requested for this answer.</p>';list.querySelectorAll('[data-bound-report]').forEach(b=>b.onclick=async()=>{try{show(await api(base+'/deliverables/'+encodeURIComponent(b.dataset.boundReport)))}catch(e){msg.textContent=e.message}})}catch(e){msg.textContent=e.message}};
+ $('listSavedReports').onclick=load;const create=$('createSavedReport');if(create)create.onclick=async()=>{create.disabled=true;msg.textContent='Rendering the saved evidence…';try{const out=await api(base+'/report',{template:'brief',request:'Create an evidence review brief of this saved answer, preserving its scope, sources and limitations.'});show(out);msg.textContent='Evidence brief saved. No new model request.';await load()}catch(e){msg.textContent=e.message}finally{create.disabled=false}}}
+function savedFollowup(d){const ref=d.action_context,c=d.saved_context||ref;if(!ref||!c)return '';
+ const scopes=[...(c.result_scope_available?[{id:'result',label:'Patients in this answer'}]:[]),...(c.input_patients!=null?[{id:'input',label:'Original input population'}]:[]),...(c.population_scopes||[]).map(s=>({id:'population:'+s.id,label:s.label+' · '+s.patients+' patients'}))];
+ if(!scopes.length)return '';const blocked=c.stale||c.invalidated||c.source_review_required||(c.source_disposition||{}).status==='unavailable';
+ return `<div class="card" style="margin-top:16px"><label for="savedq">Ask about this saved population</label><p class="small muted">Uses the same people and original evidence. List patients, count them, group by practice or payer, or exclude recorded deaths.</p><select id="savedScope" aria-label="Saved population">${scopes.map(s=>`<option value="${esc(s.id)}">${esc(s.label)}</option>`).join('')}</select><input id="savedq" placeholder="Group them by practice" ${blocked?'disabled':''}><button id="savedFollowup" class="chip" ${blocked?'disabled':''}>Apply to saved population</button><span id="savedMsg" class="small muted">${blocked?'Refresh the source-bound answer before changing its population.':''}</span></div>`}
+function bindAnswer(d){bindAnswerRecords(d);bindClarification(d);bindReports(d);document.querySelectorAll('#ans [data-reopen]').forEach(b=>b.onclick=()=>reopenAnswer(b.dataset.reopen));const b=$('savedFollowup');if(b)b.onclick=async()=>{const q=$('savedq').value.trim();if(!q)return;b.disabled=true;const t0=Date.now();try{const out=await api(W('/answers/'+encodeURIComponent(d.action_context.id)+'/followup'),{question:q,scope:$('savedScope').value});if(out.status==='clarify'){$('savedMsg').textContent=out.headline+' '+(out.suggestions||[]).join(' · ');return}rememberConversation(out);$('ans').innerHTML=showAnswer(out,q,(Date.now()-t0)/1000);bindAnswer(out);loadHist()}catch(e){$('savedMsg').textContent=e.message}finally{b.disabled=false}}}
+async function reopenAnswer(id){const t0=Date.now();try{const d=await api(W('/answers/'+encodeURIComponent(id)));STATE.answerContext=id;$('q').value=d.question;$('ans').innerHTML=showAnswer(d,d.question,(Date.now()-t0)/1000);bindAnswer(d)}catch(e){$('ans').innerHTML=`<div class="notice err">${esc(e.message)}</div>`}}
+async function loadHist(){try{const d=await api(W('/questions'));$('hist').innerHTML=d.questions.slice(0,10).map(r=>`<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span style="flex:1;min-width:200px">${esc(clip(r.question,180))}</span><b class="mono">${esc(clip(r.answer?(r.answer.count??r.answer.value??(r.answer.patient_ids?r.answer.patient_ids.length+' patients':'table')):'no confident answer',60))}</b>${r.conversation?`<button class="chip" data-conversation="${esc(r.conversation.id)}">Open conversation</button>`:r.action_context?`<button class="chip" data-saved-answer="${esc(r.action_context.id)}">Open answer</button>`:''}</div>`).join('')||'None yet.';document.querySelectorAll('#hist [data-conversation]').forEach(b=>b.onclick=()=>openConversation(b.dataset.conversation));document.querySelectorAll('#hist [data-saved-answer]').forEach(b=>b.onclick=()=>reopenAnswer(b.dataset.savedAnswer))}catch(e){$('hist').textContent=e.message}}
 
 // --- Plan & act ---------------------------------------------------------------------------------------------------------
 function paneAct(w){
@@ -497,7 +551,8 @@ async function refresh(){
  const k=await api('/api/admin/keys');document.getElementById('keys').innerHTML=tbl(k.keys,[['name','Name'],['role','Role'],['prefix','Key'],['created_at','Created'],['last_used_at','Last used'],[r=>r.revoked?'revoked':'active','Status']]);
  const c=await api('/api/admin/credentials');document.getElementById('creds').innerHTML=tbl(c.credentials,[['name','Name'],['kind','Kind'],['updated_at','Updated']]);
  const u=(await api('/api/admin/usage')).usage||{};const bw=Object.entries(u.by_workspace||{}).map(([w,v])=>Object.assign({workspace:w},typeof v==='object'?v:{value:v}));
- document.getElementById('usage').innerHTML='<div class="kpi">'+esc(u.records||0)+'</div><p class="muted">questions · $'+Number(u.cost_usd||0).toFixed(2)+' model cost · '+Math.round(u.seconds||0)+' s answering</p>'+(bw.length?tbl(bw,Object.keys(bw[0]).map(x=>[x,x])):'');
+ const cost=u.cost_usd==null?'total unknown ($'+Number(u.known_cost_usd||0).toFixed(2)+' known; '+Number(u.unknown_cost_records||0)+' unknown records)':'$'+Number(u.cost_usd).toFixed(2);
+ document.getElementById('usage').innerHTML='<div class="kpi">'+esc(u.records||0)+'</div><p class="muted">questions · '+cost+' model estimate · '+Math.round(u.seconds||0)+' s answering</p>'+(bw.length?tbl(bw,Object.keys(bw[0]).map(x=>[x,x])):'');
  const when=s=>s?new Date(s*1000).toLocaleString():'';
  const a=await api('/api/admin/audit');document.getElementById('audit').innerHTML=tbl((a.audit||[]).slice(0,100),[[r=>when(r.at),'When'],['user','User'],['action','Action'],[r=>JSON.stringify(r.detail||''),'Detail'],['ip','IP']]);}
 document.getElementById('addmem').onclick=async()=>{const m=document.getElementById('memmsg');try{const d=await api('/api/admin/members',{email:document.getElementById('mem').value,role:document.getElementById('role').value});

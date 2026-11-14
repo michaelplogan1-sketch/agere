@@ -38,3 +38,4 @@ scipy==1.18.1          # same lazy path (stack_runtime, drug_classes, metric_rou
 #   verification_v2, demand); not reached by the hosted server.
 # scikit-learn / joblib / threadpoolctl: only context_student.fit()/ContextStudent and the *_learning / semantic_student
 #   trainers import them; the hosted path uses context_student.send() (HTTP) only.
+anthropic>=0.60       # tiered core on the hosted server: paid Claude API (AGERE_CLAUDE_TRANSPORT=api); only messages.create is used

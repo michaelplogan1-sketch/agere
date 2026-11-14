@@ -1,10 +1,10 @@
-# Latest delivery: approved G3 execution; manual turn handoff
+# Current Agere build continuity
 
-See APPROVED_EXECUTION_BUILD.md and artifacts/agere-approved-execution-v1/implementation-receipt.json. Actual appointment answer-to-work replay and medication output recovery pass; grouped payer interpretation stops on a retained citation-validation failure. Formal engineering remains6/9. All three transfer approvals were granted. Build/heartbeat are now PAUSED between human-directed turns, at the user's request. AGERE_BUILD_CONTROL.json owns the next action; older pending-approval and ACTIVE descriptions below are historical.
+`AGERE_BUILD_CONTROL.json` owns the current sequence, measured checkpoint and exact next action; `BUILD_OWNER.json` owns runtime and build ownership. Mike's October 29–30 instructions authorize autonomous MVP completion, the current synthetic warehouse and verified private-branch pushes. Those instructions supersede the older discussion pause and individual payload-approval requests below. All ten acceptance areas remain in scope; engineering, model/clinical qualification and production authority remain separate.
 
 # Active Agere continuation queue
 
-**PAUSED between human-directed turns after the October 12 execution handoff.** `BUILD_OWNER.json` owns pause/ownership.
+**Build ACTIVE; scheduled prompts PAUSED.** Read `BUILD_OWNER.json` for current ownership and runtime state.
 `AGERE_BUILD_CONTROL.json` is the only current delivery sequence and checkpoint.
 This page preserves the full product acceptance backlog and links to evidence;
 older reports do not determine the next action.
@@ -25,7 +25,9 @@ inconsistencies; it does not run workflow acceptance or establish clinical quali
 Do not replace the full backlog with six individual example questions or expand
 model catalogs instead of delivering the current gate.
 
-## Last sealed delivery and unfinished work
+## Earlier delivery and unfinished-work history (superseded)
+
+These entries retain the original evidence and limitations. The current sealed delivery and unsealed work are identified only by `BUILD_OWNER.json` and `AGERE_BUILD_CONTROL.json`; historical pauses and pending approvals here do not override Mike's later instructions.
 
 - Latest G3 delivery: `GROUPED_REASSESSMENT_BUILD.md` and
   `artifacts/agere-grouped-reassessment-v1/implementation-receipt.json`.

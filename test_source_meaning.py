@@ -28,6 +28,24 @@ class Meaning(unittest.TestCase):
    self.assertLessEqual(P.request_bytes(body),20000);wire=json.loads(body['messages'][0]['content'])
    self.assertFalse(wire['canonical_identity']['narrative_subject_verified'])
    self.assertEqual({r[0] for r in wire['canonical_identity']['records']['rows']},{u['unit']['source_ref'] for u in units.values()})
+ def test_prepared_request_and_strict_parser_use_effective_policy_model(self):
+  from clinical_core.agere import model_policy as policy
+  from clinical_core.agere.clinical import source_output_recovery as recovery
+  from clinical_core.contracts import digest
+  import os
+  def check(expected):
+   with policy.tracking()as tracked:
+    body,units=self.packet()
+   self.assertEqual(tracked,[])
+   self.assertEqual(body['model'],expected)
+   self.assertEqual(recovery.request_key(body),digest({'contract':'context-student/1','provider':'claude','body':{**body,'model':policy.claude_model(body['model'])}}))
+   self.assertTrue(M.parse(self.answer(body),body,units,self.row)['unit_reviews'])
+  with patch.dict(os.environ,{'AGERE_QUESTION_LADDER':'','AGERE_HAIKU_FIRST':'on','AGERE_QUESTION_OPUS':'off'}):
+   check(policy.OPUS)
+   with policy.question_path():
+    check(policy.SONNET)
+    with policy.escalation():check(policy.OPUS)
+   with policy.deliverable():check(policy.OPUS)
  def test_raw_identity_namespace_and_unsubmitted_content_not_promoted(self):
   # Canonical binding remains unchanged even if a raw source-system ID differs.
   u=next(u for u in self.row['model_context']['evidence'] if u['kind']=='structured');u['reported_fields']['source_patient_id']='raw-system-123'

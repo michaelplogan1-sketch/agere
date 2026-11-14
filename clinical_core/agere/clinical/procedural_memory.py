@@ -8,6 +8,7 @@ revisions; revisions must be proposed and grounded again before use.
 from contextlib import contextmanager
 import json
 from pathlib import Path
+import re
 import sqlite3
 import time
 import uuid
@@ -46,6 +47,35 @@ def _family(question):
     return family(question)
 
 
+def _source_readings_current(path, lesson):
+    # Read only the sealed trajectory, avoiding recursive lesson selection in
+    # answer_context.load. Suggestions never gain authority from suspension.
+    from ..deliverables import answer_context as A
+    from .answer_dependencies import seal, source_readings
+    key = lesson.get('context_id')
+    if not isinstance(key, str) or not re.fullmatch(r'ANS-[0-9a-f]{24}', key):
+        return False
+    try:
+        context = A.read_snapshot(A.root(path) / key / 'answer.json')
+        if context.get('dependencies', {}).get('derivation') != lesson.get('trajectory'):
+            return False
+        seen = {key}
+        for _ in range(32):
+            if (context.get('dependencies', {}).get('derivation') != seal(path, context)['derivation']
+                    or not source_readings(path, context)['source_readings_current']):
+                return False
+            parent = (context.get('cohort_transform') or {}).get('parent_context_id')
+            if not parent:
+                return True
+            if not isinstance(parent, str) or parent in seen or not re.fullmatch(r'ANS-[0-9a-f]{24}', parent):
+                return False
+            seen.add(parent)
+            context = A.read_snapshot(A.root(path) / parent / 'answer.json')
+        return False
+    except (OSError, ValueError, TypeError, KeyError):
+        return False
+
+
 def _population(population):
     if population is None: return None
     if not isinstance(population, (list, tuple, set, frozenset)) or any(not isinstance(p, str) or not p for p in population):
@@ -77,6 +107,8 @@ def propose(path, context_id, instruction, *, probes, required_fields=None, supe
     from ..deliverables import answer_context as A
     from . import shared_planner as S, sql_query
     context = A.load(path, context_id)  # original failed/corrected trajectory is preserved
+    if not context['source_disposition']['source_readings_current']:
+        raise ValueError('Resolve suspended or unavailable source readings before proposing a reusable lesson')
     from .answer_dependencies import seal
     if (not context.get('dependencies') or seal(path, context)['derivation'] != context['dependencies']['derivation']
             or not (context.get('planner_receipt') or {}).get('request_contract')):
@@ -157,10 +189,12 @@ def ground(path, lesson_id):
     source, policy, wal = A.source_identity(path), S.policy_identity(), wal_identity(path)
     if lesson['source'] != source or lesson['policy'] != policy:
         raise ValueError('Lesson source or planning definitions changed; propose a new revision')
+    if not _source_readings_current(path, lesson):
+        raise ValueError('Resolve suspended or unavailable source readings before grounding a reusable lesson')
     feedback = learning.feedback_identity(path, lesson['question'])
     results = _probe(path, lesson)
     if (A.source_identity(path) != source or wal_identity(path) != wal
-            or learning.feedback_identity(path, lesson['question']) != feedback):
+            or learning.feedback_identity(path, lesson['question']) != feedback or not _source_readings_current(path, lesson)):
         raise ValueError('Source or feedback changed during grounding')
     with _db(path) as db:
         _event(db, lesson_id, 'active', {'probe_results': results, 'feedback': feedback, 'wal': wal})
@@ -183,6 +217,7 @@ def select(path, question, *, catalog=None, probe=False, population=None):
     for row in rows:
         if (row['source'] != source or row['policy'] != policy or row['state']['feedback'] != feedback
                 or row['state']['wal'] != wal_identity(path)
+                or not _source_readings_current(path, row)
                 or any(t not in catalog.tables or not set(cols) <= set(catalog.tables[t]) for t, cols in row['required_fields'].items())):
             continue
         if probe:

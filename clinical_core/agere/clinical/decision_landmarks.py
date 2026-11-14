@@ -17,7 +17,7 @@ from ...contracts import digest
 from . import outcomes as O, baseline_evidence as B, longitudinal as L
 from .clinical_events import iso
 
-VERSION='receipt-decision-landmarks/1'
+VERSION='receipt-decision-landmarks/2'
 LIMITS=[
     'Synthetic retrospective receipt-time experiment; no clinical prediction or treatment authority.',
     'The decision day begins after the earliest index receipt day; no within-day ordering is invented.',
@@ -69,16 +69,18 @@ def prepare(path,p):
 
 
 def clinical_clock_available(event,cutoff):
-    if not iso(event.get('clinical_date')):return False
     # Native source clocks can depend on an encounter row that arrived later.
     refs=event.get('clinical_date_evidence',[])
     if any(e['patient_id']!=event['patient_id'] for e in refs):raise ValueError('Cross-patient clock dependency')
+    if not iso(event.get('clinical_date')):return False
     return all(iso(e.get('arrival_date')) and e['arrival_date']<=cutoff for e in refs)
 
 
 def evaluate(pid,indices,endpoints,spec,p):
     parent=O.definition(spec['source_contract'])
     if any(e['patient_id']!=pid or e['source']['patient_id']!=pid for e in indices+endpoints):raise ValueError('Cross-patient landmark evidence')
+    for event in indices+endpoints:
+        clinical_clock_available(event,p['available_by'])  # validate every clinical clock/patient dependency, even an unused copy
     row={'schema':VERSION,'synthetic':True,'patient_id':pid,'contract':spec,'parameters':p,
          'status':'no_received_index','index':None,'decision':None,'window':None,'recorded_label':None,
          'calendar_mature':False,'mature_recorded_label_usable':False,'matches':[],
@@ -93,9 +95,12 @@ def evaluate(pid,indices,endpoints,spec,p):
     first=[e for e in candidates if e['arrival_date']==receipt]
     groups=O.deduplicate(first,'clinical_date')
     if len(groups)!=1:row.update(status='ambiguous_first_received_index',index_issues=[e['id'] for e in first]);return row
-    index=groups[0]['event'];clinical=index.get('clinical_date')
+    clock_witnesses=[e for e in groups[0]['evidence'] if clinical_clock_available(e,receipt)]
+    index=min(clock_witnesses,key=lambda e:e['id']) if clock_witnesses else groups[0]['event']
+    clinical=index.get('clinical_date')
     row['index']={'event_id':index['id'],'receipt_date':receipt,'clinical_date':clinical,
-                  'evidence_ids':[e['id'] for e in groups[0]['evidence']]}
+                  'evidence_ids':[e['id'] for e in groups[0]['evidence']],
+                  'clock_available_witness_ids':sorted(e['id'] for e in clock_witnesses)}
     if not clinical_clock_available(index,receipt):row['status']='index_clinical_clock_unavailable_at_receipt';return row
     if clinical>receipt:row['status']='index_clinical_event_after_receipt';return row
     decision=(date.fromisoformat(receipt)+timedelta(days=1)).isoformat()
@@ -109,26 +114,50 @@ def evaluate(pid,indices,endpoints,spec,p):
     if decision>p['available_by']:row['status']='decision_after_available_cutoff';return row
     ek=O.encounter_key(index)
     for group in O.deduplicate(endpoints,'clinical_date'):
-        e=group['event'];ids=[x['id'] for x in group['evidence']];reason=None;unresolved=None
-        clinical=e.get('clinical_date');arrival=e.get('arrival_date');other=O.encounter_key(e)
-        source_a=tuple(index['source'].get(k) for k in ('source_system','organization_id'))
-        source_b=tuple(e['source'].get(k) for k in ('source_system','organization_id'))
-        if iso(arrival) and arrival>p['available_by']:reason='not_received_by_evaluation_cutoff'
-        elif clinical and clinical<start:reason='clinical_event_before_decision_window'
-        elif clinical and clinical>end:reason='clinical_event_after_decision_window'
-        elif clinical and clinical>p['available_by']:reason='clinical_event_after_evaluation_cutoff'
-        elif iso(arrival) and arrival<=receipt:reason='endpoint_record_already_available_at_decision'
-        elif e['id']==index['id']:reason='same_event'
-        elif parent['source_scope']=='same_source_organization' and all(source_a+source_b) and source_a!=source_b:reason='different_source_organization'
-        elif ek and other and parent['encounter_rule']=='same_when_present' and ek!=other:reason='different_encounter'
-        elif ek and other and parent['encounter_rule']=='different_when_present' and ek==other:reason='same_encounter'
-        elif not iso(arrival):unresolved='unknown_endpoint_arrival'
-        elif not clinical_clock_available(e,p['available_by']):unresolved='endpoint_clinical_clock_unavailable'
-        elif parent['source_scope']=='same_source_organization' and not all(source_a+source_b):unresolved='unknown_source_organization'
-        if reason:row['excluded_endpoints'].append({'evidence_ids':ids,'reason':reason})
-        elif unresolved:row['unresolved_endpoints'].append({'evidence_ids':ids,'reason':unresolved})
-        else:row['matches'].append({'event_id':e['id'],'clinical_date':clinical,'arrival_date':arrival,'evidence_ids':ids,
-            'link':'explicit_source_scoped_encounters' if ek and other else 'provisional_observation_link'})
+        ids=[x['id'] for x in group['evidence']];assessments=[]
+        for e in group['evidence']:
+            reason=unresolved=None
+            clinical=e.get('clinical_date');arrival=e.get('arrival_date');other=O.encounter_key(e)
+            source_a=tuple(index['source'].get(k) for k in ('source_system','organization_id'))
+            source_b=tuple(e['source'].get(k) for k in ('source_system','organization_id'))
+            if iso(arrival) and arrival>p['available_by']:reason='not_received_by_evaluation_cutoff'
+            elif clinical and clinical<start:reason='clinical_event_before_decision_window'
+            elif clinical and clinical>end:reason='clinical_event_after_decision_window'
+            elif clinical and clinical>p['available_by']:reason='clinical_event_after_evaluation_cutoff'
+            elif iso(arrival) and arrival<=receipt:reason='endpoint_record_already_available_at_decision'
+            elif e['id']==index['id']:reason='same_event'
+            elif parent['source_scope']=='same_source_organization' and all(source_a+source_b) and source_a!=source_b:reason='different_source_organization'
+            elif ek and other and parent['encounter_rule']=='same_when_present' and ek!=other:reason='different_encounter'
+            elif ek and other and parent['encounter_rule']=='different_when_present' and ek==other:reason='same_encounter'
+            elif not iso(arrival):unresolved='unknown_endpoint_arrival'
+            elif not clinical_clock_available(e,p['available_by']):unresolved='endpoint_clinical_clock_unavailable'
+            elif parent['source_scope']=='same_source_organization' and not all(source_a+source_b):unresolved='unknown_source_organization'
+            assessments.append({'event_id':e['id'],'clinical_date':clinical,'arrival_date':arrival,
+                'disposition':'excluded' if reason else 'unresolved' if unresolved else 'qualifying',
+                'reason':reason or unresolved,
+                'clinical_clock_available_at_decision':clinical_clock_available(e,receipt),
+                'clinical_clock_available_at_evaluation':clinical_clock_available(e,p['available_by'])})
+        # Novel receipt is a group property. A post-decision copy cannot turn an
+        # already-received exact endpoint into a new future observation.
+        prior=[a['event_id'] for a in assessments if a['reason']=='endpoint_record_already_available_at_decision']
+        if prior:
+            for a in assessments:
+                if a['disposition'] in ('qualifying','unresolved'):
+                    a.update(disposition='excluded',reason='duplicate_of_endpoint_record_available_at_decision',
+                             prior_receipt_witness_ids=prior)
+        qualifying=[a for a in assessments if a['disposition']=='qualifying']
+        witness_ids=sorted(a['event_id'] for a in qualifying)
+        if qualifying:
+            chosen=min(qualifying,key=lambda a:(a['arrival_date'],a['event_id']))
+            e=row['evidence'][chosen['event_id']];other=O.encounter_key(e)
+            row['matches'].append({'event_id':e['id'],'clinical_date':e['clinical_date'],'arrival_date':e['arrival_date'],
+                'evidence_ids':ids,'qualifying_witness_ids':witness_ids,'copy_assessments':assessments,
+                'link':'explicit_source_scoped_encounters' if ek and other else 'provisional_observation_link'})
+        for disposition,field in [('excluded','excluded_endpoints'),('unresolved','unresolved_endpoints')]:
+            for why in sorted({a['reason'] for a in assessments if a['disposition']==disposition}):
+                row[field].append({'evidence_ids':[a['event_id'] for a in assessments if a['disposition']==disposition and a['reason']==why],
+                    'group_evidence_ids':ids,'reason':why,'qualifying_witness_ids':witness_ids,
+                    'matched_by_other_witness':bool(qualifying),'copy_assessments':assessments})
     if row['matches']:row.update(status='future_endpoint_observed',recorded_label=1)
     elif row['unresolved_endpoints']:row['status']='unresolved_future_endpoint'
     elif not row['calendar_mature']:row['status']='incomplete_followup'

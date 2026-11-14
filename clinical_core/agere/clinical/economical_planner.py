@@ -73,6 +73,10 @@ def normalize(question):
 
 def local_plan(question,as_of):
     key=normalize(question)
+    from .engine_suite import registered_input_command
+    registered, operation = registered_input_command(question, as_of)
+    if registered:
+        return validate(registered,as_of), f'exact_registered_input_{operation}'
     from .evidence_portfolio import local_question as portfolio_question
     portfolio=portfolio_question(question)
     if portfolio:return validate(portfolio,as_of),'exact_evidence_portfolio'

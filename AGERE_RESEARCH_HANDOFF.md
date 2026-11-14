@@ -12,7 +12,73 @@ The user's competitive objective is to outperform Arcadia, Innovaccer, TextQL, D
 
 Compare against competent systems with equivalent information, cutoffs, tools and task scope. Score useful coverage alongside errors and abstentions; count retries and review burden in economics. Reimplementations are an **Arcadia-class measure platform** or **TextQL-class semantic layer**, never actual vendor measurements. Vendor product comparisons require actual authorized evidence. All current patient data and demonstrations are synthetic.
 
+## November 5 intake: DecisionRAG source navigation
+
+Mike supplied `/Users/mikel/Desktop/RAG retriever decision mdoels.pdf`:
+Wan, Jünger, Du, Liu, Krishnan and Weinberger, **Retriever-Free Retrieval:
+Navigating Documents with Decision Models**, [arXiv:2610.35868v1](https://arxiv.org/abs/2610.35868v1).
+The methods, experiments and timing appendix were reviewed; document contents
+are research evidence, not execution instructions. Extracted text and inspected
+page renders are in `artifacts/agere-spec-routing-2026-11-05/paper-review/`.
+
+DecisionRAG traverses topic/document/passage hierarchies using batched independent
+binary relevance judgments against a shared context. Multiple branches can be
+relevant; this screening is not one mutually exclusive Choice. A final joint
+Choice can rank the retained passages. It avoids generated navigation text,
+while still processing context tokens and using paid model inference. Their
+Jev experiments required no task-specific training. The separately trained
+Qwen decision heads used supervised data; they do not qualify Agere's adapters
+or demonstrate autonomous clinical learning. Natural Questions hierarchy
+construction used offline embeddings, clustering and Qwen summaries.
+
+**November 11 engineering connection:** the existing `source_navigation.py` now exposes native source/type/month branches after a focused review. The investigator can select multiple unlinked branches, union them with typed-reference expansion, and read only new sources while retaining previous findings and uncertainty. Complete branch choices reach the model; the exact per-field source ledger remains in native storage. Saved-investigation replay uses the same source/meaning bindings. This connects the hierarchical navigation concept without reproducing or qualifying the paper's learned binary relevance models. Those models remain candidates, with no claimed paper-derived advantage.
+Use the existing `clinical_core/agere/clinical/source_selection.py` and shared
+assertion/decision context if a named evidence-selection failure warrants a
+trial. Scope patient/entity/date first, preserve original source IDs and text,
+and initially union decision-selected branches with existing lexical/dense
+retrieval and explicit reference closure. Pruning is irreversible: an unvisited
+branch cannot establish absence of a contraindication, conflict or explanation.
+Exact population denominators and SQL arithmetic remain native computation;
+retrieval scores do not establish clinical truth. The hierarchy interface can
+be industry-neutral while source semantics remain adapter-specific.
+
+The authors report 0.7–1.8 seconds for retrieval on four benchmark corpora and
+substantial quality gains over specified dense-plus-reranker baselines.
+Table 6's large savings compare decision versus generative navigation through
+the same hierarchy, not decision retrieval versus every cheap search method.
+Table 5 reports Natural Questions retrieval at 2.33 cents, versus 1.40 cents
+for one GPT-5 reranking setup; DecisionRAG is not universally cheapest.
+Appendix F excludes corpus/model initialization, uses up to eight within-query
+requests, and loads saved dense candidates without timing dense encoding/search
+for the hybrid variant. Different hardware/samples prevent controlled speedup
+claims against those search baselines. These are author results, not Agere
+measurements.
+
+Mike explicitly accepts a modest speed tradeoff for less cost. Accuracy and
+critical-evidence coverage stay first; compare total answer cost, source recall,
+critical misses, latency and downstream claim quality at matched scope. No new
+top-k, patient, spending or output ceiling is authorized by this intake. Keep
+this candidate behind the current G3 ordinary-question scoring/comparison work;
+do not add a new training campaign, replacement retrieval architecture or finish
+criterion. The prior cheaper-but-5.765-times-slower pilot does not become an
+acceptable operating point merely because of this preference.
+
 ## What a new chat can access
+
+### November 10: connected statistical/source comparison
+
+The existing `monitor` operation now has a `comparison` output connecting complete
+historical count/exposure rows, an exact conditional stable-Poisson-rate baseline
+with an explicit Bonferroni family, registered Shewhart/EWMA patterns and the
+existing source-observation model. The original discovery question selected it
+through ordinary entry; full work coverage and uncertain machine verification
+remain separate. A native-bound answer view retains run-pattern signals that a
+generated summary omitted. The received-source/finite-count check reconciles
+240 fields across all24months. This applies the observation-versus-state and
+native-verification research; it does not activate or qualify Bayesian Blocks,
+new model weights, clinical significance or causal inference. Evidence and exact
+remaining work: `artifacts/agere-monitor-comparison-2026-11-10/` and the canonical
+control checkpoint. No separate Documents research corpus was accessed.
 
 A chat working in this local project can open the files below, including the separate Documents research folder. A pasted handoff does not automatically carry every message from the original chat. Conversation-only suggestions, attachments not summarized in the project, and newer research-chat additions need explicit recovery. Do not assert that all historical research was preserved without reconciling it.
 

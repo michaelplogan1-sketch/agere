@@ -119,6 +119,17 @@ def visits_sql(db):
     return f"SELECT patient_id, event_date FROM {relation_sql(columns(db))} WHERE classification = 'ed'"
 
 
+def metric_visits_sql(db):
+    """Same event relation as the versioned all-source warehouse ED metric.
+
+    Preserve the received materialization's event grain. Older semantic layers
+    without it use the existing all-source patient-day definition explicitly.
+    """
+    if {'patient_id','event_date','kind'} <= columns(db).get('utilization_event',set()):
+        return "SELECT patient_id,event_date FROM utilization_event WHERE kind='ed_visit' AND event_date IS NOT NULL"
+    return visits_sql(db)
+
+
 def columns(db):
     names = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')")]
     return {n: {r[1] for r in db.execute(f'PRAGMA table_info("{n}")')} for n in names}

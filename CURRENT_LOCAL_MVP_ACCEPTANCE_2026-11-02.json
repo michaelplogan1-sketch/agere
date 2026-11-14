@@ -1,0 +1,34 @@
+{
+  "schema": "current-local-mvp-engineering-decision/1",
+  "status": "passed",
+  "recorded_at": "2026-11-03T19:43:36.988190+00:00",
+  "product_commit": "e7a0d1c76889d4a2a6ccbf8e7dfa6ae19b407ea6",
+  "current_gate": "G3",
+  "engineering_passed": 9,
+  "engineering_total": 9,
+  "scope_areas": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "complete_workflows": 6,
+  "independent_model_clinical_qualification": false,
+  "production_authority": false,
+  "full_mvp_acceptance": false,
+  "new_provider_calls": 16,
+  "scorecard_sha256": "e47e2b9993ae629e37c50581c9c95df34b43246440a521a7e443d46bb68bb824",
+  "delivery_receipt": "artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json",
+  "clinical_answer_status": "partial_unverified",
+  "remaining": [
+    "The current finite functional matrix passes9/9 across alltenareas. The original57patient answer is saved and usable for evidence review, but remains partial/unverified with55of61source packets supported,6unresolved and undecided coverage. Current numeric exact-question reuse is measured; current full-clinical cost/latency and a suitable simpler-route comparison remain open. Independent clinical/model/outcome qualification and customer deployment remain separate. No fullMVP or superiority claim."
+  ],
+  "decision_basis": "artifacts/agere-current-release-closure-2026-11-03/code-applicability.json",
+  "fresh_current_archive_or_recovery_execution_claimed": false
+}

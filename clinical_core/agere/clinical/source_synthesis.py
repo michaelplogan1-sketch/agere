@@ -48,10 +48,12 @@ def saved_source_stage(path,key):
     reconciliation cannot hide paid source progress or become a reconciled answer.
     """
     row=context(path,key)
-    from . import source_output_recovery
+    from . import source_output_recovery, source_citation_recovery
     stage,_=stages(path,key)
     *_,answer_id=stage.prepare(path,key)
     recovered=source_output_recovery.saved_for_context(path,key) if stage.VERSION=='meaning-source-stage/1' else None
+    if recovered is None and stage.VERSION=='meaning-source-stage/1':
+        recovered=source_citation_recovery.saved_for_context(path,key)
     if recovered is None and not stage.exists(path,answer_id):
         return {'status':'source_passes_incomplete','context_id':key,'answer':None,'new_paid_api_calls':0}
     answer=recovered if recovered is not None else stage.inspect(path,answer_id)
@@ -89,9 +91,18 @@ def synthesize(path,key,ledger,*,allow_live=False):
     # run source passes followed directly by stable-reference reconciliation.
     try:return engine(path,key).synthesize(path,key,DispatchLedger(ledger),allow_live=False)
     except ValueError as exc:
-        if 'Live synthesis route disabled' not in str(exc):raise
+        if 'Live synthesis route disabled' not in str(exc):
+            # A complete, original-parser-validated correction supersedes the
+            # failed *source attempt* for downstream use, never its ledger status.
+            # Incomplete recovery and historical engines keep their retry guard.
+            if str(exc)!='Prior source pass pending/failed; no silent paid retry':raise
+            candidate,_=stages(path,key)
+            if candidate.VERSION!='meaning-source-stage/1' or saved_source_stage(path,key)['answer'] is None:raise
     source_stage_synthesis,stable_reconciliation=stages(path,key)
-    parent=source_stage_synthesis.synthesize(path,key,ledger,allow_live=allow_live)
+    completed=saved_source_stage(path,key) if source_stage_synthesis.VERSION=='meaning-source-stage/1' else None
+    parent=({**completed['answer'],'new_paid_api_calls':0,'new_token_count_calls':0,'cache_hit':True}
+            if completed and completed['answer'] is not None else
+            source_stage_synthesis.synthesize(path,key,ledger,allow_live=allow_live))
     if len(parent['passes'])==1:return parent
     try:result=stable_reconciliation.synthesize(path,parent['id'],ledger,allow_live=allow_live)
     except ValueError as exc:
@@ -112,8 +123,9 @@ def progress(path,key):
             'status':'complete' if planned['saved_answer_available'] else 'source_passes_complete_reconciliation_pending'}
     return stage
 def inspect(path,key):
-    from . import source_output_recovery
+    from . import source_output_recovery, source_citation_recovery
     if source_output_recovery.exists(path,key):return source_output_recovery.inspect(path,key)
+    if source_citation_recovery.exists(path,key):return source_citation_recovery.inspect(path,key)
     complete=complete_plan_view(path,key)
     if complete is not None:return complete
     from . import reconciliation

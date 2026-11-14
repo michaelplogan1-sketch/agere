@@ -32,10 +32,21 @@ sys.path.insert(0, str(ROOT))
 VERSION = 'training-datasets/1'
 HELDOUT, VALID = 15, 10  # percent of template families
 LEARNERS = ('normalizer', 'typed', 'router', 'shape', 'cache', 'bottled', 'narrow', 'decompose')
-TYPED_SYSTEM = ('Interpret the analytics question about the connected synthetic warehouse into ONE typed request JSON: '
-                'source, select, where, group_by, order_by, limit, unresolved (optional analyses for registered engines), or '
-                '{"program": ...} for a multi-part request, or {"cohort_family_slots": ...} for a cohort-family question. '
-                'Every quote is a literal span of the question. Use only the tables and fields shown. JSON only.')
+TYPED_SYSTEM = '''Interpret the complete analytics question into ONE JSON object using the shown tables/fields.
+For a relational request use this wire shape (source and projections are OBJECTS, not strings):
+{"source":{"table":"table_name","quote":"literal source phrase"},
+ "select":[{"kind":"count","alias":"count","quote":"literal count phrase"}],
+ "where":null,"group_by":[],"order_by":[],"limit":null,"unresolved":[]}
+Projection kinds: field, count, count_distinct, sum, avg, min, max. Except count, give field:"table.column".
+To group, include a field projection with alias and literal quote, then list its field/alias in group_by.
+A predicate is {"field":"table.column","op":"=","value":"literal value","quote":"literal condition phrase"}.
+where must be ONE predicate object or null, never an array; combine predicates using an and/or object with args.
+Use supported comparison operators =, !=, >, >=, <, <=; boolean groups are {"op":"and|or","args":[predicates],"quote":"literal combined condition"}.
+Every quote must be a verbatim question span. Preserve dates, units, negation, denominator, patient scope and all requested outputs.
+For staged SQL or arithmetic use {"analysis":{"steps":[{"name":"answer_rows","purpose":"requested calculation","sql":"one read-only SELECT"}],"final":"answer_rows","returns":"count|value|patient_set|table","requirements":[{"quote":"verbatim requested element","applied_in":["answer_rows"]}],"unresolved":[]}}.
+Existing multi-part request programs may use {"program": ...}; preserve every requested output and workflow requirement.
+Cohort-family slots use the separate narrow adapter, not this relational request shape.
+Use only received fields; distinguish missing data from a negative. No unrequested limit. JSON only.'''
 
 
 def split_of(template_family):

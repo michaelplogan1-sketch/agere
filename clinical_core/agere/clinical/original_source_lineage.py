@@ -23,11 +23,15 @@ def prepare(stack,release,output):
     if output.exists():raise ValueError('Fresh original-source policy output required')
     meta=json.loads((stack/'run.json').read_text());manifest=json.loads((release/'manifest.json').read_text())
     source=release/'warehouse.sqlite';dataset=meta['snapshot'].get('source_dataset',{})
-    if (meta.get('synthetic') is not True or dataset.get('adapter')!=ADAPTER or
-        manifest.get('schema')!='single-healthcare-warehouse/1' or
-        manifest.get('population')!='same_original_patient_roster' or
-        manifest['metrics'].get('original_patient_id_set_preserved') is not True):
-        raise ValueError('Explicit preserved original-cohort source required')
+    schema = manifest.get('schema')
+    original = (schema == 'single-healthcare-warehouse/1' and dataset.get('adapter') == ADAPTER and
+                manifest.get('population') == 'same_original_patient_roster' and
+                manifest.get('metrics', {}).get('original_patient_id_set_preserved') is True)
+    expanded = (schema == 'healthcare-warehouse/2' and dataset.get('adapter') in
+                ('original-cohort-warehouse-adapter/2', 'original-cohort-warehouse-adapter/3',
+                 'original-cohort-warehouse-adapter/4'))
+    if meta.get('synthetic') is not True or not (original or expanded):
+        raise ValueError('Explicit supported received-patient source required')
     sha=checksum(source)
     if (sha!=manifest['files'].get('warehouse.sqlite') or sha!=dataset.get('source_sha256') or
         source.resolve()!=Path(dataset['source']).resolve()):raise ValueError('Original-cohort source hash/location mismatch')
@@ -49,6 +53,7 @@ def prepare(stack,release,output):
     output.mkdir(parents=True,exist_ok=False)
     text=json.dumps(policy,indent=2,allow_nan=False)+'\n';(output/'policy.json').write_text(text)
     receipt={'schema':VERSION,'synthetic':True,'warehouse_release':meta['snapshot']['release'],
+        'warehouse_manifest_schema':schema,'warehouse_adapter':dataset['adapter'],
         'generator_manifest_sha256':checksum(release/'manifest.json'),'ancestry_source_sha256':sha,
         'policy_sha256':checksum(output/'policy.json'),'patients':len(ids),'families':len(ids),
         'extracted_fields':['patients.patient_id'],'private_files_read':False,'hidden_clinical_labels_exported':False,

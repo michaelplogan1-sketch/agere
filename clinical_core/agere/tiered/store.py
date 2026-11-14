@@ -1,0 +1,141 @@
+"""Read-only access to the semantic layer, and the one place SQL is executed."""
+import os
+import re
+import sqlite3
+import time
+from pathlib import Path
+
+DEFAULT_DB = 'artifacts/agere-full-stack-rerun-2026-10-30/focused/runtime/stack/semantic.sqlite3'
+# Tables a recipe may read. `document` is a catalog view over notes, readable scans and exchange documents; document
+# text itself is never selectable by a recipe: it is fetched by texts() for the reading tier only.
+TABLES = ('document', 'note_fact', 'note_therapy_change', 'therapy_barrier', 'utilization_event', 'stay', 'appointment', 'visit', 'fill', 'claim', 'patient', 'concept_patient', 'member_month',
+          'measurement_latest', 'immunization', 'death', 'organization', 'clinician', 'enrollment_span', 'condition',
+          'encounter', 'prescription', 'allergy_entry', 'smoking_status', 'social_need', 'wellness_visit', 'cancer_screening')
+SECONDS = 20.0
+
+
+def path():
+    return Path(os.environ.get('AGERE_TIERED_DB', DEFAULT_DB))
+
+
+# Tables whose rows belong to one patient. Restricting these restricts every recipe: the document catalog is built
+# from the three document tables, so it is restricted with them.
+PATIENT_TABLES = tuple(t for t in TABLES if t not in ('document', 'organization', 'clinician')) + ('clinical_note', 'scanned_document', 'hie_document')
+MAX_COHORT = 5000
+
+
+def connect(cohort=None):
+    """cohort: patient ids. When given, every patient table on this connection holds only those patients' rows
+    (a temporary view of the same name over the real table), so any recipe runs inside the cohort with no change
+    to its SQL and no model involved."""
+    db = sqlite3.connect(path().resolve().as_uri() + '?mode=ro', uri=True)
+    if cohort is not None:
+        db.execute('CREATE TEMP TABLE cohort(patient_id TEXT PRIMARY KEY)')
+        db.executemany('INSERT OR IGNORE INTO cohort VALUES(?)', [(str(p),) for p in cohort])
+        for table in PATIENT_TABLES:
+            db.execute(f'CREATE TEMP VIEW {table} AS SELECT * FROM main.{table} WHERE patient_id IN (SELECT patient_id FROM cohort)')
+    db.execute(DOCUMENT_VIEW)
+    db.execute('PRAGMA query_only=ON')
+    return db
+
+
+DOCUMENT_VIEW = """CREATE TEMP VIEW document AS
+SELECT record_id, patient_id, 'clinical_note' AS source, note_type AS document_type, event_date, organization_id, text_chars FROM clinical_note
+UNION ALL SELECT record_id, patient_id, 'scanned_document', document_type, event_date, NULL, text_chars FROM scanned_document WHERE readable = 1
+UNION ALL SELECT record_id, patient_id, 'hie_document', document_type, event_date, author_organization_id, text_chars FROM hie_document"""
+
+
+def portable(sql, cohort=None):
+    """The same SELECT runnable on the semantic layer by anyone: the document catalog is inlined as a CTE, because
+    the view exists only on this module's connections. With a cohort, the patient ids and the restricted tables are
+    inlined the same way, so the saved SQL returns the cohort's result and not the whole population's."""
+    text = sql.strip().rstrip(';')
+    uses_documents = bool(re.search(r'(?i)\bdocument\b(?!_)', text))
+    ctes = []
+    if cohort is not None:
+        ids = sorted({str(p) for p in cohort})
+        values = 'VALUES ' + ', '.join("('" + p.replace("'", "''") + "')" for p in ids) if ids else 'SELECT NULL WHERE 0'
+        ctes.append(f'cohort(patient_id) AS ({values})')
+        for table in PATIENT_TABLES:
+            if re.search(rf'(?i)\b{table}\b(?!_)', text) or (uses_documents and table in ('clinical_note', 'scanned_document', 'hie_document')):
+                ctes.append(f'{table} AS (SELECT * FROM main.{table} WHERE patient_id IN (SELECT patient_id FROM cohort))')
+    if uses_documents: ctes.append('document AS (' + DOCUMENT_VIEW.split(' AS\n', 1)[1] + ')')
+    if not ctes: return text
+    if re.match(r'(?is)^\s*with\s+recursive\b', text): raise RecipeError('A recursive recipe cannot be saved with a cohort or the document catalog')
+    if re.match(r'(?is)^\s*with\b', text):
+        return re.sub(r'(?is)^\s*with\b', 'WITH ' + ', '.join(ctes) + ',', text, count=1)
+    return 'WITH ' + ', '.join(ctes) + ' ' + text
+
+
+def texts(record_ids, db):
+    """Document text for the reading tier. -> {record_id: {'text', 'event_date', 'source'}}. Only catalogued documents."""
+    out, ids = {}, list(dict.fromkeys(record_ids))
+    for i in range(0, len(ids), 400):
+        chunk = ids[i:i + 400]
+        marks = ','.join('?' * len(chunk))
+        for rid, source, day, text in db.execute(
+                f"SELECT d.record_id, d.source, d.event_date, COALESCE(t.text, json_extract(r.payload, '$.text')) FROM document d "
+                f"LEFT JOIN scanned_document_text t ON t.record_id = d.record_id AND d.source = 'scanned_document' "
+                f"LEFT JOIN record r ON r.record_id = d.record_id AND d.source <> 'scanned_document' WHERE d.record_id IN ({marks})", chunk):
+            out[rid] = {'text': text or '', 'event_date': day, 'source': source}
+    return out
+
+
+def schema_version(db=None):
+    own = db is None
+    db = db or connect()
+    try:
+        rows = dict(db.execute("SELECT key, value FROM meta WHERE key IN ('version', 'source_digest')"))
+        return f"{rows.get('version')}:{str(rows.get('source_digest'))[:16]}"
+    finally:
+        if own: db.close()
+
+
+_as_of = {}
+
+
+def as_of(db):
+    """The semantic layer's own snapshot date: the clock for anything dated, never today's date."""
+    key = str(path())
+    if key not in _as_of:
+        _as_of[key] = db.execute("SELECT value FROM meta WHERE key = 'as_of'").fetchone()[0][:10]
+    return _as_of[key]
+
+
+def schema_text(db=None):
+    """Table and column names only: what a model may see. Never rows."""
+    own = db is None
+    db = db or connect()
+    try:
+        return '\n'.join(f"{t}({', '.join(c[1] for c in db.execute(f'PRAGMA table_info({t})'))})" for t in TABLES)
+    finally:
+        if own: db.close()
+
+
+class RecipeError(ValueError):
+    pass
+
+
+def run(sql, params=None, db=None):
+    """Execute one read-only SELECT. -> (columns, rows). Raises RecipeError on anything else."""
+    text = sql.strip().rstrip(';')
+    if ';' in text or not re.match(r'(?is)^\s*(select|with)\b', text):
+        raise RecipeError('A recipe is exactly one SELECT statement')
+    if re.search(r'(?i)\b(scanned_document_text|payload)\b', text):
+        raise RecipeError('A recipe may not select document text; use a reading plan')
+    if re.search(r'(?i)\b(concept|drug_class)\s*\)?\s+(not\s+)?(like|glob)\b', text):
+        raise RecipeError('Compare concept and drug_class with = or IN against exact vocabulary values; LIKE would also match other values (diabetes matches prediabetes)')
+    if re.search(r'(?i)\b(attach|pragma|insert|update|delete|drop|alter|create|replace|vacuum)\b', text):
+        raise RecipeError('A recipe may only read')
+    own = db is None
+    db = db or connect()
+    deadline = time.monotonic() + SECONDS
+    db.set_progress_handler(lambda: 1 if time.monotonic() > deadline else 0, 20000)
+    try:
+        cur = db.execute(text, params or {})
+        return [d[0] for d in cur.description], [list(r) for r in cur.fetchall()]
+    except sqlite3.Error as exc:
+        raise RecipeError(f'{type(exc).__name__}: {exc}') from exc
+    finally:
+        db.set_progress_handler(None, 0)
+        if own: db.close()

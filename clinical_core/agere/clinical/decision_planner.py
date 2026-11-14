@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 from ...contracts import digest
 from ..gateway import PersistentGateway
+from ..model_policy import claude_model
 from . import care_capabilities as care, case_synthesis
 from .context_student import send
 
@@ -49,7 +50,7 @@ def inputs(answer, context, binding, portfolio):
 
 
 def body(wire):
-    return {'model':PersistentGateway.MODELS['claude'],'max_tokens':4096,'system':INSTRUCTIONS,
+    return {'model':claude_model(PersistentGateway.MODELS['claude']),'max_tokens':4096,'system':INSTRUCTIONS,
         'messages':[{'role':'user','content':json.dumps(wire,ensure_ascii=False,separators=(',',':'))}],
         'output_config':{'format':{'type':'json_schema','schema':SCHEMA}}}
 

@@ -29,6 +29,27 @@ class GeneralAnalysis(unittest.TestCase):
     def setUp(self):
         fixtures.SharedPlanner.setUp(self)
 
+    def test_native_self_count_rewrite_runs_before_inspection_and_preserves_selected_scope(self):
+        import sqlite3
+        question = 'List patients with source event counts in 2029.'
+        query = ("SELECT n.patient_id,n.event_date,(SELECT COUNT(DISTINCT m.event_date) "
+                 "FROM utilization_event m WHERE m.kind=n.kind) AS source_dates "
+                 "FROM utilization_event n WHERE n.event_date BETWEEN {{parameter:year}} || '-01-01' "
+                 "AND {{parameter:year}} || '-12-31' ORDER BY n.patient_id,n.event_date")
+        proposal = {'steps':[{'name':'observed','purpose':'Received source dates','sql':query}],
+                    'final':'observed','returns':'table','parameters':[{'name':'year','value':2029,'quote':'2029'}],
+                    'requirements':[{'quote':question,'applied_in':['observed'],'how':'Retain source dates and distinct counts'}],
+                    'definitions':[],'unresolved':[]}
+        contract = G.prepare(self.catalog,question,proposal,population=['A'])
+        self.assertEqual(contract['population'],['A'])
+        self.assertEqual(contract['native_optimization']['rewrites'][0]['source'],'utilization_event')
+        self.assertIs(G.sealed(contract),contract)
+        _,shown = G.preview(self.catalog,contract,population=['A'])
+        with sqlite3.connect(self.catalog.target) as db:
+            expected = db.execute("WITH utilization_event AS (SELECT * FROM main.utilization_event WHERE patient_id='A') "
+                                  + query.replace('{{parameter:year}}','2029')).fetchall()
+        self.assertEqual([tuple(row[c] for c in contract['output_columns']) for row in shown['rows']],expected)
+
     def test_prepare_expands_governed_definitions_and_records_exact_sources(self):
         c = G.prepare(self.catalog, Q, spec())
         self.assertIn("concept IN ('diabetes')", c['query'])
@@ -40,6 +61,29 @@ class GeneralAnalysis(unittest.TestCase):
         tampered = {**c, 'query': c['query'].replace('>= 2', '>= 1')}
         with self.assertRaises(R.PlanError):
             G.sealed(tampered)
+
+    def test_explicit_provider_claim_source_is_compiled_not_left_to_reviewer_agreement(self):
+        import sqlite3
+        from clinical_core.agere.clinical import request_language as L
+        with sqlite3.connect(self.path/'semantic.sqlite3') as db:
+            db.execute("ALTER TABLE claim ADD COLUMN claim_source TEXT DEFAULT 'medical_claims'")
+            db.execute("INSERT INTO claim(claim_id,patient_id,service_date,allowed_cents,claim_source) VALUES('PAYER','A','2029-03-01',999999,'payer_medical_claims')")
+        self.catalog = R.Catalog.load(self.path)
+        question = 'List patients with at least 2 provider claims in 2029 and their total allowed_cents.'
+        bad = {'steps':[{'name':'totals','purpose':'Received claims','sql':
+              "SELECT patient_id,SUM(allowed_cents) AS total_allowed_cents FROM claim WHERE service_date BETWEEN '2029-01-01' AND '2029-12-31' GROUP BY patient_id HAVING COUNT(*)>=2"}],
+               'returns':'table','requirements':[{'quote':question,'applied_in':['totals'],'how':'Grouped source amounts'}],'unresolved':[]}
+        with self.assertRaisesRegex(R.PlanError,'explicitly requests provider claims'):
+            G.prepare(self.catalog,question,bad)
+        bad['steps'][0]['sql']=bad['steps'][0]['sql'].replace('GROUP BY',"AND claim_source='medical_claims' GROUP BY")
+        raw,_=G.preview(self.catalog,G.prepare(self.catalog,question,bad))
+        self.assertEqual(raw['rows'],[{'patient_id':'A','total_allowed_cents':30000}])
+        # Both phrases use the existing source adapter and bind the same feed.
+        for wording in ('provider claims','provider medical claims'):
+            q='How many '+wording+' in 2029?'
+            contract=R.compile_request(self.catalog,q,L.parse(self.catalog,q))
+            self.assertIn('claim_source',contract['query'])
+            self.assertIn('medical_claims',contract['query'])
 
     def test_every_question_word_must_be_mapped_or_explicitly_unresolved(self):
         s = spec()

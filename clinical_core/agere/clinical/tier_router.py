@@ -20,6 +20,9 @@ _CACHE = {}
 
 
 def model_path():
+    if os.environ.get('AGERE_COMPONENT_RELEASE_ROOT'):
+        from .component_learning import runtime_model
+        return runtime_model('tier_router')
     if os.environ.get('AGERE_TIER_ROUTER'): return Path(os.environ['AGERE_TIER_ROUTER'])
     base = next((p for p in (ROOT, *ROOT.parents) if (p / 'artifacts' / 'training' / 'runs').exists()), ROOT)
     pointers = sorted((base / 'artifacts' / 'training' / 'runs').glob('*/promoted/tier_router.json'), key=lambda p: p.stat().st_mtime)
@@ -44,8 +47,8 @@ def load(path=None):
 
 
 def predict(question, encoder, model):
-    from .learned_router import features, softmax
-    X = features([question], encoder)
+    from .learned_router import features, softmax,lexical,LEXICAL_SCALE
+    X = np.asarray([LEXICAL_SCALE*lexical(question)]) if model.get('feature_kind')=='lexical' else features([question], encoder)
     p = softmax((X @ model['W'].T + model['b']) / model['temperature'])[0]
     i = int(p.argmax())
     return model['labels'][i], float(p[i])
@@ -58,8 +61,16 @@ def reorder(stack, question, order, *, model=None, encoder=None):
     model = model or load()
     if not model: return order, None
     encoder = encoder or getattr(getattr(stack, 'retriever', None), 'encoder', None)
-    if encoder is None or getattr(encoder, 'identity', None) != model.get('encoder_identity'): return order, None
+    if model.get('feature_kind')!='lexical':
+        from .component_learning import model_encoder
+        encoder=model_encoder(model,encoder)
+    if model.get('feature_kind')!='lexical' and (encoder is None or getattr(encoder, 'identity', None) != model.get('encoder_identity')): return order, None
     tier, p = predict(question, encoder, model)
+    from .decision_evaluation import observe,snapshot_identity
+    observe(decision_type='route',model='tier_router',confidence=p,proposal=tier,incumbent=order,
+        identity={k:model.get(k)for k in ('version','weights','bias','labels','threshold','temperature','encoder_identity')},
+        inputs={'question':question,'order':order,
+                'snapshot':snapshot_identity(stack)})
     receipt = {'version': VERSION, 'tier': tier, 'p': round(p, 4), 'threshold': model.get('threshold'), 'applied': False}
     if tier not in order or p < float(model.get('threshold', 1.01)): return order, receipt
     front = [t for t in PINNED if t in order and t != tier] + [tier]

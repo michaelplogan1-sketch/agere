@@ -184,7 +184,7 @@ def patient_details_requested(question):
     q = str(question or '').lower()
     return bool(re.search(r'\b(?:patients?|members?|people)\b', q) and re.search(
         r"\b(?:who (?:their|each .{0,20}) (?:pcp|cardiologist|provider|clinician)|"
-        r"(?:list|show|include|return|give|display)\b[^.;?]{0,50}\b(?:their|each (?:patient|member)'?s?)\b|"
+        r"(?:list|show|include|return|give|display)\b[^.;?]*?\b(?:their|each (?:patient|member)'?s?)\b|"
         r"(?:with|including|along with) (?:their|each (?:patient|member)'?s?)\b|"
         r"(?:flag|label) (?:which |the |each |those )?(?:patients?|members?)\b)", q))
 

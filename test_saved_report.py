@@ -1,0 +1,331 @@
+"""Shared answer-to-report contracts, without provider calls or question banks."""
+import copy
+import os
+import json
+import re
+import unittest
+from unittest.mock import Mock, patch
+import test_shared_planner as F
+from clinical_core.agere.clinical import conversation as C
+from clinical_core.agere.deliverables import answer_context as A, saved_report as R, workflow as W
+import test_answer_workflow as AW
+
+
+class SavedReport(unittest.TestCase):
+    setUp = F.SharedPlanner.setUp
+
+    def prepare(self, partial=False):
+        f=AW.AnswerWorkflow();f.__dict__.update(self.__dict__)
+        question,_,result,_=f.composed(base='List patients with diabetes')
+        result['workflow']=[result['workflow'][0]]
+        if partial:
+            result['answer']['status']='partial'
+            result['answer']['missing']=['Medication history unavailable']
+        return question,result
+
+    def test_normal_compose_can_choose_zero_call_report_and_keep_analysis_cost(self):
+        question,result=self.prepare()
+        from clinical_core.agere.gateway import BudgetLedger
+        ledger_path=self.path/'provider-ledger.sqlite3'
+        def compose(*args,**kwargs):
+            ledger=BudgetLedger(ledger_path)
+            try:
+                ledger.reserve('authored-analysis-call','claude','claude-haiku-5-5')
+                ledger.finish('authored-analysis-call',response={'content':[],'usage':{'input_tokens':1000,'output_tokens':100}},seconds=.1)
+            finally:ledger.close()
+            return {**copy.deepcopy(result),'new_paid_api_calls':1}
+        self.stack.compose=compose
+        self.stack.allow_live=True
+        with patch.dict(os.environ,{'AGERE_LEDGER_PATH':str(ledger_path)}),patch('clinical_core.agere.deliverables.answer_context.compose_frontier',side_effect=AssertionError('No paid renderer')):
+            out=C.handle_compose(self.stack,{'question':question,'scope':'warehouse','delivery_generation':'saved_report'})
+        step=out['workflow'][0]
+        self.assertEqual(step['status'],'ready');self.assertEqual(step['generation'],'saved_report')
+        self.assertEqual(step['new_paid_api_calls'],0)
+        self.assertEqual(out['cost_receipt']['paid_calls'],1)
+        self.assertGreater(out['cost_receipt']['usd'],0)
+        spec=json.loads((A.root(self.path)/out['action_context']['id']/'deliverables'/step['deliverable_id']/'spec.json').read_text())
+        self.assertEqual(spec['verification']['rows'],sum(len(a.get('table') or []) for a in R.sections(result['answer'])))
+        self.assertFalse(spec['mockup'])
+
+    def test_partial_result_remains_partial_with_full_evidence_and_no_action_claim(self):
+        question,result=self.prepare(partial=True)
+        out=W.fulfill(self.stack,question,result,generation='saved_report')
+        step=out['workflow'][0];folder=A.root(self.path)/out['action_context']['id']/'deliverables'/step['deliverable_id']
+        body=(folder/'artifact.html').read_text()
+        payload=json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>',body,re.S).group(1))
+        self.assertEqual(payload['answer']['status'],'partial')
+        self.assertEqual(payload['answer'],result['answer'])
+        self.assertIn('Medication history unavailable',body)
+        self.assertIn('No model call',body)
+
+    def test_requested_brief_exposes_compound_findings_without_new_analysis_or_pdf(self):
+        question,result=self.prepare(partial=True)
+        result['answer']['sections']=[{'title':'Received financial observations','answer':{
+            'status':'partial','facts':['Observed paid amounts are retained.'],
+            'missing':['Attribution and causal savings remain unknown.'],
+            'limitations':['Use the recorded payment period.'],'table':[{
+                'source_domain':'recorded payments','paid_cents':201,'attributable_savings':None,
+                'citations':[{'url':'https://example.org/received-definition'}]}]}}]
+        c=A.capture(self.path,question,result)
+        with patch('clinical_core.agere.deliverables.answer_context.compose_frontier',side_effect=AssertionError('No paid renderer')):
+            d=R.create(self.path,{'context_id':c['id'],'template':'brief','request':'Review brief'})
+        body=d['html'];payload=json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>',body,re.S).group(1))
+        overview=body.split('<section class="panel full-width" id="review-brief">')[1].split('<script id="data"')[0]
+        for text in ['Received financial observations','Observed paid amounts are retained.',
+                     'Attribution and causal savings remain unknown.','Use the recorded payment period.']:
+            self.assertIn(text,overview)
+        self.assertEqual(payload['answer'],result['answer']);self.assertEqual(payload['layout'],'brief')
+        self.assertIn('paid cents',overview);self.assertIn('201',overview)
+        self.assertIn('Unknown / not supplied',overview)
+        self.assertIn('href="https://example.org/received-definition"',overview)
+        self.assertEqual(d['new_paid_api_calls'],0);self.assertNotIn('pdf',d['formats'])
+        self.assertNotIn('PDF companion not yet generated',body)
+        raw,_,_=R.read_format(self.path,c['id'],d['id'],'json')
+        self.assertEqual(json.loads(raw),payload)
+
+    def test_brief_overview_escapes_source_text_and_keeps_formula_as_recorded_fields(self):
+        from clinical_core.agere.deliverables.patient_dashboard import brief_overview
+        formula={'template':'Unknown {count}','bindings':{'count':'not resolved'}}
+        answer={'status':'partial','headline':formula,'missing':['</section><script>bad()</script>']}
+        body=brief_overview({'answer':answer})
+        self.assertNotIn('<script>',body);self.assertIn('&lt;script&gt;',body)
+        self.assertIn('Recorded headline fields',body);self.assertIn('not resolved',body)
+        self.assertIn('later observations do not establish an earlier clinical state',body)
+
+    def test_empty_missing_list_does_not_hide_unfinished_source_review(self):
+        question,result=self.prepare()
+        result['answer'].update(status='partial',missing=[],verification='unverified',
+            investigation_review={'status':'repair','repair_kind':'global_source_dependencies',
+                                  'feedback':'Source coverage is unfinished <not accepted>'})
+        result['answer']['sections']=[{'title':'Subgroup','answer':{'status':'partial',
+            'verification':'uncertain','investigation_review':{'feedback':'The subgroup definition needs evidence.'}}}]
+        c=A.capture(self.path,question,result)
+        request='Turn the saved analysis into an HTML review brief with all unresolved requirements.'
+        d=R.create(self.path,{'context_id':c['id'],'template':'brief','request':request})
+        body=d['html'];overview=body.split('id="review-brief">')[1].split('<script id="data"')[0]
+        self.assertIn('unverified',overview);self.assertIn('uncertain',overview)
+        self.assertIn('Source coverage is unfinished &lt;not accepted&gt;',overview)
+        self.assertIn('The subgroup definition needs evidence.',overview)
+        self.assertNotIn('Recorded unresolved items',body)
+        self.assertIn('This count does not include unfinished verification',body)
+        payload=json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>',body,re.S).group(1))
+        self.assertEqual(payload['answer'],result['answer'])
+        self.assertEqual(d['title'],'Evidence review brief');self.assertEqual(d['request'],request)
+        self.assertEqual(d['new_paid_api_calls'],0)
+
+    def test_source_text_cannot_inject_html_script_or_replace_template_markers(self):
+        question,result=self.prepare();result['answer']['limitations']=['</script><img src=x onerror=alert(1)> %%STATUS%%']
+        c=A.capture(self.path,question,result)
+        d=R.create(self.path,{'context_id':c['id'],'template':'brief','request':'%%STATUS%% <svg onload=alert(1)>'})
+        self.assertNotIn('<img src=x',d['html']);self.assertNotIn('<svg onload',d['html'])
+        self.assertIn('%%STATUS%%',d['html'])
+        self.assertEqual(d['html'].count('</script>'),2)
+
+    def test_current_source_validation_rejects_stale_answer_without_a_provider(self):
+        question,result=self.prepare();c=A.capture(self.path,question,result)
+        with patch.object(A,'source_identity',return_value={'changed':True}),self.assertRaises(ValueError):
+            R.create(self.path,{'context_id':c['id'],'template':'brief','request':'Saved report'})
+
+    def test_report_references_full_native_history_and_keeps_complete_display_evidence(self):
+        from clinical_core.agere.deliverables.compose import load
+        from clinical_core.agere.deliverables.patient_evidence import projection
+        question,result=self.prepare(partial=True)
+        result['investigation']={'diagnostic_history':['retained attempt ' * 1000] * 20}
+        c=A.capture(self.path,question,result);native=A.load(self.path,c['id'])
+        d=R.create(self.path,{'context_id':c['id'],'template':'brief','request':'Saved report'})
+        _,bundle,_,_=load(A.workspace(self.path,native),d['id'])
+        saved=next(bundle.results[rid] for rid,r in bundle.receipts.items() if r['tool']=='saved_answer')
+        shown=next(bundle.results[rid] for rid,r in bundle.receipts.items() if r['tool']=='saved_report_evidence')
+        self.assertEqual(saved['answer'],native['answer']);self.assertEqual(shown,projection(native))
+        self.assertNotIn('investigation',saved)
+        self.assertEqual(saved['native_context_reference']['derivation'],native['dependencies']['derivation'])
+        self.assertEqual(A.load(self.path,c['id'])['investigation'],result['investigation'])
+        raw,_,_=R.read_format(self.path,c['id'],d['id'],'json')
+        self.assertEqual(json.loads(raw)['answer'],native['answer'])
+
+    def test_source_change_during_render_still_prevents_publication(self):
+        from clinical_core.agere.deliverables import patient_dashboard as H
+        question,result=self.prepare();c=A.capture(self.path,question,result)
+        render=H.render
+        with patch.object(A,'source_identity',wraps=A.source_identity) as source:
+            def changed(*args,**kwargs):
+                body=render(*args,**kwargs);source.return_value={'changed':True};return body
+            with patch.object(H,'render',side_effect=changed),self.assertRaisesRegex(ValueError,'data changed'):
+                R.create(self.path,{'context_id':c['id'],'template':'brief','request':'Saved report'})
+        self.assertFalse((A.root(self.path)/c['id']/'deliverables').exists())
+
+    def test_work_change_during_render_still_prevents_publication(self):
+        question,result=self.prepare();c=A.capture(self.path,question,result)
+        with patch.object(A,'work',side_effect=[[],[{'id':'new','state':'needs_review'}]]),self.assertRaisesRegex(ValueError,'Review work changed'):
+            R.create(self.path,{'context_id':c['id'],'template':'brief','request':'Saved report'})
+        self.assertFalse((A.root(self.path)/c['id']/'deliverables').exists())
+
+    def test_mode_is_explicit_and_unknown_values_are_rejected_before_compose(self):
+        self.assertEqual(C.compose_shape({'question':'Count claims','delivery_generation':'frontier'})[:2],('Count claims','auto'))
+        with self.assertRaises(ValueError):C.compose_shape({'question':'Count claims','delivery_generation':'silently_cap_cost'})
+
+    def test_pdf_is_real_source_bound_and_contains_complete_saved_context(self):
+        from pypdf import PdfReader
+        import io,gzip
+        question,result=self.prepare(partial=True);c=A.capture(self.path,question,result)
+        d=R.create(self.path,{'context_id':c['id'],'template':'explore','request':'Interactive dashboard and PDF'})
+        raw,mime,name=R.read_format(self.path,c['id'],d['id'],'pdf')
+        self.assertTrue(raw.startswith(b'%PDF-'));self.assertEqual(mime,'application/pdf')
+        pdf=PdfReader(io.BytesIO(raw));embedded=json.loads(gzip.decompress(pdf.attachments['Agere-saved-answer.json.gz'][0]))
+        saved=A.load(self.path,c['id'])
+        self.assertEqual(embedded['answer'],saved['answer']);self.assertEqual(embedded['source'],saved['source'])
+        self.assertIn('Medication history unavailable','\n'.join(p.extract_text()for p in pdf.pages))
+        self.assertEqual(d['new_paid_api_calls'],0)
+
+    def test_pdf_download_rejects_tampering_and_unrecorded_formats(self):
+        question,result=self.prepare();c=A.capture(self.path,question,result)
+        d=R.create(self.path,{'context_id':c['id'],'template':'brief','request':'PDF'})
+        f=A.root(self.path)/c['id']/'deliverables'/d['id']/'artifact.pdf';f.write_bytes(b'changed')
+        with self.assertRaisesRegex(ValueError,'bytes differ'):R.read_format(self.path,c['id'],d['id'],'pdf')
+        with self.assertRaises(ValueError):R.read_format(self.path,c['id'],d['id'],'../../answer.json')
+
+    def test_structured_headline_is_retained_without_printing_unresolved_template_as_prose(self):
+        from pypdf import PdfReader
+        import gzip,io
+        question,result=self.prepare(partial=True)
+        headline={'template':'There are {unresolved_count} records.',
+                  'bindings':{'unresolved_count':{'result_view':'native_result','row':0,'column':'count'}}}
+        result['answer']['headline']=headline
+        result['answer']['facts']={'unresolved_formula':headline,'recorded_finding':'The saved data remain incomplete.'}
+        ref=A.capture(self.path,question,result)
+        d=R.create(self.path,{'context_id':ref['id'],'template':'explore','request':'Interactive review and PDF'})
+        payload=json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>',d['html'],re.S).group(1))
+        self.assertEqual(payload['answer']['headline'],headline)
+        raw,_,_=R.read_format(self.path,ref['id'],d['id'],'pdf');pdf=PdfReader(io.BytesIO(raw))
+        text='\n'.join(p.extract_text()for p in pdf.pages)
+        self.assertNotIn('There are {unresolved_count}',text)
+        self.assertIn('The saved data remain incomplete.',text)
+        embedded=json.loads(gzip.decompress(pdf.attachments['Agere-saved-answer.json.gz'][0]))
+        self.assertEqual(embedded['answer']['headline'],headline)
+        self.assertEqual(embedded['answer']['facts'],result['answer']['facts'])
+
+    def test_recorded_exports_match_full_report_payload_and_reject_altered_bytes(self):
+        import csv,io
+        question,result=self.prepare(partial=True);c=A.capture(self.path,question,result)
+        d=R.create(self.path,{'context_id':c['id'],'template':'explore','request':'Inspect every saved record'})
+        payload=json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>',d['html'],re.S).group(1))
+        raw,mime,_=R.read_format(self.path,c['id'],d['id'],'json')
+        self.assertEqual(json.loads(raw),payload);self.assertEqual(mime,'application/json; charset=utf-8')
+        raw,_,_=R.read_format(self.path,c['id'],d['id'],'csv')
+        rows=list(csv.DictReader(io.StringIO(raw.decode())))
+        self.assertEqual(len(rows),len(payload['rows']))
+        self.assertEqual([r['patient_id'] for r in rows],[r['patient_id'] for r in payload['rows']])
+        for name in ('json','csv'):
+            f=A.root(self.path)/c['id']/'deliverables'/d['id']/('artifact.'+name)
+            f.write_bytes(b'changed')
+            with self.assertRaisesRegex(ValueError,'bytes differ'):R.read_format(self.path,c['id'],d['id'],name)
+
+    def test_supporting_notes_and_medications_survive_final_table_projection(self):
+        from clinical_core.agere.deliverables.patient_evidence import projection
+        c={'investigation':{'document_reviews':[{'questions':{'reason':'Why?'},'rows':[{'patient_id':'EXAMPLE','review_status':'needs_review',
+            'documents_reviewed':2,'review_json':json.dumps({'reason':[{'value':'Cost documented','record_id':'REC','date':'2030-01-01','quote':'Could not afford.'}]})}]}],
+            'tool_calls':[{'name':'query_sql','result':{'result_view':'rows_1','columns':['patient_id','drug_name','latest_fill_date'],
+                'rows':[['EXAMPLE','Authored medication','2030-01-02']]}}]}}
+        out=projection(c)
+        self.assertEqual(out['notes']['EXAMPLE'][0]['findings']['reason'][0]['quote'],'Could not afford.')
+        self.assertEqual(out['supporting_tables'][0]['rows'][0]['drug_name'],'Authored medication')
+
+    def test_same_context_pdf_rendering_is_deterministic(self):
+        from clinical_core.agere.deliverables.patient_report_pdf import render
+        question,result=self.prepare();c=A.capture(self.path,question,result)
+        first=self.path/'first.pdf';second=self.path/'second.pdf'
+        saved=A.load(self.path,c['id'])
+        render(saved,first);render(saved,second);self.assertEqual(first.read_bytes(),second.read_bytes())
+
+
+if __name__=='__main__':unittest.main()
+
+class RetainedInspection(unittest.TestCase):
+    setUp = F.SharedPlanner.setUp
+    prepare = SavedReport.prepare
+    def test_inspection_can_render_retained_analysis_without_enabling_clinical_work(self):
+        question,result=self.prepare(partial=True);c=A.capture(self.path,question,result)
+        with patch.object(A,'source_identity',return_value={'changed':True}):
+            d=R.create(self.path,{'context_id':c['id'],'template':'brief','request':'Retained analysis PDF','retained_inspection':True})
+            raw,_,_=R.read_format(self.path,c['id'],d['id'],'pdf')
+        self.assertTrue(d['retained_inspection']);self.assertFalse(d['clinical_execution_authorized'])
+        self.assertEqual(d['new_paid_api_calls'],0);self.assertTrue(raw.startswith(b'%PDF-'))
+        self.assertIn('Retained analysis for inspection',d['html'])
+    def test_literal_source_roles_survive_projection_without_becoming_assignments(self):
+        from clinical_core.agere.deliverables.patient_evidence import projection
+        role={'name':'Jane Doe, MD','documented_role':'Cardiology','relationship':'signed_correspondence_author','current_assignment':'not_established','record_id':'R','date':'2030-01-01','quote':'Jane Doe, MD\nCardiology'}
+        c={'investigation':{'document_reviews':[{'questions':{},'rows':[{'patient_id':'A','review_json':'{}','source_clinicians_json':json.dumps([role])}]}]}}
+        evidence=projection(c);self.assertEqual(evidence['notes']['A'][0]['source_clinicians'],[role])
+
+    def test_rechecked_legacy_fields_remain_audit_only_with_exact_original_findings(self):
+        from clinical_core.agere.deliverables.patient_evidence import projection
+        from clinical_core.contracts import digest
+        original={'record_id':'n','date':'2030-01-01','quote':'MRA held.','value':'MRA held.'}
+        rows=[{'patient_id':'A','review_json':json.dumps({'rasi_reason':[original],'pcp_named':[]})}]
+        scope={'result_view':'native','source_rows_digest':digest(rows),'checked_fields':['rasi_reason'],
+            'scope':'Retained candidate spans only; no whole-document absence.'}
+        context={'investigation':{'document_reviews':[
+            {'questions':{'rasi_reason':'Original question','pcp_named':'PCP?'},'rows':rows},
+            {'questions':{'rasi_reason':'Bound question'},'candidate_observation_review':scope,
+             'rows':[{'patient_id':'A','review_json':'{"rasi_reason":[]}','review_status':'reviewed_candidates'}]}]}}
+        evidence=projection(context);prior,current=evidence['notes']['A']
+        self.assertEqual(prior['audit_only_fields'],['rasi_reason']);self.assertEqual(prior['findings']['rasi_reason'],[original])
+        self.assertEqual(current['candidate_review_scope'],scope);self.assertEqual(current['findings']['rasi_reason'],[])
+
+    def test_pdf_prints_bound_source_meaning_once_and_embeds_every_original_audit_value(self):
+        import gzip,tempfile
+        from pathlib import Path
+        from pypdf import PdfReader
+        from clinical_core.agere.clinical import document_review as D
+        from clinical_core.agere.deliverables.patient_report_pdf import render
+        from test_document_relations import question
+        quote='Prior source: MRA held for potassium.'
+        doc={'record_id':'current-source','date':'2029-02-03','available_date':'2029-02-04','text':quote}
+        finding=D.relation_finding('A','mra',question(),doc,{'start':0,'end':len(quote),'text':quote},
+            {'polarity':'affirmed','temporality':'historical','subject':'patient'},'fixture')
+        legacy={'record_id':'audit-source','date':'2028-01-01','quote':quote,'field':'gdmt_not_on_rasi_reason','value':quote}
+        context={'id':'authored','question':'Review source accounts','source':{'as_of':'2030-05-27'},
+            'patient_ids':['A'],'answer':{'status':'partial','table':[{'patient_id':'A',
+                'documentary_relations':[finding],'legacy_machine_findings':[legacy]}]}}
+        with tempfile.TemporaryDirectory()as tmp:
+            output=Path(tmp)/'report.pdf';render(context,output)
+            reader=PdfReader(output);text=' '.join(' '.join(page.extract_text()or''for page in reader.pages).split())
+            self.assertEqual(text.count(quote),1)
+            self.assertIn('Polarity: affirmed; source timing: historical',text)
+            self.assertIn('Current clinical applicability: not established',text)
+            self.assertIn('audit-source',text);self.assertIn('2028-01-01',text)
+            self.assertNotIn('gdmt_not_on_rasi_reason',text)
+            self.assertNotIn(finding['assertion']['id'],text)
+            self.assertEqual(json.loads(gzip.decompress(reader.attachments['Agere-saved-answer.json.gz'][0])),context)
+
+class RecommendationDisplay(unittest.TestCase):
+    def test_pdf_displays_every_nested_source_object_without_duplicating_equal_quote_value(self):
+        import tempfile
+        from pathlib import Path
+        from pypdf import PdfReader
+        from clinical_core.agere.deliverables.patient_report_pdf import render
+        findings=[{'value':'Medication held in prior record.','quote':'Medication held in prior record.',
+            'record_id':'SOURCE-A','date':'2030-01-02','temporality':'historical'},
+            {'value':'Different interpretation','quote':'Separate exact passage.','record_id':'SOURCE-B','date':'2030-02-03'}]
+        c={'question':'Inspect the source findings','source':{'as_of':'2030-05-27'},'answer':{'status':'partial',
+            'table':[{'patient_id':'A','documentary_findings':json.dumps(findings),'proposed_next_action':'Confirm applicability.'}]}}
+        with tempfile.TemporaryDirectory()as temp:
+            out=Path(temp)/'report.pdf';render(c,out,evidence={});pdf=PdfReader(out);text='\n'.join(p.extract_text()for p in pdf.pages)
+            bookmarks=[entry.title for group in pdf.outline if isinstance(group,list)for entry in group]
+        self.assertEqual(text.count('Medication held in prior record.'),1)
+        for exact in ('SOURCE-A','SOURCE-B','2030-01-02','2030-02-03','historical','Different interpretation','Separate exact passage.'):
+            self.assertIn(exact,text)
+        self.assertNotIn('{"value"',text)
+        self.assertIn('A',bookmarks)
+
+    def test_proposed_next_action_is_visible_as_a_recommendation_in_pdf(self):
+        import tempfile,io
+        from pathlib import Path
+        from pypdf import PdfReader
+        from clinical_core.agere.deliverables.patient_report_pdf import render
+        c={'question':'Review the care gaps','source':{'as_of':'2030-05-27'},'answer':{'status':'partial','table':[{'patient_id':'A','proposed_next_action':'Reconcile the documented medication and confirm the follow-up appointment.'}]}}
+        with tempfile.TemporaryDirectory()as temp:
+            out=Path(temp)/'report.pdf';render(c,out,evidence={});text='\n'.join(p.extract_text()for p in PdfReader(out).pages)
+        self.assertIn('Recommended next steps',text)
+        self.assertIn('Reconcile the documented medication',text)
+        self.assertNotIn('No individualized recommendation was supplied',text)

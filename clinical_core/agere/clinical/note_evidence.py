@@ -20,7 +20,7 @@ import re
 import sqlite3
 from pathlib import Path
 
-VERSION = 'note-evidence/1'
+VERSION = 'note-evidence/2'
 MAX_PASSAGES = 12
 PER_RECORD = 3
 MAX_CHARS = 700
@@ -143,6 +143,55 @@ def concept_patterns(concept):
     return uniq
 
 
+def focused_documents(documents, questions, *, prior_sources=None):
+    """Retrieve every lexical/concept match for each explicitly bound field.
+
+    This is candidate retrieval, not a negative clinical judgment. There is no
+    rank/count/date cutoff. Kept documents retain their complete original text;
+    the caller must expose unmatched sources and permit targeted expansion.
+    """
+    from .document_review import validate_questions
+    from ...contracts import digest
+    validate_questions(questions)
+    if any(not isinstance(q, dict) for q in questions.values()):
+        raise ValueError('Focused narrative review needs an explicit entity/relation/subject binding for every field. '
+                         'Bind the actual requested concept and its synonyms, or select exact record_ids for source repair. '
+                         'Use source_scope=all only when an exhaustive source review is required.')
+    patterns = {};registered={}
+    from . import drug_classes
+    for field, q in questions.items():
+        entity = q['entity']
+        if entity['kind']=='medication_class':
+            registered[field]=({entity['id']}if entity['id']in drug_classes.CLASSES else set(drug_classes.GROUPS[entity['id']]))
+        terms = list(dict.fromkeys([entity['id'].replace('_', ' '), *entity['aliases']]))
+        patterns[field] = list(dict.fromkeys(rx for term in terms for rx in concept_patterns({'term': term})))
+    compiled = {field: [re.compile(rx, re.I) for rx in values] for field, values in patterns.items()}
+    selected = {field: set() for field in questions}
+    sources = []
+    for doc in documents:
+        identity = digest([doc['record_id'], doc['date'], doc['text']])
+        # Source type/title are retrieval hints only. The reader receives and
+        # judges the actual whole text before any finding can be accepted.
+        text = ocr_fold(' '.join(str(doc.get(k) or '') for k in ('type', 'title', 'text')))
+        native_classes=set(drug_classes.classify(text)+drug_classes.brand_classes(text))if registered else set()
+        fields = [field for field, values in compiled.items() if any(rx.search(text) for rx in values)
+                  or bool(registered.get(field,set())&native_classes)
+                  or identity in (prior_sources or {}).get(field,set())]
+        for field in fields:
+            selected[field].add(identity)
+        sources.append({'record_id': doc['record_id'], 'date': doc['date'],
+                        'document_text_digest': digest(doc['text']), 'selected_fields': fields})
+    return selected, {'schema': 'focused-document-retrieval/1', 'queries': patterns,
+        'registered_class_members':{field:sorted(members)for field,members in registered.items()},
+        'inventory_documents': len(documents), 'selected_documents': sum(bool(s['selected_fields']) for s in sources),
+        'field_documents': {field: len(ids) for field, ids in selected.items()}, 'sources': sources,
+        'prior_source_seeds':{field:len(ids)for field,ids in (prior_sources or {}).items()},
+        'complete_chart_review': False, 'absence_established': False,
+        'selection_sufficiency': 'unqualified_candidate_retrieval',
+        'expansion': 'An empty finding is unresolved outside these candidates. Search additional synonyms/relationships, '
+                     'explicit received records or an exhaustive field scope when the missing evidence matters.'}
+
+
 _OCR_L = re.compile(r"(?<=[a-z])(?<!\ba)1(?=[a-z])|\b1(?=[a-z]{3,})", re.I)
 _OCR_O = re.compile(r"(?<=[a-z])0(?=[a-z])|\b0(?=[a-z]{3,})", re.I)
 
@@ -211,9 +260,12 @@ def _texts(db, patient_id, sources, as_of):
         streams += OTHER_STREAMS
     if streams:
         q = ','.join('?' * len(streams))
+        record_columns={c[1] for c in db.execute('pragma table_info(record)')}
+        availability=' AND substr(coalesce(available_date,event_date),1,10)<=?' if 'available_date' in record_columns else ''
         rows = db.execute(f"select record_id, stream, event_date, json_extract(payload,'$.text') t, "
                           f"coalesce(json_extract(payload,'$.note_type'), json_extract(payload,'$.document_type')) nt "
-                          f"from record where patient_id=? and stream in ({q}) and event_date<=?", (patient_id, *streams, as_of))
+                          f"from record where patient_id=? and stream in ({q}) and substr(event_date,1,10)<=?"+
+                          availability, (patient_id, *streams, as_of, *([as_of] if availability else [])))
         for r in rows:
             if r['t']:
                 src = 'clinical_note' if r['stream'] in NOTE_STREAMS else 'hie_document' if r['stream'] in HIE_STREAMS else 'other_text'
@@ -221,9 +273,10 @@ def _texts(db, patient_id, sources, as_of):
     if 'scanned_document_text' in want:
         cols = {c[1] for c in db.execute('pragma table_info(scanned_document)')}
         title = 'd.document_title' if 'document_title' in cols else "''"
+        availability=' AND substr(coalesce(d.available_date,d.event_date,?),1,10)<=?' if 'available_date' in cols else ''
         for r in db.execute(f'select t.record_id, t.text, d.document_type, d.event_date, t.text_source, {title} title from scanned_document_text t '
                             'left join scanned_document d on d.record_id=t.record_id where t.patient_id=? and '
-                            'coalesce(d.event_date, ?)<=?', (patient_id, as_of, as_of)):
+                            'substr(coalesce(d.event_date, ?),1,10)<=?'+availability, (patient_id, as_of, as_of, *([as_of,as_of] if availability else []))):
             if r['text']:
                 out.append((r['record_id'], 'scanned_document_text', r['text_source'] or 'scanned_document',
                             r['document_type'] or 'scanned_document', r['event_date'], r['text'], r['title'] or ''))

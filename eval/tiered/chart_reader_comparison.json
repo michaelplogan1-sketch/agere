@@ -1,0 +1,357 @@
+{
+ "schema": "tiered-chart-reader-comparison/1",
+ "authored": "2026-11-13",
+ "authored_by": "Claude (build owner)",
+ "arms": {
+  "stack": "the tiered core as the app runs it",
+  "chart_reader": "the frontier model (Claude Sonnet) given the question and the full text of the same documents the stack selected, in one prompt, asked to answer directly"
+ },
+ "rule": "Both arms answer the same question over the same documents. Stack: the answer rows must equal the reference. Chart reader: the count, the document list or the per-document values must equal the reference; a value that contains the reference value is accepted. This is not a test of ChatGPT, Epic or any other product.",
+ "items": [
+  {
+   "id": "D07",
+   "group": "one patient",
+   "question": "How many of patient WHP-E6DB55DE6BEA's HIE discharge summaries give a disposition of home?",
+   "reference_rows": [
+    [
+     23,
+     12
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "D08",
+   "group": "one patient",
+   "question": "Which of patient WHP-66F4B476DECF's scanned documents report a pulmonary nodule?",
+   "reference_rows": [
+    [
+     "WHN-R-1df946c0693d7818cb7e93"
+    ],
+    [
+     "WHN-R-822407133276126975d1d0"
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "D09",
+   "group": "one patient",
+   "question": "How many of patient WHP-66F4B476DECF's scanned documents are consultation letters from neurology?",
+   "reference_rows": [
+    [
+     20,
+     4
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "E01",
+   "group": "one patient",
+   "question": "What discharge disposition does each of patient WHP-B4E976A6BC06's HIE discharge summaries give?",
+   "reference_rows": [
+    [
+     "WHN-R-e4fcecbb91a76e273b5185",
+     "home"
+    ],
+    [
+     "WHN-R-6528a8a9301a2053f1bbf8",
+     "home"
+    ],
+    [
+     "WHN-R-3efec7150a3b6ae2cbde57",
+     "home"
+    ],
+    [
+     "WHN-R-7b5d685f2f52f48deae280",
+     "home"
+    ],
+    [
+     "WHN-R-7e27688c5279cf7e0136b0",
+     "home"
+    ],
+    [
+     "WHN-R-27352b3a24ccfaae903720",
+     "home"
+    ],
+    [
+     "WHN-R-dab7325a2835da66f40785",
+     "home"
+    ],
+    [
+     "WHN-R-0156c2520c66d1452e1e4f",
+     "home"
+    ],
+    [
+     "WHN-R-3f97e32980232eb398414b",
+     "home"
+    ],
+    [
+     "WHN-R-1469f14cfbb9cc16663ace",
+     "snf"
+    ],
+    [
+     "WHN-R-9f26570a64d8a23c768a27",
+     "snf"
+    ],
+    [
+     "WHN-R-b3fb715340fbe4c422f0df",
+     "home health"
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "E02",
+   "group": "one patient",
+   "question": "What principal diagnosis does each of patient WHP-1D09E959D6C3's HIE discharge summaries give?",
+   "reference_rows": [
+    [
+     "WHN-R-c931fd8f124e3a53a131cc",
+     "Community-acquired pneumonia"
+    ],
+    [
+     "WHN-R-fb5f0f0d085faec2a67874",
+     "Community-acquired pneumonia"
+    ],
+    [
+     "WHN-R-8073d653f647a4f259348c",
+     "Community-acquired pneumonia"
+    ],
+    [
+     "WHN-R-cf9e91527fc5bed1532917",
+     "Type 2 diabetes with hyperglycemia"
+    ],
+    [
+     "WHN-R-320b2acce4ad13927fec5d",
+     "Type 2 diabetes with hyperglycemia"
+    ],
+    [
+     "WHN-R-c23e51f821d63b61d05f41",
+     "Type 2 diabetes with hyperglycemia"
+    ],
+    [
+     "WHN-R-7779443c79f1394c3767f6",
+     "Acute on chronic heart failure"
+    ],
+    [
+     "WHN-R-384b8b009cf5d25ae73ec1",
+     "Acute on chronic heart failure"
+    ],
+    [
+     "WHN-R-98bffc295d9615bf8fddeb",
+     "Acute on chronic heart failure"
+    ],
+    [
+     "WHN-R-ce69827f85a13260b3578c",
+     "Acute on chronic heart failure"
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "E03",
+   "group": "one patient",
+   "question": "For patient WHP-F8BE1B187FFF, list the disposition stated in each HIE discharge summary.",
+   "reference_rows": [
+    [
+     "WHN-R-cd3f454a96ba8a64be4b54",
+     "home"
+    ],
+    [
+     "WHN-R-6916d6475e500aa2bda9a2",
+     "home"
+    ],
+    [
+     "WHN-R-c2e47c5698dd795642dfd0",
+     "home"
+    ],
+    [
+     "WHN-R-626b6f2001663a5916d8bb",
+     "home"
+    ],
+    [
+     "WHN-R-871911e7763ef2018e836b",
+     "irf"
+    ],
+    [
+     "WHN-R-d3c33b00476ad9acf79a1d",
+     "home health"
+    ],
+    [
+     "WHN-R-99e1bea2ac5a3217255992",
+     "home health"
+    ],
+    [
+     "WHN-R-6af890b9fae7864cf5abca",
+     "home health"
+    ],
+    [
+     "WHN-R-a32219d1f44d6c6e773ab8",
+     "snf"
+    ],
+    [
+     "WHN-R-b28bd949c0cdcfb287426b",
+     "snf"
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "E04",
+   "group": "one patient",
+   "question": "What left ventricular ejection fraction does each of patient WHP-66F4B476DECF's scanned documents report?",
+   "reference_rows": [
+    [
+     "WHN-R-283fd8d395b897bad5db57",
+     "55-60%"
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "D01",
+   "group": "one month of reports",
+   "question": "How many scanned radiology reports dated in 2029-06 report a possible lung infiltrate?",
+   "reference_rows": [
+    [
+     12,
+     2
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "D02",
+   "group": "one month of reports",
+   "question": "How many scanned radiology reports dated in 2026-11 report a thyroid nodule?",
+   "reference_rows": [
+    [
+     14,
+     2
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "D03",
+   "group": "one month of reports",
+   "question": "How many scanned radiology reports dated in 2028-03 report a fracture?",
+   "reference_rows": [
+    [
+     17,
+     0
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "D04",
+   "group": "one month of reports",
+   "question": "Of the scanned radiology reports dated 2028-06, how many found a thyroid nodule?",
+   "reference_rows": [
+    [
+     10,
+     1
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "D05",
+   "group": "one month of reports",
+   "question": "Count the scanned radiology reports from 2027-11 that describe an infiltrate in the lung.",
+   "reference_rows": [
+    [
+     14,
+     1
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "D06",
+   "group": "one month of reports",
+   "question": "In 2028-03, how many scanned radiology reports give a left ventricular ejection fraction?",
+   "reference_rows": [
+    [
+     17,
+     1
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "D10",
+   "group": "one month of reports",
+   "question": "How many scanned consult notes dated in 2029-03 recommend starting or changing a medication?",
+   "reference_rows": [
+    [
+     20,
+     5
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "E05",
+   "group": "one month of reports",
+   "question": "What BI-RADS category number does each scanned radiology report dated in 2028-03 give?",
+   "reference_rows": [
+    [
+     "WHN-R-4e8d88acfeda98b6f16879",
+     "2"
+    ],
+    [
+     "WHN-R-67233faeb4d330be2ec653",
+     "1"
+    ],
+    [
+     "WHN-R-9cc644643cb270a9d72813",
+     "2"
+    ]
+   ],
+   "reference": "hand-set from the document text; committed with eval/tiered/questions.json before this comparison was designed"
+  },
+  {
+   "id": "R1",
+   "group": "one year of reports",
+   "question": "How many scanned radiology reports dated in 2029 report a pulmonary nodule?",
+   "reference_rows": [
+    [
+     267,
+     13
+    ]
+   ],
+   "repeats": 3,
+   "reference": "OCR-tolerant text match over every report, with the borderline documents read by hand; set before either arm ran on this item"
+  },
+  {
+   "id": "R2",
+   "group": "one year of reports",
+   "question": "How many scanned radiology reports dated in 2028 report an infiltrate?",
+   "reference_rows": [
+    [
+     277,
+     33
+    ]
+   ],
+   "repeats": 3,
+   "reference": "OCR-tolerant text match over every report, with the borderline documents read by hand; set before either arm ran on this item"
+  },
+  {
+   "id": "R3",
+   "group": "one year of reports",
+   "question": "How many scanned radiology reports dated in 2029 report a thyroid nodule?",
+   "reference_rows": [
+    [
+     267,
+     16
+    ]
+   ],
+   "repeats": 3,
+   "reference": "OCR-tolerant text match over every report, with the borderline documents read by hand; set before either arm ran on this item"
+  }
+ ]
+}

@@ -26,6 +26,146 @@ def mapping():
     return m
 
 
+def payer_cash_requested(question):
+    return bool(re.search(r'\b(?:payer[ _-]+cash|cash\s+(?:(?:received|collected)\s+)?from\s+(?:the\s+)?payers?)\b',str(question),re.I))
+
+
+def cash_source_issues(question,answer,calls):
+    """Require actual cash-value ancestry for an explicit monetary cash answer.
+
+    This proves a source obligation, not the entire financial calculation. Scope,
+    clocks, currency and reconciliation still need their ordinary checks. Labels,
+    a paid_date, an unused cash query or a cash-only join cannot supply the value.
+    """
+    explicit=payer_cash_requested(question)
+    root=answer.get('table_from_tool')
+    if not root:return []
+    by={c['result']['result_view']:c for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')and not c['result'].get('error')}
+    if root not in by:return []
+    if not explicit and not any(re.search(r'(?:^|[^a-z])cash(?:[^a-z]|$)',str(c),re.I)
+            and re.search(r'cents|amount|dollar|usd',str(c),re.I)for c in by[root]['result'].get('columns')or[]):return []
+    from .backstop_agent import native_result_dependencies
+    needed=native_result_dependencies(calls,[root]);sources={};schema={};physical=set()
+    for name in needed:
+        call=by.get(name)
+        if not call:continue
+        out=call['result'];contracts=out.get('source_contracts')or{}
+        for rel in contracts.get('relations')or[]:
+            physical.add(rel['name'].casefold())
+            if rel.get('columns'):schema[rel['name']]={c:'UNKNOWN'for c in rel['columns']}
+        for definition in contracts.get('definitions')or[]:sources[definition['name']]=definition['query']
+        if call.get('name')=='query_sql':
+            sources[name]=out.get('declared_executed_query')or out.get('executed_query')or(call.get('input')or{}).get('sql')
+        elif call.get('name')=='compose_table':
+            from .result_assembly import source_query
+            query=source_query({key:c['result']for key,c in by.items()},name)
+            if query:sources[name]=query
+    issue='Cash was requested, but no returned monetary value is bound to a received payer-cash source. Adjudication paid_cents and paid_date describe adjudication, not cash receipts. Use the registered financial account transaction map: record/current_record stream payer_cash_allocations, payload allocated_cents, with its receipt/event clocks and account currency; preserve the requested population. A cash label or unrelated cash query is not a binding.'
+    if not sources.get(root):return [issue]
+    from sqlglot import exp
+    from sqlglot.lineage import lineage
+    from sqlglot.errors import SqlglotError
+    cash_rules=[r for r in mapping()['transactions']if r['snapshot_field']=='payer_received_cents']
+    transaction_clock=bool(re.search(r'\btransactions?\b|\b(?:year|month|date|monthly|yearly|annual|quarter|daily)\b|\b(?:19|20)\d{2}\b',str(question),re.I))
+    def stream_domain(node,alias):
+        if isinstance(node,exp.Paren):return stream_domain(node.this,alias)
+        if isinstance(node,(exp.And,exp.Or)):
+            left,right=stream_domain(node.this,alias),stream_domain(node.expression,alias)
+            if isinstance(node,exp.And):return right if left is None else left if right is None else left&right
+            return None if left is None or right is None else left|right
+        if isinstance(node,exp.EQ):
+            for column,value in ((node.this,node.expression),(node.expression,node.this)):
+                if isinstance(column,exp.Column)and column.name.casefold()=='stream'and column.table.casefold()==alias.casefold()and isinstance(value,exp.Literal)and value.is_string:return {value.this}
+        if isinstance(node,exp.In)and isinstance(node.this,exp.Column)and node.this.name.casefold()=='stream'and node.this.table.casefold()==alias.casefold()and node.expressions and all(isinstance(v,exp.Literal)and v.is_string for v in node.expressions):return {v.this for v in node.expressions}
+        return None
+    monetary=re.compile(r'cents|amount|dollar|usd',re.I)
+    def payload_paths(node):
+        if not node.downstream:return [[node]]
+        return [[node,*path]for child in node.downstream for path in payload_paths(child)]
+    def registered_payload(node,column,value):
+        # Follow the specific payload column through native/CTE aliases. A
+        # filter in its defining SELECT is as binding as an outer filter.
+        targets=[n for n in node.walk()if n.name.casefold()==column.sql(dialect='sqlite').casefold()]
+        if not targets:return False
+        for target in targets:
+            for path in payload_paths(target):
+                leaf=path[-1]
+                if not isinstance(leaf.expression,exp.Table)or leaf.expression.name.casefold()not in('record','current_record')or leaf.expression.name.casefold()not in physical or leaf.name.rsplit('.',1)[-1].casefold()!='payload':return False
+                allowed=None
+                for parent,child in zip([node,*path[:-1]],path):
+                    where=parent.source.args.get('where');domain=stream_domain(where.this,child.name.rsplit('.',1)[0])if where else None
+                    if domain is not None:allowed=domain if allowed is None else allowed&domain
+                condition=value.find_ancestor(exp.If)
+                if condition and condition.args.get('true')is not None and value in list(condition.args['true'].walk())and condition.args.get('false')is None:
+                    domain=stream_domain(condition.this,column.table)
+                    if domain is not None:allowed=domain if allowed is None else allowed&domain
+                if not any(allowed=={rule['stream']}and not rule.get('status_field')and rule.get('accepted_status')is None for rule in cash_rules):return False
+        return True
+    def cash_value(node):
+        walked=list(node.walk());found=False
+        for n in walked:
+            if not n.downstream and isinstance(n.expression,exp.Table)and monetary.search(n.name.rsplit('.',1)[-1]):
+                # This existing normalized field is an overall cash rollup,
+                # never evidence for a transaction/date-grain answer.
+                if not transaction_clock and n.expression.name.casefold()=='claim'and 'claim'in physical and n.name.rsplit('.',1)[-1].casefold()=='net_payer_cash_cents':found=True
+                else:return False
+            for value in n.expression.find_all(exp.JSONExtract,exp.JSONExtractScalar):
+                path=value.args.get('expression');keys=[p.this for p in path.expressions if isinstance(p,exp.JSONPathKey)]if isinstance(path,exp.JSONPath)else[]
+                if not any(monetary.search(str(k))for k in keys):continue
+                column=value.this
+                if not isinstance(column,exp.Column)or column.name.casefold()!='payload'or len(keys)!=1 or not any(keys[0]==rule['amount_field']for rule in cash_rules)or not registered_payload(n,column,value):return False
+                found=True
+        return found
+    def cash_label(value):
+        return isinstance(value,str)and bool(re.search(r'(?:^|[^a-z])cash(?:[^a-z]|$)',value,re.I))
+    def unknown_value(node):
+        expression=node.expression.this if isinstance(node.expression,exp.Alias)else node.expression
+        return not node.downstream and isinstance(expression,exp.Null)
+    try:
+        checked=[]
+        explicit_cash_columns=[name for name in by[root]['result'].get('columns')or[]if monetary.search(name)and cash_label(name)]
+        cash_rows=any(any(cash_label(v)for v in row.values())for row in by[root]['result'].get('rows')or[]if isinstance(row,dict))
+        for name in by[root]['result'].get('columns')or[]:
+            if explicit_cash_columns and name not in explicit_cash_columns and not cash_rows:continue
+            graph=lineage(name,sources[root],schema=schema,sources={k:v for k,v in sources.items()if k!=root},dialect='sqlite',trim_selects=False)
+            leaves=[n for n in graph.walk()if not n.downstream and isinstance(n.expression,exp.Table)]
+            # The executed source can establish this role even when the user's
+            # wording differs from the legacy explicit-payer-cash phrases.
+            # Do not redefine patient cash or an unused diagnostic as payer cash.
+            payer_rollup=any(n.expression.name.casefold()=='claim'and
+                n.name.rsplit('.',1)[-1].casefold()=='net_payer_cash_cents'for n in leaves)
+            if not explicit and not(cash_label(name)and payer_rollup):continue
+            count_alias=any(isinstance(n.expression.this if isinstance(n.expression,exp.Alias)else n.expression,exp.Count)for n in graph.walk())
+            numeric_cash_alias=cash_label(name)and not count_alias and any(type(row.get(name))in(int,float)for row in by[root]['result'].get('rows')or[]if isinstance(row,dict))
+            money=bool(monetary.search(name)or numeric_cash_alias or any(monetary.search(n.name.rsplit('.',1)[-1])for n in leaves)or any(
+                monetary.search(str(value.args.get('expression')))for n in graph.walk()for value in n.expression.find_all(exp.JSONExtract,exp.JSONExtractScalar)))
+            if not money:continue
+            branches=[n for n in graph.walk()if isinstance(n.source,exp.Select)and any(
+                isinstance(e,exp.Alias)and isinstance(e.this,exp.Literal)and e.this.is_string and cash_label(e.this.this)for e in n.source.expressions)]
+            if branches:checked.extend(unknown_value(n)or cash_value(n)for n in branches)
+            elif cash_label(name)or not cash_rows:
+                checked.append(unknown_value(graph)or cash_value(graph))
+        if not checked or all(checked):return []
+    except (SqlglotError,ValueError,TypeError,KeyError,RecursionError,AttributeError):
+        return [issue+' Make the cash-value lineage explicit before acceptance.']
+    return [issue]
+
+
+def cash_input_contract():
+    """Expose the existing source map at the generic investigator boundary."""
+    m=mapping()
+    return {'meaning':'Received payer cash is distinct from payer adjudication and account snapshots.',
+        'registered_transactions':[r for r in m['transactions']if r['snapshot_field']=='payer_received_cents'],
+        'native_source':'record/current_record expose stream, patient_id, event_date, available_date and payload. Filter the registered stream before extracting its amount field with json_extract(payload, ...).',
+        'clocks':'Use received availability for the cutoff and the cash event date for payment/posting periods. payer_adjudication.paid_cents and paid_date remain adjudication facts, not a cash-receipt ledger.',
+        'currency':'Follow the existing account/source currency binding; cents without a known currency cannot establish USD.',
+        'currency_account_source':{k:m[k]for k in('snapshot_stream','account_field','currency_field')},
+        'scope':'Preserve the population resolved by the existing decision context and original question, including its registered living-patient default when applicable. This cash source map does not broaden or narrow that population.',
+        'coverage':'Counted payer-claim adjudication and received provider-account cash can cover different claims and organizations. Their difference does not establish a receivable, settlement gap or savings.',
+        'reconciliation_contract':m['reconciliation_contract'],
+        'limits':LIMITS}
+
+
 def identity():return digest([P.identity(),*[hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in (__file__,Path(__file__).with_name('financial_account_maps.json'))]])
 
 

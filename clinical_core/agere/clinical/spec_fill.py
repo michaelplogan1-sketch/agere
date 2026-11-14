@@ -47,6 +47,7 @@ PROVIDERS = {'decide': None, 'models': None}  # test hooks: fake System One / Cl
 class SpecInvalid(ValueError):
     """The spec does not validate (compile, literal check or decision context)."""
     held = None  # (plan, contract) of a spec that validated except for its own unresolved requirements
+    notes = None  # rejected proposals remain evidence of attempted work, never executable contracts
 
 
 class SpecNotFilled(QuestionNotUnderstood):
@@ -65,7 +66,11 @@ def env_float(name, default):
 
 def enabled_fillers():
     raw = os.environ.get('AGERE_SPEC_FILLERS', '').strip()
-    names = tuple(x.strip() for x in raw.split(',') if x.strip()) if raw else FILLERS
+    # Repeated ordinary runs bought a second frontier planner without a valid
+    # plan. Keep grammar and typed System One choices on the automatic path;
+    # the investigator already owns unresolved frontier reasoning. The spec
+    # writer remains available for explicit comparative qualification.
+    names = tuple(x.strip() for x in raw.split(',') if x.strip()) if raw else ('grammar','s1_slots')
     return tuple(n for n in FILLERS if n in names)
 
 
@@ -566,6 +571,13 @@ def haiku_fill(ctx, *, previous=None, review=None, steps=None):
                         'instruction': 'System One checked each part of this spec against the question and these parts do not match. Repair exactly those parts, keep every other part, '
                                        'and preserve the whole original question. Return the complete corrected spec.'}
         notes = {'calls': []}
+        def retain_failure(plan, error):
+            if isinstance(plan, dict) and isinstance(plan.get('source'), dict) and isinstance(plan.get('select'), list):
+                notes.setdefault('rejected_proposals', []).append({
+                    'question_fingerprint': request_plan.fingerprint(ctx.question),
+                    'proposal_fingerprint': request_plan.fingerprint(plan),
+                    'proposal': copy.deepcopy(plan), 'validation_error': str(error),
+                    'authority': 'unverified_proposal', 'executed': False})
         # The Haiku-first ladder (model_policy): the first pass is Haiku, Haiku again with the validator's feedback; Sonnet is the escalation
         # rung only, and the cascade runs it after every Haiku attempt of every tier for the question has failed.
         plan_calls = ('sonnet',) if model_policy.escalating() else ('haiku', 'haiku')
@@ -587,6 +599,7 @@ def haiku_fill(ctx, *, previous=None, review=None, steps=None):
             ctx.charge('haiku', 0 if stats.get('cache_hit') else 1, stats.get('api_usd') or 0.0, stats.get('api_cost_known', True))
             notes['calls'].append({'model': stats.get('model') or which, 'seconds': round(time.perf_counter() - started, 3), 'usd': stats.get('api_usd') or 0.0,
                                    'cache_hit': bool(stats.get('cache_hit'))})
+            plan = None
             try:
                 plan = shared_planner.decode(raw)
                 names = {'need_tables', 'need_operations', 'need_streams'}
@@ -609,16 +622,22 @@ def haiku_fill(ctx, *, previous=None, review=None, steps=None):
                 return plan, notes
             except SpecInvalid as exc:
                 last_error = exc
-                if exc.held is not None: raise
+                retain_failure(plan, exc)
+                if exc.held is not None:
+                    exc.notes = notes
+                    raise
                 feedback = {'error': str(exc), 'previous_proposal': raw[:6000],
                             'instruction': 'Repair this specific validation error while preserving the original question. Quotes are literal substrings of the question; '
                                            'every predicate, number, window and negation must survive. Return the complete corrected spec.'}
             except (ValueError, KeyError, TypeError, AttributeError, request_plan.PlanError) as exc:
                 last_error = SpecInvalid(f'haiku: {exc}')
+                retain_failure(plan, exc)
                 feedback = {'error': str(exc), 'previous_proposal': raw[:6000],
                             'instruction': 'Repair this specific validation error while preserving the original question. Return the complete corrected spec.'}
             attempt += 1
-        raise SpecInvalid(f'haiku: {last_error}' if last_error else 'haiku: no valid spec')
+        failure = SpecInvalid(f'haiku: {last_error}' if last_error else 'haiku: no valid spec')
+        failure.notes = notes
+        raise failure
     finally:
         if owned_ledger is not None: owned_ledger.close()
 
@@ -635,6 +654,7 @@ def run_filler(name, fn, ctx):
         cand.update(status='valid', plan=copy.deepcopy(contract['request']), contract=contract)
     except SpecInvalid as exc:
         cand.update(status='invalid', error=str(exc)[:500])
+        cand['notes'] = copy.deepcopy(exc.notes or {})
         if exc.held is not None: cand['held'] = exc.held
     except Exception as exc:  # noqa: BLE001 - one filler failing never stops the others
         cand.update(status='error', error=f'{type(exc).__name__}: {str(exc)[:300]}')
@@ -739,7 +759,7 @@ def cancel_early(stack, question, population):
 
 
 def fill(stack, catalog, question, *, population=None, ledger=None, decide=None, models=None, as_of=None, verify=None, fillers=None, grace=None,
-         seconds=None, ctx_hook=None):
+         seconds=None, ctx_hook=None, filler_limits=None):
     """Run the fillers and choose. -> {'winner', 'plan', 'contract', 'agreement', 'readings', 'receipt'}; raises SpecNotFilled.
     decide / models: System One / Claude callables (tests pass fakes; None -> the live providers). verify(candidate) -> spec_verify receipt, used
     only to settle a disagreement."""
@@ -761,6 +781,7 @@ def fill(stack, catalog, question, *, population=None, ledger=None, decide=None,
     if candidates.get('grammar', {}).get('status') == 'valid': cancel_early(stack, question, population)  # the grammar's spec wins; stop the early start
     if candidates.get('grammar', {}).get('status') != 'valid' and paid:
         limits = {'s1_slots': env_float('AGERE_SPEC_S1_SECONDS', 8.0), 'haiku': env_float('AGERE_SPEC_HAIKU_SECONDS', 45.0)}
+        if filler_limits is not None: limits.update(filler_limits)
         fns = {'s1_slots': s1_fill, 'haiku': haiku_fill}
         early_ctx, early = take_early(stack, question, population) if decide is PROVIDERS['decide'] and models is PROVIDERS['models'] else (None, {})
         pool = ThreadPoolExecutor(max_workers=len(paid), thread_name_prefix='spec-fill')

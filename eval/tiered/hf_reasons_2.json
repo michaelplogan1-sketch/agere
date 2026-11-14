@@ -1,0 +1,113 @@
+{
+ "schema": "tiered-hf-reasons-comparison/2",
+ "authored": "2026-11-13",
+ "authored_by": "Claude (build owner)",
+ "question": "Why isn't patient {patient} on all four guideline heart failure medication pillars?",
+ "reference": "CORRECTED AFTER THE FIRST RUN (hf-20261113T195321Z). The first key came from two keyword sweeps and missed real documented reasons that both arms reported. This key adds them from a third, broader sweep and from reading the context of every extra either arm reported. Only reasons about the four pillar medications are required; statements about other drugs, or that say no reason is known, are optional. It was committed before the rerun.",
+ "arms": {
+  "stack": "fill status and labs by SQL; reasons by the reading tier over the patient's documents",
+  "chart_reader": "Claude Sonnet given the same fill status and labs as text plus the full text of every document of the patient, in one prompt"
+ },
+ "rule": "A reported reason counts only with a quote. Required reasons must be found (the quote or reason text contains the phrase). A quote that is not in the patient's documents is unsupported. A supported reason that is neither required nor optional is an extra, listed for hand review. A patient is correct when every required reason is found and there is no unsupported and no extra reason. This is not a test of ChatGPT, Epic or any other product.",
+ "optional_everywhere": [
+  "0/14 days used",
+  "new dizziness or fatigue",
+  "unable to obtain medication",
+  "fills beta-blocker only",
+  "did not escalate the blood pressure medication",
+  "cannot recall why use stopped",
+  "reports running out",
+  "no replacement prescription authorized",
+  "no chronic medicine is started",
+  "has not been restarted",
+  "not being used",
+  "previous adverse effect",
+  "does not agree to restarting"
+ ],
+ "patients": [
+  {
+   "id": "P-HF01",
+   "required": [
+    "reports running out"
+   ]
+  },
+  {
+   "id": "P-HF02",
+   "required": [
+    "did not increase lisinopril today because",
+    "attributes stopping to a prior clinician change"
+   ]
+  },
+  {
+   "id": "P-HF03",
+   "required": [
+    "did not like how it made them feel",
+    "unsure whether it was still needed",
+    "did not increase carvedilol today because",
+    "reports running out",
+    "previous adverse effect",
+    "does not agree to restarting"
+   ]
+  },
+  {
+   "id": "P-HF04",
+   "required": [
+    "reports running out",
+    "did not increase lisinopril today because"
+   ]
+  },
+  {
+   "id": "P-HF05",
+   "required": [
+    "cost and pillbox burden",
+    "did not increase carvedilol today because",
+    "reports running out"
+   ]
+  },
+  {
+   "id": "P-HF06",
+   "required": [
+    "sbp 96 limits titration",
+    "did not increase lisinopril today because",
+    "reports running out"
+   ]
+  },
+  {
+   "id": "P-HF07",
+   "required": [
+    "held for k 5.2",
+    "did not increase carvedilol today because"
+   ]
+  },
+  {
+   "id": "P-HF08",
+   "required": [
+    "did not increase lisinopril today because"
+   ]
+  },
+  {
+   "id": "P-HF09",
+   "required": [
+    "reports running out"
+   ]
+  },
+  {
+   "id": "P-HF10",
+   "required": [
+    "reports running out",
+    "does not agree to restarting"
+   ]
+  },
+  {
+   "id": "P-HF11",
+   "required": []
+  },
+  {
+   "id": "P-HF12",
+   "required": [
+    "did not increase lisinopril today because",
+    "attributes stopping to a prior clinician change"
+   ]
+  }
+ ]
+}

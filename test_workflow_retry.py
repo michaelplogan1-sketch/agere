@@ -1,5 +1,7 @@
 """Recovery from real provider-failure shape without duplicate work or hidden costs."""
 import unittest
+import json
+import importlib
 from unittest.mock import Mock
 import test_frontier_conversation_integration as F
 from clinical_core.agere.deliverables import workflow as W, answer_context as A
@@ -13,13 +15,17 @@ class WorkflowRetry(unittest.TestCase):
         self.request={'context_id':self.key,'index':0,'attempt':2}
 
     def test_success_updates_workflow_retains_failure_and_unknown_total(self):
-        r=W.retry_deliverable(self.path,self.request,allow_live=True,send=self.f.sender);s=r['steps'][0]
+        def sender(body):
+            if 'Assess the COMPLETE artifact' in body['messages'][0]['content']:
+                return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported','issues':[]})}]},{'cost_estimate':{'estimated_usd':.01}}
+            return self.f.sender(body)
+        r=W.retry_deliverable(self.path,self.request,allow_live=True,send=sender);s=r['steps'][0]
         self.assertEqual(s['status'],'ready');self.assertEqual(len(s['attempts']),2)
         self.assertEqual(s['attempts'][0]['deliverable_id'],self.first['deliverable_id'])
         self.assertNotEqual(s['deliverable_id'],self.first['deliverable_id'])
         self.assertFalse(s['costs']['api_cost_known']);self.assertIsNone(s['costs']['total_usd'])
-        self.assertEqual(s['costs']['known_api_estimate_usd'],.25)
-        self.assertEqual(r['new_paid_api_calls'],1);self.assertEqual(s['new_paid_api_calls'],2)
+        self.assertEqual(s['costs']['known_api_estimate_usd'],.26)
+        self.assertEqual(r['new_paid_api_calls'],2);self.assertEqual(s['new_paid_api_calls'],3)
         self.assertEqual(W.materialize(self.path,self.key)['new_paid_api_calls'],0)
         with self.assertRaisesRegex(ValueError,'Only a failed'):
             W.retry_deliverable(self.path,self.request,allow_live=True,send=Mock(side_effect=AssertionError()))

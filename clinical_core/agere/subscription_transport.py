@@ -21,6 +21,7 @@ import subprocess
 import tempfile
 import threading
 import urllib.request
+from urllib.parse import urlsplit
 import uuid
 
 MESSAGES_URL = 'api.anthropic.com/v1/messages'
@@ -75,10 +76,13 @@ def _text(content):
 
 TOOL_PROTOCOL = '''
 
-TOOLS (emulated). You may call one of these tools per reply:
+TOOLS (emulated). You may call these tools:
 {tools}
 To call a tool, reply with ONLY one JSON object and nothing else: {{"tool_use": {{"name": "<tool name>", "input": {{...arguments...}}}}}}
-The tool's result will come back in the next message. When you are done, reply with your final answer in the format the instructions above require
+When several read-only actions and all their exact arguments are already resolved, you may return
+{{"tool_uses": [{{"name": "<tool name>", "input": {{...literal arguments...}}}}, ...]}}.
+Do not batch an action whose arguments require new inference from an earlier result. The executor checks source and scope guards between actions.
+Tool results will come back in the next message. When you are done, reply with your final answer in the format the instructions above require
 (not a tool_use object).'''
 
 
@@ -86,15 +90,78 @@ def build_prompt(body):
     """-> (system text, user text) for one Messages API body."""
     system = body.get('system') or ''
     system = _text(system) if not isinstance(system, str) else system
-    tools = body.get('tools') or []
+    schema=output_schema(body)
+    if schema is not None:
+        system+='\nThe final value must satisfy this JSON Schema: '+json.dumps(schema)
+    tools = allowed_tools(body.get('tools'),body.get('tool_choice'))
     if tools:
         listing = json.dumps([{'name': t.get('name'), 'description': t.get('description'), 'input_schema': t.get('input_schema')} for t in tools], indent=1)
         system += TOOL_PROTOCOL.format(tools=listing)
+        choice=body.get('tool_choice')or{}
+        if choice.get('type')in ('tool','any'):
+            system+='\nThis turn requires a tool call. Return ONLY the tool_use object'
+            if choice['type']=='tool':system+=' naming '+choice['name']
+            system+=' with literal input arguments. Do not return final text or a repair_draft on this turn.'
+    elif body.get('tools'):
+        system += '\nTools are disabled for this turn. Return the final answer in the required contract. Tool requests will not execute.'
     turns = []
     for m in body.get('messages') or []:
         turns.append(('USER' if m.get('role') == 'user' else 'ASSISTANT') + ':\n' + _text(m.get('content')))
     user = turns[-1].split(':\n', 1)[1] if len(turns) == 1 else 'Conversation so far:\n\n' + '\n\n'.join(turns) + '\n\nReply as the ASSISTANT to the last USER message.'
     return system, user
+
+
+def prefix_cache_enabled():
+    """The opt-in candidate flag. Callers that would re-encode the compiled state for the wire skip that when this is on:
+    measured on the retained 65-patient run, the re-encoded state is 43% smaller but only 7-25% of it is an unchanged prefix
+    of the previous turn, against 93-99% for the native form, so the encoding defeats the cache it would otherwise use."""
+    return os.environ.get('AGERE_SUBSCRIPTION_PREFIX_CACHE', 'off').strip().lower() == 'on'
+
+
+def prefix_cache_blocks(body, user):
+    """Candidate, off unless AGERE_SUBSCRIPTION_PREFIX_CACHE=on: the one compiled execution-state message as exact text blocks
+    with a cache boundary after the stable catalog, else None (every other prompt keeps today's single string)."""
+    if not prefix_cache_enabled(): return None
+    messages = body.get('messages') or []
+    if len(messages) != 1 or messages[0].get('role') != 'user' or not isinstance(messages[0].get('content'), str): return None
+    from .clinical.execution_state import cache_blocks
+    return cache_blocks(user)
+
+
+def output_schema(body):
+    config=body.get('output_config')or{}
+    if not isinstance(config,dict):raise ValueError('output_config must be an object')
+    form=config.get('format')
+    if form is None:return None
+    if not isinstance(form,dict)or form.get('type')!='json_schema' or not isinstance(form.get('schema'),dict):
+        raise ValueError('Subscription output format requires a JSON Schema object')
+    return form['schema']
+
+
+def allowed_tools(tools,choice=None):
+    """Honor the current turn's tool permission before advertising or parsing."""
+    kind=(choice or {}).get('type','auto')
+    if kind=='none':return []
+    if kind=='tool':return [t for t in tools or [] if t.get('name')==choice.get('name')]
+    if kind not in ('auto','any'):raise ValueError('Unsupported tool_choice')
+    return tools or []
+
+
+def decision_output_schema(body):
+    """Constrain either a final value or currently permitted emulated actions."""
+    final=output_schema(body)
+    if final is None:return None
+    tools=allowed_tools(body.get('tools'),body.get('tool_choice'))
+    if not tools:return final
+    def obj(properties):
+        return {'type':'object','properties':properties,'required':list(properties),'additionalProperties':False}
+    calls={'anyOf':[obj({'name':{'enum':[t['name']]},'input':t.get('input_schema')or{'type':'object'}})for t in tools]}
+    variants=[obj({'tool_use':calls}),obj({'tool_uses':{'type':'array','items':calls,'minItems':1}})]
+    if (body.get('tool_choice')or{}).get('type','auto')not in ('tool','any'):
+        variants.insert(0,final)
+    # StructuredOutput requires a root object and rejects a top-level union.
+    # Nest the decision, then remove only this transport-owned wrapper below.
+    return obj({'decision':{'anyOf':variants}})
 
 
 INVOKE = re.compile(r'<invoke\s+name="([^"]+)"\s*>(.*?)(?:</invoke>|$)', re.S)
@@ -105,7 +172,7 @@ def _xml_call(text, names):
     """The model's native tool-call markup (<invoke name="tool"><parameter name="p">value</parameter></invoke>), which it sometimes writes
     instead of the JSON protocol (2026-10-26: x1-25 failed this way) -> {'name', 'input'} or None. A JSON-looking value is decoded."""
     m = INVOKE.search(text or '')
-    if not m or m.group(1) not in names: return None
+    if not m or m.group(1) not in names | {'tool_use'}: return None
     args = {}
     for k, v in PARAM.findall(m.group(2)):
         v = v.strip()
@@ -113,6 +180,9 @@ def _xml_call(text, names):
             args[k] = json.loads(v) if v[:1] in '[{' or v in ('true', 'false', 'null') or re.fullmatch(r'-?\d+(?:\.\d+)?', v) else v
         except ValueError:
             args[k] = v
+    if m.group(1)=='tool_use':
+        if set(args)!={'name','input'} or not isinstance(args['name'],str) or args['name'] not in names or not isinstance(args['input'],dict):return None
+        return args
     return {'name': m.group(1), 'input': args}
 
 
@@ -136,45 +206,281 @@ def _tool_call(text, tools):
     return None
 
 
-def run_cli(model, system, user, timeout=300):
-    """-> the CLI's JSON result (dict). Raises RuntimeError on a CLI or authentication failure."""
+def run_cli(model, system, user, timeout=None, *, max_tokens=None, effort=None, json_schema=None, user_blocks=None):
+    """-> the CLI's JSON result (dict). Raises RuntimeError on a CLI or authentication failure.
+
+    user_blocks (text blocks equal to `user` when concatenated) are sent as one stream-json user message, so a block's
+    cache boundary reaches the provider; the result is the same final JSON object, read from the last stream line."""
+    env = cli_env()  # never the API account: the subscription login / token only
+    # Mike's explicit subscription policy: no custom response ceiling. Legacy
+    # API callers still include max_tokens; validate and record it but do not
+    # enforce it through the CLI or inherit an earlier custom output setting.
+    if max_tokens is not None:
+        if type(max_tokens) is not int or max_tokens <= 0:
+            raise ValueError('max_tokens must be a positive integer')
+    env.pop('CLAUDE_CODE_MAX_OUTPUT_TOKENS',None)
+    if 'CLAUDE_CODE_EXTRA_BODY' in env:
+        extra=json.loads(env['CLAUDE_CODE_EXTRA_BODY'])
+        if not isinstance(extra, dict):
+            raise ValueError('CLAUDE_CODE_EXTRA_BODY must be a JSON object')
+        extra.pop('max_tokens',None)
+        if extra:env['CLAUDE_CODE_EXTRA_BODY']=json.dumps(extra)
+        else:env.pop('CLAUDE_CODE_EXTRA_BODY')
+    if effort is not None:
+        if effort not in ('low', 'medium', 'high', 'xhigh', 'max'):
+            raise ValueError('Unsupported caller effort level')
+        env['CLAUDE_CODE_EFFORT_LEVEL'] = effort
+    if json_schema is not None and not isinstance(json_schema,dict):
+        raise ValueError('json_schema must be an object')
     with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False) as f:
         f.write(system); path = f.name
-    env = cli_env()  # never the API account: the subscription login / token only
     cmd = [cli_path(), '-p', '--model', model, '--system-prompt-file', path, '--output-format', 'json', '--tools', '',
            '--strict-mcp-config', '--no-session-persistence']
+    if user_blocks is not None:
+        if ''.join(b['text'] for b in user_blocks) != user:
+            raise ValueError('Prefix-cache blocks must reproduce the prompt exactly')
+        cmd[cmd.index('--output-format')+1] = 'stream-json'
+        cmd += ['--input-format', 'stream-json', '--verbose']
+        user = json.dumps({'type': 'user', 'message': {'role': 'user', 'content': user_blocks}}) + '\n'
+    if json_schema is not None:cmd+=['--json-schema',json.dumps(json_schema)]
     try:
         done = subprocess.run(cmd, input=user, capture_output=True, text=True, timeout=timeout, env=env)
+    except subprocess.TimeoutExpired as exc:
+        partial=exc.stdout or ''
+        if isinstance(partial,bytes):partial=partial.decode('utf-8',errors='replace')
+        exc.subscription_cli_result={'result':partial,'usage':None,'subtype':'timeout','partial_format':'cli_stdout'}
+        raise
     finally:
         os.unlink(path)
     lines = [l for l in done.stdout.splitlines() if l.strip().startswith('{')]
-    if not lines: raise RuntimeError(f'claude CLI returned no JSON (exit {done.returncode}): {(done.stderr or done.stdout)[-300:]}')
-    out = json.loads(lines[-1])
-    if out.get('is_error') or out.get('terminal_reason') == 'api_error':
-        raise RuntimeError('claude CLI error: ' + str(out.get('result'))[:300])
+    try:
+        out=json.loads(lines[-1]) if lines else None
+        if not isinstance(out,dict):raise ValueError('No JSON result object')
+    except ValueError:
+        from .gateway import ProviderUnavailable
+        error=(ProviderUnavailable('request_cancelled: Claude CLI interrupted without a complete response',kind='cancelled')
+               if done.returncode in (-2,-15,130,143) else
+               RuntimeError(f'claude CLI returned no complete JSON result (exit {done.returncode})'))
+        error.subscription_cli_result={'result':done.stdout,'usage':None,'subtype':'invalid_cli_result',
+            'exit_code':done.returncode,'partial_format':'cli_stdout'}
+        raise error from None
+    if done.returncode or out.get('is_error') or out.get('terminal_reason') in ('api_error','aborted_streaming'):
+        errors=out.get('errors')or[]
+        if not isinstance(errors,list):errors=[errors]
+        message='\n'.join(str(v) for v in [out.get('result'),*errors] if v)
+        from .gateway import ProviderUnavailable, subscription_limit
+        error=(ProviderUnavailable('Claude subscription limit reached: ' + message[:300], kind='rate_limit')
+               if subscription_limit(message) else
+               ProviderUnavailable('request_cancelled: Claude subscription stream aborted; native work retained',kind='cancelled')
+               if out.get('terminal_reason')=='aborted_streaming' or done.returncode in (-2,-15,130,143) else
+               RuntimeError('claude CLI error: ' + message[:300]))
+        error.subscription_cli_result=out
+        raise error
     return out
 
 
-def respond(body):
+def strip_empty_unregistered_prefix(text, tools):
+    """Remove only closed, empty, unknown leading tags; never discard an action.
+
+    The subscription sometimes prefixes JSON with an empty formatting tag.
+    Registered tools (even with no arguments), reserved envelopes, nonempty or
+    malformed markup and tags inside JSON remain untouched.
+    """
+    names={t.get('name')for t in tools or []}|{'tool_use','tool_uses'}
+    raw=text
+    while True:
+        padding=INVOKE.match(raw)
+        if (not padding or not padding.group(0).endswith('</invoke>') or
+                padding.group(1)in names or padding.group(2).strip()):return raw
+        raw=raw[padding.end():].lstrip()
+
+
+def _tool_calls(text, tools):
+    """Recognize every unambiguous literal action, allowing surrounding prose.
+
+    A complete answer JSON object is never searched for embedded actions. Mixed
+    action/data objects, unknown actions and differing XML/JSON actions decline
+    as a whole. Equivalent alternative encodings execute once. Ordinary
+    introductory text or a trailing transport marker is inert.
+    """
+    if not tools: return []
+    names = {t.get('name') for t in tools}
+    raw = (text or '').strip()
+    if raw.startswith('```'):
+        raw = re.sub(r'^```(?:json)?\s*|\s*```$', '', raw)
+    # Observed CLI formatting wrapper; only its complete literal body is
+    # eligible for the same registered-action parser and per-turn permissions.
+    wrapper=re.fullmatch(r'<invoke_tool>\s*(.*?)\s*</invoke_tool>',raw,re.S)
+    if wrapper:
+        raw=wrapper.group(1).strip()
+        try:
+            _,end=json.JSONDecoder().raw_decode(raw)
+            if not raw.startswith('{') or raw[end:].strip():return []
+        except ValueError:return []
+    def nonfinite(value):raise ValueError('Nonfinite tool argument')
+    decoder=json.JSONDecoder(parse_constant=nonfinite)
+    def call(value):
+        if not isinstance(value,dict)or not {'name','input'}<=set(value)or set(value)-{'name','input','id','type'}:return None
+        if not isinstance(value['name'],str)or value['name']not in names or not isinstance(value['input'],dict):return None
+        if 'type'in value and value['type']!='tool_use':return None
+        if 'id'in value and not isinstance(value['id'],str):return None
+        result={'name':value['name'],'input':value['input']}
+        try:json.dumps(result,allow_nan=False)
+        except (TypeError,ValueError):return None
+        return result
+    def envelope(value):
+        if not isinstance(value,dict):return None
+        if set(value)=={'tool_use'}:values=[value['tool_use']]
+        elif set(value)=={'tool_uses'}:values=value['tool_uses']
+        elif value.get('type')=='tool_use':values=[value]
+        else:return None
+        if not isinstance(values,list)or not values:return None
+        parsed=[call(v)for v in values]
+        return parsed if all(v is not None for v in parsed)else None
+    def same_calls(first, second):
+        # Alternative encodings of one action must preserve literal types too:
+        # Python equality alone would equate a boolean argument with 0 or 1.
+        return second is not None and json.dumps(first,sort_keys=True,allow_nan=False)==json.dumps(second,sort_keys=True,allow_nan=False)
+    # Do not find XML/JSON actions inside a literal final-answer object.
+    if raw.startswith('['):return []
+    if raw.startswith('{'):
+        try:first,end=decoder.raw_decode(raw)
+        except ValueError:return []
+        first_calls=envelope(first)
+        if first_calls is None:return []
+        tail=raw[end:].strip()
+        if tail.startswith('<invoke'):
+            # The subscription can emit the same literal request in JSON and
+            # XML. Execute that request once, without accepting differing or
+            # unregistered companion actions as a partial valid batch.
+            xml_calls=_tool_calls(tail,tools)
+            return first_calls if same_calls(first_calls,xml_calls) else []
+    raw=strip_empty_unregistered_prefix(raw,tools)
+    xml_start=raw.find('<invoke');json_start=raw.find('{')
+    if xml_start>=0 and (json_start<0 or xml_start<json_start):
+        calls=[];cursor=0;remainder=[]
+        for invocation in INVOKE.finditer(raw):
+            remainder.append(raw[cursor:invocation.start()]);cursor=invocation.end()
+            if not invocation.group(0).rstrip().endswith('</invoke>'):return []
+            parameters=list(PARAM.finditer(invocation.group(2)))
+            keys=[p.group(1)for p in parameters]
+            if len(keys)!=len(set(keys)) or PARAM.sub('',invocation.group(2)).strip():return []
+            if invocation.group(1)not in names|{'tool_use'}and not invocation.group(2).strip():continue
+            parsed=call(_xml_call(invocation.group(0),names))
+            if parsed is None:return []
+            calls.append(parsed)
+        remainder.append(raw[cursor:]);tail=''.join(remainder)
+        if '<invoke'in tail:return []
+        if not calls:return _tool_calls(tail,tools)
+        if '{'in tail:
+            try:
+                alternative,end=decoder.raw_decode(tail.strip())
+                if tail.strip()[end:].strip():return []
+            except ValueError:return []
+            return calls if same_calls(calls,envelope(alternative)) else []
+        return calls
+    calls=[];cursor=0
+    while True:
+        start=raw.find('{',cursor)
+        if start<0:
+            if '<invoke'in raw[cursor:]:return []
+            break
+        if '<invoke'in raw[cursor:start]:return []
+        try:obj,end=decoder.raw_decode(raw,start)
+        except ValueError:return []
+        parsed=envelope(obj)
+        if parsed is None:return []
+        calls.extend(parsed);cursor=end
+    return calls
+
+
+def normalize_tool_response(response, tools, tool_choice=None):
+    """Free literal normalization also applies to cached or non-CLI text responses."""
+    blocks = response.get('content') or []
+    permitted=allowed_tools(tools,tool_choice);names={t.get('name')for t in permitted}
+    if any(b.get('type')=='tool_use' and b.get('name')not in names for b in blocks):
+        # Native/cached actions have the same permissions as emulated text.
+        # Preserve every block as inert text; reject the whole mixed batch.
+        return {**response,'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(
+            {'tool_uses':[{'name':b.get('name'),'input':b.get('input')}for b in blocks if b.get('type')=='tool_use'],
+             'unexecuted_blocks':blocks})}], 'tool_permission_rejected':True}
+    tools=permitted
+    if not tools or response.get('stop_reason') == 'max_tokens' or any(b.get('type') == 'tool_use' for b in blocks): return response
+    calls = _tool_calls('\n'.join(b.get('text', '') for b in blocks if b.get('type') == 'text'), tools)
+    if not calls: return response
+    return {**response, 'stop_reason': 'tool_use',
+            'content': [{'type': 'tool_use', 'id': 'toolu_normalized_' + uuid.uuid4().hex[:20],
+                         'name': c['name'], 'input': c['input']} for c in calls]}
+
+
+def respond(body, *, timeout=None):
     """A Messages API body -> a Messages API response dict, answered by the CLI."""
     model = body.get('model') or 'claude-haiku-5-5'
     system, user = build_prompt(body)
-    # a CLI call normally takes seconds; a hung one (about 1 in 8 under load, 2026-10-25) is cut short and retried once
-    timeout = float(os.environ.get('AGERE_SUBSCRIPTION_TIMEOUT', '150'))
+    blocks = prefix_cache_blocks(body, user)
+    # Preserve the caller's timeout instead of silently imposing a shorter CLI
+    # limit. An explicit environment override remains available. A timeout is
+    # reported once: replaying an interrupted generation can duplicate usage.
+    configured = os.environ.get('AGERE_SUBSCRIPTION_TIMEOUT')
+    if configured:
+        timeout = float(configured)
+    output_config = body.get('output_config') or {}
+    if not isinstance(output_config, dict):
+        raise ValueError('output_config must be an object')
     try:
-        out = run_cli(model, system, user, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        out = run_cli(model, system, user, timeout=timeout)
+        schema=decision_output_schema(body)
+        schema_kw={'json_schema':schema} if schema is not None else {}
+        structured=bool(schema_kw)
+        if blocks is not None:schema_kw['user_blocks']=blocks
+        wrapped_decision=bool(schema is not None and allowed_tools(body.get('tools'),body.get('tool_choice')))
+        if wrapped_decision:
+            system+='\nFor the native StructuredOutput response, put the final value or permitted tool envelope under its decision property. This transport wrapper does not authorize any extra tool or mixed action.'
+        if structured:
+            system+='\nNative output transport: submit the required value once through the provided StructuredOutput tool. Do not print the complete value in assistant text first or repeat it afterwards. The tool is the serialization channel for this response; all declared tool permissions and evidence requirements still apply.'
+        out = run_cli(model, system, user, timeout=timeout,
+                      max_tokens=body.get('max_tokens'), effort=output_config.get('effort'),**schema_kw)
+    except Exception as exc:
+        raw=getattr(exc,'subscription_cli_result',None)
+        if isinstance(raw,dict):
+            exc.provider_response={'model':model,'transport':'claude-code-subscription',
+                # Aborted CLI streams can report all-zero aggregate counters
+                # after a long in-flight call. Preserve them raw, not as a
+                # known zero-cost completion. Partial stdout remains intact.
+                'usage':None if getattr(exc,'kind',None)=='cancelled' or raw.get('terminal_reason')=='aborted_streaming' else raw.get('usage'),
+                'subscription_cli_result':raw,'status':'failed'}
+        raise
     text = out.get('result') or ''
-    usage = out.get('usage') or {}
-    usage = {k: usage.get(k, 0) for k in ('input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens')}
-    call = _tool_call(text, body.get('tools'))
-    if call:
-        content, stop = [{'type': 'tool_use', 'id': 'toolu_' + uuid.uuid4().hex[:20], 'name': call['name'], 'input': call['input']}], 'tool_use'
+    if structured and out.get('stop_reason')!='max_tokens'and 'structured_output'in out:
+        structured=out['structured_output']
+        if wrapped_decision and isinstance(structured,dict)and set(structured)=={'decision'}:
+            structured=structured['decision']
+        text=json.dumps(structured,ensure_ascii=False)
+    reported_usage = out.get('usage') or {}
+    usage = {k: reported_usage.get(k) for k in ('input_tokens', 'output_tokens')}
+    usage.update({k:reported_usage.get(k,0)for k in ('cache_creation_input_tokens','cache_read_input_tokens')})
+    if 'cache_creation' in reported_usage:
+        # Preserve reported cache TTLs for pricing. Never turn a one-hour write
+        # into a cheaper five-minute write by dropping the provider breakdown.
+        usage['cache_creation'] = reported_usage['cache_creation']
+    truncated = out.get('stop_reason') == 'max_tokens'
+    calls = [] if truncated else _tool_calls(text, allowed_tools(body.get('tools'),body.get('tool_choice')))
+    if calls:
+        content, stop = [{'type': 'tool_use', 'id': 'toolu_' + uuid.uuid4().hex[:20], 'name': call['name'], 'input': call['input']} for call in calls], 'tool_use'
     else:
-        content, stop = [{'type': 'text', 'text': text}], 'end_turn'
+        content, stop = [{'type': 'text', 'text': text}], 'max_tokens' if truncated else 'end_turn'
     return {'id': 'msg_sub_' + uuid.uuid4().hex[:16], 'type': 'message', 'role': 'assistant', 'model': model, 'content': content,
-            'stop_reason': stop, 'stop_sequence': None, 'usage': usage, 'transport': 'claude-code-subscription'}
+            'stop_reason': stop, 'stop_sequence': None, 'usage': usage, 'transport': 'claude-code-subscription',
+            'transport_details': {
+                'schema': 'subscription-cli-receipt/1',
+                'caller_max_tokens': body.get('max_tokens'),
+                'caller_max_tokens_enforced':False,
+                'output_policy':'Service boundary only; no custom output ceiling',
+                'caller_effort': output_config.get('effort'),
+                'structured_output_mode':'native_cli_decision_schema'if wrapped_decision else 'native_cli_schema'if structured else None,
+                **({'prefix_cache':{'candidate':True,'text_blocks':len(blocks),'boundary_block':len(blocks)-2,'ttl':'1h'}}if blocks is not None else {}),
+                'cli': {k: out[k] for k in ('num_turns', 'duration_ms', 'duration_api_ms', 'subtype', 'stop_reason', 'modelUsage','structured_output') if k in out},
+                **({'native_text':out['result']}if structured and out.get('result')and 'structured_output'in out else {}),
+                'usage_scope': 'CLI aggregate, including reported internal recovery requests; internal API attempt count is unknown unless explicitly reported. No subscription allocation or invoice inferred.'}}
 
 
 class _Response(io.BytesIO):
@@ -199,9 +505,12 @@ def install():
         def urlopen(url, data=None, timeout=None, *args, **kwargs):
             full = url.full_url if isinstance(url, urllib.request.Request) else str(url)
             if MESSAGES_URL in full:
+                address = urlsplit(full)
+                if address.scheme != 'https' or (address.hostname or '') + address.path.rstrip('/') != MESSAGES_URL:
+                    raise ValueError('The configured subscription transport supports generation only; count_tokens and other Messages subroutes must not invoke generation')
                 payload = data if data is not None else (url.data if isinstance(url, urllib.request.Request) else None)
                 body = json.loads(payload.decode() if isinstance(payload, (bytes, bytearray)) else payload)
-                return _Response(json.dumps(respond(body)).encode())
+                return _Response(json.dumps(respond(body, timeout=timeout)).encode())
             return real(url, data, timeout, *args, **kwargs) if timeout is not None else real(url, data, *args, **kwargs)
         urllib.request.urlopen = urlopen
         os.environ.setdefault('ANTHROPIC_API_KEY', 'subscription-transport')  # Claude tiers check for a key; it is never sent

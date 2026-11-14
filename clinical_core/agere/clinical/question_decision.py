@@ -688,7 +688,7 @@ def prepare_population(retriever, request):
     return row
 
 
-def inspect_population(retriever, row):
+def inspect_population(retriever, row, *, recheck=None):
     if row.get('protocol_review_dependency'):
         from . import population_protocol_review as protocols
         if protocols.current_dependency(retriever.path,row['request']['program'],row['selection']['patient_ids']) != row['protocol_review_dependency']:
@@ -703,21 +703,46 @@ def inspect_population(retriever, row):
     expected={k:v for k,v in row['selection'].items() if k not in ('roster_digest','not_matched_patient_ids')}
     selected={k:v for k,v in selected.items() if k not in ('cache_hit','examples')}
     with care.work.warehouse(retriever.path) as src:roster=sorted(r[0] for r in src.execute('SELECT id FROM patients'))
+    preparation = care.work.preparation_identity(retriever.path,[row['request']['program']])
     if (selected!=expected or digest(roster)!=row['selection']['roster_digest']
-            or care.work.preparation_identity(retriever.path,[row['request']['program']])!=row['preparation_identity']
             or digest(care.portfolio(retriever.path,row['buyer_id']))!=row['portfolio_digest']):
         raise care.work.WorkConflict('Population, assessments or buyer services changed; prepare a new decision')
     db=care.work.database(retriever.path)
+    saved_assessments={}
     try:
         for member in row['members']:
-            if digest(care.work.load(db,'work_assessments',member['assessment_id']))!=member['assessment_digest']:
+            assessment=care.work.load(db,'work_assessments',member['assessment_id'])
+            if digest(assessment)!=member['assessment_digest']:
                 raise care.work.WorkConflict('Saved population assessment changed')
+            saved_assessments[member['patient_id']]=assessment
     finally:db.close()
+    if preparation != row['preparation_identity']:
+        # Shared transport/accounting dependencies can change the preparation
+        # identity without changing a native assessment. Recompute the current
+        # assessments, never the work, and compare every field except their
+        # derived receipt ID and implementation identity. Source hashes, rules,
+        # nominations, context attachments and all uncertainty must still match.
+        selection, _, current = population_basis(retriever.path,row['request'])
+        by_patient={a['patient_id']:a for a in current}
+        substantive=lambda a:{k:v for k,v in a.items() if k not in ('id','engine_identity')}
+        if (selection!=row['selection'] or len(saved_assessments)!=len(row['members'])
+                or len(by_patient)!=len(current) or by_patient.keys()!=saved_assessments.keys()
+                or any(substantive(a)!=substantive(by_patient[pid]) for pid,a in saved_assessments.items())):
+            raise care.work.WorkConflict('Current population assessments differ; prepare a new decision')
+        if (care.work.preparation_identity(retriever.path,[row['request']['program']])!=preparation
+                or digest(care.portfolio(retriever.path,row['buyer_id']))!=row['portfolio_digest']):
+            raise care.work.WorkConflict('Population dependencies changed during reassessment')
+        if recheck is not None:
+            recheck.update(method='exact_current_native_assessment_comparison',members=len(current),
+                previous_preparation_identity=row['preparation_identity'],current_preparation_identity=preparation,
+                excluded_metadata_fields=['id','engine_identity'],all_other_assessment_fields_equal=True,
+                work_reexecuted=False,new_provider_requests=0)
     return row
 
 
 def reopen_population(retriever,row):
-    try:inspect_population(retriever,row);current=True;reason=None
+    recheck={}
+    try:inspect_population(retriever,row,recheck=recheck);current=True;reason=None
     except (ValueError,KeyError,FileNotFoundError) as exc:current=False;reason=str(exc)
     db=database(retriever.path)
     try:
@@ -729,7 +754,8 @@ def reopen_population(retriever,row):
         task=care_readiness.task(retriever.path,link['task_id'])
         matches=task['patient_id']==link['patient_id'] and task['plan_id']==link['plan_id'] and task['option_id']==link['option_id']
         tasks.append({'task':task,'decision_binding':link,'binding_current':matches})
-    return {'decision':row,'dependencies_current':current,'stale_reason':reason,'tasks':tasks,'followups':followups,'new_paid_api_calls':0}
+    return {'decision':row,'dependencies_current':current,'stale_reason':reason,'tasks':tasks,'followups':followups,
+            'dependency_recheck':recheck or None,'new_paid_api_calls':0}
 
 
 def match_population_member(retriever,request):

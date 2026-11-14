@@ -637,13 +637,19 @@ class Workspace:
             if not ok and pipeline == 'full':
                 raise ValueError(f'Full pipeline unavailable on {self.slug}: {reason}')
             if ok:
+                from ..clinical.question_input import QuestionNotUnderstood
                 try:
                     out = self._ask_full(question, answer_type=answer_type, send_factory=send_factory, live=live)
+                except QuestionNotUnderstood:
+                    # A scope/meaning guard is a request for clarification, not
+                    # an engine outage that another model may reinterpret.
+                    raise
                 except Exception as exc:  # noqa: BLE001 - heal, don't block: the hybrid core still answers
                     if pipeline == 'full':
                         raise
                     fallback = {'from': 'full', 'reason': f'{type(exc).__name__}: {exc}'[:400]}
                 else:
+                    self._save_full_answer(question, out)
                     self._record(question, out)
                     return out
             else:
@@ -704,6 +710,8 @@ class Workspace:
             out['customer_ids'] = self.customer_ids(ids)  # the customer's own identifiers (MRN, member id, EHR id)
         record = {'at': _now(), 'question': question, 'pipeline': out.get('pipeline'), 'decision': out['decision'],
                   'answer': out['answer'], 'cost_usd': out['cost_usd'], 'interpretation': out['interpretation']}
+        record.update({k: out[k] for k in ('status', 'action_context', 'parent_context_id', 'conversation', 'clarification',
+                                          'context_error', 'new_paid_api_calls') if k in out})
         with open(self.dir / 'questions.jsonl', 'a') as f:
             f.write(json.dumps(record, default=str) + '\n')
         if self.native:  # streaming dependency registry (what the answer read), so a later tick can mark it stale
@@ -728,7 +736,135 @@ class Workspace:
         # no send_factory: live stacks meter the hybrid core through together's ledgered sender (same ledger, receipts under
         # pipeline/provider-receipts); offline stacks refuse every hosted call
         stack = workspace_stack.stack_for(self, allow_live=live, send_factory=send_factory)
-        return workspace_stack.envelope(together.compose_together(stack, question, answer_type=answer_type), answer_type=answer_type)
+        result = together.compose_together(stack, question, answer_type=answer_type)
+        out = workspace_stack.envelope(result, answer_type=answer_type)
+        out.update(question=question, _full_result=result)
+        return out
+
+    def _save_full_answer(self, question, out, *, original_question=None):
+        from . import workspace_stack
+        from ..deliverables import answer_context
+        result = out.pop('_full_result')
+        try:
+            ref = answer_context.capture(self.dir / workspace_stack.DIRNAME, question, result, original_question=original_question)
+            if ref:
+                out['action_context'] = {**ref, 'url': f'/api/workspaces/{self.slug}/answers/{ref["id"]}'}
+        except Exception as exc:
+            # The analysis already happened. Preserve it and report the save failure;
+            # never buy a second answer through the automatic hybrid fallback.
+            import gzip
+            import uuid
+            receipt = self.dir / 'receipts' / f'answer-save-failed-{uuid.uuid4().hex}.json.gz'
+            receipt.parent.mkdir(parents=True, exist_ok=True)
+            out['context_error'] = 'The answer could not be saved for reopening. Its analysis has not been rerun.'
+            with gzip.open(receipt, 'wt') as f:
+                json.dump({'question': question, 'result': result, 'error': f'{type(exc).__name__}: {exc}'}, f, default=str)
+
+    def saved_answer(self, context_id):
+        """Reopen immutable evidence in this workspace, without preparing or rerunning it."""
+        from . import workspace_stack
+        from ..deliverables import answer_context
+        try:
+            saved = answer_context.load(self.dir / workspace_stack.DIRNAME, context_id)
+        except ValueError as exc:
+            if str(exc) in ('A saved answer context is required', 'Saved answer not found in this warehouse'):
+                raise FileNotFoundError('Saved answer not found in this workspace') from exc
+            raise
+        out = workspace_stack.envelope(saved)
+        out.update(question=saved['question'], saved_context=saved,
+                   action_context={'id': saved['id'], 'url': f'/api/workspaces/{self.slug}/answers/{saved["id"]}'},
+                   reopened=True, reopen_paid_api_calls=0)
+        ids = (out.get('answer') or {}).get('patient_ids')
+        if ids and self.native:
+            out['customer_ids'] = self.customer_ids(ids)
+        return out
+
+    def followup_answer(self, context_id, question, *, scope='result'):
+        """Use existing native transformations of server-owned saved membership."""
+        from . import workspace_stack
+        from ..deliverables import answer_context
+        parent = self.saved_answer(context_id)['saved_context']
+        result = answer_context.followup(self.dir / workspace_stack.DIRNAME, context_id, question, scope=scope)
+        if result is None:
+            out = {'question': question, 'status': 'clarify', 'answer': None, 'pipeline': 'full',
+                    'headline': 'Choose a supported follow-up for this saved population.',
+                    'suggestions': ['Show me the patient list', 'Group them by practice', 'Count them'],
+                    'decision': 'saved_population_clarification', 'interpretation': 'Saved population retained; follow-up needs clarification.',
+                    'parent_context_id': context_id, 'cost_usd': 0, 'new_paid_api_calls': 0}
+            self._record(question, out)
+            return out
+        out = workspace_stack.envelope(result)
+        out.update(question=question, parent_context_id=context_id, _full_result=result)
+        self._save_full_answer(question, out, original_question=parent.get('original_question') or parent['question'])
+        self._record(question, out)
+        return out
+
+    def answer_report(self, context_id, request):
+        """Render requested evidence using the existing guarded native renderer."""
+        from . import workspace_stack
+        from ..deliverables import saved_report
+        if set(request) != {'template', 'request'}:
+            raise ValueError('A report layout and request are required; its evidence comes from the saved answer')
+        self.saved_answer(context_id)  # tenant-bound identity, including absent-context 404
+        out = saved_report.create(self.dir / workspace_stack.DIRNAME,
+            {**request, 'context_id': context_id},
+            context_url=f'/api/workspaces/{self.slug}/answers/{context_id}')
+        return {**out, 'context_id': context_id}
+
+    def answer_deliverables(self, context_id, deliverable_id=None):
+        from . import workspace_stack
+        from ..deliverables import answer_context as A, saved_report
+        from ..deliverables.compose import load, listing
+        context = self.saved_answer(context_id)['saved_context']
+        path = self.dir / workspace_stack.DIRNAME
+        ws = A.workspace(path, context)
+        if deliverable_id is None:
+            return {'context_id': context_id, 'deliverables': listing(ws)}
+        spec, bundle, _, html = load(ws, deliverable_id)
+        if spec.get('generation') == 'saved_report' and spec.get('status') == 'delivered':
+            data, _, _ = saved_report.read_format(path, context_id, deliverable_id, 'html')
+            html = data.decode('utf-8')
+        else:
+            A.bundle_validator(path, bundle)()
+        return {**spec, 'context_id': context_id, 'html': html}
+
+    def converse(self, body, *, can_write=False, live=True):
+        """Use the application's existing conversation lifecycle in this tenant."""
+        import copy
+        from . import workspace_stack
+        from ..clinical import conversation
+        if self.state['status'] != 'ready':
+            raise RuntimeError('The workspace must be ready before answering')
+        request = {k: v for k, v in body.items() if k != 'answer_type'}
+        request.setdefault('conversation_id', None)
+        stack = copy.copy(workspace_stack.stack_for(self, allow_live=live))
+        stack.allow_workflow_actions = bool(can_write)
+        # Collect scoped observations; a tenant request cannot append labels to
+        # the process-wide legacy corpus or start an operator's training plan.
+        stack.learning_observation_only = True
+        # Deliberately outside ask()'s legacy fallback: a clarification, scope
+        # guard, provider limit or interrupted conversation must not buy a replay.
+        result = conversation.handle_compose(stack, request)
+        out = workspace_stack.envelope(result, answer_type=body.get('answer_type'))
+        if result.get('clarification_replay'):
+            out.update(original_cost_receipt=out.get('cost_receipt'), cost_receipt={
+                'version': 'cost-receipt/1', 'paid_calls': 0, 'usd': 0, 'usd_known': True,
+                'accounting_complete': True, 'reused_clarification': True}, cost_usd=0, new_paid_api_calls=0)
+        ref = result.get('action_context')
+        if ref:
+            out['action_context'] = {**ref, 'url': f'/api/workspaces/{self.slug}/answers/{ref["id"]}'}
+        out['question'] = (result.get('conversation') or {}).get('question') or body.get('question') or result.get('question')
+        self._record(out['question'], out)
+        return out
+
+    def conversation_history(self, conversation_id):
+        from . import workspace_stack
+        from ..clinical import conversation
+        conversation.check_id(conversation_id)
+        rows = conversation.turns(self.dir / workspace_stack.DIRNAME, conversation_id)
+        if not rows:
+            raise FileNotFoundError('Conversation not found in this workspace')
+        return rows
 
     def _ask_hybrid(self, question, *, answer_type=None, send_factory=None):
         from ..clinical.semantic_analyst import SemanticWarehouse

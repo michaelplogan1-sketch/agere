@@ -101,10 +101,10 @@ def compact_body(body):
     return result
 
 
-def transform(parent):
+def transform(parent, *, reference_identity=None):
     if parent.get('schema') == VERSION: raise ValueError('Context already uses reference tables')
     row = deepcopy(parent); row.pop('id')
-    row.update(schema=VERSION, reference_table_identity=identity(), reference_parent_id=parent['id'], reference_parent_hash=digest(parent))
+    row.update(schema=VERSION, reference_table_identity=reference_identity or identity(), reference_parent_id=parent['id'], reference_parent_hash=digest(parent))
     row['missing_evidence']['record_scope']['reference_table_transport'] = VERSION
     row['model_context']['missing_evidence'] = row['missing_evidence']
     row['budget']['used'] = len(B.encode(row['model_context']))
@@ -135,10 +135,24 @@ def create(path, key):
 def inspect(path, key):
     row = json.loads(location(path, key).read_text())
     if row['id'] != key or digest({k: v for k, v in row.items() if k != 'id'}) != key: raise ValueError('Reference context integrity changed')
-    if row['reference_table_identity'] != identity(): raise ValueError('Reference transport contract changed')
+    historical=row.get('reference_table_identity')
+    if not isinstance(historical,str) or not re.fullmatch('[a-f0-9]{64}',historical):raise ValueError('Invalid reference transport provenance')
     parent = C.inspect(path, row['reference_parent_id'])
-    if parent.get('schema') == VERSION or digest(parent) != row['reference_parent_hash'] or transform(parent) != row:
+    # Reconstruct every current context field from the freshly verified parent.
+    # Holding only its historical stamp preserves immutable IDs, never a source
+    # or model judgment. Actual requests/results retain their own validation.
+    rebuilt=transform(parent,reference_identity=historical)
+    if parent.get('schema') == VERSION or digest(parent) != row['reference_parent_hash'] or rebuilt != row:
         raise ValueError('Reference transport differs from original context')
+    current=identity()
+    if historical!=current:
+        from .case_passes import atomic_write
+        proof={'schema':'reference-context-current-revalidation/1','status':'passed','context_id':key,
+               'parent_id':parent['id'],'parent_digest':digest(parent),'historical_identity':historical,
+               'current_identity':current,'all_current_context_fields_equal':True,
+               'provider_calls':0,'clinical_qualification_transferred':False}
+        target=Path(path)/'reference-context-current-revalidation'/(key+'.json');target.parent.mkdir(exist_ok=True)
+        if not target.exists() or json.loads(target.read_text())!=proof:atomic_write(target,proof)
     return row
 
 

@@ -183,8 +183,17 @@ def inspect(retriever, body):
     plan = json.loads(found[0])
     if digest({k: v for k, v in plan.items() if k != 'id'}) != body['id'] or plan['id'] != body['id']:
         raise ValueError('Source-plan integrity changed')
-    if preview(retriever, plan['preview']['request']) != plan['preview']:
-        raise ValueError('Source plan or received evidence changed')
+    current=preview(retriever, plan['preview']['request'])
+    historical=plan['preview'];revalidated=current!=historical
+    if revalidated:
+        # A codec's identity includes its provider transport implementation.
+        # Recompute the COMPLETE native selection before allowing metadata-only
+        # drift. All scope, dates, records, unknowns and other contracts match.
+        compatible={**current,'identity':dict(current['identity'])}
+        for name in ('code','reference_tables'):
+            compatible['identity'][name]=historical['identity'][name]
+        compatible['id']=digest({k:v for k,v in compatible.items()if k!='id'})
+        if compatible!=historical:raise ValueError('Source plan or received evidence changed')
     rows = []
     for g in plan['groups']:
         context = C.inspect(retriever.path, g['context_id'])
@@ -194,4 +203,12 @@ def inspect(retriever, body):
     ids = [rid for g in plan['groups'] for rid in g['record_ids']]
     if len(ids) != len(set(ids)) or sorted(ids) != plan['preview']['selected_record_ids']:
         raise ValueError('Saved source-plan coverage changed')
+    if revalidated:
+        from .case_passes import atomic_write
+        proof={'schema':'source-plan-current-revalidation/1','status':'passed','plan_id':plan['id'],
+               'historical_preview_id':historical['id'],'current_preview_id':current['id'],
+               'all_current_selection_fields_equal':True,'verified_context_digests':[digest(r)for r in rows],
+               'provider_calls':0,'clinical_qualification_transferred':False}
+        target=Path(retriever.path)/'source-plan-current-revalidation'/(plan['id']+'.json');target.parent.mkdir(exist_ok=True)
+        if not target.exists() or json.loads(target.read_text())!=proof:atomic_write(target,proof)
     return {'plan': plan, 'contexts': rows}

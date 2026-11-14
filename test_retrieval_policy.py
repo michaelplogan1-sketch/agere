@@ -16,6 +16,7 @@ def retriever(path, rerank=True):
     r.path = Path(path)
     r.reranker = SimpleNamespace(identity='bge-id', rank=lambda q, rows, top_k: rows) if rerank else None
     r._installed_reranker = r.reranker
+    r._qwen=SimpleNamespace(identity='qwen3-reranker-verified-fixture',rank=lambda q,rows,top_k:rows) if rerank else None
     return r
 
 
@@ -38,7 +39,7 @@ class Policy(unittest.TestCase):
         self.assertEqual((med['type'], med['reranker'], med['graph_fallback']), ('medication', 'bge', True)); self.assertEqual(med['reranker_identity'], 'bge-id')
         self.assertIsNone(med['graph_identity'])                              # no graph file yet: nothing to fuse
         (self.dir / MG.FILE).write_bytes(b'x')
-        self.assertEqual(r.policy('Is the patient on a statin?')['graph_identity'], MG.VERSION)
+        self.assertEqual(r.policy('Is the patient on a statin?')['graph_identity']['version'], MG.VERSION)
 
     def test_missing_qwen_falls_back_to_incumbent_not_an_error(self):
         (self.qwen / 'agere-model.json').unlink()

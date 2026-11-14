@@ -87,3 +87,8 @@ details pre{white-space:pre-wrap;font-size:12px;color:var(--muted);margin:4px 0;
 .flag textarea{width:100%;min-height:64px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg);padding:8px;font:inherit}
 .muted{color:var(--muted)}.warnc{color:var(--warn)}.badc{color:var(--bad)}.goodc{color:var(--good)}
 .skeleton{color:var(--muted);padding:18px 0}
+.contract-input-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin:18px 0}
+.contract-input-grid label{display:grid;gap:7px;font-size:13px;font-weight:600;color:var(--ink)}
+.contract-input-grid label:last-child{grid-column:1/-1}
+.contract-input-grid input{box-sizing:border-box;width:100%;padding:10px 12px;border:1px solid var(--line,#d9d5e2);border-radius:8px;background:var(--paper,#fff);color:inherit;font:inherit;font-weight:400}
+.contract-input-grid input:focus-visible{outline:2px solid var(--accent,#7550a3);outline-offset:2px}

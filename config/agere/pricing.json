@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-10-12",
+  "checked_at": "2026-10-28",
   "units": "USD per million tokens; estimates, not invoice amounts",
   "jev-1.13.0": {
     "input": 0.042,
@@ -27,8 +27,8 @@
     "output": 10.0,
     "cache_write_5m": 2.5,
     "cache_write_1h": 4.0,
-    "cache_read": 0.2,
-    "source": "Anthropic pricing via claude-api skill (cached 2026-10-06): writes 1.25x (5m) / 2x (1h), reads per model"
+    "cache_read": 0.1,
+    "source": "https://platform.claude.com/docs/en/about-claude/pricing"
   },
   "claude-haiku-5-5": {
     "input": 0.1,
@@ -36,6 +36,14 @@
     "cache_write_5m": 0.125,
     "cache_write_1h": 0.2,
     "cache_read": 0.01,
-    "source": "Anthropic pricing via claude-api skill (cached 2026-10-06): writes 1.25x (5m) / 2x (1h), reads per model"
+    "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "long_context": {
+      "input_tokens_above": 100000,
+      "input": 0.5,
+      "output": 2.5,
+      "cache_write_5m": 0.625,
+      "cache_write_1h": 1.0,
+      "cache_read": 0.05
+    }
   }
 }

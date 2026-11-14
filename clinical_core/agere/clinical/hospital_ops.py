@@ -278,8 +278,8 @@ def common_params(low):
     return out
 
 
-def visits_in(db, as_of, p, patient_ids=None, classes=None, need=None):
-    """Governed visits (visit_groups.load) restricted to the question window / facility / classes -> (rows, basis, (start, end), fac, notes)."""
+def visits_in(db, as_of, p, patient_ids=None, classes=None, need=None, overlap=False):
+    """Governed visits restricted to arrivals (default) or overlapping stays, with identical scope/cutoff filters."""
     from . import visit_groups
     rows, basis = visit_groups.load(db, patient_ids, as_of)
     start, end = window(as_of, p.get('months'), p.get('start'), p.get('end'))
@@ -287,7 +287,12 @@ def visits_in(db, as_of, p, patient_ids=None, classes=None, need=None):
     if p.get('facility'):
         fac = resolve_facility(p['facility'], facilities(db))
         if not fac: notes.append(f"No facility matches '{p['facility']}'; every facility is counted.")
-    sel = [r for r in rows if (not start or r['start_date'] >= start) and r['start_date'] <= end and (not fac or r['organization_id'] == fac)
+    def in_window(r):
+        if not start: return True
+        if not overlap: return r['start_date'] >= start
+        return not r['discharge_known'] or not r['end_date'] or r['end_date'] >= start
+    sel = [r for r in rows if in_window(r)
+           and r['start_date'] <= end and (not fac or r['organization_id'] == fac)
            and (not classes or r['visit_class'] in classes) and (not need or need(r))]
     return sel, basis, (start, end), fac, notes
 

@@ -83,6 +83,8 @@ class Version:
     amount: float | None = None
     service_date: str | None = None
     person_id: str | None = None
+    stream: str | None = None
+    observation: dict | None = None
 
 
 @dataclass
@@ -108,18 +110,55 @@ def order_key(v):
     return (v.sequence or 0, v.arrival or '', v.event or '', v.record_id)
 
 
+def lab_reference_issue(old, new):
+    """Patient validation belongs to replacement_issue; require compatible analyte/order evidence for labs.
+
+    A correction may change the result, units or collection date. It cannot use a
+    contradictory analyte code or another known order to erase an observation.
+    """
+    norm = lambda x: ' '.join(str(x or '').strip().lower().split())
+    code_a, code_b = old.get('loinc'), new.get('loinc')
+    if code_a and code_b and code_a != code_b:return 'lab_analyte_mismatch'
+    if not (code_a and code_b and code_a == code_b):
+        local_a,local_b=old.get('local_code'),new.get('local_code')
+        name_a,name_b=norm(old.get('name') or old.get('test')),norm(new.get('name') or new.get('test'))
+        if not ((local_a and local_b and local_a==local_b) or (name_a and name_a==name_b)):
+            return 'lab_analyte_unresolved'
+    order_a,order_b=old.get('laboratory_order_record_id'),new.get('laboratory_order_record_id')
+    if order_a and order_b and order_a!=order_b:return 'lab_order_mismatch'
+    return None
+
+
+def replacement_issue(new, old):
+    """Why a pointer cannot invalidate a known record; raw proposals remain available for inspection."""
+    if old is None:return 'target_not_available'
+    if new.record_id==old.record_id:return 'self_reference'
+    if new.person_id!=old.person_id:return 'patient_identity_mismatch_or_unknown'
+    if new.stream and old.stream and new.stream!=old.stream:return 'stream_mismatch'
+    if new.stream=='labs' or old.stream=='labs':
+        if not new.person_id:return 'patient_identity_unknown'
+        return lab_reference_issue(old.observation or {},new.observation or {})
+    if new.key is not None and old.key is not None and new.key!=old.key and new.frequency!='7':
+        return 'entity_mismatch_without_replacement_frequency'
+    return None
+
+
 def superseded_by(versions):
-    """old record_id -> sorted list of record_ids that name it as an older version (pointers to unknown ids kept)."""
+    """old record_id -> valid same-patient/stream successors; invalid proposals never erase evidence."""
+    versions=list(versions);by_id={v.record_id:v for v in versions}
     out = defaultdict(list)
     for v in versions:
         for old in v.replaces:
-            if old and old != v.record_id:
+            if old and replacement_issue(v,by_id.get(old)) is None:
                 out[old].append(v.record_id)
     return {k: sorted(set(x)) for k, x in out.items()}
 
 
 def current_ids(versions, successors=None):
-    successors = superseded_by(versions) if successors is None else successors
+    versions=list(versions)
+    valid=superseded_by(versions)
+    successors = valid if successors is None else {k:[v for v in vals if v in valid.get(k,())] for k,vals in successors.items()}
+    successors={k:v for k,v in successors.items() if v}
     return {v.record_id for v in versions if v.record_id not in successors}
 
 
@@ -133,7 +172,7 @@ def _net(final, by_id, mode):
         base, seen, cur = 0.0, set(), final
         while cur is not None and cur.record_id not in seen:
             seen.add(cur.record_id)
-            prior = next((by_id[r] for r in cur.replaces if r in by_id), None)
+            prior = next((by_id[r] for r in cur.replaces if r in by_id and replacement_issue(cur,by_id[r]) is None), None)
             if prior is None:
                 break
             if prior.status == 'paid':
@@ -250,22 +289,23 @@ def stream_versions(db, release, stream, spec=None, as_of=None):
     pointer_fields = POINTER_FIELDS['*'] + POINTER_FIELDS.get(stream, ())
     fields = [spec.get(k) for k in ('key', 'status', 'sequence', 'frequency', 'amount', 'service_date')]
     extract = ', '.join(f"json_extract(payload, '$.{f}')" if f else 'NULL' for f in fields + list(pointer_fields[1:]))
-    sql = (f'SELECT id, patient, arrival, event, supersedes, {extract} FROM records '
+    sql = (f'SELECT id, patient, arrival, event, supersedes, {extract}' + (', payload' if stream=='labs' else '') + ' FROM records '
            'WHERE stream = ? AND release = ?' + (' AND arrival <= ?' if as_of else ''))
     params = (stream, release) + ((as_of,) if as_of else ())
     for row in db.execute(sql, params):
         rid, patient, arrival, event, sup = row[:5]
         key, status, seq, freq, amount, service = row[5:11]
-        extra = row[11:]
+        extra = row[11:11+len(pointer_fields)-1]
         yield Version(record_id=rid, replaces=tuple(x for x in (sup, *extra) if x), arrival=arrival or '',
                       event=event or '', key=key, status=status, sequence=int(seq or 0),
                       frequency=None if freq is None else str(freq), amount=amount, service_date=service,
-                      person_id=patient)
+                      person_id=patient,stream=stream,observation=json.loads(row[-1]) if stream=='labs' else None)
 
 
 SCHEMA = '''
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE superseded_record(record_id TEXT, stream TEXT, superseded_by TEXT, rule TEXT, superseded_by_arrival TEXT);
+CREATE TABLE unresolved_record_reference(record_id TEXT, referenced_record_id TEXT, stream TEXT, reason TEXT);
 CREATE TABLE entity_version(stream TEXT, entity_key TEXT, person_id TEXT, final_record_id TEXT, final_status TEXT,
   net_amount REAL, final_amount REAL, amount_unit TEXT, version_count INTEGER, status_path TEXT, replaced_by TEXT,
   rule TEXT, denied_then_paid INTEGER, picked_up INTEGER, service_date TEXT, available_date TEXT,
@@ -273,6 +313,8 @@ CREATE TABLE entity_version(stream TEXT, entity_key TEXT, person_id TEXT, final_
 '''
 
 TABLE_DOCS = {
+    'unresolved_record_reference':{'description':'Invalid or unresolved correction proposals retained without invalidating another record.',
+        'columns':{'record_id':'proposed replacement','referenced_record_id':'referenced old record','stream':'target stream','reason':'identity or linkage issue'}},
     'superseded_record': {
         'description': 'Every raw record that a later record replaces. A raw record is CURRENT iff its record_id is '
                        'absent here. One row per (record, successor).',
@@ -327,10 +369,27 @@ def build(source, out, *, release=None, as_of=None, receipt_path=None):
              + (' AND arrival <= ?' if as_of else ''))
         rows += [(old, target, new, f'{carrier}.{new_f}', arr) for old, new, arr in
                  db.execute(q, (carrier, release) + ((as_of,) if as_of else ())) if old]
-    w.executemany('INSERT INTO superseded_record VALUES (?,?,?,?,?)', rows)
-    for r in rows:
+    cache={}
+    def referenced(rid):
+        if rid not in cache:
+            row=db.execute('SELECT patient,stream,payload,arrival FROM records WHERE release=? AND id=?',(release,rid)).fetchone()
+            if not row or (as_of and row[3] and row[3]>as_of):cache[rid]=None
+            else:
+                person,st,payload,arrival=row;r=json.loads(payload);spec=ENTITY_SPECS.get(st,{})
+                cache[rid]=Version(rid,person_id=person,stream=st,observation=r if st=='labs' else None,
+                    key=r.get(spec.get('key')),frequency=str(r.get(spec.get('frequency')) or '') if spec.get('frequency') else None)
+        return cache[rid]
+    valid=[];unresolved=[]
+    for old,stream,new,rule,arr in rows:
+        a,b=referenced(old),referenced(new)
+        issue=replacement_issue(b,a) if b is not None else 'replacement_not_available'
+        if issue:unresolved.append((new,old,stream,issue));audit['unresolved_reference:'+issue]+=1
+        else:valid.append((old,stream,new,rule,arr))
+    w.executemany('INSERT INTO superseded_record VALUES (?,?,?,?,?)', valid)
+    w.executemany('INSERT INTO unresolved_record_reference VALUES (?,?,?,?)', unresolved)
+    for r in valid:
         audit[f'superseded:{r[1]}:{r[3]}'] += 1
-    del rows
+    del rows,valid,cache
     timings['superseded_record'] = round(time.perf_counter() - t, 2)
 
     # 2. Entity settlement, one stream at a time.

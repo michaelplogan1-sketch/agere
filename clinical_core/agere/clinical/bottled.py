@@ -93,6 +93,7 @@ def jaccard(a, b):
 
 def benchmark_match(question, root=None):
     """The benchmark question id (or True) this question is, or paraphrases; None when it is not a benchmark question."""
+    if os.environ.get('AGERE_COMPONENT_RELEASE_ROOT') or os.environ.get('AGERE_COMPONENT_LEARNING')=='on':return None
     n, toks = _norm(question), set(nl2sql._tokens(question))
     for ident, bn, bt in _bench_questions(root):
         if n == bn or jaccard(toks, bt) >= NEAR_DUPLICATE: return ident or True
@@ -133,6 +134,9 @@ def check(stack_path, profile, question, sql, roster):
     """lint -> read-only execution -> sanity. Returns a candidate dict; 'ok' only when every check passes."""
     cand = {'sql': sql}
     if not sql or not re.search(r'(?i)\bselect\b', sql): return {**cand, 'ok': False, 'rejected': 'no SQL'}
+    from .source_scope import problem as source_scope_problem
+    scope_gap=source_scope_problem(question,sql)
+    if scope_gap:return {**cand,'ok':False,'rejected':scope_gap}
     problems = verify.lint(profile, sql)
     if problems: return {**cand, 'ok': False, 'rejected': 'lint: ' + '; '.join(problems)[:300]}
     try:
@@ -203,6 +207,9 @@ def base_dir():
 def base_adapter_dir():
     """Adapter for the active base: AGERE_BOTTLED_ADAPTER, else the registry adapter of that base when it exists, else the qwen3 adapter
     for the default base and none (the base model alone) for a swapped base -- a LoRA only fits the base it was trained on."""
+    if os.environ.get('AGERE_COMPONENT_RELEASE_ROOT'):
+        from .adapter_learning import runtime_adapter
+        return runtime_adapter('bottled',base_dir())
     explicit = os.environ.get('AGERE_BOTTLED_ADAPTER')
     if explicit: return Path(explicit)
     want = os.environ.get('AGERE_BOTTLED_BASE')
@@ -255,14 +262,17 @@ class BottledModel:
     @classmethod
     def available(cls):
         adapter = base_adapter_dir()
+        if os.environ.get('AGERE_COMPONENT_RELEASE_ROOT'):return adapter is not None
         if base_dir() == nl2sql.MODEL_DIR: return nl2sql.MODEL_DIR.exists() and adapter is not None and (adapter / 'adapters.safetensors').exists()
         return base_dir().exists()   # a swapped base may run adapter-free (its own specialist weights)
 
     @classmethod
     def get(cls):
         with cls._lock:
-            if cls._instance is None:
-                cls._instance = cls(adapter_dir=base_adapter_dir())
+            adapter=base_adapter_dir();key=(str(base_dir()),str(adapter))
+            if os.environ.get('AGERE_COMPONENT_RELEASE_ROOT') and adapter is None:raise ValueError('No qualified bottled adapter for this base model')
+            if cls._instance is None or getattr(cls,'_instance_key',None)!=key:
+                cls._instance = cls(adapter_dir=adapter);cls._instance_key=key
             return cls._instance
 
     def __call__(self, msgs, k=1, temperature=SAMPLE_TEMPERATURE, seed=7, max_tokens=MAX_TOKENS, grammar=None):
@@ -670,14 +680,23 @@ class NarrowModel(BottledModel):
 
     @classmethod
     def available(cls):
-        adapter = Path(os.environ.get('AGERE_BOTTLED_COHORT_ADAPTER', NARROW_ADAPTER_DIR))
-        return nl2sql.MODEL_DIR.exists() and (adapter / 'adapters.safetensors').exists()
+        adapter=cls.adapter()
+        return base_dir().exists() and adapter is not None and (adapter/'adapters.safetensors').exists()
+
+    @classmethod
+    def adapter(cls):
+        if os.environ.get('AGERE_COMPONENT_RELEASE_ROOT'):
+            from .adapter_learning import runtime_adapter
+            return runtime_adapter('narrow',base_dir())
+        return Path(os.environ.get('AGERE_BOTTLED_COHORT_ADAPTER',NARROW_ADAPTER_DIR))
 
     @classmethod
     def get(cls):
         with cls._lock:
-            if cls._instance is None:
-                cls._instance = cls(adapter_dir=os.environ.get('AGERE_BOTTLED_COHORT_ADAPTER', NARROW_ADAPTER_DIR))
+            adapter=cls.adapter();key=(str(base_dir()),str(adapter))
+            if adapter is None:raise ValueError('No qualified narrow adapter for this base model')
+            if cls._instance is None or getattr(cls,'_instance_key',None)!=key:
+                cls._instance = cls(adapter_dir=adapter);cls._instance_key=key
             return cls._instance
 
     def __call__(self, msgs, k=1, temperature=SAMPLE_TEMPERATURE, seed=7, max_tokens=NARROW_MAX_TOKENS, grammar=None):

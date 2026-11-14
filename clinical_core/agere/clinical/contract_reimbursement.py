@@ -105,6 +105,11 @@ def run(db, patient_ids, p, as_of):
     rows, agg, summary = [], defaultdict(lambda: {'lines': 0, 'actual': 0.0, 'expected': 0.0, 'short': 0.0, 'over': 0.0, 'short_lines': 0, 'over_lines': 0}), defaultdict(lambda: defaultdict(int))
     reprice = defaultdict(lambda: {'lines': 0, 'actual': 0.0, 'repriced': 0.0})
     for cid, payer, product, code, u, allowed, rate in lines:
+        # This scenario needs a reference and a supplied ratio, independent of
+        # whether current-contract variance can be estimated for this line.
+        pct = p['reprice'].get(payer) or p['reprice'].get('*')
+        if pct and medicare.get(code):
+            r = reprice[payer]; r['lines'] += 1; r['actual'] += allowed; r['repriced'] += pct * medicare[code] * u
         rates = by[(payer, code)]
         if payer in p['terms'] and (code in p['terms'][payer]['rates'] or p['terms'][payer]['pct_of_medicare']) or '*' in p['terms']:
             exp, basis = expected_rate(payer, code, p['terms'], medicare, None)
@@ -125,9 +130,6 @@ def run(db, patient_ids, p, as_of):
             a['over'] += d; a['over_lines'] += 1
             rows.append({'claim': cid, 'payer': payer, 'product': product, 'code': code, 'units': u, 'allowed': round(allowed, 2), 'expected': round(e, 2),
                          'variance': round(d, 2), 'variance_pct': round(d / e, 4) if e else None, 'basis': basis, 'direction': 'over_paid'})
-        pct = p['reprice'].get(payer) or p['reprice'].get('*')
-        if pct and medicare.get(code):
-            r = reprice[payer]; r['lines'] += 1; r['actual'] += allowed; r['repriced'] += pct * medicare[code] * u
     payers = defaultdict(lambda: {'lines': 0, 'actual': 0.0, 'expected': 0.0, 'short': 0.0, 'over': 0.0, 'short_lines': 0, 'over_lines': 0})
     for (payer, code), a in agg.items():
         for k, v in a.items(): payers[payer][k] += v

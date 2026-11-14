@@ -100,8 +100,10 @@ def verify(stack, question, spec, catalog, *, ledger=None, as_of=None, decide=No
     items = list(parts) if parts is not None else spec_readback.parts(spec, catalog, question, as_of)
     read_back = spec_readback.read_back(spec, catalog, question, as_of)
     items.append({'id': 'completeness', 'kind': 'completeness', 'text': read_back, 'quotes': []})
-    path = getattr(ledger, 'path', ledger) if ledger is not None else None  # each worker opens its own connection to the same ledger
-    path = str(path) if path else None
+    from .cost_telemetry import QuestionLedgerPath, bind_ledger_path, inherit_context
+    # Preserve an explicitly bound owner while opening one connection per worker.
+    path = ledger if isinstance(ledger, QuestionLedgerPath) else getattr(ledger, 'path', ledger)
+    path = bind_ledger_path(path) if path is not None else None
     workers = workers or int(os.environ.get('AGERE_SPEC_VERIFY_WORKERS', '6'))
     deadline = None if deadline_seconds is None else started + deadline_seconds
 
@@ -110,7 +112,7 @@ def verify(stack, question, spec, catalog, *, ledger=None, as_of=None, decide=No
             return {**part, 'label': 'unknown', 'p': 0.0, 'provider': None, 'status': 'unverified', 'error': 'time', 'calls': 0, 'cost_usd': 0.0}
         return check_part(question, part, as_of=as_of, ledger=path, decide=decide)
     with ThreadPoolExecutor(max_workers=max(1, min(workers, len(items)))) as pool:
-        checked = list(pool.map(run, items))
+        checked = list(pool.map(inherit_context(run), items))
     failed = [p['id'] for p in checked if p['status'] == 'fail']
     unverified = [p['id'] for p in checked if p['status'] == 'unverified']
     verdict = 'failed' if failed else 'confirmed' if not unverified else 'unverified'

@@ -663,6 +663,52 @@ _CODE_COLS = r'icd10|icd_10|icd10_code|code|dx_code|snomed|loinc|rxnorm|ndc|cpt|
 _NOT_ALIAS = {'where', 'join', 'left', 'right', 'inner', 'outer', 'cross', 'on', 'group', 'order', 'limit', 'union', 'using', 'natural'}
 
 
+def _scoped_value_filters(sql, names):
+    """Only direct physical-column predicates in their own SQL lexical scope.
+
+    A CTE/result column can contain computed labels. A same-named physical
+    column elsewhere in the statement cannot supply its value domain.
+    """
+    from sqlglot import parse_one, exp
+    from sqlglot.errors import ParseError, OptimizeError
+    from sqlglot.optimizer.scope import build_scope
+    try:
+        tree = parse_one(sql, read='sqlite')
+        root = build_scope(tree)
+    except (ParseError, OptimizeError, ValueError):
+        # An unparseable query cannot justify a raw-column value verdict.
+        return []
+    if root is None: return []
+    found = []
+    for scope in root.traverse():
+        for predicate in list(scope.expression.find_all(exp.EQ, exp.In)):
+            if predicate.find_ancestor(exp.Select) is not scope.expression: continue
+            if predicate.find_ancestor(exp.Where, exp.Having, exp.Join) is None: continue
+            column = predicate.this
+            values = predicate.expressions if isinstance(predicate, exp.In) else [predicate.expression]
+            if not isinstance(column, exp.Column) or not values or any(
+                    not isinstance(v, exp.Literal) or not v.is_string for v in values): continue
+            owner = scope
+            source = None
+            if column.table:
+                while owner is not None:
+                    sources = {alias.lower(): value for alias, value in owner.sources.items()}
+                    if column.table.lower() in sources:
+                        source = sources[column.table.lower()]; break
+                    owner = owner.parent
+            elif len(scope.sources) == 1:
+                source = next(iter(scope.sources.values()))
+            if not isinstance(source, exp.Table): continue
+            table = names.get(source.name.lower())
+            if table is None: continue
+            replacement = exp.true()
+            predicate.replace(replacement)
+            relaxed = tree.sql(dialect='sqlite')
+            replacement.replace(predicate)
+            found.append((table, column.name, column.table, [v.this for v in values], relaxed))
+    return found
+
+
 def value_existence(stack, graph, answer, *, catalog=None, target=None):
     """Text filters (col = 'x', col IN ('a', 'b')) whose values the column never holds (case-insensitive) AND whose removal makes
     the same plan return rows: the made-up label alone emptied or narrowed the answer (BH-07: codes F20/F25/F31 find patients,
@@ -678,28 +724,17 @@ def value_existence(stack, graph, answer, *, catalog=None, target=None):
         names = {r[0].lower(): r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')")}
         cols = {}
         for sql in sqls:
-            aliases, used = {}, []
-            for t, a in _ALIAS.findall(sql):
-                table = names.get(t.lower())
-                if table is None: continue
-                used.append(table); aliases[t.lower()] = table
-                if a and a.lower() not in _NOT_ALIAS: aliases[a.lower()] = table
-            for m in _FILTER.finditer(sql):
-                alias, col, eq, val, listed = m.groups()
-                table = aliases.get(alias.lower()) if alias else (used[0] if len(set(used)) == 1 else None)
-                if table is None: continue
+            for table, col, alias, values, relaxed in _scoped_value_filters(sql, names):
                 if table not in cols: cols[table] = {r[1].lower(): (r[1], (r[2] or '').upper()) for r in db.execute(f'PRAGMA table_info("{table}")')}
                 info = cols[table].get(col.lower())
                 if info is None or any(k in info[1] for k in ('INT', 'REAL', 'NUM', 'DATE', 'BOOL')): continue
-                values = [val] if eq else re.findall(r"'((?:[^']|'')*)'", listed)
-                values = [v.replace("''", "'") for v in values if v and not re.fullmatch(r'[-+]?\d+(?:\.\d+)?|\d{4}-\d{2}-\d{2}.*', v)]
+                values = [v for v in values if v and not re.fullmatch(r'[-+]?\d+(?:\.\d+)?|\d{4}-\d{2}-\d{2}.*', v)]
                 if not values: continue
                 try:
                     hit = db.execute(f'SELECT 1 FROM "{table}" WHERE lower("{info[0]}") IN ({",".join("?" * len(values))}) LIMIT 1',
                                      [v.lower() for v in values]).fetchone()
                 except _sqlite3.Error:
                     continue  # time budget or an unreadable column: no verdict
-                relaxed = sql[:m.start()] + '1=1' + sql[m.end():]
                 if hit is not None:  # the label exists; beside a code filter on the same table it must not drop coded rows
                     if not (_LABEL_COL.fullmatch(info[0]) and re.search(r'\b(?:' + re.escape(alias or table) + r'\.)?(?:' + _CODE_COLS + r')\s+(?:LIKE|=|IN)\b', relaxed, re.I)):
                         continue
@@ -921,6 +956,25 @@ def _guard(stack, question, graph, receipt, answer, profile, state, verdict):
             verdict['annotations'].append('answer guard: ' + '; '.join(f['message'] for f in found))
     else:
         verdict['annotations'].append('answer guard: ' + '; '.join(f['message'] for f in found))
+
+
+def investigation_binding(question, graph, answer):
+    """Bind a completed evidence review to the actual question, computation and material answer, excluding gate annotations."""
+    import hashlib
+    fields = ('status', 'answer_type', 'headline', 'value', 'count', 'unit', 'table', 'table_binding', 'patient_ids', 'facts', 'sources', 'missing', 'sql')
+    material = {k: answer.get(k) for k in fields}
+    material['patient_ids'] = answer.get('patient_ids') or []
+    payload = [question, graph, material]
+    return hashlib.sha256(_json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
+
+
+def investigation_confirmed(tier, receipt, question, graph, answer):
+    review = (receipt or {}).get('investigation_review') or {}
+    return bool(tier == 'backstop_agent' and review.get('status') == 'confirmed'
+                and (review.get('coverage') or {}).get('label') == 'answers_fully'
+                and (review.get('support') or {}).get('label') == 'supported'
+                and (review.get('support') or {}).get('decided_by')
+                and receipt.get('investigation_binding') == investigation_binding(question, graph, answer))
 
 
 def spec_confirmed(receipt):
@@ -1202,7 +1256,12 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     # they are reported in the documented order below
     run('cascade_certificates', lambda: _certificates(receipt, state, verdict))
     verdict['checks_run'].remove('cascade_certificates')
-    if verdict['accept'] and audited_analyst(tier, receipt, graph):
+    reviewed = investigation_confirmed(tier, receipt, question, graph, answer)
+    if verdict['accept'] and reviewed:
+        verdict['annotations'].append('The complete answer and evidence were reviewed in the investigation; the bound review replaces duplicate result-summary judgments. Hard scope, definition, arithmetic and output checks still ran.')
+        verdict['system_one'] = receipt['investigation_review']['coverage']
+        state['zero_confirmed'] = state.get('zero_confirmed') or 'investigation_review'
+    elif verdict['accept'] and audited_analyst(tier, receipt, graph):
         verdict['annotations'].append('Cross-check: replaced by the deterministic definitions audit of the analyst\'s SQL '
                                       f"({receipt['definitions_audit'].get('action')}); free-form answer.")
     elif verdict['accept'] and tier in DETERMINISTIC_READERS:
@@ -1219,7 +1278,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
         stage = STAGES[stage_of(tier)][0] if tier is not None else None
         planner = (_route(receipt) == 'local_model_sql' or stage == 'free_planners'
                    or (stage == 'claude' and tier not in GOVERNED_CLAUDE_ROUTERS))
-        if not planner or state.get('certified') or not verdict['accept'] or spec_confirmed(receipt) or audited_analyst(tier, receipt, graph): return None
+        if not planner or state.get('certified') or not verdict['accept'] or reviewed or spec_confirmed(receipt) or audited_analyst(tier, receipt, graph): return None
         s1 = verdict.get('system_one_cross_check') or {}
         if s1.get('verdict') != 'confirmed':
             verdict['accept'] = False
@@ -1233,7 +1292,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     run('release_drift_guard', lambda: release_drift.annotate(stack, question, graph, answer))  # QC-DRIFT: definitions that drifted this release
     run('answer_shape_review', lambda: _shape(question, graph, result, verdict, receipt))
     run('source_defect_annotation', lambda: verdict['annotations'].extend(__import__(__package__ + '.dq_detectors', fromlist=['annotate']).annotate(stack, question, graph, answer)))
-    if verdict['accept'] and not spec_confirmed(receipt) and not audited_analyst(tier, receipt, graph): _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
+    if verdict['accept'] and not reviewed and not spec_confirmed(receipt) and not audited_analyst(tier, receipt, graph): _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
     from . import normalization_check as _norm  # Jev second check on the normalized codes the plan reads (annotation only)
     run('jev_normalization_check', lambda: _norm.annotate_verdict(stack, graph, answer, verdict, ledger=ledger))
     from . import answer_verifier as _av, semantic_entropy as _se, label_choice as _lc  # learned verifier, sampled-agreement entropy, score label

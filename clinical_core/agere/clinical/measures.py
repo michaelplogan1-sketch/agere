@@ -147,6 +147,7 @@ class Context:
         self.db = db
         self._cols = {}
         self._cache = {}
+        self.uncertain = []
 
     def columns(self, table):
         if table not in self._cols:
@@ -217,9 +218,12 @@ def _rows(ctx, c):
             elif not c.get('concept'):
                 missing.append(f"{c['label']}: LOINC-coded results (not in this release)")
         if terms:
-            for pid, d, v, raw in db.execute(f"SELECT patient_id, event_date, value_canonical, value FROM measurement WHERE ({' OR '.join(terms)}) "
-                                             "AND (value_canonical IS NOT NULL OR value IS NOT NULL)", args):
-                out[pid].append((d[:10] if d else None, v if v is not None else raw, None))
+            from .safety_data import usable_measurement_sql
+            optional=','.join(k if ctx.has('measurement',k) else 'NULL' for k in ('value_censor','value_text','unit_canonical','unit','record_id'))
+            for pid, d, v, raw, censor, text, canonical_unit, unit, rid in db.execute(f"SELECT patient_id, event_date, value_canonical, value,{optional} FROM measurement WHERE ({' OR '.join(terms)}) "
+                                             "AND (value_canonical IS NOT NULL OR value IS NOT NULL)"+usable_measurement_sql(db), args):
+                out[pid].append((d[:10] if d else None, v if v is not None else raw,
+                                 {'comparator':censor,'received_text':text,'received_unit':unit,'unit':canonical_unit if v is not None else unit,'record_id':rid}))
         if c.get('claim_codes') and not c.get('value'):
             # The test performed, from claim lines (claims-only members have no results feed): HEDIS administrative
             # specifications accept the lab CPT in place of the result when no value is needed.
@@ -384,13 +388,12 @@ def _claim_lines(ctx, codes):
 def _claim_code_rows(ctx, spec):
     """Claim-line evidence for a measurement criterion: [(patient_id, date, detail)].
     spec = {"cpt": [...], "with": {"cpt": [...], "loinc": [...], "days": N}}. 'with' is a companion test that must be billed
-    within N days (HEDIS KED: quantitative urine albumin 82043 with urine creatinine 82570 within 4 days = uACR). A source
-    that never itemizes the companion code cannot show it; there the primary code stands alone and the detail says so."""
+    within N days. Missing companion evidence is unresolved, including when the source never itemizes it;
+    another patient's billing pattern cannot change this patient's status."""
     rows = _claim_lines(ctx, spec.get('cpt') or [])
     w = spec.get('with') or {}
     if not w: return [(pid, d, f'CPT {code} ({src})') for src, pid, d, code in rows if d]
     comp = _claim_lines(ctx, w.get('cpt') or [])
-    itemized = {src for src, *_ in comp}
     near = defaultdict(set)
     for src, pid, d, _ in comp:
         if d: near[pid].add(d)
@@ -402,12 +405,10 @@ def _claim_code_rows(ctx, spec):
     out = []
     for src, pid, d, code in rows:
         if not d: continue
-        if src not in itemized:
-            out.append((pid, d, f'CPT {code} ({src}; companion {"/".join(w.get("cpt") or [])} not itemized by this source)'))
-            continue
         day = date.fromisoformat(d)
         if any(abs((date.fromisoformat(x) - day).days) <= days for x in near.get(pid, ())):
             out.append((pid, d, f'CPT {code} + companion within {days} days ({src})'))
+        else:out.append((pid,d,{'uncertain':True,'evidence':f'CPT {code} ({src}); required companion evidence within {days} days is unavailable'}))
     return out
 
 
@@ -463,13 +464,38 @@ def _evaluate(ctx, c, pid, anchors):
         if not inside:
             return bool(c['value'].get('missing_counts_as_met', False)), f"{c['label']}: no result {lo}..{hi}"
         day = inside[-1][0]
-        values = [float(r[1]) for r in inside if r[0] == day and _num(r[1])]
-        if not values: return bool(c['value'].get('missing_counts_as_met', False)), f"{c['label']}: non-numeric result on {day}"
-        v = min(values)
-        return _compare(v, c['value']), f"{c['label']}: {v:g} on {day}"
+        latest = [r for r in inside if r[0] == day and _num(r[1])]
+        if not latest: return bool(c['value'].get('missing_counts_as_met', False)), f"{c['label']}: non-numeric result on {day}"
+        from .cohorts import _compare_measurement, CENSOR_OPS
+        states=[];descriptions=[];ids=[]
+        for _,v,detail in latest:
+            meta=detail if isinstance(detail,dict) else {};op=meta.get('comparator');v=float(v)
+            value={'op':CENSOR_OPS[op],'bound':v} if op in CENSOR_OPS else v
+            states.append(None if op and op not in CENSOR_OPS else _compare_measurement(value,{'>':'gt','>=':'ge','<':'lt','<=':'le'}[c['value']['op']],c['value']['threshold']))
+            descriptions.append(f"{op or ''}{v:g}"+(' '+str(meta['unit']) if meta.get('unit') else '')+
+                                (f" (received {meta['received_text']})" if meta.get('received_text') else ''))
+            if meta.get('record_id'):ids.append(meta['record_id'])
+        # Existing measures use the lowest result on the latest day. Infer its predicate
+        # from all possible values, preserving open/closed bounds rather than substituting a point.
+        if c['value']['op'] in ('<','<='):
+            met=True if True in states else False if all(s is False for s in states) else None
+        else:met=False if False in states else True if all(s is True for s in states) else None
+        text=f"{c['label']}: "+' / '.join(descriptions)+f' on {day}'
+        if met is None:
+            text+='; bound does not determine the requested threshold'
+            ctx.uncertain.append({'patient_id':pid,'criterion':c['label'],'record_ids':ids,'evidence':text})
+        return met,text
+    unresolved=[r for r in inside if isinstance(r[2],dict) and r[2].get('uncertain')]
+    inside=[r for r in inside if r not in unresolved]
+    if unresolved and len({r[0] for r in inside})<c.get('min_dates',1):
+        text=c['label']+': '+'; '.join(r[2]['evidence'] for r in unresolved)
+        ctx.uncertain.append({'patient_id':pid,'criterion':c['label'],'record_ids':[],'evidence':text})
+        return None,text
     dates = sorted({r[0] for r in inside})
     if len(dates) < c.get('min_dates', 1): return False, f"{c['label']}: {len(dates)} of {c.get('min_dates', 1)} dates {lo}..{hi}"
     detail = next((str(r[2]) for r in reversed(inside) if r[2]), '')
+    if c['type']=='measurement' and inside and isinstance(inside[-1][2],dict):
+        _,v,meta=inside[-1];detail=f"{meta.get('comparator') or ''}{v:g}"+(' '+str(meta['unit']) if meta.get('unit') else '')
     return True, f"{c['label']}: {dates[-1]}" + (f' ({detail})' if detail else '')
 
 
@@ -588,6 +614,25 @@ def _enrolled(info, start, end, allowed_gap_months):
 
 # ---- evaluation ------------------------------------------------------------------------
 def evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=None, attr=None, output='rates', top=500, ctx=None):
+    ctx=ctx or Context(db);ctx.uncertain=[]
+    report=_evaluate_db(db,m,start,end,as_of,group_by,keep,people,attr,output,top,ctx)
+    if not ctx.uncertain:return report
+    unknown=list({json.dumps(r,sort_keys=True):r for r in ctx.uncertain}.values())
+    ids={r['patient_id'] for r in unknown}
+    report.update(partial=True,declined=True,unknown_measurements=unknown,
+                  missing_inputs=sorted({r['evidence'] for r in unknown}),known_evaluation_overall=report.get('overall'))
+    report['overall']={k:None for k in report.get('overall',{})}
+    report['reading']=f"{m['name']}: full-population result is indeterminate for {len(ids)} patient(s); received measurement evidence does not determine the requested criterion. Determinate observations are retained separately."
+    report['rows']=[{('known_subset_'+k if k in ('eligible','excluded','denominator','numerator','rate','shrunk_rate','rate_ci95') else k):v for k,v in row.items()} for row in report.get('rows',[])]
+    if output=='patients':
+        present={r['patient_id'] for r in report.get('patient_rows',[])}
+        report.setdefault('patient_rows',[]).extend({'patient_id':pid,'measure':m['id'],'met':None,'excluded':None,
+            'evidence':'; '.join(r['evidence'] for r in unknown if r['patient_id']==pid),'assessment':'indeterminate'} for pid in sorted(ids-present))
+    report.setdefault('warnings',[]).append('Unresolved measurement evidence remains unknown, not a care gap or satisfied quality criterion. Bounded results are intervals, not measured boundary points; required companion evidence is not inferred from other patients.')
+    return report
+
+
+def _evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=None, attr=None, output='rates', top=500, ctx=None):
     """Evaluate one measure dict on an open semantic-layer connection. ctx: a Context to reuse evidence across periods
     (its cache is keyed on criteria without windows, so one Context serves every measurement year)."""
     from . import vbc
@@ -633,9 +678,11 @@ def evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=Non
             if not all(ok for ok, _ in reasons): continue
             num_results = [_evaluate(ctx, c, pid, anchors0) for c in m['numerator']['criteria']]
             if any(ok is None for ok, _ in num_results): continue  # PDC: not enough fills to be in the denominator
+            exclusions=[_evaluate(ctx,c,pid,anchors0) for c in m.get('exclusions',[])]
+            if any(ok is None for ok,_ in exclusions):continue
             g = groups[_group(group_by, pid, people, attr)]
             g['eligible'] += 1
-            excl = next((t for ok, t in (_evaluate(ctx, c, pid, anchors0) for c in m.get('exclusions', [])) if ok), None)
+            excl = next((t for ok,t in exclusions if ok), None)
             combine = any if m['numerator'].get('combine', 'all') == 'any' else all
             met = combine(ok for ok, _ in num_results)
             if output == 'patients':
@@ -670,12 +717,15 @@ def evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=Non
                 anchors = {**anchors0, 'index': admit, 'index_end': dis or admit}
                 if not all(ok for ok, _ in (_evaluate(ctx, c, pid, anchors) for c in den.get('criteria', []))): continue
                 last_counted = day
+                exclusions=[_evaluate(ctx,c,pid,anchors) for c in m.get('exclusions',[])]
+                if any(ok is None for ok,_ in exclusions):continue
+                num_results = [_evaluate(ctx, c, pid, anchors) for c in m['numerator']['criteria']]
+                if any(ok is None for ok,_ in num_results):continue
                 g = groups[_group(group_by, pid, people, attr)]
                 g['eligible'] += 1
-                excl = next((t for ok, t in (_evaluate(ctx, c, pid, anchors) for c in m.get('exclusions', [])) if ok), None)
+                excl = next((t for ok,t in exclusions if ok), None)
                 if excl: g['excluded'] += 1; continue
                 g['denominator'] += 1
-                num_results = [_evaluate(ctx, c, pid, anchors) for c in m['numerator']['criteria']]
                 combine = any if m['numerator'].get('combine', 'all') == 'any' else all
                 met = combine(ok for ok, _ in num_results)
                 g['numerator'] += bool(met)
@@ -724,8 +774,9 @@ def evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=Non
         return _finish(base, m, rows, overall, gaps, output, top, start, end)
     rows = []
     if output == 'patients':
-        groups_out = _finish(base, m, [], {k: sum(v[k] for v in groups.values()) for k in ('eligible', 'excluded', 'denominator', 'numerator')}
-                             | {'rate': None}, gaps, 'rates', top, start, end)
+        totals={k:sum(v[k] for v in groups.values()) for k in ('eligible','excluded','denominator','numerator')}
+        totals['rate']=round(totals['numerator']/totals['denominator'],4) if totals['denominator'] else None
+        groups_out = _finish(base, m, [], totals, gaps, 'rates', top, start, end)
         return {**groups_out, 'patient_rows': patient_rows}
     for gk, v in sorted(groups.items(), key=lambda kv: str(kv[0])):
         rows.append({'measure': m['id'], 'definition': m['name'], 'group': gk, **v,

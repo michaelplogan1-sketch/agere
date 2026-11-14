@@ -1,0 +1,287 @@
+{
+ "schema": "tiered-cohort-followups/1",
+ "authored": "2026-11-13",
+ "authored_by": "Claude (build owner), written and committed before any run on it; references by hand-written SQL restricted to the cohort, or by reading the documents",
+ "rule": "Each item is typed about a selected patient group. Correct only when the answer equals the reference computed inside that group; a decline item is correct only when the tiered core returns no answer.",
+ "cohorts": {
+  "A": {
+   "description": "patients with heart failure",
+   "sql": "SELECT DISTINCT patient_id FROM concept_patient WHERE kind='condition' AND concept='heart_failure'"
+  },
+  "B": {
+   "description": "patients with a statin fill in 2029",
+   "sql": "SELECT DISTINCT patient_id FROM fill WHERE drug_class='statin' AND substr(fill_date,1,4)='2029'"
+  },
+  "C": {
+   "description": "patients with an inpatient stay admitted in 2029",
+   "sql": "SELECT DISTINCT patient_id FROM stay WHERE type='inpatient' AND substr(admit_date,1,4)='2029'"
+  }
+ },
+ "items": [
+  {
+   "id": "G01",
+   "cohort": "A",
+   "say": "how many of them had an ED visit in 2029?",
+   "reference_sql": "SELECT COUNT(DISTINCT patient_id) FROM utilization_event WHERE kind='ed_visit' AND substr(event_date,1,4)='2029' AND patient_id IN (SELECT DISTINCT patient_id FROM concept_patient WHERE kind='condition' AND concept='heart_failure')",
+   "reference_rows": [
+    [
+     142
+    ]
+   ]
+  },
+  {
+   "id": "G02",
+   "cohort": "A",
+   "say": "How many ED visits did these patients have in 2029?",
+   "reference_sql": "SELECT COUNT(*) FROM utilization_event WHERE kind='ed_visit' AND substr(event_date,1,4)='2029' AND patient_id IN (SELECT DISTINCT patient_id FROM concept_patient WHERE kind='condition' AND concept='heart_failure')",
+   "reference_rows": [
+    [
+     389
+    ]
+   ]
+  },
+  {
+   "id": "G03",
+   "cohort": "A",
+   "say": "what are the 5 most common conditions among them?",
+   "reference_sql": "SELECT concept, COUNT(DISTINCT patient_id) FROM concept_patient WHERE kind='condition' AND patient_id IN (SELECT DISTINCT patient_id FROM concept_patient WHERE kind='condition' AND concept='heart_failure') GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 5",
+   "reference_rows": [
+    [
+     "heart_failure",
+     387
+    ],
+    [
+     "hypertension",
+     227
+    ],
+    [
+     "obesity",
+     222
+    ],
+    [
+     "diabetes",
+     212
+    ],
+    [
+     "type_2_diabetes",
+     184
+    ]
+   ]
+  },
+  {
+   "id": "G04",
+   "cohort": "A",
+   "say": "show their appointments scheduled in 2029 by final status",
+   "reference_sql": "SELECT final_status, COUNT(*) FROM appointment WHERE substr(scheduled_date,1,4)='2029' AND patient_id IN (SELECT DISTINCT patient_id FROM concept_patient WHERE kind='condition' AND concept='heart_failure') GROUP BY 1",
+   "reference_rows": [
+    [
+     "arrived",
+     192
+    ],
+    [
+     "attended",
+     107
+    ],
+    [
+     "booked",
+     115
+    ],
+    [
+     "cancelled",
+     103
+    ],
+    [
+     "fulfilled",
+     2138
+    ],
+    [
+     "no_show",
+     141
+    ],
+    [
+     "rescheduled",
+     2
+    ]
+   ]
+  },
+  {
+   "id": "G05",
+   "cohort": "B",
+   "say": "how many of them have diabetes?",
+   "reference_sql": "SELECT COUNT(DISTINCT patient_id) FROM concept_patient WHERE kind='condition' AND concept='diabetes' AND patient_id IN (SELECT DISTINCT patient_id FROM fill WHERE drug_class='statin' AND substr(fill_date,1,4)='2029')",
+   "reference_rows": [
+    [
+     338
+    ]
+   ]
+  },
+  {
+   "id": "G06",
+   "cohort": "B",
+   "say": "break them down by coverage type",
+   "reference_sql": "SELECT coverage_type, COUNT(*) FROM patient WHERE patient_id IN (SELECT DISTINCT patient_id FROM fill WHERE drug_class='statin' AND substr(fill_date,1,4)='2029') GROUP BY 1",
+   "reference_rows": [
+    [
+     "cob_secondary",
+     2
+    ],
+    [
+     "commercial",
+     229
+    ],
+    [
+     "dual",
+     47
+    ],
+    [
+     "medicaid",
+     75
+    ],
+    [
+     "medicare",
+     291
+    ],
+    [
+     "medigap",
+     11
+    ],
+    [
+     "uninsured",
+     10
+    ]
+   ]
+  },
+  {
+   "id": "G07",
+   "cohort": "B",
+   "say": "how many metformin fills did they have in 2028?",
+   "reference_sql": "SELECT COUNT(*), COUNT(DISTINCT patient_id) FROM fill WHERE drug_class='metformin' AND substr(fill_date,1,4)='2028' AND patient_id IN (SELECT DISTINCT patient_id FROM fill WHERE drug_class='statin' AND substr(fill_date,1,4)='2029')",
+   "reference_rows": [
+    [
+     691,
+     107
+    ]
+   ]
+  },
+  {
+   "id": "G08",
+   "cohort": "C",
+   "say": "what was the 30-day readmission rate for these patients in 2029?",
+   "reference_sql": "SELECT COUNT(*), SUM(readmitted_30d), ROUND(1.0*SUM(readmitted_30d)/COUNT(*),4) FROM stay WHERE type='inpatient' AND discharge_known=1 AND substr(discharge_date,1,4)='2029' AND patient_id IN (SELECT DISTINCT patient_id FROM stay WHERE type='inpatient' AND substr(admit_date,1,4)='2029')",
+   "reference_rows": [
+    [
+     504,
+     106,
+     0.2103
+    ]
+   ]
+  },
+  {
+   "id": "G09",
+   "cohort": "C",
+   "say": "how many recorded deaths occurred among them in 2029?",
+   "reference_sql": "SELECT COUNT(*) FROM death WHERE substr(death_date,1,4)='2029' AND patient_id IN (SELECT DISTINCT patient_id FROM stay WHERE type='inpatient' AND substr(admit_date,1,4)='2029')",
+   "reference_rows": [
+    [
+     14
+    ]
+   ]
+  },
+  {
+   "id": "G10",
+   "cohort": "C",
+   "say": "how many members did each payer have in 2029-06, for those patients only?",
+   "reference_sql": "SELECT payer_id, COUNT(DISTINCT patient_id) FROM member_month WHERE month='2029-06' AND patient_id IN (SELECT DISTINCT patient_id FROM stay WHERE type='inpatient' AND substr(admit_date,1,4)='2029') GROUP BY 1",
+   "reference_rows": [
+    [
+     "WH-PAYER-0",
+     28
+    ],
+    [
+     "WH-PAYER-1",
+     25
+    ],
+    [
+     "WH-PAYER-2",
+     15
+    ],
+    [
+     "WH-PAYER-C1",
+     19
+    ],
+    [
+     "WH-PAYER-C2",
+     21
+    ],
+    [
+     "WH-PAYER-C3",
+     15
+    ],
+    [
+     "WH-PAYER-DSNP1",
+     11
+    ],
+    [
+     "WH-PAYER-MA1",
+     24
+    ],
+    [
+     "WH-PAYER-MA2",
+     19
+    ],
+    [
+     "WH-PAYER-MA3",
+     19
+    ],
+    [
+     "WH-PAYER-MCD1",
+     21
+    ],
+    [
+     "WH-PAYER-MCD2",
+     24
+    ],
+    [
+     "WH-PAYER-MSSP",
+     46
+    ],
+    [
+     "WH-PAYER-SUP1",
+     3
+    ],
+    [
+     "WH-PAYER-SUP2",
+     2
+    ],
+    [
+     "WH-PAYER-X1",
+     6
+    ]
+   ]
+  },
+  {
+   "id": "G11",
+   "cohort": "B",
+   "say": "How many of their scanned radiology reports dated in 2029-06 report an infiltrate?",
+   "reference_method": "Set by hand from the document text",
+   "reference_rows": [
+    [
+     4,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "G12",
+   "cohort": "A",
+   "say": "why are they in this group?",
+   "decline": true
+  },
+  {
+   "id": "G13",
+   "cohort": "B",
+   "say": "which of them should we call first?",
+   "decline": true
+  }
+ ]
+}

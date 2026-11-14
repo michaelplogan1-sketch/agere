@@ -1,0 +1,118 @@
+{
+  "schema": "ordinary-question-scoring/1",
+  "curriculum": "config/agere/ordinary_question_curriculum.json",
+  "purpose": "Executable review contract for the fixed study; never supplied to either answerer as expected answers.",
+  "states": ["passed", "failed", "unassessed"],
+  "common_checks": {
+    "original_scope": "Original entity, population, historical date, source and requested outputs are preserved. Current survival/enrollment cannot silently narrow historical questions.",
+    "quantities": "Every reported quantity is reconciled at its declared source/grain/unit/definition. Missing values differ from zero; duplicated or omitted groups are explicit failures. Unscored quantities remain unassessed, not correct.",
+    "source_fidelity": "Native lineage and cited text/date/entity/relation match actual received inputs. Quotes exist verbatim, preserve subject/polarity/time and do not turn orders into use or authors into treating clinicians.",
+    "coverage_and_unknowns": "All requested populations/outputs and relevant source dispositions are accounted for. Supported absent inputs can pass engineering; unread required sources or missing wiring cannot be relabeled supported unknowns.",
+    "no_overclaim": "Observed facts, machine findings, hypotheses, scenarios, estimates and proposals are distinguished. No invented care, risk qualification, causal effect, hardship, realized savings or customer readiness.",
+    "study_integrity": "Source/code/protocol frozen; evaluator references and other-arm answers inaccessible; learning disabled. Every provider attempt/partial/error and unpriced cost is retained."
+  },
+  "cases": {
+    "Q01": {"native_reference":"Q01", "checks": {
+      "historical_payer_binding":"Use enrollment at each discharge. Retain unknown and multiple payers without duplicating discharges; disclose any alternative payer-allocation convention.",
+      "year_change":"Reconcile both calendar years, absolute change and percent with explicit zero/missing prior baselines."
+    }},
+    "Q02": {"native_reference":"Q02", "checks": {
+      "financial_lifecycles":"Service-date cohort, allowed, signed adjudicated paid and separately received cash remain distinct with their clocks/currencies.",
+      "cash_cohort_closure":"All cash allocations reconcile to this service cohort, another known cohort or unlinked claims. Different coverage is not a receivable or missing payment."
+    }},
+    "Q03": {"native_reference":"Q03", "checks": {
+      "date_missingness":"Reconcile all admission organizations and received/absent discharge dates; absent discharge never becomes zero duration.",
+      "duration_definition":"Explicitly identified recorded LOS or calendar date difference is checked against its own reference. Silent definition changes fail; invalid/missing clocks stay explicit."
+    }, "execution":"Preserve the existing paired ordinary pilot separately; no repeat paid Q03 campaign or pooling it as a frozen study run."},
+    "Q04": {"native_reference":"Q04", "checks": {
+      "clinical_family_scope":"Declare the source-family universe and account for all selected current-version observations and omitted families.",
+      "receipt_clock":"Reported availability, event date and actual warehouse ingestion are different clocks. Unreceived/unknown clocks and superseded historical-state limitations remain explicit."
+    }},
+    "Q05": {"native_reference":null, "clinical_qualification":"independent_adjudication_required", "checks": {
+      "cohort_and_fills":"AF evidence and 2029 discharges use versioned evidence; dispensing is distinct from current use, and the full resolved patient cohort is represented.",
+      "documented_reasons":"Patient names and dated reasons/contradictions have exact source/subject/drug bindings; absent fill is not refusal or contraindication."
+    }},
+    "Q06": {"native_reference":null, "clinical_qualification":"independent_adjudication_required", "checks": {
+      "copd_encounter_scope":"COPD evidence and respiratory encounters have explicit source/date definitions and complete cohort accounting.",
+      "medication_state":"Intention, reported use, dispensing and explicit non-use are separate dated observations; disagreements produce specific evidence dependencies."
+    }},
+    "Q07": {"native_reference":null, "clinical_qualification":"independent_adjudication_required", "checks": {
+      "referral_cohort":"Received 2029 cardiology referrals and every resolved patient are accounted for without inventing destination or attendance.",
+      "dated_roles":"PCP assignment, referral destination, document author/addressee and actual attendance retain distinct dated source bindings; no inferred current cardiologist."
+    }},
+    "Q08": {"native_reference":null, "clinical_qualification":"independent_adjudication_required", "checks": {
+      "request_stage_counts":"Received requests, authorizations, schedules, recorded completions and preferences are distinct with source-bound counts and complete patient chains.",
+      "unresolved_work":"Each missing source relation remains a named evidence dependency suitable for internal review work; no care execution."
+    }},
+    "Q09": {"native_reference":null, "clinical_qualification":"independent_adjudication_required", "checks": {
+      "definition_and_cutoff":"Installed program specification versions and each historical cutoff are explicit. Absent historical inputs or uninstalled definitions remain concrete dependencies.",
+      "program_boundaries":"Candidate eligibility/overlap, payer entitlement and consent are separate; all required inputs and patient populations are represented."
+    }},
+    "Q10": {"native_reference":null, "clinical_qualification":"independent_adjudication_required", "checks": {
+      "same_relation":"Source-linked substance, subject, reaction and dates bind the allergy/interview relationship; same keyword is insufficient.",
+      "interpretation_boundaries":"Negated, uncertain, historical and copied accounts remain distinct; missing relation is named rather than asserted resolved."
+    }},
+    "Q11": {"native_reference":"Q11", "checks": {
+      "exposure_and_attribution":"Historical attributed exposure, unknown practice, unmatched events, sample sizes and unadjusted rates reconcile without current-PCP substitution.",
+      "case_mix":"Adjusted comparison requires a justified model and measured input support. Missing inputs/qualification are named; no invented adjusted ranking."
+    }},
+    "Q12": {"native_reference":"Q12", "checks": {
+      "development":"Declare payer-only full-history versus unified/provider scope, signed payments, service origin, development clock, duplicate/replacement policy and snapshot cutoff. Each alternative must independently reconcile.",
+      "ultimate_limit":"Observed development and incomplete runout remain separate from any modeled completion. Assumptions and source availability constrain ultimate estimates."
+    }},
+    "Q13": {"native_reference":"Q13", "checks": {
+      "active_account_definition":"Define 2029 recorded activity versus economically open accounts. Account snapshots are stocks, not summed events; same patient/account/currency and event cutoffs are preserved.",
+      "conservation":"Integer-cent patient-balance and billed-allocation identities and received payment/refund flows reconcile; unresolved source links are retained."
+    }},
+    "Q14": {"native_reference":null, "clinical_qualification":"independent_adjudication_required", "checks": {
+      "balance_cohort":"Outstanding balance is from the received current account statement with explicit patient/account/currency binding.",
+      "affordability_evidence":"Financial amount alone cannot establish hardship/preferences. Any affordability statement has a same-subject dated documentary source; unknown is retained."
+    }},
+    "Q15": {"native_reference":"Q15", "checks": {
+      "appointment_grain":"Every received appointment is counted once by scheduled month and actual appointment provider, including unknowns.",
+      "status_versions":"Installed version-resolved outcome governs completed/cancelled/no-show/scheduled distinctions, rather than interpreting raw booked status alone. Totals reconcile without causal claims."
+    }},
+    "Q16": {"native_reference":"Q16", "checks": {
+      "capacity_inputs":"Observed demand and actual service-time/staffing availability are demonstrated. Missing inputs block numeric FTE/queue claims rather than receiving defaults.",
+      "scenario_assumptions":"The10% increase is a scenario; any queueing calculation states distribution, arrival/exposure, service time, staffing and utilization assumptions."
+    }},
+    "Q17": {"native_reference":"Q17", "checks": {
+      "monthly_exposure":"All24months, eligible ED events, unmatched events, unknown/zero exposure and the simple stable-rate baseline reconcile.",
+      "change_method":"A registered method actually executes when supported; its assumptions, multiplicity, missing months and source-clock sensitivity are reported. No asserted true change point or cause from this arithmetic reference."
+    }},
+    "Q18": {"native_reference":"Q18", "checks": {
+      "index_and_followup":"First recorded admission, index discharge, next event, contiguous eligibility and snapshot/death/end-of-coverage clocks are explicit; ambiguous chronology stays unresolved.",
+      "survival_interpretation":"Observed follow-up/censoring are not complete external-event capture or qualified modeled risk. Death/unknown eligibility and competing-event assumptions remain explicit."
+    }},
+    "Q19": {"native_reference":null, "clinical_qualification":"independent_model_and_target_qualification_required", "checks": {
+      "prediction_evidence":"Report actual existing target and model receipts with positive-label support, time-safe input provenance, calibration and simple-baseline comparison.",
+      "no_forced_fit":"No new fit or risk claim. If no qualified predictor exists, the actual evidence dependency and existing failed/degenerate target results are retained."
+    }},
+    "Q20": {"native_reference":null, "clinical_qualification":"independent_adjudication_required", "checks": {
+      "agenda_provenance":"Utilization, care-gap and financial findings retain exact full-population denominators and original source/spec versions in one saved context.",
+      "commercial_action":"Observed facts, clinical nominations, explanations and contract-dependent opportunities are distinct with buyer/payer requirements and follow-up; no unsupported realizable savings."
+    }},
+    "Q21": {"native_reference":null, "clinical_qualification":"independent_adjudication_required", "checks": {
+      "source_assertion":"Each polarity/time/subject/copy-sensitive example links the original assertion, exact text/date/subject and the affected analytical conclusion.",
+      "unassessed_scope":"Unexamined source scope and unresolved contradictions are disclosed. Repeated copied statements are not independent corroboration."
+    }},
+    "Q22": {"native_reference":null, "checks": {
+      "saved_parent_work":"Actual saved Q08 findings and unresolved dependencies produce internal review requests with patient/source/context binding.",
+      "localized_invalidation":"A declared isolated source-version mutation invalidates dependent findings/work only; unchanged patients and prior versions remain inspectable."
+    }},
+    "Q23": {"native_reference":null, "checks": {
+      "spec_adapter_replay":"Actual saved Q09 context is replayed under declared isolated spec/adapter versions; changed nominations and exact inputs are inspected.",
+      "rollback_and_staleness":"Stale reuse/model artifacts are rejected and known-good definitions recover. Existing failed model qualifications remain failed."
+    }},
+    "Q24": {"native_reference":null, "clinical_qualification":"inherits_Q20_limitations", "checks": {
+      "faithful_deliverable":"Actual Q20 saved analysis produces readable HTML with received names, clinical context, dated roles, program reasoning, documented exceptions, financial assumptions and linked sources.",
+      "render_and_review":"Rendered artifact is visually inspected; unresolved requirements and proposed actions survive generation. No technical companion or routine PDF is required."
+    }},
+    "Q25": {"native_reference":null, "checks": {
+      "portable_core":"An explicitly authored invoice/payment fixture exercises the existing generic entity/date/domain quantities, money lifecycle, percentages, missingness and dependency invalidation.",
+      "portable_recovery":"Wrong entity/domain/date and stale values fail; known-good source/spec recover. This is a core contract demonstration, not a commercial connector claim."
+    }}
+  },
+  "decision_rule": "Every required engineering check must have a supported passed disposition and evidence; any failed or unassessed check prevents complete engineering acceptance for that case. Clinical/model qualification is separate and remains unqualified without its independent evidence. Do not collapse quantities, coverage, source errors, verification uncertainty, latency and cost into one success score.",
+  "numeric_policy": "Native references define received-source calculations, not exclusive answer formats. A reviewer may map actual output fields/units into a reference with recorded transforms and exact output paths. Values are never rewritten. A genuinely different declared measure needs a separate independently prepared reference; report it unassessed until then."
+}

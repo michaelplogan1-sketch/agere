@@ -103,7 +103,7 @@ class FixedSet(unittest.TestCase):
         self.assertEqual(card['questions'], 48)
         self.assertGreater(card['answered_no_llm'], 0.5)
         self.assertGreater(card['system_one']['decided_share'], 0)
-        self.assertGreaterEqual(card['opus_without_failed_sonnet']['failures'], 2)  # the why/driver questions
+        self.assertEqual(card['opus_without_failed_sonnet']['failures'], 0)  # current policy permits escalation after non-review failures
         self.assertTrue(card['violations'])
 
     def test_recorded_run_if_present(self):

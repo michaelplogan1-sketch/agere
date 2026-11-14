@@ -23,7 +23,7 @@ import time
 from pathlib import Path
 import sys
 
-VERSION = 'local-typed-worker/2'
+VERSION = 'local-typed-worker/3'
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -34,6 +34,9 @@ def _base():
 
 def typed_adapter():
     """The promoted typed adapter directory (held-out win in train_all), or None."""
+    if os.environ.get('AGERE_COMPONENT_RELEASE_ROOT'):
+        from .adapter_learning import runtime_adapter
+        return runtime_adapter('typed',_base())
     if os.environ.get('AGERE_TYPED_ADAPTER'):
         p = Path(os.environ['AGERE_TYPED_ADAPTER'])
         return p if (p / 'adapters.safetensors').exists() else None
@@ -60,7 +63,13 @@ def short_messages(catalog, question):
 
 
 def decode(text):
-    value = json.loads(re.sub(r'^```(?:json)?\s*|\s*```$', '', re.sub(r'<think>.*?</think>', '', text, flags=re.S).strip()))
+    raw=re.sub(r'^```(?:json)?\s*|\s*```$', '', re.sub(r'<think>.*?</think>', '', text, flags=re.S).strip())
+    start=raw.find('{')
+    if start<0:raise ValueError('Typed output contains no JSON object')
+    # Ignore a formatting preamble only. Never skip a malformed outer object to
+    # select a nested plan, or silently discard a second plan/trailing content.
+    value,end=json.JSONDecoder().raw_decode(raw[start:])
+    if raw[start+end:].strip():raise ValueError('Typed output has trailing content or multiple plans')
     if not isinstance(value, dict): raise ValueError('typed output must be an object')
     return value
 
@@ -90,7 +99,8 @@ def interpret_short(catalog, question, population, generate, adapter=None):
     prompt_chars = sum(len(m['content']) for m in messages)
     return contract, {'interpreter': 'qwen_typed_adapter', 'review': 'typed_adapter_compile_literal_check', 'semantic_review': review,
                       'attempts': [{'model': f'qwen3-4b+{Path(adapter).name if adapter else "adapter"}', 'seconds': seconds, 'api_tokens': 0,
-                                    'prompt': 'datasets.typed_messages', 'prompt_chars': prompt_chars, 'tables': tables}],
+                                    'prompt': 'datasets.typed_messages', 'prompt_chars': prompt_chars, 'tables': tables,
+                                    'formatting_preamble_removed':not text.lstrip().startswith(('{','```','<think>'))}],
                       'execution_accepted': False, 'worker': VERSION}
 
 
@@ -126,6 +136,19 @@ def resident(key, build):
     return _RESIDENT[key]
 
 
+def completion_allowance(prompt_tokens,config,kv_per_token,budget_gb=None):
+    """Complete within the real checkpoint/attention-cache contract, never a 700-token quota."""
+    from .bottled import KV_BUDGET_GB
+    cfg=config.get('text_config',config)
+    context=cfg.get('max_position_embeddings')
+    if type(context)is not int or context<1:raise LocalDeclined('Native checkpoint context capacity is unavailable')
+    if type(prompt_tokens)is not int or prompt_tokens<0:raise ValueError('Prompt token count required')
+    cache_tokens=int((budget_gb or KV_BUDGET_GB)*2**30/kv_per_token)if kv_per_token else context
+    capacity=min(context,cache_tokens)-prompt_tokens
+    if capacity<1:raise LocalDeclined('Complete prompt exhausts the native context/attention-cache capacity; prompt was not shortened')
+    return capacity
+
+
 def _build_typed(adapter):
     os.environ.update(HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1', HF_HUB_DISABLE_TELEMETRY='1')
     from mlx_lm import load, generate
@@ -140,10 +163,12 @@ def _build_typed(adapter):
 
     def run(messages):
         prompt = tok.apply_chat_template(messages, add_generation_prompt=True, tokenize=False, enable_thinking=False)
-        fit_check(len(tok.encode(prompt, add_special_tokens=False)), 700, kv)
+        n_prompt=len(tok.encode(prompt, add_special_tokens=False))
+        capacity=completion_allowance(n_prompt,json.loads((_base()/'config.json').read_text()),kv)
+        fit_check(n_prompt,capacity,kv)
         try:
             # grammar-constrained: the typed request is one JSON object (constrained_decoding); decode() still parses it
-            return generate(model, tok, prompt=prompt, max_tokens=700, sampler=make_sampler(temp=0.0), verbose=False,
+            return generate(model, tok, prompt=prompt, max_tokens=capacity, sampler=make_sampler(temp=0.0), verbose=False,
                             logits_processors=processors(tok, JsonGrammar(root='object')))
         finally:
             _release()
@@ -188,6 +213,8 @@ def handle(item, *, generate_factory=mlx_generate, fallback=long_prompt):
     c = item['catalog']
     catalog = Catalog(Path(c['target']), c['tables'], c['identity'], c['stream_fields'])
     adapter, short_error = typed_adapter(), None
+    if adapter is None and os.environ.get('AGERE_LOCAL_TYPED_FALLBACK','on')=='off':
+        raise LocalDeclined('No qualified typed adapter is available; base-model fallback is disabled')
     if adapter is not None:
         try:
             contract, interpretation = interpret_short(catalog, item['question'], item['population'], generate_factory(adapter), adapter)

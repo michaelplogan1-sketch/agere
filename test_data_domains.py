@@ -56,7 +56,8 @@ class DataDomains(unittest.TestCase):
         q = 'What did the Holter monitor show for patient 12?'
         out = D.after_decline(self.path, q, QuestionNotUnderstood('no plan'))
         self.assertEqual(out['answer']['status'], 'not_available')
-        self.assertTrue(out['answer']['data_absence_established'])
+        self.assertFalse(out['answer']['data_absence_established'])
+        self.assertEqual(out['answer']['discovery_status'],'structured_representation_unmapped')
         self.assertEqual(out['planner_receipt']['interpretation']['stage'], 'after_decline')
         self.assertIsNone(D.after_decline(self.path, q, RuntimeError('boom')))  # an error is not a decline
         self.assertIsNone(D.after_decline(self.path, 'What is the average HbA1c of our diabetic patients?', QuestionNotUnderstood('x')))
@@ -88,6 +89,14 @@ class DataDomains(unittest.TestCase):
         from clinical_core.agere.clinical.question_input import QuestionNotUnderstood
         with mock.patch.dict(os.environ, {'AGERE_STATED_ABSENCE': 'off'}):
             self.assertIsNone(D.after_decline(self.path, 'What did the Holter monitor show?', QuestionNotUnderstood('x')))
+
+    def test_decline_does_not_erase_failed_attempt_cost_or_claim_no_execution(self):
+        out=D.answer('Question','unmapped domain','Structured representation unknown',stage='post',
+                     receipt={'new_paid_api_calls':2,'known_api_estimate_usd':.25,'api_cost_known':False})
+        self.assertEqual(out['new_paid_api_calls'],2)
+        self.assertFalse(out['planning_economics']['api_cost_known'])
+        self.assertEqual(out['planning_economics']['known_api_estimate_usd'],.25)
+        self.assertNotIn('no query was run',' '.join(out['answer']['limitations']))
 
 
 if __name__ == '__main__':

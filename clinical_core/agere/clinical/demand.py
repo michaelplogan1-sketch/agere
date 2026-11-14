@@ -32,7 +32,7 @@ from scipy.stats import poisson
 from . import monitor, semantic_layer
 from ...signal_math import gaussian_change_points
 
-VERSION = 'demand/1'
+VERSION = 'demand/2'
 # measure -> (source, visit type concept, label)
 MEASURES = {
     'ed_visits': ('visit', 'emergency_visit', 'ED visits'),
@@ -439,8 +439,9 @@ class Timestral(Model):
     def point(self, h): return self._quantiles(h)[:, list(self._levels).index(0.5)]
 
     def simulate(self, h, n, rng):
-        q = self._quantiles(h); u = rng.uniform(self._levels[0], self._levels[-1], (n, h))
-        return np.stack([np.interp(u[:, k], self._levels, q[k]) for k in range(h)], axis=1)
+        from .foundation_forecasters import quantile_samples
+        draws, self.simulation_assumptions = quantile_samples(self._quantiles(h), self._levels, n, rng)
+        return draws
 
 
 def timestral_sizes():
@@ -535,6 +536,30 @@ def sequential_coverage(recs, level, floor):
     return (hits / total if total else None), total
 
 
+def _received_support(out, partial, period):
+    """Disclose deterministic support projection; historical coverage does not qualify a conditional nowcast."""
+    out['current_period_support'] = {'period': period, 'observed_so_far': float(partial['observed_so_far']),
+                                    'method': 'received_count_support_projection', 'conditional_coverage_qualified': False,
+                                    'assumption': 'Received eligible units cannot disappear from the full-period total; future bookings are separate.'}
+    out.setdefault('data_issues', []).append({'kind': 'unqualified_current_period_coverage', 'periods': period,
+        'detail': 'Current-period points and samples are projected to contain received units. These are support-constrained estimates; nominal intervals have not been calibrated conditional on the partial count. Backtest coverage describes unconditional historical periods.'})
+
+
+def _support_hierarchy(values, S, bottoms, floors):
+    """Coherent nonnegative support projection, allocating any unassigned parent deficit equally to descendant leaves.
+
+    This deterministic allocation is a modelling assumption, not a learned conditional distribution.
+    values has nodes on its last axis; floors contains received counts on that same axis.
+    """
+    b = np.maximum(np.asarray(values)[..., bottoms], 0).copy()
+    # Descendants first: adding to leaves cannot undo a previously satisfied lower bound.
+    for i in np.argsort(S.sum(axis=1), kind='stable'):
+        children = np.flatnonzero(S[i])
+        deficit = np.maximum(floors[i] - b[..., children].sum(axis=-1), 0)
+        b[..., children] += deficit[..., None] / len(children)
+    return b @ S.T
+
+
 # ---- one series end to end -----------------------------------------------------------------
 def forecast_series(periods, y, freq, horizon, partial=None, booked=None, seed=0):
     """Screen, select by backtest, forecast with intervals. Pure function of the series (testable on synthetic data)."""
@@ -610,6 +635,15 @@ def forecast_series(periods, y, freq, horizon, partial=None, booked=None, seed=0
         c, k = sequential_coverage(recs, lv, floor)
         coverage[f'{int(lv * 100)}'] = {'conformal_sequential': None if c is None else round(c, 3), 'evaluated': k,
                                          'model_simulation': round(float(np.mean([r['model_cover'][lv] for r in recs])), 3), 'errors': len(recs)}
+    current = next_period(periods[-1], freq)
+    if partial and partial['period'] == current:
+        received = max(float(partial['observed_so_far']), 0)
+        pt[0] = max(pt[0], received)
+        sims[:, 0] = np.maximum(sims[:, 0], received)
+        for lo, hi in intervals.values():
+            lo[0], hi[0] = max(lo[0], received), max(hi[0], received)
+        sd = sims.std(axis=0)
+        _received_support(out, partial, current)
     fc = []
     k = periods[-1]
     for i in range(steps):
@@ -626,6 +660,11 @@ def forecast_series(periods, y, freq, horizon, partial=None, booked=None, seed=0
                          'selected_mase': round(mase[best], 3), 'baseline_mase': round(mase[baseline], 3),
                          'skill_vs_baseline': round(1 - mase[best] / mase[baseline], 3) if mase[baseline] > 0 else None,
                          'coverage': coverage})
+    if getattr(model, 'simulation_assumptions', None):
+        out['simulation_assumptions'] = model.simulation_assumptions
+        if model.simulation_assumptions['tails'] == 'linear_extrapolation':
+            out['data_issues'].append({'kind': 'unqualified_forecast_tails',
+                                      'detail': 'Source quantiles do not identify the full tails. Simulation uses explicit linear extrapolation; nominal model intervals are estimates under that assumption, not established coverage.'})
     out.update(_sims=sims, _pt=pt, _sd=sd, _recs=recs, _offset=sc['start'], _yr=yr, _lag=SEASON[freq] if seasonal else 1, _floor=floor)
     return out
 
@@ -791,6 +830,14 @@ def forecast_hierarchy(periods, ys, paths, freq, horizon, method='mint_shrink', 
     raw_pt = PT.T @ G.T                                  # (steps x bottoms) before clipping
     RP = project(S, G, PT.T).T                           # nodes x steps
     RS = project(S, G, B)                                # sims x steps x nodes
+    current = next_period(periods[-1], freq)
+    active = [p for p in partials if p and p['period'] == current]
+    if active:
+        floors = np.array([max(float(p['observed_so_far']), 0) if p and p['period'] == current else 0 for p in partials])
+        RP[:, 0] = _support_hierarchy(RP[:, 0], S, bottoms, floors)
+        RS[:, 0, :] = _support_hierarchy(RS[:, 0, :], S, bottoms, floors)
+        rec['current_period_support'] = {'period': current, 'conditional_coverage_qualified': False,
+            'method': 'received_count_support_projection', 'unassigned_parent_deficit': 'equal allocation to descendant leaves'}
     q = {lv: np.quantile(RS, [(1 - lv) / 2, (1 + lv) / 2], axis=0) for lv in LEVELS}
     ev = reconcile_backtest(series, S, parent, levels, method, steps)
     k = periods[-1]; ks = []
@@ -804,10 +851,13 @@ def forecast_hierarchy(periods, ys, paths, freq, horizon, method='mint_shrink', 
             for lv, tag in ((0.8, '80'), (0.95, '95')):
                 row['lo' + tag] = round(min(float(q[lv][0][j, i]), pt), 2); row['hi' + tag] = round(max(float(q[lv][1][j, i]), pt), 2)
             part = partials[i] or (partials[0] and {'period': partials[0]['period'], 'observed_so_far': 0.0})
-            if partials[0] and ks[j] == partials[0]['period']: row.update(in_progress=True, observed_so_far=part['observed_so_far'])
+            if part and ks[j] == part['period']: row.update(in_progress=True, observed_so_far=part['observed_so_far'])
             if booked[i] and booked[i].get(ks[j]): row['already_booked'] = booked[i][ks[j]]
             fc.append(row)
         s['forecast'] = fc; s['reconciled'] = True; s['interval_method'] = {lv: interval_method for lv in LEVELS}
+        s.update(_pt=RP[i], _sims=RS[:, :, i], _sd=RS[:, :, i].std(axis=0))
+        if active and 'current_period_support' not in s:
+            _received_support(s, {'observed_so_far': floors[i]}, current)
         if ev: s['reconciliation'] = ev['by_node'][i]
     gap = coherence_gap(RP, parent)
     rounded = np.array([[r['point'] for r in s['forecast']] for s in series])
@@ -926,6 +976,7 @@ def _finish(p, path, as_of, label, freq, series, table, capacity, flags, recon):
     method = (f"{label.capitalize()} per {freq} ({'Monday-start weeks' if freq == 'week' else 'calendar months'}) from the semantic layer; "
               f"only complete {freq}s through the snapshot ({as_of}) are modelled; an in-progress {freq} is forecast and its count so far shown. ")
     method += {'visit': 'Visits = encounter rows of that setting on their event date. ',
+               'utilization_event':'Hospital admissions = governed all-source inpatient and observation events on their received event date. ',
                'appointment': 'Appointments counted on their scheduled date regardless of final status (demand, including no-shows); '
                               'appointments already booked for future periods are shown beside the forecast. ',
                'stay': ('Bed-days = nights of each hospital stay (same-day stays = 1) from admit to discharge. ' if p['measure'] == 'bed_days'

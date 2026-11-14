@@ -7,6 +7,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 import hashlib
 import json
+import os
 
 from ...contracts import digest
 from . import semantic_reader as reader
@@ -16,15 +17,32 @@ PARTITIONS = ('train', 'calibration', 'validation')
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def protections():
-    root = ROOT/'artifacts/agere-local-decisions-v1'
-    plan = json.loads((root/'experiment-plan.json').read_text())
+def protections(*, plan_path=None, plan_sha256=None):
+    """Read only the frozen exclusion metadata, including from an explicit installation resource.
+
+    A relocated checkout must not silently discover another experiment or drop
+    exclusions. External plans require their saved hash; the plan in turn pins
+    the adjacent reserved-source register. Neither file contains answer labels.
+    """
+    if plan_path is None and plan_sha256 is None:
+        plan_path = os.environ.get('AGERE_LEARNING_PROTECTION_PLAN')
+        plan_sha256 = os.environ.get('AGERE_LEARNING_PROTECTION_PLAN_SHA256')
+    if bool(plan_path) != bool(plan_sha256):
+        raise ValueError('External learning protection plan requires its pinned SHA-256')
+    path = Path(plan_path) if plan_path else ROOT/'artifacts/agere-local-decisions-v1/experiment-plan.json'
+    raw = path.read_bytes()
+    plan_hash = hashlib.sha256(raw).hexdigest()
+    if plan_sha256 and plan_hash != plan_sha256:
+        raise ValueError('Frozen learning protection plan changed')
+    root = path.parent
+    plan = json.loads(raw)
     sources = root/'reserved-sources.json'
-    actual = hashlib.sha256(sources.read_bytes()).hexdigest()
+    source_bytes = sources.read_bytes()
+    actual = hashlib.sha256(source_bytes).hexdigest()
     if actual != plan['files']['reserved-sources.json']: raise ValueError('Frozen reserved source register changed')
-    return {'patient_ids': sorted(json.loads(sources.read_text())),
+    return {'patient_ids': sorted(json.loads(source_bytes)),
             'family_ids': sorted(set(plan['reserved_families']+plan['calibration_source_families'])),
-            'register_sha256': digest([hashlib.sha256((root/'experiment-plan.json').read_bytes()).hexdigest(), actual]),
+            'register_sha256': digest([plan_hash, actual]),
             'scope': 'Existing local-decision reserved and calibration patient families excluded from new fitting. Additional evaluation families must be supplied in the lineage policy.'}
 
 

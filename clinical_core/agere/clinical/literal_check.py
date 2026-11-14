@@ -15,7 +15,7 @@ import re
 
 from . import local_normalizer as N
 
-VERSION = 'literal-question-check/1'
+VERSION = 'literal-question-check/4'
 
 # Executable-side spellings of each qualifier/concept, in addition to the question-side pattern (local_normalizer).
 ALIASES = {
@@ -28,11 +28,13 @@ ALIASES = {
     'a1c': r'a1c|4548-4|17856-6', 'beta_blocker': r'beta.?block', 'sglt2': r'sglt', 'flu': r'flu|influenza',
     'uacr': r'uacr|albumin|acr', 'food': r'food', 'transport': r'transport', 'housing': r'housing|homeless',
     'diabetes': r'diabet|\bdm\b|e1[01]', 'depression': r'depress|phq|f3[23]', 'copd': r'copd|j44',
+    'reversed': r'revers(?:ed|al)(?:\b|_)',
+    'inpatient': r'inpatient', 'outpatient': r'outpatient',
 }
 MONTHS = {m: i + 1 for i, m in enumerate('january february march april may june july august september october november december'.split())}
 NEGATED = re.compile(r"\bnot\b|!=|<>|\bis null\b|\bexcept\b|=\s*0\b|\bexclu|\bwithout\b|\bno_|\bmissing|\bgap|\babsen|\bnever\b|"
                      r"\bnone\b|\bfalse\b|\black|\bunfilled|\bnot_|\bnon_|\bnegat|\bcancel|\bno.?show", re.I)
-RATE_ASKED = re.compile(r'%|\b(?:percent(?:age)?|share|proportion|(?<!ejection )fraction|ratio|rate|per\s+1,?000|pmpm|per member)\b', re.I)
+RATE_ASKED = re.compile(r'%|\b(?:percent(?:age)?|share|proportion|(?<!ejection )fraction|ratio|rate|per\s+1,?000|pmpm|per\s+(?:(?:received|recorded|covered|eligible|attributed|enrolled)\s+)?member)\b', re.I)
 RATE_DONE = re.compile(r'/|\bratio\b|\brate\b|percent|\bshare\b|proportion|pmpm|per_1000|denominator|avg\(|\bmean\b|\bpct\b', re.I)
 AVERAGE_ASKED = re.compile(r'\b(?:average|mean|median|typical)\b', re.I)
 AVERAGE_DONE = re.compile(r'avg\(|\bmean\b|median|percentile|/|"statistic"\s*:\s*"(?:mean|median|avg)', re.I)
@@ -69,6 +71,35 @@ def executable_text(*parts):
     return '\n'.join(out)
 
 
+def graph_evidence_text(graph):
+    """Parameters plus registered, validated operator semantics; no question text.
+
+    An enum such as an engine's evidence mode can enforce no fitting without
+    spelling that restriction in its parameters. Only the implementing module
+    can declare those semantics. Unknown engines, invalid parameters and modes
+    without such a declaration add nothing to the ordinary literal checks.
+    """
+    nodes = (graph or {}).get('nodes') or []
+    parts = [executable_text([node.get('parameters') for node in nodes])]
+    from . import engine_suite
+    for node in nodes:
+        operation = node.get('operation')
+        if operation not in engine_suite.MODULES:
+            continue
+        module = engine_suite.module(operation)
+        describe = getattr(module, 'executable_evidence', None)
+        if not callable(describe):
+            continue
+        try:
+            bound = module.validate(node.get('parameters'))
+            semantics = describe(bound)
+        except (ValueError, TypeError, KeyError):
+            continue
+        if semantics:
+            parts.append(executable_text({'operator_semantics': semantics}))
+    return '\n'.join(part for part in parts if part)
+
+
 def _numbers(text):
     found = set()
     # Apply the same number-word normalization to executable evidence and the
@@ -88,6 +119,64 @@ def _fmt(v):
 # the plan must carry (its digits made every plan fail the number check).
 AS_OF_CLAUSE = re.compile(r'\b(?:use|using)\s+(?:the\s+)?(?:data|records?)\s+(?:received|available|delivered)\s+as\s+of\s+\d{4}-\d{2}-\d{2}\b\.?', re.I)  # a bare 'as of DATE' stays a requirement
 
+# Instructions about epistemic caution/presentation are not patient exclusion
+# predicates. Ignore them only for this coarse negation check; all other literal
+# checks still see the original question, and clinical exclusions remain intact.
+REPORTING_CAUTION = re.compile(r"(?:^|[.!?;])\s*(?:please\s+)?(?:(?:do not|don't|never)\s+"
+    r"(?:(?:infer|invent|guess|assume|impute|fabricate|extrapolate)\b[^.!?;]*|"
+    r"(?:treat|interpret|regard|use)\b[^.!?;]*?\bas\s+(?:proof|evidence|confirmation)\b[^.!?;]*)|"
+    r"(?:keep|report|show|display|label|make|preserve)\s+(?:the\s+)?(?:missing|unknown|null|unavailable)\s+"
+    r"(?:values|data|information)\b[^.!?;]*\b(?:explicit|separate(?:ly)?|distinct|visible|unknown|unavailable)\b[^.!?;]*)",re.I)
+
+
+def predicate_negation_question(question):
+    def keep_patient_clause(match):
+        text=match.group(0)
+        tail=re.search(r'\b(?:and|but|then|also)\s+(?:exclude|include|count|list|find|filter|remove|omit|show)\b',text,re.I)
+        return ' '+text[tail.start():] if tail else ' '
+    return REPORTING_CAUTION.sub(keep_patient_clause,question)
+
+
+def aggregate_misfit(question, query):
+    """Catch an unambiguous count substituted for a requested percent/average.
+
+    Aliases and copied measure words are not arithmetic. This deliberately checks only a single explicit count
+    projection; it does not infer arbitrary SQL semantics, rewrite denominators, or certify queries it does not flag.
+    """
+    from .answer_shape import requested, shape_wording
+    req = requested(question)
+    if req['shape'] != 'value' or not (req['percent'] or AVERAGE_ASKED.search(shape_wording(question))):
+        return None
+    import sqlglot
+    from sqlglot import exp
+    try:
+        tree = sqlglot.parse_one(query, read='sqlite')
+    except (sqlglot.errors.ParseError, sqlglot.errors.TokenError):
+        return None  # Native SQL remains the syntax authority; no guessed semantic finding.
+    if not isinstance(tree, exp.Select) or len(tree.expressions) != 1:
+        return None
+    value = tree.expressions[0]
+    while isinstance(value, (exp.Alias, exp.Paren, exp.Cast, exp.TryCast, exp.Filter)):
+        value = value.this
+    if isinstance(value, exp.Count):
+        measure = 'a percentage' if req['percent'] else 'an average or median'
+        return ('the question asks for ' + measure + '; the SQL projects only a count. '
+                'Compute the requested measure from its source and denominator, or explicitly report it unavailable.')
+    return None
+
+
+def _single_query(evidence):
+    """Recover one SQL value from executable_text without treating an alias as a measure."""
+    if re.match(r'(?is)^\s*(?:select|with)\b', evidence):
+        return evidence
+    starts = list(re.finditer(r'(?m)^"(?:query|sql)"\s*:\s*"', evidence))
+    if len(starts) != 1:
+        return None  # Multiple steps need their compiled final query, not a guessed final operation.
+    tail = evidence[starts[0].end():]
+    end = re.search(r'(?m)\n"[a-zA-Z_]\w*"\s*:', tail)
+    value = (tail[:end.start()] if end else tail).rstrip()
+    return value[:-1] if value.endswith('"') else None
+
 
 def missing(question, evidence):
     """Literal elements of the question absent from the executable evidence text (a list of readable reasons)."""
@@ -99,7 +188,7 @@ def missing(question, evidence):
     for name, number in MONTHS.items():
         if re.search(rf'\b{name}\b', q, re.I) and not re.search(rf'-{number:02d}-|\b{name}\b|"month"\s*:\s*{number}\b', text):
             gaps.append(f'month {name} is not in the plan')
-    if N.NEGATION.search(q) and not NEGATED.search(text):
+    if N.NEGATION.search(predicate_negation_question(q)) and not NEGATED.search(text):
         gaps.append('the question negates or excludes something; the plan has no negation or exclusion')
     for table in (N.QUALIFIERS, N.CONCEPTS):
         for key, rx in table.items():
@@ -113,6 +202,14 @@ def missing(question, evidence):
         gaps.append('the question asks for a rate or share; the plan has no denominator')
     if AVERAGE_ASKED.search(q) and not AVERAGE_DONE.search(text):
         gaps.append('the question asks for an average; the plan computes none')
+    query = _single_query(evidence)
+    if query:
+        from .source_scope import problem as source_scope_problem
+        source_gap=source_scope_problem(question,query)
+        if source_gap:gaps.append(source_gap)
+    misfit = aggregate_misfit(q, query) if query else None
+    if misfit:
+        gaps.append(misfit)
     if SUPERLATIVE.search(q) and not ORDERED.search(text):
         gaps.append('the question asks for a ranking; the plan has no ordering')
     windows = [m.group(0).lower() for m in RELATIVE_TIME.finditer(q)]
@@ -128,6 +225,35 @@ SHAPES = {'count': {'count', 'value', 'patient_set'}, 'value': {'value', 'count'
           'patient_set': {'patient_set', 'table'}, 'table': {'table'}}
 
 
+def attribution_misfit(question, answer):
+    """Explicit paired entity attribution needs row identities, not totals.
+
+    This only consumes output instructions such as "show patient/account
+    attribution". Questions counting missing links and source qualifications
+    do not request attributed rows. Unknown identity values may remain null.
+    """
+    entities=set()
+    for clause in re.split(r'[.;?!]', question or ''):
+        if not re.search(r'\b(?:show|include|return|report|give)\b',clause,re.I):continue
+        for match in re.finditer(r'\b([a-z][a-z_]*)\s*(?:/|and)\s*([a-z][a-z_]*)\s+attribution\b',clause,re.I):
+            entities.update(x.lower()for x in match.groups())
+    rows=(answer or {}).get('table')or[]
+    if not entities or not rows:return None
+    def keys(value):
+        if isinstance(value,dict):
+            for key,item in value.items():
+                yield re.sub(r'[^a-z0-9]','',str(key).lower())
+                yield from keys(item)
+        elif isinstance(value,list):
+            for item in value:yield from keys(item)
+    for entity in sorted(entities):
+        stems={entity,entity[:-1]}if entity.endswith('s')else{entity}
+        allowed={stem+suffix for stem in stems for suffix in ('','id','identifier','name','number','key')}
+        if any(not allowed.intersection(keys(row))for row in rows):
+            return f'the question requests {entity} attribution; each detail row needs its {entity} identity, not only aggregate totals'
+    return None
+
+
 def shape_misfit(question, answer, analyst=False):
     """None when the executed answer has the requested output shape (one-row tables count as scalars), else why not."""
     from .analysis_graph import requested_shape
@@ -135,6 +261,8 @@ def shape_misfit(question, answer, analyst=False):
     status = (answer or {}).get('status')
     if status in ('unsupported', 'not_available', 'clarify'): return None  # an honest decline is not a reshaped answer
     if status not in ('answered', 'partial'): return f'the plan did not produce an answer (status {status})'
+    attribution=attribution_misfit(question,answer)
+    if attribution:return attribution
     got = answer.get('answer_type')
     if got == 'composite': return None
     if analyst and wanted == 'patient_set' and got == 'count':

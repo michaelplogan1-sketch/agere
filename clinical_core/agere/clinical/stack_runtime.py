@@ -23,7 +23,26 @@ class Stack:
     def close(self):self.retriever.close()
     def metadata(self):
         from .analysis_graph import catalog
+        from .typed_distillation import active_student
         return {'schema':VERSION,'synthetic':True,'retrieval':self.retriever.meta,
+                'runtime_profile':os.environ.get('AGERE_RUNTIME_PROFILE','configured'),
+                'local_student_runtime':active_student()[0],
+                'source_verification_runtime':{
+                    'frontier_fallback_enabled':os.environ.get('AGERE_FRONTIER_SOURCE_REVIEW','off')=='on',
+                    'scope':'Native execution and joins first; System One chooses program-meaning or source-reading work. Frontier reviews unresolved meaning; native defects and deciding faults require repair.',
+                    'work_triage':'execution-work-triage/1',
+                    'source_obligations':'source-fields-first/1',
+                    'mixed_native_work':'mixed-native-work/1; shared program meaning once, exact field copies, remaining documentary obligations separately',
+                    'actor_role_routing':'role-scoped-escalation/1',
+                    'binding_inputs':'native-binding-input/1; prior complete readings stay queryable, newly requested values remain visible, source interpretation retains full readings',
+                    'coverage_order':'System One requested-work coverage, focused frontier fallback if undecided, then source verification. Unresolved coverage retains the partial before patient dispatch.',
+                    'field_reuse':'Exact input-bound supported fields; remaining claims only escalate with full source context.',
+                    'authority':'machine_judgment','clinical_qualification':False},
+                'execution_wire_encoding':os.environ.get('AGERE_EXECUTION_WIRE_ENCODING','off')=='on',
+                'local_retrieval_runtime':{
+                    'encoder_weights_loaded':getattr(self.retriever.encoder,'weights_loaded',None),
+                    'reranker_weights_loaded':getattr(self.retriever.reranker,'weights_loaded',None) if self.retriever.reranker else False,
+                    'scope':'Retrieval encoder/reranker only; configured availability is separate from loaded weights.'},
                 'database_concurrency':self.database_concurrency,
                 'model_roles':self.model_roles(),
                 'operators':json.loads((self.path/'operators.json').read_text()),'allow_live':self.allow_live,
@@ -136,7 +155,7 @@ class Stack:
                 'proposers_on':env('AGERE_PROPOSERS')!='off',
                 'skipped_by_env':sorted(s.strip() for s in env('AGERE_PROPOSER_SKIP','').split(',') if s.strip()),
                 'frontier_model':os.environ.get('AGERE_SHARED_INTERPRETER_MODEL') or 'tiered',
-                'model_ladder':{'ladder':model_policy.ladder('planner'),'rule':'Haiku first; Sonnet only as the escalation after every Haiku attempt failed; Opus deliverables only'},
+                'model_ladder':{'ladder':model_policy.ladder('planner'),'rule':'Sonnet entry; Opus escalation after this role failed. Native computation, qualified local models and System One retain their roles.'},
                 'question_interpretation_llm_enabled':live,'deterministic_first':True,'hosted_enabled':live,
                 'qwen3_4b_available':qwen_on,'qwen3_4b_active':any(v for k,v in qwen.items() if k not in ('model_installed','role')),
                 'qwen_status':qwen,'component_ledger':ledger,

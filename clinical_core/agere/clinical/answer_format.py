@@ -98,12 +98,12 @@ def _honest_unknown(answer):
     if answer.get('status') not in ('answered', 'partial'): return
     reasons = [str(m) for m in answer.get('missing') or []]
     table = answer.get('table')
-    if any(k in answer for k in ('value', 'count')) and answer.get('value', answer.get('count')) is None:
-        absent = True
-    elif isinstance(table, list) and table and all(isinstance(r, dict) for r in table):
+    if isinstance(table, list) and table and all(isinstance(r, dict) for r in table):
         notes = [[v for v in r.values() if isinstance(v, str) and ABSENCE.search(v)] for r in table]
         absent = all(notes)
         reasons += [n for row in notes for n in row]
+    elif any(k in answer for k in ('value', 'count')) and answer.get('value', answer.get('count')) is None:
+        absent = True
     elif 'value' not in answer and 'count' not in answer and table is None and answer.get('answer_type') in ('count', 'value', 'table'):
         absent = True
     else:

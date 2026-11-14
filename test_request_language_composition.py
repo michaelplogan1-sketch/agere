@@ -60,6 +60,33 @@ class ModifierComposition(unittest.TestCase):
         self.assertEqual(answer['patient_ids'], [])
         self.assertEqual(answer['table'], [])
 
+    def test_explicit_medication_months_and_years_compose_without_model_fallback(self):
+        with sqlite3.connect(self.catalog.target)as db:
+            db.executemany('INSERT INTO medication(patient_id,drug_class,event_date) VALUES(?,?,?)',[
+                ('A','statin','2030-01-01'),('B','statin','2029-11-27'),('D','statin','2029-11-28'),
+                ('OUTSIDE','statin','2030-05-28'),('A','metformin','2029-12-01'),('B','metformin','2030-05-28')])
+        for question,count in [('How many patients filled a statin in the last 12 months?',3),
+                               ('How many patients filled a statin in the last 6 months?',2),
+                               ('How many patients filled a statin during the past six months?',2),
+                               ('How many patients filled a statin over the last two years?',3),
+                               ('How many patients filled metformin within the last six months?',1)]:
+            with self.subTest(question=question):self.assertEqual(self.ask(question)['count'],count)
+
+    def test_medication_calendar_window_uses_sqlite_month_end_and_leap_semantics(self):
+        for as_of,months,phrase in [('2028-08-31',6,'six months'),('2028-02-29',12,'year'),
+                                   ('2030-05-27',24,'two years')]:
+            catalog=R.Catalog.load(self.path);catalog.identity['as_of']=as_of
+            plan=L.parse(catalog,'How many patients filled a statin in the last '+phrase+'?')
+            with sqlite3.connect(':memory:')as db:
+                start=db.execute("SELECT date(?, ?, '+1 day')",(as_of,'-'+str(months)+' months')).fetchone()[0]
+            self.assertEqual(plan['where']['period'],{'start':start,'end':as_of})
+            R.compile_request(catalog,'How many patients filled a statin in the last '+phrase+'?',plan)
+
+    def test_explicit_window_dates_cannot_borrow_a_different_numeral(self):
+        q='How many patients filled a statin in the last 6 months?';plan=L.parse(self.catalog,q)
+        plan['where']['period']={'start':'2029-05-28','end':'2030-05-27'}
+        with self.assertRaises(R.PlanError):R.compile_request(self.catalog,q,plan)
+
     def test_catalog_field_aggregations_and_copular_age(self):
         self.assertEqual(self.ask('How many patients are over 65?')['count'], 3)
         self.assertEqual(self.ask('average age by payer')['table'],

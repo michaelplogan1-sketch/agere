@@ -74,6 +74,36 @@ def fake_stack(hits=None, allow_live=False, reading='patient_affirmed', passes=T
 
 
 class Kind(unittest.TestCase):
+    def test_filtered_collections_across_domains_skip_ranked_examples_without_io(self):
+        for q in [
+            'Identify received 2029 clinical accounts whose interpretation changes when a negated, historical, copied or other-subject statement is respected. Show the source-bound assertion and its date/polarity/subject, the affected analytical conclusion and any unresolved contradiction. Do not infer truth from repeated copied text.',
+            'Identify received invoices whose interpretation changes when conditional payment text is respected.',
+            'Find contracts where a cancellation clause changes the outstanding obligation.',
+            'Please show customer complaints that contradict the recorded resolution.',
+        ]:
+            with self.subTest(question=q):
+                self.assertIsNone(E.retrieval_tier(Untouchable(),q))
+                self.assertIsNone(E.review_tier(Untouchable(),q))
+
+    def test_explicit_filtered_examples_keep_the_ranked_retrieval_route(self):
+        for q in [
+            'Find examples of received text that mention medication affordability.',
+            'Show me some passages that discuss conditional payment.',
+            'Identify an excerpt that describes the family history.',
+        ]:
+            with self.subTest(question=q):
+                self.assertFalse(E._not_examples(q))
+
+    def test_patient_field_and_cohort_comparisons_skip_examples_without_io(self):
+        for q in [
+            'For patients with a recorded condition and a discharge, compare fills with dated non-use statements. Show patient names.',
+            'Among members with a respiratory encounter, distinguish medication intention from reported use. Show dated source-linked findings.',
+            'Show patient names and the documented reasons for missing therapy.',
+        ]:
+            with self.subTest(question=q):
+                self.assertIsNone(E.retrieval_tier(Untouchable(),q))
+                self.assertIsNone(E.review_tier(Untouchable(),q))
+
     def test_other_questions_return_none_without_touching_the_stack(self):
         for q in ('How many patients have diabetes?', 'What share of notes mention statins?', 'List patients with CKD',
                   'Average A1c by region', 'Which patients have notes mentioning dyspnea?'):
@@ -91,6 +121,19 @@ class Kind(unittest.TestCase):
 
 
 class Retrieval(unittest.TestCase):
+    def test_large_saved_population_is_preserved_instead_of_widened(self):
+        ids=['P-'+str(i)for i in range(1001,1030)]
+        stack=fake_stack(hits=[passage('P-1001','Received source passage.')])
+        graph,receipt=E.retrieval_tier(stack,'What do the notes say about medication affordability?',{'patient_ids':ids})
+        self.assertEqual(stack.retriever.calls[0]['patient_ids'],ids)
+        self.assertEqual(graph['nodes'][0]['parameters']['patient_ids'],ids)
+        self.assertEqual(receipt['scope'],'29 selected patients')
+
+    def test_empty_saved_population_never_opens_a_whole_roster_search(self):
+        self.assertIsNone(E.retrieval_tier(Untouchable(),'What do the notes say about medication affordability?',{'patient_ids':[]}))
+        self.assertEqual(E.population_ids({'patient_ids':[]}),[])
+        self.assertEqual(E.membership(Untouchable(),[]),[])
+
     def test_population_wide_passage_question(self):
         stack = fake_stack(hits=[passage('P-1002', 'Patient cannot afford insulin.')])
         graph, receipt = E.retrieval_tier(stack, 'What do the notes say about medication affordability?')
@@ -105,8 +148,7 @@ class Retrieval(unittest.TestCase):
     def test_named_patient_scopes_the_cohort_and_selects_context(self):
         stack = fake_stack(hits=[passage('P-1001', 'Myalgia on atorvastatin.')])
         graph, receipt = E.retrieval_tier(stack, 'What did the notes for P-1001 say about atorvastatin in the last 3 months?')
-        self.assertEqual(graph['nodes'][0]['parameters']['specification']['all'],
-                         [{'kind': 'patient', 'field': 'patient_id', 'op': 'eq', 'value': 'P-1001'}])
+        self.assertEqual(graph['nodes'][0]['parameters']['patient_ids'],['P-1001'])
         self.assertEqual(graph['nodes'][1]['parameters']['analysis_window']['basis'], 'source_event')
         self.assertEqual(stack.contexts, ['P-1001'])
         self.assertIn('question_context_selection', receipt['components'])
@@ -134,11 +176,39 @@ class Retrieval(unittest.TestCase):
         stack = fake_stack(hits=[passage('P-1001', 'Myalgia on atorvastatin.')])
         q = 'Does the chart support statin intolerance for P-1001?'
         self.assertIsNone(E.retrieval_tier(stack, q))
-        self.assertIsNotNone(E.review_tier(stack, q))
+        with patch.dict(os.environ, {'AGERE_DOCUMENT_LOCAL_READERS': 'student_lexical'}):
+            self.assertIsNotNone(E.review_tier(stack, q))
 
 
 class Review(unittest.TestCase):
     Q = 'Does the chart support statin intolerance for P-1001?'
+
+    def setUp(self):
+        # These historical reader-cascade controls explicitly opt into their
+        # fixture roles; mere model availability is no longer normal activation.
+        import os
+        opt_in = patch.dict(os.environ, {'AGERE_DOCUMENT_LOCAL_READERS': ','.join(E.LOCAL_READERS)})
+        opt_in.start(); self.addCleanup(opt_in.stop)
+
+    def test_unconfigured_research_readers_are_not_loaded_on_ordinary_path(self):
+        import os
+        with patch.dict(os.environ, {'AGERE_DOCUMENT_LOCAL_READERS': ''}):
+            stack = fake_stack(hits=[passage('P-1001', 'Statin intolerance discussed.')], allow_live=True)
+            with patch.object(E, 'read_locally', side_effect=AssertionError('No unconfigured local reader')):
+                graph, receipt = E.review_tier(stack, self.Q)
+            self.assertEqual(graph['nodes'][-1]['parameters']['providers'], list(E.PAID_READERS))
+            self.assertNotIn('kev_reader', receipt['components'])
+            self.assertNotIn('d1_reader', receipt['components'])
+            self.assertNotIn('bioclinical_modernbert_student', receipt['components'])
+            self.assertIsNone(E.review_tier(fake_stack(hits=stack.retriever.search(self.Q)['evidence']), self.Q))
+
+    def test_local_configuration_is_shared_without_changing_explicit_diagnostics(self):
+        import os
+        with patch.dict(os.environ, {'AGERE_DOCUMENT_LOCAL_READERS': 'student_minilm, student_minilm'}):
+            self.assertEqual(E.active_review_order(), ('student_minilm', *E.PAID_READERS))
+        with patch.dict(os.environ, {'AGERE_DOCUMENT_LOCAL_READERS': 'unknown_reader'}):
+            with self.assertRaisesRegex(ValueError, 'Unknown configured'):
+                E.active_review_order()
 
     def test_free_readers_decide_without_live(self):
         stack = fake_stack(hits=[passage('P-1001', 'Statin intolerance: myalgia on atorvastatin.')])

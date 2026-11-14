@@ -128,6 +128,32 @@ def validate_inputs(op, inputs, seen):
             raise ValueError('Worklist support inputs must be distinct registered review reports')
 
 
+def assertion_vocabulary(narrative=(), care=()):
+    """The same explicit bindings for every documentary planning surface."""
+    from . import native_assertions
+    return sorted(set(narrative) | native_assertions.CONCEPTS | set(care) |
+                  {'financial hardship', 'care nephrology'} |
+                  {'medication '+c for c in ('bb','acei','arb','arni','mra','sglt2')})
+
+
+def documentary_parameter_catalog(path, stream_fields=None):
+    """Use validated existing source metadata; never build an index for discovery."""
+    from pathlib import Path
+    from . import longitudinal, native_care_assertions
+    path=Path(path);narrative=[]
+    if (path/'longitudinal-link.json').exists():
+        db,meta=longitudinal.connect(path)
+        db.close()
+        narrative=meta['vocabulary']['concept']
+    care=native_care_assertions.concepts(path) if (path/'stack.sqlite3').exists() else []
+    fields=stream_fields or {}
+    if stream_fields is None:
+        from .request_plan import Catalog
+        fields=Catalog.load(path).stream_fields
+    return {'cohort_fields':{'record_fields':fields}, 'source_streams':sorted(fields),
+            'evidence_catalog':{'assertion_concepts':assertion_vocabulary(narrative,care)}}
+
+
 def parameter_schema(op, catalog):
     """Selected vocabulary shapes, derived from actual runtime registries."""
     from . import cohorts, source_state, functional_programs, domain_programs
@@ -149,18 +175,26 @@ def parameter_schema(op, catalog):
     if op == 'trajectory':
         from . import trajectory
         return obj({'concept': string(trajectory.NOISE), 'direction': string(['worse', 'better', 'up', 'down', 'any']),
-                    'min_points': {'type': 'integer', 'minimum': 3, 'maximum': 50}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
+                    'threshold': {'type': ['number','null']}, 'horizon_days': {'type': ['integer','null'], 'minimum': 7, 'maximum': 1095},
+                    'target_event': {'anyOf': [string(trajectory.EVENTS, 'Endpoint exceedance is supported; path events retain an explicit unknown until qualified.'), {'type':'null'}]},
+                    'min_points': {'type': 'integer', 'minimum': 3, 'maximum': 50}, 'top': {'type': ['integer','null'], 'minimum': 1,'description':'Explicit presentation limit; null returns all flagged patients'}})
     if op == 'survival':
         from . import survival, concepts as library
         return obj({'index': obj({'type': string(survival.INDEX_TYPES, 'Time zero: discharge (each stay with a received discharge), '
                                                  'condition_first_record (first dated record of concept), date (fixed date)'),
                                   'concept': string(['', *library.CONDITIONS], 'condition_first_record only'),
                                   'date': {'type': 'string', 'description': 'YYYY-MM-DD for date index, else empty'},
+                                  'selection': string(survival.INDEX_SELECTIONS, 'discharge only: all stays, first across received history, or first after window filtering'),
+                                  'window_basis': string(('discharge', 'admission'), 'discharge only: date tested against index.window'),
+                                  'stay_kind': string(survival.STAY_KINDS, 'hospital = canonical merged hospital stays; inpatient = canonical inpatient utilization events, including claims/ADT'),
                                   'window': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}})}),
                     'event': obj({'type': string(survival.EVENT_TYPES, 'readmission/followup need a discharge index'),
                                   'concept': string(['', *library.ENCOUNTERS, *library.MEASUREMENTS], 'encounter or measurement concept'),
                                   'op': string(['', *survival.OPS], 'measurement threshold comparison'), 'value': {'type': 'number'}}),
-                    'horizon_days': {'type': 'integer', 'minimum': 1, 'maximum': 3650},
+                    'horizon_days': {'type': ['integer', 'null'], 'minimum': 1, 'maximum': 3650, 'description': 'Existing estimate horizon; observed_units may use null for all follow-up through the snapshot'},
+                    'coverage': string(survival.FOLLOWUP_COVERAGE, 'received_records or recorded contiguous enrollment covering time zero; no current-roster or lifetime-open-span substitution'),
+                    'output': string(survival.OUTPUTS, 'estimates or complete observed_units without fitting risk/predictive models'),
+                    'lower_bound': {'type': 'boolean', 'description': 'Predictive lower bound; false for observed_units'},
                     'time_points': array({'type': 'integer'}, '1..12 days within the horizon'),
                     'group_by': string(survival.GROUP_BY), 'group_concept': string(['', *library.CONDITIONS], 'group_by condition only'),
                     'cox': {'type': 'boolean'}, 'covariates': array(string([*survival.COVARIATES, *library.CONDITIONS]), 'Cox covariates; empty for defaults'),
@@ -318,7 +352,8 @@ def parameter_schema(op, catalog):
                     'sub_question_count': {'type': 'integer', 'minimum': 1, 'maximum': 8},
                     'aggregation': string(aq.AGGREGATIONS), 'returns': string(aq.RETURNS), 'unit': string(aq.UNITS),
                     'select_labels': array(string(), 'Option labels that select a patient'),
-                    'maximum_patients': {'type': 'integer', 'minimum': 1, 'maximum': aq.HARD_MAX_PATIENTS},
+                    'maximum_patients': {'type': ['integer','null'], 'minimum': 1,
+                        'description': 'Null reviews the entire scoped population; a positive limit must be explicit.'},
                     'window': WINDOW_SCHEMA, 'sources': array(string(aq.SOURCES)), 'providers': array(string(aq.PROVIDERS))})
     if op == 'hcc_suspects':
         from . import hcc_suspecting as hs
@@ -353,7 +388,8 @@ def parameter_schema(op, catalog):
                     'windows': {'type': 'object', 'description': 'Follow-up window override in days per item type, e.g. {"abnormal_result": 14}'},
                     'group_by': string(lc.GROUP_BY), 'evidence': string(lc.EVIDENCE, 'specific = visits/calls that do not cite the item do not close it'),
                     'abnormal_basis': string(lc.BASIS), 'concept': string(['', *sorted(lc.ACTIONABLE)], 'One lab, else empty'),
-                    'owner': {'type': 'string'}, 'practice': {'type': 'string'}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 1000}})
+                    'owner': {'type': 'string'}, 'practice': {'type': 'string'}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 1000},
+                    'items': string(lc.ITEMS, 'all = every item with status, closed_date, closed_by and closure_detail (use for per-patient follow-up or attendance); open = only open past-due items (default)')})
     if op == 'diagnostic_delay':
         from . import diagnostic_delay as dd
         return obj({'target': string(sorted(dd.TARGETS)), 'mode': string(dd.MODES, 'lookback: delays before diagnosis; undiagnosed: signals without a '
@@ -456,6 +492,8 @@ def parameter_schema(op, catalog):
                     'series': array(string(monitor.SERIES), '[] = the defaults for the check'),
                     'group_by': string(monitor.GROUP_BY, 'auto = overall plus each series\' natural grouping'),
                     'method': string(monitor.METHODS), 'amount': string(monitor.AMOUNTS),
+                    'exposure_basis': string(monitor.EXPOSURE_BASES, 'registered_coverage = existing enrollment plus coverage fallback; historical_member_months = recorded patient/month exposure only, no current-coverage fallback'),
+                    'output': string(monitor.OUTPUTS, 'summary or complete monthly_points for check=control_chart; comparison composes explicit count/exposure series with an exact conditional stable-rate baseline, Bonferroni, registered Shewhart/EWMA and source-volume evidence. Use comparison when asked to compare methods and source availability; no causal or clinical qualification.'),
                     'stream': {'type': 'string', 'description': 'One source stream for feed checks, or empty'},
                     'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}}),
                     'chart': string(monitor.CHART_OPTIONS, 'control = SPC charts (default); ra_cusum = risk-adjusted CUSUM; vlad = variable life-adjusted display of observed minus expected outcomes'),
@@ -561,7 +599,9 @@ def parameter_schema(op, catalog):
             measurement['properties']['concept']=string(concept_library.MEASUREMENTS)
             if streams:record['properties']['stream']=string(streams)
             else:prop['items']={'anyOf':[patient,concept,measurement]}
-        return obj({'specification':spec})
+        result=obj({'specification':spec,'patient_ids':array(string(), 'Optional exact received membership; [] remains empty')})
+        result['required']=['specification']
+        return result
     if op == 'evidence':
         from .evidence_queries import FIELDS
         props={'source':string(['text','structured']), 'concept':{'type':'string','minLength':1,'maxLength':120},
@@ -576,12 +616,22 @@ def parameter_schema(op, catalog):
     if op in ('intersect', 'union', 'difference', 'compare', 'medication_identity'):
         return obj({})
     if op == 'assertion_review':
-        concepts=array(string(evidence['assertion_concepts']), '1..20 distinct mapped concepts required. Empty does not mean all concepts.')
-        concepts['minItems']=1
-        return obj({'streams': stream_list, 'concepts': concepts})
+        stream_list['description']='Nonempty distinct explicitly loaded source streams; all declared streams are processed without widening or truncation.'
+        concepts=array(string(evidence['assertion_concepts']), 'Mapped concepts; [] requires explicit received_annotations=true to inspect all existing annotations without inventing concept mappings.')
+        concepts['minItems']=0
+        result=obj({'streams':stream_list,'concepts':concepts,'received_annotations':{'type':'boolean',
+            'description':'Include all existing narrative and derived note_fact annotations in the explicit streams. Preserve values/units, failed bindings and unvalidated meaning.'},
+            'assertion_window':copy.deepcopy(WINDOW_SCHEMA)})
+        result['required']=['streams','concepts']
+        result['anyOf']=[{'properties':{'concepts':{'minItems':1}}},
+            {'properties':{'received_annotations':{'const':True}},'required':['received_annotations']}]
+        return result
     if op == 'interpretation':
         from .interpretation_state import FILTERS
         schema=parameter_schema('assertion_review',catalog)
+        for key in ('received_annotations','assertion_window'):schema['properties'].pop(key)
+        schema.pop('anyOf',None)
+        schema['properties']['concepts']['minItems']=1
         schema['properties']['filter']=string(FILTERS)
         schema['required'].append('filter')
         return schema

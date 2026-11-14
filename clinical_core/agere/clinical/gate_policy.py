@@ -58,7 +58,7 @@ ROUTE_CODE = {
     'local_compiler.answer': ('local_compiler.py', 'compiler_rules.py', 'cohorts.py', 'concepts.py', 'grounding.py', 'analysis_graph.py',
                               'answer_checks.py', 'metrics.py'),
     'local_rewrite.answer': ('local_compiler.py', 'nl2sql.py', 'cohorts.py', 'concepts.py', 'analysis_graph.py'),
-    'learned_reuse.answer': ('learning.py', 'verify.py', 'semantic_cache.py'),
+    'learned_reuse.answer': ('learning.py', 'verify.py', 'semantic_cache.py', 'vcache.py'),
     'bottled.answer': ('bottled.py', 'verify.py'),
     'metric_router.answer': ('metric_router.py', 'metrics.py', 'answer_checks.py'),
     'metric_router.generated_answer': ('metric_router.py', 'metrics.py', 'answer_checks.py', 'generated_metrics.py'),
@@ -168,8 +168,18 @@ def assess(receipt, encoder=None, path=None):
     """-> {'level': verified|unverified|low, 'reason', 'gates': [...]} under the rule in the module docstring."""
     gates = path_gates(receipt)
     out, failed, uncertified = [], [], []
+    scored = receipt
+    while isinstance(scored, dict) and scored.get('route') == 'exact_question_cache':
+        scored = scored.get('prior_planning_receipt') or {'route': scored.get('original_route')}
+    effective_cache = None
     for g in gates or []:
         cert = certificate(g['gate'], encoder, path)
+        if g['gate'] == 'semantic_cache.similarity':
+            from .semantic_cache import effective_gate
+            effective_cache = effective_gate((scored or {}).get('semantic_cache') or {}, cert,
+                                              getattr(encoder, 'identity', None))
+            if effective_cache is not None:
+                cert = effective_cache
         passed = g['passed']
         if passed is None:
             passed = g['score'] is not None and cert['threshold'] is not None and float(g['score']) >= float(cert['threshold'])
@@ -187,7 +197,8 @@ def assess(receipt, encoder=None, path=None):
     # its path failed: the answer guard then does not spend an independent hosted path re-checking it.
     try:
         from . import cascade
-        tier_cert = cascade.certify_route(receipt) if isinstance(receipt, dict) else None
+        tier_cert = cascade.certify_route(receipt) if isinstance(receipt, dict) and \
+            (effective_cache is None or effective_cache.get('calibrated')) else None
     except Exception:  # noqa: BLE001 - certification bookkeeping never fails an answer
         tier_cert = None
     if tier_cert and tier_cert.get('certified'):

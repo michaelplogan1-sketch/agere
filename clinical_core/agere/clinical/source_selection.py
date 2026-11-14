@@ -81,14 +81,19 @@ def identity(retriever):
             'source_schema': W.identity(), 'reference_selection': hashlib.sha256(Path(Q.__file__).read_bytes()).hexdigest()}
 
 
-def preserve_references(records, comparison, categories, as_of):
+def preserve_references(records, comparison, categories, as_of, *, default_record_ids=()):
     selected_passages = set(comparison['variants']['bge_reranked'])
-    roots = {r['source']['record_id'] for r in comparison['candidates'] if r['id'] in selected_passages}
+    paired_roots = {r['source']['record_id'] for r in comparison['candidates'] if r['id'] in selected_passages}
+    roots = paired_roots | set(default_record_ids)
     closure = Q.select_sources(records, roots, as_of) if roots else {'connected_record_ids': [], 'reference_edges': []}
-    already = roots | {r['record_id'] for r in records if r['source_table'] in categories}
+    # The source-plan primitive already retains the paired baseline roots.
+    # Completed default-search roots outside that set need their categories
+    # explicitly added, just like their typed-reference dependencies.
+    already = paired_roots | {r['record_id'] for r in records if r['source_table'] in categories}
     extra = set(closure['connected_record_ids']) - already
     added_categories = sorted({r['source_table'] for r in records if r['record_id'] in extra})
     return {'baseline_record_ids': sorted(roots), 'connected_record_ids': closure['connected_record_ids'],
+            'paired_baseline_record_ids': sorted(paired_roots), 'default_reference_record_ids': sorted(default_record_ids),
             'reference_edges': closure['reference_edges'], 'additional_categories': added_categories,
             'reason': 'Preserve every baseline typed-reference dependency. The existing whole-category contract may add other records from these categories; relevance remains unassessed.'}
 
@@ -110,7 +115,11 @@ def prepare(path, patient, question, retriever):
         return {**saved, 'source_plan': plan, 'cache_hit': True}
     routes = rank(question, profile, retriever.encoder, retriever.reranker)
     comparison = R.prepare(retriever, {'patient': patient, 'question': question})['comparison']
-    references = preserve_references(records, comparison, routes['selected_categories'], meta['snapshot']['as_of'])
+    # Keep the normal completed search and its verified typed-reference closure.
+    # Its additional candidates are outside the fixed-set ranking experiment.
+    baseline = Q.prepare(path, patient, question, retriever)
+    references = preserve_references(records, comparison, routes['selected_categories'], meta['snapshot']['as_of'],
+        default_record_ids=baseline['connected_record_ids'])
     request = {'comparison_id': comparison['id'], 'baseline': 'bge_reranked',
                'categories': sorted(set(routes['selected_categories']) | set(references['additional_categories']))}
     preview = P.preview(retriever, request)
@@ -121,6 +130,7 @@ def prepare(path, patient, question, retriever):
              'identity': identity(retriever), 'snapshot': meta['snapshot'],
              'patient_source_fingerprint': digest(records), 'metadata_inventory': profile,
              'schema_retrieval': routes, 'comparison_id': comparison['id'],
+             'default_reference_scope_id': baseline['id'],
              'reference_preservation': references,
              'source_plan_id': plan['plan']['id'] if plan else None, 'preview': preview,
              'status': plan['plan']['status'] if plan else 'source_scope_needs_narrowing',

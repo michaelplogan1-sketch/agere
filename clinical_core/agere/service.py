@@ -36,12 +36,27 @@ def _pack_status():
 
 
 def _failure_receipts(exc):
-    """What a refused /api/stack/compose says about cost and isolation (handle_compose attaches both to the exception)."""
+    """Retained work, usage and isolation from a failed compose or resume."""
     out={}
     if getattr(exc,'cost_receipt',None):out['cost_receipt']=exc.cost_receipt
     if getattr(exc,'cost_telemetry',None):out['cost_telemetry']=exc.cost_telemetry
     if getattr(exc,'evaluation',None):out['evaluation']=exc.evaluation
+    if getattr(exc,'action_context',None):out['action_context']=exc.action_context
+    if getattr(exc,'action_context_error',None):out['action_context_error']=exc.action_context_error
+    if hasattr(exc,'new_paid_api_calls'):out['new_paid_api_calls']=exc.new_paid_api_calls
+    if getattr(exc,'planning_economics',None):out['planning_economics']=exc.planning_economics
     return out
+
+def answer_feedback(stack,body):
+    from os import environ
+    if environ.get('AGERE_COMPONENT_LEARNING','off')=='on':
+        from .clinical.component_learning import handle_feedback
+        return handle_feedback(stack,body)
+    from .clinical import learning
+    if set(body)-{'question','note','expected','rule'} or not isinstance(body.get('question'),str) or not isinstance(body.get('note'),str):
+        raise ValueError('Correction needs question and note (optional expected)')
+    return learning.record_correction(stack.path,body['question'],body['note'],body.get('expected'),body.get('rule'))
+
 
 def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_stack=False,recovery=None):
     if recovery and allow_live_stack:raise ValueError('Restored installations have hosted inference disabled')
@@ -183,7 +198,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if path == '/api/stack/compose':
                     held.enter_context(evaluation.request_scope(self.headers, connected_stack.path))
                 from . import request_lineage
-                execution=None if recovery and path in READ_POSTS else request_lineage.begin(connected_stack.path,path,body)
+                execution=None if recovery and path in READ_POSTS else request_lineage.begin(connected_stack.path,path,body,
+                    tracking=self.headers.get('X-Agere-Progress-Key')if path in ('/api/stack/compose','/api/stack/investigation/resume')else None)
                 if execution:held.enter_context(execution)  # activates the lineage scope; closed with the request, even on error
                 if path=='/api/stack/appointment-graph/work':
                     from .clinical import appointment_graph
@@ -286,10 +302,19 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 elif path=='/api/stack/ask':
                     if set(body)!={'question','live'} or type(body['live']) is not bool:raise ValueError('Explicit question/live route required')
                     result=connected_stack.ask(body['question'],live=body['live'])
-                elif path in ('/api/stack/action-work/create', '/api/stack/action-work/update', '/api/stack/action-deliverable', '/api/stack/action-mockup', '/api/stack/action-simulate'):
+                elif path=='/api/stack/action-populations':
+                    from .deliverables import answer_context
+                    result=answer_context.prepare_population_scopes(connected_stack.path,body)
+                elif path=='/api/stack/action-population-members':
+                    from .deliverables import answer_context
+                    result=answer_context.open_population_members(connected_stack.path,body)
+                elif path in ('/api/stack/action-work/create', '/api/stack/action-work/update', '/api/stack/action-work/refresh', '/api/stack/action-deliverable', '/api/stack/action-report', '/api/stack/action-mockup', '/api/stack/action-simulate'):
                     from .deliverables import answer_context
                     if path.endswith('/action-mockup'):
                         from .deliverables.mock_views import create
+                        result=create(connected_stack.path,body)
+                    elif path.endswith('/action-report'):
+                        from .deliverables.saved_report import create
                         result=create(connected_stack.path,body)
                     elif path.endswith('/action-simulate'):
                         from .deliverables.synthetic_actions import advance
@@ -298,11 +323,31 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         result=answer_context.create_work(connected_stack.path,body)
                     elif path.endswith('/update'):
                         result=answer_context.update_work(connected_stack.path,body)
+                    elif path.endswith('/refresh'):
+                        result=answer_context.refresh_review_sources(connected_stack.path,body)
                     else:
                         result=answer_context.compose_frontier(connected_stack.path,body,allow_live=connected_stack.allow_live)
+                    if path.endswith(('/action-work/create','/action-work/update','/action-work/refresh')):
+                        from .deliverables.action_center import inspection_view
+                        result=inspection_view(result,compact_rows=self.headers.get('X-Agere-Response-View')=='workspace')
                 elif path=='/api/stack/action-workflow/retry':
                     from .deliverables.workflow import retry_deliverable
                     result=retry_deliverable(connected_stack.path,body,allow_live=connected_stack.allow_live)
+                elif path=='/api/stack/contract-input/save':
+                    from .clinical.contract_performance import save_input
+                    result=save_input(body)
+                elif path=='/api/stack/investigation/resume':
+                    if set(body)!={'context_id'}:raise ValueError('Exact saved investigation required')
+                    from .clinical.proposers import continue_from_artifact
+                    from .deliverables import answer_context
+                    result=continue_from_artifact(connected_stack,body['context_id'])
+                    saved=answer_context.capture(connected_stack.path,result['question'],result)
+                    result={'action_context':saved,'status':result['answer']['status'],
+                            'verification':result['answer'].get('verification'),
+                            'new_paid_api_calls':result.get('new_paid_api_calls'),
+                            'planning_economics':result.get('planning_economics'),
+                            'cost_telemetry':result.get('cost_telemetry'),
+                            'cost_receipt':result.get('cost_receipt')}
                 elif path=='/api/stack/action-monitor':
                     from .deliverables.workflow import refresh
                     result=refresh(connected_stack,body)
@@ -314,10 +359,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     from .clinical import conversation
                     result=conversation.handle_compose(connected_stack,body)
                 elif path=='/api/stack/correct':
-                    from .clinical import learning
-                    if set(body)-{'question','note','expected','rule'} or not isinstance(body.get('question'),str) or not isinstance(body.get('note'),str):
-                        raise ValueError('Correction needs question and note (optional expected)')
-                    result=learning.record_correction(connected_stack.path,body['question'],body['note'],body.get('expected'),body.get('rule'))
+                    result=answer_feedback(connected_stack,body)
                 elif path=='/api/stack/briefing-feedback':  # implicit feedback for the briefing ranker (briefing_rank)
                     from .clinical import briefing_rank
                     result=briefing_rank.handle_feedback(connected_stack.path,body)
@@ -328,13 +370,20 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     from .clinical.scoped_review_compiler import prepare_decision
                     result=prepare_decision(connected_stack.retriever,body)
                 elif path in ('/api/stack/context/output-recovery-plan','/api/stack/context/output-recover'):
-                    from .clinical import source_output_recovery
-                    if path.endswith('/output-recovery-plan'):result=source_output_recovery.preview(connected_stack.path,body)
+                    from .clinical.source_citation_recovery import recovery_engine
+                    from .clinical import reconciliation as current_reconciliation
+                    if current_reconciliation.context_recovery_available(connected_stack.path,body.get('context_id')):
+                        preview_recovery=current_reconciliation.preview_context_recovery
+                        run_recovery=current_reconciliation.run_context_recovery
+                    else:
+                        engine=recovery_engine(connected_stack.path,body.get('context_id'))
+                        preview_recovery,run_recovery=engine.preview,engine.run
+                    if path.endswith('/output-recovery-plan'):result=preview_recovery(connected_stack.path,body)
                     else:
                         from .clinical.stack_runtime import ROOT
                         from .gateway import BudgetLedger, default_ledger_path
                         ledger=BudgetLedger(default_ledger_path())
-                        try:result=source_output_recovery.run(connected_stack.path,body,ledger,allow_live=connected_stack.allow_live)
+                        try:result=run_recovery(connected_stack.path,body,ledger,allow_live=connected_stack.allow_live)
                         finally:ledger.close()
                 elif path in ('/api/stack/context/recovery-plan','/api/stack/context/recover'):
                     from .clinical import interpretation_recovery
@@ -671,6 +720,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 elif path=='/api/stack/semantic/review':
                     from .clinical.semantic_reader import save_review
                     result=save_review(connected_stack.path,body)
+                elif path=='/api/stack/typed-learning/review':
+                    from .clinical.typed_distillation import save_review
+                    result=save_review(connected_stack.path,body)
                 elif path=='/api/stack/learning-queue/target':
                     from .clinical.learning_queue import mark_target
                     result=mark_target(connected_stack.path,body)
@@ -767,17 +819,24 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if execution:
                     execution.finish(result)
                     result={**result,'request_execution_id':execution.id}
-                raw=json.dumps(result,allow_nan=False).encode();status=200
+                encoding=None
+                if path=='/api/stack/compose' and self.headers.get('X-Agere-Response-View')=='answer':
+                    from .deliverables.action_center import compose_view,encode_inspection
+                    result=compose_view(connected_stack.path,result)
+                    raw,encoding=encode_inspection(result,self.headers.get('Accept-Encoding',''))
+                else:
+                    raw=json.dumps(result,allow_nan=False).encode()
+                status=200
             except PermissionError as exc:
                 raw=json.dumps({'error':str(exc)[:400]}).encode();status=403
             except (ValueError,TypeError,KeyError) as exc:
                 from .clinical.program_work import WorkConflict
                 from .clinical.question_input import failure
                 details = failure(exc) if path=='/api/stack/compose' else {'error':str(exc)[:400]}
-                if path=='/api/stack/compose': details = {**details, **_failure_receipts(exc)}
+                if path in ('/api/stack/compose','/api/stack/investigation/resume'): details = {**details, **_failure_receipts(exc)}
                 raw=json.dumps(details,default=str).encode();status=409 if isinstance(exc,WorkConflict) else 400
             except RuntimeError as exc:
-                raw=json.dumps({'error':str(exc)[:400],**(_failure_receipts(exc) if path=='/api/stack/compose' else {})},default=str).encode();status=502
+                raw=json.dumps({'error':str(exc)[:400],**(_failure_receipts(exc) if path in ('/api/stack/compose','/api/stack/investigation/resume') else {})},default=str).encode();status=502
             finally:
                 try:
                     if execution:
@@ -786,6 +845,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     if execution:execution.close()
                     held.close()
             self.send_response(status);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(raw)))
+            if path=='/api/stack/compose':
+                self.send_header('Vary','X-Agere-Response-View, Accept-Encoding')
+            if status==200 and encoding:self.send_header('Content-Encoding',encoding)
             self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(raw)
         def do_GET(self):
             parsed=urlsplit(self.path);params=parse_qs(parsed.query)
@@ -808,10 +870,10 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
             elif parsed.path in ('/stack-evaluation','/api/stack/workflow-evaluation'):
                 from .clinical.stack_runtime import ROOT
                 from .workflow_evaluation_view import page as evaluation_page
-                report_path=ROOT/'artifacts/agere-workflow-evaluation-v1/scorecard.json'
-                if not report_path.exists():self.send_error(404);return
-                report=json.loads(report_path.read_text())
-                from .workflow_scorecard import source_selection_decision, release_acceptance
+                from .workflow_scorecard import source_selection_decision, release_acceptance, saved_report
+                try:report=saved_report(ROOT,connected_stack.retriever.meta['snapshot'] if connected_stack is not None else None)
+                except FileNotFoundError:self.send_error(404);return
+                except (ValueError,KeyError,TypeError):self.send_error(409,'Saved workflow report evidence needs revalidation');return
                 report['source_selection_decision']=source_selection_decision(ROOT)
                 evidence_config=ROOT/'config/agere/capability_acceptance.json'
                 if evidence_config.exists() and connected_stack is not None:
@@ -826,6 +888,13 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.answer_log import summary as economics_summary
                 raw=json.dumps(economics_summary(connected_stack.path)).encode();mime='application/json'
+            elif parsed.path=='/api/stack/analysis-progress':
+                if connected_stack is None:self.send_error(404);return
+                from . import request_lineage
+                params=parse_qs(parsed.query)
+                try:result=request_lineage.progress(connected_stack.path,params.get('key',[''])[0],after=int(params.get('after',['-1'])[0]))
+                except ValueError as exc:self.send_error(400,str(exc));return
+                raw=json.dumps(result).encode();mime='application/json'
             elif parsed.path=='/api/stack/intelligence-activity':
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.intelligence_activity import snapshot as intelligence_snapshot
@@ -867,6 +936,14 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if connected_stack is None:self.send_error(404);return
                 from .deliverables.action_center import page
                 raw=page().encode();mime='text/html; charset=utf-8'
+            elif parsed.path in ('/api/stack/deliverable-gallery','/api/stack/deliverable-preview'):
+                if connected_stack is None:self.send_error(404);return
+                from .deliverables import gallery
+                try:
+                    result=(gallery.catalog(connected_stack.path) if parsed.path.endswith('/deliverable-gallery') else
+                            gallery.preview(connected_stack.path,params.get('context',[''])[0],params.get('id',[''])[0]))
+                    raw=json.dumps(result,default=str).encode();mime='application/json'
+                except (ValueError,TypeError,KeyError,FileNotFoundError) as exc:self.send_error(400,str(exc)[:200]);return
             elif parsed.path in ('/api/stack/action-contexts','/api/stack/action-context','/api/stack/action-deliverables','/api/stack/action-deliverable'):
                 if connected_stack is None:self.send_error(404);return
                 from .deliverables import answer_context
@@ -876,7 +953,27 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         result={'contexts':answer_context.listing(connected_stack.path)}
                     elif parsed.path.endswith('/action-context'):
                         result={**answer_context.inspect(connected_stack.path,key),'allow_frontier':bool(connected_stack.allow_live and not recovery)}
+                        from .deliverables.compose import context_review
+                        result['independent_review']=context_review(connected_stack.path,result['context'])
+                        from .deliverables.action_center import inspection_view,evidence_view
+                        view=params.get('view',[''])[0]
+                        if view not in ('','native','evidence'):raise ValueError('Unknown saved evidence view')
+                        if view=='evidence':
+                            result=evidence_view(result,binding=params.get('binding',[''])[0],
+                                patient_id=params.get('patient',[None])[0])
+                        elif view!='native':
+                            result=inspection_view(result,compact_rows=self.headers.get('X-Agere-Response-View')=='workspace')
                     else:
+                        if parsed.path.endswith('/action-deliverable') and params.get('format'):
+                            # read_format loads the context and validates its source,
+                            # evidence bundle and recorded bytes. Do not load the same
+                            # potentially large context again before that guarded read.
+                            from .deliverables.saved_report import read_format
+                            raw,mime,filename=read_format(connected_stack.path,key,params.get('id',[''])[0],params['format'][0])
+                            self.send_response(200);self.send_header('Content-Type',mime)
+                            self.send_header('Content-Length',str(len(raw)))
+                            self.send_header('Content-Disposition','attachment; filename="'+filename+'"')
+                            self.end_headers();self.wfile.write(raw);return
                         from .deliverables.compose import load,listing
                         context=answer_context.load(connected_stack.path,key)
                         ws=answer_context.workspace(connected_stack.path,context)
@@ -885,7 +982,18 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         else:
                             spec,_,_,doc=load(ws,params.get('id',[''])[0])
                             result={**spec,'html':doc if spec.get('status')=='delivered' else None}
-                    raw=json.dumps(result,default=str).encode();mime='application/json'
+                    mime='application/json'
+                    if parsed.path.endswith('/action-context'):
+                        from .deliverables.action_center import encode_inspection
+                        raw,encoding=encode_inspection(result,self.headers.get('Accept-Encoding',''))
+                        self.send_response(200);self.send_header('Content-Type',mime)
+                        self.send_header('Content-Length',str(len(raw)))
+                        self.send_header('Vary','X-Agere-Response-View, Accept-Encoding')
+                        self.send_header('Cache-Control','no-store')
+                        self.send_header('X-Content-Type-Options','nosniff')
+                        if encoding:self.send_header('Content-Encoding',encoding)
+                        self.end_headers();self.wfile.write(raw);return
+                    raw=json.dumps(result,default=str).encode()
                 except (ValueError,FileNotFoundError) as exc:
                     self.send_response(400);self.send_header('Content-Type','application/json');self.end_headers()
                     self.wfile.write(json.dumps({'error':str(exc)}).encode());return
@@ -929,6 +1037,14 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.learning_workbench import page
                 raw=page().encode();mime='text/html; charset=utf-8'
+            elif parsed.path in ('/api/stack/typed-learning','/api/stack/typed-learning/item'):
+                if connected_stack is None:self.send_error(404);return
+                from .clinical import typed_distillation
+                try:
+                    result=(typed_distillation.inspect_review(connected_stack.path,params.get('id',[''])[0])
+                            if parsed.path.endswith('/item') else typed_distillation.review_listing(connected_stack.path,offset=int(params.get('offset',['0'])[0])))
+                    raw=json.dumps(result,allow_nan=False).encode();mime='application/json'
+                except (ValueError,TypeError,KeyError,FileNotFoundError) as exc:self.send_error(400,str(exc)[:200]);return
             elif parsed.path=='/programs':
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.program_workbench import page

@@ -42,7 +42,7 @@ import numpy as np
 
 from . import aggregate, outreach, program_effect, semantic_layer
 
-VERSION = 'uplift/1'
+VERSION = 'uplift/2'
 OUTCOMES = ('ed_visits', 'admissions', 'ed_or_admission')
 OUTCOME_TYPES = ('binary', 'count')
 LEARNERS = ('x', 't', 'dml', 'causal_forest')  # dml = cross-fitted double ML R-learner, causal_forest = honest GRF-style forest (causal_hte.py)
@@ -281,8 +281,8 @@ def analyze(X, t, y, family='logistic', folds=5, l2=1.0, trim=0.05, bootstrap=20
         from . import causal_hte
         cm = causal_hte.fit((X - mu_) / sd_, t, y, fold, keep, ml, seed)
         for l in ml: tau[l] = cm['tau'][l]
-        out['dml_ate_benefit'] = {**cm['dml_ate'], 'estimate': sgn * cm['dml_ate']['estimate'],
-                                  'ci95': sorted(sgn * v for v in cm['dml_ate']['ci95'])}
+        out['plr_projection_benefit'] = {**cm['plr_projection'], 'estimate': sgn * cm['plr_projection']['estimate'],
+                                  'ci95': sorted(sgn * v for v in cm['plr_projection']['ci95'])}
         if cm['importance'] is not None: out['causal_forest_importance'] = {names[j]: float(cm['importance'][j]) for j in range(d)}
     gamma = mu1h - mu0h + t * (y - mu1h) / ec - (1 - t) * (y - mu0h) / (1 - ec)
     # Ranking-evaluation scores must not contain the learners' own contrast mu1 - mu0 (that would reward any ranking by
@@ -292,7 +292,10 @@ def analyze(X, t, y, family='logistic', folds=5, l2=1.0, trim=0.05, bootstrap=20
     G = sgn * rscore[keep]
     Gate = sgn * gamma[keep]
     ate = float(Gate.mean()); ate_se = float(Gate.std(ddof=1) / math.sqrt(len(Gate)))
-    out['ate_benefit'] = {'estimate': ate, 'se': ate_se, 'ci95': [ate - 1.96 * ate_se, ate + 1.96 * ate_se],
+    out['ate_benefit'] = {'estimand': 'average_treatment_effect',
+                          'population': 'members retained under the declared propensity-overlap bounds',
+                          'n': int(keep.sum()), 'method': 'cross-fitted augmented inverse probability weighting',
+                          'estimate': ate, 'se': ate_se, 'ci95': [ate - 1.96 * ate_se, ate + 1.96 * ate_se],
                           'observed_rate_treated': float(y[keep & (t == 1)].mean()), 'observed_rate_control': float(y[keep & (t == 0)].mean())}
     evals = {}
     for l in learners:
@@ -517,7 +520,7 @@ def execute(path, patient_ids, params, as_of=None):
               'ate': res['ate_benefit'],
               'learners': {l: {k: v for k, v in e.items()} for l, e in res['learners'].items()},
               'primary_learner': prim,
-              **({'dml_ate': res['dml_ate_benefit']} if 'dml_ate_benefit' in res else {}),
+              **({'plr_projection': res['plr_projection_benefit']} if 'plr_projection_benefit' in res else {}),
               **({'causal_forest_importance': res['causal_forest_importance']} if 'causal_forest_importance' in res else {}),
               'segments': segments,
               'members': [{k: v for k, v in x.items() if k != 'i'} for x in sorted(ordered, key=lambda x: (-x['predicted_uplift'], x['patient_id']))][:p['top']],

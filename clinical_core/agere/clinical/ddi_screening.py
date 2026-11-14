@@ -20,7 +20,7 @@ import re
 
 from . import revenue_common as rc
 
-VERSION = 'ddi-screening/1'
+VERSION = 'ddi-screening/2'
 OP = 'ddi_screening'
 TASK_KEY = 'ddi_screening_confirm'
 SEVERITIES = ('contraindicated', 'major', 'moderate')
@@ -212,28 +212,32 @@ def screen(fills, rules, p, start, end, as_of):
     return rows
 
 
-def load_fills(db, keep, start, end):
-    out = []
+def load_fills(db, keep, start, end, *, include_unknown=False):
+    out, unknown = [], []
     for fid, pid, fd, se, name, cls, rec in db.execute(
             'SELECT fill_id, patient_id, fill_date, supply_end, drug_name, drug_class, record_ids FROM fill '
-            'WHERE fill_date <= ? AND COALESCE(supply_end, fill_date) >= ?', (end, start)):
+            'WHERE fill_date <= ? AND (supply_end IS NULL OR supply_end >= ?)', (end, start)):
         if keep is not None and pid not in keep: continue
-        out.append({'patient_id': pid, 'fill_id': fid, 'start': fd[:10], 'end': (se or fd)[:10], 'drug': (name or '').lower(),
-                    'cls': cls, 'record_ids': [r for r in (rec or '').split(',') if r]})
-    return out
+        row = {'patient_id': pid, 'fill_id': fid, 'start': fd[:10], 'end': se[:10] if se else None,
+               'drug': (name or '').lower(), 'cls': cls, 'record_ids': [r for r in (rec or '').split(',') if r]}
+        (out if se else unknown).append(row)
+    return (out, unknown) if include_unknown else out
 
 
 def run(db, patient_ids, p, as_of):
     start, end = rc.window(as_of, p['months'])
     rules = {k: v for k, v in RULES.items() if not p['rules'] or k in p['rules']}
     keep = set(patient_ids) if patient_ids is not None else None
-    fills = load_fills(db, keep, start, end)
+    fills, unknown = load_fills(db, keep, start, end, include_unknown=True)
+    unknown = [f for f in unknown if any(
+        SEVERITIES.index(v[3]) <= SEVERITIES.index(p['severity']) and
+        (side_match(v[0], f['drug'], f['cls']) or side_match(v[1], f['drug'], f['cls'])) for v in rules.values())]
     rows = screen(fills, rules, p, start, end, as_of)
     by_rule = defaultdict(lambda: {'patients': set(), 'pairs': 0})
     for r in rows: by_rule[r['rule']]['patients'].add(r['patient_id']); by_rule[r['rule']]['pairs'] += 1
     summary = [{'rule': k, 'severity': RULES[k][3], 'patients': len(v['patients']), 'pairs': v['pairs'], 'provenance': RULES[k][5]}
                for k, v in sorted(by_rule.items(), key=lambda kv: (SEVERITIES.index(RULES[kv[0]][3]), -len(kv[1]['patients'])))]
-    screened = len({f['patient_id'] for f in fills})
+    screened = len({f['patient_id'] for f in fills + unknown})
     assumptions = [
         'Synthetic warehouse; concurrency = overlapping dispensed supply windows (fill_date..supply_end); actual ingestion, dose, route, '
         'renal/hepatic function and stop dates other than supply exhaustion are not received.',
@@ -243,7 +247,11 @@ def run(db, patient_ids, p, as_of):
         f"; minimum overlap {p['min_overlap_days']} day(s); severity {p['severity']} or worse.",
         'Class-level matches (drug matched only by drug class) are lower confidence; System One confirms them when live.',
         'Flags are medication-review prompts for a clinician or pharmacist, not orders.']
+    if unknown:
+        assumptions.append(f"{len(unknown)} relevant fill(s) have unknown supply windows; concurrent exposure for them remains unassessed.")
     return {'schema': VERSION, 'as_of': as_of, 'parameters': p, 'period': {'start': start, 'end': end},
+            'status': 'partial' if unknown else 'complete', 'unassessed_fills': unknown,
+            'missing': ['Reported supply duration or dated medication reconciliation for fills with unknown supply windows.'] if unknown else [],
             'patients_with_fills': screened, 'rows': rows[:p['top']], 'total_pairs': len(rows),
             'flagged_patients': sorted({r['patient_id'] for r in rows}), 'by_rule': summary, 'assumptions': assumptions,
             'system_one': {'decisions': 0, 'new_paid_api_calls': 0, 'estimated_usd': 0.0, 'status': 'not_run'},
@@ -299,6 +307,9 @@ def review(stack, report, *, decide=None):
 
 def headline(r):
     n = len(r['flagged_patients'])
+    if not r['total_pairs'] and r.get('unassessed_fills'):
+        return (f"No interacting pairs established from known supply windows; concurrency remains unassessed for "
+                f"{len(r['unassessed_fills'])} relevant fill(s) with unknown duration")
     if not r['total_pairs']:
         return (f"No interacting concurrent fills found among {r['patients_with_fills']} patients with fills "
                 f"({r['period']['start']} to {r['period']['end']})")
@@ -314,10 +325,12 @@ def answer(report, plan, question):
            or pid not in {r['patient_id'] for r in report['rows']}]
     sources = [{'patient_id': r['patient_id'], 'record_id': x, 'text': f"{r['drug_a']} + {r['drug_b']}"}
                for r in report['rows'][:20] for x in r['record_ids'][:2]]
-    return rc.answer(report, plan, value=headline(report) + '.', table=report['rows'], patient_ids=ids, membership_role='selected',
+    result = rc.answer(report, plan, value=headline(report) + '.', table=report['rows'], patient_ids=ids, membership_role='selected',
                      number=len(ids), sources=sources,
                      definitions=[{'term': 'concurrent fills', 'basis': 'overlapping dispensed supply windows (fill_date..supply_end)'},
                                   {'term': 'interaction rule', 'basis': 'curated cited table in ddi_screening.RULES'}])
+    result.update(missing=list(report.get('missing') or []), unassessed_fills=report.get('unassessed_fills', []))
+    return result
 
 
 # ---- free local-compiler route ----------------------------------------------------------------------------------------

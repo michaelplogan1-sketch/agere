@@ -170,7 +170,9 @@ class TogetherCascadeTests(unittest.TestCase):
                     'new_paid_api_calls': 1, 'tool_calls': [], 'receipts': [], 'seconds': 0.1}
         with patch.object(together, '_run_analyst', analyst), patch.object(together, '_compiled_engine', lambda *a: []), \
                 patch.object(together, '_snapshot_as_of', lambda s: '2030-05-27'):
-            return together.compose_together(stack, 'Which diabetic patients are not on a statin?', answer_type='patient_set')
+            # This fixture supplies legacy fast-answer objects and stubs the legacy analyst.
+            # The public shared planner has its own complete-catalog integration fixtures.
+            return together.legacy_compose_together(stack, 'Which diabetic patients are not on a statin?', answer_type='patient_set')
 
     def test_certified_specialist_answers_with_the_certificate_in_its_receipts(self):
         _write(self.path, [_route_record('cohort_family', 0.9)])

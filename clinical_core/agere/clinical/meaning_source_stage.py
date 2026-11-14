@@ -2,6 +2,7 @@
 
 Versioned separately to preserve all historical requests and source receipts.
 """
+from .case_synthesis import input_token_total, token_count_calls
 from collections import Counter
 from pathlib import Path
 import hashlib
@@ -22,24 +23,22 @@ def location(path,key):return single.receipt_path(path,key).parent.parent /'mean
 def exists(path,key):return location(path,key).exists()
 
 
-def prepare(path,context_id):
+def prepare(path,context_id,*,historical=None):
     scoped=record_context.exists(path,context_id)
     row=record_context.verified(path,context_id) if scoped else single.verified_context(path,context_id)
     links=passes.dependencies(path,row)
-    received=availability.snapshot(path,row)
+    received=availability.historical_snapshot(availability.snapshot(path,row),row,historical)
     bundle,links=meaning.plan(row,links,received)
     packets=[meaning.pass_request(p,links,row,received) for p in bundle['passes']]
-    key=digest([VERSION,identity(),digest(row),digest(links)])
+    key=(historical['stage_id']if historical and 'stage_id'in historical else
+         digest([VERSION,historical['code_identity']if historical else identity(),digest(row),digest(links)]))
     return row,bundle,links,packets,key
 
 
 def inspect(path,key):
     saved=json.loads(location(path,key).read_text())
-    if saved.get('id')!=key or saved.get('code_identity')!=identity() or saved.get('status')!='complete':raise ValueError('Source-stage identity changed')
-    if saved.get('source_stage_digest')!=digest({k:v for k,v in saved.items() if k!='source_stage_digest'}):raise ValueError('Source-stage result integrity changed')
-    *_,expected=prepare(path,saved['context_id'])
-    if key!=expected:raise ValueError('Source-stage input dependencies changed')
-    return saved
+    return availability.verify_stage(path,key,saved,prepare=prepare,current_identity=identity(),
+        location=location,parser=meaning.parse,schema=VERSION,meaning_contract=meaning.VERSION)
 
 
 def preview(path,context_id):
@@ -85,7 +84,7 @@ def synthesize(path,context_id,ledger,*,allow_live=False):
         for packet,(body,units) in zip(bundle['passes'],packets):
             if passes.request_bytes(body)>20000:raise ValueError('Source pass exceeds gateway bound')
             cached(body);fresh();tokens=single.token_check(body,out,allow_live=allow_live)
-            state['new_token_count_calls']+=int(not tokens['provider_count_cached']);fresh()
+            state['new_token_count_calls']+=token_count_calls(tokens);fresh()
             result,usage=single.send(body,'claude',ledger,out,parse=lambda raw:meaning.parse(raw,body,units,row))
             state['new_paid_api_calls']+=int(not usage.get('cache_hit',False))
             if usage.get('cache_hit'):
@@ -118,7 +117,7 @@ def synthesize(path,context_id,ledger,*,allow_live=False):
                 'reconciliation_groups':0,'cross_group_relations_assessed':len(stages)==1,
                 'interpretation_accuracy_assessed':False,'retrieval_recall_assessed':False},
             'provider':'claude','model':packets[0][0]['model'],'usage':[p['usage'] for p in stages],
-            'token_check':{'input_tokens':sum(p['token_check']['input_tokens'] for p in stages)},
+            'token_check':{'input_tokens':input_token_total(p['token_check'] for p in stages)},
             'new_paid_api_calls':state['new_paid_api_calls'],'new_token_count_calls':state['new_token_count_calls'],'cache_hit':False,
             'source_meaning_contract':meaning.VERSION,'meaning_judgments_validated':False,'clinical_state_established':False,'clinical_execution_authorized':False,
             'limits':single.LIMITS+['Source-stage completion accounts for submitted units only; multi-pass reconciliation is a separate stage.']}

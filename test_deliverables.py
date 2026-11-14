@@ -213,6 +213,8 @@ def _fake(replies):
 
     def send(body):
         calls.append(body)
+        if body['model']==composemod.SMALL_MODEL and 'Assess the COMPLETE artifact' in body['messages'][0]['content']:
+            return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported','issues':[]})}]},{'cost_estimate':{'estimated_usd':.001}}
         r = replies.pop(0)
         text = r(body) if callable(r) else r
         return ({'model': body['model'], 'content': [{'type': 'text', 'text': text}], 'stop_reason': 'end_turn',
@@ -241,10 +243,10 @@ class Composer(unittest.TestCase):
         self.assertEqual(out['status'], 'delivered', out['verification'])
         self.assertTrue(out['repaired'])
         self.assertEqual(out['verification']['first_attempt']['violations'][0]['detail'], '$987,654')
-        self.assertEqual([c['purpose'] for c in out['model_calls']], ['compose', 'repair'])
+        self.assertEqual([c['purpose'] for c in out['model_calls']], ['compose', 'repair','semantic_review'])
         self.assertEqual(out['costs']['frontier']['calls'], 2)
-        self.assertAlmostEqual(out['costs']['total_usd'], 0.0246)
-        self.assertTrue(all(c['model'] == composemod.FRONTIER_MODEL for c in calls))
+        self.assertAlmostEqual(out['costs']['total_usd'], 0.0256)
+        self.assertEqual([c['model'] for c in calls],[composemod.RENDER_MODELS[0],composemod.RENDER_MODELS[1],composemod.SMALL_MODEL])
         self.assertIn('cache_control', json.dumps(calls[0]['system']))
         self.assertEqual(calls[0]['tools'][-1].get('cache_control'), {'type': 'ephemeral'})
         tools_used = {c['tool'] for c in out['tool_calls']}
@@ -261,7 +263,7 @@ class Composer(unittest.TestCase):
 
     def test_fails_closed_when_repair_does_not_fix(self):
         bad = 'TITLE: X\n```html\n<p>Net savings of $555,555 next year.</p>\n```'
-        send, _ = _fake([bad, bad])
+        send, _ = _fake([bad, bad, bad])
         out = composemod.compose(self.ws, 'a story of our heart failure program', send=send)
         self.assertEqual(out['status'], 'rejected')
         self.assertIsNone(out['html'])

@@ -60,6 +60,21 @@ class Worker(unittest.TestCase):
         with mock.patch.object(W, 'typed_adapter', return_value=None):
             self.assertEqual(W.handle(self.item, fallback=fallback)[1]['interpreter'], 'long')  # no adapter: long prompt
 
+    def test_missing_adapter_respects_disabled_fallback_without_loading_or_generating(self):
+        generate=mock.Mock();fallback=mock.Mock()
+        with mock.patch.dict(os.environ,{'AGERE_LOCAL_TYPED_FALLBACK':'off'}),mock.patch.object(W,'typed_adapter',return_value=None):
+            with self.assertRaisesRegex(W.LocalDeclined,'No qualified typed adapter'):
+                W.handle(self.item,generate_factory=generate,fallback=fallback)
+        generate.assert_not_called();fallback.assert_not_called()
+
+    def test_cascade_declines_missing_adapter_before_starting_a_worker(self):
+        from clinical_core.agere.clinical import proposers as P
+        from types import SimpleNamespace
+        tier=SimpleNamespace(reject=mock.Mock(return_value=None))
+        with mock.patch.dict(os.environ,{'AGERE_LOCAL_TYPED':'on','AGERE_LOCAL_TYPED_FALLBACK':'off'}),mock.patch.object(W,'typed_adapter',return_value=None),mock.patch('clinical_core.agere.clinical.shared_planner.isolated_local')as worker:
+            self.assertIsNone(P.Cascade.tier_qwen_typed_interpreter(tier))
+        worker.assert_not_called();tier.reject.assert_called_once()
+
 
 FAKE = """
 import json, os, sys, time

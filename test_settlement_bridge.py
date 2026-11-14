@@ -25,7 +25,8 @@ class Pieces(unittest.TestCase):
         self.assertEqual(B.attainment(0.9, 0.7, 'higher_is_better'), 1.0)
         rows = [{'rate': 0.35, 'projected_rate': 0.7, 'target': 0.7, 'direction': 'higher_is_better'},
                 {'rate': 0.3, 'projected_rate': 0.3, 'target': None, 'direction': 'higher_is_better'}]
-        self.assertEqual((B.quality_score(rows), B.quality_score(rows, 'projected_rate')), (0.5, 1.0))
+        self.assertEqual((B.quality_score(rows), B.quality_score(rows, 'projected_rate')), (None,None))
+        self.assertEqual((B.quality_score(rows[:1]),B.quality_score(rows[:1],'projected_rate')),(.5,1))
 
     def test_utilization_counted_once_per_patient(self):
         chosen, per, d = B.work_items(CANDS, 10)
@@ -57,7 +58,7 @@ class Run(unittest.TestCase):
             r = B.run(sqlite3.connect(':memory:'), None, B.validate({'benchmark_pmpm': 1200, 'measures': ['cbp'], 'population': 'all',
                                                                       'closure_if_engaged': 1.0}), AS_OF)
         w = {x['label']: x['dollars'] for x in r['waterfall']}
-        self.assertAlmostEqual(w['realized'] + w['forecast'] + w['modeled'], w['projected'], places=1)
+        self.assertAlmostEqual(w['current_scenario'] + w['forecast'] + w['modeled'], w['projected'], places=1)
         self.assertGreater(w['forecast'], 0)   # closures raise the cbp attainment
         self.assertGreater(w['modeled'], 0)
         self.assertEqual(r['quality_score']['current'], 0.5)
@@ -65,7 +66,8 @@ class Run(unittest.TestCase):
         self.assertEqual(r['dedupe']['adjustment_utilization'], 2000.0)
         self.assertEqual(r['patient_ids'], ['A', 'B', 'C'])
         ans = B.answer(r, {'coverage': 'supported_observation'}, 'q')
-        self.assertEqual(ans['number'], w['projected']); self.assertIn('realized settlement', ans['value'])
+        self.assertEqual(ans['number'], w['projected']); self.assertIn('current settlement scenario', ans['value'])
+        self.assertFalse(r['actual_settlement_established'])
 
 
 class Route(unittest.TestCase):

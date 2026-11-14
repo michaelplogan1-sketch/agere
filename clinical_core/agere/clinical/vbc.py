@@ -166,6 +166,8 @@ def attribution(db, people, start, end, method='hybrid'):
         r = json.loads(payload)
         if r.get('role') in aggregate.PCP_ROLES and r.get('status') in (None, 'assigned'):
             key = r.get('effective_start') or r.get('event_date') or ''
+            if key and key[:10]>end[:10]:continue
+            if r.get('effective_end') and r['effective_end'][:10]<end[:10]:continue
             if pid not in assigned or key >= assigned[pid][0]:
                 assigned[pid] = (key, r.get('clinician_id'), r.get('organization_id'))
     visits = defaultdict(lambda: defaultdict(lambda: [0, '', None]))
@@ -270,10 +272,10 @@ def _beta_binomial(rows, num_key, den_key):
 def _utilization(db, people, attr, p, start, end):
     groups = defaultdict(lambda: {'members': 0, 'member_years': 0.0, 'ed_visits': 0, 'admissions': 0, 'index_stays': 0,
                                   'readmissions': 0, 'discharges_7d_eligible': 0, 'followup_7d': 0})
-    ed = defaultdict(set)
-    from .ed_definition import visits_sql  # the one governed ED definition (EHR + ADT + claims, one per patient-day)
-    for pid, d in db.execute(f"SELECT patient_id, event_date FROM ({visits_sql(db)}) WHERE event_date BETWEEN ? AND ?", (start, end)):
-        ed[pid].add(d)
+    ed = defaultdict(list)
+    from .ed_definition import metric_visits_sql
+    for pid, d in db.execute(f"SELECT patient_id, event_date FROM ({metric_visits_sql(db)}) WHERE event_date BETWEEN ? AND ?", (start, end)):
+        ed[pid].append(d)
     stays = defaultdict(list)
     for pid, a, dis, rd in db.execute("SELECT patient_id, admit_date, discharge_date, readmitted_30d FROM stay WHERE admit_date BETWEEN ? AND ?", (start, end)):
         stays[pid].append((a, dis, rd))
@@ -284,6 +286,7 @@ def _utilization(db, people, attr, p, start, end):
     timed = p['group_by'] in TIME_GROUPS
     for pid, info in people.items():
         if not info['months']: continue
+        enrolled = set(info['months'])
         if timed:  # each enrolled month, ED day, stay and discharge lands in its own calendar period
             enrolled = set(info['months'])
             for key in {_time_key(m, p['group_by']) for m in enrolled}: groups[key]['members'] += 1
@@ -295,8 +298,8 @@ def _utilization(db, people, attr, p, start, end):
         else:
             g = groups[_group_key(p['group_by'], pid, people, attr)]
             g['members'] += 1; g['member_years'] = round(g['member_years'] + len(info['months']) / 12, 4)
-            g['ed_visits'] += len(ed[pid])
-            keyed_stays = [(None, a, dis, rd) for a, dis, rd in stays[pid]]
+            g['ed_visits'] += sum(d and d[:7] in enrolled for d in ed[pid])
+            keyed_stays = [(None, a, dis, rd) for a, dis, rd in stays[pid] if a and a[:7] in enrolled]
         for month, a, dis, rd in keyed_stays:
             g = groups[_time_key(month, p['group_by'])] if timed else g
             g['admissions'] += 1; g['index_stays'] += 1; g['readmissions'] += rd
@@ -384,11 +387,14 @@ def _payer_claims(db, start, end):
     return covered, rows
 
 
-def _completion(claims, end):
-    """Chain-ladder completion factors from arrival lag (months), estimated on months with full runout."""
+def _completion(claims, end, basis='allowed'):
+    """Arrival-lag factors on the named monetary basis, estimated on months with six months' runout."""
+    if basis not in ('allowed', 'paid'): raise ValueError('completion basis: allowed|paid')
     lag = lambda svc, arr: (int(arr[:4]) - int(svc[:4])) * 12 + int(arr[5:7]) - int(svc[5:7]) if arr else 0
     by_month = defaultdict(lambda: defaultdict(float))
-    for _, svc, allowed, _, _, arr in claims: by_month[svc][max(lag(svc, arr or svc), 0)] += allowed
+    for row in claims:
+        svc, arr = row[1], row[5]
+        by_month[svc][max(lag(svc, arr or svc), 0)] += row[2 if basis == 'allowed' else 3]
     end_m = end[:7]
     mature = [m for m in by_month if lag(m, end_m) >= 6]
     factors = {}
@@ -452,6 +458,7 @@ def risk_scores(db, people, start, end):
     for pid, month, allowed, _, _, _ in claims:
         if month in people.get(pid, {}).get('months', ()): cost[pid] += allowed / 100
     pids = [pid for pid, info in people.items() if info['months']]
+    if not pids:return {},{'coefficients':{},'calibration_by_decile':[],'members':0,'status':'no_eligible_members'}
     bands = ['0-17', '18-44', '45-64', '65-74', '75+']
     cols = [f'age_{b}' for b in bands[1:]] + ['female'] + [f'has_{c}' for c in CHRONIC]
     X = np.array([[aggregate.age_band(people[p]['age']) == b for b in bands[1:]] + [people[p]['sex'] == 'F'] +
@@ -474,6 +481,7 @@ def risk_scores(db, people, start, end):
     order = np.argsort(score)
     deciles = []
     for i, chunk in enumerate(np.array_split(order, 10)):
+        if not len(chunk):continue  # an empty quantile has no mean; never emit NaN calibration
         deciles.append({'decile': i + 1, 'mean_score': round(float(score[chunk].mean()), 3),
                         'observed_to_expected': round(float((y[chunk].sum()) / max((exposure[chunk] * pred[chunk]).sum(), 1e-9)), 3)})
     return ({p: float(s) for p, s in zip(pids, score)},
@@ -512,18 +520,21 @@ def _risk_pairs(db, origin, group_by):
     return pairs, scores, pmpy
 
 
-def risk_calibration(db, end, group_by, alpha=0.1, min_group=30):
+def risk_calibration(db, end, group_by, alpha=0.1, min_group=30, *, patient_ids=None):
     """Mondrian split conformal for per-member next-year cost implied by the internal risk score.
     Score = |observed - predicted| / predicted. Live intervals are calibrated on predictions issued a year before `end`
     and scored on the following year; the backtest calibrates two years back and evaluates one year back."""
+    from . import conformal
     level = 1 - alpha
     t1, t2 = _shift(end, -365), _shift(end, -730)
     by = group_by if group_by != 'none' else 'age_band'
     out = {'method': (f'Mondrian ({by}) split conformal on per-member next-year allowed cost predicted as risk score x population '
                       f'cost per member-year; score |observed - predicted| / predicted; members with >= 6 enrolled months in the outcome year. '
                       f'Live intervals calibrated on predictions issued {t1}; backtest calibrated on predictions issued {t2}, evaluated on {t1}.'),
-           'level': level, 'target': 'allowed cost per member-year, next 12 months (USD)', 'available': False}
+           'level': level, 'target': 'allowed cost per member-year, next 12 months (USD)', 'available': False,
+           'calibration_origin': t1, 'backtest_origin': t2, 'model_fit_population': 'global', 'reference_calibration_population': 'global'}
     live, _, _ = _risk_pairs(db, t1, group_by)
+    out['evaluation'] = conformal.scoped_interval_coverage(live, patient_ids=patient_ids)
     if len(live) < 20:
         out['reason'] = f'only {len(live)} members with a prediction issued {t1} and >= 6 enrolled months after it (need 20)'
         out['statement'] = 'Conformal calibration unavailable: ' + out['reason'] + '.'
@@ -541,12 +552,14 @@ def risk_calibration(db, end, group_by, alpha=0.1, min_group=30):
         pred, y = arr(live, 'pred'), arr(live, 'y')
         qs = np.array([conformal.mondrian_q(bt, q['group']) for q in live])
         lo, hi = conformal.interval(pred, qs, np.maximum(pred, 1.0), lower=0.0)
-        hit = (y >= lo) & (y <= hi)
-        groups = np.array([q['group'] for q in live], dtype=object)
-        out.update(backtest_coverage=round(float(hit.mean()), 4), backtest_evaluation_pairs=len(live), backtest_calibration_pairs=len(earlier),
-                   backtest_by_group={str(g): {'cases': int((groups == g).sum()), 'coverage': round(float(hit[groups == g].mean()), 4)}
-                                      for g in sorted(set(groups.tolist()), key=str)})
-        out['statement'] = conformal.describe_coverage(level, out['backtest_coverage'], len(live)) + ' in the time-split backtest'
+        evaluation = conformal.scoped_interval_coverage(live, lo, hi, patient_ids)
+        out.update(evaluation=evaluation, backtest_coverage=evaluation['coverage'],
+                   backtest_evaluation_pairs=evaluation['evaluable_pairs'], backtest_calibration_pairs=len(earlier),
+                   backtest_by_group=evaluation['by_group'])
+        if evaluation['coverage'] is not None:
+            out['statement'] = conformal.describe_coverage(level, evaluation['coverage'], evaluation['evaluable_pairs']) + ' in the requested-population time-split backtest'
+        else:
+            out['statement'] = 'No evaluable finite-interval cases in the requested population; coverage is unknown'
     else:
         out['statement'] = f'Conformal {level:.0%} intervals calibrated on {len(live)} members; too little earlier history to backtest their coverage'
     out['statement'] += f' (per-member next-year cost from the risk score; Mondrian by {by}).'

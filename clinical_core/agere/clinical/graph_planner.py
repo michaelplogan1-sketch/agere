@@ -28,8 +28,9 @@ CONTRACTS = {
                        'group_by': 'list of registered population dimensions'},
         'meaning': 'A named, versioned governed business or quality measure over the compiled population. '
                    'Use the registered definition digest; no model-written numerator, denominator or SQL.'},
-    'trajectory': {'inputs':['earlier_set'],'parameters':{'concept':'measurement concept','direction':'worse|better|up|down|any','min_points':3},
-        'meaning':'Per-patient lab/vital trajectories: uncertainty-weighted change points + Theil-Sen slope; flags material, statistically separable changes (e.g. declining eGFR).'},
+    'trajectory': {'inputs':['earlier_set'],'parameters':{'concept':'measurement concept','direction':'worse|better|up|down|any','min_points':3,
+        'threshold':'optional forecast threshold','horizon_days':'forecast days from snapshot','target_event':'endpoint_exceedance|any_observed_crossing|first_passage|sustained_crossing'},
+        'meaning':'Per-patient lab/vital trajectories: change points + Theil-Sen slope; optional endpoint value forecasts. Path-event requests preserve their event and return an explicit unknown until a corresponding model/capture definition is supported.'},
     'discover': {'inputs':['earlier_set'],'parameters':{'outcome':'cohort specification of the outcome','segments':['practice','pcp','coverage_type','age_band','sex','food_difficulty','transport_difficulty','financial_hardship'],'pairs':True,'direction':'high|low|both'},
         'meaning':'Finds where an outcome is unusually concentrated across segments and segment pairs (two-proportion tests, BH-controlled), labelling documentation-limited cells. Use for where/which-groups/hotspot/pattern questions nobody specified.'},
     'program_effect': {'inputs':['optional earlier_set'],'parameters':{'program':'care_management|transitions_of_care|community_services|care_coordination|medication_start',
@@ -139,7 +140,7 @@ CONTRACTS = {
         'relation':'reported_barrier','clock':'source_statement_date','filter':'affirmed'},
         'meaning':'Documentary state, not clinical truth. Clocks source_statement_date/explicit_clinical_date/literal_reference_date; filters all/affirmed/negated/conflicting/unresolved. Unknowns persist. Medication relations reported_use/treatment_hold_stop/dose_change/prescription_order/dispense_record/administration_record/use_observed. Care request/status/booking/completion uses referrals,referral_status_updates,outside_report_status,imported_documents: concept care requested services covers all request types; care_completion filter all retains a separate account for every linked request, its statuses, bookings, received completion report and unresolved evidence. Other exact care concepts are supplied. False confirmation is unknown, not no attendance; documented limited service is not closure of all requested care. financial hardship and native social concepts use reported_barrier.'},
     'assertion_review': {'inputs':['earlier_set'],'parameters':{'streams':['notes'],'concepts':['outside care']},
-        'meaning':'All assertions/relations/clocks/conflicts/copies/unmet evidence; no inference/calls.'},
+        'meaning':'All assertions/relations/clocks/conflicts/copies/unmet evidence; no inference/calls. Optional received_annotations=true permits concepts=[] for all existing annotations in explicit streams, retaining derived values/units/entity qualifiers and failed bindings. Optional assertion_window uses explicit source_event/arrival/clinical/all_observed basis with start/end; unknown dates remain, and old repetitions cannot refresh into a later window. Annotation meaning remains unqualified.'},
     'context_passes': {'inputs':['earlier_set'],'parameters':{'question':'Documentary assertion','streams':['notes'],
         'concepts':[],'contract':'','program_ids':[],'max_bytes':10000},
         'meaning':'Partition all received units; retain indivisible overflow. No calls/clinical decisions.'},
@@ -289,7 +290,7 @@ CONTRACTS['trial_feasibility'] = {'inputs':['optional earlier_set'],'parameters'
               '(trailing 12 months, Poisson interval). Criteria come only from the question; uncomputable ones are listed as not applied.'}
 CONTRACTS['loop_closure'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|results|critical|screening|recommendations|orders|referrals|reports',
     'period':{'start':'','end':''},'window_days':365,'windows':{},'group_by':'practice|owner|item_type|none','evidence':'any|specific',
-    'abnormal_basis':'actionable|reference_range','concept':'','owner':'','practice':'','top':50},
+    'abnormal_basis':'actionable|reference_range','concept':'','owner':'','practice':'','top':50,'items':'open|all'},
     'meaning':'Closing the loop on results, orders, recommendations and referrals: each item (critical / abnormal lab result, positive mammogram or FIT, '
               'report or note follow-up recommendation, test order, referral, abnormal report) has an expected follow-up action and window; closure '
               'evidence is the earliest of a structured review citing the item (link table), the expected study / procedure / specialist visit / '
@@ -342,7 +343,7 @@ CONTRACTS['clinical_task'] = {'inputs':['optional earlier_set'],'parameters':{'t
 CONTRACTS['atomic_questions'] = {'inputs':['earlier_set'],'parameters':{'question':'the question verbatim',
     'sub_questions':[{'key':'snake_case','atom':'one question about ONE patient','options':{'yes':'...','no':'...','unknown':'...'},'subject':'pillar/drug class or ""','task_key':'atomic_yes_no'}],
     'sub_question_count':1,'aggregation':'any|latest|count|conflict|trajectory','returns':'table|patient_set|count|value|verdict','unit':'patient|document',
-    'select_labels':['yes'],'maximum_patients':25,'window':{'basis':'all_observed','start':'','end':''},'sources':['passages','medication_state'],'providers':['jev','perplexity']},
+    'select_labels':['yes'],'maximum_patients':None,'window':{'basis':'all_observed','start':'','end':''},'sources':['passages','medication_state'],'providers':['jev','perplexity']},
     'meaning':'Break a question into atomic typed sub-questions (explicit options incl. unknown) asked of EACH patient\'s ranked passages (and governed '
               'medication_state rows for medication subjects) by System One (Jev first, Perplexity fallback, ~$0.0002 per patient), aggregated in code: '
               'any (patient lists, why-factor tables, verdicts), latest (per-pillar tables), count (count or share), conflict / trajectory (per document). '
@@ -415,8 +416,9 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
     from . import native_assertions, native_care_assertions
     compact_catalog['native_assertion_bindings'] = native_assertions.contracts()
     compact_catalog['native_care_assertion_bindings'] = native_care_assertions.contracts()
-    compact_catalog['assertion_concepts'] = sorted(set(longitudinal.get('vocabulary',{}).get('concept',[])) |
-        native_assertions.CONCEPTS | set(graph_catalog.get('native_care_concepts', [])) | {'financial hardship','care nephrology'} | {'medication '+c for c in ('bb','acei','arb','arni','mra','sglt2')})
+    from .graph_contracts import assertion_vocabulary
+    compact_catalog['assertion_concepts'] = assertion_vocabulary(
+        longitudinal.get('vocabulary',{}).get('concept',[]), graph_catalog.get('native_care_concepts', []))
     compact_catalog['clinical_state_available']=graph_catalog.get('clinical_state_available',False)
     compact_catalog['medication_terminology_available']=graph_catalog.get('medication_terminology_available',False)
     compact_catalog['documentary_contracts']=[{k:s[k] for k in ('id','title')} for s in graph_catalog.get('documentary_contracts',[])]

@@ -76,9 +76,50 @@ def build(db_path):
 _CACHE = {}
 
 
+def _semantic_profile(path):
+    """Observed relation/field availability for a received ordinary SQLite DB.
+
+    No fabricated record streams or clinical vocabularies. The schema and
+    non-NULL counts come from the database; patient/document contents stay out
+    of the profile. WAL changes invalidate the cached availability counts.
+    """
+    import hashlib
+    target = path / 'semantic.sqlite3'
+    stamps = []
+    for file in (target, Path(str(target) + '-wal')):
+        if file.exists():
+            stat = file.stat(); stamps.append((file.name, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns))
+    snapshot = hashlib.sha256(json.dumps(stamps).encode()).hexdigest()
+    key = (str(path.resolve()), 'semantic:' + snapshot)
+    if key in _CACHE: return _CACHE[key]
+    def quoted(name): return '"' + name.replace('"', '""') + '"'
+    with _connect(target) as db:
+        names = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name!='meta' AND name NOT LIKE 'sqlite_%' ORDER BY name")]
+        relations = {}
+        for name in names:
+            cols = [r[1] for r in db.execute('PRAGMA table_info(' + quoted(name) + ')')]
+            if not cols: continue
+            counts = db.execute('SELECT COUNT(*),' + ','.join('COUNT('+quoted(c)+')' for c in cols) + ' FROM ' + quoted(name)).fetchone()
+            relations[name] = {'records': counts[0], 'fields': {c: {'populated': n} for c,n in zip(cols,counts[1:])}}
+        digest = None
+        if db.execute("SELECT 1 FROM sqlite_master WHERE name='meta'").fetchone():
+            meta_columns = {r[1] for r in db.execute('PRAGMA table_info(meta)')}
+            if {'key','value'} <= meta_columns:
+                row = db.execute("SELECT value FROM meta WHERE key='source_digest'").fetchone()
+                digest = row[0] if row else None
+    profile = {'schema': VERSION, 'source_digest': digest or 'semantic:' + snapshot,
+               'snapshot_identity': snapshot, 'source_kind': 'received_sqlite_relations',
+               'relations': relations, 'streams': {}, 'patients': relations.get('patient', {'records': 0, 'fields': {}}),
+               'measurements': {}, 'clinical_vocabulary_inferred': False}
+    _CACHE[key] = profile
+    return profile
+
+
 def load(path):
     """Profile for a product build directory (the one holding run.json and stack.sqlite3)."""
     path = Path(path)
+    if not (path / 'stack.sqlite3').is_file() and (path / 'semantic.sqlite3').is_file():
+        return _semantic_profile(path)
     run = path / 'run.json'
     if run.exists():
         digest = json.loads(run.read_text())['source_digest']

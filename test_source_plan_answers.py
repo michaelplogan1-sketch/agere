@@ -1,4 +1,5 @@
 import json
+import copy
 import sqlite3
 import tempfile
 import unittest
@@ -138,6 +139,46 @@ class Answers(unittest.TestCase):
             'unanswered':['p2:u1 has unsupplied information'],'review_steps':[]}
         raw={'model':job['body']['model'],'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(value)}]}
         with self.assertRaisesRegex(ValueError,'not supplied'):R.L.parse(raw,job,refs)
+
+    def test_historical_cross_group_receipt_revalidates_fully_without_new_inference(self):
+        s=self.snapshot()
+        with patch.object(R.P,'dependencies',return_value={'edges':[],'unresolved_references':[]}),patch.object(R.V,'snapshot',return_value={'records':[1]*22}):
+            result,refs,job,claims,key=R.prepare(self.r,{'snapshot_id':s['snapshot']['id']})
+            core={'findings':[],'claim_reviews':[{'input_id':c['input_id'],'status':'unassessed','finding_ids':[],'reason':'Not established by these excerpts'}for c in claims],
+                'unanswered':['Meaning remains unassessed'],'review_steps':[]}
+            raw={'model':job['body']['model'],'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(core)}]}
+            output=R.L.parse(raw,job,refs);usage={'request_hash':R.G.request_key(job['body']),'cache_hit':False}
+            saved=R.receipt(result,refs,job,claims,key,output,usage,{'input_tokens':100,'provider_count_cached':False})
+            p=R.location(self.r.path,key);p.parent.mkdir(exist_ok=True);p.write_text(json.dumps(saved));provider=p.parent/'provider';provider.mkdir()
+            q=provider/(usage['request_hash']+'.json');q.write_text(json.dumps({'response':raw}))
+            with patch.object(R,'identity',return_value='new-admission-implementation'):
+                self.assertEqual(R.inspect(self.r,{'id':key}),saved)
+                preview=R.preview(self.r,{'snapshot_id':s['snapshot']['id']})
+                self.assertEqual(preview['id'],key);self.assertTrue(preview['saved_answer_available'])
+                with patch.object(R.G,'send')as send:
+                    replay=R.reconcile(self.r,{'snapshot_id':s['snapshot']['id']},None,allow_live=False);send.assert_not_called()
+                self.assertEqual(replay['id'],key);self.assertEqual(replay['new_paid_api_calls'],0)
+                changed=copy.deepcopy(raw);value=json.loads(changed['content'][0]['text']);value['claim_reviews'][0]['reason']='Different result';changed['content'][0]['text']=json.dumps(value);q.write_text(json.dumps({'response':changed}))
+                with self.assertRaisesRegex(ValueError,'differs from current native'):R.inspect(self.r,{'id':key})
+
+    def test_complete_answer_keeps_identity_only_after_exact_current_composition(self):
+        from clinical_core.agere.clinical import plan_answer as P
+        self.plan['preview'].update(snapshot=self.contexts[0]['model_context']['snapshot'],excluded_by_category={})
+        for context,group,a in zip(self.contexts,self.plan['groups'],self.answers.values()):
+            record=next(iter(context['model_context']['sources']));source=context['model_context']['sources'][record]['source'];source['source_table']='notes'
+            group['context_hash']=digest(context);a['context_digest']=digest(context)
+            a.update(findings=deepcopy(a['passes'][0]['result']['findings']),unanswered=[],review_steps=[],usage=[],token_check={'input_tokens':0})
+            for finding in a['findings']:
+                for cite in finding['citations']:cite.update(source=deepcopy(source),citation_verified=True)
+        selection=self.snapshot();request={'snapshot_id':selection['snapshot']['id']}
+        with patch.object(P,'identity',return_value=digest('previous implementation')):
+            answer=P.prepare(self.r,request);context=P.inspect(self.r,answer['context_id'],context=True)
+        with patch.object(P,'identity',return_value=digest('current implementation')):
+            self.assertEqual(P.inspect(self.r,answer['id']),answer)
+            self.assertEqual(P.inspect(self.r,context['id'],context=True),context)
+            self.assertEqual(P.prepare(self.r,request),answer)
+            self.answers[self.ids[0]]['findings'][0]['text']='Changed evidence'
+            with self.assertRaises(ValueError):P.inspect(self.r,answer['id'])
 
 
 class Codec(unittest.TestCase):

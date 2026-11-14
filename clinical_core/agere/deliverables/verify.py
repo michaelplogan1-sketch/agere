@@ -137,6 +137,10 @@ class NumberIndex:
 
 
 JS_STRING_RE = re.compile(r"'((?:\\.|[^'\\\n])*)'|\"((?:\\.|[^\"\\\n])*)\"|`((?:\\.|[^`\\])*)`", re.S)
+# This numeral is part of the indexed filtration-rate UNIT, not a result.
+# NIDDK: https://www.niddk.nih.gov/research-funding/research-programs/kidney-clinical-research-epidemiology/laboratory/glomerular-filtration-rate-equations/adults
+# Require the complete unit syntax; never exempt a bare factor or measurement.
+INDEXED_RATE_UNIT_RE = re.compile(r'(?<!\w)mL\s*/\s*min\s*(?:/|per\s+)\s*1\.73\s*m\s*(?:²|\^?2)(?![\w.])', re.I)
 
 
 def js_string_numbers(code):
@@ -168,7 +172,8 @@ def _strip_js(code):
 
 
 def text_numbers(text):
-    t = DATE_RE.sub(' ', text)
+    t = INDEXED_RATE_UNIT_RE.sub(' ', text)
+    t = DATE_RE.sub(' ', t)
     t = IDENT_RE.sub(' ', t)
     out = []
     for m in NUM_RE.finditer(t):

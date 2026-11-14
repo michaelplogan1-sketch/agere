@@ -1,0 +1,13 @@
+# Patient workspace response — 2026-11-02
+
+G3 scoped engineering delivery `dd5a7e52ae0e22f5d0d28f5c68bd4cc5deea062b` removes duplicated operational review history from the existing saved-workspace response. Actual HTTP decoded JSON falls from **52,589,412 to4,752,172bytes (90.96%)**; compressed transfer falls from **2,844,703 to335,437bytes (88.21%)**.
+
+Every57patientrow, all522current field judgments, packet labels/probabilities/deciders, original missing-evidence statements and all non-review answer fields remain exact. Repeated packet judgments resolve to the exact canonical claim list. Structured JSON embedded in the exact reviewer feedback is referenced by native context, path and character offsets; all prose outside those JSON spans remains. Unbound prose and business/source cells are never shortened. Original complete saved contexts, work, source and policy identities remain unchanged.
+
+Actual HTTP confirms the current patient workspace, exact PDF/HTML, answered12rowfinancial workspace and prior-policy invalidation. Current PDF remains74pages,236214bytes, SHA256 `ed2bf845852289ac7c4ac8cbbef8827ecc4b200499a5ef88928b1168383d859b`.42distinct tests pass, including source/work guards, saved report reads and exact reference reconstruction. Three harness/fixture expectations were corrected with failed logs retained; no runtime source interpretation was changed. Zero provider attempts; all28093ledgerrows exact. The selected financial execution candidate and previous native29/29qualification remain applicable because only the display module changed.
+
+This is a transfer-size improvement, not a new full-clinical runtime benchmark. The current clinical result remains partial; all58dependencies were checked and522field judgments remain below threshold. Independent clinical/model/outcome qualification and authentic all-in economics remain open. Full MVP acceptance is false. Alltenareas remain; OWASP/HHS deferred, scheduler paused, primary8885/main unchanged.
+
+Receipt: `artifacts/agere-inspection-response-2026-11-02/delivery-receipt.json`.
+
+Next: Qualify transfer in the existing general_analysis parameter binding and native execution reuse paths against Claude E7: identify a completed source-bound composition, exercise changed numeric/time/population bindings with exact source/domain/unknown-state guards, and compare native results before any ordinary-route activation. Keep original57patient/financial regressions, full-request acceptance and fresh final checks. Do not select the partial clinical answer, invent clinical labels, introduce another catalog or repeat an unchanged whole-cohort provider run.

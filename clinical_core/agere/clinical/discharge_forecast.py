@@ -2,7 +2,7 @@
 
 Patients in house at the snapshot get a conditional remaining stay drawn from the empirical LOS distribution given the time already spent;
 new admissions arrive by weekday rate and run through the same twin as capacity_simulation, so the forecast includes bed waits. A
-hold-out backtest (last 8 weeks, weekday-mean discharges from the earlier window) reports the forecast's own error.
+hold-out backtest (last 8 weeks) measures a separate weekday-mean baseline. The capacity twin's historical accuracy is unmeasured.
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ SPEC = {'facility': ('str',), 'months': ('int', 1, 120), 'start': ('date',), 'en
         'beds': ('int', 1, 5000), 'replications': ('int', 5, 500)}
 PRODUCT = {'population': 'optional', 'view': 'discharge_forecast',
            'use': 'DISCHARGE FORECAST: expected discharges, bed-days and census for the next days from the in-house census and the discrete-event '
-                  'capacity twin (conditional remaining stay for patients in house, weekday admission rates, bed waits), with backtest error.'}
+                  'capacity twin (conditional remaining stay for patients in house, weekday admission rates, bed waits). A separate weekday baseline backtest does not validate the twin.'}
 CONTRACT = {'inputs': ['optional earlier_set'],
             'parameters': {'facility': None, 'months': 12, 'horizon_days': 7, 'beds': None, 'replications': 100, 'start': None, 'end': None},
             'meaning': 'Per-day expected discharges (10th-90th percentile), census and bed-days for the next horizon_days from open governed visits plus '
@@ -45,7 +45,10 @@ def backtest(rows, as_of, weeks=8):
     mean = {k: sum(c for d, c in dis.items() if first <= d < cut and d.weekday() == k) / max(dow_n.get(k, 0), 1) for k in range(7)}
     errs = [(mean[(cut + timedelta(i)).weekday()], dis.get(cut + timedelta(i), 0)) for i in range(weeks * 7)]
     overall = sum(c for d, c in dis.items() if first <= d < cut) / max(n_days, 1)
-    return {'days': len(errs), 'mae_weekday_mean': round(float(np.mean([abs(f - a) for f, a in errs])), 3),
+    return {'method':'weekday_mean','validation_target':'weekday_mean_baseline','days': len(errs),
+            'origins':[cut.isoformat()],'horizon_days':weeks*7,'training_before':cut.isoformat(),
+            'availability_safe_reconstruction':False,
+            'mae_weekday_mean': round(float(np.mean([abs(f - a) for f, a in errs])), 3),
             'mae_overall_mean': round(float(np.mean([abs(overall - a) for _, a in errs])), 3),
             'bias': round(float(np.mean([f - a for f, a in errs])), 3), 'actual_mean': round(float(np.mean([a for _, a in errs])), 3)}
 
@@ -92,7 +95,8 @@ def execute(path, patient_ids, params, as_of):
     bt = backtest(rows, as_of)
     receipt = {'count': int(round(float(dis.sum(axis=1).mean()))), 'horizon_days': H_, 'in_house_now': len(open_v), 'beds': beds,
                'expected_discharges_total': round(float(dis.sum(axis=1).mean()), 1), 'p10_total': float(np.quantile(dis.sum(axis=1), 0.1)),
-               'p90_total': float(np.quantile(dis.sum(axis=1), 0.9)), 'expected_bed_days': round(float(cen.sum(axis=1).mean()), 1), 'backtest': bt}
+               'p90_total': float(np.quantile(dis.sum(axis=1), 0.9)), 'expected_bed_days': round(float(cen.sum(axis=1).mean()), 1), 'backtest': bt,
+               'forecast_validation':{'method':'capacity_twin','status':'unmeasured','historical_predictions':None}}
     return {'schema': VERSION, 'status': 'computed', 'as_of': as_of, 'parameters': p, 'window': [start, end], 'facility': fac, 'basis': basis,
             'table': table, 'receipt': receipt, 'notes': notes, 'patient_ids': sorted({r['patient_id'] for r in open_v}),
             'method': ('In-house visits get a remaining stay drawn from the empirical LOS conditional on time already in house; new admissions follow the '
@@ -100,14 +104,15 @@ def execute(path, patient_ids, params, as_of):
             'assumptions': ['Open visits are inpatient/observation visits without a discharge received by the snapshot (discharge_known = 0); '
                             'a visit whose discharge feed is late is counted as still in house.',
                             'Discharge timing within a day is taken from simulated LOS hours; no discharge-order or discharge-before-noon clock is received.',
-                            'Bed counts are not received (see notes); the twin never sees a pending discharge order, so the first days of a large census are approximate.']}
+                            'Bed counts are not received (see notes); the twin never sees a pending discharge order, so the first days of a large census are approximate.',
+                            'Historical error shown belongs to a weekday-mean baseline, not the capacity twin. Historical availability and twin interval coverage are unqualified.']}
 
 
 def headline(r):
     rc = r['receipt']; bt = rc.get('backtest')
     txt = (f"Next {rc['horizon_days']} days: about {rc['expected_discharges_total']:.0f} discharges (80% range {rc['p10_total']:.0f}-{rc['p90_total']:.0f}), "
            f"{rc['expected_bed_days']:.0f} bed-days; {rc['in_house_now']} patients in house at the snapshot")
-    if bt: txt += f"; backtest MAE {bt['mae_weekday_mean']} discharges/day vs {bt['mae_overall_mean']} for a flat mean"
+    if bt: txt += f"; weekday-mean baseline backtest MAE {bt['mae_weekday_mean']} discharges/day vs {bt['mae_overall_mean']} for a flat mean; capacity-twin historical accuracy unmeasured"
     return txt
 
 

@@ -4,6 +4,7 @@ No additional interpretation is invented by joining groups. An optional existing
 cross-group reconciliation can supply conclusions; otherwise that uncertainty
 remains explicit. Parent answers and their local reference scopes are preserved.
 """
+from .case_synthesis import input_token_total
 import copy
 import hashlib
 import json
@@ -29,7 +30,8 @@ def exists(path,key,*,context=False):
     try:return db.execute('SELECT 1 FROM complete_plan_answers WHERE '+('context' if context else 'id')+'=?',(key,)).fetchone() is not None
     finally:db.close()
 
-def assemble(result,reconciliation=None):
+def assemble(result,reconciliation=None,*,rule_identity=None):
+    rule_identity=identity()if rule_identity is None else rule_identity
     snap=result['snapshot']; plan=result['plan']; sources={};evidence=[];findings=[];retained=[];passes=[];unanswered=[];steps=[];usage=[];units=[];lineage=[]
     if sorted(g['context_id'] for g in snap['groups'])!=sorted(g['context_id'] for g in plan['groups']):
         raise ValueError('Every declared source-plan group must have exactly one saved answer')
@@ -82,7 +84,7 @@ def assemble(result,reconciliation=None):
     context={'schema':VERSION,'patient_id':snap['patient_id'],'parameters':{'question':snap['original_question'],'streams':streams},
         'record_scope':record_scope,'omissions':[],'dispatch':{'source_review_allowed':False,'reason':'Use original bounded group contexts; this view never sends a combined chart.'},
         'model_context':{'snapshot':plan['preview']['snapshot'],'sources':sources,'evidence':evidence},
-        'source_plan_id':plan['id'],'source_plan_digest':digest(plan),'snapshot_id':snap['id'],'group_lineage':lineage,'rule_identity':identity()}
+        'source_plan_id':plan['id'],'source_plan_digest':digest(plan),'snapshot_id':snap['id'],'group_lineage':lineage,'rule_identity':rule_identity}
     context['id']=digest(context)
     cross='Cross-group relationships remain unassessed. Group answers do not establish a combined clinical, medication-use or benefit conclusion.'
     if reconciliation:
@@ -96,7 +98,7 @@ def assemble(result,reconciliation=None):
     for a in result['answers']:counts.update(a['coverage'].get('unit_dispositions',{}))
     answer={'schema':VERSION,'status':'complete','synthetic':True,'patient_id':snap['patient_id'],'question':snap['original_question'],
         'context_id':context['id'],'context_digest':digest(context),'snapshot_id':snap['id'],'source_plan_id':plan['id'],
-        'analysis_window':snap['analysis_window'],'group_lineage':lineage,'rule_identity':identity(),
+        'analysis_window':snap['analysis_window'],'group_lineage':lineage,'rule_identity':rule_identity,
         'record_scope':record_scope,'source_scope':streams,'findings':findings,'retained_source_findings':retained,
         'unanswered':list(dict.fromkeys(unanswered)),'review_steps':steps,'passes':passes,
         'coverage':{'received_units':snap['source_units'],'submitted_units':snap['source_units'],'model_accounted_units':snap['source_units'],
@@ -104,7 +106,7 @@ def assemble(result,reconciliation=None):
             'cross_group_relations_assessed':bool(reconciliation),'group_answers':len(snap['groups']),'reconciliation_groups':0},
         'dependencies':{'group_answers':lineage,'source_plan_digest':digest(plan),'answer_selection_digest':digest(snap)},
         'cross_group_reconciliation_id':reconciliation['id'] if reconciliation else None,
-        'model':'saved group interpretations','usage':usage,'token_check':{'input_tokens':sum(a['token_check']['input_tokens'] for a in result['answers'])+(reconciliation['token_check']['input_tokens'] if reconciliation else 0)},
+        'model':'saved group interpretations','usage':usage,'token_check':{'input_tokens':input_token_total([a['token_check'] for a in result['answers']] + ([reconciliation['token_check']] if reconciliation else []))},
         'new_paid_api_calls':0,'cache_hit':True,'clinical_execution_authorized':False,
         'limits':['Complete means every declared group has an accounted saved answer; it does not mean the whole chart or clinical completeness.',
                   'Original group prose and local reference aliases retain their group/answer scope. Equal aliases across groups are not identical sources.',
@@ -113,13 +115,20 @@ def assemble(result,reconciliation=None):
     answer['id']=digest(answer)
     return {'answer':answer,'context':context}
 
-def build(retriever,request):
+def build(retriever,request,*,rule_identity=None):
     care.exact(request,'snapshot_id'+(' reconciliation_id' if 'reconciliation_id' in request else ''))
     result=A.inspect(retriever,{'id':request['snapshot_id']})
     reconciliation=R.inspect(retriever,{'id':request['reconciliation_id']}) if request.get('reconciliation_id') else None
-    return assemble(result,reconciliation)
+    return assemble(result,reconciliation,rule_identity=rule_identity)
 
 def prepare(retriever,request):
+    care.exact(request,'snapshot_id'+(' reconciliation_id' if 'reconciliation_id'in request else ''))
+    db=database(retriever.path)
+    try:previous=db.execute('SELECT id,payload FROM complete_plan_answers').fetchall()
+    finally:db.close()
+    for key,payload in previous:
+        if json.loads(payload).get('request')==request:
+            return inspect(retriever,key)
     result=build(retriever,request);saved={'request':request,**result};saved['digest']=digest(saved)
     if build(retriever,request)!=result:raise ValueError('Source dependencies changed during composition')
     db=database(retriever.path)
@@ -135,8 +144,22 @@ def inspect(retriever,key,*,context=False):
     if not row:raise ValueError('Unknown complete-plan answer')
     saved=json.loads(row[0])
     if saved['digest']!=digest({k:v for k,v in saved.items() if k!='digest'}):raise ValueError('Complete-plan answer integrity changed')
-    result=build(retriever,saved['request'])
+    # Historical identity is provenance, not a waiver: rerun the complete current
+    # source/answer/reconciliation composition and require EXACT output equality.
+    # Only its implementation stamp is held at the saved value to preserve the
+    # context/answer identities already bound into durable buyer work.
+    rule=saved['answer'].get('rule_identity')
+    if not rule or saved['context'].get('rule_identity')!=rule:raise ValueError('Complete-plan rule provenance differs')
+    result=build(retriever,saved['request'],rule_identity=rule)
     if result!={k:saved[k] for k in ('answer','context')}:raise ValueError('Complete-plan answer source or rule dependencies changed')
+    if rule!=identity():
+        proof={'schema':'complete-plan-current-revalidation/1','status':'passed','answer_id':saved['answer']['id'],
+            'context_id':saved['context']['id'],'historical_rule_identity':rule,'current_rule_identity':identity(),
+            'saved_digest':saved['digest'],'all_current_composition_fields_equal':True,'provider_calls':0}
+        target=Path(retriever.path)/'complete-plan-current-revalidation'/(saved['answer']['id']+'.json');target.parent.mkdir(exist_ok=True)
+        if not target.exists()or json.loads(target.read_text())!=proof:
+            from .case_passes import atomic_write
+            atomic_write(target,proof)
     return result['context' if context else 'answer']
 
 def binding(retriever,answer):

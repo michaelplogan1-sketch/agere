@@ -4,18 +4,22 @@ No model inputs, credentials or responses are copied into this journal. Executio
 IDs are unique attempts, never cache keys. Historical reuse is not a new dispatch.
 """
 from contextvars import ContextVar
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 import json
+import os
 import re
+import sqlite3
 import time
+import threading
 import uuid
 from ..contracts import digest
 
 ACTIVE = ContextVar('agere_request_execution', default=None)
 VERSION = 'question-request-lineage/1'
 OPERATIONS = {
- '/api/stack/ask', '/api/stack/compose', '/api/stack/context/synthesize',
+ '/api/stack/ask', '/api/stack/compose', '/api/stack/investigation/resume', '/api/stack/context/synthesize',
  '/api/stack/claims/reconcile', '/api/stack/source-plan-answers/compose',
  '/api/stack/decision/prepare', '/api/stack/decision/population-prepare',
  '/api/stack/decision/scoped-prepare',
@@ -23,6 +27,73 @@ OPERATIONS = {
  '/api/stack/decision/statement-review-attach',
 }
 KEY = re.compile('[a-f0-9]{64}')
+_TRACE_LOCK = threading.Lock()
+
+
+def execution_observation(kind, **data):
+    """Operational observations, never inference success or clinical acceptance.
+
+    The optional JSONL sink also records worker threads, where a request context
+    may be absent. Exact SQL is opt-in and stays in the local diagnostic sink.
+    Failure of optional instrumentation must not change the tool's behavior.
+    """
+    active = ACTIVE.get()
+    if active is not None:
+        try:
+            observe(kind, **data)
+        except (OSError, sqlite3.Error) as exc:
+            data = {**data, 'lineage_recording_error': type(exc).__name__}
+    target = os.environ.get('AGERE_EXECUTION_TRACE')
+    if target:
+        event = {'at': datetime.now(timezone.utc).isoformat(), 'kind': kind,
+                 'execution_id': active.id if active is not None else None,
+                 'thread_id': threading.get_ident(), **data}
+        try:
+            with _TRACE_LOCK:
+                path = Path(target)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with path.open('a') as stream:
+                    stream.write(json.dumps(event, allow_nan=False) + '\n')
+        except (OSError, TypeError, ValueError):
+            pass  # optional local diagnostics cannot turn a successful tool into a failure
+
+
+@contextmanager
+def component(name, **identity):
+    """Record actual invocation and completion; loading a model is not usage."""
+    metrics = {}
+    if ACTIVE.get() is None and not os.environ.get('AGERE_EXECUTION_TRACE'):
+        yield metrics
+        return
+    invocation = uuid.uuid4().hex
+    execution_observation('component_started', component=name, invocation_id=invocation, **identity)
+    started = time.perf_counter()
+    error = None
+    try:
+        yield metrics
+    except BaseException as exc:
+        error = type(exc).__name__
+        raise
+    finally:
+        execution_observation('component_finished', component=name, invocation_id=invocation,
+                              status='failed' if error else 'completed', error_type=error,
+                              elapsed_seconds=time.perf_counter()-started, metrics=metrics, **identity)
+
+
+def trace_sql(db):
+    """Opt-in expanded SQL before execution, including a statement that stalls.
+
+    No progress handler, deadline or query transformation is installed here.
+    Callback text is local diagnostics, not an answer or a computation receipt.
+    """
+    if not os.environ.get('AGERE_EXECUTION_TRACE') or os.environ.get('AGERE_EXECUTION_SQL_TRACE') != 'on':
+        return db
+    def started(sql):
+        if sql.lstrip().upper().startswith(('SELECT', 'WITH')) and 'sqlite_master' not in sql:
+            execution_observation('sql_statement_started', component='sqlite', sql=sql,
+                                  query_digest=digest(sql), completion_not_established=True)
+    db.set_trace_callback(started)
+    return db
 
 
 def database(path):
@@ -32,6 +103,11 @@ def database(path):
       CREATE TABLE IF NOT EXISTS question_request_events(
         execution TEXT, sequence INTEGER, payload TEXT NOT NULL,
         PRIMARY KEY(execution,sequence));
+      CREATE TABLE IF NOT EXISTS question_progress_keys(tracking TEXT PRIMARY KEY,execution TEXT NOT NULL UNIQUE);
+      CREATE TRIGGER IF NOT EXISTS question_progress_keys_update BEFORE UPDATE ON question_progress_keys
+        BEGIN SELECT RAISE(ABORT,'Request progress binding is immutable'); END;
+      CREATE TRIGGER IF NOT EXISTS question_progress_keys_delete BEFORE DELETE ON question_progress_keys
+        BEGIN SELECT RAISE(ABORT,'Request progress binding is immutable'); END;
       CREATE TRIGGER IF NOT EXISTS question_request_events_update BEFORE UPDATE ON question_request_events
         BEGIN SELECT RAISE(ABORT,'Request history is immutable'); END;
       CREATE TRIGGER IF NOT EXISTS question_request_events_delete BEFORE DELETE ON question_request_events
@@ -46,8 +122,9 @@ def links(value):
 
 
 class Execution:
-    def __init__(self,path,operation,request):
+    def __init__(self,path,operation,request,*,tracking=None):
         self.path=Path(path);self.id=uuid.uuid4().hex;self.sequence=0
+        self._append_lock=threading.Lock()
         self.started=time.perf_counter();self.cpu_started=time.thread_time()
         bound=links(request)
         if operation=='/api/stack/decision/statement-review-attach':
@@ -57,6 +134,14 @@ class Execution:
         # ACTIVE is set only by `with` (__enter__) and always reset by __exit__ in a finally: constructing an Execution
         # never touches it, so a failing caller cannot leave ACTIVE pointing at a finished (or deleted) execution.
         self.token=None
+        if tracking is not None:
+            tracking_key(tracking)
+            db=database(self.path)
+            try:
+                with db:db.execute('INSERT INTO question_progress_keys VALUES (?,?)',(digest(tracking),self.id))
+            except sqlite3.IntegrityError:
+                raise ValueError('This progress key already belongs to a recorded attempt; the request was not repeated')from None
+            finally:db.close()
         self.append('started', operation=operation, request_digest=digest(request), input_links=bound,
                     received_body_bytes=len(json.dumps(request,allow_nan=False).encode()),
                     body_size_scope='Reserialized local API input; not outbound provider payload bytes')
@@ -72,14 +157,17 @@ class Execution:
         self.close();return False
 
     def append(self,kind,**data):
-        event={'schema':VERSION,'execution_id':self.id,'sequence':self.sequence,
-               'at':datetime.now(timezone.utc).isoformat(),'kind':kind,**data}
-        db=database(self.path)
-        try:
-            with db:db.execute('INSERT INTO question_request_events VALUES (?,?,?)',
-                (self.id,self.sequence,json.dumps(event,allow_nan=False)))
-        finally:db.close()
-        self.sequence+=1
+        # A copied request context can accompany independent source workers.
+        # Reserve and commit each sequence together; the journal stays append-only.
+        with self._append_lock:
+            event={'schema':VERSION,'execution_id':self.id,'sequence':self.sequence,
+                   'at':datetime.now(timezone.utc).isoformat(),'kind':kind,**data}
+            db=database(self.path)
+            try:
+                with db:db.execute('INSERT INTO question_request_events VALUES (?,?,?)',
+                    (self.id,self.sequence,json.dumps(event,allow_nan=False)))
+            finally:db.close()
+            self.sequence+=1
 
     def finish(self,result=None):
         effort={'elapsed_seconds':time.perf_counter()-self.started,
@@ -111,6 +199,7 @@ class Execution:
             collect(result.get('usage',[]))
             collect(planner)
             self.append('completed',output_links=bound,route=route,
+                answer_status=(result.get('answer')or{}).get('status'),
                 returned_receipt_keys=sorted(reused),result_digest=digest(result),
                 historical_receipts_are_new_dispatches=False,effort=effort,
                 local_reading_id=result.get('reading_id'),
@@ -126,8 +215,69 @@ class Execution:
         if token is not None:ACTIVE.reset(token)
 
 
-def begin(path,operation,request):
-    return Execution(path,operation,request) if operation in OPERATIONS else None
+def begin(path,operation,request,*,tracking=None):
+    return Execution(path,operation,request,tracking=tracking) if operation in OPERATIONS else None
+
+
+def tracking_key(value):
+    if not isinstance(value,str)or not re.fullmatch('[0-9a-f]{32}',value):
+        raise ValueError('A random 32-character analysis progress key is required')
+    return value
+
+
+def progress(path,tracking,*,after=-1):
+    """Read-only incremental presentation of this attempt's actual journal.
+
+    Random per-attempt capability; never match by patient, question or another
+    conversation. No SQL, prompts, record text, ledger paths or credentials leave
+    this projection. A reserved provider call is not proof of a received response.
+    """
+    from .clinical.evaluation import operational_path
+    tracking_key(tracking)
+    if type(after)is not int or not -1<=after<2**63:raise ValueError('Invalid progress sequence')
+    target=operational_path(path,'program-work.sqlite3')
+    empty={'schema':'analysis-progress/1','status':'waiting','sequence':after,'updates':[],
+           'answer_status':None,'observed_only':True}
+    if not target.is_file():return empty
+    db=sqlite3.connect(target.resolve().as_uri()+'?mode=ro',uri=True,timeout=10)
+    try:
+        if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='question_progress_keys'").fetchone():return empty
+        row=db.execute('SELECT execution FROM question_progress_keys WHERE tracking=?',(digest(tracking),)).fetchone()
+        if not row:return empty
+        execution=row[0]
+        rows=[json.loads(r[0])for r in db.execute('SELECT payload FROM question_request_events WHERE execution=? AND sequence>? ORDER BY sequence',(execution,after))]
+        last=db.execute('SELECT payload FROM question_request_events WHERE execution=? ORDER BY sequence DESC LIMIT 1',(execution,)).fetchone()
+    finally:db.close()
+    if not last:return empty
+    last=json.loads(last[0]);updates=[]
+    labels={'proposer_tier':('understand','Checking an analysis approach'),
+        'investigator_sql':('compute','Querying the connected records'),
+        'governed_sql':('compute','Computing with the source data'),
+        'analytical_engine':('compute','Running the requested analysis'),
+        'claim_local_source_review':('verify','Checking statements against their sources')}
+    for event in rows:
+        kind=event['kind'];component=event.get('component');group,label,state=None,None,None
+        if kind=='started':group,label,state='understand','Question received','completed'
+        elif kind in ('component_started','component_finished')and component in labels:
+            group,label=labels[component];state='running'if kind=='component_started'else event.get('status','completed')
+            if state=='completed':label={'proposer_tier':'Analysis approach checked','investigator_sql':'Source query finished',
+                'governed_sql':'Calculation finished','analytical_engine':'Analysis step finished',
+                'claim_local_source_review':'Source check finished'}[component]
+            elif state=='failed':label+=' · step stopped'
+            metrics=event.get('metrics')or{}
+            if component in ('investigator_sql','governed_sql')and state=='completed'and type(metrics.get('rows'))is int and metrics['rows']>=0:
+                label+=f" · {metrics['rows']:,} result "+('row'if metrics['rows']==1 else'rows')+(' (partial)'if metrics.get('truncated')is True else'')
+        elif kind in ('reserved','request_finished','cache_reused'):
+            group='reason';state='running'if kind=='reserved'else'failed'if event.get('status')=='failed'else'completed'
+            label={'reserved':'Model work scheduled','request_finished':'Model attempt returned','cache_reused':'Reused a saved model response'}[kind]
+        elif kind=='completed':group,label,state='respond','Analysis returned','completed'
+        elif kind=='operation_failed':group,label,state='respond','The request stopped; completed work remains recorded','failed'
+        if label:
+            updates.append({'sequence':event['sequence'],'at':event['at'],'group':group,'label':label,'state':state,
+                'key':(event.get('invocation_id')or digest(['progress',event.get('request_hash')]))if kind in ('reserved','request_finished','cache_reused')else event.get('invocation_id'),
+                'kind':kind,'component':component if component in labels else None})
+    return {**empty,'sequence':last['sequence'],'status':'complete'if last['kind']=='completed'else'failed'if last['kind']=='operation_failed'else'active_or_interrupted',
+            'last_observed_at':last['at'],'answer_status':last.get('answer_status'),'updates':updates}
 
 
 def observe(kind,**data):

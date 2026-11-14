@@ -14,29 +14,46 @@ executes it read-only and checks the output shape, so a proposal here never answ
     reader_comparison roles (cohort lexical, windowed MiniLM, Kev, d1) or the semantic statement reader's native Kev/d1;
     only an undecided question escalates, and only with stack.allow_live, to Jev/TypeSafe (Stack.review), a matching
     context-pass bundle, Perplexity Decisions, and last the Jev -> Claude gateway cascade.
+    Ordinary planning enables local readers only through AGERE_DOCUMENT_LOCAL_READERS;
+    the installed-reader list below also serves explicit diagnostic comparisons.
 Both return None at once (no I/O) when the question is not of their kind, or asks for a count/value/table/patient list
 (ranked passages are examples, never a denominator, so the output check would reject them anyway).
 """
 import json
+import os
 import re
 import sqlite3
 import time
 from datetime import date, timedelta
 from pathlib import Path
 
-VERSION = 'evidence-proposers/1'
+VERSION = 'evidence-proposers/2'
 ROOT = Path(__file__).resolve().parents[3]
 
 # free, cheapest first. student_bioclinical = frozen BioClinical ModernBERT head on the same curriculum as the MiniLM student
 # (tools/train_semantic_students_v2.py; its validation accuracy beside lexical/MiniLM is in comparison.json), read after them.
 LOCAL_READERS = ('student_lexical', 'student_minilm', 'student_bioclinical', 'cohort_windowed_minilm', 'kev', 'd1', 'medgemma')
 PAID_READERS = ('jev', 'perplexity')
-REVIEW_ORDER = LOCAL_READERS + PAID_READERS
+REVIEW_ORDER = LOCAL_READERS + PAID_READERS  # supported explicit diagnostic order, not ordinary defaults
 RETRIEVAL_COMPONENTS = ('warehouse_retriever', 'fts5_index', 'minilm_encoder', 'bge_reranker')
 READER_COMPONENTS = {'student_lexical': 'semantic_student_heads', 'student_minilm': 'semantic_student_heads',
                      'student_bioclinical': 'bioclinical_modernbert_student',
                      'cohort_windowed_minilm': 'windowed_student', 'kev': 'kev_reader', 'd1': 'd1_reader',
                      'jev': 'jev_typesafe_review', 'perplexity': 'perplexity_decisions_review', 'medgemma': 'medgemma_reader'}
+
+
+def active_review_order():
+    """Share the ordinary document reader's explicit local-role configuration.
+
+    Installed research weights are availability, not permission or qualification
+    to load them for every source question. Explicit diagnostic provider lists
+    remain inspectable and do not change the frozen experiments.
+    """
+    local = list(dict.fromkeys(p.strip() for p in os.environ.get('AGERE_DOCUMENT_LOCAL_READERS', '').split(',')
+                               if p.strip()))
+    if any(p not in LOCAL_READERS for p in local):
+        raise ValueError('Unknown configured local document reader')
+    return tuple(local) + PAID_READERS
 
 NARRATIVE = re.compile(
     r"\b(?:notes?|documents?|documented|documentation|charts?|charted|charting|narratives?|free[- ]?text|passages?|"
@@ -60,8 +77,28 @@ WORDS = {'one': 1, 'two': 2, 'three': 3, 'six': 6, 'twelve': 12}
 # -- question kind -------------------------------------------------------------------------------------------------
 def _not_examples(question):
     """Counts, values, tables and patient lists are not answered by ranked examples."""
-    from .analysis_graph import requested_shape
-    return requested_shape(question) is not None
+    from .analysis_graph import requested_shape,patient_list_question
+    from .patient_ids import names_a_patient
+    if requested_shape(question)is not None:return True
+    if patient_list_question(question)and not names_a_patient(question):return True
+    # A filtered collection can name any entity: accounts, contracts, notes,
+    # invoices, etc. Ranked passages cannot establish that collection's scope.
+    # Keep explicitly requested examples/passages as retrieval, and leave the
+    # complete original request to the ordinary planner for collection work.
+    from .answer_shape import shape_wording
+    selection = re.match(r'^\s*(?:please\s+)?(?:identify|find|list|show(?:\s+me)?)\s+([^.!?]+)',
+                         shape_wording(question), re.I)
+    if selection:
+        obj = selection[1]
+        examples = re.match(r'(?:(?:an?|some|a\s+few|\d+)\s+)?(?:(?:ranked|illustrative|matching)\s+)?'
+                            r'(?:examples?|passages?|excerpts?)\b', obj, re.I)
+        if not examples and re.search(r'\b(?:whose|that|which|where)\b', obj, re.I):
+            return True
+    # A cohort-prefixed request needs its membership resolved before retrieval.
+    # This tier cannot compile those predicates or produce a complete patient
+    # comparison. Keep single-patient and unfiltered passage questions available.
+    return bool(re.match(r'^\s*(?:for|among)\s+(?:(?:the|all|received|recorded|these|those)\s+)*'
+                         r'(?:patients|members|people|individuals|beneficiaries)\b',str(question),re.I))
 
 
 def narrative_question(question, stack=None):
@@ -110,7 +147,7 @@ def named_patients(stack, question, limit=20):
 
 def population_ids(population):
     ids = population.get('patient_ids') if isinstance(population, dict) else population
-    return sorted({str(p) for p in ids}) if isinstance(ids, (list, tuple, set)) and ids else None
+    return sorted({str(p) for p in ids}) if isinstance(ids, (list, tuple, set)) else None
 
 
 def window(question, as_of):
@@ -133,11 +170,8 @@ def window(question, as_of):
 
 def cohort_node(ids, purpose):
     from .cohorts import empty
-    spec = empty()
-    atoms = [{'kind': 'patient', 'field': 'patient_id', 'op': 'eq', 'value': p} for p in (ids or [])]
-    if len(atoms) == 1: spec['all'] = atoms
-    elif atoms: spec['any'] = atoms
-    return {'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': spec}, 'purpose': purpose}
+    return {'id': 'population', 'operation': 'cohort', 'inputs': [],
+            'parameters': {'specification': empty(),**({'patient_ids':list(ids)}if ids is not None else{})}, 'purpose': purpose}
 
 
 def retrieve_node(query, win, purpose):
@@ -155,7 +189,7 @@ def as_of(stack):
 
 def membership(stack, ids):
     """The exact membership the graph's cohort node yields, so the preflight search shares the executed search's cache."""
-    if ids: return sorted(ids)
+    if ids is not None: return sorted(ids)
     return sorted(r[0] for r in stack.retriever.db.execute('SELECT id FROM patients'))
 
 
@@ -216,12 +250,12 @@ def expand(question, hits, limit=12):
 def retrieval_tier(stack, question, population=None, *, granite_encoder=None):
     """What do the notes/documents/charts say -> cohort -> retrieve. None when not a narrative question or nothing found."""
     if not narrative_question(question, stack): return None
+    if population_ids(population)==[]:return None
     started, cutoff = time.perf_counter(), as_of(stack)
     named = named_patients(stack, question)
     if named and len(named) <= 3 and ASSERTION.match(question) and evidence_question(question):
         return None  # "does the chart support X for P-1" is an assertion for review_tier, not a passage search
     ids = named or population_ids(population)
-    if ids is not None and len(ids) > 20: ids = None  # cohort predicates are bounded; rank across the whole roster
     win = window(question, cutoff)
     components = list(RETRIEVAL_COMPONENTS)
     members = membership(stack, ids)
@@ -245,7 +279,7 @@ def retrieval_tier(stack, question, population=None, *, granite_encoder=None):
                                                 'connected_record_ids', 'scope_sufficiency')}
         except Exception as exc:  # noqa: BLE001 - context selection is supporting detail; retrieval still answers
             context = {'status': 'failed', 'reason': f'{type(exc).__name__}: {exc}'[:300]}
-    scope = f"patient {ids[0]}" if ids and len(ids) == 1 else f"{len(ids)} selected patients" if ids else 'all observed patients'
+    scope = f"patient {ids[0]}" if ids and len(ids) == 1 else f"{len(ids)} selected patients" if ids is not None else 'all observed patients'
     nodes = [cohort_node(ids, f'Source passages are ranked within {scope}'),
              retrieve_node(query, win, 'Ranked source passages answering what the received text says (examples, not a denominator)')]
     graph = graph_of(question, nodes)
@@ -298,8 +332,9 @@ def _comparison_cohort(stack):
     return next((c['cohort_id'] for c in listed if c['status'] == 'available'), None)
 
 
-def read_locally(stack, question, patient, evidence, providers=LOCAL_READERS):
+def read_locally(stack, question, patient, evidence, providers=None):
     """Free readers in order; stop at the first provider whose readings decide. -> {'verdict','readings','components'}"""
+    providers = tuple(p for p in active_review_order() if p in LOCAL_READERS) if providers is None else providers
     readings, used = [], []
     goal = targets(question, evidence)
     if not goal: return {'verdict': 'unknown', 'readings': [], 'components': [], 'reason': 'no retrieved passages'}
@@ -410,9 +445,10 @@ def gateway_cascade(stack, question, patient, evidence):
         ledger.close()
 
 
-def review_patient(stack, question, patient, providers=REVIEW_ORDER):
+def review_patient(stack, question, patient, providers=None):
     """Free readers first; escalate an undecided question to paid readers only with stack.allow_live. Never raises for a
     single reader failing; paid providers are skipped (and say so) without allow_live."""
+    providers = active_review_order() if providers is None else providers
     started = time.perf_counter()
     try:  # bounded subject-anchored packet with learned category selection: the SAME evidence for every reader
         from . import evidence_packets
@@ -502,17 +538,21 @@ def review_tier(stack, question, population=None):
     if not ids or len(ids) > 3: return None  # patient-scoped review reads one to three named charts
     started, cutoff = time.perf_counter(), as_of(stack)
     live = bool(getattr(stack, 'allow_live', False))
-    providers = [p for p in REVIEW_ORDER if live or p in LOCAL_READERS]
+    providers = [p for p in active_review_order() if live or p in LOCAL_READERS]
+    if not providers:
+        return None  # no configured reader can execute; continue the existing cascade
     scope = f'patient {ids[0]}' if len(ids) == 1 else f'patients {", ".join(ids)}'
     nodes = [cohort_node(ids, f'The chart of {scope}'),
              retrieve_node(question, window(question, cutoff), 'Ranked source passages bearing on the asked assertion')]
     extra, components = {}, ['engine_review', 'warehouse_retriever', 'fts5_index', 'bge_reranker']
     review = {'id': 'review', 'operation': 'review', 'inputs': ['population'], 'purpose':
-              'Read the passages free first (students, windowed MiniLM, Kev, d1); escalate undecided charts to Jev, then Perplexity',
+              'Read with the explicitly configured local roles; escalate undecided charts to the existing System One routes',
               'parameters': {'providers': providers, 'question': question[:1000], 'maximum_patients': len(ids)}}
     if review_node_accepts(providers, cutoff):
         nodes.append(review)  # the engine op runs the whole reader cascade (review_patient)
-        components += [READER_COMPONENTS[p] for p in providers] + ['reader_comparison', 'semantic_statement_reader']
+        components += [READER_COMPONENTS[p] for p in providers]
+        if any(p in providers for p in ('cohort_windowed_minilm', 'kev', 'd1')):
+            components += ['reader_comparison', 'semantic_statement_reader']
     else:
         # Today's 'review' op takes only jev/perplexity and needs allow_live: read free here, put the readings in the
         # receipt, and add the paid review node only for charts the free readers left undecided.

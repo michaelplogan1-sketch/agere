@@ -118,6 +118,49 @@ def packages(path):
  finally:db.close()
 
 
+def discovery(path,as_of):
+ """Expose installed dated definitions without installing or selecting a rule.
+
+ Read-only discovery includes unavailable/expired versions so a caller can
+ explain their disposition. It never promotes an authored or quoted package to
+ an applicable clinical program, or resolves overlapping versions by recency.
+ """
+ date.fromisoformat(as_of);path=Path(path);quoted=[];older=[]
+ file=path/'program-documents.sqlite3'
+ if file.exists():
+  db=sqlite3.connect(file.resolve().as_uri()+'?mode=ro',uri=True)
+  try:
+   for raw, in db.execute('SELECT payload FROM packages ORDER BY program,version'):
+    p=json.loads(raw)
+    if digest({k:v for k,v in p.items() if k!='id'})!=p['id']:raise ValueError('Program document package changed')
+    state=review_state(db,p['id']);spec=p['spec']
+    temporal=('document_not_received_by_cutoff' if p['provenance']['received_on']>as_of else
+        'not_effective' if not spec['effective_start']<=as_of<=spec['effective_end'] else 'within_declared_period')
+    quoted.append({**summary(p),'source':spec['source'],'provenance':p['provenance'],
+        'temporal_status':temporal,'review':state,'input_bindings':p['input_bindings'],
+        'clinical_execution_authorized':False})
+  finally:db.close()
+ counts=Counter(p['program'] for p in quoted if p['temporal_status']=='within_declared_period')
+ for p in quoted:p['overlapping_versions_require_selection']=counts[p['program']]>1 and p['temporal_status']=='within_declared_period'
+ file=path/'stack.sqlite3'
+ if file.exists():
+  db=sqlite3.connect(file.resolve().as_uri()+'?mode=ro',uri=True)
+  try:
+   if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='program_packages'").fetchone():
+    for raw, in db.execute('SELECT payload FROM program_packages ORDER BY program,start,version'):
+     p=json.loads(raw);s=p['spec']
+     if Program(s).hash!=p['policy_hash']:raise ValueError('Legacy program policy changed')
+     older.append({'policy_hash':p['policy_hash'],'program':s['id'],'version':s['version'],
+        'purpose':s['purpose'],'source':s['source'],'effective_start':s['effective_start'],'effective_end':s['effective_end'],
+        'temporal_status':'within_declared_period' if s['effective_start']<=as_of<=s['effective_end'] else 'not_effective',
+        'source_document_available':p.get('source_document_available',False),'status':p['status'],
+        'clinical_eligibility_established':False})
+  finally:db.close()
+ return {'as_of':as_of,'quoted_packages':quoted,'legacy_packages':older,
+    'scope':'Installed program-document and legacy program registries only; not an exhaustive search of source records, public programs or buyer contracts. A date-effective research/example rule remains a simulation, not approved program criteria.',
+    'clinical_eligibility_established':False,'automatic_version_selection':False}
+
+
 def load_package(path,key):
  if not isinstance(key,str) or not re.fullmatch('[a-f0-9]{64}',key):raise ValueError('Exact imported package hash required')
  db=storage(path)

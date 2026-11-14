@@ -4,6 +4,7 @@ Reuses the chart partitioner, source/citation checks and audited provider gatewa
 All first-pass findings survive reconciliation. Model coverage is self-reported,
 not an entailment check, and excerpt reconciliation is not whole-chart reasoning.
 """
+from .case_synthesis import input_token_total, token_count_calls
 from collections import Counter
 from pathlib import Path
 import hashlib
@@ -406,7 +407,7 @@ def synthesize(path, context_id, ledger, *, allow_live=False, maximum_passes=8):
         if request_bytes(body) > MAX_REQUEST_BYTES: raise ValueError('Provider request exceeds gateway bound')
         available(body); fresh()
         tokens = single.token_check(body, out, allow_live=allow_live)
-        progress['new_token_count_calls'] += int(not tokens['provider_count_cached'])
+        progress['new_token_count_calls'] += token_count_calls(tokens)
         fresh()
         result, usage = single.send(body, 'claude', ledger, out, parse=parser)
         if usage.get('cache_hit'):
@@ -470,7 +471,7 @@ def synthesize(path, context_id, ledger, *, allow_live=False, maximum_passes=8):
                 'request_bytes': max(r['request_bytes'] for r in reconciliations)},
             'provider': 'claude', 'model': body['model'],
             'route_reason': 'Complete original units exceed one gateway request; bounded raw passes followed by cited-excerpt reconciliation.',
-            'token_check': {'input_tokens': sum(t['input_tokens'] for t in receipts), 'basis': 'sum_of_provider_counts_across_calls'},
+            'token_check': {'input_tokens': input_token_total(receipts), 'basis': 'Sum of measured provider counts; unknown if any pass has no token measurement'},
             'usage': [p['usage'] for p in progress['passes']]+[r['usage'] for r in reconciliations],
             'new_paid_api_calls': progress['new_paid_api_calls'], 'new_token_count_calls': progress['new_token_count_calls'],
             'cache_hit': False, 'clinical_state_established': False, 'clinical_execution_authorized': False,

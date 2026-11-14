@@ -114,8 +114,9 @@ def sql_pair(result):
     contract = (result or {}).get('request_contract') or {}
     graph = (result or {}).get('graph') or {}
     nodes = graph.get('nodes') or []
-    if nodes and all(n.get('operation') == 'sql' for n in nodes):
+    if len(nodes) == 1 and nodes[0].get('operation') == 'sql':
         p = nodes[0].get('parameters') or {}
+        if re.search(r'\bagere_result_\d+\b', str(p.get('query') or '')): return None
         if p.get('query'): return {'query': p['query'], 'returns': p.get('returns') or (result.get('answer') or {}).get('answer_type')}
     request = contract.get('request')
     if contract.get('query') and isinstance(request, dict) and not request.get('analyses') and not request.get('workflow'):
@@ -227,10 +228,32 @@ def after_answer(stack, question, result, *, body=None):
     receipt = {'version': VERSION, 'verified': False, 'saved_pair': None, 'corpus': None, 'quarantine': [], 'components': {}, 'errors': []}
     if _evaluating():  # a measured run learns nothing: no pair, corpus row, gap, trace, stability row, correction or learning task
         receipt['evaluation'] = True
+        if os.environ.get('AGERE_COMPONENT_LEARNING','off')=='on':return receipt
         try:
             receipt['verified'], receipt['reasons'] = verified(stack, question, result)
         except Exception as exc:  # noqa: BLE001
             receipt['errors'].append(f'{type(exc).__name__}: {exc}'[:300])
+        return receipt
+    # Outcome collection is independent of fitting/promotion. Turning model
+    # updates off must not silently discard the evidence for the next cycle.
+    try:
+        from .component_learning import observe
+        receipt['components']['component_learning']=observe(stack,question,result,body)
+    except Exception as exc:
+        receipt['errors'].append('component observation: '+type(exc).__name__+': '+str(exc)[:300])
+    if getattr(stack, 'learning_observation_only', False):
+        receipt['components']['learning_cycle'] = {'status': 'observation_only', 'provider_calls': 0,
+            'reason': 'Workspace observations require independently reviewed labels and a scoped promotion plan.'}
+        return receipt
+    if os.environ.get('AGERE_COMPONENT_LEARNING','off')=='on':
+        # Explicit component-learning mode never reads the legacy learning,
+        # question-plan or answer stores. Observations need direct review before
+        # becoming training labels; model-generated learning_requests cannot approve themselves.
+        try:
+            from .component_learning import run_plan
+            receipt['components']['learning_cycle']=run_plan(stack)
+        except Exception as exc:
+            receipt['errors'].append('component learning: '+type(exc).__name__+': '+str(exc)[:300])
         return receipt
     try:
         ok, reasons = verified(stack, question, result)
@@ -271,7 +294,7 @@ def after_answer(stack, question, result, *, body=None):
     except Exception as exc:  # noqa: BLE001 - learning bookkeeping never fails an answer
         receipt['errors'].append(f'{type(exc).__name__}: {exc}'[:300])
     try:
-        receipt['components'] = components(stack, question, result, body)
+        receipt['components'].update(components(stack, question, result, body))
     except Exception as exc:  # noqa: BLE001
         receipt['errors'].append(f'components: {type(exc).__name__}: {exc}'[:300])
     return receipt
@@ -280,6 +303,15 @@ def after_answer(stack, question, result, *, body=None):
 def after_failure(stack, question, exc):
     """A question nobody could answer: record it as a gap for grammar growth and training negatives. Never raises."""
     if _evaluating(): return None
+    try:
+        from .component_learning import observe
+        observation=observe(stack,question,{'answer':{'status':'failed'}})
+        if getattr(stack, 'learning_observation_only', False) or os.environ.get('AGERE_COMPONENT_LEARNING','off')=='on':
+            return observation
+    except Exception:  # bookkeeping cannot suppress the original failure/gap
+        pass
+    if getattr(stack, 'learning_observation_only', False):
+        return None
     try:
         usage = getattr(exc, 'planner_receipt', {}) or {}
         return append('gaps', {'question': question, 'status': 'error', 'error': f'{type(exc).__name__}: {exc}'[:500],

@@ -181,6 +181,12 @@ def requested_shape(question):
     q = shape_wording(question).lower()
     # Evidential 'going by the last two results' does not request grouped rows.
     q = re.sub(r'\b(?:going|judging)\s+by\b', 'using', q)
+    q = re.sub(r'\bmultiplied\s+by\b', 'times', q)
+    # A hyphenated dose/goal modifier and a rate denominator do not request
+    # separate output rows. Preserve actual "per patient" / "by payer" asks.
+    q = re.sub(r'\bper-(?:patient|member|person)\b', 'individual', q)
+    q = re.sub(r'\bper\s+(?:(?:received|recorded|covered|eligible|attributed|enrolled)\s+)?member(?:[- ]month|\s+per\s+month)s?\b', 'pmpm', q)
+    q = re.sub(r'\bcount(?:ing)?\s+each\s+(?:claim|record|patient|member|visit|encounter|stay|event|fill)s?\s+once\b', 'count distinct records', q)
     if re.search(r'\b(?:by|per|for each|each|break(?:s)? ?(?:it )?(?:down|out)|split|tabulate|monthly|quarterly|weekly|trend)\b'
                  r'(?! 1,?000\b)(?! (?:at least|at most|more than|less than|over|under|about|around|up to|\$?\d))', q) and \
             not re.search(r'\bper 1,?000\b(?!.*\bby\b)', q):
@@ -219,6 +225,11 @@ def headline(answer):
     if status in ('unsupported', 'grounding_failed') or kind == 'unsupported':
         missing = '; '.join(m.replace('Missing input: ', '') for m in answer.get('missing', [])[:4])
         return f'Not answerable from the received data. Missing: {missing}.' if missing else 'Not answerable from the received data.'
+    financial=(answer.get('overall')or{}).get('financial_account_scope')
+    if financial is not None:
+        rows=answer.get('table')or[];unknown=sum(r.get('account_status')=='unresolved_snapshot'for r in rows)
+        return (f"{len(rows):,} received accounts across {len(answer.get('patient_ids')or[]):,} patients"
+                +(f'; {unknown:,} have an unresolved snapshot.'if unknown else'.'))
     if kind == 'count': core = f"{_fmt(answer.get('count'))}"
     elif kind == 'patient_set': core = f"{_fmt(answer.get('count') if answer.get('count') is not None else len(answer.get('patient_ids') or []))} patients"
     elif kind == 'value': core = (_fmt(answer.get('value')) + answer.get('unit', '')) if not isinstance(answer.get('value'), str) else answer['value']
@@ -337,6 +348,16 @@ def build_answer_core(plan, results, memberships, question):
             report_index = len(plan['nodes']) - 1
     else:
         report_index = len(plan['nodes']) - 1
+    if last['operation'] == 'financial_accounts'and results[-1]['result'].get('account_output')is not None:
+        report=results[-1]['result'];output=report['account_output'];rows=output['rows'];scope=output['scope']
+        partial=plan.get('coverage')!='supported_observation'or bool(plan.get('unmet_requirements'))or bool(scope['unresolved_selected_sources'])
+        answer.update(status='partial'if partial else'answered',answer_type='table',count=len(rows),table=rows,
+            patient_ids=sorted({r['patient_id']for r in rows}|{r['patient_id']for r in scope['unresolved_selected_sources']}),
+            membership_role='financial_record_subjects',actionable_cohort=False,
+            method='Complete received account detail with registered native integer-cent identities; snapshots and received transactions have separate clock/currency scopes.',
+            overall={'financial_account_scope':scope},limitations=report['limits'])
+        if scope['unresolved_selected_sources']:answer['missing'].append('Selected source records without a unique received account remain listed in financial_account_scope.')
+        return answer
     if last['operation'] == 'governed_metric':
         return results[-1]['result']['answer']
     if last['operation'] in ('retrieve', 'review'):
@@ -354,17 +375,27 @@ def build_answer_core(plan, results, memberships, question):
         return answer
     if last['operation'] == 'trajectory':
         report = results[-1]['result']
+        from . import trajectory
+        requested = trajectory.requested_event(question)
+        if report.get('status') == 'unknown' or (report.get('mode') == 'forecast' and requested != 'endpoint_exceedance'):
+            reason = 'The requested path-event probability is unknown: the current engine estimates an endpoint value and cannot substitute it for a crossing within the window.'
+            answer.update(status='partial', answer_type='table', table=[], patient_ids=[], count=None, value=reason, method=report['method'],
+                          overall={'requested_event': report.get('target_event', requested), 'path_event_probability_available': False})
+            answer['missing'] += report.get('missing') or [reason]
+            return answer
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
         answer.update(status='partial' if partial else 'answered', answer_type='table', table=report['patients'], method=report['method'],
                       count=report['flagged'], patient_ids=[x['patient_id'] for x in report['patients']],
                       value=(f"{report['flagged']} of {report['patients_with_series']} patients with a {report['concept']} series are projected "
-                             f"to go {report['direction']} {_fmt(report['threshold'])} {report['unit']} within {report['horizon_days']} days "
+                             f"to be {report['direction']} {_fmt(report['threshold'])} {report['unit']} at the endpoint {report['horizon_days']} days from the snapshot "
                              f"(probability >= 50%)." if report.get('mode') == 'forecast' else
                              f"{report['flagged']} of {report['patients_with_series']} patients with a {report['concept']} series show a material, "
                              f"statistically separable change ({report['direction']})."))
         if report.get('conformal'):  # forecast mode: distribution-free intervals and their backtested coverage
             answer['value'] += ' Conformal calibration: ' + report['conformal']['statement']
             answer['overall'] = {**(answer.get('overall') or {}), 'calibration': report['conformal']}
+        if report.get('probability_target'):
+            answer['overall'] = {**(answer.get('overall') or {}), 'probability_target': report['probability_target']}
         return answer
     if last['operation'] == 'calibration':
         report = results[-1]['result']
@@ -373,7 +404,9 @@ def build_answer_core(plan, results, memberships, question):
         answer.update(status='partial' if partial or not tested else 'answered', answer_type='table',
                       table=[{k: v for k, v in r.items() if k != 'statement'} for r in report['rows']], value=report['reading'],
                       method=report['method'], limitations=report['limitations'],
-                      overall={'calibration': {'statement': report['reading'], 'receipts': report['receipts']}, 'reliability': report['reliability']})
+                      overall={'calibration': {'statement': report['reading'], 'receipts': report['receipts'],
+                                               **{k: report.get(k) for k in ('evaluation_population','as_of','parameters','source_binding')}},
+                               'reliability': report['reliability']})
         return answer
     if last['operation'] == 'scheduling':
         from .scheduling import summary
@@ -418,7 +451,8 @@ def build_answer_core(plan, results, memberships, question):
     if last['operation'] == 'queueing':
         from .queueing import summary, table
         report = results[-1]['result']
-        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or report.get('unmet_requirements')
+        unavailable = report.get('inference_status') == 'insufficient_data'
+        partial = unavailable or plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or report.get('unmet_requirements')
         rows = table(report)
         ok = bool(rows)
         answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
@@ -430,17 +464,24 @@ def build_answer_core(plan, results, memberships, question):
                                'input_scope': report.get('input_scope'), 'input_membership': report.get('input_membership'),
                                'inference_status': report['inference_status'], 'assumptions': report['assumptions']})
         answer['missing'].extend(report.get('unmet_requirements', []))
-        if not ok: answer['missing'].append(summary(report))
+        if not ok or unavailable: answer['missing'].append(summary(report))
         return answer
     if last['operation'] == 'survival':
         from .survival import summary
         report = results[-1]['result']
-        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
-        answer.update(status='partial' if partial else ('answered' if report['units'] else 'unsupported'),
-                      answer_type='table' if report['units'] else 'unsupported', table=report['table'], method=report['method'],
-                      value=summary(report), count=report['units'],
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or report.get('status') == 'partial'
+        displayed = len(report['table']) if report['parameters'].get('output') == 'observed_units' else report['units']
+        answer.update(status='partial' if partial else ('answered' if displayed else 'unsupported'),
+                      answer_type='table' if displayed else 'unsupported', table=report['table'], method=report['method'],
+                      value=summary(report), count=displayed,
                       overall={k: report[k] for k in ('event_label', 'time_zero', 'units', 'patients', 'events', 'excluded',
                                                       'included_without_baseline_result', 'groups', 'logrank', 'cox', 'curves')})
+        answer['missing'].extend(report.get('missing') or [])
+        answer['overall']['unresolved_units'] = report.get('unresolved_units', [])
+        answer['overall']['unsupported_horizons'] = report.get('unsupported_horizons', [])
+        answer['overall'].update({k: report[k] for k in ('parameters', 'death_source', 'selected_index_accounts', 'observed_status_counts', 'estimand') if k in report})
+        if report['parameters'].get('output') == 'observed_units':
+            answer['patient_ids'] = sorted({row['patient_id'] for row in report['table']})
         if not report['units']:
             answer['missing'].append(summary(report))
         return answer
@@ -542,9 +583,13 @@ def build_answer_core(plan, results, memberships, question):
                       overall={'period': report['period'], 'members_in_scope': report.get('members_in_scope'),
                                'tests_examined': report['tests_examined'], 'look_elsewhere_bits': report['look_elsewhere_bits'],
                                'charts': [] if report['check'] in ('ra_cusum', 'vlad') else chart_points(report),
+                               **({'monitor_comparison': report['comparison']} if report.get('comparison') is not None else {}),
                                **({'risk_adjusted': {'check': report['check'], 'parameters': report['parameters'], 'summary': report.get('summary'),
                                                      'control_limits': report.get('control_limits'), 'units': report.get('units'),
                                                      'signals': report.get('signals')}} if report['check'] in ('ra_cusum', 'vlad') else {})})
+        if report.get('comparison') is not None:
+            answer.update(count=len(table), computed_as={'source_request_id': digest({'question': question, 'parameters': report['parameters']}),
+                'operation': 'monitor', 'output': 'comparison', 'definition': report['comparison']['baseline']['method']})
         return answer
     if last['operation'] == 'claims_review':
         from .claims_review import summarize as claims_summary
@@ -608,15 +653,16 @@ def build_answer_core(plan, results, memberships, question):
     if last['operation'] == 'line_of_therapy':
         from .line_of_therapy import summarize as lot_summary
         report = results[-1]['result']
-        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or report.get('status') == 'partial'
         value, table = lot_summary(report)
-        ok = report.get('status') == 'answered'
+        ok = report.get('status') in ('answered', 'partial')
         answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
                       value=value, table=table, method=report['method'], warnings=report['warnings'], count=report['counts'].get('analysed_new_users'),
                       overall={'line_of_therapy': {k: report.get(k) for k in ('parameters', 'area', 'area_label', 'fill_feed_start', 'counts', 'rules',
                                                                              'lines', 'regimens', 'transitions', 'switch_matrix', 'sequences',
                                                                              'sankey', 'persistence', 'examples')}})
         if not ok: answer['missing'].append(value)
+        elif report.get('status') == 'partial': answer['missing'].append('Long-term persistence or next-treatment risk lacks observed follow-up support; descriptive treatment lines remain available.')
         return answer
     if last['operation'] == 'trial_feasibility':
         from .trial_feasibility import summarize as tf_summary
@@ -884,9 +930,13 @@ def validate(plan, as_of):
             assert_sealed(p['contract'])
             if not p['contract'].get('membership_query'): raise ValueError('Request has no patient membership')
         elif op == 'cohort':
-            if inputs or set(p) != {'specification'}:
+            if inputs or set(p)-{'patient_ids'} != {'specification'}:
                 raise ValueError('Cohort node needs its explicit specification')
-            p = {'specification': cohorts.validate(p['specification'], as_of)}
+            ids=p.get('patient_ids')
+            if 'patient_ids' in p and (not isinstance(ids,list) or any(not isinstance(x,str) or not x for x in ids)):
+                raise ValueError('Explicit received patient IDs required')
+            p = {'specification': cohorts.validate(p['specification'], as_of),
+                 **({'patient_ids':list(dict.fromkeys(ids))} if 'patient_ids' in p else {})}
         elif op == 'aggregate':
             from . import aggregate
             p = aggregate.validate(p)
@@ -1137,6 +1187,10 @@ def validate(plan, as_of):
             p=validate_interpretation(p)
         elif op == 'assertion_review':
             if len(inputs)!=1:raise ValueError('Assertion review needs one complete selected population')
+            from .assertion_reconciliation import validate as validate_assertions
+            p=validate_assertions(p)
+            if 'assertion_window'in p:
+                p['assertion_window']=validate_window(p['assertion_window'],as_of)
         elif op in ('context','context_passes'):
             if len(inputs)!=1:raise ValueError('Context needs one complete selected population')
         elif op == 'medication_identity':
@@ -1432,7 +1486,7 @@ def execute(stack, plan, *, question=None):
     from . import decision_context  # lab thresholds in cohort atoms follow the question's lab mode before the plan is keyed and cached
     plan, _ = decision_context.enforce_plan(plan, question)
     from .plan_optimizer import optimize_plan  # identical nodes run once (compiler common-subexpression elimination)
-    plan, fusion = optimize_plan(plan)
+    plan, fusion = optimize_plan(plan, validator=lambda candidate: validate(candidate, meta['snapshot']['as_of']))
     if question is not None:
         from .question_input import validate_question
         validate_question(question)
@@ -1445,9 +1499,12 @@ def execute(stack, plan, *, question=None):
             # patients are living patients: the universe every membership is drawn from excludes the deceased (decision_context)
             with sqlite3.connect(f"file:{path / 'semantic.sqlite3'}?mode=ro", uri=True) as semantic_db:
                 universe = decision_context.living_universe(semantic_db, roster)
-        evidence_db, evidence_meta = evidence_connection(path, meta)
-        # Validate every narrative vocabulary before running any graph node.
-        observed = catalog(path)
+        # Structured mathematics must not require an unrelated narrative index.
+        # Narrative/longitudinal/forecast nodes retain their original validation.
+        needs_catalog=any(n['operation'] in ('evidence','sequence','longitudinal','forecast') for n in plan['nodes'])
+        evidence_meta={'model_identity':None}
+        if needs_catalog or (path/'annotation-link.json').is_file():evidence_db,evidence_meta=evidence_connection(path,meta)
+        observed=catalog(path) if needs_catalog else {'evidence_concepts':[]}
         concepts = {(r['source'], r['concept']) for r in observed['evidence_concepts']}
         for node in plan['nodes']:
             if node['operation'] == 'query_population':
@@ -1635,7 +1692,7 @@ def execute(stack, plan, *, question=None):
                 detail['request_id'] = c['id']
             elif op == 'cohort':
                 try:
-                    selected = cohorts.select(path, params['specification'])
+                    selected = cohorts.select(path, params['specification'],patient_ids=params.get('patient_ids'))
                 except grounding.GroundingError as exc:
                     # The data cannot support this predicate: report it, don't
                     # convert a binding failure into patient-level unknowns.
@@ -1656,6 +1713,8 @@ def execute(stack, plan, *, question=None):
             elif op == 'trajectory':
                 from . import trajectory
                 chosen = memberships[node['inputs'][0]]
+                event = trajectory.requested_event(question)
+                if 'threshold' in params and event != 'endpoint_exceedance': params = {**params, 'target_event': event}
                 detail = trajectory.execute(path, sorted(chosen.yes), params)
                 detail['input_membership'] = membership_receipt(chosen)
             elif op == 'survival':
@@ -2058,6 +2117,12 @@ def execute(stack, plan, *, question=None):
                       'accountability_review':accountability_preparations,'outcome':outcome_preparations,
                       'observation_process':observation_preparations}[op][node['id']]
                 graph_reports.attach(path,op,sorted(chosen.yes),params,prep,detail,membership_receipt(chosen))
+                if op=='financial_accounts'and question is not None:
+                    parent=node_index[node['inputs'][0]]
+                    state=decision_context.current()
+                    source_contract=parent['parameters']['contract']if(parent['operation']=='query_population'and state is not None
+                        and state.population.get('record_subject_scope')and parent['parameters']['contract']['request']['source']['table']!='patient')else None
+                    detail['account_output']=graph_reports.financial_table(path,detail,selector_contract=source_contract,prepared=prep)
             results.append({'node': node, 'result': detail})
             node_seconds.append({'id': node['id'], 'operation': op, 'seconds': round(time.perf_counter() - node_started, 4)})
         answer_started = time.perf_counter()
@@ -2073,7 +2138,7 @@ def execute(stack, plan, *, question=None):
         result['question']=question
         result['answer']=build_answer(plan, results, memberships, question)
         if fusion['fused']: result['plan_optimizer'] = fusion
-        if plan['nodes'][0]['operation'] == 'query_population':
+        if plan['nodes'] and plan['nodes'][0]['operation'] == 'query_population':
             result['answer']['computed_as'] = {**result['answer'].get('computed_as', {}),
                 'source_request_id': plan['nodes'][0]['parameters']['contract']['id'],
                 'operation': plan['nodes'][-1]['operation'], 'layer': 'shared_request_engine',
@@ -2086,7 +2151,7 @@ def execute(stack, plan, *, question=None):
         result['answer']['benchmark']=benchmark_references(result['answer'], question, plan['nodes'][-1]['operation'] if plan.get('nodes') else None)
         # Shared requests may ask for several independent analytical outputs.
         # Retain each answer instead of silently showing only the final engine.
-        if plan['nodes'][0]['operation'] == 'query_population' and len(plan['nodes']) > 2:
+        if len(plan['nodes']) > 2 and plan['nodes'][0]['operation'] == 'query_population':
             result['answers_by_node'] = {}
             for item in results[1:]:
                 subplan = {**plan, 'nodes': [plan['nodes'][0], item['node']]}

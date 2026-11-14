@@ -15,7 +15,38 @@ import json, math, sqlite3, statistics
 from . import concepts, conformal, semantic_layer
 from ...signal_math import gaussian_change_points
 
-VERSION = 'trajectory/1'
+VERSION = 'trajectory/2'
+EVENTS = ('endpoint_exceedance', 'any_observed_crossing', 'first_passage', 'sustained_crossing')
+
+
+def requested_event(question):
+    """Preserve explicit path-event language; an endpoint distribution cannot answer those requests."""
+    import re
+    text = str(question or '').lower()
+    if re.search(r'\bsustained\b|\bpersistent crossing\b', text): return 'sustained_crossing'
+    if re.search(r'\bfirst[- ]passage\b|\bfirst (?:time|crossing)\b', text): return 'first_passage'
+    if re.search(r'\bat any (?:time|point)\b|\bever\b', text): return 'any_observed_crossing'
+    if re.search(r'\bendpoint\b|\bat (?:the )?(?:\d+[- ]day |one[- ]year )?horizon\b', text): return 'endpoint_exceedance'
+    if re.search(r'\b(?:within|during)\s+(?!(?:the )?(?:last|previous|prior|past)\b)|\bcross(?:ing|es)?\b', text): return 'any_observed_crossing'
+    return 'endpoint_exceedance'
+
+
+def load_series(db, concepts_, as_of, keep=None):
+    """Shared received series cutoff: event date and known arrival date cannot exceed the requested snapshot.
+
+    Missing arrival dates remain unknown, as in the existing temporal readers. This does not reconstruct
+    historical correction/version state from a current semantic snapshot.
+    """
+    cols = {r[1] for r in db.execute('PRAGMA table_info(measurement)')}
+    marks = ','.join('?' * len(concepts_))
+    sql = f'SELECT patient_id, concept, event_date, value_canonical FROM measurement WHERE concept IN ({marks}) AND value_canonical IS NOT NULL AND event_date IS NOT NULL AND substr(event_date,1,10) <= ?'
+    args = [*concepts_, str(as_of)[:10]]
+    if 'available_date' in cols:
+        sql += ' AND (available_date IS NULL OR substr(available_date,1,10) <= ?)'; args.append(str(as_of)[:10])
+    series = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    for pid, c, d, v in db.execute(sql, args):
+        if keep is None or pid in keep: series[c][pid][d[:10]].append(v)
+    return series
 # (relative variation, absolute floor) per concept: combined analytic + within-person biological variation.
 NOISE = {'egfr': (0.08, 3.0), 'creatinine': (0.06, 0.05), 'hba1c': (0.02, 0.15), 'glucose': (0.12, 8.0), 'potassium': (0.04, 0.15),
          'sodium': (0.01, 1.0), 'hemoglobin': (0.03, 0.3), 'ldl': (0.08, 6.0), 'hdl': (0.07, 3.0), 'total_cholesterol': (0.06, 8.0),
@@ -30,7 +61,8 @@ WORSE = {'egfr': 'down', 'hemoglobin': 'down', 'hdl': 'down', 'platelets': 'down
 
 
 def validate(p):
-    if not isinstance(p, dict) or set(p) - {'concept', 'direction', 'min_points', 'top', 'threshold', 'horizon_days'}:
+    if isinstance(p, dict): p = {k: v for k, v in p.items() if v is not None}
+    if not isinstance(p, dict) or set(p) - {'concept', 'direction', 'min_points', 'top', 'threshold', 'horizon_days', 'target_event'}:
         raise ValueError('trajectory parameters: concept, direction, min_points, top, threshold, horizon_days')
     if 'threshold' in p and (type(p['threshold']) not in (int, float) or not math.isfinite(p['threshold'])): raise ValueError('threshold must be a number')
     if 'horizon_days' in p and (type(p['horizon_days']) is not int or not 7 <= p['horizon_days'] <= 1095): raise ValueError('horizon_days 7..1095')
@@ -39,9 +71,32 @@ def validate(p):
     if direction not in ('worse', 'better', 'up', 'down', 'any'): raise ValueError('direction: worse, better, up, down or any')
     mp = p.get('min_points', 3)
     if type(mp) is not int or not 3 <= mp <= 50: raise ValueError('min_points 3..50')
-    out = {'concept': p['concept'], 'direction': direction, 'min_points': mp, 'top': p.get('top', 50)}
-    if 'threshold' in p: out.update(threshold=float(p['threshold']), horizon_days=p.get('horizon_days', 365))
+    top=p.get('top')
+    if top is not None and (type(top) is not int or top<1):raise ValueError('top must be a positive explicit limit or null for all results')
+    out = {'concept': p['concept'], 'direction': direction, 'min_points': mp, 'top': top}
+    if p.get('target_event', 'endpoint_exceedance') not in EVENTS: raise ValueError('Unknown trajectory target_event')
+    if 'threshold' in p: out.update(threshold=float(p['threshold']), horizon_days=p.get('horizon_days', 365), target_event=p.get('target_event', 'endpoint_exceedance'))
     return out
+
+
+def _transition(days, floor, drift_per_year=None):
+    """The same latent-state transition and process covariance for filtering and future projection."""
+    import numpy as np
+    if not math.isfinite(days) or days < 0:
+        raise ValueError('A forward time interval must be finite and nonnegative')
+    q_level = (floor * 0.5) ** 2 / 365.0
+    q_slope = (drift_per_year or floor) ** 2 / 365.0 ** 3
+    F = np.array([[1.0, days], [0.0, 1.0]])
+    Q = np.array([[q_level * days + q_slope * days ** 3 / 3, q_slope * days ** 2 / 2],
+                  [q_slope * days ** 2 / 2, q_slope * days]])
+    return F, Q
+
+
+def _project(x, P, floor, days):
+    """Latent-state predictive uncertainty; observation noise is a separate endpoint."""
+    import numpy as np
+    F, Q = _transition(float(days), floor)
+    return float((F @ x)[0]), float(np.sqrt(max((F @ P @ F.T + Q)[0, 0], 1e-12)))
 
 
 def kalman(points, rel, floor, drift_per_year=None):
@@ -49,14 +104,11 @@ def kalman(points, rel, floor, drift_per_year=None):
     max(rel x value, floor). Returns final state mean [level, slope/day] and covariance."""
     import numpy as np
     t0, v0 = points[0]
-    q_level = (floor * 0.5) ** 2 / 365.0          # true level wanders slowly (per day)
-    q_slope = (drift_per_year or floor) ** 2 / 365.0 ** 3
     x = np.array([v0, 0.0]); P = np.diag([max(rel * abs(v0), floor) ** 2, (floor / 365.0) ** 2 * 4])
     last = t0
     for t, v in points:
         dt = max(t - last, 0); last = t
-        F = np.array([[1.0, dt], [0.0, 1.0]])
-        Q = np.array([[q_level * dt + q_slope * dt ** 3 / 3, q_slope * dt ** 2 / 2], [q_slope * dt ** 2 / 2, q_slope * dt]])
+        F, Q = _transition(dt, floor, drift_per_year)
         x = F @ x; P = F @ P @ F.T + Q
         R = max(rel * abs(v), floor) ** 2
         S = P[0, 0] + R; K = P[:, 0] / S
@@ -65,23 +117,27 @@ def kalman(points, rel, floor, drift_per_year=None):
 
 
 def forecast(points, rel, floor, horizon_days, threshold, below=True):
-    """Predicted value at the horizon (mean, sd) and the probability it is past the threshold."""
+    """Latent endpoint value and exceedance probability; p_cross is a legacy endpoint alias, never first passage."""
     import numpy as np
     x, P, last = kalman(points, rel, floor)
-    F = np.array([1.0, float(horizon_days)])
-    mean = float(F @ x); sd = float(np.sqrt(max(F @ P @ F, 1e-12)))
+    mean, sd = _project(x, P, floor, horizon_days)
     z = (threshold - mean) / sd
     p_below = 0.5 * (1 + math.erf(z / math.sqrt(2)))
     return {'level_now': round(float(x[0]), 2), 'slope_per_year': round(float(x[1]) * 365.25, 2),
-            'forecast': round(mean, 2), 'forecast_sd': round(sd, 2), 'p_cross': round(p_below if below else 1 - p_below, 3)}
+            'forecast': round(mean, 2), 'forecast_sd': round(sd, 2),
+            'p_endpoint': round(p_below if below else 1 - p_below, 3),
+            'probability_target': {'event': 'endpoint_exceedance', 'quantity': 'latent_state_at_horizon',
+                                   'origin_day': last, 'horizon_days': horizon_days, 'threshold': threshold,
+                                   'direction': 'below' if below else 'above', 'path_event_probability_available': False},
+            'p_cross': round(p_below if below else 1 - p_below, 3),
+            '_p_cross': p_below if below else 1 - p_below}
 
 
 def _predict(points, rel, floor, horizon_days):
     """Unrounded Kalman forecast mean and sd at horizon_days after the last point."""
     import numpy as np
     x, P, _ = kalman(points, rel, floor)
-    F = np.array([1.0, float(horizon_days)])
-    return float(F @ x), float(np.sqrt(max(F @ P @ F, 1e-12)))
+    return _project(x, P, floor, horizon_days)
 
 
 def _p_past(mean, sd, threshold, below):
@@ -103,16 +159,19 @@ def backtest_pairs(series, origin, window, rel, floor, min_points, threshold, be
         mean, sd = _predict(past, rel, floor, t - past[-1][0])
         already = (past[-1][1] < threshold) if below else (past[-1][1] > threshold)
         out.append({'patient_id': pid, 'mean': mean, 'sd': sd, 'y': y, 'p': _p_past(mean, sd, threshold, below),
+                    'target_event': 'endpoint_exceedance', 'observation_definition': 'last_observed_value_in_window',
+                    'origin_day': origin, 'window_days': window,
                     'crossed': (y < threshold) if below else (y > threshold), 'already': already, 't': t})
     return out
 
 
-def _sequential(series, start, rel, floor, min_points, keep=None):
-    """One-step-ahead forecasts for every value observed after `start`, time ordered (for ACI)."""
+def _sequential(series, start, rel, floor, min_points, keep=None, end=None):
+    """One-step-ahead feedback after start and through end, time ordered (for ACI)."""
     steps = []
     for pid, days in series.items():
         if keep is not None and pid not in keep: continue
-        pts = sorted((date.fromisoformat(d).toordinal(), statistics.mean(v)) for d, v in days.items())
+        pts = sorted((date.fromisoformat(d).toordinal(), statistics.mean(v)) for d, v in days.items()
+                     if end is None or date.fromisoformat(d).toordinal() <= end)
         for i in range(min_points, len(pts)):
             if pts[i][0] <= start: continue
             mean, sd = _predict(pts[:i], rel, floor, pts[i][0] - pts[i - 1][0])
@@ -122,7 +181,7 @@ def _sequential(series, start, rel, floor, min_points, keep=None):
 
 
 def calibrate(series, concept, snapshot, horizon_days, threshold, below, min_points=3, alpha=0.1, keep=None):
-    """Time-split conformal calibration of the Kalman forecast and its crossing probability.
+    """Time-split calibration against the last observed value in each declared window.
 
     Live intervals/probabilities are calibrated on forecasts issued at snapshot - H and scored on
     (snapshot - H, snapshot]. The reported backtest repeats the procedure one window earlier: calibrate on
@@ -136,11 +195,14 @@ def calibrate(series, concept, snapshot, horizon_days, threshold, below, min_poi
     eval_pairs = backtest_pairs(series, snapshot - H, H, rel, floor, min_points, threshold, below, keep)
     cal_pairs = backtest_pairs(series, snapshot - 2 * H, H, rel, floor, min_points, threshold, below, keep)
     out = {'method': (f'Split conformal on normalized residuals |value - forecast| / Kalman sd, time-split with one pair per patient; '
-                      f'crossing probability recalibrated by inductive Venn-Abers on patients not yet past the threshold. Live calibration: '
+                      f'last-observed-value exceedance probability recalibrated by inductive Venn-Abers on patients not yet past the threshold. Live calibration: '
                       f'forecasts issued {date.fromordinal(snapshot - H)} scored on the next {H} days; backtest: calibrated on forecasts issued '
                       f'{date.fromordinal(snapshot - 2 * H)}, evaluated on those issued {date.fromordinal(snapshot - H)}.'),
            'level': level, 'calibration_pairs': len(eval_pairs), 'backtest_calibration_pairs': len(cal_pairs),
-           'backtest_evaluation_pairs': len(eval_pairs), 'available': False}
+           'backtest_evaluation_pairs': len(eval_pairs), 'available': False, 'observation_cutoff': date.fromordinal(snapshot).isoformat(),
+           'probability_target': {'event': 'endpoint_exceedance', 'quantity': 'last_observed_value_in_window', 'horizon_days': H,
+                                  'threshold': threshold, 'direction': 'below' if below else 'above',
+                                  'exact_horizon_latent_equivalence_qualified': False, 'path_event_probability_available': False}}
     if len(eval_pairs) < 20:
         out['reason'] = f'only {len(eval_pairs)} patients have a forecast issued {date.fromordinal(snapshot - H)} and a later value (need 20)'
         out['statement'] = 'Conformal calibration unavailable: ' + out['reason'] + '.'
@@ -167,7 +229,7 @@ def calibrate(series, concept, snapshot, horizon_days, threshold, below, min_poi
                                            'brier_kalman': round(conformal.brier(raw, y), 4), 'brier_calibrated': round(conformal.brier(va, y), 4),
                                            'ece_kalman': round(conformal.ece(raw, y), 4), 'ece_calibrated': round(conformal.ece(va, y), 4),
                                            'reliability_calibrated': conformal.reliability(va, y, 5)}
-    steps = _sequential(series, snapshot - 2 * H, rel, floor, min_points, keep)
+    steps = _sequential(series, snapshot - 2 * H, rel, floor, min_points, keep, end=snapshot)
     if len(steps) >= 60:
         a = conformal.aci([s[1] for s in steps], [s[2] for s in steps], [s[3] for s in steps], alpha, gamma=0.005, warmup=30)
         out['aci'] = {'steps': a['steps'], 'coverage': round(a['coverage'], 4), 'final_alpha': round(float(a['alpha_path'][-1]), 4),
@@ -181,7 +243,7 @@ def calibrate(series, concept, snapshot, horizon_days, threshold, below, min_poi
                             'too little earlier history to backtest their coverage')
     if out.get('probability_backtest'):
         pb = out['probability_backtest']
-        out['statement'] += f"; crossing-probability Brier {pb['brier_kalman']} (Kalman) vs {pb['brier_calibrated']} (Venn-Abers)"
+        out['statement'] += f"; last-observed-value exceedance Brier {pb['brier_kalman']} (Kalman) vs {pb['brier_calibrated']} (Venn-Abers)"
     if out.get('aci'):
         out['statement'] += f"; adaptive (ACI) one-step intervals covered {out['aci']['coverage']:.1%} of {out['aci']['steps']} sequential values"
     out['statement'] += '.'
@@ -192,12 +254,15 @@ def apply_calibration(row, cal):
     """Add conformal fields to one forecast row in place; existing fields are untouched."""
     import numpy as np
     mean, sd = row.pop('_mean', None), row.pop('_sd', None)
+    raw_probability = row.pop('_p_cross', row.get('p_cross'))
     if not cal.get('available') or mean is None: return row
+    row['calibration_target'] = cal.get('probability_target')
     if math.isfinite(cal['_q']):
         row['conformal_low'], row['conformal_high'] = round(mean - cal['_q'] * sd, 2), round(mean + cal['_q'] * sd, 2)
     if '_venn_abers' in cal:
-        p0, p1, merged = conformal.venn_abers(*cal['_venn_abers'], np.array([row['p_cross']]))
+        p0, p1, merged = conformal.venn_abers(*cal['_venn_abers'], np.array([raw_probability]))
         row['p_cross_calibrated'] = round(float(merged[0]), 3)
+        row['p_last_observed_exceedance_calibrated'] = round(float(merged[0]), 3)
         row['p_cross_calibrated_range'] = [round(float(p0[0]), 3), round(float(p1[0]), 3)]
     return row
 
@@ -223,10 +288,9 @@ def execute(path, patient_ids, params):
     rel, floor = NOISE[c]
     db = sqlite3.connect(f'file:{semantic_layer.ensure(path)}?mode=ro', uri=True)
     try:
-        series = defaultdict(lambda: defaultdict(list))
-        for pid, d, v in db.execute("SELECT patient_id, event_date, value_canonical FROM measurement WHERE concept = ? "
-                                    "AND value_canonical IS NOT NULL AND event_date IS NOT NULL", (c,)):
-            series[pid][d[:10]].append(v)
+        from pathlib import Path
+        snapshot = date.fromisoformat(json.loads((Path(path)/'run.json').read_text())['snapshot']['as_of']).toordinal()
+        series = load_series(db, [c], date.fromordinal(snapshot).isoformat(), set(patient_ids) if patient_ids is not None else None)[c]
     finally:
         db.close()
     keep = set(patient_ids) if patient_ids is not None else None
@@ -254,7 +318,13 @@ def execute(path, patient_ids, params):
                         'slope_per_year': round(_theil_sen(pts), 2) if _theil_sen(pts) is not None else None,
                         'points': len(pts), 'last_value': round(values[-1], 2), 'last_date': date.fromordinal(times[-1]).isoformat()})
     flagged.sort(key=lambda f: (-abs(f['change']) / max(abs(f['from']), 1e-9)))
-    if 'threshold' in p:  # forecast mode: who is projected to cross the threshold within the horizon
+    if 'threshold' in p:
+        if p['target_event'] != 'endpoint_exceedance':
+            return {'schema': VERSION, 'status': 'unknown', 'mode': 'forecast', 'concept': c, 'unit': concepts.MEASUREMENTS[c]['unit'],
+                    'flagged': None, 'patients': [], 'patients_with_series': evaluated, 'target_event': p['target_event'],
+                    'threshold': p['threshold'], 'horizon_days': p['horizon_days'], 'direction': wanted,
+                    'method': 'The existing Kalman engine estimates a value at the endpoint; it does not identify the requested path-event probability.',
+                    'missing': ['A supported path-event model and an explicit observation/capture definition are needed for '+p['target_event']+'. The requested event has not been narrowed to an endpoint.']}
         below = wanted in ('down',) or (wanted in ('worse', 'any') and worse == 'down')
         import json as _json
         from pathlib import Path as _Path
@@ -267,17 +337,22 @@ def execute(path, patient_ids, params):
             if (pts[-1][1] < p['threshold']) if below else (pts[-1][1] > p['threshold']): continue  # already past it
             gap = max(0, snapshot - pts[-1][0])  # the horizon runs from the snapshot, not the last result
             f = forecast(pts, rel, floor, p['horizon_days'] + gap, p['threshold'], below)
+            f['probability_target'].update(request_origin_day=snapshot, requested_horizon_days=p['horizon_days'])
             f['days_since_last_result'] = gap
-            if f['p_cross'] >= 0.5:
+            if f['_p_cross'] >= 0.5:
                 f['_mean'], f['_sd'] = _predict(pts, rel, floor, p['horizon_days'] + gap)
                 at_risk.append({'patient_id': pid, 'last_value': round(pts[-1][1], 2), 'last_date': date.fromordinal(pts[-1][0]).isoformat(),
                                 'points': len(pts), **f})
-        at_risk.sort(key=lambda r: -r['p_cross'])
+        at_risk.sort(key=lambda r: -r['_p_cross'])
         unit = concepts.MEASUREMENTS[c]['unit']
         cal = calibrate(series, c, snapshot, p['horizon_days'], p['threshold'], below, p['min_points'], keep=keep)
         for r in at_risk:
             apply_calibration(r, cal)
         return {'schema': VERSION, 'concept': c, 'unit': unit, 'mode': 'forecast', 'threshold': p['threshold'], 'conformal': public(cal),
+                'probability_target': {'event': 'endpoint_exceedance', 'quantity': 'latent_state_at_horizon',
+                                       'request_origin_day': snapshot, 'requested_horizon_days': p['horizon_days'],
+                                       'threshold': p['threshold'], 'direction': 'below' if below else 'above',
+                                       'path_event_probability_available': False},
                 'horizon_days': p['horizon_days'], 'direction': 'below' if below else 'above', 'patients_with_series': evaluated,
                 'flagged': len(at_risk), 'patients': at_risk[:p['top']],
                 'method': (f'Local linear trend Kalman filter per patient (per-value error max({rel:.0%} x value, {floor} {unit})); '

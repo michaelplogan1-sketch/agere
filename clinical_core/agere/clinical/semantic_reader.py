@@ -52,6 +52,19 @@ INSTRUCTIONS = ('Interpret only the marked target occurrence and its proposition
  'An asserted refusal of a dose change does not stop the existing drug. A medication list/fill is not use. '
  'Missing records do not prove missing care. Choose unknown when this bounded context is insufficient.')
 TARGET_FIELDS = {'patient_id','record_id','field','start','end','concept'}
+# Independent qualifier follow-up for an unresolved combined statement label.
+# The existing three-axis reader/review contract stays unchanged.
+QUALIFIER_AXES = {
+ 'subject':{'patient':'The targeted proposition is about this patient.',
+            'family':'The target is about a relative of this patient.',
+            'other':'The target is about another person who is not established as a relative.',
+            'nonclinical':'The target is metadata or instructions, not a person account.',
+            'unknown':'The person/source role is unresolved.'},
+ 'polarity':{'affirmed':'The targeted proposition is asserted. Cannot afford affirms a cost barrier.',
+             'negated':'The targeted proposition is explicitly denied.',
+             'hypothetical':'The proposition is conditional/possible rather than asserted.',
+             'retracted':'The targeted proposition was explicitly withdrawn or entered in error.',
+             'unknown':'Polarity is unresolved or conflicting.'}}
 
 
 def identity():

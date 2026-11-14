@@ -6,11 +6,15 @@ Routes (JSON; handled before the service's global stack lock because builds take
   GET  /api/workspaces/<slug>               summary + step detail + verification
   GET  /api/workspaces/<slug>/review        open mapping questions
   GET  /api/workspaces/<slug>/questions     question history
+  GET  /api/workspaces/<slug>/answers/<id>  saved answer and current source status (no analysis replay)
+  POST /api/workspaces/<slug>/answers/<id>/followup {question, scope?} native transform of saved population
   POST /api/workspaces                      {name, source, as_of?, raw?}  -> create and start the build in the background
   POST /api/workspaces/<slug>/run           re-profile and rebuild from scratch (background)
   POST /api/workspaces/<slug>/decide        {item, decision}  decision: accept | reject | {source} | {source_table}
   POST /api/workspaces/<slug>/rebuild       re-apply the mapping with decisions (background)
-  POST /api/workspaces/<slug>/ask           {question, answer_type?}  -> the hybrid core's answer over this workspace
+  GET  /api/workspaces/<slug>/conversations/<id> tenant-scoped conversation history
+  POST /api/workspaces/<slug>/ask           {question, conversation_id?, interaction_mode?, answer_context_id?, answer_scope?}
+                                             or {conversation_id, clarification_response}: the shared conversation lifecycle
   POST /api/workspaces/<slug>/plan          {question | patient_ids, program_kind?, as_of?, narrative?, format?: json|csv,
                                              act?: true, through?: YYYY-MM-DD}
                                             -> routed enrollment plan (answer envelope with a `plan` block) run through the
@@ -117,6 +121,12 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
                 return 200, _detail(ws, root)
             if parts[1] == 'review':
                 return 200, {'items': ws.review_items()}
+            if parts[1] == 'answers' and len(parts) == 3:
+                return 200, ws.saved_answer(parts[2])
+            if parts[1] == 'conversations' and len(parts) == 3:
+                return 200, {'conversation_id': parts[2], 'turns': ws.conversation_history(parts[2])}
+            if parts[1] == 'answers' and len(parts) in (4, 5) and parts[3] == 'deliverables':
+                return 200, ws.answer_deliverables(parts[2], parts[4] if len(parts) == 5 else None)
             if parts[1] in ('work', 'decisions'):
                 from .plans import backbone
                 if parts[1] == 'work' and len(parts) == 2:
@@ -144,7 +154,8 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
             return 404, {'error': 'Unknown workspace route'}
         body = body or {}
         action = parts[1] if len(parts) > 1 else None
-        if not can_write and (not parts or action != 'ask'):
+        saved_followup = len(parts) == 4 and action == 'answers' and parts[3] == 'followup'
+        if not can_write and (not parts or (action != 'ask' and not saved_followup)):
             return 403, {'error': 'Your role can read and ask questions only'}
         if not parts:
             if not body.get('name') or not body.get('source'):
@@ -155,6 +166,24 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
             _background(ws.slug, ws.run, root)
             return 202, _detail(ws, root)
         ws = W(parts[0])
+        if action == 'answers' and len(parts) == 4 and parts[3] == 'report':
+            t0 = __import__('time').time()
+            out = ws.answer_report(parts[2], body)
+            if on_usage:
+                on_usage(ws.slug, {'question': body.get('request'), 'context_id': parts[2],
+                    'cost_usd': 0, 'decision': 'saved_report', 'seconds': round(__import__('time').time() - t0, 2)})
+            return 200, out
+        if saved_followup:
+            q = str(body.get('question') or '').strip()
+            if not q or set(body) - {'question', 'scope'}:
+                raise ValueError('A question and optional saved population scope are required')
+            t0 = __import__('time').time()
+            out = ws.followup_answer(parts[2], q, scope=body.get('scope', 'result'))
+            if on_usage:
+                on_usage(ws.slug, {'question': q, 'context_id': (out.get('action_context') or {}).get('id'),
+                                   'cost_usd': out.get('cost_usd'), 'decision': out.get('decision'),
+                                   'seconds': round(__import__('time').time() - t0, 2)})
+            return 200, out
         if action == 'run':
             _background(ws.slug, ws.run, root)
             return 202, _detail(ws, root)
@@ -247,18 +276,34 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
             return (200 if out['status'] == 'delivered' else 422), out
         if action == 'ask':
             q = str(body.get('question') or '').strip()
-            if not q:
+            resuming = 'clarification_response' in body
+            if not q and not resuming:
                 raise ValueError('question is required')
             t0 = __import__('time').time()
             # one box for everything: questions, plans, simulations and deliverables (intent_router; deterministic rules)
             from . import intent_router
-            intent = intent_router.classify(q, body.get('answer_type') or None)
+            intent = 'question' if resuming else intent_router.classify(q, body.get('answer_type') or None)
             if intent in ('plan', 'simulate', 'deliverable') and not can_write:
                 return 403, {'error': f'Your role can read and ask questions only ({intent} requests write work)'}
-            out = intent_router.handle(ws, q, answer_type=body.get('answer_type') or None)
+            # Native workspaces use one shared request planner for every intent;
+            # never lose a prior population by dispatching a follow-up elsewhere.
+            conversational = ws.pipeline_support()[0]
+            if conversational:
+                try:
+                    out = ws.converse(body, can_write=can_write)
+                except Exception as exc:
+                    cost = getattr(exc, 'cost_receipt', None)
+                    if on_usage and cost is not None:
+                        on_usage(ws.slug, {'question': q or 'Clarification continuation', 'cost_usd': cost.get('usd'),
+                            'seconds': round(__import__('time').time() - t0, 2), 'decision': 'failed_preserved'})
+                    raise
+            else:
+                if any(k in body for k in ('clarification_response', 'answer_context_id')) or body.get('conversation_id'):
+                    raise ValueError('This request cannot continue the saved analysis through another pipeline')
+                out = intent_router.handle(ws, q, answer_type=body.get('answer_type') or None)
             if on_usage:
-                on_usage(ws.slug, {'question': q[:300], 'cost_usd': out.get('cost_usd'), 'seconds': round(__import__('time').time() - t0, 2),
-                                   'decision': out.get('decision')})
+                on_usage(ws.slug, {'question': (out.get('question') or q)[:300], 'cost_usd': out.get('cost_usd'), 'seconds': round(__import__('time').time() - t0, 2),
+                                   'decision': out.get('decision'), 'context_id': (out.get('action_context') or {}).get('id')})
             return 200, out
         return 404, {'error': 'Unknown workspace action'}
     except FileNotFoundError as exc:

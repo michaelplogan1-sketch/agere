@@ -7,6 +7,143 @@ from unittest.mock import patch
 from clinical_core.agere.clinical import backstop_agent as B, proposers as P
 
 
+class EntryModelReuse(unittest.TestCase):
+    def test_assertion_window_contract_renders_and_native_analyst_starts(self):
+        # Exercise the actual answer entry, not only an isolated prompt string.
+        # A literal schema example must not become a str.format replacement key.
+        rendered = B.RULES.format(tool_quota='No fixed tool-call quota.')
+        self.assertIn('assertion_window={basis,start,end}', rendered)
+        self.assertIn('No fixed tool-call quota.', rendered)
+        self.assertIn('execute this native review before acquiring new narrative judgments', rendered)
+        self.assertIn('a subgroup selected for one qualifier does not cover the other requested qualifiers', rendered)
+        result, replay, _ = self.entry_result()
+        self.assertEqual(result['answer']['headline'], 'Native result retained.')
+        replay.assert_called_once()
+
+    def entry_result(self, reviews=None, hint=None, run_override=None):
+        from contextlib import ExitStack
+        from clinical_core.agere import model_policy as M
+        from clinical_core.agere.clinical import harness_improvement as H
+        wh=SimpleNamespace(columns={},define=lambda day:None,close=lambda:None)
+        tools=SimpleNamespace(cohort=None,scope=None,db=SimpleNamespace(close=lambda:None),continuation_identity=lambda:{'source':'fixture'},
+            subtool_accounting={'new_paid_api_calls':0,'estimated_cost_usd':0.0},document_reviews=[],judged=[])
+        run={'answer':{'status':'answered','headline':'Native result retained.'},'model':M.SONNET,
+             'tool_calls':[],'answer_reviews':reviews or [{'status':'confirmed','calls':0}],
+             'estimated_cost_usd':0.01,'new_paid_api_calls':1}
+        if run_override:run.update(run_override)
+        with ExitStack() as stack:
+            for name,value in {
+                'clinical_core.agere.clinical.legacy_proposers._semantic_path':'unused',
+                'clinical_core.agere.clinical.together.warehouse':wh,
+                'clinical_core.agere.clinical.semantic_analyst.semantic_context':'',
+                'clinical_core.agere.clinical.analyst_definitions.agere_context':('',None),
+                'clinical_core.agere.clinical.analyst_context.install':'',
+                'clinical_core.agere.clinical.component_learning.shape_hint':None,
+                'clinical_core.agere.clinical.backstop_agent.conversation_turns':[],
+                'clinical_core.agere.clinical.backstop_agent.Tools':tools,
+                'clinical_core.agere.clinical.semantic_analyst.tool_loop':run,
+            }.items():stack.enter_context(patch(name,return_value=value))
+            replay=stack.enter_context(patch.object(H,'attempt_replay',return_value={'used':None,'calls':[]}))
+            propose=stack.enter_context(patch.object(H,'attempt_propose',return_value={'id':'native-prefix'}))
+            stack.enter_context(patch.object(H,'recovery_checkpoint',return_value=None))
+            result=B.answer(SimpleNamespace(), 'A source question',send=lambda body:self.fail('No provider call'),
+                            as_of='2030-05-27',model=M.HAIKU,hint=hint)
+        return result,replay,propose
+
+    def test_failed_planning_handoff_is_context_not_an_answer_or_native_execution(self):
+        hint={'prior_plan_attempts':[{'proposal':{'source':{'table':'stay'}},
+            'validation_error':'Missing scope','authority':'unverified_proposal','executed':False}]}
+        _,replay,_=self.entry_result(hint=hint)
+        payload=replay.call_args.args[2]
+        self.assertEqual(payload['question'],'A source question')
+        self.assertEqual(payload['second_look']['prior_plan_attempts'],hint['prior_plan_attempts'])
+        self.assertIn('has not executed',payload['second_look']['instruction'])
+        self.assertIn('registered tools',payload['second_look']['instruction'])
+        self.assertNotIn('earlier_answer',payload['second_look'])
+
+    def test_escalated_actor_keeps_native_learning_on_the_entry_model_key(self):
+        from clinical_core.agere import model_policy as M
+        result,replay,propose=self.entry_result()
+        self.assertEqual(replay.call_args.args[3],M.SONNET)
+        self.assertEqual(propose.call_args.args[3],replay.call_args.args[3])
+        self.assertEqual(result['model'],M.SONNET)
+        self.assertEqual(result['recursive_improvement']['candidate']['id'],'native-prefix')
+
+    def test_unavailable_review_cost_preserves_known_subtotal_without_claiming_complete_cost(self):
+        reviews=[{'status':'repair','calls':0,'cost_usd':None,'cost_known':False},
+                 {'status':'confirmed','calls':1,'cost_usd':0.002}]
+        result,_,_=self.entry_result(reviews)
+        self.assertIsNone(result['estimated_cost_usd'])
+        self.assertAlmostEqual(result['known_cost_usd'],0.012)
+        self.assertEqual(result['new_paid_api_calls'],2)
+        self.assertEqual(result['answer_reviews'],reviews)
+
+
+class ExplicitGlobalViews(unittest.TestCase):
+    def test_explicit_references_bind_all_rows_without_accepting_the_claim(self):
+        import copy
+        calls=[{'name':'inspect_populations','input':{},'result':{'result_view':'agere_result_28',
+            'columns':['population_id','patients'],'rows':[['a',3],['b',7]]}}]
+        answer={'facts':{'trace':'Members are available in agere_result_28; clinical eligibility remains unresolved.'}}
+        before=copy.deepcopy(calls);original=copy.deepcopy(answer['facts'])
+        added=B.bind_explicit_global_views(answer,calls)
+        self.assertEqual(added,[{'path':['facts','trace'],'basis':[
+            {'result_view':'agere_result_28','row':0},{'result_view':'agere_result_28','row':1}]}])
+        B.bind_computed_prose(answer,calls)
+        self.assertEqual(answer['facts'],original);self.assertEqual(calls,before)
+        self.assertNotIn('verification',answer)
+        self.assertEqual(answer['computed_prose'][0]['rendered'],original['trace'])
+        self.assertEqual(B.bind_explicit_global_views(answer,calls),[])
+
+    def test_missing_ambiguous_incomplete_and_source_free_references_remain_unbound(self):
+        import copy
+        base={'name':'query_sql','input':{'sql':'SELECT flag FROM source'},'result':{
+            'result_view':'agere_result_1','columns':['flag'],'rows':[['unresolved']]}}
+        for kind in ('missing','ambiguous','incomplete','constant','mixed','prefix','empty'):
+            with self.subTest(kind=kind):
+                call=copy.deepcopy(base);calls=[call];value='See agere_result_1.'
+                if kind=='missing':calls=[]
+                if kind=='ambiguous':calls.append(copy.deepcopy(call))
+                if kind=='incomplete':call['result']['truncated']=True
+                if kind=='constant':call['input']['sql']='SELECT 1 AS flag'
+                if kind=='mixed':value+=' Also agere_result_9.'
+                if kind=='prefix':value='See invalid_agere_result_1_suffix.'
+                if kind=='empty':call['result']['rows']=[]
+                answer={'facts':{'trace':value}};before=copy.deepcopy(answer)
+                self.assertEqual(B.bind_explicit_global_views(answer,calls),[])
+                self.assertEqual(answer,before)
+
+
+class ConnectedDocumentSearch(unittest.TestCase):
+    def test_hybrid_search_preserves_lexical_hits_and_rejects_foreign_or_changed_spans(self):
+        from unittest.mock import Mock
+        tools = B.Tools.__new__(B.Tools)
+        tools.db, tools.as_of = None, '2030-05-27'
+        tools._texts = Mock(return_value=[('r1', 'note', '', 'clinical', '2030-01-01', 'Exact hybrid passage', ''),
+                                         ('r2', 'note', '', 'clinical', '2030-01-02', 'Lexical match', '')])
+        tools.NE = SimpleNamespace(retrieve=lambda *a, **kw: [{'record_id': 'r2', 'text': 'Lexical match'}])
+        search = Mock(return_value={'evidence': [
+            {'source': {'record_id': 'r1', 'patient_id': 'p'}, 'text': 'Exact hybrid passage'},
+            {'source': {'record_id': 'r1', 'patient_id': 'other'}, 'text': 'Exact hybrid passage'},
+            {'source': {'record_id': 'r1', 'patient_id': 'p'}, 'text': 'Invented passage'},
+            {'source': {'record_id': 'unknown', 'patient_id': 'p'}, 'text': 'Unknown source'}],
+            'retrieval_policy': {'reranker': 'bge'}, 'candidate_passages': 4})
+        tools.stack = SimpleNamespace(retriever=SimpleNamespace(search=search))
+        result = tools.search_documents('p', 'a concept', date_to='2030-02-01')
+        self.assertEqual([p['record_id'] for p in result['passages']], ['r1', 'r2'])
+        self.assertFalse(result['retrieval']['complete_evidence_guarantee'])
+        self.assertEqual(result['retrieval']['hybrid_bound_passages'], 1)
+        self.assertEqual(search.call_args.kwargs['patient_ids'], ['p'])
+        self.assertEqual(search.call_args.kwargs['analysis_window']['end'], '2030-02-01')
+        tools.search_documents('p', 'a concept', date_to='2030-02-01', offset=15)
+        search.assert_called_once()  # paging does not repeat model work
+        tools._document_searches.clear()
+        search.side_effect = RuntimeError('local retrieval unavailable')
+        fallback = tools.search_documents('p', 'a concept')
+        self.assertEqual([p['record_id'] for p in fallback['passages']], ['r2'])
+        self.assertEqual(fallback['retrieval']['hybrid_status'], 'failed_lexical_retained')
+
+
 class FakeTools:
     def __init__(self, docs): self.read = {k: {'text': v} for k, v in docs.items()}
     def read_document(self, rid):
@@ -23,6 +160,54 @@ class Quotes(unittest.TestCase):
         kept, dropped = B.verified_sources(answer, tools)
         self.assertEqual([s['quote'] for s in kept], ['Stop losartan 100 mg  due to hyperkalemia'])
         self.assertEqual(dropped, 2)
+
+
+class NativeFieldCitations(unittest.TestCase):
+    def setUp(self):
+        import json, sqlite3
+        self.json=json
+        self.db=sqlite3.connect(':memory:');self.addCleanup(self.db.close)
+        self.db.execute('CREATE TABLE record(record_id TEXT,patient_id TEXT,stream TEXT,event_date TEXT,available_date TEXT,payload TEXT)')
+        self.record={'record_id':'r1','patient_id':'p','authorization':'not established by this order',
+                     'performed':False,'unknown':None,'derived':12,
+                     '_warehouse_fields':['authorization','performed','unknown']}
+        self.db.execute('INSERT INTO record VALUES (?,?,?,?,?,?)',('r1','p','requests','2029-07-20','2029-07-21',json.dumps(self.record)))
+        self.tools=SimpleNamespace(semantic=SimpleNamespace(db=self.db),scope={'p'},as_of='2030-05-27',read={})
+        self.source={'kind':'received_field','record_id':'r1','patient_id':'p','date':'2029-07-20',
+                     'field':'authorization','value':self.record['authorization']}
+
+    def verify(self,source):return B.verified_sources({'sources':[source]},self.tools)
+
+    def test_literal_field_reference_does_not_invent_a_quotation(self):
+        kept,dropped=self.verify(self.source)
+        self.assertEqual(dropped,0);self.assertEqual(kept[0]['value'],self.record['authorization'])
+        self.assertEqual(kept[0]['source'],'requests');self.assertNotIn('quote',kept[0])
+        self.assertIn('source_record_digest',kept[0])
+        self.assertEqual(self.verify(kept[0]),(kept,0))
+
+    def test_entity_date_field_type_and_value_are_bound_to_that_record(self):
+        for edit in [{'patient_id':'q'},{'record_id':'r2'},{'date':'2029-07-21'},
+                     {'field':'authorization','value':'approved'},
+                     {'field':'performed','value':0},{'field':'derived','value':12},
+                     {'field':'_warehouse_fields','value':['authorization','performed','unknown']},
+                     {'patient_id':['p']}]:
+            with self.subTest(edit=edit):self.assertEqual(self.verify({**self.source,**edit}),([],1))
+        self.tools.scope=set()
+        self.assertEqual(self.verify(self.source),([],1))
+
+    def test_null_and_unknown_clocks_remain_unknown(self):
+        self.db.execute('UPDATE record SET event_date=NULL,available_date=NULL')
+        kept,dropped=self.verify({**self.source,'date':None,'field':'unknown','value':None})
+        self.assertEqual(dropped,0);self.assertIsNone(kept[0]['value']);self.assertIsNone(kept[0]['date'])
+        self.assertFalse(kept[0]['reported_availability_known'])
+
+    def test_future_source_or_changed_record_version_is_not_reused(self):
+        old=self.verify(self.source)[0][0]
+        self.record['performed']=True
+        self.db.execute('UPDATE record SET payload=?',(self.json.dumps(self.record),))
+        self.assertEqual(self.verify(old),([],1))
+        self.db.execute("UPDATE record SET available_date='2031-01-01'")
+        self.assertEqual(self.verify(self.source),([],1))
 
 
 class Polarity(unittest.TestCase):
@@ -54,8 +239,8 @@ class JudgeDocuments(unittest.TestCase):
         from clinical_core.agere.clinical import system_one
         t = B.Tools.__new__(B.Tools)
         t.as_of, t.ledger, t.stack, t.judged = '2030-05-27', None, SimpleNamespace(allow_live=True), []
-        t.read = {'N1': {'text': 'x' * 3000 + ' amLODIPine 2.5 MG: reported status: not using.', 'date': '2027-05-10', 'type': 'discharge_summary'},
-                  'N2': {'text': 'Unrelated visit.', 'date': '2026-01-01', 'type': 'progress'}}
+        t.read = {'N1': {'text': 'x' * 3000 + ' amLODIPine 2.5 MG: reported status: not using.', 'date': '2027-05-10', 'available': '2027-05-10', 'type': 'discharge_summary'},
+                  'N2': {'text': 'Unrelated visit.', 'date': '2026-01-01', 'available': '2026-01-01', 'type': 'progress'}}
         calls = []
         def decide(question, options, evidence, **kw):
             calls.append(len(evidence))
@@ -145,6 +330,16 @@ class Snapping(unittest.TestCase):
 
 
 class Shape(unittest.TestCase):
+    def test_retained_answer_keeps_its_own_source_review_after_a_rejected_edit(self):
+        import copy
+        source={'status':'repair','repair_kind':'unresolved_verification','support':{'packets':[{'id':'A','label':'unknown'}]}}
+        compiler={'status':'repair','repair_kind':'deterministic_compiler','feedback':'Unbound new quantity'}
+        run={'answer_reviews':[source,compiler],'unaccepted_draft':{'returned_answer':'last_structurally_complete_candidate'}}
+        before=copy.deepcopy(run)
+        self.assertEqual(B.returned_answer_review(run),source);self.assertEqual(run,before)
+        run['answer_reviews'].append({'status':'confirmed'});run.pop('unaccepted_draft')
+        self.assertEqual(B.returned_answer_review(run),{'status':'confirmed'})
+
     def test_numbers_in_the_headline_are_not_read_as_an_absent_value(self):
         a = B.shaped({'status': 'answered', 'answer_type': 'value', 'headline': '97 of 490 stays (19.8%)', 'value': None, 'count': None,
                       'table': {'columns': ['g', 'n'], 'rows': [['HF', 51]]}})
@@ -219,6 +414,26 @@ class SubQuestionIsolation(unittest.TestCase):
 
 
 class Cascade(unittest.TestCase):
+    def test_subscription_limit_preserves_checkpoint_without_more_checks_or_generation(self):
+        from clinical_core.agere.gateway import ProviderUnavailable
+        checkpoint={'source':{'source_digest':'retained'},'draft_digest':'unfinished'}
+        run={'answer':{'status':'partial','answer_type':'table','headline':'Native table'},
+             'tool_calls':[],'new_paid_api_calls':1,'estimated_cost_usd':.01,
+             'recovery_checkpoint':checkpoint,'error':'Claude subscription limit reached'}
+        for has_answer in (True,False):
+            candidate={**run,'answer':run['answer'] if has_answer else None}
+            with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'subscription'}),patch.object(P,'claude_available',lambda:True),patch.object(
+                    B,'answer',return_value=candidate) as generate,patch.object(P,'answer_gate') as gate:
+                with self.assertRaises(ProviderUnavailable) as caught:self.cascade().tier_backstop_agent()
+            self.assertEqual(generate.call_count,1);gate.assert_not_called()
+            self.assertEqual(caught.exception.kind,'rate_limit')
+            partial=getattr(caught.exception,'partial_result',None)
+            if has_answer:
+                self.assertEqual(partial['investigation']['recovery_checkpoint'],checkpoint)
+                self.assertEqual(partial['answer']['verification'],'unverified')
+                self.assertEqual(partial['workflow'],[])
+            else:self.assertIsNone(partial)
+
     def cascade(self):
         c = P.Cascade.__new__(P.Cascade)
         c.stack, c.question, c.population, c.log, c.deferred = SimpleNamespace(allow_live=True), 'Why was losartan stopped for P1?', None, [], []
@@ -226,6 +441,23 @@ class Cascade(unittest.TestCase):
         c.usd, c.calls, c.cost_known = 0.0, 0, True
         c._ledger, c._owned = object(), False
         return c
+
+    def test_partial_investigation_retains_terminal_review_and_draft_state(self):
+        review={'status':'repair','feedback':'Coverage remains undecided.'}
+        run={'answer':{'status':'partial','answer_type':'note','headline':'Received evidence is incomplete.',
+                      'investigation_review':review},
+             'tool_calls':[],'model':'fixture','new_paid_api_calls':0,'estimated_cost_usd':0,
+             'answer_reviews':[review],'review_stopped':'unresolved_coverage',
+             'unaccepted_draft':{'draft_digest':'current','returned_answer':'last_structurally_complete_candidate'},
+             'recovery_checkpoint':{'draft_digest':'retained-server-owned-proposal'},
+             'error':'Retained interrupted response'}
+        with patch.object(P,'claude_available',lambda:True),patch.object(B,'answer',return_value=run):
+            contract,_=self.cascade().tier_backstop_agent()
+        result=contract['executed'];investigation=result['investigation']
+        for key in ('review_stopped','unaccepted_draft','error','answer_reviews','recovery_checkpoint'):
+            self.assertEqual(investigation[key],run[key])
+        self.assertEqual(result['answer']['status'],'partial')
+        self.assertEqual(result['answer']['verification'],'unverified')
 
     def test_the_backstop_answer_is_accepted_with_checks_as_annotations(self):
         run = {'answer': {'status': 'answered', 'answer_type': 'note', 'headline': 'Stopped for hyperkalemia.',

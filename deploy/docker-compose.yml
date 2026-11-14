@@ -12,6 +12,10 @@ services:
       AGERE_DATA_DIR: /data
       AGERE_HOST: 0.0.0.0
       AGERE_PORT: "8080"
+      # Ask: the tiered answering stack over the demonstration data copied to the volume (deploy/send_demo_data.sh)
+      AGERE_TIERED_DB: /data/demo/semantic.sqlite3
+      AGERE_TIERED_BOTTLES: /data/demo/bottles.sqlite3
+      AGERE_TIERED_LEDGER: /data/tiered-ledger.sqlite3
     volumes:
       - agere-data:/data
     restart: unless-stopped

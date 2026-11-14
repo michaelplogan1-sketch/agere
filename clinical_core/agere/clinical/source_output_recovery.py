@@ -4,6 +4,7 @@ The original request, failed response and source engine remain immutable. Only
 max_tokens changes; every returned unit and citation is checked by the original
 meaning contract. This is not an automatic retry or a new interpretation default.
 """
+from .case_synthesis import input_token_total, token_count_calls
 from collections import Counter
 from pathlib import Path
 import copy
@@ -123,7 +124,7 @@ def assemble(row, bundle, links, packets, key, binding, stages, counts):
             'reconciliation_groups':0,'cross_group_relations_assessed':len(stages)==1,
             'interpretation_accuracy_assessed':False,'retrieval_recall_assessed':False},
         'provider':'claude','model':packets[0][0]['model'],'usage':[p['usage'] for p in stages],
-        'token_check':{'input_tokens':sum(p['token_check']['input_tokens'] for p in stages)},
+        'token_check':{'input_tokens':input_token_total(p['token_check'] for p in stages)},
         **counts, 'cache_hit':False, 'failed_requests_resent':0,
         'source_meaning_contract':meaning.VERSION,'meaning_judgments_validated':False,
         'clinical_state_established':False,'clinical_execution_authorized':False,
@@ -197,7 +198,7 @@ def run(path,request,ledger,*,allow_live=False):
             if not token_target.exists() and original_token.exists():
                 token_target.write_bytes(original_token.read_bytes())
             tokens=single.token_check(body,out,allow_live=False if reused else allow_live)
-            counts['new_token_count_calls']+=int(not tokens['provider_count_cached'])
+            counts['new_token_count_calls']+=token_count_calls(tokens)
             result,usage=single.send(body,'claude',ledger,origin,parse=lambda raw:parsed(raw,body,units,row))
             counts['new_paid_api_calls']+=int(not usage.get('cache_hit',False))
             counts['reused_source_passes']+=int(reused)

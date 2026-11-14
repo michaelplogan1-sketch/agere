@@ -8,7 +8,7 @@ import json, os, re, sqlite3, time
 from pathlib import Path
 from .evaluation import active as _evaluating
 
-VERSION = 'learning-store/2'
+VERSION = 'learning-store/3'
 
 
 def correction_context(path, question):
@@ -74,6 +74,10 @@ def _db(path):
     for table in ('verified', 'quarantined'):
         if 'provenance' not in [r[1] for r in db.execute(f'PRAGMA table_info({table})')]:
             db.execute(f'ALTER TABLE {table} ADD COLUMN provenance TEXT')
+    columns = {r[1] for r in db.execute('PRAGMA table_info(outcomes)')}
+    for name in ('source_context', 'episode_id', 'attempt_id', 'prior_routes'):
+        if name not in columns:
+            db.execute(f'ALTER TABLE outcomes ADD COLUMN {name} TEXT')
     return db
 
 
@@ -118,12 +122,24 @@ def lookup(path, question):
     return {'plan_kind': row[0], 'plan': json.loads(row[1]), 'agreement': row[2]} if row else None
 
 
-def record_outcome(path, question, route, status, reason=None, paid_calls=0, usd=0.0):
+def record_outcome(path, question, route, status, reason=None, paid_calls=0, usd=0.0, *,
+                   episode_id=None, attempt_id=None, prior_routes=None, source_context=None):
     if _evaluating(): return
+    import uuid
+    # One ordinary request is its own episode. Multiple actually observed routes
+    # may explicitly share an episode; matching question text alone never pairs runs.
+    episode_id = episode_id or uuid.uuid4().hex
+    attempt_id = attempt_id or uuid.uuid4().hex
+    if source_context is None:
+        try: source_context = context(path)
+        except (OSError, ValueError, KeyError): source_context = None
     db = _db(path)
     try:
-        db.execute('INSERT INTO outcomes VALUES (?,?,?,?,?,?,?)',
-                   (question.strip(), route, status, (reason or '')[:500], int(paid_calls or 0), None if usd is None else float(usd), time.time()))
+        db.execute('INSERT INTO outcomes(question,route,status,reason,paid_calls,usd,created,source_context,episode_id,attempt_id,prior_routes) '
+                   'VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+                   (question.strip(), route, status, (reason or '')[:500], None if paid_calls is None else int(paid_calls),
+                    None if usd is None else float(usd), time.time(), source_context, episode_id, attempt_id,
+                    json.dumps(prior_routes) if prior_routes is not None else None))
         db.commit()
     finally:
         db.close()

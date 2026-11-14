@@ -1,0 +1,567 @@
+"""Join executed result objects in code, preserving grain and intact source rows.
+
+This is a read-only investigator tool, not a clinical plan or a disease handler.
+A scalar join must prove uniqueness; a collection join preserves every matching
+row, including its original quote/date/record relationships. Missingness remains
+missingness. The base result, never the joins, defines output membership.
+"""
+import json
+from ...contracts import digest
+
+VERSION='result-assembly/1'
+RETENTION_CONTRACT='collection-retention/3'
+
+
+def incomplete_dependencies(result, *, result_view=None):
+    """Explicit producer gaps survive complete calculations over their rows."""
+    inherited = result.get('incomplete_dependencies') or []
+    if not isinstance(inherited, list) or any(not isinstance(item, dict) for item in inherited):
+        raise ValueError('Incomplete native dependency receipt is malformed')
+    reasons = list(inherited)
+    name = result_view or result.get('result_view') or 'producer'
+    if result.get('truncated'):
+        reasons.append({'result_view': name, 'reason': 'truncated source result'})
+    rows = result.get('rows')
+    if not isinstance(rows, list):
+        rows = next((result[key] for key in ('table', 'documents', 'passages')
+                     if isinstance(result.get(key), list)), None)
+    if isinstance(rows, list) and type(result.get('table_rows')) is int and result['table_rows'] != len(rows):
+        reasons.append({'result_view': name, 'reason': 'source cardinality does not match its native rows'})
+    return list({json.dumps(item, sort_keys=True, allow_nan=False): item for item in reasons}.values())
+
+
+def incomplete_reason(result):
+    reasons = incomplete_dependencies(result)
+    return ('Incomplete native input: ' + '; '.join(
+        str(item.get('result_view', 'producer')) + ': ' + str(item.get('reason', 'incomplete source'))
+        for item in reasons)) if reasons else None
+
+
+def source_domain(condition,columns):
+    """Compile an explicit exact source-domain predicate, without guessing labels."""
+    if (not isinstance(condition,dict) or set(condition)!={'column','values'} or
+        not isinstance(condition['column'],str) or condition['column'] not in columns or
+        not isinstance(condition['values'],list) or not condition['values'] or
+        any(v is not None and type(v)not in (str,int,float,bool)for v in condition['values'])):
+        raise ValueError('Domain requires a received column and explicit scalar values')
+    accepted={json.dumps(v,sort_keys=True,allow_nan=False)for v in condition['values']}
+    return lambda row:json.dumps(row[condition['column']],sort_keys=True,allow_nan=False)in accepted
+
+
+def measure(results,spec):
+    """Compute a claim from complete native rows with explicit scope and domain.
+
+    This uses the same native result objects as table assembly. It does not infer
+    a domain from a label or a unit from a number. The declared predicate, grain,
+    population and missing values remain part of the final claim's evidence.
+    """
+    from decimal import Decimal
+    required={'result_view','operation','grain','unit','population','domain'}
+    if not isinstance(spec,dict) or not required<=set(spec) or set(spec)-required-{'where','column','distinct','null_policy'}:
+        raise ValueError('Measure needs native result_view, operation, grain, unit, population and domain')
+    if not isinstance(spec['result_view'],str) or spec['result_view'] not in results:raise ValueError('Measure source must be an executed result_view')
+    columns,rows=_rows(results[spec['result_view']])
+    grain=spec['grain']
+    if not isinstance(grain,list) or not grain or not all(isinstance(k,str) for k in grain) or len(set(grain))!=len(grain) or not set(grain)<=set(columns):
+        raise ValueError('Measure grain must name distinct received source columns')
+    if not isinstance(spec['unit'],str) or not spec['unit'].strip():raise ValueError('Measure unit must be explicit')
+    def key(row,names):
+        values=[row[k] for k in names]
+        if any(v is None or isinstance(v,(dict,list)) for v in values):raise ValueError('Measure keys must be observed scalars')
+        return json.dumps(values,sort_keys=True,allow_nan=False)
+    identities=[key(r,grain) for r in rows]
+    if len(set(identities))!=len(identities):raise ValueError('Measure source violates its declared row grain')
+    population=spec['population']
+    if not isinstance(population,dict) or set(population)!={'result_view','on'} or not isinstance(population['result_view'],str) or population['result_view'] not in results:
+        raise ValueError('Measure population must bind to an executed result_view and exact key mapping')
+    pop_columns,pop_rows=_rows(results[population['result_view']]);on=population['on']
+    if not isinstance(on,dict) or not on or not set(on)<=set(columns) or not all(isinstance(v,str) for v in on.values()) or not set(on.values())<=set(pop_columns):
+        raise ValueError('Measure population mapping uses unavailable keys')
+    left=list(on);right=[on[k] for k in left];members=[key(r,right) for r in pop_rows]
+    if len(set(members))!=len(members):raise ValueError('Measure population keys must be unique')
+    members=set(members);scoped=[r for r in rows if key(r,left) in members]
+    def scalar(v):return v is None or type(v) in (str,int,float,bool)
+    def canonical(v):return json.dumps(v,sort_keys=True,allow_nan=False)
+    def predicate(condition,*,domain=False):
+        required={'column','values'} if domain else {'column','op','value'}
+        if not isinstance(condition,dict) or set(condition)!=required or not isinstance(condition['column'],str) or condition['column'] not in columns:
+            raise ValueError('Measure predicate must bind to a received source column')
+        op='in' if domain else condition['op'];value=condition['values'] if domain else condition['value']
+        if op not in ('eq','ne','in','not_in'):raise ValueError('Use exact equality or membership predicates')
+        if op in ('in','not_in'):
+            if not isinstance(value,list) or not value or not all(scalar(v) for v in value):raise ValueError('Membership needs explicit scalar values')
+            accepted={canonical(v) for v in value}
+            return lambda row:(canonical(row[condition['column']]) in accepted)==(op=='in')
+        if not scalar(value):raise ValueError('Equality needs a scalar value')
+        return lambda row:(canonical(row[condition['column']])==canonical(value))==(op=='eq')
+    domain=spec['domain']
+    # null explicitly means all received domains; it must not be relabeled as a
+    # narrower domain. Source-based semantic checking still reviews that label.
+    domain_test=source_domain(domain,columns) if domain is not None else lambda row:True
+    where=spec.get('where',[])
+    if not isinstance(where,list):raise ValueError('Measure where must be a list of source predicates')
+    filters=[predicate(p) for p in where]
+    domain_rows=[r for r in scoped if domain_test(r)]
+    selected=[r for r in domain_rows if all(f(r) for f in filters)]
+    operation=spec['operation'];missing=0
+    if operation=='count_rows':
+        if set(spec)&{'column','distinct','null_policy'}:raise ValueError('Row counts do not take numeric or distinct fields')
+        value=len(selected)
+    elif operation=='count_distinct':
+        distinct=spec.get('distinct')
+        if not isinstance(distinct,list) or not distinct or not all(isinstance(k,str) for k in distinct) or len(set(distinct))!=len(distinct) or not set(distinct)<=set(columns):
+            raise ValueError('Distinct count needs exact source columns')
+        if set(spec)&{'column','null_policy'}:raise ValueError('Distinct counts do not take numeric fields')
+        values=[]
+        for row in selected:
+            if any(row[k] is None for k in distinct):missing+=1
+            else:values.append(key(row,distinct))
+        value=len(set(values)) if not missing else None
+    elif operation=='sum':
+        column=spec.get('column');policy=spec.get('null_policy','unknown')
+        if not isinstance(column,str) or column not in columns or not isinstance(policy,str) or policy not in ('unknown','exclude') or 'distinct' in spec:raise ValueError('Sum needs a received numeric column and explicit null policy')
+        values=[]
+        for row in selected:
+            v=row[column]
+            if v is None:missing+=1;continue
+            if type(v) not in (int,float) or not Decimal(str(v)).is_finite():raise ValueError('Sum source must contain finite numeric values')
+            values.append(Decimal(str(v)))
+        value=None if missing and policy=='unknown' else str(sum(values,Decimal(0)))
+    else:raise ValueError('Use count_rows, count_distinct or sum')
+    return {'value':value,'contract':spec,'source_rows':len(rows),'population_members':len(pop_rows),
+        'rows_outside_population':len(rows)-len(scoped),'rows_in_domain':len(domain_rows),'selected_rows':len(selected),
+        'missing_value_rows':missing,'source_result_digest':digest(results[spec['result_view']]),
+        'population_result_digest':digest(results[population['result_view']]),
+        'meaning':'Native computation under declared source scope/domain/grain/unit. Source-supported unknowns remain unknown; no clinical interpretation inferred.'}
+
+
+def _rows(result):
+    columns=result.get('columns');rows=result.get('rows')
+    if not isinstance(rows,list):rows=next((result[k]for k in ('table','documents','passages')if isinstance(result.get(k),list)),None)
+    if not isinstance(rows,list):raise ValueError('An executed tabular result is required')
+    problem=incomplete_reason(result)
+    if problem:raise ValueError('Complete result required. '+problem+'. Obtain complete producer output before composition.')
+    if type(result.get('table_rows')) is int and result['table_rows']!=len(rows):raise ValueError('Native result rows do not match their declared complete cardinality')
+    if columns is None:columns=list(dict.fromkeys(k for r in rows if isinstance(r,dict)for k in r))
+    if not isinstance(columns,list)or not all(isinstance(c,str)for c in columns)or len(columns)!=len(set(columns)):
+        raise ValueError('Distinct received column names required')
+    columns=list(columns)
+    output=[]
+    for row in rows:
+        if isinstance(row,dict):
+            if set(row)-set(columns):raise ValueError('Row contains an undeclared column')
+            output.append({c:row.get(c)for c in columns})
+        elif isinstance(row,list)and len(row)==len(columns):output.append(dict(zip(columns,row)))
+        else:raise ValueError('Invalid received result row')
+    return columns,output
+
+
+def source_query(results,view):
+    """Expose value ancestry of an intact native scalar left composition.
+
+    This is a lineage graph for source-role checks, never an alternate executor
+    or proof of a calculation's scope. Collections keep their existing separate
+    retention contracts. Unknown/changed producers cannot supply this graph.
+    """
+    result=results.get(view)or{};a=result.get('assembly')or{}
+    base=a.get('base_result_view');joins=a.get('joins',[])
+    if (a.get('schema')!=VERSION or base not in results or
+        a.get('base_result_digest')!=digest(results[base]) or
+        any(j.get('mode')!='one'or j.get('domain')is not None or j.get('items_from')is not None or
+            j.get('result_view')not in results or j.get('source_result_digest')!=digest(results[j['result_view']])for j in joins)):
+        return None
+    def ident(s):return '"'+s.replace('"','""')+'"'
+    def literal(s):return "'"+s.replace("'","''")+"'"
+    base_columns,_=_rows(results[base]);columns,_=_rows(result)
+    renames=a.get('column_renames')or{};out=[];sql=' FROM '+ident(base)+' AS b'
+    try:
+        expected=compose(results,base=base,keys=a['keys'],
+            base_columns=[c for c in base_columns if renames.get(c,c)in columns],
+            joins=[{'result':j['result_view'],'as':j['as'],'on':j['on'],'mode':'one',
+                    'columns':j['selected_columns']}for j in joins],rename_columns=renames)
+        if digest([expected['columns'],expected['rows']])!=digest([columns,result['rows']]):return None
+    except (ValueError,KeyError,TypeError):return None
+    # A projection may omit base fields; a new field must have a real producer.
+    for column in base_columns:
+        target=renames.get(column,column)
+        if target in columns:out.append('b.'+ident(column)+' AS '+ident(target))
+    for i,j in enumerate(joins):
+        alias='j'+str(i);on=j.get('on')or{};selected=j.get('selected_columns')or[]
+        if not on or not selected:return None
+        pairs=[('b.'+ident(left),alias+'.'+ident(right))for left,right in on.items()]
+        sql+=' LEFT JOIN '+ident(j['result_view'])+' AS '+alias+' ON '+' AND '.join(
+            left+'='+right+' AND typeof('+left+')=typeof('+right+')'for left,right in pairs)
+        obj='json_object('+','.join(literal(c)+','+alias+'.'+ident(c)for c in selected)+')'
+        out.append('CASE WHEN '+pairs[0][1]+' IS NULL THEN NULL ELSE '+obj+' END AS '+ident(renames.get(j['as'],j['as'])))
+    if set(columns)!={renames.get(c,c)for c in base_columns if renames.get(c,c)in columns}|{renames.get(j['as'],j['as'])for j in joins}:
+        return None
+    return 'SELECT '+','.join(out)+sql
+
+
+def compose(results,*,base,keys,joins=None,base_columns=None,rename_columns=None):
+    if base not in results:raise ValueError('base must name an executed result_view')
+    if not isinstance(keys,list)or not keys or len(keys)!=len(set(keys))or not all(isinstance(k,str)for k in keys):
+        raise ValueError('Nonempty distinct base keys required')
+    columns,rows=_rows(results[base])
+    if base_columns is not None:
+        if not isinstance(base_columns,list)or not all(isinstance(c,str)for c in base_columns)or len(base_columns)!=len(set(base_columns))or not set(keys)<=set(base_columns)or not set(base_columns)<=set(columns):
+            raise ValueError('base_columns must be distinct received columns including all keys')
+        columns=list(base_columns);rows=[{c:r[c]for c in columns}for r in rows]
+    if not set(keys)<=set(columns):raise ValueError('Base key not in received columns')
+    def identity(row,names):
+        vals=[row[k]for k in names]
+        if any(v is None for v in vals):return None
+        if any(isinstance(v,(dict,list))for v in vals):raise ValueError('Join keys must be scalar')
+        # JSON identity preserves strings versus numbers and exact source grain.
+        return json.dumps(vals,sort_keys=True,allow_nan=False)
+    keyed={}
+    for row in rows:
+        k=identity(row,keys)
+        if k is None:raise ValueError('Base result contains a missing key; establish its grain first')
+        if k in keyed:raise ValueError('Base keys are not unique; establish the intended grain first')
+        keyed[k]=dict(row)
+    coverage=[]
+    if joins is None:joins=[]
+    if not isinstance(joins,list):raise ValueError('joins must be a list')
+    for join in joins:
+        if not isinstance(join,dict)or not {'result','as','on','mode'}<=set(join)or set(join)-{'result','as','on','mode','columns','items_from','retain_in_final','domain'}:raise ValueError('Join requires result, as, on and mode, with optional columns, items_from or explicit source domain')
+        view,alias,on,mode=(join[x]for x in ('result','as','on','mode'))
+        if view not in results:raise ValueError('Join must name an executed result_view')
+        if not isinstance(alias,str)or not alias or alias in columns:raise ValueError('Join alias must be a new nonempty field')
+        if mode not in ('one','collect'):raise ValueError('Use one for proven unique rows, collect for every matching source row')
+        # Row identity and a foreign relation are different contracts. Several
+        # source transactions may refer to one invoice/account; a missing
+        # foreign key must remain an unmatched row, not erase the transaction.
+        # Base uniqueness still uses keys, and one still requires a unique RHS.
+        if not isinstance(on,dict)or not on or not set(on)<=set(columns)or not all(isinstance(v,str)for v in on.values()):
+            raise ValueError('on maps received base columns to received join columns')
+        right_columns,right=_rows(results[view]);left_names=list(on);right_names=[on[k]for k in left_names]
+        source_rows=len(right);domain=join.get('domain')
+        if domain is not None:
+            matches=source_domain(domain,right_columns);right=[r for r in right if matches(r)]
+        if not set(right_names)<=set(right_columns):raise ValueError('Join key not in received columns')
+        selected=join.get('columns',right_columns)
+        if not isinstance(selected,list)or not selected or not all(isinstance(c,str)for c in selected)or len(selected)!=len(set(selected))or not set(selected)<=set(right_columns):raise ValueError('Join columns must be distinct received names')
+        items_from=join.get('items_from');collections={}
+        retain=join.get('retain_in_final',False)
+        if type(retain)is not bool or retain and mode!='collect':raise ValueError('Final retention requires a native collect join')
+        if items_from is not None:
+            if mode!='collect' or not isinstance(items_from,str) or items_from not in right_columns or 'columns' in join:
+                raise ValueError('items_from requires collect and a received collection column, without a columns projection')
+            for index,r in enumerate(right):
+                value=r[items_from]
+                if isinstance(value,str):
+                    try:value=json.loads(value)
+                    except ValueError as exc:raise ValueError('items_from must contain a native JSON collection') from exc
+                if value is None:value=[]
+                if not isinstance(value,list):raise ValueError('items_from must contain an array or null')
+                collections[id(r)]=value
+        grouped={};missing=0
+        for r in right:
+            k=identity(r,right_names)
+            if k is None:missing+=1;continue
+            grouped.setdefault(k,[]).append(r)
+        eligible={identity(r,left_names)for r in keyed.values()}
+        if mode=='one'and any(len(v)!=1 for k,v in grouped.items()if k in eligible):raise ValueError('Scalar join is not unique; use collect to retain all rows')
+        matched=0;matched_right=set()
+        for row in keyed.values():
+            k=identity(row,left_names);found=grouped.get(k)
+            row[alias]=([item for v in found for item in collections[id(v)]] if found else None) if items_from is not None else (
+                [{c:v[c]for c in selected}for v in found]if found and mode=='collect'else {c:found[0][c]for c in selected}if found else None)
+            if found:matched+=1;matched_right.add(k)
+        columns.append(alias)
+        coverage.append({'result_view':view,'as':alias,'mode':mode,'on':on,'selected_columns':selected,'source_rows':source_rows,
+            'domain':domain,'source_rows_in_domain':len(right),'source_rows_outside_domain':source_rows-len(right),
+            'base_rows_matched':matched,'base_rows_without_match':len(rows)-matched,
+            'source_rows_with_missing_key':missing,'source_rows_outside_base_keys':sum(len(v)for k,v in grouped.items()if k not in matched_right),
+            'source_result_digest':digest(results[view]),'retain_in_final':retain,
+            **({'items_from':items_from,'source_collection_items':sum(map(len,collections.values())),
+                'output_collection_items':sum(len(row[alias] or []) for row in keyed.values()),'retain_in_final':retain} if items_from is not None else {})})
+    if rename_columns is None:rename_columns={}
+    if (not isinstance(rename_columns,dict)or not set(rename_columns)<=set(columns)or set(rename_columns)&set(keys)or
+        any(not isinstance(k,str)or not isinstance(v,str)or not v for k,v in rename_columns.items())or
+        len(set(rename_columns.get(c,c)for c in columns))!=len(columns)):
+        raise ValueError('Column renames require received non-key fields and distinct nonempty output names')
+    output=[{rename_columns.get(k,k):v for k,v in row.items()}for row in keyed.values()]
+    columns=[rename_columns.get(c,c)for c in columns]
+    return {'columns':columns,'rows':output,'truncated':False,
+        'assembly':{'schema':VERSION,'base_result_view':base,'base_result_digest':digest(results[base]),'keys':keys,
+            **({'column_renames':rename_columns}if rename_columns else {}),
+            'base_rows':len(rows),'output_rows':len(keyed),'joins':coverage,
+            'method':'Exact left membership; scalar joins prove uniqueness; collection joins retain intact rows. Missing joins are null, not a clinical negative.'}}
+
+
+def _retained_parent_bindings(join,keys,parent):
+    """Only source-side join identities preserved in the enclosing row can be elided."""
+    bindings={};conflicts=set()
+    for left,right in (join.get('on')or{}).items():
+        value=parent.get(left)
+        if left not in keys or value is None or type(value)not in (str,int,float,bool):continue
+        try:encoded=json.dumps(value,sort_keys=True,allow_nan=False)
+        except ValueError:continue
+        if right in bindings and bindings[right]!=encoded:conflicts.add(right)
+        else:bindings[right]=encoded
+    return {name:value for name,value in bindings.items()if name not in conflicts}
+
+
+def _retention_item(item,bindings):
+    """Normalize redundant top-level identity only; nested assertions remain exact."""
+    if not isinstance(item,dict)or not bindings:return item
+    out=dict(item)
+    for name,parent in bindings.items():
+        if name not in item or item[name]is None:continue
+        try:equal=json.dumps(item[name],sort_keys=True,allow_nan=False)==parent
+        except (TypeError,ValueError):equal=False
+        if equal:out.pop(name)
+    return out
+
+
+def collection_contract_renames(results,root,required,*,keys):
+    """Follow a unique native items_from contract to its consumer address.
+
+    Alias spelling and object content never supply a clinical meaning. Existing
+    destinations, ambiguous constructors and non-identity joins stay explicit.
+    """
+    result=results.get(root)or{};assembly=result.get('assembly')or{}
+    if assembly.get('schema')!=VERSION or assembly.get('keys')!=keys or assembly.get('column_renames'):return {}
+    try:columns,rows=_rows(result)
+    except ValueError:return {}
+    if not set(keys)<=set(columns) or any(row.get(k)is None for row in rows for k in keys):return {}
+    output={}
+    for name in required:
+        if name in columns:continue
+        candidates=[]
+        for join in assembly.get('joins',[]):
+            alias=join.get('as');source=results.get(join.get('result_view'))
+            if (join.get('mode')!='collect' or join.get('items_from')!=name or join.get('retain_in_final')is not True
+                or join.get('on')!={k:k for k in keys} or alias not in columns or source is None
+                or join.get('source_result_digest')!=digest(source)):continue
+            try:source_columns,source_rows=_rows(source)
+            except ValueError:continue
+            if name not in source_columns:continue
+            def identity(row):return json.dumps([row.get(k)for k in keys],sort_keys=True,allow_nan=False)
+            grouped={};valid=True
+            for source_row in source_rows:
+                value=source_row.get(name)
+                try:value=json.loads(value)if isinstance(value,str)else value
+                except ValueError:valid=False;break
+                if value is not None and not isinstance(value,list):valid=False;break
+                grouped.setdefault(identity(source_row),[]).extend(value or[])
+            for row in rows:
+                value=row.get(alias)
+                try:value=json.loads(value)if isinstance(value,str)else value
+                except ValueError:valid=False;break
+                if digest(value)!=digest(grouped.get(identity(row))):valid=False;break
+            if valid:candidates.append(alias)
+        if len(candidates)==1:output[candidates[0]]=name
+    return output
+
+
+def collection_retention_plan(calls, root):
+    """Keep collection versions separate from unrelated upstream column reads.
+
+    A corrected assembly may explicitly collect a new version under the same
+    field contract. Its predecessor remains history only when EVERY live
+    consumer proves it did not read that old collection. Mere omission, a
+    rename, changed population or unknown read metadata cannot replace it.
+    This proves value lineage, never correctness of the replacement's meaning.
+    """
+    from collections import Counter
+    from .backstop_agent import native_result_dependencies, NATIVE_SQL_CONTRACT
+    from .evidence_projection import assembly_column_dependencies, _native_column_consumers
+    dependencies = native_result_dependencies(calls, [root])
+    by = {}
+    for call in calls:
+        result = call.get('result') or {}
+        if not isinstance(result, dict) or not result.get('result_view'):continue
+        view = result['result_view']
+        if view in by:return {'dependencies': dependencies, 'replacements': []}
+        by[view] = call
+    replacements = []
+    if dependencies is None:return {'dependencies': None, 'replacements': []}
+    proofs = assembly_column_dependencies(calls, dependencies, by)
+    for view in sorted(dependencies - {root}):
+        if view not in proofs:continue
+        result = by[view]['result']; contract = result['assembly']; keys = contract['keys']
+        columns, rows = _rows(result)
+        used = _native_column_consumers(view, columns,
+            digest({k:v for k,v in result.items() if k != 'result_view'}), by, dependencies, proofs)
+        if not used:continue
+        needed, consumers = used
+        if any(by[c['result_view']]['result'].get('error') or
+               incomplete_reason(by[c['result_view']]['result']) or
+               (by[c['result_view']]['name']=='query_sql' and
+                by[c['result_view']]['result'].get('native_sql_contract')!=NATIVE_SQL_CONTRACT)
+               for c in consumers):continue
+        population = Counter(digest([row[k] for k in keys]) for row in rows)
+        for join in contract['joins']:
+            alias = (contract.get('column_renames') or {}).get(join['as'], join['as'])
+            if not join.get('retain_in_final') or alias in needed:continue
+            for successor in sorted(dependencies - {view}):
+                if successor not in proofs:continue
+                newer = by[successor]['result']; assembly = newer['assembly']
+                if assembly['keys'] != keys:continue
+                # The new assembly must descend from this version, rather than
+                # an unrelated same-named collection elsewhere in the graph.
+                ancestors = native_result_dependencies(calls, [successor])
+                if ancestors is None or view not in ancestors:continue
+                _, newrows = _rows(newer)
+                if Counter(digest([row[k] for k in keys]) for row in newrows) != population:continue
+                for replacement in assembly['joins']:
+                    destination = (assembly.get('column_renames') or {}).get(replacement['as'], replacement['as'])
+                    if (not replacement.get('retain_in_final') or destination != alias
+                            or replacement['on'] != join['on']):continue
+                    replacements.append({'previous_result_view': view, 'field': alias,
+                        'previous_result_digest': digest(result), 'replacement_result_view': successor,
+                        'replacement_result_digest': digest(newer), 'keys': keys,
+                        'population_digest': digest(sorted(population.items())),
+                        'consumers': consumers, 'original_receipt_preserved': True,
+                        'current_source_review_required': True})
+                    break
+                else:continue
+                break
+    return {'dependencies': dependencies, 'replacements': replacements}
+
+
+def collection_retention_issues(results,final_rows,dependencies,*,replacements=()):
+    """Check explicitly promised source collections in descendant final tables."""
+    from collections import Counter
+    issues={}
+    if dependencies is None:return []
+    replaced={(r['previous_result_view'],r['field']) for r in replacements}
+    def decoded(value):
+        if isinstance(value,str) and value[:1] in ('{','['):
+            try:return json.loads(value)
+            except ValueError:return value
+        return value
+    def key(row,names):
+        if not isinstance(row,dict) or any(k not in row for k in names):return None
+        return json.dumps([row[k]for k in names],sort_keys=True,allow_nan=False)
+    def aliases(name):
+        # Only executed, validated rename contracts may change a retained
+        # collection's address. Exact object/identity checks still apply.
+        names={name};changed=True
+        while changed:
+            before=len(names)
+            for dependent in dependencies:
+                renames=(results[dependent].get('assembly')or{}).get('column_renames')or{}
+                names.update(new for old,new in renames.items()if old in names)
+            changed=len(names)!=before
+        return names
+    def report(kind,alias,view,keys,ident,join,expected,missing=None,records=None):
+        issue=issues.setdefault((kind,alias,view),{'keys':keys,'affected_keys':[],'required_fields':set(),'missing_objects':[]})
+        if ident not in issue['affected_keys']:issue['affected_keys'].append(ident)
+        issue['required_fields'].update(join.get('selected_columns')or[])
+        for item in expected:
+            if isinstance(item,dict):issue['required_fields'].update(item)
+        if missing is not None:issue['missing_objects'].append({'key':json.loads(ident),'objects':missing,'record_ids':records or[]})
+    for view in sorted(dependencies):
+        result=results[view];assembly=result.get('assembly') or {};keys=assembly.get('keys') or []
+        required=[j for j in assembly.get('joins',[]) if j.get('retain_in_final')]
+        if not required:continue
+        _,source=_rows(result);final={key(row,keys):row for row in final_rows if key(row,keys) is not None}
+        for row in source:
+            ident=key(row,keys)
+            if ident not in final:continue
+            target=final[ident]
+            for join in required:
+                original=join['as'];source_alias=(assembly.get('column_renames')or{}).get(original,original)
+                if (view,source_alias) in replaced:continue
+                expected=decoded(row[source_alias]) or []
+                addresses=sorted(aliases(source_alias)&set(target))
+                # An explicitly renamed context can retain the old objects
+                # while a new clinical view legitimately reuses the old name.
+                # Only native rename destinations qualify; exact objects still
+                # have to be present in full at one of those addresses.
+                wanted=Counter(digest(item)for item in expected)
+                choices=[]
+                for address in addresses:
+                    value=decoded(target.get(address))
+                    if value is None or isinstance(value,list):
+                        missing=wanted-Counter(digest(item)for item in value or [])
+                        choices.append((sum(missing.values()),address,missing))
+                if choices and min(c[0]for c in choices)==0:continue
+                bindings=_retained_parent_bindings(join,keys,row)
+                normalized=False
+                if choices and bindings:
+                    normalized=True
+                    wanted=Counter(digest(_retention_item(item,bindings))for item in expected)
+                    choices=[]
+                    for address in addresses:
+                        value=decoded(target.get(address))
+                        if value is None or isinstance(value,list):
+                            missing=wanted-Counter(digest(_retention_item(item,bindings))for item in value or[])
+                            choices.append((sum(missing.values()),address,missing))
+                    if choices and min(c[0]for c in choices)==0:continue
+                alias=addresses[0]if addresses else source_alias
+                if not choices:
+                    report('omitted',alias,view,keys,ident,join,expected);continue
+                _,alias,missing=min(choices,key=lambda c:(c[0],c[1]))
+                if missing:
+                    records=sorted({item['record_id']for item in expected if isinstance(item,dict) and isinstance(item.get('record_id'),str) and
+                        digest(_retention_item(item,bindings)if normalized else item)in missing})
+                    report('changed',alias,view,keys,ident,join,expected,sum(missing.values()),records)
+    messages=[]
+    for (kind,alias,view),issue in issues.items():
+        text=('Final field '+alias+' omits its explicitly retained native collection'if kind=='omitted'else
+              'Final field '+alias+' drops or changes retained source objects')
+        text+=' from '+view+'; keys='+json.dumps(issue['keys'])+'; affected_keys='+json.dumps([json.loads(k)for k in issue['affected_keys']])
+        text+='; required_object_fields='+json.dumps(sorted(issue['required_fields']))
+        if issue['missing_objects']:text+='; missing_objects='+json.dumps(issue['missing_objects'])
+        text+='. Keep the intact collection. Redundant source join keys may be carried by the identically bound parent row; other fields remain exact. Use an executed compose_table.rename_columns mapping to move broader evidence to a clearly labelled context field; a narrower clinical projection does not remove an earlier retain_in_final promise.'
+        messages.append(text)
+    return messages
+
+
+def equivalent_retained_assembly(calls, root, final_rows):
+    """Find an already executed correction with exactly the proposed values.
+
+    A final projection can carry obsolete retention ancestry even though its
+    complete values equal a corrected assembly. Rebind only exact rows/fields;
+    JSON text -> collection differences require a real native collect operation.
+    This selects execution lineage, never edits a claimed fact or accepts it.
+    """
+    native={c['result']['result_view']:c['result'] for c in calls
+            if isinstance(c.get('result'),dict) and c['result'].get('result_view')}
+    if root not in native:return None
+    columns, rows = _rows(native[root])
+    if digest(rows)!=digest(final_rows):return None
+    prior=collection_retention_plan(calls,root)
+    if not collection_retention_issues(native,rows,prior['dependencies'],replacements=prior['replacements']):return None
+    for call in reversed(calls):
+        result=call.get('result')or{};view=result.get('result_view')
+        if call.get('name')!='compose_table' or not view or view==root:continue
+        candidate_columns,candidate_rows=_rows(result)
+        if columns!=candidate_columns or len(rows)!=len(candidate_rows):continue
+        plan=collection_retention_plan(calls,view)
+        if not plan['replacements'] or collection_retention_issues(native,candidate_rows,
+                plan['dependencies'],replacements=plan['replacements']):continue
+        converted=[];valid=True;keys=result['assembly']['keys']
+        for field in columns:
+            if all(digest(a[field])==digest(b[field])for a,b in zip(candidate_rows,rows)):continue
+            if field in keys:valid=False;break
+            try:
+                for source,target in zip(candidate_rows,rows):
+                    value=source[field]
+                    if isinstance(value,str):value=json.loads(value)
+                    if value is not None and not isinstance(value,list):raise ValueError('Not a collection')
+                    if digest(value)!=digest(target[field]):raise ValueError('Changed collection')
+            except (ValueError,TypeError):valid=False;break
+            converted.append(field)
+        if not valid:continue
+        spec=None
+        if converted:
+            spec={'base':view,'keys':keys,'base_columns':[c for c in columns if c not in converted],
+                'joins':[{'result':view,'as':c,'on':{k:k for k in keys},'mode':'collect',
+                          'items_from':c,'retain_in_final':True}for c in converted]}
+            try:rebased=compose(native,**spec)
+            except (ValueError,TypeError,KeyError):continue
+            if digest(rebased['rows'])!=digest(rows):continue
+        elif digest(candidate_rows)!=digest(rows):continue
+        return {'schema':'equivalent-retained-assembly/1','previous_result_view':root,
+            'previous_result_digest':digest(native[root]),'candidate_result_view':view,
+            'candidate_result_digest':digest(result),'compose':spec,
+            'exact_rows_digest':digest(rows),'original_columns':columns,
+            'replacement_lineage':plan['replacements'],'values_and_population_unchanged':True,
+            'full_current_review_required':True,'whole_answer_accepted':False}
+    return None

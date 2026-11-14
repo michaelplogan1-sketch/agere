@@ -19,7 +19,24 @@ from . import chart_intents as CI
 from . import chart_queries as Q
 from . import note_open as NO
 
-VERSION = 'chart-notes/2'
+VERSION = 'chart-notes/3'
+_SOURCE_RELATION = re.compile(
+    r"\b(?:linked|referenced|attached)\b[^.!?;]*\b(?:sources?|evidence|documents?|reports?|records?|results?)\b|"
+    r"\b(?:sources?|evidence|documents?|reports?|records?|results?)\b[^.!?;]*\b(?:linked|referenced|attached)\b|"
+    r"\b(?:follow|traverse|resolve|inspect|review)\b[^.!?;]*\b(?:source |record |document )?references?\b", re.I)
+
+
+def source_traversal_requested(question):
+    """A relationship between sources needs the analyst's native reference tools.
+
+    A chart scalar/list or note-frame predicate cannot express following a
+    reference and reviewing its target. A citation alone does not request this.
+    Keep that capability boundary explicit instead of inferring an event order
+    from procedural words such as "review ... first".
+    """
+    return bool(_SOURCE_RELATION.search(question or ''))
+
+
 STRONG = re.compile(
     r"\b(?:in (?:the |his |her |their )?notes?|the notes?|notes? (?:say|show|record|mention|document|list|stated)|(?:is|are) there (?:a|an|any) (?:\w+ )?(?:notes?|documentation|mention)|"
     r"(?:a|an|any) notes? (?:saying|stating|documenting|mentioning|showing|recording)|chart (?:say|show|mention)s?|later notes?|"

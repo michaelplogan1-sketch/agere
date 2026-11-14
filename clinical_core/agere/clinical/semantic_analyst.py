@@ -18,6 +18,7 @@ the bench posts directly; the product uses the ledgered context_student.send.
 from __future__ import annotations
 
 import json
+import os
 import random
 import re
 import sqlite3
@@ -27,14 +28,41 @@ from pathlib import Path
 
 from . import semantic_docs
 
+# Native subscription decisions use the same tool permissions as each loop turn.
+# This open final contract preserves product-specific answer fields. Compiled
+# composition and focused repair schemas narrow it later; runtime reviews still
+# validate every native binding, scope and repair digest. No output-size ceiling.
+INVESTIGATOR_OUTPUT_CONFIG = {'format': {'type': 'json_schema', 'schema': {
+    'type': 'object',
+    'properties': {
+        'status': {'enum': ['answered', 'partial', 'unsupported', 'grounding_failed', 'not_available']},
+        'answer_type': {'type': 'string'},
+        'repair_draft': {'type': 'object', 'additionalProperties': True}},
+    'anyOf': [{'required': ['status', 'answer_type']}, {'required': ['repair_draft']}],
+    'additionalProperties': True}}}
+
 # --- read-only access ---------------------------------------------------------------------------------------------------
 
 
-def bounded_query(db, sql, params, timeout_s, max_rows, max_chars):
+def bounded_query(db, sql, params, timeout_s, max_rows, max_chars, *, check_date_types=False):
+    from ..request_lineage import component, trace_sql
+    from ...contracts import digest
+    trace_sql(db)
+    with component('investigator_sql', query_digest=digest([sql,params])) as metrics:
+        result = _bounded_query(db, sql, params, timeout_s, max_rows, max_chars, check_date_types=check_date_types)
+        metrics.update(rows=len(result['rows']), truncated=result['truncated'])
+        return result
+
+
+def _bounded_query(db, sql, params, timeout_s, max_rows, max_chars, *, check_date_types=False):
     """Execute one read under a time limit; explicit truncation by rows and serialized size."""
     start = time.perf_counter()
     db.set_progress_handler(lambda: int(time.perf_counter() - start > timeout_s), 10000)
     try:
+        if check_date_types:
+            from .sql_query import date_arithmetic_issues, source_tuple_issues
+            issues = source_tuple_issues(sql) + date_arithmetic_issues(db, sql)
+            if issues: raise ValueError('; '.join(issues))
         cursor = db.execute(sql, params)
         if cursor.description is None:
             raise ValueError('Query must return rows')
@@ -45,7 +73,7 @@ def bounded_query(db, sql, params, timeout_s, max_rows, max_chars):
         for row in cursor:
             item = dict(row)
             size = len(json.dumps(item, allow_nan=False))
-            if len(rows) >= max_rows or chars + size > max_chars:
+            if (max_rows is not None and len(rows) >= max_rows) or (max_chars is not None and chars + size > max_chars):
                 truncated = True
                 break
             rows.append(item)
@@ -74,7 +102,7 @@ class SemanticWarehouse:
     """
     DENIED_FUNCTIONS = {'load_extension', 'readfile', 'writefile', 'eval', 'fts3_tokenizer'}
     MISSING = 'Semantic layer not found'
-    DEFINITION_VIEWS = frozenset(('living_patient', 'condition_member', 'latest_lab', 'last_12_months', 'medicare_member'))
+    DEFINITION_VIEWS = frozenset(('living_patient', 'condition_evidence', 'condition_member', 'latest_lab', 'last_12_months', 'medicare_member'))
 
     def __init__(self, path, timeout_s=30):
         if path is None or not Path(path).is_file():
@@ -100,6 +128,9 @@ class SemanticWarehouse:
         """A read-only connection without the authorizer (setup reads: meta, PRAGMA table_info)."""
         db = sqlite3.connect(self.path.as_uri() + '?mode=ro', uri=True, check_same_thread=False)
         db.row_factory = sqlite3.Row
+        from .dose import register as register_dose
+        from .clinical_inputs import register as register_inputs
+        register_inputs(register_dose(db))
         db.execute('PRAGMA query_only=ON')
         return db
 
@@ -123,7 +154,12 @@ class SemanticWarehouse:
         if action == sqlite3.SQLITE_READ:
             # Reads of main tables, CTEs/subqueries (database None) and json_each/json_tree; the temp schema only for the
             # definition views define() created (their own reads of main tables are authorized as above).
-            if database == 'temp' and arg1 in cls.DEFINITION_VIEWS: return sqlite3.SQLITE_OK
+            if database == 'temp' and (arg1 in cls.DEFINITION_VIEWS or arg1 in ('cohort', 'agere_data_model_context') or re.fullmatch(r'agere_result_\d+|agere_review_feedback_[a-f0-9]{64}', str(arg1))):
+                return sqlite3.SQLITE_OK  # only code-created, request-local cohort and executed-result views
+            if database == 'temp' and str(arg1).startswith('phenotype_'):
+                from .clinical_definitions import PHENOTYPES
+                if str(arg1)[len('phenotype_'):] in PHENOTYPES:
+                    return sqlite3.SQLITE_OK  # only registered owner definitions, never arbitrary temp tables
             return sqlite3.SQLITE_OK if database in (None, 'main') else sqlite3.SQLITE_DENY
         if action == sqlite3.SQLITE_FUNCTION:
             return sqlite3.SQLITE_DENY if str(arg2).lower() in cls.DENIED_FUNCTIONS else sqlite3.SQLITE_OK
@@ -140,20 +176,119 @@ class SemanticWarehouse:
         db.set_authorizer(None)
         db.execute('PRAGMA query_only=OFF')
         try:
-            for name in analyst_definitions.VIEW_NAMES:
+            for name in dict.fromkeys([*getattr(self._local, 'defined_names', []), *views]):
                 db.execute(f'DROP VIEW IF EXISTS temp.{name}')
-            for name in analyst_definitions.VIEW_NAMES:  # dependency order: living_patient before medicare_member
-                if name in views: db.execute(f'CREATE TEMP VIEW {name} AS {views[name]}')
+            for name, sql in views.items():  # dependency order: living_patient before its dependents
+                db.execute(f'CREATE TEMP VIEW {name} AS {sql}')
         finally:
             db.execute('PRAGMA query_only=ON')
             db.set_authorizer(self._authorize)
-        self._local.defined, self._local.defined_names = day, [n for n in analyst_definitions.VIEW_NAMES if n in views]
+        self._local.defined, self._local.defined_names = day, list(views)
+        self._local.defined_views = dict(views)
         return self._local.defined_names
 
-    def query(self, sql, *, as_of=None, max_rows=2000, max_chars=60000):
-        if not isinstance(sql, str) or not sql.strip() or len(sql) > 30000:
-            raise ValueError('A bounded SQL statement is required')
-        return bounded_query(self.db, sql, {'as_of': as_of or self.as_of}, self.timeout_s, max_rows, max_chars)
+    def register_native_result(self, name, receipt):
+        from .result_assembly import incomplete_dependencies
+        native = getattr(self._local, 'native_results', None)
+        if native is None:
+            native = self._local.native_results = {}
+        from ...contracts import digest
+        native[name.casefold()] = {'name': name, 'kind': receipt.get('kind'),
+            'receipt_digest': digest({k:v for k,v in receipt.items()if k!='result_view'}),
+            'incomplete_dependencies': incomplete_dependencies(receipt, result_view=name)}
+
+    def query(self, sql, *, as_of=None, max_rows=2000, max_chars=60000, inspect_incomplete=False):
+        if not isinstance(sql, str) or not sql.strip():
+            raise ValueError('A read-only SQL statement is required')
+        # Product investigation uses governed definitions; the standalone reader
+        # remains independent of product compiler imports and type checks share
+        # the query's existing timeout.
+        defined = getattr(self._local, 'defined', None)
+        reads, definitions = set(), set()
+        views = getattr(self._local, 'defined_views', {}) if defined else {}
+        native = getattr(self._local, 'native_results', {})
+        bindings = set()
+        if native:
+            from .sql_query import native_query_bindings
+            _, tables = native_query_bindings(sql, native)
+            bindings = None if tables is None else {table.name.casefold() for table in tables}
+        native_reads, blocked, functions = set(), set(), set()
+        native_columns, unknown_native_columns = {}, set()
+        def authorize(action, arg1, arg2, database, source):
+            verdict = self._authorize(action, arg1, arg2, database, source)
+            if verdict == sqlite3.SQLITE_OK:
+                if action == sqlite3.SQLITE_FUNCTION:
+                    functions.add(str(arg2).casefold())
+                if action == sqlite3.SQLITE_READ:
+                    if database == 'main': reads.add(arg1)
+                    if database == 'temp' and arg1 in views: definitions.add(arg1)
+                if source in views: definitions.add(source)
+                if action == sqlite3.SQLITE_READ:
+                    candidates = {str(source).casefold()}
+                    cardinality_read=(database is None and arg2=='' and bindings is not None
+                        and str(arg1).casefold()in bindings)
+                    if database == 'temp' or cardinality_read:candidates.add(str(arg1).casefold())
+                    for name in candidates & native.keys():
+                        if bindings is None or name in bindings:
+                            native_reads.add(name)
+                            if (database == 'temp' or cardinality_read) and str(arg1).casefold() == name:
+                                native_columns.setdefault(name,set())
+                                if arg2:native_columns[name].add(arg2)
+                            elif str(source).casefold() == name:
+                                unknown_native_columns.add(name)
+                            # Direct producer consumers (population selection,
+                            # field scopes) must not dispatch from clipped input.
+                            # The registered SQL inspection tool opts in below;
+                            # it may explore, while acceptance still rejects gaps.
+                            if not inspect_incomplete and native[name]['incomplete_dependencies']:
+                                blocked.add(name)
+                                return sqlite3.SQLITE_DENY
+            return verdict
+        db = self.db
+        db.set_authorizer(authorize)
+        try:
+            result = bounded_query(db, sql, {'as_of': as_of or self.as_of}, self.timeout_s, max_rows, max_chars,
+                                   check_date_types=bool(defined))
+        except sqlite3.DatabaseError as exc:
+            if blocked:
+                raise ValueError('Incomplete native dependency cannot define a producer scope: ' +
+                                 ', '.join(native[name]['name'] for name in sorted(blocked)) +
+                                 '. Obtain complete producer output first.') from exc
+            raise
+        finally:
+            db.set_authorizer(self._authorize)
+        if native_reads and bindings is None:
+            raise ValueError('Native SQL dependency binding is unavailable; no complete result was registered')
+        result['read_views'] = [native[name]['name'] for name in sorted(native_reads)]
+        if native_reads:
+            from ...contracts import digest
+            result['native_read_columns'] = {'schema':'sqlite-native-column-reads/1',
+                'query_digest':digest(sql),
+                'sources':{native[name]['name']:{'columns':sorted(native_columns.get(name,())),
+                    'complete':name not in unknown_native_columns and name in native_columns,
+                    'receipt_digest':native[name]['receipt_digest']}
+                    for name in sorted(native_reads)}}
+        reasons = [reason for name in sorted(native_reads) for reason in native[name]['incomplete_dependencies']]
+        if reasons:
+            result['incomplete_dependencies'] = list({json.dumps(item, sort_keys=True): item for item in reasons}.values())
+        if 'drug_group_member' in functions:
+            from .drug_classes import classification_identity
+            result['registered_domain_functions'] = [{'name': 'drug_group_member',
+                'registry_identity': classification_identity(),
+                'meaning': 'Registered medication class/group membership only; unclassifiable names are NULL. No current use, tolerated dose or clinical suitability is inferred.'}]
+        if not defined:
+            return result
+        from ...contracts import digest
+        meanings = semantic_docs.schema_doc()
+        result['source_contracts'] = {'schema':'executed-source-contracts/1','as_of':defined,
+            'source_digest':self.meta.get('source_digest'),'semantic_version':self.meta.get('version'),
+            'definitions':[{'name':name,'query':views[name],'query_digest':digest(views[name])}
+                           for name in sorted(definitions)],
+            'relations':[{'name':name,'meaning':meanings.get(name),'columns':self.columns.get(name,[]),
+                          'clock_roles':semantic_docs.source_clock_roles(self.columns.get(name,[]))}
+                         for name in sorted(reads)],
+            'scope':'Inherited definitions and source-table semantics from actual authorized SQLite reads. These describe computation and received evidence, not independent clinical support.'}
+        return result
 
     def close(self):
         with self._lock:
@@ -191,7 +326,8 @@ examples; do not explore tables blindly. Query only to compute the answer or to 
 the documentation (for example the exact spelling of a received label).
 Answer the question as asked: follow its literal scope (records vs patients vs visits, named fields, units, date
 clocks, inclusions/exclusions). Prefer modeled tables; use record with json_extract(payload, '$.field') for fields
-the modeled tables do not carry. Deduplicate patients. Distinguish event dates from arrival (available_date).
+the modeled tables do not carry. Deduplicate patients. Distinguish reported event, source-recorded and source-availability
+dates. available_date is reported availability, not proof of a physical warehouse receipt/ingestion timestamp.
 Do arithmetic in SQL. You have at most 8 query_sql calls; tools may return explicit errors or truncation, never
 treat either as zero.
 Snapshot semantics: the semantic layer is ONE snapshot of received evidence (see the Snapshot line). It holds records
@@ -242,8 +378,254 @@ def new_result(model):
             'error': None, 'cost_scope': 'returned_provider_usage'}
 
 
+def native_runtime_failure(error):
+    """Classify native storage failures, never text supplied by a document."""
+    import errno
+    code = getattr(error, 'sqlite_errorcode', None)
+    storage = (isinstance(error, sqlite3.Error) and isinstance(code, int)
+               and (code & 255) in (sqlite3.SQLITE_FULL, sqlite3.SQLITE_IOERR))
+    no_space = isinstance(error, OSError) and error.errno == errno.ENOSPC
+    if not (storage or no_space):
+        return None
+    return {'schema': 'native-runtime-failure/1', 'kind': 'storage_unavailable',
+            'error_type': type(error).__name__, 'message': str(error),
+            'sqlite_errorcode': code, 'sqlite_errorname': getattr(error, 'sqlite_errorname', None),
+            'errno': getattr(error, 'errno', None), 'model_retry_can_repair': False,
+            'retry_disposition': 'retain_partial_until_runtime_recovers',
+            'data_absence_established': False}
+
+
+def successful_sql_calls(calls):
+    """Successful computation receipts only; failed attempts remain in the investigation history."""
+    return [c for c in calls if c.get('sql') and not (isinstance(c.get('result'), dict) and c['result'].get('error'))]
+
+
+def row_count_profile(columns,rows):
+    """Exact compact aggregates for a model preview; full rows remain queryable.
+
+    Repeated categories keep their values. Singleton category values are not
+    copied into this summary; their exact count and native view remain explicit.
+    This is row metadata, not inferred clinical status or patient grain.
+    """
+    import math
+    from decimal import Decimal
+    out={}
+    for i,column in enumerate(columns):
+        values={};missing=0;positive=0;numeric=0;numbers=[];nonnull=0
+        for row in rows:
+            if isinstance(row,dict):
+                if column not in row:missing+=1;continue
+                value=row[column]
+            else:value=row[i]
+            key=json.dumps(value,sort_keys=True,default=str)
+            if key not in values:values[key]={'value':value,'rows':0}
+            values[key]['rows']+=1
+            nonnull+=value is not None
+            if isinstance(value,(int,float)) and not isinstance(value,bool) and math.isfinite(value):
+                numeric+=1;positive+=value>0
+                numbers.append(Decimal(str(value)))
+        out[column]={'missing_rows':missing,'null_rows':sum(v['rows'] for v in values.values() if v['value'] is None),
+                     'repeated_values':[v for v in values.values() if v['rows']>1],
+                     'singleton_value_rows':sum(v['rows']==1 for v in values.values()),
+                     'finite_numeric_rows':numeric,'positive_numeric_rows':positive}
+        if numbers and numeric==nonnull:
+            out[column]['numeric_rows']={'non_null_rows':numeric,'sum_decimal':str(sum(numbers,Decimal(0))),
+                                        'min_decimal':str(min(numbers)),'max_decimal':str(max(numbers))}
+    return {'rows':len(rows),'columns':out,'meaning':'Code-computed row counts, repeated categories, singleton counts and arithmetic over numeric non-null rows. Decimal strings preserve arithmetic precision. Sums are raw column sums; counts and sums do not establish distinct patient/event grain, current therapy or clinical appropriateness. Singleton values and all original rows remain in the native result_view; query it for exact details.'}
+
+
+def collection_manifest(rows):
+    """Expose native JSON collections even when their row preview is empty.
+
+    Counts describe observed result rows, not patients or clinical validity.
+    Full collection values stay in the native result view. The existing
+    review_json field manifest describes that column separately.
+    """
+    columns={}
+    for row in rows:
+        if not isinstance(row,dict):continue
+        for column,raw in row.items():
+            if not isinstance(column,str) or not column.endswith('_json') or column=='review_json':continue
+            entry=columns.setdefault(column,{'rows_observed':0,'collections':{}})
+            entry['rows_observed']+=1
+            if raw is None:
+                entry['null_rows']=entry.get('null_rows',0)+1;continue
+            try:value=json.loads(raw) if isinstance(raw,str) else raw
+            except (ValueError,TypeError,RecursionError):
+                entry['unparseable_rows']=entry.get('unparseable_rows',0)+1;continue
+            if isinstance(value,list):collections={'$':value}
+            elif isinstance(value,dict):
+                collections={'$.'+json.dumps(key):items for key,items in value.items()if isinstance(items,list)}
+            else:collections={}
+            if not collections:
+                entry['noncollection_rows']=entry.get('noncollection_rows',0)+1;continue
+            for path,items in collections.items():
+                found=entry['collections'].setdefault(path,{'rows_with_items':0,'items':0,'item_fields':[]})
+                found['rows_with_items']+=bool(items);found['items']+=len(items)
+                fields=set(found['item_fields'])
+                fields.update(key for item in items if isinstance(item,dict)for key in item)
+                found['item_fields']=sorted(fields)
+    return columns
+
+
+def complete_actor_reading(value):
+    """Only an exact executor-bound reading changes the model projection."""
+    from ...contracts import digest
+    if not isinstance(value,dict) or not isinstance(value.get('rows'),list):return False
+    marker=value.get('actor_reading')
+    if not isinstance(marker,dict) or marker.get('mode')!='complete_rows':return False
+    return marker=={'mode':'complete_rows','rows_digest':digest(value['rows']),
+                    'columns_digest':digest(value.get('columns'))}
+
+
+def actor_result(value):
+    """A model preview, while native receipts and SQL result views retain ALL rows."""
+    if not isinstance(value,dict):return value
+    from . import source_navigation
+    if value.get('schema') == source_navigation.VERSION:
+        return source_navigation.actor_reading(value)
+    shown={k:v for k,v in value.items() if k not in ('executed_query','elapsed_s','engine_result')}
+    if value.get('executed_query'):
+        from ...contracts import digest
+        shown['executed_query_digest']=digest(value['executed_query'])
+    # These complete operational arrays are native receipts, not frontier
+    # reading context. Keep source meanings in row fields and explicit native
+    # views; never duplicate every prior typed response/group in each tool turn.
+    if value.get('analysis')in ('assertion_source_review','assertion_source_interpretation'):
+        from ...contracts import digest
+        key=value['analysis'];meta=shown.get(key)
+        if isinstance(meta,dict):
+            projected=dict(meta)
+            for field in ('typed_checks','documentary_groups','patient_state_coverage'):
+                items=projected.get(field)
+                if isinstance(items,list):
+                    projected[field]={'native_records':len(items),'native_digest':digest(items),
+                        'meaning':'Complete original data retained in the native receipt; this is a transport manifest, not clinical acceptance.'}
+            shown[key]=projected
+    rows=shown.get('rows')
+    if complete_actor_reading(value):
+        shown.update(rows_computed=len(rows),preview_only=False,
+            reading_instruction='Every row of this explicitly requested native reading is supplied intact. Interpret the actual values and source observations; this does not establish source completeness, clinical truth or current responsibility.')
+        return shown
+    # Population inspection is a native membership proof, not an instruction
+    # for the analyst to read every member ID. Keep every proof and its source
+    # contract visible, but reference the identical member list already stored
+    # in the queryable result instead of sending it a second time.
+    from .membership import NATIVE_POPULATIONS
+    if (value.get('schema')==NATIVE_POPULATIONS and isinstance(value.get('result_view'),str)
+            and value.get('columns')==['population_id','label','patient_count','patient_ids']
+            and isinstance(value.get('scopes'),list) and isinstance(rows,list)):
+        from ...contracts import digest
+        scopes=value['scopes']
+        if (len(scopes)==len(rows) and all(isinstance(scope,dict) and isinstance(row,dict)
+                and isinstance(scope.get('patient_ids'),list) and scope.get('id')==row.get('population_id')
+                and row.get('patient_ids')==json.dumps(scope['patient_ids'])
+                and scope.get('patient_count')==row.get('patient_count')==len(scope['patient_ids'])
+                and (scope.get('proof')or{}).get('patient_ids_digest')==digest(scope['patient_ids'])
+                for scope,row in zip(scopes,rows))):
+            shown['scopes']=[{**{k:v for k,v in scope.items()if k!='patient_ids'},
+                'patient_membership':{'result_view':value['result_view'],'population_id':scope['id'],
+                    'column':'patient_ids','encoding':'complete JSON array',
+                    'sha256':digest(scope['patient_ids'])}}for scope in scopes]
+            shown['membership_reading']='Complete member IDs remain in patient_ids for each population_id in the native result_view. Query them when individual membership is needed. All counts, selection proofs, unknowns and source contracts are retained here; membership is not clinical eligibility.'
+    if isinstance(rows,list):
+        collections=collection_manifest(rows)
+        if collections:
+            shown['structured_collection_manifest']=collections
+            shown['structured_collection_instruction']='Query these complete JSON collections in the native result_view and compose applicable dated relations. Collection counts and field names do not establish current assignment, attendance or clinical meaning. Invalid or null JSON is not an empty clinical finding.'
+    # Required narrative fields must remain visible even when the first patient's
+    # long JSON leaves no room for a row preview. Counts describe availability,
+    # not clinical acceptance; the native SQL view remains the source of values.
+    if isinstance(rows,list) and any(isinstance(r,dict) and 'review_json' in r for r in rows):
+        fields={}
+        for row in rows:
+            if not isinstance(row,dict):continue
+            try:findings=json.loads(row.get('review_json') or '{}')
+            except (ValueError,TypeError):continue
+            for key,items in findings.items():
+                if not isinstance(items,list):continue
+                f=fields.setdefault(key,{'patients_with_findings':0,'findings':0,'json_path':'$.'+key})
+                f['patients_with_findings']+=bool(items);f['findings']+=len(items)
+        shown['narrative_field_manifest']={'fields':fields,'instruction':'Carry every requested field into the final assessment. Query review_json using these paths; a preview omission is not absence of source findings. Counts are not clinical accuracy.'}
+    if isinstance(rows,list) and len(json.dumps(shown,default=str))>12000:
+        preview=[]
+        for row in rows[:3]:
+            if len(json.dumps(preview+[row],default=str))>10000:break
+            preview.append(row)
+        if isinstance(shown.get('columns'),list):shown['computed_row_count_profile']=row_count_profile(shown['columns'],rows)
+        shown.update(rows=preview,rows_computed=len(rows),preview_only=True,
+                     complete_result_available_in=shown.get('result_view'),
+                     instruction='The native receipt and result_view retain every row. Query the view for details/aggregates; use table_from_tool to copy a complete final result.')
+        # Engine answers repeat their complete tables and memberships. Keep those
+        # in native receipts, rather than defeating the preview with nested copies.
+        if isinstance(shown.get('answer'),dict):
+            nested=shown['answer'];shown['answer']={k:v for k,v in nested.items() if k not in ('table','patient_ids','unknown_patient_ids')}
+            if isinstance(nested.get('table'),list):shown['answer']['table_rows_computed']=len(nested['table'])
+        for key in ('input_patient_ids','patient_ids','unknown_patient_ids'):
+            if isinstance(shown.get(key),list):shown[key+'_count']=len(shown.pop(key))
+        if isinstance(shown.get('coverage'),list):
+            coverage=shown.pop('coverage')
+            shown['coverage_summary']={'patients':len(coverage),'received_documents':sum(x.get('received_documents',0) for x in coverage),
+                                       'unique_whole_documents':sum(x.get('unique_whole_documents',0) for x in coverage),
+                                       'inventory_whole_documents':sum(x.get('inventory_whole_documents',x.get('unique_whole_documents',0))for x in coverage),
+                                       'source_scope':shown.get('source_scope'),'chart_wide_absence_established':False}
+        if isinstance(shown.get('navigation_coverage'),list):
+            # Per-record source versions carried for a later native expansion.
+            # Code consumes them from the receipt; the model needs the totals.
+            from ...contracts import digest
+            carried=shown.pop('navigation_coverage')
+            listed=[s for p in carried for s in ((p.get('source_selection')or{}).get('sources')or[])]
+            shown['navigation_coverage_summary']={'patients':len(carried),'source_records_listed':len(listed),
+                'source_records_read_for_a_field':sum(1 for s in listed if s.get('selected_fields')),
+                'complete_chart_review':all((p.get('source_selection')or{}).get('complete_chart_review')is True for p in carried)if carried else False,
+                'native_digest':digest(carried),
+                'meaning':'Complete per-record source versions and selected fields remain in the native receipt for a later expansion. Listed-but-unread records remain unexamined; these counts establish no absence.'}
+        # A row preview must not repeat the complete free-text dataset through
+        # its category-frequency metadata. Keep full native rows and counts;
+        # condense the largest lists only until the existing preview envelope fits.
+        profile=shown.get('computed_row_count_profile')or{}
+        distributions=profile.get('columns')or{}
+        compacted=[]
+        for column,entry in sorted(distributions.items(),key=lambda item:-len(json.dumps(item[1].get('repeated_values'),default=str))):
+            if len(json.dumps(shown,default=str))<=12000:break
+            repeated=entry.get('repeated_values')
+            if not repeated:continue
+            from ...contracts import digest
+            entry.update(repeated_values=None,repeated_category_count=len(repeated),
+                repeated_value_rows=sum(v['rows']for v in repeated),repeated_values_digest=digest(repeated),
+                repeated_values_available_in=shown.get('result_view'))
+            compacted.append(column)
+        if compacted:
+            shown['condensed_frequency_metadata']={'columns':compacted,
+                'instruction':'Complete category values and all data rows remain in result_view. Query it for exact frequencies or source details. No patient or source row was removed.'}
+    return shown
+
+
+def dependency_verification(assessment):
+    """Per-dependency outcome of the last source review, for an answer delivered with open faults.
+
+    Each patient row (and the shared summary) is its own dependency. A row whose every claim was
+    supported by a deciding check is verified; every other row is listed with its located fields and
+    stays unverified. Nothing here corrects or accepts a flagged row.
+    """
+    support=assessment.get('support')or{};packets=[p for p in support.get('packets')or[]if isinstance(p,dict)and p.get('id')]
+    verified=[p['id']for p in packets if p.get('label')=='supported'and p.get('decided_by')]
+    flagged=[{'id':p['id'],**({'patient_id':p['patient_id']}if p.get('patient_id')else{}),
+              'state':p.get('status')or(p.get('label')if p.get('decided_by')else'unchecked'),
+              'fields':sorted({f['field']for f in p.get('claim_feedback')or[]if isinstance(f,dict)and f.get('field')})}
+             for p in packets if p['id']not in verified]
+    return {'schema':'dependency-verification/1','verified':verified,'flagged':flagged,
+            'all_dependencies_checked':support.get('all_dependencies_checked')is True,
+            'coverage':(assessment.get('coverage')or{}).get('label'),
+            'meaning':'Machine source checks per dependency. Flagged rows are delivered unverified, not corrected; no clinical acceptance is inferred.'}
+
+
+SOURCE_REPAIR_ROUNDS = 2  # source-review repairs before the retained answer is delivered as partial
+
+
 def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None,
-              format_retries=0):
+              format_retries=0, review=None, continuation_guard=None, initial_calls=None, initial_answer=None,
+              escalation_model=None, compact_execution_state=False, binding_system=None, restored_messages=None,initial_readings=True):
     """Bounded tool-use loop: every executed call (failed ones included) counts toward max_tools; all returned usage is
     recorded, including cache writes/reads; there are no automatic paid retries.
 
@@ -251,18 +633,243 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     request) costs nothing and is not a new paid call. deadline (time.monotonic() value) bounds wall clock: no provider
     call or SQL call starts after it (the sender bounds the call itself).
     format_retries (product analyst only; the bench baselines keep 0): when the final reply is not valid JSON, first try
-    the JSON object embedded in the text (free), then ask once more for only the JSON object (build log step 12)."""
+    the JSON object embedded in the text (free), then ask once more for only the JSON object (build log step 12).
+    review(answer, tool_calls) optionally returns an assessment with repair feedback. Repair continues in THIS conversation,
+    retaining every tool result. None for max_tools means no call quota. Repeated rejected answers with unchanged evidence
+    stop as explicitly partial; a provider or deadline failure retains the last rejected answer as unverified.
+    An optional stronger model continues this SAME conversation after a failed answer/format/progress check;
+    it never restarts tools, bypasses validation, or retries a failed provider request.
+    initial_readings=False is only for explicit source-only native restoration:
+    old receipts remain complete/queryable but are not readings by this actor.
+    New explicit readings, certified replay defaults and restored same-actor
+    messages retain their complete source content across subsequent turns."""
+    if type(initial_readings)is not bool:raise ValueError('initial_readings must be a boolean')
+    # An executor may append new calls to the list used for restoration.
+    # Snapshot its membership so that new explicit readings never become
+    # "prior" readings as that caller-owned list grows across turns.
+    initial_calls=list(initial_calls or [])
     result = new_result(model)
+    # A failed binding edit is evidence about that role, not every later
+    # analytical task. Keep promotion within the role that required it.
+    role_models={'analyst':model,'binding_repair':model}
+    active_role='analyst'
+    source_repairs=0
+    def escalate(reason):
+        nonlocal model
+        if not escalation_model or model == escalation_model:
+            return False
+        result.setdefault('model_escalations', []).append({'from':model,'to':escalation_model,'reason':reason,
+                                                          'role':active_role,
+                                                          'retained_tool_calls':len(result['tool_calls'])})
+        model = escalation_model
+        role_models[active_role]=model
+        result['model'] = model
+        return True
     messages = [{'role': 'user', 'content': user}]
-    calls = 0
+    state_feedback=None; state_candidate=None; latest_calls=[];last_complete_candidate=None
+    repair_protocol_feedback=None;binding_query_required=False
+    binding_query_reason='The previous patch changed a quantity instead of binding it.'
+    declined_compiler_probes=set()
+    if restored_messages is not None:
+        import copy
+        messages=copy.deepcopy(restored_messages)
+        result['tool_calls']=list(initial_calls or [])
+    elif initial_calls:
+        # Certified literal replay enters through the same native tool protocol.
+        # The actor sees actual current receipts, never a cached final answer.
+        blocks=[];answers=[]
+        for i,c in enumerate(initial_calls):
+            ident=f'replayed_{i}'
+            blocks.append({'type':'tool_use','id':ident,'name':c['name'],'input':c['input']})
+            answers.append({'type':'tool_result','tool_use_id':ident,'content':json.dumps(actor_result(c['result'])),
+                            'is_error':bool(c['result'].get('error')) if isinstance(c['result'],dict) else False})
+        messages += [{'role':'assistant','content':blocks},{'role':'user','content':answers}]
+        result['tool_calls']=list(initial_calls)
+    calls = len(initial_calls or [])
     retries_left = format_retries
     force_text = False
+    turns, repairs, reviewed = 0, 0, set()
+    compiler_reviewed = set()
+    rejected_protocol = set()
+    last_tools = None
+    pending_output = None
+    pending_protocol_response = None
+
+    def retain_protocol_response(blocks):
+        # The compact state omits conversational history. A rejected mixed
+        # response may still contain expensive draft work; retain it as inert
+        # input without executing its actions or accepting its answer.
+        nonlocal pending_protocol_response
+        import copy
+        from ...contracts import digest
+        earlier=[]
+        if pending_protocol_response is not None:
+            earlier=copy.deepcopy(pending_protocol_response.get('earlier_rejected_responses',[]))
+            earlier.append({k:copy.deepcopy(v)for k,v in pending_protocol_response.items()if k!='earlier_rejected_responses'})
+        pending_protocol_response = {'turn': turns, 'content': copy.deepcopy(blocks),
+            'content_digest': digest(blocks), 'tool_actions_executed': False,
+            'accepted_answer': False,
+            'instruction': 'This is your rejected response, retained verbatim for protocol repair. '
+                'No action or answer from it was accepted. Resolve the protocol ambiguity using registered literal tools '
+                'or the required answer/repair contract. Preserve useful draft work; all existing review checks still apply.'}
+        result.setdefault('protocol_repair_responses', []).append(copy.deepcopy(pending_protocol_response))
+        if earlier:pending_protocol_response['earlier_rejected_responses']=earlier
+    def retain_review_failure(exc,candidate):
+        """A reviewer interruption cannot erase completed checks or native work."""
+        import copy
+        partial=getattr(exc,'agere_partial_answer_review',None)
+        if isinstance(partial,dict):
+            result.setdefault('answer_reviews',[]).append(copy.deepcopy(partial))
+        # Keep the proposal explicitly unaccepted, alongside the prior complete
+        # answer. Source-phase receipts establish that this proposal compiled.
+        if isinstance(candidate,dict):
+            result['interrupted_review_draft']=copy.deepcopy(candidate)
+            retained=(candidate if isinstance(partial,dict) and (partial.get('evidence_coverage') or partial.get('compiled_draft_retained'))
+                else last_complete_candidate or initial_answer or result.get('answer'))
+            if isinstance(retained,dict):
+                result['answer']={**copy.deepcopy(retained),'status':'partial','verification':'unverified',
+                    'actionable_cohort':False}
+        result.update(error=type(exc).__name__+': '+str(exc),review_stopped='review_interrupted')
+        return result
+
+    if initial_answer is not None and review is not None:
+        import copy
+        candidate=copy.deepcopy(initial_answer)
+        try:assessment=review(candidate,result['tool_calls'])
+        except Exception as exc:return retain_review_failure(exc,candidate)
+        state_feedback=assessment;state_candidate=candidate
+        if assessment.get('repair_kind')!='deterministic_compiler':last_complete_candidate=copy.deepcopy(candidate)
+        result.setdefault('answer_reviews',[]).append(assessment)
+        if assessment.get('status')=='confirmed' and not assessment.get('feedback'):
+            result.update(answer=candidate,final_decision_reused=True)
+            return result
+        if last_complete_candidate is not None:
+            # Reviewer instructions are operational history, not new source
+            # limitations. Copying them into the answer makes a later review
+            # mistake a resolved repair request for current missing work.
+            # The complete diagnostic is already retained in answer_reviews.
+            result['answer']={**last_complete_candidate,'status':'partial','verification':'unverified',
+                'limitations':list(last_complete_candidate.get('limitations')or[])}
+            if assessment.get('retry_disposition')=='retain_partial_until_new_evidence':
+                result['review_stopped']=assessment.get('review_stop_reason')or'unresolved_coverage'
+                return result
+        messages += [{'role':'assistant','content':json.dumps(candidate)},
+                     {'role':'user','content':'Recheck the retained final draft against the current tool receipts; finish the unresolved work. '+str(assessment.get('feedback') or assessment.get('reason'))}]
+        from .execution_state import draft_state
+        repair_contract=draft_state(candidate).get('localized_prose_repair')
+        if repair_contract:messages[-1]['content']+='\n'+json.dumps(repair_contract)
     try:
-        for _ in range(max_tools + 1 + format_retries):
-            body = {'model': model, 'max_tokens': max_tokens, 'system': system, 'messages': messages, 'tools': tools,
-                    'tool_choice': {'type': 'none' if calls >= max_tools or force_text else 'auto'}, **(extra or {})}
+        while max_tools is None or turns < max_tools + 1 + format_retries + repairs:
+            turns += 1
+            from ...contracts import digest
+            # Bind resolved future actions to the state the model actually saw.
+            # There is no learned action cache and no argument substitution.
+            guard_identity=None
+            if continuation_guard is not None:
+                try: guard_identity=digest(continuation_guard())
+                except (ValueError,OSError,sqlite3.Error): pass
+            actor_system=system;loaded_docs=None;documentation_identity=None
+            if compact_execution_state:
+                from .execution_state import loaded_documentation
+                documentation_identity=getattr(getattr(getattr(execute,'semantic',None),'_local',None),'documentation_identity',None)
+                loaded_docs=loaded_documentation(result['tool_calls'],documentation_identity)
+                if loaded_docs:
+                    # Only exact, installed first-party contracts enter this
+                    # stable cacheable block. Clinical/source results remain
+                    # in their existing evidence path and authority.
+                    actor_system=[*(system if isinstance(system,list)else[{'type':'text','text':system}]),
+                        {'type':'text','text':'LOADED FIRST-PARTY DOCUMENTATION:\n'+json.dumps(loaded_docs,default=str,allow_nan=False),
+                         'cache_control':{'type':'ephemeral'}}]
+            if pending_output is not None:
+                if continuation_guard is not None and (guard_identity is None or guard_identity!=pending_output['guard_identity']):
+                    raise ValueError('Source/scope changed during output continuation; no pending actions executed')
+                actor_messages=pending_output['messages']
+            elif compact_execution_state:
+                from .execution_state import messages as state_messages,review_reference
+                actor_messages=state_messages(user,result['tool_calls'],recent_results=latest_calls,feedback=state_feedback,candidate=state_candidate,
+                                              documentation_identity=documentation_identity,documentation_in_system=bool(loaded_docs),
+                                              feedback_native=review_reference(state_feedback,execute),
+                                              readings_start=0 if initial_readings or restored_messages is not None else len(initial_calls or []))
+            else:actor_messages=messages
+            focused_repair=None;binding_role=False
+            if compact_execution_state:
+                state=json.loads(actor_messages[0]['content'])
+                if pending_protocol_response is not None:
+                    state['pending_protocol_response'] = pending_protocol_response
+                    actor_messages=[{**actor_messages[0],'content':json.dumps(state,default=str)},*actor_messages[1:]]
+                focused_repair=state.get('focused_prose_repair')
+                if repair_protocol_feedback:
+                    state['repair_protocol_feedback']=repair_protocol_feedback
+                    actor_messages=[{**actor_messages[0],'content':json.dumps(state,default=str)},*actor_messages[1:]]
+                if focused_repair and pending_output is None and binding_system is not None:
+                    from .execution_state import binding_repair_schema
+                    if binding_repair_schema(focused_repair) is not None:
+                        # The caller supplies this narrower role explicitly.
+                        # All native state, tools, loaded schema and downstream
+                        # reviews remain identical; source interpretation keeps
+                        # the full analyst system on the next transition.
+                        actor_system=list(binding_system)if isinstance(binding_system,list)else[{'type':'text','text':binding_system}]
+                        if loaded_docs:
+                            actor_system.append({'type':'text','text':'LOADED FIRST-PARTY DOCUMENTATION:\n'+json.dumps(loaded_docs,default=str,allow_nan=False),
+                                                 'cache_control':{'type':'ephemeral'}})
+                        binding_role=True
+                if focused_repair:
+                    patch_fields=('fields:[{path:[exact located keys],value:source-supported text or computed template}]'
+                        if focused_repair.get('intent')=='source_meaning_review'else
+                        'fields:[{path:[exact located keys],bind_literals:[native scalar edits]}]')if focused_repair.get('scope')=='answer'else'rows:[changed entity fields]'
+                    actor_system=[*(actor_system if isinstance(actor_system,list)else[{'type':'text','text':actor_system}]),
+                        {'type':'text','text':'Current operation: repair the retained draft. Use literal registered tools if needed, then return ONLY repair_draft with the exact focused_prose_repair draft_digest and '+patch_fields+'. Follow its patch_contract. A replacement final answer is invalid in this operation. If the evidence justifies no changes, return the same repair_draft contract with an empty edit list; the existing answer remains partial and unresolved.'}]
+            body = {'model': model, 'max_tokens': max_tokens, 'system': actor_system, 'messages': actor_messages, 'tools': tools,
+                    'tool_choice': {'type': 'none' if (max_tools is not None and calls >= max_tools) or force_text else 'auto'}, **(extra or {})}
+            if (binding_query_required and focused_repair and body['tool_choice']['type']!='none'
+                    and any(t.get('name')=='query_sql'for t in tools)):
+                body['tool_choice']={'type':'tool','name':'query_sql'}
+                body['system']=[*(body['system']if isinstance(body['system'],list)else[{'type':'text','text':body['system']}]),
+                    {'type':'text','text':binding_query_reason+' '
+                     'The required next action is query_sql, not another prose patch. Select the actual source value '
+                     'or compute the named definition count from native evidence, carrying the entity keys and source record/date. '
+                     'Do not SELECT invented constants. After its result returns, bind the value in the unchanged original sentence.'}]
+            if pending_output is not None:
+                body['tool_choice']=pending_output['tool_choice']
+                body['system']=pending_output['system']
+                binding_role=pending_output['binding_role']
+            next_role='binding_repair'if binding_role else'analyst'
+            if next_role!=active_role:
+                next_model=role_models[next_role]
+                result.setdefault('model_role_transitions',[]).append({
+                    'from_role':active_role,'to_role':next_role,'from':model,'to':next_model,
+                    'reason':'Use this role\'s own recorded model promotion; retain other role promotions separately.',
+                    'retained_tool_calls':len(result['tool_calls'])})
+                active_role=next_role;model=next_model;result['model']=model
+            body['model']=model
+            completion_schema=None
+            if compact_execution_state and not focused_repair:
+                from .execution_state import composition_output_schema
+                completion_schema=composition_output_schema(state_candidate,state_feedback,result['tool_calls'])
+                if completion_schema is not None and pending_output is None:
+                    body['output_config']={**(body.get('output_config')or{}),
+                        'format':{'type':'json_schema','schema':completion_schema}}
+            if focused_repair and pending_output is None:
+                from .execution_state import binding_repair_schema
+                schema=binding_repair_schema(focused_repair)
+                if schema is not None:
+                    body['output_config']={**(body.get('output_config')or{}),
+                        'format':{'type':'json_schema','schema':schema}}
             if deadline is not None and deadline - time.monotonic() <= 0:
                 raise TimeoutError('Wall-clock limit reached')
+            wire_proofs=[]
+            from ..subscription_transport import prefix_cache_enabled
+            if (compact_execution_state and pending_output is None and os.environ.get('AGERE_EXECUTION_WIRE_ENCODING','off')=='on'
+                    and not prefix_cache_enabled()):
+                from .execution_state import transport_messages
+                body['messages'],wire_proofs=transport_messages(body['messages'])
+            prompt_receipt={'turn':turns,'execution_state':compact_execution_state,
+                'message_bytes':len(json.dumps(body['messages'],default=str).encode()),
+                'native_tool_calls_retained':len(result['tool_calls']),
+                'role':'binding_repair'if binding_role else'analyst',
+                'system_bytes':len(json.dumps(body['system'],default=str).encode()),
+                'wire_encoding':wire_proofs,'prefix_cache_candidate':prefix_cache_enabled(),'status':'prepared'}
+            result.setdefault('actor_prompt_receipts',[]).append(prompt_receipt)
             try:
                 response, cost, cache_hit = send(body)
             except Exception:
@@ -270,7 +877,9 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 # usage. Preserve prior measured spend without claiming a total.
                 result['known_cost_usd'] = result['estimated_cost_usd']
                 result['estimated_cost_usd'] = None
+                prompt_receipt['status']='failed'
                 raise
+            prompt_receipt.update(status='returned',cache_hit=bool(cache_hit))
             usage = response.get('usage', {})
             if cache_hit:
                 result['cache_hits'] = result.get('cache_hits', 0) + 1
@@ -282,46 +891,355 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     result[field] = result[field] + value if result[field] is not None and type(value) is int else None
                 result['estimated_cost_usd'] = (result['estimated_cost_usd'] + cost
                                                  if result['estimated_cost_usd'] is not None and cost is not None else None)
+            from ..subscription_transport import normalize_tool_response
+            blocks=response.get('content') or []
+            if response.get('stop_reason')=='max_tokens' or pending_output is not None:
+                text=''.join(b.get('text','')for b in blocks if b.get('type')=='text')
+                result.setdefault('output_continuation_receipts',[]).append({'turn':turns,'response':response,
+                    'source_guard':guard_identity,'tool_actions_executed':False})
+                if any(b.get('type')!='text'for b in blocks):
+                    raise ValueError('Truncated or continued structured action requires a complete decision; no partial actions executed')
+                if response.get('stop_reason')=='max_tokens':
+                    if not text or pending_output is not None and text==pending_output['last_chunk']:
+                        raise ValueError('Provider response was truncated and repeated without output progress; partial output retained')
+                    accumulated=(pending_output['text'] if pending_output else '')+text
+                    pending_output={'text':accumulated,'last_chunk':text,'guard_identity':guard_identity,
+                        'tool_choice':body['tool_choice'],'system':body['system'],'binding_role':binding_role,
+                        'messages':actor_messages+[{'role':'assistant','content':blocks},{'role':'user','content':
+                            'The service stopped this response at its output boundary. Continue exactly from its final character. '
+                            'Return only the remaining suffix, without repeating prior text or adding Markdown. '
+                            'No actions from the incomplete response have executed. The complete joined response will undergo the same source, permission and answer checks.'}]}
+                    result['final_text']=accumulated
+                    repairs+=1
+                    continue
+                if continuation_guard is not None:
+                    try:current_guard=digest(continuation_guard())
+                    except (ValueError,OSError,sqlite3.Error):current_guard=None
+                    if current_guard is None or current_guard!=pending_output['guard_identity']:
+                        raise ValueError('Source/scope changed during output continuation; no pending actions executed')
+                response={**response,'content':[{'type':'text','text':pending_output['text']+text}]}
+                result['completed_output_continuations']=result.get('completed_output_continuations',0)+1
+                pending_output=None
+            response = normalize_tool_response(response, tools,body.get('tool_choice'))
             blocks = response.get('content', [])
             uses = [b for b in blocks if b.get('type') == 'tool_use']
+            if binding_query_required and body['tool_choice']=={'type':'tool','name':'query_sql'} and not uses:
+                result.setdefault('protocol_repairs',[]).append({'reason':'Required binding evidence query was not returned',
+                    'retained_draft_digest':digest(state_candidate),'response':response})
+                if not escalate('Binding repair requires native evidence before another prose patch'):
+                    result['review_stopped']='binding_evidence_required';return result
+                repair_protocol_feedback='Return the required query_sql tool call. No patch can be applied before its native evidence returns.'
+                continue
             if not uses:
                 text = '\n'.join(b.get('text', '') for b in blocks if b.get('type') == 'text').strip()
                 result['final_text'] = text
-                if response.get('stop_reason') == 'max_tokens':
-                    raise ValueError('Provider answer was truncated')
+                from ..subscription_transport import strip_empty_unregistered_prefix
+                normalized=strip_empty_unregistered_prefix(text,tools)
+                if normalized!=text:
+                    result['format_repair']='empty_unregistered_prefix'
+                    text=normalized
                 if text.startswith('```'):
                     text = re.sub(r'^```(?:json)?\s*|\s*```$', '', text)
 
                 def reject_constant(value):
                     raise ValueError('Non-finite JSON number: ' + value)
+                unexecuted_markup=not text.startswith(('{','[')) and bool(re.search(r'<invoke\b',text))
+                if text.startswith(('{','[')):
+                    try:
+                        _,json_end=json.JSONDecoder(parse_constant=reject_constant).raw_decode(text)
+                        unexecuted_markup=bool(re.search(r'<invoke\b',text[json_end:]))
+                    except ValueError:pass
                 try:
-                    result['answer'] = json.loads(text, parse_constant=reject_constant)
-                    return result
+                    # Unrecognized invocation markup cannot become a final
+                    # answer by extracting its inner JSON tool arguments.
+                    if unexecuted_markup:
+                        raise ValueError('Unexecuted invocation markup')
+                    candidate = json.loads(text, parse_constant=reject_constant)
                 except ValueError:
-                    if not format_retries:
+                    if not format_retries and not unexecuted_markup:
                         raise
                     start, end = text.find('{'), text.rfind('}')
-                    if 0 <= start < end:
+                    if unexecuted_markup:
+                        candidate={'tool_use':{'unresolved_markup':text}}
+                    elif 0 <= start < end:
                         try:
-                            result['answer'] = json.loads(text[start:end + 1], parse_constant=reject_constant)
+                            candidate = json.loads(text[start:end + 1], parse_constant=reject_constant)
                             result['format_repair'] = 'extracted'
-                            return result
                         except ValueError:
-                            pass
-                    if retries_left <= 0:
-                        raise
-                    retries_left -= 1
-                    result['format_repair'] = 'asked_again'
-                    force_text = True
+                            candidate = None
+                    else:
+                        candidate = None
+                    if candidate is None:
+                        retain_protocol_response(blocks)
+                        if retries_left <= 0:
+                            if not escalate('Answer JSON remained invalid after format feedback'):
+                                raise
+                        else:
+                            retries_left -= 1
+                        result['format_repair'] = 'asked_again'
+                        force_text = not bool(focused_repair)
+                        if focused_repair:
+                            # A serialization failure does not supersede the
+                            # compiler/source assessment of the retained draft.
+                            # Losing that assessment disables the patch boundary
+                            # and lets a replacement silently discard row prose.
+                            repair_protocol_feedback='Your repair was not valid JSON and was not applied. The complete draft and located targets are unchanged. Use registered tools if needed, then return only the required repair_draft object with its current digest.'
+                            format_feedback=repair_protocol_feedback
+                        elif state_candidate is not None and isinstance(state_feedback,dict):
+                            repair_protocol_feedback='Your response was not valid JSON. The retained draft and its complete review requirements are unchanged. Return the required answer object using the existing native evidence.'
+                            format_feedback=repair_protocol_feedback
+                        else:
+                            state_feedback='Your reply was not valid JSON. Return only the required JSON object.'
+                            format_feedback='Your reply was not a valid JSON answer object. Reply with ONLY the JSON answer object in the required contract, no other text.'
+                        messages.append({'role': 'assistant', 'content': blocks})
+                        messages.append({'role': 'user', 'content': format_feedback})
+                        continue
+                if isinstance(candidate, dict) and any(k in candidate for k in ('tool_use', 'tool_uses')):
+                    retain_protocol_response(blocks)
+                    signature = json.dumps([candidate, result['tool_calls']], sort_keys=True, default=str)
+                    if signature in rejected_protocol:
+                        if not escalate('Repeated unexecuted tool envelope'):
+                            raise ValueError('Investigation made no progress: repeated unexecuted tool request, not a final answer')
+                    if focused_repair:
+                        repair_protocol_feedback='Unexecuted tool envelope: no action or prose edit was applied. The complete draft and located targets are unchanged. Use registered tools with literal arguments, then return only repair_draft with the current digest.'
+                    elif state_candidate is not None and isinstance(state_feedback,dict):
+                        repair_protocol_feedback='Unexecuted tool envelope: no action or answer was accepted. The retained draft and its complete review requirements are unchanged. Use a registered literal tool envelope or return the required complete answer object.'
+                    else:
+                        state_feedback='Unexecuted tool envelope. Use the registered tools with literal arguments before returning a final answer.'
+                    rejected_protocol.add(signature)
+                    repairs += 1
+                    result.setdefault('protocol_repairs', []).append({'reason': 'Unexecuted tool request is not a final answer',
+                                                                    'candidate_digest': digest(candidate)})
+                    force_text = False
                     messages.append({'role': 'assistant', 'content': blocks})
-                    messages.append({'role': 'user', 'content': 'Your reply was not a valid JSON answer object. Reply with '
-                                     'ONLY the JSON answer object in the required contract, no other text.'})
+                    messages.append({'role': 'user', 'content': 'Your reply requests tools but is not a valid executable tool envelope. '
+                                     'Use only the registered tool names and exact literal arguments in the provided protocol. '
+                                     'Do not wrap tool requests in an answer object or mix them with other actions. '
+                                     'Execute the missing work before returning the final answer.'})
                     continue
+                if completion_schema is not None:
+                    from .execution_state import composition_contract_error
+                    completion_error=composition_contract_error(candidate,completion_schema)
+                    if completion_error:
+                        retain_protocol_response(blocks)
+                        signature=digest(['incomplete_composition_contract',candidate,digest(state_candidate)])
+                        result.setdefault('protocol_repairs',[]).append({'reason':'Incomplete native composition contract',
+                            'candidate_digest':digest(candidate),'retained_draft_digest':digest(state_candidate)})
+                        if signature in rejected_protocol and not escalate('Repeated incomplete native composition'):
+                            result['review_stopped']='no_progress';return result
+                        rejected_protocol.add(signature);repairs+=1;force_text=False
+                        repair_protocol_feedback=completion_error
+                        continue
+                pending_protocol_response = None
+                if not focused_repair:repair_protocol_feedback=None
+                if focused_repair and (not isinstance(candidate,dict) or set(candidate)!={'repair_draft'}):
+                    signature=digest(['focused_repair_replacement',candidate,digest(state_candidate)])
+                    result.setdefault('protocol_repairs',[]).append({'reason':'Replacement answer rejected at focused repair boundary',
+                        'candidate_digest':digest(candidate),'retained_draft_digest':digest(state_candidate)})
+                    result['unaccepted_draft']={'draft_digest':digest(candidate),'reason':'focused_repair_requires_patch',
+                        'returned_answer':'last_structurally_complete_candidate','source_accepted':False}
+                    if signature in rejected_protocol and not escalate('Repeated replacement answer in focused repair'):
+                        result['review_stopped']='no_progress';return result
+                    rejected_protocol.add(signature);repairs+=1;force_text=False
+                    repair_protocol_feedback='Your replacement answer was not reviewed or applied. The complete original draft is intact. Return only repair_draft with the exact current digest and supported changed fields, or rows:[] if no change is justified.'
+                    continue
+                empty_field='fields'if focused_repair and focused_repair.get('scope')=='answer'else'rows'
+                if focused_repair and candidate.get('repair_draft')=={'draft_digest':digest(state_candidate),empty_field:[]}:
+                    if (focused_repair.get('compiler_feedback') or
+                            isinstance(state_feedback,dict) and state_feedback.get('repair_kind')=='deterministic_compiler'):
+                        if escalate('Scoped source edit still needs native quantity bindings'):
+                            repairs+=1
+                            repair_protocol_feedback='The retained draft has not compiled. Complete the named quantity bindings using current native evidence and literal tools. Retain all other fields; an empty repair does not finish this compiler work.'
+                            continue
+                        # An empty patch is not evidence that native values are
+                        # unavailable. Ask the existing read-only tool for those
+                        # values once for this exact draft before stopping. A
+                        # second decline cannot restart the same investigation.
+                        probe=digest(state_candidate)
+                        if (probe not in declined_compiler_probes and
+                                body['tool_choice']['type']!='none' and
+                                any(t.get('name')=='query_sql'for t in tools)):
+                            declined_compiler_probes.add(probe)
+                            binding_query_required=True
+                            binding_query_reason='The empty repair left located compiler failures unresolved without querying their native evidence.'
+                            repair_protocol_feedback=binding_query_reason+' Query the retained source/result views for the missing scalar values, preserving entity keys and source provenance. No prose change has been applied.'
+                            result.setdefault('compiler_evidence_requests',[]).append({
+                                'draft_digest':probe,'reason':'empty_compiler_patch',
+                                'target_count':len(focused_repair.get('targets')or[]),
+                                'retained_tool_calls':len(result['tool_calls'])})
+                            repairs+=1
+                            continue
+                        result['review_stopped']='compiler_unresolved'
+                        return result
+                    result['review_stopped']='no_supported_prose_change'
+                    return result
+                if isinstance(candidate,dict) and 'repair_draft'in candidate:
+                    from .execution_state import apply_prose_repair,draft_state
+                    patch_proposal=candidate
+                    binding_rejections=[]
+                    try:
+                        candidate=apply_prose_repair(patch_proposal,state_candidate,calls=result['tool_calls'],feedback=state_feedback,
+                                                     binding_rejections=binding_rejections)
+                    except ValueError as exc:
+                        from .execution_state import BindingPreservationError,UnchangedProseRepair
+                        if (isinstance(exc,UnchangedProseRepair) and focused_repair
+                                and not focused_repair.get('compiler_feedback')
+                                and state_feedback.get('repair_kind')!='deterministic_compiler'):
+                            # An exact no-op source patch means the same thing
+                            # as rows:[]: no justified edit. Preserve the current
+                            # unresolved review; do not demand a new paraphrase
+                            # or mistake unchanged prose for source acceptance.
+                            result.setdefault('unchanged_prose_repairs',[]).append({
+                                'draft_digest':digest(state_candidate),'proposal_digest':digest(patch_proposal),
+                                'reason':'exact_existing_fields_without_new_basis','source_accepted':False})
+                            result['review_stopped']='no_supported_prose_change'
+                            return result
+                        if isinstance(exc,BindingPreservationError):
+                            binding_query_required=True
+                            binding_query_reason='The previous patch changed a quantity instead of binding it.'
+                        signature=digest([exc.failure_identity()if isinstance(exc,BindingPreservationError)else patch_proposal,
+                                          digest(state_candidate)])
+                        if signature in rejected_protocol and not escalate('Repeated invalid prose repair'):
+                            result['review_stopped']='no_progress'
+                            return result
+                        rejected_protocol.add(signature);repairs+=1
+                        retained_targets=state_feedback.get('prose_repair')if isinstance(state_feedback,dict)else None
+                        state_feedback={'status':'repair','repair_kind':'deterministic_compiler',
+                                        'feedback':str(exc),'progress_state':{'invalid_prose_repair':True},
+                                        **({'prose_repair':retained_targets}if retained_targets else{})}
+                        messages.append({'role':'assistant','content':blocks})
+                        messages.append({'role':'user','content':str(exc)+'\n'+json.dumps(draft_state(state_candidate))})
+                        continue
+                    old_prose=state_candidate.get('row_prose')
+                    new_prose=candidate.get('row_prose')
+                    old_rows=old_prose.get('rows',[])if isinstance(old_prose,dict)else[]
+                    new_rows=new_prose.get('rows',[])if isinstance(new_prose,dict)else[]
+                    old_fields={digest(r['key']):r['fields']for r in old_rows}
+                    old_bases={digest(r['key']):r['basis']for r in old_rows}
+                    repair_protocol_feedback=('Valid binding edits were retained; these fields are unchanged and still need repair: '
+                        +json.dumps(binding_rejections))if binding_rejections else None
+                    changed=[sum(v!=old_fields[digest(r['key'])][k]for k,v in r['fields'].items())
+                             for r in new_rows]
+                    result.setdefault('prose_repairs',[]).append({'base_draft_digest':patch_proposal['repair_draft']['draft_digest'],
+                        'proposal_digest':digest(patch_proposal),'changed_rows':sum(bool(n)for n in changed),
+                        'numeric_corrections':[{'path':field['path'],**edit}
+                            for field in patch_proposal['repair_draft'].get('fields',[])
+                            for edit in field.get('bind_literals',[])if 'correction_reason'in edit]
+                            +[{'key':row['key'],'field':field,**edit}
+                              for row in patch_proposal['repair_draft'].get('rows',[])
+                              for field,operation in row['fields'].items()if isinstance(operation,dict)
+                              for edit in operation.get('bind_literals',[])if 'correction_reason'in edit],
+                        'changed_fields':sum(changed),
+                        'changed_answer_fields':len(patch_proposal['repair_draft'].get('fields',[])),
+                        'added_basis_rows':sum(len(r['basis'])-len(old_bases[digest(r['key'])])for r in new_rows),
+                        'rejected_fields':binding_rejections,
+                        'complete_review_required':True})
+                if review is not None:
+                    try:assessment = review(candidate, result['tool_calls'])
+                    except Exception as exc:return retain_review_failure(exc,candidate)
+                    from .execution_state import continue_source_prose_repair
+                    assessment=continue_source_prose_repair(state_candidate,state_feedback,candidate,assessment)
+                    state_feedback=assessment;state_candidate=candidate
+                    if assessment.get('repair_kind')!='deterministic_compiler':
+                        import copy
+                        last_complete_candidate=copy.deepcopy(candidate)
+                    result.setdefault('answer_reviews', []).append(assessment)
+                    feedback = assessment.get('feedback')
+                    if feedback:
+                        # Counts do not establish progress: querying the same rows again must not reset this protection.
+                        from .execution_state import progress_evidence
+                        evidence = progress_evidence(result['tool_calls'],candidate)
+                        # Rephrasing alone does not repair the same failed check.
+                        # The reviewer runs first, so a genuinely corrected answer
+                        # can pass using existing evidence. Otherwise, only a new
+                        # failure/evidence state justifies further investigation.
+                        key = json.dumps([assessment.get('status'), assessment.get('progress_state',feedback), evidence], sort_keys=True, default=str)
+                        retained=last_complete_candidate if assessment.get('repair_kind')=='deterministic_compiler'and last_complete_candidate is not None else candidate
+                        limitations=list(retained.get('limitations')or[])if isinstance(retained,dict)else[]
+                        result['answer'] = {**retained, 'status': 'partial', 'verification': 'unverified',
+                                            'limitations': limitations} if isinstance(retained, dict) else None
+                        if retained is not candidate:
+                            result['unaccepted_draft']={'draft_digest':digest(candidate),'reason':'compiler_repair_required',
+                                'returned_answer':'last_structurally_complete_candidate','source_accepted':False}
+                        else:result.pop('unaccepted_draft',None)
+                        if assessment.get('retry_disposition')=='retain_partial_until_new_evidence':
+                            result['review_stopped']=assessment.get('review_stop_reason')or'unresolved_coverage'
+                            return result
+                        indeterminate=assessment.get('repair_kind')=='unresolved_verification'
+                        compiler=assessment.get('repair_kind')=='deterministic_compiler'
+                        history=compiler_reviewed if compiler else reviewed
+                        if key in history:
+                            if indeterminate or not escalate('Answer review repeated with unchanged evidence'):
+                                result['review_stopped'] = 'no_progress'
+                                return result
+                        elif assessment.get('status') == 'repair' and assessment.get('repair_kind')not in ('deterministic_compiler','native_population_scope','global_source_dependencies','unresolved_verification','incomplete_work'):
+                            # A review that located its faults in named patient claims needs that
+                            # located repair, not a costlier model (live run 2026-11-12: $18.48 of
+                            # $22.68 was Opus repair turns after one such review). Every other failed
+                            # check still escalates, as does a review repeating on unchanged evidence.
+                            located=any(p.get('claim_feedback')for p in((assessment.get('support')or{}).get('packets')or[])if isinstance(p,dict))
+                            if not located:escalate('Answer failed its existing evidence/coverage checks: '+str(feedback))
+                        if not compiler and key not in reviewed:
+                            # Passing the compiler and reaching a new source
+                            # failure is real phase progress. Its correction
+                            # may introduce a new binding error with the same
+                            # coarse shape as an earlier, already fixed one.
+                            # Keep source-failure history: repeated semantic
+                            # failures cannot reset the loop indefinitely.
+                            compiler_reviewed.clear()
+                        # Exact compiler feedback can be repaired on the cheap
+                        # rung. A repeated failure/evidence state still takes
+                        # the existing checked escalation above; no new quota.
+                        history.add(key)
+                        repairs += 1
+                        if not compiler and assessment.get('repair_kind')not in ('native_population_scope','global_source_dependencies'):
+                            # Deliver in bounded time. Reviews that send the analyst back for more work count,
+                            # whether for a source fault or for work the answer itself lists as unfinished
+                            # (live run 8: three such rounds alternated with three source reviews). Binding
+                            # and scope repairs that precede the source check do not count. Each source-review repair is a fresh round of
+                            # authoring that can introduce new faults (live runs 2026-11-12: seven
+                            # rounds, each for a different reason, no accepted answer). After
+                            # SOURCE_REPAIR_ROUNDS repairs the retained answer is returned as partial,
+                            # with its located faults in answer_reviews, instead of another round.
+                            source_repairs+=1
+                            if source_repairs>SOURCE_REPAIR_ROUNDS:
+                                result['review_stopped']='source_repair_rounds_spent'
+                                checked=[r for r in result.get('answer_reviews')or[]if(r.get('support')or{}).get('packets')]
+                                result['dependency_verification']=dependency_verification(checked[-1]if checked else assessment)
+                                return result
+                        force_text = False  # the repair may need more evidence, even after a JSON-format repair
+                        messages.append({'role': 'assistant', 'content': blocks})
+                        from .execution_state import draft_state
+                        repair_contract=draft_state(candidate).get('localized_prose_repair')
+                        messages.append({'role': 'user', 'content': 'Continue the investigation using the evidence already gathered. '
+                                         'Repair the final answer, fetching or computing anything missing. ' + str(feedback)
+                                         + ('\n'+json.dumps(repair_contract) if repair_contract else '')})
+                        continue
+                result.pop('unaccepted_draft',None)
+                result['answer'] = candidate
+                return result
+            pending_protocol_response = None
+            if not focused_repair:repair_protocol_feedback=None
             messages.append({'role': 'assistant', 'content': blocks})
             answers = []
-            for use in uses:
+            latest_calls=[]
+            predecessor_failed=False
+            for index,use in enumerate(uses):
                 failure = False
-                if calls >= max_tools:
+                runtime_failure = None
+                guarded=len(uses)>1 and continuation_guard is not None
+                current_guard=None
+                if guarded:
+                    try: current_guard=digest(continuation_guard())
+                    except (ValueError,OSError,sqlite3.Error): pass
+                blocked=guarded and (guard_identity is None or current_guard!=guard_identity or predecessor_failed)
+                if any(u.get('name')=='request_clarification'for u in uses)and len(uses)!=1:
+                    output={'error':'Call request_clarification alone, after completing independent work. No mixed-batch action was executed.'}
+                    failure=True
+                elif blocked:
+                    output={'error':'Resolved continuation not executed: source/scope changed, identity unavailable, or predecessor failed. Replan from the retained evidence.'}
+                    failure=True
+                elif max_tools is not None and calls >= max_tools:
                     output = {'error': 'SQL tool budget exhausted. Return the answer or explicit unsupported prerequisites.'}
                     failure = True
                 elif deadline is not None and time.monotonic() >= deadline:
@@ -330,18 +1248,86 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     calls += 1
                     try:
                         output = execute(use)
-                    except (ValueError, sqlite3.Error) as exc:
-                        output = {'error': str(exc)}
+                    except (ValueError, sqlite3.Error, OSError) as exc:
+                        runtime_failure = native_runtime_failure(exc)
+                        if isinstance(exc, OSError) and runtime_failure is None:
+                            raise  # preserve the existing non-storage failure path
+                        output = {'error': str(exc), **({'runtime_dependency': runtime_failure} if runtime_failure else {})}
                         failure = True
-                result['tool_calls'].append({'sql': use.get('input', {}).get('sql'), 'result': output})
+                failure=failure or (isinstance(output,dict) and bool(output.get('error')))
+                if use.get('name')=='query_sql'and not failure:binding_query_required=False
+                if guarded and index>0 and not failure:
+                    certificate={'decision_digest':digest([use.get('name'),use.get('input')]),
+                                 'guard_identity':guard_identity,'predecessor_receipt_digest':digest(result['tool_calls'][-1]),
+                                 'tool_receipt_digest':digest(output),'without_intervening_model_call':True,
+                                 'scope':'Literal actions from this model reply only; not clinical acceptance or a measured token saving'}
+                    result.setdefault('guarded_continuations',[]).append(certificate)
+                    from ..request_lineage import execution_observation
+                    execution_observation('guarded_continuation_executed',**certificate)
+                result['tool_calls'].append({'name': use.get('name'), 'input': use.get('input') or {},
+                                            'sql': (output.get('executed_query') if isinstance(output, dict) else None) or use.get('input', {}).get('sql'), 'result': output,
+                                            'actor_callback_id':digest(body),'actor_turn':turns})
+                latest_calls.append(result['tool_calls'][-1])
+                if runtime_failure is not None:
+                    # A different model cannot allocate disk space. Retain the
+                    # failed native action and every prior receipt before any
+                    # sibling action, repair callback or stronger-model turn.
+                    import copy
+                    problem={**runtime_failure,'failed_tool':use.get('name'),
+                             'failed_call_index':len(result['tool_calls'])-1}
+                    result.update(runtime_dependency=problem,review_stopped='native_runtime_unavailable',
+                                  error='NativeRuntimeUnavailable: storage_unavailable')
+                    result['runtime_pause']={'actor_callback_id':digest(body),'actor_turn':turns,
+                        'unexecuted_actions':copy.deepcopy(uses[index+1:]),
+                        'pending_actions_executed':False,'resume_requires_runtime_recovery':True}
+                    retained=last_complete_candidate if isinstance(last_complete_candidate,dict) else result.get('answer')
+                    answer=copy.deepcopy(retained) if isinstance(retained,dict) else {
+                        'status':'partial','answer_type':'composite',
+                        'headline':'Document analysis could not finish because required storage is unavailable. Completed work is retained for recovery.',
+                        'missing':['Restore storage before resuming the unfinished analysis.'],
+                        'data_absence_established':False,'actionable_cohort':False}
+                    answer.update(status='partial',verification='unverified',actionable_cohort=False,
+                        investigation_review={'status':'unavailable','runtime_dependency':problem,
+                            'retry_disposition':problem['retry_disposition'],
+                            'reason':'Required storage is unavailable. Completed native work and all attempts are retained; no further model reasoning or source acceptance is performed.'})
+                    result['answer']=answer
+                    return result
+                if (use.get('name')=='request_clarification'and not failure and
+                        isinstance(output,dict)and output.get('clarification_required')and
+                        output.get('interaction_mode')=='interactive'):
+                    import copy
+                    result['clarification_pause']={'request':copy.deepcopy(output['clarification_required']),
+                        'messages':copy.deepcopy(messages),'tool_id':use['id']}
+                    return result
                 answers.append({'type': 'tool_result', 'tool_use_id': use['id'],
-                                'content': json.dumps(output, allow_nan=False), 'is_error': failure})
+                                 'content': json.dumps(actor_result(output), allow_nan=False), 'is_error': failure})
+                predecessor_failed=predecessor_failed or failure
             messages.append({'role': 'user', 'content': answers})
+            # Compare complete native evidence, not preview/transport handles.
+            # Repeated SQL receives a new result_view; that name cannot make
+            # unchanged values count as progress. Prior calls resolve native
+            # references, but only this batch is compared with the preceding one.
+            from .execution_state import progress_evidence
+            state = progress_evidence(result['tool_calls'],first_call=len(result['tool_calls'])-len(uses))
+            if max_tools is None and state == last_tools:
+                if isinstance(state_feedback,dict)and state_feedback.get('repair_kind')=='unresolved_verification':
+                    result['review_stopped']='no_progress'
+                    return result
+                if not escalate('Repeated tools returned unchanged evidence'):
+                    raise ValueError('Investigation made no progress: the same tools returned the same evidence again.')
+            last_tools = state
         raise ValueError('No final answer within the bounded tool loop')
     except Exception as exc:
         # Keep all measured usage from successful calls even if final parsing fails.
         result['error'] = type(exc).__name__ + ': ' + str(exc)
         return result
+    finally:
+        # The displayed answer may be an older, structurally complete table.
+        # Retain the latest compiler draft separately for guarded continuation;
+        # it must never become a checked answer merely because generation stopped.
+        if isinstance(state_candidate,dict) and isinstance(state_feedback,dict) and state_feedback.get('repair_kind')=='deterministic_compiler':
+            import copy
+            result['unfinished_draft']={'draft':copy.deepcopy(state_candidate),'draft_digest':digest(state_candidate)}
 
 
 def _sql_executor(semantic, as_of, max_rows, max_chars):

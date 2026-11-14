@@ -56,6 +56,135 @@ def _seq(v):
         return 0
 
 
+def development_requested(question):
+    import re
+    return bool(re.search(r'\b(?:paid|payments?|payer)\b',str(question or ''),re.I)and
+                re.search(r'\b(?:development|run[- ]?out|ibnr|completion)\b',str(question or ''),re.I))
+
+
+def development_input_contract():
+    return {'schema':'received-signed-paid-development/1','source':'payer_adjudication',
+        'amount':{'field':'paid_cents','role':'received signed financial event; not a cumulative replacement balance'},
+        'history':'Full observed development sums every received signed event in the requested scope, including superseded events and negative reversals/recoupments. Current/last versions are a separately named alternative.',
+        'clocks':{'cohort':'service_from','development':'adjudication_date when requested; declare another clock explicitly',
+                  'received_cutoff':'available_date through the snapshot; future/unreceived observations do not enter the observed history'},
+        'native_computation':'Group the requested service-month/cohort and development period, SUM signed paid_cents, then compute cumulative observed development in code/SQL. Do not subtract LAG of individual signed events.',
+        'unknowns':'Missing source/receipt dates remain explicit. Recent development is incomplete; elapsed months do not establish complete capture.',
+        'completion_estimate':'Optional, separately labeled from observations; state its method/assumptions and retain missing fit/ultimate qualification. No assumed tail factor is an observed payment.',
+        'unit':'Source integer cents. This table alone does not establish currency or receipt of cash.'}
+
+
+def development_source_issues(question, answer, calls):
+    """Check the received signed-event role behind returned paid development.
+
+    Diagnostic queries may inspect current versions. Only ancestors of the
+    returned monetary columns are checked. This is a source obligation, not
+    qualification of a completion model, cash receipt or actuarial estimate.
+    """
+    import re
+    q=str(question or '')
+    if not development_requested(q):return []
+    if re.search(r'\b(?:current|latest|surviving)\s+versions?\s+only\b|\bexclud(?:e|ing)\s+superseded\b',q,re.I):
+        return []  # an explicitly requested alternative keeps its own basis
+    root=answer.get('table_from_tool')
+    by={c['result']['result_view']:c for c in calls if isinstance(c.get('result'),dict)
+        and c['result'].get('result_view')and not c['result'].get('error')}
+    if root not in by:return []
+    from .backstop_agent import native_result_dependencies
+    from .result_assembly import source_query
+    from sqlglot import exp
+    from sqlglot.lineage import lineage
+    from sqlglot.errors import SqlglotError
+    needed=native_result_dependencies(calls,[root]);sources={};native_sources={};schema={}
+    for name in needed:
+        call=by[name];out=call['result'];contracts=out.get('source_contracts')or{}
+        for relation in contracts.get('relations')or[]:
+            if relation.get('columns'):schema[relation['name']]={k:'UNKNOWN'for k in relation['columns']}
+        for definition in contracts.get('definitions')or[]:sources[definition['name']]=definition['query']
+        if call.get('name')=='query_sql':
+            native_sources[name]=out.get('declared_executed_query')or out.get('executed_query')or(call.get('input')or{}).get('sql')
+        else:
+            query=source_query({k:c['result']for k,c in by.items()},name)
+            if query:native_sources[name]=query
+    # Native tables are lossless value copies; their JSON definitions are not
+    # substitutes for the actual producer's source/quantity ancestry.
+    sources.update(native_sources)
+    if not sources.get(root):return []
+    def paths(node):
+        if not node.downstream:return [[node]]
+        return [[node,*tail]for child in node.downstream for tail in paths(child)]
+    def financial(path):
+        leaf=path[-1]
+        return (isinstance(leaf.expression,exp.Table)and leaf.expression.name.casefold()in('payer_adjudication','payer_claim')
+                and leaf.name.rsplit('.',1)[-1].casefold()=='paid_cents'
+                and not any(isinstance(x,exp.Count)for n in path[:-1]for x in n.expression.walk()))
+    def raw_event_lag(node):
+        for lag in node.expression.find_all(exp.Lag):
+            if any(isinstance(x,exp.Sum)for x in lag.this.walk()):continue
+            for column in lag.this.find_all(exp.Column):
+                for child in node.downstream:
+                    if child.name.rsplit('.',1)[-1].casefold()!=column.name.casefold():continue
+                    if any(financial(p)and p[-1].expression.name.casefold()=='payer_adjudication'
+                           and not any(isinstance(x,exp.Sum)for n in p[:-1]for x in n.expression.walk())for p in paths(child)):
+                        return True
+        return False
+    filter_roles={}
+    def history_filter(column,source):
+        key=(source.sql(dialect='sqlite'),column.sql(dialect='sqlite'))
+        if key not in filter_roles:
+            projected=source.copy();projected.set('expressions',[exp.alias_(column.copy(),'__history_filter')])
+            try:
+                role=lineage('__history_filter',projected,schema=schema,
+                    sources={k:v for k,v in sources.items()if k!=root},dialect='sqlite')
+                filter_roles[key]=any(not n.downstream and isinstance(n.expression,exp.Table)
+                    and n.expression.name.casefold()=='payer_adjudication'
+                    and n.name.rsplit('.',1)[-1].casefold()in('superseded','superseded_by','is_last')for n in role.walk())
+            except (SqlglotError,ValueError,KeyError):filter_roles[key]=False
+        return filter_roles[key]
+    restricted=[];complete=[];differenced=[]
+    try:
+        for column in by[root]['result'].get('columns')or[]:
+            value=lineage(column,sources[root],schema=schema,sources={k:v for k,v in sources.items()if k!=root},
+                          dialect='sqlite',trim_selects=False)
+            money=[p for p in paths(value)if financial(p)]
+            if not money:continue
+            has_full=False
+            for path in money:
+                cut=path[-1].expression.name.casefold()!='payer_adjudication'
+                for node in path[:-1]:
+                    predicates=[node.source.args.get(k)for k in('where','having')]
+                    predicates.extend(node.expression.find_all(exp.If,exp.Filter))
+                    if any(history_filter(c,node.source)
+                           for predicate in predicates if predicate is not None for c in predicate.find_all(exp.Column)):
+                        cut=True
+                has_full=has_full or not cut
+            (complete if has_full else restricted).append(column)
+            if any(any(isinstance(x,exp.Sub)for x in n.expression.walk())and
+                   any(raw_event_lag(child)for child in n.walk())for n in value.walk()):
+                differenced.append(column)
+    except (SqlglotError,ValueError,KeyError,RecursionError):
+        return ['The returned paid-development value ancestry could not be resolved; retain a supported unknown rather than assert full received development.']
+    issues=[]
+    if restricted and not complete:
+        issues.append('Paid development was requested, but returned monetary columns use only current/last adjudications or exclude superseded events. '
+            'payer_adjudication.paid_cents are received signed financial events: sum the full requested history, including reversals/recoupments, '
+            'through the declared receipt cutoff. A current-version balance is a separately named alternative, not full observed development.')
+    elif not restricted and not complete and 'payer_adjudication'in schema:
+        columns=by[root]['result'].get('columns')or[];rows=by[root]['result'].get('rows')or[]
+        known_money=any(re.search(r'paid|amount|cents|dollars?|usd',column,re.I)
+            and any(type(row.get(column)if isinstance(row,dict)else row[index])in(int,float)for row in rows)
+            for index,column in enumerate(columns))
+        if known_money:
+            issues.append('The returned paid-development amounts have no resolved signed-event source binding. '
+                'Preserve the received native results, but bind observed payments directly to full payer_adjudication signed history before '
+                'asserting observed runout or a completion estimate. An opaque recursive/value-copy calculation is not evidence that its current-state inputs are full event history.')
+    if differenced:
+        issues.append('Returned paid-development columns ('+', '.join(differenced)+') subtract LAG of individual signed payment events. '
+            'These amounts are events, not cumulative replacement balances. Sum signed events for observed development; '
+            'do not difference successive event amounts. Cumulative sums and separately declared current-version alternatives retain their own meanings.')
+    return issues
+
+
 def build(out, warehouse_path):
     """Write payer_adjudication into an open semantic-layer connection from the received warehouse. -> summary."""
     # The semantic layer's patient ids differ from the received store's for some segments (deep-chart P-* ids); every claim
@@ -142,12 +271,14 @@ RECORD_DDL = """
 CREATE TABLE record_correction(record_id TEXT PRIMARY KEY, stream TEXT, patient_id TEXT, superseded_by TEXT,
   replacement_stream TEXT, link_field TEXT, event_date TEXT, available_date TEXT, replacement_available_date TEXT);
 CREATE INDEX record_correction_stream ON record_correction(stream);
+CREATE TABLE record_correction_unresolved(record_id TEXT, referenced_record_id TEXT, stream TEXT, reason TEXT);
 """
 
 
 def build_corrections(out, warehouse_path):
     """record_correction: every received record that a later record supersedes, across all streams (the semantic layer's
     record table keeps current versions only). Patient ids are mapped to the semantic layer's where it knows the record."""
+    from ..canonical.versions import Version,replacement_issue
     src = sqlite3.connect(Path(warehouse_path).resolve().as_uri() + '?mode=ro', uri=True)
     try:
         links = [(*r, 'supersedes_record_id') for r in src.execute(
@@ -156,21 +287,29 @@ def build_corrections(out, warehouse_path):
         links += [(*r, 'replaces_result_record_id') for r in src.execute(
             "SELECT id, json_extract(payload, '$.replaces_result_record_id'), stream, arrival FROM records "
             "WHERE stream = 'labs' AND json_extract(payload, '$.replaces_result_record_id') IS NOT NULL")]
-        olds = {old for _, old, _, _, _ in links}
-        info = {rid: (stream, pid, event, arrival) for rid, stream, pid, event, arrival in src.execute(
-            'SELECT id, stream, patient, event, arrival FROM records') if rid in olds}
-        rows = []
+        relevant = {rid for new,old,*_ in links for rid in (new,old)}
+        info={}
+        for chunk_start in range(0,len(relevant),800):
+            chunk=sorted(relevant)[chunk_start:chunk_start+800]
+            for rid,stream,pid,event,arrival,payload in src.execute('SELECT id,stream,patient,event,arrival,payload FROM records WHERE id IN ('+','.join('?' for _ in chunk)+')',chunk):
+                info[rid]=(stream,pid,event,arrival,json.loads(payload))
+        rows = [];unresolved=[]
         for new, old, stream, arrival, field in links:
-            o = info.get(old)
-            if o:
+            o,n = info.get(old),info.get(new)
+            identity=lambda rid,r:Version(rid,person_id=r[1],stream=r[0],observation=r[4] if r[0]=='labs' else None)
+            issue=replacement_issue(identity(new,n),identity(old,o) if o else None) if n else 'replacement_not_available'
+            if issue:unresolved.append((new,old,stream,issue))
+            else:
                 rows.append((old, o[0], o[1], new, stream, field, o[2], o[3], arrival))
     finally:
         src.close()
     known = {r[0] for r in out.execute('SELECT patient_id FROM patient')}
     out.execute('DROP TABLE IF EXISTS record_correction')
+    out.execute('DROP TABLE IF EXISTS record_correction_unresolved')
     out.executescript(RECORD_DDL)
     out.executemany('INSERT OR IGNORE INTO record_correction VALUES (?,?,?,?,?,?,?,?,?)', rows)
-    return {'corrections': len(rows), 'patients_known': sum(1 for r in rows if r[2] in known)}
+    out.executemany('INSERT INTO record_correction_unresolved VALUES (?,?,?,?)',unresolved)
+    return {'corrections': len(rows), 'patients_known': sum(1 for r in rows if r[2] in known),'unresolved_references':len(unresolved)}
 
 
 def apply_corrections(semantic_path):

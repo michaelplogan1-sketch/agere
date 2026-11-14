@@ -1,9 +1,9 @@
 """The spec path: the main path after reuse (docs/agere/QUESTION_SPEC.md). The cascade tier `spec_path` calls propose().
 
-  1. spec_fill.fill: the grammar, System One slot filling and one Haiku spec call, in parallel; the first valid spec, with the choice rules
-     for disagreeing readings.
+  1. spec_fill.fill: grammar and System One slot filling by default. The frontier spec writer is available through explicit
+     AGERE_SPEC_FILLERS configuration for comparative qualification; it is not a second automatic frontier planner.
   2. spec_verify.verify: System One checks the spec part by part against the question (the grammar's own spec is deterministic and not re-judged).
-     A failed part is repaired once by the Haiku filler; a part that still fails leaves the question unresolved for this path.
+     A failed part declines to the investigator; an explicitly enabled frontier spec writer may repair it once.
   3. The spec is executed once inside the tier and passed through answer_checks (decision context and the other mandatory checks; a spec-verified
      answer needs no result-summary cross-check), then returned as an ordinary typed contract, which shared_planner executes, caches and
      presents with answer['read_back'].
@@ -69,6 +69,41 @@ def verify_spec(cascade_or_stack, question, catalog, plan, *, ledger):
     return spec_verify.verify(stack, question, plan, catalog, ledger=ledger)
 
 
+def merge_fill_receipts(prior,current):
+    if not prior:return current
+    return {**current,'fillers':{**prior.get('fillers',{}),**current.get('fillers',{})},
+        'calls':prior.get('calls',0)+current.get('calls',0),
+        'usd':prior.get('usd',0.)+current.get('usd',0.),
+        'seconds':prior.get('seconds',0.)+current.get('seconds',0.),
+        'cost_known':prior.get('cost_known',True)and current.get('cost_known',True),
+        'scheduling':'nonfrontier_then_hosted'}
+
+
+def fill_in_order(stack,catalog,question,*,fillers=None,**kwargs):
+    names=tuple(fillers)if fillers is not None else spec_fill.enabled_fillers()
+    if os.environ.get('AGERE_NONFRONTIER_FIRST')!='on':
+        return spec_fill.fill(stack,catalog,question,fillers=names,**kwargs)
+    # Unilateral scheduling deadlines must not discard a valid cheap proposal
+    # while its hosted replacement is already being bought. Transport/native
+    # context limits and explicit caller cancellation remain in force.
+    kwargs.setdefault('seconds',float('inf'))
+    kwargs.setdefault('filler_limits',{name:float('inf')for name in names})
+    native=tuple(n for n in names if n!='haiku');prior=None
+    if native:
+        try:return spec_fill.fill(stack,catalog,question,fillers=native,**kwargs)
+        except spec_fill.SpecNotFilled as exc:prior=exc
+    if 'haiku'not in names:
+        if prior is not None:raise prior
+        raise spec_fill.SpecNotFilled('No applicable spec filler configured')
+    try:result=spec_fill.fill(stack,catalog,question,fillers=('haiku',),**kwargs)
+    except spec_fill.SpecNotFilled as exc:
+        exc.receipt=merge_fill_receipts(getattr(prior,'receipt',None),exc.receipt or {})
+        if exc.held is None and prior is not None:exc.held=prior.held
+        raise
+    result['receipt']=merge_fill_receipts(getattr(prior,'receipt',None),result['receipt'])
+    return result
+
+
 def propose(c):
     """Cascade tier body. -> (contract, interpretation), 'held' (an unresolved spec held as the decline), or None / QuestionNotUnderstood."""
     from . import shared_planner
@@ -81,10 +116,24 @@ def propose(c):
         if 'haiku' not in fillers: return None
         fillers = ('haiku',)
     try:
-        filled = spec_fill.fill(c.stack, c.catalog, c.question, population=c.population, ledger=ledger, fillers=fillers,
+        filled = fill_in_order(c.stack, c.catalog, c.question, population=c.population, ledger=ledger, fillers=fillers,
                                 verify=(lambda cand: verify_spec(c, c.question, c.catalog, cand['plan'], ledger=ledger)) if live else None)
     except spec_fill.SpecNotFilled as exc:
         if exc.receipt: spend_receipt(c, exc.receipt)
+        # Carry this request's failed reasoning into the existing investigator.
+        # It is not an executed proposal, compiled contract or reuse candidate.
+        attempts = []
+        for filler in (exc.receipt or {}).get('fillers', {}).values():
+            for item in (filler.get('notes') or {}).get('rejected_proposals', []):
+                if (item.get('authority') == 'unverified_proposal' and item.get('executed') is False
+                        and item.get('question_fingerprint') == request_plan.fingerprint(c.question)
+                        and item.get('proposal_fingerprint') == request_plan.fingerprint(item.get('proposal'))
+                        and isinstance(item.get('validation_error'), str)):
+                    attempts.append(item)
+        if attempts:
+            import copy
+            c.second_look_hint = {**getattr(c, 'second_look_hint', {}),
+                                  'prior_plan_attempts': copy.deepcopy(attempts)}
         if exc.held:
             plan, contract = exc.held
             interpretation = interpretation_for(c.question, c.catalog, {'plan': plan, 'contract': contract, 'winner': 'haiku', 'agreement': 'single',
@@ -98,6 +147,10 @@ def propose(c):
         verification = filled.get('candidate', {}).get('verification') or verify_spec(c, c.question, c.catalog, filled['plan'], ledger=ledger)
         c.spend(verification['calls'], verification['cost_usd'])
         if verification['failed']:
+            if 'haiku'not in fillers:
+                c.reject('spec_path',['The native spec did not pass its question/source checks. '
+                    'Continue the original question through the investigator; frontier spec repair requires explicit qualification.'])
+                return None
             review = spec_verify.feedback(verification)
             try:
                 again = spec_fill.repair(c.stack, c.catalog, c.question, filled['plan'], review, population=c.population, ledger=ledger)

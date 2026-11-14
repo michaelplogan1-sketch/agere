@@ -26,21 +26,23 @@ affected, so findings can be ranked by information x impact.
 """
 from collections import defaultdict
 from datetime import date
-import math, re, sqlite3
+import json, math, re, sqlite3
 
 import numpy as np
-from scipy.stats import chi2, norm
+from scipy.stats import binomtest, chi2, norm
 
 from . import semantic_layer, vbc
 
-VERSION = 'monitor/1'
+VERSION = 'monitor/3'
 CHECKS = ('all', 'control_chart', 'feed', 'claims', 'claims_integrity', 'benford', 'peer_outliers', 'duplicates', 'ra_cusum', 'vlad')
 SERIES = ('ed_rate', 'admit_rate', 'pmpm', 'lab_volume', 'denial_rate', 'arrival_lag')
 CLAIM_SERIES = ('pmpm', 'denial_rate', 'arrival_lag')
 GROUP_BY = ('auto', 'none', 'practice', 'payer', 'facility', 'source_system')
 METHODS = ('both', 'shewhart', 'ewma')
 AMOUNTS = ('billed', 'allowed', 'both')
-FIELDS = {'check', 'series', 'group_by', 'method', 'amount', 'stream', 'period'} | {'chart', 'outcome', 'unit', 'or_shift', 'or_improve', 'arl0',
+EXPOSURE_BASES = ('registered_coverage', 'historical_member_months')
+OUTPUTS = ('summary', 'monthly_points', 'comparison')
+FIELDS = {'check', 'series', 'group_by', 'method', 'amount', 'stream', 'period', 'exposure_basis', 'output'} | {'chart', 'outcome', 'unit', 'or_shift', 'or_improve', 'arl0',
                                                                                     'window_days', 'adjust', 'min_cases', 'include_observation'}
 NATURAL_GROUP = {'ed_rate': 'practice', 'admit_rate': 'practice', 'pmpm': 'practice', 'lab_volume': 'source_system',
                  'denial_rate': 'payer', 'arrival_lag': 'payer'}
@@ -87,15 +89,26 @@ def validate(p):
     stream = p.get('stream', '')
     if not isinstance(stream, str) or (stream and not re.fullmatch(r'[a-z][a-z0-9_]{0,60}', stream)):
         raise ValueError('monitor stream must be a source stream name or empty')
-    period = p.get('period') or {}
-    if not isinstance(period, dict) or set(period) - {'start', 'end'} or \
-            any(not re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(v)) for v in period.values() if v):
+    period = p.get('period',{})
+    if not isinstance(period, dict) or set(period) - {'start', 'end'}:
         raise ValueError('monitor period needs YYYY-MM-DD start/end')
+    from .clinical_events import validate_window
+    validate_window({'basis':'source_event','start':period.get('start',''),'end':period.get('end','')})
     out = {'check': check, 'series': series, 'group_by': group_by, 'method': method, 'amount': amount, 'stream': stream,
            'period': {k: v for k, v in period.items() if v}}
+    for name, choices in (('exposure_basis', EXPOSURE_BASES), ('output', OUTPUTS)):
+        value = p.get(name, choices[0])
+        if value not in choices: raise ValueError(f'monitor {name} must be one of {choices}')
+        out[name] = value
+    if out['output'] in ('monthly_points', 'comparison') and (check != 'control_chart' or p.get('chart', 'control') != 'control'):
+        raise ValueError('monitor monthly_points/comparison output requires check=control_chart and chart=control')
+    if out['output'] == 'comparison' and (not series or any(s not in ('ed_rate', 'admit_rate', 'lab_volume') for s in series)):
+        raise ValueError('monitor comparison requires explicit count/exposure series: ed_rate, admit_rate or lab_volume')
     chart = p.get('chart') or (check if check in ('ra_cusum', 'vlad') else None)
     if chart is not None:
         if chart not in CHART_OPTIONS: raise ValueError(f'monitor chart must be one of {CHART_OPTIONS}')
+        if chart != 'control' and out['exposure_basis'] != 'registered_coverage':
+            raise ValueError('monitor historical_member_months exposure applies to monthly control charts, not risk-adjusted case charts')
         if chart != 'control': out.update(_validate_ra(p, chart, group_by))
         else: out['chart'] = 'control'
     return out
@@ -359,22 +372,28 @@ def windows(p, as_of):
     end = min(end, as_of)
     last = end[:7] if end >= _month_end(end[:7]) else _shift(end[:7], -1)
     first_report = (p['period'].get('start') or f'{_shift(last, -(CHART_MONTHS - 1))}-01')[:7]
+    if p['period'].get('start')and not p['period']['start'].endswith('-01'):first_report=_shift(first_report,1)
     first_chart = min(first_report, _shift(last, -(CHART_MONTHS - 1)))
     chart = vbc._months(f'{first_chart}-01', f'{last}-01') if first_chart <= last else []
     report = [m for m in chart if m >= first_report]
-    if chart and not report:
-        # "this week" / a period inside the incomplete current month: report the latest COMPLETE month and say so
-        report = chart[-1:]
-        p.setdefault('notes', []).append(f'Requested period has no complete month yet; reporting the latest complete month ({chart[-1]}).')
+    if not report:raise ValueError('Requested monitoring period contains no complete observed month; no recent-month substitution')
     return chart, report
 
 
 class Population:
     """Members, enrolled months, attribution and group keys shared by all member-based series."""
-    def __init__(self, db, months, keep):
+    def __init__(self, db, months, keep, exposure_basis='registered_coverage'):
         start, end = f'{months[0]}-01', _month_end(months[-1])
         self.people = vbc.eligibility(db, end, start, end)
         if keep is not None: self.people = {k: v for k, v in self.people.items() if k in keep}
+        if exposure_basis == 'historical_member_months':
+            recorded = defaultdict(set)
+            for pid, month in db.execute('SELECT DISTINCT patient_id, substr(month,1,7) FROM member_month '
+                                        'WHERE substr(month,1,7) BETWEEN ? AND ?', (months[0], months[-1])):
+                recorded[pid].add(month)
+            for pid, info in self.people.items():
+                info['months'] = sorted(recorded.get(pid, ()))
+                info['enrollment_basis'] = 'recorded_member_month'
         self.attr = vbc.attribution(db, self.people, start, end)
         self.months = {pid: set(i['months']) for pid, i in self.people.items() if i['months']}
 
@@ -402,10 +421,9 @@ def _series_events(db, series, months, pop, keep):
     """(pid, month, organization, value) rows for one series. value = 1 for count series."""
     lo, hi = f'{months[0]}-01', _month_end(months[-1])
     if series == 'ed_rate':
-        rows = db.execute("SELECT patient_id, event_date, max(CASE WHEN source_table = 'encounters' THEN organization_id END), "
-                          "max(organization_id) FROM encounter WHERE type_concept = 'emergency_visit' AND event_date BETWEEN ? AND ? "
-                          "GROUP BY 1, 2", (lo, hi))
-        return [(pid, d[:7], o1 or o2, 1.0) for pid, d, o1, o2 in rows if d[:7] in pop.months.get(pid, ())]
+        rows = db.execute("SELECT patient_id, event_date, organization_id FROM utilization_event "
+                          "WHERE kind = 'ed_visit' AND event_date BETWEEN ? AND ?", (lo, hi))
+        return [(pid, d[:7], org, 1.0) for pid, d, org in rows if d[:7] in pop.months.get(pid, ())]
     if series == 'admit_rate':
         return [(pid, d[:7], org, 1.0) for pid, d, org in
                 db.execute('SELECT patient_id, admit_date, organization_id FROM stay WHERE admit_date BETWEEN ? AND ?', (lo, hi))
@@ -427,11 +445,154 @@ def _rate_chart_inputs(db, series, group_by, months, pop, keep):
         g = pop.key(group_by, pid) if group_by in ('none', 'practice', 'payer') else (org or 'unknown')
         counts[g][m] += v
     groups = sorted(set(counts) | (set(exposure) if group_by in ('none', 'practice', 'payer') else set()))
+    if group_by == 'none' and 'all' not in groups: groups.append('all')
     out = {}
     for g in groups:
         ex = exposure[g if group_by in ('none', 'practice', 'payer') else 'all']
         out[g] = ([counts[g].get(m, 0.0) for m in months], [ex.get(m, 0.0) for m in months])
     return out
+
+
+def _monthly_rows(series, group_by, group, spec, months, report_idx, status, params):
+    """Complete, unrounded report-window inputs, even when a chart cannot be fitted."""
+    points = {x['month']: x for x in (status or {}).get('chart', [])}
+    rows = []
+    for i, month in enumerate(months):
+        if i not in report_idx: continue
+        value, n = spec[0][i], spec[1][i]
+        point = points.get(month, {})
+        count_series = series not in ('pmpm', 'arrival_lag')
+        rate = (value / n if count_series else value) * SCALE[series] if n and n > 0 and value is not None else None
+        rows.append({'series': series, 'group_by': group_by, 'group': group, 'month': month,
+                     'input_value': value, 'numerator': value if count_series else None, 'exposure': n,
+                     'rate': rate, 'unit': LABELS[series],
+                     'exposure_basis': params['exposure_basis'],
+                     'numerator_basis': "utilization_event WHERE kind='ed_visit' matched to the same patient's eligible month"
+                        if series == 'ed_rate' else 'registered ' + series + ' input',
+                     'month_status': 'observed_exposure' if n and n > 0 else 'no_recorded_exposure_rate_unknown',
+                     'chart_status': (status or {}).get('status', 'insufficient_chart_data'),
+                     'center': (status or {}).get('center_exact'), 'laney_phi': (status or {}).get('laney_phi'),
+                     'lcl': point.get('lcl_exact'), 'ucl': point.get('ucl_exact'), 'z': point.get('z_exact'),
+                     'baseline_start': months[0], 'baseline_end': months[-1],
+                     'report_start': months[min(report_idx)], 'report_end': months[max(report_idx)],
+                     'rate_rules_json': json.dumps((status or {}).get('rate_rules', [])),
+                     'data_rules_json': json.dumps((status or {}).get('data_rules', [])),
+                     'parameters_json': json.dumps(params, sort_keys=True)})
+    return rows
+
+
+def stable_rate_comparison(rows):
+    """A fixed reporting-period, equal-Poisson-rate baseline, not a predictor.
+
+    Conditional on each group's total events, a month's events are binomial
+    with probability exposure_month / exposure_total. This avoids treating an
+    estimated pooled rate as a known Poisson mean. Bonferroni covers every
+    testable series/group/month in this request, including non-signals; it does
+    not calibrate the separate adaptive chart/rule heuristics.
+    """
+    totals = defaultdict(lambda: [0, 0.0])
+    for row in rows:
+        count, exposure = row['numerator'], row['exposure']
+        if (count is None or not math.isfinite(count) or count < 0 or int(count) != count
+                or exposure is None or not math.isfinite(exposure) or exposure < 0):
+            raise ValueError('Stable-rate comparison requires finite nonnegative counts and exposure')
+        if exposure > 0:
+            total = totals[(row['series'], row['group_by'], row['group'])]
+            total[0] += int(count); total[1] += exposure
+    result = []
+    for source in rows:
+        row = dict(source)
+        events, exposure = totals[(row['series'], row['group_by'], row['group'])]
+        count, n = int(row['numerator']), row['exposure']
+        rest_events, rest_n = events - count, exposure - n
+        pooled = events / exposure if exposure > 0 else None
+        tested = n > 0 and rest_n > 0
+        probability = float(binomtest(count, events, n / exposure).pvalue) if tested and events else 1.0 if tested else None
+        row.update(stable_pooled_rate_per_1000=pooled * 1000 if pooled is not None else None,
+                   stable_expected_events=pooled * n if pooled is not None and n > 0 else None,
+                   stable_p_value=probability, stable_alpha=0.05,
+                   stable_rate_difference_per_1000=(1000 * (count / n - rest_events / rest_n)) if tested else None,
+                   stable_rate_ratio_to_rest=((count / n) / (rest_events / rest_n)) if tested and rest_events else None,
+                   stable_total_events=events, stable_total_exposure=exposure,
+                   stable_test_status=('tested' if events else 'no_events_no_power') if tested else 'insufficient_exposure',
+                   stable_baseline_start=row['report_start'], stable_baseline_end=row['report_end'])
+        result.append(row)
+    family = sum(row['stable_p_value'] is not None for row in result)
+    for row in result:
+        p = row['stable_p_value']
+        row.update(stable_family_tests=family, stable_bonferroni_p=min(1.0, p * family) if p is not None else None,
+                   stable_unadjusted_flag=p < 0.05 if p is not None else None,
+                   stable_family_flag=p * family < 0.05 if p is not None else None)
+    return result
+
+
+def comparison_view(report, path, patient_ids, as_of):
+    """Compose existing rate charts and source observation model, without prose math."""
+    from . import change_attribution
+    rows = stable_rate_comparison(report['monthly_points'])
+    source = change_attribution.execute(path, patient_ids,
+        {'period': report['parameters']['period'], 'group_by': 'source_system', 'output': 'monthly_coverage'}, as_of)
+    by_month = {r['month']: r for r in source['monthly_coverage']}
+    flags = defaultdict(int)
+    for anomaly in source['anomalies']: flags[anomaly['month']] += 1
+    for row in rows:
+        received = by_month.get(row['month'])
+        row.update(received_source_records=received['received_records_in_selected_streams'] if received else None,
+                   source_pattern_flags=flags[row['month']] if received else None,
+                   source_capture_status=received['capture_status'] if received else 'not_computed',
+                   physical_arrival_history_reconstructed=False,
+                   source_comparison_scope='Whole selected population, all received source streams; not group-specific completeness or causal attribution')
+    return {'schema': 'monitor-comparison/1', 'rows': rows, 'source_observation': source,
+            'baseline': {'method': 'Two-sided exact conditional equal-Poisson-rate test, each report month versus all other report months in the same series/group',
+                         'alpha': 0.05, 'family_tests': sum(r['stable_p_value'] is not None for r in rows),
+                         'multiplicity': 'Bonferroni across all testable requested series/group/month cells, including non-signals',
+                         'assumptions': ['Fixed retrospective reporting window and observed exposure; independent Poisson counts under the constant-rate null.',
+                             'Seasonality, recurrent-member dependence, overdispersion and incomplete capture can invalidate this simple null; no clinical or repeated-look qualification is established.',
+                             'No separate training/test split: the conditional test conditions on observed total counts; this is not out-of-sample prediction.']},
+            'registered_chart': {'method': report['method'], 'parameters': report['parameters'],
+                                 'multiplicity': 'Existing adaptive chart rules retain their look-elsewhere ranking penalty; baseline Bonferroni does not qualify their alert rate.',
+                                 'chart_status': report['chart_status']},
+            'clinical_qualification': False, 'causal_change_established': False,
+            'source_limitation': 'Received event-date volume is observable. Physical arrival/capture history and actual care-volume changes are not identified by these records.'}
+
+
+def attach_comparison(answer, calls):
+    """Restore a complete native view only for an exact server-bound table copy.
+
+    Model prose and its uncertain verification stay separate. A table summary
+    must not hide run-pattern signals just because no point crossed a limit.
+    """
+    value = answer.get('overall')
+    overall = dict(value) if isinstance(value, dict) else {}
+    if 'monitor_comparison' in overall:
+        overall.pop('monitor_comparison')  # model-authored metadata is not authority
+        answer['overall'] = overall
+    answer.pop('native_comparison_binding', None)
+    binding = answer.get('table_binding') or {}
+    if not binding.get('copied_from_executed_result') or binding.get('interpreted_columns'):
+        return False
+    for call in calls:
+        if call.get('name') != 'execute_analysis' or (call.get('input') or {}).get('operation') != 'monitor': continue
+        result = call.get('result') or {}
+        native = (result.get('engine_result') or {}).get('answer') or {}
+        comparison = (native.get('overall') or {}).get('monitor_comparison')
+        if (comparison is None or result.get('result_view') != binding.get('result_view')
+                or answer.get('table') != comparison['rows'] or native.get('table') != comparison['rows']):
+            continue
+        overall['monitor_comparison'] = comparison
+        answer['overall'] = overall
+        answer['computed_as'] = native['computed_as']
+        registered = comparison['registered_chart']['chart_status']
+        charts = sum(row['status'] == 'rate_signal' for row in registered)
+        corrected = sum(row['stable_family_flag'] is True for row in comparison['rows'])
+        notice = (f'Native comparison: {corrected} corrected stable-rate baseline flags; {charts} registered charts have exploratory '
+                  'rate-pattern signals. Run-pattern signals and single-point limits are distinct. Neither establishes a causal care change or complete source capture.')
+        answer['warnings'] = list(dict.fromkeys([*(answer.get('warnings') or []), notice]))
+        answer['native_comparison_binding'] = {'result_view': binding['result_view'], 'rows': len(comparison['rows']),
+            'source': 'complete executed monitor report matched to the final native table',
+            'model_verification_changed': False, 'clinical_qualification': False}
+        return True
+    return False
 
 
 def _claims_rows(db, months, keep, as_of):
@@ -640,6 +801,8 @@ def event_type_gaps(db, months, series, keep=None):
     chart = control_chart(num, den, kind='p')
     runs = [g for g in chart['gaps'] if g['end'] - g['start'] >= 2]
     return {'concept': concept, 'months': months, 'events': num, 'stream_records': den, 'share_center': chart['center'],
+            'source_basis': 'EHR visit type share; does not establish all-source utilization completeness',
+            'applies_to_rate_baseline': series != 'ed_rate',
             'gaps': runs, 'chart': chart}
 
 
@@ -804,7 +967,8 @@ RA_UNITS = ('hospital', 'practice', 'pcp', 'none')
 RA_ADJUST = ('age_sex_conditions', 'age_sex', 'none')
 RA_FIELDS = {'chart', 'outcome', 'unit', 'or_shift', 'or_improve', 'arl0', 'window_days', 'adjust', 'min_cases', 'include_observation'}
 RA_P_FLOOR, RA_P_CEIL = 1e-4, 1 - 1e-4
-VLAD_Z = (1.96, 3.09)       # 95% and 99.8% two-sided funnel limits
+VLAD_Z = (1.96, 3.09)       # legacy Gaussian diagnostic comparison only
+VLAD_LEVELS = (0.95, 0.998)
 RA_PATH_POINTS = 120
 RA_ASSUMPTIONS = [
     'Expected risk per case comes from one patient-level logistic model fitted on all cases in the window (risk_outcomes.fit_glm '
@@ -815,10 +979,10 @@ RA_ASSUMPTIONS = [
     'CUSUM weights follow Steiner, Cook, Farewell & Treasure (2000) for a step change of the odds ratio to or_shift (and to '
     'or_improve for the improvement chart); each chart restarts at zero after a signal.',
     'The control limit h is one value for all units, found by simulation of in-control outcomes (Bernoulli at the expected risk, '
-    'case mix resampled from the pooled cases of the charted units) so the average run length to a false signal is arl0 cases. '
-    'Units with unusual case mix have a slightly different true ARL0; expected risks are treated as known (model error ignored).',
-    'VLAD is the running sum of expected minus observed events; limits are +-z sqrt(sum p(1-p)) (95% and 99.8%), exact for known '
-    'risks at a fixed look but not corrected for looking at every case, so crossings are prompts to review, not proof of worse care.',
+    'case mix resampled from the pooled cases of the charted units), targeting arl0 cases per false signal. The actual rounded '
+    'threshold is independently simulated; finite estimates, uncertainty and censoring are reported, not an exact achievement '
+    'or established calibration. Unit case mix and fitted-risk error can change alarm spacing.',
+    'VLAD is cumulative expected minus observed events. Central 95%/99.8% bands use finite independent-Bernoulli count recursion, evaluated numerically, conditional on known risks at one prespecified look. Fitted-risk error, case dependence, repeated looks and multiple-unit calibration are unqualified. Standardized residual z is descriptive, not a Gaussian tail. Crossings prompt review, not proof of worse care.',
     'Outcomes are what the warehouse records; follow-up must be complete before the snapshot. No planned-readmission flag exists.',
 ]
 
@@ -842,26 +1006,50 @@ def ra_cusum(p, y, R, h):
     return {'path': path, 'signals': signals, 'max': max(path) if path else 0.0, 'final': s}
 
 
+def _restart_arl(probs, R, h, n_chains, length, seed):
+    """Finite restart exposure per signal at the actual threshold; independent-chain uncertainty is approximate.
+
+    This estimates long-run ARL under the declared iid case-mix simulation, not a finite-window any-alarm probability.
+    Terminal unfinished runs remain exposure; first-passage censoring is reported separately.
+    """
+    P = np.asarray(probs, float); D = np.log1p(P * (R - 1.0)); lr = math.log(R)
+    rng = np.random.default_rng(seed)
+    s = np.zeros(n_chains); counts = np.zeros(n_chains, int); first = np.full(n_chains, length + 1, int)
+    for t in range(length):
+        idx = rng.integers(0, len(P), n_chains)
+        w = (rng.random(n_chains) < P[idx]) * lr - D[idx]
+        s = np.maximum(0.0, s + w); hit = s >= h
+        first[(first > length) & hit] = t + 1
+        counts += hit; s[hit] = 0.0
+    signals = int(counts.sum()); exposure = int(n_chains * length)
+    rate = signals / exposure; estimate = exposure / signals if signals else None
+    se_rate = float(counts.std(ddof=1) / math.sqrt(n_chains) / length) if n_chains > 1 else None
+    if signals and se_rate is not None and se_rate > 0:
+        lo, hi = max(0., rate - 1.96 * se_rate), rate + 1.96 * se_rate
+        interval = [1 / hi, 1 / lo if lo else None]
+    else:
+        interval = [None, None]  # zero empirical variance is not proof of certainty
+    return {'estimate': estimate, 'ci95_approx': interval, 'signals': signals, 'exposure_cases': exposure,
+            'first_passages_observed': int((first <= length).sum()), 'first_window_any_alarm_rate': float((first <= length).mean()),
+            'first_window_probability_contract': 'Any alarm within chain_length cases; distinct from average cases per signal', 'first_passages_censored': int((first > length).sum()),
+            'restricted_first_passage_mean': float(np.minimum(first, length).mean()),
+            'uncertainty_method': 'Independent-chain normal approximation for signal rate, inverted to ARL; finite-run boundary bias and model assumptions are not eliminated.',
+            'metric': 'restart_exposure_cases_per_signal', 'seed': seed}
+
+
 def simulate_arl(probs, R, h, n_chains=300, length=4000, seed=11):
     """Average run length (cases) to a signal for an in-control process: chains of cases drawn from the case-mix `probs`, outcomes
     Bernoulli at the expected risk, CUSUM restarted after each signal. ARL = cases observed / signals."""
-    P = np.asarray(probs, float); D = np.log1p(P * (R - 1.0)); lr = math.log(R)
-    rng = np.random.default_rng(seed)
-    s = np.zeros(n_chains); signals = 0
-    for _ in range(length):
-        idx = rng.integers(0, len(P), n_chains)
-        w = (rng.random(n_chains) < P[idx]) * lr - D[idx]
-        s = np.maximum(0.0, s + w)
-        hit = s >= h
-        signals += int(hit.sum()); s[hit] = 0.0
-    return n_chains * length / signals if signals else math.inf
+    result = _restart_arl(probs, R, h, n_chains, length, seed)
+    return result['estimate'] if result['estimate'] is not None else math.inf
 
 
 def simulate_control_limit(probs, R, arl0, seed=7, n_chains=None, length=None, step=0.05, h_max=20.0):
     """Control limit h giving in-control ARL ~ arl0 cases, by simulation over the case-mix distribution `probs`.
     One simulation of reflected CUSUMs (never reset) gives the first-passage time to every h on a grid at once: the run
-    length to a signal is the first time the reflected path reaches h. ARL(h) is the total cases observed over signals
-    seen (the censored-exponential estimate, exact for a constant signal rate), then h is interpolated on log ARL."""
+    length to a signal is the first time the reflected path reaches h. The total cases observed over first hits is a censored-hazard grid selection proxy, not an achieved ARL.
+    An actual grid boundary is selected and the returned rounded threshold is independently evaluated with restart simulation.
+    Discrete score lattices may not attain the target."""
     P = np.clip(np.asarray(probs, float), RA_P_FLOOR, RA_P_CEIL)
     if len(P) == 0 or not (arl0 >= 2): raise ValueError('need case risks and arl0 >= 2')
     length = int(length or min(max(4 * arl0, 2000), 400000))
@@ -892,26 +1080,68 @@ def simulate_control_limit(probs, R, arl0, seed=7, n_chains=None, length=None, s
         arl = np.where(hits > 0, cases / np.maximum(hits, 1), np.inf)
     arl = np.maximum.accumulate(np.where(np.isfinite(arl), arl, 1e18))
     k = int(np.searchsorted(arl, arl0, side='left'))
-    if k >= len(grid):
-        h, est = float(grid[-1]), float(arl[-1])
-    elif k == 0:
-        h, est = float(grid[0]), float(arl[0])
-    else:
-        a0, a1 = math.log(arl[k - 1]), math.log(min(arl[k], 1e17))
-        frac = (math.log(arl0) - a0) / (a1 - a0) if a1 > a0 else 1.0
-        h, est = float(grid[k - 1] + frac * step), float(arl0)
-    return {'h': round(h, 3), 'arl0_target': arl0, 'arl0_simulated': round(est, 1), 'chains': n_chains, 'chain_length': length,
-            'signals_at_h': int(hits[min(k, len(grid) - 1)]), 'odds_ratio': R}
+    k = min(k, len(grid) - 1)
+    h = math.ceil(float(grid[k]) * 1000) / 1000  # never lower the selected boundary when serializing
+    validation = _restart_arl(P, R, h, n_chains, length, seed + 1)
+    low, high = validation['ci95_approx']
+    assessment = ('estimated_at_least_target' if low is not None and low >= arl0 else
+                  'estimated_below_target' if high is not None and high < arl0 else 'not_established')
+    return {'h': h, 'arl0_target': arl0, 'arl0_simulated': round(validation['estimate'], 1) if validation['estimate'] is not None else None,
+            'arl0_ci95_approx': [round(x, 1) if x is not None else None for x in validation['ci95_approx']],
+            'target_assessment': assessment, 'grid_selection_proxy': float(cases[k] / hits[k]) if hits[k] else None,
+            'grid_first_hits': int(hits[k]), 'grid_threshold': float(grid[k]),
+            'chains': n_chains, 'chain_length': length, 'signals_at_h': validation['signals'], 'odds_ratio': R,
+            'grid_case_draws': n_chains * length, 'validation_case_draws': n_chains * length,
+            'risk_assumption': {'law': 'iid resampling of the supplied case mix and Bernoulli expected outcomes', 'probability_floor': RA_P_FLOOR, 'probability_ceiling': RA_P_CEIL},
+            'validation': validation, 'calibration_qualified': False,
+            'method': 'Choose a grid threshold without interpolating unattainable ARLs; independently restart-simulate the actual rounded threshold. Monte Carlo intervals and finite-run bias do not establish clinical calibration.'}
+
 
 
 def vlad(p, y):
-    """Variable life-adjusted display for cases in order: cumulative expected minus observed events, with 95% / 99.8% funnel limits
-    +-z sqrt(sum p(1-p)) around zero. Below the lower limit = more events than expected."""
-    p = np.asarray(p, float); y = np.asarray(y, float)
-    cum = np.cumsum(p - y)
+    """VLAD with central finite-count bands, conditional on known independent risks.
+
+    Prefix Poisson-binomial sum-product recursion is O(n^2) time/O(n) working
+    memory. No cases are dropped or truncated. Gaussian limits remain only as a
+    labelled compatibility diagnostic; signals use integer count intervals.
+    Floating-point evaluation is not a formal roundoff proof or a repeated-look,
+    fitted-risk or clinical calibration guarantee.
+    """
+    p, y = np.asarray(p, float), np.asarray(y, float)
+    if p.ndim != 1 or y.shape != p.shape or not np.all(np.isfinite(p)) or not np.all((p >= 0) & (p <= 1)):
+        raise ValueError('VLAD needs one finite probability in [0,1] per case')
+    if not np.all(np.isfinite(y)) or not np.all((y == 0) | (y == 1)):
+        raise ValueError('VLAD needs binary observed events')
+    expected, observed = np.cumsum(p), np.cumsum(y).astype(int)
+    cum = expected - observed
     sd_ = np.sqrt(np.maximum(np.cumsum(p * (1 - p)), 1e-12))
     z = cum / sd_
-    return {'cum': cum, 'sd': sd_, 'z': z, 'limits': {str(k): (k * sd_) for k in VLAD_Z}}
+    n = len(p)
+    intervals = {str(level): np.empty((n, 2), dtype=int) for level in VLAD_LEVELS}
+    tails, residual = np.empty(n), 0.0
+    pmf = np.array([1.])
+    for i, risk in enumerate(p):
+        pmf = np.convolve(pmf, [1 - risk, risk])
+        cdf = np.cumsum(pmf)
+        residual = max(residual, abs(float(cdf[-1]) - 1))
+        count = observed[i]
+        # Direct tail sums avoid subtracting two nearly equal probabilities.
+        tails[i] = min(1., 2 * min(float(pmf[:count + 1].sum()), float(pmf[count:].sum())))
+        for level in VLAD_LEVELS:
+            alpha = (1 - level) / 2
+            lo = min(int(np.searchsorted(cdf, alpha, side='right')), i + 1)
+            hi = min(int(np.searchsorted(cdf, 1 - alpha, side='left')), i + 1)
+            intervals[str(level)][i] = [lo, hi]
+    bands = {level: np.column_stack((expected - bounds[:, 1], expected - bounds[:, 0])) for level, bounds in intervals.items()}
+    outside = {level: (observed < bounds[:, 0]) | (observed > bounds[:, 1]) for level, bounds in intervals.items()}
+    return {'cum': cum, 'sd': sd_, 'z': z, 'z_kind': 'standardized residual; not a Gaussian tail',
+            'limits': {str(k): k * sd_ for k in VLAD_Z}, 'limits_kind': 'legacy normal-approximation diagnostic only',
+            'bands': bands, 'count_intervals': intervals, 'observed_counts': observed,
+            'outside': outside, 'fixed_look_tail_p': tails, 'final_count_pmf': pmf,
+            'mass_residual_max': residual, 'method': 'finite Poisson-binomial count recursion; central fixed-look intervals',
+            'qualification': {'known_independent_risks_fixed_look': True, 'floating_point_roundoff_certified': False,
+                              'fitted_risk': False, 'dependence': False, 'repeated_looks': False,
+                              'multiple_units': False, 'clinical': False}}
 
 
 def _episodes(mask):
@@ -996,18 +1226,26 @@ def ra_chart(unit, cases, p, y, params, limits):
                                  'signals': len(dn['signals']), 'path': [[i + 1, dates[i], round(dn['path'][i], 3)] for i in keep]}
     else:
         v = vlad(p, y)
-        lo, hi = VLAD_Z[-1], VLAD_Z[0]
-        below, above = v['z'] < -lo, v['z'] > lo
+        bounds = v['count_intervals']['0.998']
+        below, above = v['observed_counts'] > bounds[:, 1], v['observed_counts'] < bounds[:, 0]
         for mask, direction in ((below, 'deterioration'), (above, 'improvement')):
             for s, e in _episodes(mask):
                 signals.append({'unit': unit, 'direction': direction, 'case_number': s + 1, 'date': dates[s], 'last_case_number': e + 1,
-                                'last_date': dates[e], 'vlad': round(float(v['cum'][s]), 3), 'z': round(float(v['z'][s]), 3)})
+                                'last_date': dates[e], 'vlad': round(float(v['cum'][s]), 3), 'z': round(float(v['z'][s]), 3),
+                                'z_kind': v['z_kind'], 'fixed_look_tail_p': float(v['fixed_look_tail_p'][s]),
+                                'tail_scope': 'known independent risks; repeated looks and fitted risks unqualified'})
         keep = _thin(v['cum'])
         out['vlad'] = {'final': round(float(v['cum'][-1]), 3), 'final_z': round(float(v['z'][-1]), 3), 'min': round(float(v['cum'].min()), 3),
                        'max': round(float(v['cum'].max()), 3), 'excess_events': round(-float(v['cum'][-1]), 3),
-                       'outside_95': int((np.abs(v['z']) > VLAD_Z[0]).sum()),
-                       'path': [[i + 1, dates[i], round(float(v['cum'][i]), 3), round(float(v['limits'][str(VLAD_Z[0])][i]), 3),
-                                 round(float(v['limits'][str(VLAD_Z[1])][i]), 3)] for i in keep]}
+                       'outside_95': int(v['outside']['0.95'].sum()),
+                       'method': v['method'], 'z_kind': v['z_kind'], 'qualification': v['qualification'],
+                       'mass_residual_max': v['mass_residual_max'],
+                       'path_rounding': 'display only; classifications use integer observed counts and count bounds',
+                       'final_fixed_look_tail_p': float(v['fixed_look_tail_p'][-1]),
+                       'final_count_intervals': {k: bounds[-1].tolist() for k, bounds in v['count_intervals'].items()},
+                       'path_columns': ['case_number','date','expected_minus_observed','lower_95','upper_95','lower_998','upper_998'],
+                       'path': [[i + 1, dates[i], round(float(v['cum'][i]), 3),
+                                 *[round(float(x), 6) for level in ('0.95','0.998') for x in v['bands'][level][i]]] for i in keep]}
     out['signals'] = signals
     return out
 
@@ -1080,19 +1318,22 @@ def execute_ra(path, patient_ids, p, as_of=None):
                 head = (f"{c['unit']}: risk-adjusted CUSUM signals {direction} (odds ratio {p['or_shift'] if direction == 'deterioration' else p['or_improve']}) "
                         f"at case {first['case_number']} ({first['date']}); {len(sig)} signal(s) over {c['cases']} cases, O/E {c['o_e']}")
             else:
-                z = abs(first['z'])
-                bits_ = z_bits(z)
-                head = (f"{c['unit']}: VLAD outside the 99.8% limits ({direction}) from case {first['case_number']} ({first['date']}); "
+                tail = first['fixed_look_tail_p']
+                bits_ = -math.log2(tail) if tail > 0 else None
+                head = (f"{c['unit']}: VLAD outside the conditional finite-count 99.8% band ({direction}) from case {first['case_number']} ({first['date']}); "
                         f"final expected minus observed {c['vlad']['final']:+.1f} events over {c['cases']} cases")
             f = {'kind': 'risk_adjusted_signal', 'category': f'{chart}_{direction}', 'series': p['outcome'], 'group_by': p['unit'], 'group': c['unit'],
                  'months': sorted({s['date'][:7] for s in sig})[:12], 'rules': [chart], 'headline': head, 'surprise_bits': bits_,
                  'patients': c['cases'], 'dollars': None, 'first_signal_date': first['date'], 'signals': len(sig),
-                 'look_elsewhere_bits': look, 'excess_bits': round(bits_ - look, 2)}
-            f['salient'] = f['excess_bits'] >= 0
-            f['score'] = score(f['excess_bits'], c['cases'])
+                 'look_elsewhere_bits': look, 'excess_bits': round(bits_ - look, 2) if bits_ is not None else None}
+            f['salient'] = f['excess_bits'] is not None and f['excess_bits'] >= 0
+            f['score'] = score(f['excess_bits'], c['cases']) if f['excess_bits'] is not None else 0.
+            if chart == 'vlad':
+                f['tail_scope'] = 'fixed look, known independent risks; no repeated-look or fitted-risk qualification'
+                f['calibration_qualified'] = False
             f['follow_up'] = f"Is risk-adjusted {p['outcome'].replace('_', ' ')} at {c['unit']} getting worse?"
             flagged.append(f)
-    flagged.sort(key=lambda f: (-f['score'], -f['surprise_bits']))
+    flagged.sort(key=lambda f: (-f['score'], -(f['surprise_bits'] or 0)))
     status_rows = [{'series': p['outcome'], 'group_by': p['unit'], 'group': c['unit'], 'status': 'rate_signal' if c['signals'] else 'in_control',
                     'cases': c['cases'], 'signals': len(c['signals']), 'surprise_bits': 0.0} for c in units]
     summary = {'outcome': p['outcome'], 'unit': p['unit'], 'cases': int(sum(c['cases'] for c in units)), 'units_charted': len(units),
@@ -1104,15 +1345,17 @@ def execute_ra(path, patient_ids, p, as_of=None):
                   summary=summary, tests_examined=len(units), look_elsewhere_bits=look,
                   control_limits={'arl0': p['arl0'], 'upper': sims.get('up'), 'lower': sims.get('down'), 'h': limits['up'], 'h_improvement': limits['down']}
                   if chart == 'ra_cusum' else None,
-                  vlad_limits={'z': list(VLAD_Z), 'levels': ['95%', '99.8%']} if chart == 'vlad' else None)
+                  vlad_limits={'method': 'central finite independent-Bernoulli count bands, evaluated numerically',
+                               'levels': list(VLAD_LEVELS), 'symmetric': False, 'fixed_look_only': True,
+                               'fitted_risk_qualified': False, 'repeated_looks_qualified': False} if chart == 'vlad' else None)
     return report
 
 
 RA_METHOD = ('Risk-adjusted monitoring over index cases in date order, using risk_outcomes\' case definitions (readmission, post-discharge ED, ED '
              'revisit, mortality) and expected risks from one logistic model without unit terms. ra_cusum: Steiner et al. (2000) CUSUM, '
              'weight log(R^y / (1 - p + R p)) for odds ratio R (or_shift for deterioration, or_improve for improvement), restart at zero after a '
-             'signal, control limit h by simulation for an in-control average run length of arl0 cases over the data\'s case-mix. vlad: '
-             'cumulative expected minus observed events with funnel limits +-z sqrt(sum p(1 - p)) at 95% and 99.8%.')
+             'signal, control limit h by simulation targeting arl0 cases per false signal over the data\'s case-mix, with independent finite validation and uncertainty. vlad: '
+             'cumulative expected minus observed events with central finite independent-Bernoulli count bands at 95% and 99.8%, conditional on known risks at one fixed look; repeated looks and fitted-risk error remain unqualified.')
 
 
 def _plan(p):
@@ -1167,7 +1410,7 @@ def _chart_findings(s, gb, g, spec, months, report_idx, method, inherited, sourc
         e['months'] = _fmt_month_range(months, e['start'], e['end'])
         if e['rule'] == 'zero_run' or span & (gap_months - leading) or span & source_flags:
             e['cause'] = 'gap'
-            e['reason'] = 'the series is empty or missing while its source stream keeps flowing (feed or coding gap)'
+            e['reason'] = 'an improbable empty run under the pooled-rate model; a possible feed or coding gap, not established completeness or care change'
         elif span & leading:
             e['cause'] = 'gap'
             e['reason'] = 'the source had not started sending in the first months of the window (onboarding, not care)'
@@ -1187,7 +1430,8 @@ def _chart_findings(s, gb, g, spec, months, report_idx, method, inherited, sourc
         data.append(e)
     last = next((x for x in reversed(chart['points']) if x['value'] is not None), None)
     status = {'series': s, 'group_by': gb, 'group': g, 'status': 'rate_signal' if rate else 'data_feed_anomaly' if data else 'in_control',
-              'center': _r(chart['center'] * SCALE[s]), 'latest_month': months[last['index']] if last else None,
+              'center': _r(chart['center'] * SCALE[s]), 'center_exact': chart['center'] * SCALE[s],
+              'latest_month': months[last['index']] if last else None,
               'latest_value': _r(last['value'] * SCALE[s]) if last else None, 'laney_phi': chart['phi'],
               'rate_rules': sorted({e['rule'] for e in rate}), 'data_rules': sorted({e['rule'] for e in data}),
               'rate_signal_months': [e['months'] for e in sorted(rate, key=lambda e: e['start'])][:8],
@@ -1195,7 +1439,10 @@ def _chart_findings(s, gb, g, spec, months, report_idx, method, inherited, sourc
               'surprise_bits': max([e['bits'] for e in rate + data], default=0.0),
               'chart': [{'month': months[x['index']], 'value': _r(x['value'] * SCALE[s]) if x['value'] is not None else None,
                          'n': _r(x['n']), 'lcl': _r(x['lcl'] * SCALE[s]) if x['value'] is not None else None,
-                         'ucl': _r(x['ucl'] * SCALE[s]) if x['value'] is not None else None, 'z': _r(x['z'])} for x in chart['points']]}
+                         'ucl': _r(x['ucl'] * SCALE[s]) if x['value'] is not None else None, 'z': _r(x['z']),
+                         'lcl_exact': x.get('lcl') * SCALE[s] if x.get('lcl') is not None else None,
+                         'ucl_exact': x.get('ucl') * SCALE[s] if x.get('ucl') is not None else None,
+                         'z_exact': x['z']} for x in chart['points']]}
     found = []
     where = 'overall' if g == 'all' else f'{gb} {g}'
     causes = defaultdict(list)
@@ -1234,10 +1481,18 @@ def execute(path, patient_ids, params, as_of=None):
         keep = set(patient_ids) if patient_ids is not None else None
         report_idx = {i for i, m in enumerate(months) if m in report}
         charts_on, series, claims_checks, feeds_on = _plan(p)
-        pop = Population(db, months, keep)
+        pop = Population(db, months, keep, p['exposure_basis'])
         claims = _claims_rows(db, months, keep, as_of) if claims_checks or any(s in CLAIM_SERIES for s in series) else []
         annual = None  # average annual allowed spend per member, to express dollars as member-equivalents
-        findings, chart_status, tests = [], [], 0
+        findings, chart_status, monthly_points, tests = [], [], [], 0
+        event_exposure_audit = {}
+        if 'ed_rate' in series:
+            for pid, d in db.execute("SELECT patient_id, event_date FROM utilization_event WHERE kind='ed_visit' "
+                                     "AND event_date BETWEEN ? AND ?", (months[0]+'-01', _month_end(months[-1]))):
+                if keep is not None and pid not in keep: continue
+                audit = event_exposure_audit.setdefault(d[:7], {'recorded_events': 0, 'events_without_recorded_exposure': 0})
+                audit['recorded_events'] += 1
+                if d[:7] not in pop.months.get(pid, ()): audit['events_without_recorded_exposure'] += 1
         feed_stream = p['stream'] or ('medical_claims' if p['check'] == 'claims' else None)
         feed_reports, evaluated = feed_checks(db, months, feed_stream, keep) if feeds_on else ([], set())
         tests += len(evaluated) * len(months)
@@ -1253,7 +1508,9 @@ def execute(path, patient_ids, params, as_of=None):
                     type_gaps[s] = event_type_gaps(db, months, s, keep)
             series_data = {}   # series -> month indices that the overall chart attributes to data, not care
             for s in series:
-                gap_idx = {i for g in (type_gaps.get(s) or {}).get('gaps', []) for i in range(g['start'], g['end'] + 1)}
+                gap_report = type_gaps.get(s) or {}
+                gap_idx = {i for g in gap_report.get('gaps', []) for i in range(g['start'], g['end'] + 1)} \
+                    if gap_report.get('applies_to_rate_baseline', True) else set()
                 wanted = _groupings(p, s)
                 plan = ['none'] + [g for g in wanted if g != 'none']
                 for gb in plan:
@@ -1272,6 +1529,8 @@ def execute(path, patient_ids, params, as_of=None):
                                               gap_idx | series_data.get(s, set()),
                                               feed_months.get((FEED_STREAM[s], g), set()) if gb in ('facility', 'source_system') else set(),
                                               feed_months.get((FEED_STREAM[s], 'all'), set()))
+                        if p['output'] in ('monthly_points', 'comparison') and not silent:
+                            monthly_points += _monthly_rows(s, gb, g, spec, months, report_idx, res[0] if res else None, p)
                         if res is None: continue
                         status, found, data_idx, n_tests = res
                         if gb == 'none': series_data[s] = data_idx
@@ -1432,7 +1691,14 @@ def execute(path, patient_ids, params, as_of=None):
         chart_status.sort(key=lambda c: ({'rate_signal': 0, 'data_feed_anomaly': 1, 'in_control': 2}[c['status']], -c['surprise_bits']))
     finally:
         db.close()
+    for row in monthly_points:
+        row.update({'tests_examined': tests, 'look_elsewhere_bits': round(math.log2(max(tests, 1)), 2),
+                    'multiplicity_handling': 'look-elsewhere ranking penalty; not FWER/FDR control',
+                    'source_anomaly_status': 'heuristic flags require source investigation; completeness is not established'})
+        if row['series'] == 'ed_rate' and row['group_by'] == 'none':
+            row.update(event_exposure_audit.get(row['month'], {'recorded_events': 0, 'events_without_recorded_exposure': 0}))
     out = {'schema': VERSION, 'check': p['check'], 'parameters': p, 'period': {'chart_months': [months[0], months[-1]], 'report_months': [report[0], report[-1]]},
+            'monthly_points': monthly_points, 'event_exposure_audit': event_exposure_audit,
             'rows': findings, 'chart_status': chart_status, 'feeds': feed_reports, 'event_type_gaps': {k: {kk: vv for kk, vv in v.items() if kk != 'chart'}
                                                                                                        for k, v in type_gaps.items() if v},
             'integrity': integrity, 'tests_examined': tests, 'look_elsewhere_bits': round(math.log2(max(tests, 1)), 2),
@@ -1455,6 +1721,9 @@ def execute(path, patient_ids, params, as_of=None):
     if feed_reports:  # real change vs feed outage for the flagged streams (joint tensor model; never breaks the monitor answer)
         from .change_attribution import annotate_monitor
         annotate_monitor(out, path, as_of, keep)
+    if p['output'] == 'comparison':
+        out['comparison'] = comparison_view(out, path, patient_ids, as_of)
+        out['limitations'] = [*out['limitations'], *out['comparison']['baseline']['assumptions'], out['comparison']['source_limitation']]
     return out
 
 
@@ -1493,6 +1762,15 @@ def follow_up(f):
 def summarize(report, limit=5):
     """Direct answer for the shared answer contract: (one-paragraph value, table)."""
     check, rows = report['check'], report['rows']
+    comparison = report.get('comparison')
+    if comparison is not None:
+        points = comparison['rows']; family = comparison['baseline']['family_tests']
+        flags = sum(r['stable_family_flag'] is True for r in points)
+        missing = sum(r['rate'] is None for r in points)
+        return (f"Native rate comparison: {len(points)} complete series/group/month rows; {flags} stable-rate baseline flags "
+                f"after Bonferroni across {family} tests; {missing} months have unknown rates. "
+                'Registered Shewhart/EWMA chart results and received-source observation evidence are retained separately. '
+                'A statistical flag requests investigation; source capture and causal care change remain unestablished.', points)
     if check in RA_CHARTS: return _summarize_ra(report, limit)
     lead = [f for f in rows if not f.get('echo')]
     if check == 'benford':
@@ -1521,6 +1799,9 @@ def summarize(report, limit=5):
                 + (f"; {len(ok)} in control" if ok else '') + '.')
         feed = next((f for f in lead if f['kind'] == 'data_feed'), None)
         if feed: text += ' Largest data issue: ' + feed['headline'] + '.'
+        if report['parameters'].get('output') == 'monthly_points':
+            table = report['monthly_points']
+            text += ' Complete report-window monthly inputs are shown, including months without exposure; those rates are unknown.'
         return text, table
     table = [{k: f.get(k) for k in ('kind', 'category', 'series', 'stream', 'group_by', 'group', 'months', 'rules', 'surprise_bits',
                                     'excess_bits', 'salient', 'patients', 'dollars', 'score', 'echo', 'headline', 'follow_up')} for f in rows]
@@ -1563,7 +1844,8 @@ def _summarize_ra(report, limit):
     name = 'Risk-adjusted CUSUM' if report['check'] == 'ra_cusum' else 'VLAD'
     text = (f"{name} for {p['outcome'].replace('_', ' ')} across {s['units_charted']} {p['unit']} unit(s), {s['cases']} cases "
             f"(network rate {s['network_rate']:.1%}; expected risks from {s['expected_risk_source']})"
-            + (f", OR {p['or_shift']} detection, h {lim['h']}, ARL0 {p['arl0']} cases" if lim else '')
+            + (f", OR {p['or_shift']} detection, h {lim['h']}, target ARL0 {p['arl0']} cases; independently simulated "
+               f"{str((lim.get('upper') or {}).get('arl0_simulated')) + ' cases per signal' if (lim.get('upper') or {}).get('arl0_simulated') is not None else 'alarm spacing unresolved'} (finite-simulation estimate, not established calibration)" if lim else '')
             + f": {s['units_with_signals']} unit(s) signal"
             + (': ' + '; '.join(f['headline'] for f in rows[:limit]) if rows else '') + '.')
     return text + ' Signals are prompts to review case mix and data, not evidence of worse care.', table

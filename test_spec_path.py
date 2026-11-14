@@ -80,6 +80,9 @@ class Order(unittest.TestCase):
 
 class Fixture(unittest.TestCase):
     def setUp(self):
+        # These cases qualify the optional frontier spec writer explicitly.
+        fillers=patch.dict(os.environ,{'AGERE_SPEC_FILLERS':'grammar,s1_slots,haiku'})
+        fillers.start();self.addCleanup(fillers.stop)
         self.w = Warehouse(allow_live=True)
         self.addCleanup(self.w.close)
         self.s1 = FakeS1()
@@ -107,7 +110,70 @@ class Fixture(unittest.TestCase):
 UNKNOWN = FQ
 
 
+class AutomaticPlanningPolicy(Fixture):
+    def test_automatic_fillers_keep_grammar_and_system_one_without_duplicate_frontier_planning(self):
+        with patch.dict(os.environ,{'AGERE_SPEC_FILLERS':''}):
+            self.assertEqual(F.enabled_fillers(),('grammar','s1_slots'))
+        with patch.dict(os.environ,{'AGERE_SPEC_FILLERS':'haiku'}):
+            self.assertEqual(F.enabled_fillers(),('haiku',))
+
+    def test_native_grammar_still_returns_its_executable_contract_without_frontier_calls(self):
+        self.models()
+        with patch.dict(os.environ,{'AGERE_SPEC_FILLERS':''}),DC.scope(Q,AS_OF):
+            contract,interpretation=SP.propose(self.cascade(Q))
+        self.assertTrue(contract['request']['select'])
+        self.assertEqual(interpretation['spec_filler'],'grammar')
+        self.assertEqual(self.haiku.calls,[]);self.assertEqual(self.sonnet.calls,[])
+
+    def test_native_decline_reaches_investigator_with_the_original_question_intact(self):
+        self.models();seen=[]
+        question='Compare received and absent inpatient discharge dates by organization in 2029, retaining missing durations.'
+        c=self.cascade(question)
+        with patch.dict(os.environ,{'AGERE_SPEC_FILLERS':'','ANTHROPIC_API_KEY':'subscription-transport'}), \
+             patch.object(c,'order',return_value=('spec_path','backstop_agent')), \
+             patch.object(P.Cascade,'tier_backstop_agent',lambda owner:seen.append(owner.question)),DC.scope(question,AS_OF):
+            with self.assertRaises(QuestionNotUnderstood):c.run()
+        self.assertEqual(seen,[question])
+        self.assertEqual(self.haiku.calls,[]);self.assertEqual(self.sonnet.calls,[])
+        self.assertFalse(c.candidates)
+
+    def test_a_failed_system_one_spec_does_not_sneak_in_an_automatic_frontier_repair(self):
+        self.models();c=self.cascade(Q)
+        with DC.scope(Q,AS_OF):filled=F.fill(self.w.stack,self.w.catalog,Q,fillers=('grammar',))
+        filled['winner']='s1_slots'
+        with patch.dict(os.environ,{'AGERE_SPEC_FILLERS':''}),DC.scope(Q,AS_OF), \
+             patch.object(SP,'fill_in_order',return_value=filled), \
+             patch.object(SP,'verify_spec',return_value={'calls':0,'cost_usd':0,'failed':['filter']}), \
+             patch.object(F,'repair',side_effect=AssertionError('Unqualified second frontier planner must not be purchased')):
+            self.assertIsNone(SP.propose(c))
+        self.assertEqual(self.haiku.calls,[]);self.assertEqual(self.sonnet.calls,[])
+        self.assertFalse(c.candidates)
+
+
 class TierBehaviour(Fixture):
+    def test_failed_spec_transfers_only_same_question_unverified_attempts(self):
+        import copy
+        plan=spec_count_hf(Q);plan['where']['quote']='not in the question'
+        self.models(json.dumps(plan),json.dumps(plan))
+        c=self.cascade(Q);c.second_look_hint={'check_failures':'Earlier distinct check remains.'}
+        with patch.dict(os.environ,{'AGERE_SPEC_FILLERS':'haiku'}),DC.scope(Q,AS_OF):
+            with self.assertRaises(QuestionNotUnderstood):SP.propose(c)
+        attempts=c.second_look_hint['prior_plan_attempts']
+        self.assertEqual(len(attempts),2);self.assertEqual(c.calls,2)
+        self.assertEqual(attempts[0]['proposal'],plan)
+        self.assertFalse(c.candidates);self.assertIsNone(c.held_decline)
+        self.assertEqual(c.second_look_hint['check_failures'],'Earlier distinct check remains.')
+        for changed in ('question','proposal','authority','executed'):
+            item=copy.deepcopy(attempts[0])
+            if changed=='question':item['question_fingerprint']=R.fingerprint('different question')
+            elif changed=='proposal':item['proposal']['limit']={'value':1,'quote':'one'}
+            elif changed=='authority':item['authority']='checked'
+            else:item['executed']=True
+            exc=F.SpecNotFilled('retained failure');exc.receipt={'fillers':{'haiku':{'notes':{'rejected_proposals':[item]}}}}
+            fresh=self.cascade(Q)
+            with self.subTest(changed=changed),patch.object(SP,'fill_in_order',side_effect=exc),self.assertRaises(QuestionNotUnderstood):SP.propose(fresh)
+            self.assertFalse(getattr(fresh,'second_look_hint',None))
+
     def spec(self, q=UNKNOWN):
         return json.dumps(spec_count_hf(q, source='Patients', measure='how many'))
 

@@ -273,7 +273,9 @@ def index_cases(db, cap, patient_ids, p, as_of):
     stays = _stays(db, cap) if cap['stays'] else {}
     conds = _conditions(db, cap, pids) if p['adjust'] == 'age_sex_conditions' else {}
     visits = sd.visits(db, pids) if p['outcome'] in ('post_discharge_ed', 'ed_revisit') else {}
-    deaths = death_dates(db, cap['death']) if p['outcome'] == 'mortality' and cap['death'] else {}
+    uses_death = p['outcome'] in ('mortality','readmission','post_discharge_ed')
+    deaths = death_dates(db, cap['death']) if uses_death and cap['death'] else {}
+    excluded_deaths=0
     rows = []
 
     def covariates(pid, when, observation=False):
@@ -315,7 +317,9 @@ def index_cases(db, cap, patient_ids, p, as_of):
                 rows.append((u, y, covariates(pid, s['admit'], s['kind'] == 'observation'), {'patient_id': pid, 'index_date': s['admit']}))
                 continue
             if not s['discharge'] or not start <= s['discharge'] <= end: continue
-            if deaths.get(pid) and deaths[pid] <= s['discharge']: continue  # died in hospital: no readmission risk
+            if p['outcome'] in ('readmission','post_discharge_ed') and deaths.get(pid) and deaths[pid] <= s['discharge']:
+                excluded_deaths+=1
+                continue  # documented in-hospital death: no post-discharge risk
             if p['outcome'] == 'length_of_stay':
                 if s['los'] is None: continue
                 y = float(max(0, s['los']))
@@ -326,7 +330,8 @@ def index_cases(db, cap, patient_ids, p, as_of):
                 all_admits = [x['admit'] for x in ss]
                 y = float(any(not sd.first_in(sorted(all_admits), d, sd.shift(d, 1)) for d in ed))
             rows.append((u, y, covariates(pid, s['admit'], s['kind'] == 'observation'), {'patient_id': pid, 'index_date': s['discharge']}))
-    return rows, {'start': start, 'end': end}
+    return rows, {'start': start, 'end': end,'excluded_index_deaths':excluded_deaths,
+                  'death_source_available':bool(cap['death']),'absence_confirms_survival':False}
 
 
 # ---- entry points ----------------------------------------------------------------------------------------------------------
@@ -346,6 +351,10 @@ def run(db, patient_ids, params, as_of=None):
         report['method'] = method(report); return report
     rows, period = index_cases(db, cap, patient_ids, p, as_of)
     report['period'] = period
+    if p['outcome'] in ('readmission','post_discharge_ed'):
+        report['notes'].append(f"Excluded {period.get('excluded_index_deaths',0)} index admissions with documented death by discharge.")
+        if not cap['death']:
+            report['notes'].append('No received death source; undocumented index deaths cannot be excluded and absent death evidence does not confirm survival.')
     units = {r[0] for r in rows}
     if len(rows) < 10 or len(units) < 2:
         report.update(status='empty', reason=f'{len(rows)} index cases in {len(units)} units: nothing to standardise.')

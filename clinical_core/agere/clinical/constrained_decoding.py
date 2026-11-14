@@ -54,7 +54,9 @@ class JsonGrammar:
         return mode == 'done' or (mode == 'number' and not stack and bool(_NUM_FULL.match(buf)))
 
     def must_stop(self, s):
-        return False
+        # A complete JSON object has no remaining content to generate. Whitespace
+        # after its closing delimiter must not keep a local model decoding.
+        return s[0]=='done'
 
     def advance(self, s, text):
         for ch in text:
@@ -410,8 +412,13 @@ class GrammarProcessor:
             self.checked += 1
             if tid in self.eos:
                 if complete: out.append(tid)
-            elif not stop and self.grammar.advance(self.state, self._piece(tid)) is not None:
-                out.append(tid)
+            elif not stop:
+                # Padded vocabulary entries and suppressed special tokens can
+                # decode to no text. They do not advance any output grammar;
+                # some streaming detokenizers even render them as punctuation.
+                piece = self._piece(tid)
+                if piece and self.grammar.advance(self.state, piece) is not None:
+                    out.append(tid)
             if len(out) >= self.top_k: break
         if not out and complete:
             out = sorted(self.eos)

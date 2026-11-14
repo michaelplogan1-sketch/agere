@@ -1009,6 +1009,10 @@ def normalize_wire(catalog, question, proposal):
     removed or invented. Literal quote text may change only in case.
     """
     plan = copy.deepcopy(proposal)
+    if not isinstance(plan,dict) or not isinstance(plan.get('source'),dict) or not isinstance(plan['source'].get('table'),str):
+        raise PlanError('Typed source must be an object with a table name')
+    if not isinstance(plan.get('select'),list) or any(not isinstance(item,dict) for item in plan['select']):
+        raise PlanError('Typed select must be an array of projection objects')
     for key, value in {'where': None, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}.items():
         plan.setdefault(key, value)
     base = (plan.get('source') or {}).get('table')

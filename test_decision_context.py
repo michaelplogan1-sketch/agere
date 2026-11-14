@@ -79,6 +79,115 @@ class Fixture(unittest.TestCase):
 
 
 class Definitions(Fixture):
+    def test_historical_exposure_retains_subjects_but_explicit_living_wins(self):
+        for wording in ('historical eligible exposure', 'historical eligibility', 'historical member-months'):
+            question = 'Compare monthly visit rates in 2028 and 2029 using ' + wording
+            self.assertFalse(DC.population(question)['living_only'])
+            self.assertTrue(DC.population(question + ' for living patients')['living_only'])
+        self.assertTrue(DC.population('How many patients have active coverage?')['living_only'])
+
+    def test_receipt_year_requires_record_subjects_and_one_explicit_year(self):
+        for question,year in [
+            ('Identify received 2029 clinical accounts whose interpretation changes.','2029'),
+            ('Review records received in 2028 and their source dates.','2028'),
+            ('Show documents that were available during 2029.','2029'),
+            ('For received 2029 correspondence, show source clocks.','2029')]:
+            with self.subTest(question=question):
+                contract=DC.receipt_window_request(question)
+                expected={'basis':'arrival','start':year+'-01-01','end':year+'-12-31'}
+                self.assertEqual(contract['assertion_window'],expected)
+                DC.validate_receipt_window(question,{'assertion_window':expected})
+                with self.assertRaisesRegex(ValueError,'receipt-window binding'):
+                    DC.validate_receipt_window(question,{'assertion_window':{**expected,'basis':'source_event'}})
+        for question in [
+            'Which patients received treatment in 2029?',
+            'List patients who received 2029 immunizations.',
+            'Review recorded 2029 statements.',
+            'Review received statements with source-event dates in 2029.',
+            'Review records received in 2029 describing clinical events in 2028.']:
+            self.assertIsNone(DC.receipt_window_request(question),question)
+        clipped=DC.receipt_window_request('Review records received in 2029.','2029-08-15')
+        self.assertEqual(clipped['assertion_window']['end'],'2029-08-15')
+        self.assertEqual(clipped['requested_calendar_end'],'2029-12-31')
+        self.assertTrue(clipped['unobserved_remainder_after_snapshot'])
+
+    def test_received_record_heads_keep_their_subjects_and_reject_survival_filters(self):
+        for question in [
+            'Identify received 2029 clinical accounts whose interpretation changes when source qualifiers are respected.',
+            'Audit recorded 2028 laboratory statements and their source dates.',
+            'Reconcile recorded accounts with patient attribution and lifecycle dates.',
+            'Show received correspondence whose source is unresolved.',
+            'List the received source documents for comparison.']:
+            with self.subTest(question=question):
+                self.assertTrue(DC.population(question)['record_subject_scope'])
+                self.assertFalse(DC.population(question)['living_only'])
+                self.assertEqual(self.run_sql(question,'SELECT count(DISTINCT patient_id) FROM utilization_event')['value'],3)
+                with DC.scope(question):
+                    self.assertFalse(DC.verify(question,{},sqls=['SELECT * FROM living_patient'])['ok'])
+                self.assertTrue(DC.population(question+' For living patients only.')['living_only'])
+        for question in ['List patients with received 2029 documents.',
+                         'Identify patients whose received reports show diabetes.']:
+            self.assertTrue(DC.population(question)['living_only'])
+
+    def test_dated_event_selected_cohorts_keep_historical_subjects(self):
+        questions = [
+            'For patients receiving a recorded cardiology referral in 2029, show the received PCP assignment, referral destination, document authors and evidence of attendance separately.',
+            'For patients with recorded COPD evidence and a 2029 respiratory encounter, distinguish reported use and dispensing.',
+            'Among patients discharged after their first recorded inpatient stay in 2028, describe follow-up.',
+            'For received 2029 home-health requests, distinguish request, scheduling and completion.',
+            'For clinical observations recorded as occurring in 2029, show their source clocks.',
+            'For patients with a 2029 medication-allergy history update and medication-interview account, show the source relations.',
+            'Among members whose intake assessment occurred in 2028, show current responsibility separately.',
+            'Among members with a 2028 intake assessment, show current responsibility separately.',
+            'For patients with a recorded device reading in 2029, describe the received context.',
+            'For received 2029 correspondence, show its source clocks.',
+            'For patients with a discharge in 2029, show current care-team responsibility separately.']
+        for q in questions:
+            with self.subTest(question=q):
+                self.assertTrue(DC.population(q)['event_selected_cohort'])
+                self.assertFalse(DC.population(q)['living_only'])
+                # This fixture includes a deceased event subject, D.
+                self.assertEqual(self.run_sql(q, 'SELECT count(DISTINCT patient_id) FROM utilization_event')['value'], 3)
+                with DC.scope(q):
+                    for sql in [
+                        'SELECT * FROM living_patient',
+                        'SELECT * FROM "living_patient"',
+                        'SELECT DISTINCT patient_id FROM utilization_event WHERE patient_id NOT IN (SELECT patient_id FROM death)',
+                        'SELECT DISTINCT e.patient_id FROM utilization_event e WHERE NOT EXISTS (SELECT 1 FROM death d WHERE d.patient_id=e.patient_id)']:
+                        self.assertFalse(DC.verify(q, {}, sqls=[sql])['ok'], sql)
+                    good = 'SELECT patient_id, CASE WHEN patient_id NOT IN (SELECT patient_id FROM death) THEN 1 ELSE 0 END AS living_at_snapshot FROM utilization_event'
+                    self.assertTrue(DC.verify(q, {}, sqls=[good])['ok'])
+
+    def test_current_and_explicit_living_populations_preserve_the_owner_default(self):
+        for q in [
+            'For living patients receiving a cardiology referral in 2029, show the destination.',
+            'For current patients with a discharge in 2029, show care gaps.',
+            'Among living members whose intake assessment occurred in 2028, show source accounts.',
+            'For current patients with a 2029 history update, show source accounts.',
+            'For the 2029 report on patients with diabetes, show current care gaps.',
+            'How many patients have diabetes?',
+            'For patients with diabetes, show their referrals in 2029.']:
+            with self.subTest(question=q):self.assertTrue(DC.population(q)['living_only'])
+
+    def test_explicit_all_received_rows_preserve_patient_counts_within_events(self):
+        q='Across all received appointment rows, show appointment counts and distinct patients.'
+        self.assertFalse(DC.population(q)['living_only'])
+        self.assertTrue(DC.population(q)['all_received_rows'])
+        self.assertTrue(DC.population(q+' For living patients only.')['living_only'])
+        sql='SELECT count(DISTINCT patient_id) FROM utilization_event'
+        self.assertEqual(self.run_sql(q,sql)['value'],3)
+        self.assertEqual(self.run_sql('How many patients had a utilization event?',sql)['value'],2)
+        with DC.scope(q):
+            verdict=DC.verify(q,{},sqls=['SELECT count(*) FROM living_patient'])
+            self.assertFalse(verdict['ok'])
+            self.assertIn('all-received-row',verdict['reasons'][0])
+            good={'table_binding':{'query':'SELECT count(DISTINCT patient_id) FROM utilization_event'}}
+            self.assertTrue(DC.verify(q,good,sqls=['SELECT count(*) FROM living_patient'])['ok'])
+            bad={**good,'computed_prose':[{'sources':{'patients':{'input':{'sql':'SELECT count(*) FROM living_patient'}}}}]}
+            self.assertFalse(DC.verify(q,bad)['ok'])
+            data={**good,'computed_prose':[{'sources':{'patient':{'source_row':{'input':'received source value'}}}}]}
+            self.assertTrue(DC.verify(q,data)['ok'])
+
     def test_patients_are_living_unless_the_question_asks_for_the_deceased(self):
         self.assertTrue(DC.population('How many patients have diabetes?')['living_only'])
         self.assertTrue(DC.population('How many living patients have diabetes?')['living_only'])
@@ -89,6 +198,25 @@ class Definitions(Fixture):
         # money and membership months are not a count of patients
         self.assertFalse(DC.population('What was the total paid per member per month in 2029?')['living_only'])
         self.assertTrue(DC.population('How many patients had a paid claim in 2029?')['living_only'])
+
+    def test_financial_record_heads_keep_subjects_without_changing_patient_counts(self):
+        for question in [
+            'Reconcile recorded payments and refunds by patient and account.',
+            'Show patient payments during 2029 and their account balances.',
+            'Count recorded refunds by patient.',
+            'Review account balances with patient attribution.',
+            'Summarize payer remittances and patient links.']:
+            with self.subTest(question=question):
+                self.assertFalse(DC.population(question)['living_only'])
+                self.assertTrue(DC.population(question)['record_subject_scope'])
+                self.assertTrue(DC.population(question+' For living patients only.')['living_only'])
+        for question in [
+            'How many patients made payments during 2029?',
+            'List patients with unpaid balances.',
+            'Which patients need a refund?',
+            'Reconcile patient records with account balances.',
+            'How many patients are taking a credit counseling class?']:
+            with self.subTest(question=question):self.assertTrue(DC.population(question)['living_only'])
 
     def test_labs_are_latest_unless_the_question_says_ever_or_any(self):
         self.assertEqual(DC.lab_mode('How many patients have a potassium above 5.5?'), 'latest')

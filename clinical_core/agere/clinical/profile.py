@@ -309,13 +309,16 @@ def members(db, patient_ids, p, as_of):
     y, w = defaultdict(float), {}
     if kind == 'rate':
         if concept:
-            days = defaultdict(set)
-            for pid, d in db.execute('SELECT patient_id, substr(event_date, 1, 10) FROM encounter WHERE type_concept = ? AND event_date BETWEEN ? AND ?',
-                                     (concept, start, end + 'T99')):
-                days[pid].add(d)
-            for pid, ds in days.items(): y[pid] = len(ds)
+            from .ed_definition import metric_visits_sql
+            # Current rate concepts are ED only. Preserve event rows rather than
+            # silently collapsing distinct received events to patient-days.
+            query=metric_visits_sql(db) if concept=='emergency_visit' else 'SELECT DISTINCT patient_id,substr(event_date,1,10) AS event_date FROM encounter WHERE type_concept = ?'
+            args=() if concept=='emergency_visit' else (concept,)
+            for pid,d in db.execute('SELECT patient_id,event_date FROM ('+query+') WHERE event_date BETWEEN ? AND ?',(*args,start,end+'T99')):
+                if pid in people and d and d[:7] in set(people[pid]['months']):y[pid]+=1
         else:
-            for pid, n in db.execute('SELECT patient_id, count(*) FROM stay WHERE admit_date BETWEEN ? AND ? GROUP BY 1', (start, end)): y[pid] = n
+            for pid,d in db.execute('SELECT patient_id,admit_date FROM stay WHERE admit_date BETWEEN ? AND ?', (start, end)):
+                if pid in people and d and d[:7] in set(people[pid]['months']):y[pid]+=1
         w = {pid: len(info['months']) / 12 for pid, info in people.items()}
     elif metric == 'readmission_rate':
         for pid, n, r in db.execute('SELECT patient_id, count(*), sum(readmitted_30d) FROM stay WHERE admit_date BETWEEN ? AND ? GROUP BY 1', (start, end)):
@@ -472,7 +475,8 @@ def _method(p, report, hyper):
     text = (f"Fair comparison of {UNIT_WORDS[p['unit']]} on {METRICS[p['metric']][2]}, {report['period']['start']} to {report['period']['end']}. "
             f"Members with enrolled months in the period; hybrid attribution (assigned PCP, else plurality of primary-care visits); unattributed members "
             f"stay in the network reference but are not profiled. {adj[0].upper() + adj[1:]}; each unit is compared on O/E and shown on the network scale. ")
-    text += {'rate': 'Exposure = member-years; events = distinct event days (ED/urgent/primary care) or distinct hospital stays (admissions). '
+    text += {'rate': 'Exposure = enrolled member-years; only events in enrolled months count. ED uses the governed all-source event rows '
+                    '(older snapshots without that relation use the all-source patient-day definition); other visits use distinct event days and admissions use hospital stays. '
                      'Poisson-gamma random effects (negative-binomial marginal likelihood) after quasi-Poisson overdispersion '
                      'scaling of member counts. ',
              'share': ('Denominator = index hospital stays; numerator = 30-day readmissions. ' if p['metric'] == 'readmission_rate' else

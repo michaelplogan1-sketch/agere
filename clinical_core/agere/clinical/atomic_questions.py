@@ -10,11 +10,12 @@ stops/barriers). system_one.decide reads it (Jev first, Perplexity when Jev is u
   count      patients with a selected label (count, or share over evaluated patients)
   conflict   per-document labels; a patient conflicts when documents both affirm and negate
   trajectory per-document labels ordered by date; the changes over time
-Every non-unknown label cites the evidence ids System One chose (or the top passage). Patient count per call is bounded
-(AGERE_ATOMIC_MAX_PATIENTS, default 25); a capped run is status 'partial' and says so in the value and limitations.
+Every non-unknown label cites the evidence ids System One chose (or the top passage). There is no default population
+cap. An explicit deployment limit (AGERE_ATOMIC_MAX_PATIENTS) remains partial and is reported in the result.
 
-Planner order (no Claude needed): deterministic patterns, then the local Qwen typed interpreter (AGERE_LOCAL_TYPED), then
-hosted Claude only with stack.allow_live (ProviderUnavailable / no credits -> continue without it).
+Automatic proposals use the deterministic typed patterns. Optional model planning is available for explicit qualification;
+it is not evidence that a generated label plan can construct a compound population or reconcile a source chain.
+Direct planning can use local Qwen (AGERE_LOCAL_TYPED), then hosted Claude with stack.allow_live.
 Graph form: cohort -> 'atomic_questions' (registered in analysis_graph), so the cascade's literal and answer checks run.
 """
 import json
@@ -36,7 +37,6 @@ UNITS = ('patient', 'document')
 SOURCES = ('passages', 'medication_state', 'therapy_barriers', 'external')  # external = cited Perplexity Agent search
 PROVIDERS = ('jev', 'perplexity')
 COST_PER_CALL = {'jev': 0.0002, 'perplexity': 0.0001}  # measured 2026-10-22; used only when System One reports no cost
-HARD_MAX_PATIENTS = 200
 PASSAGES_PER_ATOM = 6
 DOCUMENTS_PER_PATIENT = 6
 TEXT_CHARS = 700
@@ -79,8 +79,12 @@ _MEMO, _MEMO_LOCK, MEMO_SIZE = OrderedDict(), threading.Lock(), 4096
 
 
 def max_patients():
-    try: return max(1, min(HARD_MAX_PATIENTS, int(os.environ.get('AGERE_ATOMIC_MAX_PATIENTS', '25'))))
-    except ValueError: return 25
+    """No default population cap. An explicit deployment limit is reported."""
+    raw = os.environ.get('AGERE_ATOMIC_MAX_PATIENTS')
+    if not raw: return None
+    value = int(raw)
+    if value < 1: raise ValueError('AGERE_ATOMIC_MAX_PATIENTS must be positive')
+    return value
 
 
 def code_identity():
@@ -128,6 +132,59 @@ def population_concept(question):
 def requested(question):
     from .analysis_graph import requested_shape
     return requested_shape(question)
+
+
+def output_contract_issue(question):
+    """Closed-choice labels/counts/shares cannot supply arbitrary aggregates.
+
+    Use the shared requested-shape parser, after removing this operator's own
+    patient/document row grain. The original request still goes unchanged to
+    scope, literal and source checks. An abstention leaves native calculations
+    and the other existing proposers available; it never drops a requirement.
+    """
+    from .answer_shape import requested as answer_requested,shape_wording,_breakdown_by,_VALUE_ANYWHERE,_family
+    wording=shape_wording(question)
+    grain=r'(?:patients?|members?|people|persons?|individuals?|documents?|notes?)'
+    reduced=re.sub(r'\b(?:one row\s+(?:per|for each)|for each|for every|per|by)\s+(?:the\s+|our\s+)?'+grain+r'\b',' ',wording,flags=re.I)
+    shape=answer_requested(reduced)
+    if shape['cue']=='breakdown'or _breakdown_by(reduced):
+        return 'Atomic closed-choice output has patient/document rows and no requested grouping computation; use a native grouped calculation.'
+    categorical_status=bool(re.search(r'\bstatus(?:es)?\b',wording,re.I)and
+        re.search(r'\b(?:each|every|per)\s+(?:the\s+|our\s+)?'+grain+r'\b',wording,re.I))
+    count_total=False
+    # Primary shape alone can hide a secondary measure or an open-prefixed
+    # comparison. Reuse the same measure recognizer on the complete wording.
+    for match in _VALUE_ANYWHERE.finditer(reduced):
+        word=match.group().lower();family=_family(word)
+        if family in('share','percentage'):continue
+        if word=='total'and re.match(r'\s+(?:(?:number|count)\s+of\s+)?'+grain+r'\b',reduced[match.end():],re.I):
+            count_total=True;continue
+        if family=='rate'and(categorical_status or LEAD.search(wording)):continue
+        return 'Atomic closed-choice output has no computation for the requested '+family+' measure; use a native calculation.'
+    if shape['shape']=='value'and shape['cue']not in('share','percentage')and not categorical_status and not count_total:
+        return 'Atomic closed-choice output can count selected patients or compute their share; it cannot compute the requested '+str(shape['cue'])+' value.'
+    return None
+
+
+def population_contract_issue(question):
+    """This primitive selects an existing population or one condition concept.
+
+    An event-constrained population needs a native selection before per-patient
+    classification. A date window on retrieved passages does not construct it.
+    Keep these requests on the existing analytic/composition path, rather than
+    reading a larger population and asking a model to compensate for missing SQL.
+    """
+    if not re.search(r'^\s*(?:for|among|which|how many|what share|what percentage|list)\b', question, re.I):
+        return None
+    if not re.search(r'\b(?:patients?|members?|people|individuals?|beneficiaries)\b', question, re.I):
+        return None
+    # The first clause defines membership. Later requests can mention source
+    # encounters without using them as eligibility, so do not scan those clauses.
+    selection = re.split(r'[,;.?!]|\b(?:show|compare|distinguish|describe|report)\b', question, maxsplit=1, flags=re.I)[0]
+    event = r'(?:encounters?|admissions?|discharg(?:e[sd]?|ing)|referrals?|appointments?|requests?|fills?|claims?|payments?|enroll(?:ed|ment))'
+    if re.search(r'\b' + event + r'\b', selection, re.I):
+        return 'Atomic population selection has no event-eligibility operation; first resolve the requested cohort with native tools.'
+    return None
 
 
 def atom_text(question, named):
@@ -249,12 +306,14 @@ def hosted_core(stack, question, population, ledger=None):
         if owned: ledger.close()
 
 
-def plan(stack, question, population=None, *, maximum_patients=None, ledger=None, hosted=True):
+def plan(stack, question, population=None, *, maximum_patients=None, ledger=None, hosted=True, local=True):
     """-> {'subject_question','options','sub_questions','scope':{'patients','cohort','sources','window'},'aggregation','returns',
     'unit','select_labels','maximum_patients','planner','planner_receipt'} or None."""
-    from .evidence_proposers import window
+    from .evidence_proposers import window, population_ids
+    if output_contract_issue(question) or population_contract_issue(question):return None
+    if population_ids(population) == []:return None  # empty membership must never expand to the warehouse
     core, planner, receipt = deterministic(stack, question, population), 'deterministic', None
-    if core is None:
+    if core is None and local:
         try: core, planner = local_core(stack, question, population), 'qwen_typed_interpreter'
         except Exception:  # noqa: BLE001 - local model absent/busy: next planner
             core = None
@@ -274,7 +333,9 @@ def plan(stack, question, population=None, *, maximum_patients=None, ledger=None
     if any(s['task_key'] == 'atomic_why_factor' and s['subject'] for s in subs): sources.append('therapy_barriers')
     from . import external_evidence
     if any(external_evidence.needs_external(s['atom']) for s in subs): sources.append('external')
-    cap = max(1, min(HARD_MAX_PATIENTS, int(maximum_patients or max_patients())))
+    cap = maximum_patients if maximum_patients is not None else max_patients()
+    if cap is not None and (type(cap) is not int or cap < 1):
+        raise ValueError('maximum_patients must be a positive integer or null')
     return {'schema': VERSION, 'question': question, 'subject_question': subs[0]['atom'], 'options': subs[0]['options'],
             'sub_questions': subs, 'scope': {'patients': list(core['patients'] or []) or None, 'cohort': spec,
                                              'population_concept': core.get('concept'), 'sources': sources,
@@ -325,7 +386,8 @@ def validate(p):
     if not isinstance(labels, list) or any(not any(l in s['options'] for s in subs) for l in labels):
         raise ValueError('select_labels must be option labels')
     cap = p.get('maximum_patients', max_patients())
-    if type(cap) is not int or not 1 <= cap <= HARD_MAX_PATIENTS: raise ValueError(f'maximum_patients: 1..{HARD_MAX_PATIENTS}')
+    if cap is not None and (type(cap) is not int or cap < 1):
+        raise ValueError('maximum_patients must be a positive integer or null')
     sources = p.get('sources') or ['passages']
     if not isinstance(sources, list) or any(s not in SOURCES for s in sources): raise ValueError(f'sources: {SOURCES}')
     providers = p.get('providers') or list(PROVIDERS)
@@ -450,7 +512,7 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
     started = time.perf_counter()
     p = validate(params)
     scoped = sorted(patient_ids)
-    ids = scoped[:p['maximum_patients']]
+    ids = scoped if p['maximum_patients'] is None else scoped[:p['maximum_patients']]
     subs = p['sub_questions']
     meds = medication_rows(stack, ids, [s['subject'] for s in subs if s['subject']]) if 'medication_state' in p['sources'] else {}
     live = bool(getattr(stack, 'allow_live', False))
@@ -519,8 +581,9 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
         pid, s, doc, evidence = task
         return ask(s['atom'], s['options'], evidence, as_of=as_of[:10], task_key=s['task_key'], providers=p['providers'],
                    allow_live=live, decide=decide)
+    from .cost_telemetry import inherit_context
     with ThreadPoolExecutor(max_workers=workers()) as pool:
-        decisions = list(pool.map(one, tasks))
+        decisions = list(pool.map(inherit_context(one), tasks))
     cells, calls, usd, errors, by = [], 0, 0.0, 0, {}
     for (pid, s, doc, evidence), d in zip(tasks, decisions):
         c, u = _spent(d)
@@ -702,21 +765,24 @@ def graph_of(question, plan_):
     return base(question, [population, node])
 
 
-def tier(stack, question, population=None, *, maximum_patients=None, decide=None, ledger=None, early_check=None):
+def tier(stack, question, population=None, *, maximum_patients=None, decide=None, ledger=None, early_check=None,plan_review=None):
     """Ladder-rung contract: (graph, receipt) or None. System One is called here once (memoized), so the receipt carries
     the exact new calls and cost and stack.run_graph replays the same decisions free."""
     if not getattr(stack, 'allow_live', False) and os.environ.get('AGERE_ATOMIC_OFFLINE') != 'on': return None
     started = time.perf_counter()
-    # In the cascade, planning stays free (patterns, local Qwen): Claude planning is the hosted interpreter tier's job, so this
-    # tier never spends a Claude call ahead of it (AGERE_ATOMIC_HOSTED_PLANNER=on restores the hosted planner).
+    # A generated atom is not a qualified population plan. Automatic proposals
+    # use patterns; model atom planning is explicit qualification only. Models
+    # still interpret evidence inside the supported primitive and shared tools.
     p = plan(stack, question, population, maximum_patients=maximum_patients, ledger=ledger,
-             hosted=os.environ.get('AGERE_ATOMIC_HOSTED_PLANNER', 'off') == 'on')
+             hosted=os.environ.get('AGERE_ATOMIC_HOSTED_PLANNER', 'off') == 'on',
+             local=os.environ.get('AGERE_ATOMIC_MODEL_PLANNER', 'off') == 'on')
     if p is None: return None
     as_of = stack.retriever.meta['snapshot']['as_of']
     graph = graph_of(question, p)
     from .analysis_graph import validate as validate_graph
     validate_graph(graph, as_of)
     if early_check: early_check(graph)  # the cascade's literal check on the plan, before the first paid decision
+    if plan_review:plan_review(graph,p['planner'])
     pre = execute(stack, p, decide=decide)['report']
     s1 = pre['system_one']
     if pre['cells'] and s1['errors'] == len(pre['cells']): return None  # System One unavailable for every decision: next proposer

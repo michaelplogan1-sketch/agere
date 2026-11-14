@@ -44,6 +44,14 @@ class Planner(unittest.TestCase):
         for rows in [[],self.rows*2,[{**self.rows[0],'finding_id':'invented'}]]:
             with self.assertRaises(ValueError):p.parse(self.raw(rows),self.wire)
 
+    def test_documentary_request_is_prepared_on_current_policy_rung(self):
+        from clinical_core.agere import model_policy as policy
+        self.assertEqual(p.body(self.wire)['model'],policy.SONNET)
+        with policy.question_path(),policy.tracking()as tracked:
+            self.assertEqual(p.body(self.wire)['model'],policy.HAIKU)
+            with policy.escalation():self.assertEqual(p.body(self.wire)['model'],policy.SONNET)
+        self.assertEqual(tracked,[])
+
     def test_invented_capabilities_tags_and_citations_rejected(self):
         for field,value in [('capability_id','other'),('need_tag','care_access'),('citation_ids',['wrong']),('citation_ids',[])]:
             rows=copy.deepcopy(self.rows);rows[0]['links'][0][field]=value

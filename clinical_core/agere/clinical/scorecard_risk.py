@@ -30,6 +30,8 @@ Points are associations for prioritisation, never causal effects or a clinical d
 """
 from collections import Counter, defaultdict
 from datetime import date, timedelta
+from pathlib import Path
+import json
 import math
 import re
 
@@ -37,7 +39,7 @@ import numpy as np
 
 from . import revenue_common as rc
 
-VERSION = 'scorecard-risk/1'
+VERSION = 'scorecard-risk/3'
 OP = 'scorecard_risk'
 OUTCOMES = ('admission', 'ed_visit', 'death', 'readmission')
 OUTCOME_LABEL = {'admission': 'inpatient admission', 'ed_visit': 'emergency department visit', 'death': 'death',
@@ -55,16 +57,22 @@ BINS = {'age_band': (('<45', '45-64', '65-74', '75-84', '85+'), True), 'sex': ((
 FEATURES = tuple(BINS)
 SCALES = ('pdo', 'integer')
 VIEWS = ('scorecard', 'patients')
+MODES = ('fit', 'evidence')
+NO_FIT = re.compile(r"\b(?:do\s+not|don't|must\s+not|without)\s+(?:fit|train|retrain)\b", re.I)
+EVIDENCE_ORIGIN = re.compile(r'\b(?:inputs?|information|data)\s+(?:(?:that\s+)?were\s+)?available\s+(?:at|by|as\s+of)\s+(\d{4}-\d{2}-\d{2})\b', re.I)
+EVIDENCE_DAYS = re.compile(r'\bnext\s+(\d+)\s+days?\b', re.I)
 ED_TYPES = ('emergency', 'emergency (ADT)', 'emergency (claim)')
 
 PRODUCT = {'population': 'optional', 'view': 'table',
-           'use': 'AUDITABLE POINTS-BASED RISK SCORECARD (credit-scorecard style) for admission, ED visit, death or 30-day readmission: '
+           'use': 'Read-only prediction EVIDENCE mode inspects exact origin/day-window target and source clocks without fitting; '
+                  'fit mode builds an AUDITABLE POINTS-BASED RISK SCORECARD for admission, ED visit, death or 30-day readmission: '
                   'binned features with WoE/IV, logistic points (PDO or small integers), out-of-time AUROC and calibration by score band, '
                   'line-by-line points for each patient and the highest-scoring patients now.'}
 CONTRACT = {'inputs': ['optional earlier_set'],
             'parameters': {'outcome': 'admission|ed_visit|death|readmission', 'horizon_months': 12, 'scale': 'pdo|integer', 'pdo': 20,
                            'base_score': 100, 'base_odds': 0.0526, 'point_unit': 0.3466, 'l2': 1.0, 'features': [], 'top': 25,
-                           'patient': '', 'view': 'scorecard|patients', 'bands': 5},
+                           'patient': '', 'view': 'scorecard|patients', 'bands': 5,
+                           'mode': 'fit|evidence', 'origin_date': 'YYYY-MM-DD (evidence only)', 'horizon_days': 'exact day horizon (evidence only)'},
             'meaning': 'Fixed bins of age, sex, coverage, chronic conditions, prior admissions / ED days, polypharmacy and social need known at '
                        'the index date; WoE/IV; L2 logistic on bin indicators with monotone ordinal bins; points = beta x PDO/ln2 (or '
                        'beta / unit); trained at as_of - 2 x horizon, validated out of time at as_of - horizon (AUROC, bands); current '
@@ -72,8 +80,20 @@ CONTRACT = {'inputs': ['optional earlier_set'],
 NATIVE = ('value',)
 
 
+def executable_evidence(parameters):
+    """Execution guarantees of a validated evidence mode, without model claims."""
+    p = validate(parameters)
+    if p.get('mode') != 'evidence':
+        return {}
+    return {'model_fitting_permitted': False,
+            'target_type': OUTCOME_LABEL[p['outcome']],
+            'label_support': 'recorded positive labels; unrecorded labels remain unknown'}
+
+
 def schema(obj, string, array):
-    return obj({'outcome': string(OUTCOMES),
+    return obj({'outcome': string(OUTCOMES), 'mode': string(MODES, 'fit constructs a new scorecard; evidence only inspects received target/clock support and attachment metadata, with no fitting'),
+                'origin_date': {'type': 'string', 'description': 'YYYY-MM-DD input cutoff, required for evidence mode'},
+                'horizon_days': {'type': 'integer', 'minimum': 1, 'description': 'Exact requested day horizon in evidence mode; distinct from fitting horizon_months'},
                 'horizon_months': {'type': 'integer', 'minimum': 1, 'maximum': 36, 'description': 'Outcome window (patient outcomes)'},
                 'scale': string(SCALES), 'pdo': {'type': 'number', 'minimum': 1, 'maximum': 200, 'description': 'Points to double the odds'},
                 'base_score': {'type': 'number', 'description': 'Score at the base odds (pdo scale)'},
@@ -85,8 +105,20 @@ def schema(obj, string, array):
 
 
 def validate(p):
-    allowed = {'outcome', 'horizon_months', 'scale', 'pdo', 'base_score', 'base_odds', 'point_unit', 'l2', 'features', 'top', 'patient', 'view', 'bands'}
+    if isinstance(p, dict) and p.get('mode') == 'evidence':
+        if set(p) - {'mode', 'outcome', 'origin_date', 'horizon_days'}:
+            raise ValueError('scorecard_risk evidence accepts only mode, outcome, origin_date and horizon_days; it does not fit or score')
+        origin = p.get('origin_date')
+        if not isinstance(origin, str) or _d(origin) is None or _d(origin).isoformat() != origin:
+            raise ValueError('Evidence mode requires an explicit YYYY-MM-DD origin_date')
+        days = p.get('horizon_days')
+        if type(days) is not int or days < 1: raise ValueError('Evidence mode requires positive integer horizon_days')
+        outcome = p.get('outcome', 'admission')
+        if outcome not in OUTCOMES: raise ValueError(f'outcome: {OUTCOMES}')
+        return {'mode': 'evidence', 'outcome': outcome, 'origin_date': origin, 'horizon_days': days}
+    allowed = {'outcome', 'horizon_months', 'scale', 'pdo', 'base_score', 'base_odds', 'point_unit', 'l2', 'features', 'top', 'patient', 'view', 'bands', 'mode'}
     if not isinstance(p, dict) or set(p) - allowed: raise ValueError('scorecard_risk parameters: ' + ', '.join(sorted(allowed)))
+    if p.get('mode', 'fit') != 'fit': raise ValueError(f'scorecard_risk mode: {MODES}')
     out = {'outcome': p.get('outcome') or 'admission', 'horizon_months': p.get('horizon_months', 12), 'scale': p.get('scale') or 'pdo',
            'pdo': p.get('pdo', 20), 'base_score': p.get('base_score', 100), 'base_odds': p.get('base_odds', 1 / 19),
            'point_unit': p.get('point_unit', math.log(2) / 2), 'l2': p.get('l2', 1.0), 'features': sorted(set(p.get('features') or [])),
@@ -103,6 +135,19 @@ def validate(p):
     if type(out['top']) is not int or not 1 <= out['top'] <= 500: raise ValueError('top: 1..500')
     if type(out['bands']) is not int or not 2 <= out['bands'] <= 10: raise ValueError('bands: 2..10')
     return out
+
+
+def validate_request(question, parameters):
+    """Enforce an explicit no-fit request and directly stated evidence cutoff before data loading."""
+    if NO_FIT.search(question or '') and parameters.get('mode', 'fit') != 'evidence':
+        raise ValueError('This request explicitly forbids fitting. Use scorecard_risk mode=evidence with the original origin_date and exact horizon_days; do not fit a new model.')
+    if parameters.get('mode') == 'evidence':
+        origins = set(EVIDENCE_ORIGIN.findall(question or ''))
+        days = set(EVIDENCE_DAYS.findall(question or ''))
+        if len(origins) == 1 and parameters.get('origin_date') != next(iter(origins)):
+            raise ValueError('Evidence origin_date contradicts the explicit input-availability cutoff in the original question')
+        if len(days) == 1 and parameters.get('horizon_days') != int(next(iter(days))):
+            raise ValueError('Evidence horizon_days contradicts the exact next-day window in the original question')
 
 
 # ---- data -------------------------------------------------------------------------------------------------------------
@@ -415,9 +460,108 @@ METHOD = ('Fixed ordered bins known at the index date -> WoE / IV per bin (Siddi
           'with each patient\'s points line by line.')
 
 
+def evidence(db, patient_ids, p, as_of, path):
+    """Read source/attachment evidence only. No feature frame, private partition, weight or fit is opened."""
+    origin = p['origin_date']; requested_end = (date.fromisoformat(origin) + timedelta(days=p['horizon_days'])).isoformat()
+    if origin > as_of: raise ValueError('Predictive evidence origin is after the received snapshot')
+    observed_end = min(requested_end, as_of)
+    keep = None if patient_ids is None else sorted(set(patient_ids))
+    bindings = {'scope': None if keep is None else json.dumps(keep), 'origin': origin, 'end': observed_end}
+    scoped = 'patient_id IN (SELECT patient_id FROM patient) AND (:scope IS NULL OR patient_id IN (SELECT value FROM json_each(:scope)))'
+    tabs = rc.tables(db)
+    received = {r[0] for r in db.execute('SELECT patient_id FROM patient WHERE '+scoped, bindings)}
+    inventory = defaultdict(Counter); input_subjects = set()
+    if 'record' in tabs:
+        clock_sql = """SELECT patient_id,stream,COUNT(*),
+          SUM(CASE WHEN substr(event_date,1,10)<=:origin AND substr(available_date,1,10)<=:origin THEN 1 ELSE 0 END),
+          SUM(CASE WHEN substr(event_date,1,10)<=:origin AND substr(available_date,1,10)>:origin THEN 1 ELSE 0 END),
+          SUM(CASE WHEN substr(available_date,1,10)<=:origin AND(event_date IS NULL OR event_date='')THEN 1 ELSE 0 END),
+          SUM(CASE WHEN substr(event_date,1,10)<=:origin AND(available_date IS NULL OR available_date='')THEN 1 ELSE 0 END)
+          FROM record WHERE """+scoped+' GROUP BY patient_id,stream'
+        for pid, stream, total, both, late, unknown_event, unknown_available in db.execute(clock_sql, bindings):
+            inventory[stream].update(received_rows=total, both_clocks_by_origin=both, past_event_arrived_later=late,
+                                     source_event_time_unknown=unknown_event, availability_unknown=unknown_available)
+            if both: input_subjects.add(pid)
+    known_dead, retrospectively_dead = set(), set()
+    if 'death' in tabs:
+        cols = rc.columns(db, 'death'); arrival = 'first_reported_date' if 'first_reported_date' in cols else 'NULL'
+        for pid, died, reported in db.execute(f'SELECT patient_id,death_date,{arrival} FROM death WHERE '+scoped, bindings):
+            if died and died <= origin:
+                (known_dead if reported and reported[:10] <= origin else retrospectively_dead).add(pid)
+    candidates = input_subjects - known_dead
+    target_kind = {'admission': 'inpatient', 'ed_visit': 'ed_visit'}.get(p['outcome'])
+    event_rows, positive, observation_rows, observation_subjects = 0, set(), 0, set()
+    unknown_dates, target_status = None, 'required_target_relation_unavailable'
+    if target_kind and 'utilization_event' in tabs:
+        for kind, pid, n in db.execute('SELECT kind,patient_id,COUNT(*) FROM utilization_event WHERE '+scoped+
+                " AND event_date>:origin AND event_date<=:end AND kind IN ('inpatient','observation','ed_visit') GROUP BY kind,patient_id", bindings):
+            if kind == target_kind: event_rows += n; positive.add(pid)
+            if kind == 'observation': observation_rows += n; observation_subjects.add(pid)
+        unknown_dates = db.execute('SELECT COUNT(*) FROM utilization_event WHERE '+scoped+
+                                  ' AND kind=:kind AND(event_date IS NULL OR event_date=\'\')', {**bindings, 'kind': target_kind}).fetchone()[0]
+        target_status = 'recorded_positive_support_only'
+    elif p['outcome'] == 'death' and 'death' in tabs:
+        for pid, d in db.execute('SELECT patient_id,death_date FROM death WHERE '+scoped, bindings):
+            if d and origin < d <= observed_end: event_rows += 1; positive.add(pid)
+        unknown_dates = db.execute('SELECT COUNT(*) FROM death WHERE '+scoped+" AND(death_date IS NULL OR death_date='')", bindings).fetchone()[0]
+        target_status = 'recorded_positive_support_only'
+    elif p['outcome'] == 'readmission':
+        target_status = 'episode_index_contract_required_not_a_fixed_population_origin'
+    target_available = target_status == 'recorded_positive_support_only'
+    attachments = {}
+    for name in ('prediction-qualification-link.json', 'forecast-link.json'):
+        pointer = Path(getattr(path, 'path', path))/name
+        # Pointer existence is deliberately weaker than a verified matching model.
+        # Do not traverse datasets, protected partition rows, predictions or weights.
+        attachments[name] = pointer.exists()
+    attached = any(attachments.values())
+    qualified = None if attached else False
+    summary = {'received_subjects': len(received), 'subjects_with_both_clock_inputs': len(input_subjects),
+               'known_dead_by_origin_excluded': len(input_subjects & known_dead), 'origin_input_candidates': len(candidates),
+               'retrospective_preorigin_deaths_not_known_by_origin': len(input_subjects & retrospectively_dead),
+               'recorded_target_event_rows': event_rows if target_available else None,
+               'recorded_positive_subjects_all_received': len(positive) if target_available else None,
+               'recorded_positive_origin_candidates': len(positive & candidates) if target_available else None,
+               'no_recorded_positive_origin_candidates_capture_unknown': len(candidates - positive) if target_available else None,
+               'observation_event_rows_excluded_from_admission': observation_rows if p['outcome'] == 'admission' else None,
+               'observation_only_subjects_excluded_from_admission': len(observation_subjects - positive) if p['outcome'] == 'admission' else None,
+               'unknown_target_dates_all_received': unknown_dates,
+               'calendar_window_mature': requested_end <= as_of, 'feature_frame_origin_state_qualified': False,
+               'negative_labels_established': False, 'source_capture_established': False,
+               'qualified_predictor_available': qualified, 'qualification_status': 'attached_contract_unverified' if attached else 'none_attached',
+               'calibration_brier': None, 'calibration_ece': None, 'model_vs_simple_baseline': None,
+               'model_fits': 0, 'model_scores_produced': 0, 'private_partition_or_weight_reads': 0}
+    rows = [{'category': 'target_and_origin_support', 'source': target_kind or p['outcome'], **summary}]
+    rows += [{'category': 'source_clock_inventory', 'source': stream, **dict(counts)} for stream, counts in sorted(inventory.items())]
+    # Make every unknown explicit in the queryable native table.
+    fields = sorted(set().union(*(row.keys() for row in rows)))
+    rows = [{**{k: row.get(k) for k in fields}, 'origin_date': origin, 'horizon_days': p['horizon_days'],
+             'requested_target_end': requested_end, 'observed_target_through': observed_end,
+             'outcome': p['outcome'], 'parameters_json': json.dumps(p, sort_keys=True)} for row in rows]
+    limitations = [
+        'Positive support means a recorded endpoint; absent records are not established negative labels or absence of care.',
+        'Origin input candidates have at least one received record with both source-event and availability dates through the origin day; only deaths known by that day are excluded. This is not clinical eligibility or complete capture.',
+        'Source counts are bound to received patient IDs in the requested scope; unattributed records are not treated as patient inputs.',
+        'Current snapshot rows filtered by clocks cannot reconstruct all superseded/quarantined historical feature states; feature-level leakage safety remains unqualified.',
+        'Candidate scorecard inputs are not a qualified historical feature frame: some use event dates/current patient fields/lifetime attributes without complete availability-bound state proofs.',
+        'Only active-runtime attachment presence is inspected. No protected partition, prediction row, dataset or model weight is read; present attachments still require exact target/origin/window/source and qualification verification.',
+        'No fitting, calibration run, model score, simple-baseline comparison or clinical prediction is performed by evidence mode. Missing metrics remain unknown.',
+        'Inpatient targets exclude observation stays; requested calendar maturity does not establish complete follow-up or label capture.'
+    ]
+    return {'schema': VERSION, 'as_of': as_of, 'parameters': p, 'status': 'partial', 'outcome_label': OUTCOME_LABEL[p['outcome']],
+            'rows': rows, 'summary': summary, 'attachments': attachments, 'target_status': target_status,
+            'missing': ['A qualified predictor and matching origin-bound feature, label, calibration and simple-baseline evidence are not established by these received observations.'],
+            'clinical_prediction_authorized': False, 'automatic_promotion': False, 'model_fitting_performed': False,
+            'method': 'Read-only canonical recorded-target and two-clock source inventory, with active-runtime attachment presence only; no predictive evaluation or fitting.',
+            'limitations': limitations, 'assumptions': limitations}
+
+
 def execute(path, patient_ids, params, as_of):
     p = validate(params)
+    from .decision_context import current
+    validate_request(getattr(current(), 'question', ''), p)
     with rc.connect(path) as db:
+        if p.get('mode') == 'evidence': return evidence(db, patient_ids, p, str(as_of)[:10], path)
         return run(db, patient_ids, p, str(as_of)[:10])
 
 
@@ -426,6 +570,13 @@ def _lines(r):
 
 
 def headline(r):
+    if r['parameters'].get('mode') == 'evidence':
+        s = r['summary']
+        support = (f"{s['recorded_positive_origin_candidates']} recorded positive subjects" if s['recorded_positive_origin_candidates'] is not None
+                   else 'recorded positive support unavailable for this target contract')
+        return (f"Received evidence for {r['outcome_label']}: {support} among "
+                f"{s['origin_input_candidates']} origin input candidates; qualification {s['qualification_status']}. "
+                'Zero fitting or scoring; absent targets and missing calibration/comparator evidence remain unknown')
     if r.get('status') != 'answered':
         return f"Scorecard for {r['outcome_label']}: not enough training events ({r['train_events']} of {r['train_n']})"
     v = r['validation']
@@ -447,6 +598,13 @@ def headline(r):
 
 def answer(report, plan, question):
     p = report['parameters']
+    if p.get('mode') == 'evidence':
+        out = rc.answer(report, plan, value=headline(report)+'.', table=report['rows'], patient_ids=[], membership_role='evaluated',
+                        definitions=[{'term': 'positive support', 'basis': 'Recorded canonical endpoint in the declared future day window; not complete clinical outcome capture'}])
+        out['overall'] = {'prediction_evidence': report['summary'], 'parameters': p, 'attachments': report['attachments'],
+                          'target_status': report['target_status'], 'model_fitting_performed': False}
+        out['missing'] = list(report['missing'])
+        return out
     if report.get('explained'):
         e = report['explained'][0]
         table = [{'patient_id': e['patient_id'], 'feature': 'base', 'bin': '', 'points': report['base_points']}] + \
@@ -482,6 +640,16 @@ OUTCOME_RX = [('readmission', r'\breadmi\w*'), ('ed_visit', r'\bed visits?\b|\be
 def route(question, profile, as_of):
     from .engine_suite import plan
     q = rc.low(question)
+    if NO_FIT.search(q):
+        origins, days = set(EVIDENCE_ORIGIN.findall(q)), set(EVIDENCE_DAYS.findall(q))
+        outcomes = {k for k, rx in OUTCOME_RX if re.search(rx, q)}
+        if re.search(r'\b(?:evidence|readiness|qualification)\b', q) and len(origins) == len(days) == len(outcomes) == 1:
+            params = {'mode': 'evidence', 'outcome': next(iter(outcomes)), 'origin_date': next(iter(origins)), 'horizon_days': int(next(iter(days)))}
+            try: validate(params)
+            except ValueError: return None
+            return plan(OP, params, 'Inspect exact recorded-target, origin-clock and qualification dependencies without fitting', question,
+                        ['explicit no-fit request', 'input availability origin', 'exact day horizon', 'evidence-only target'])
+        return None  # Do not silently fall through to constructing a scorecard.
     if not re.search(SCORECARD_RX, q): return None
     if re.search(r'\b(?:star|hedis|quality|balanced|mips|vendor|supplier|cahps|bsc)\b.{0,20}\bscore ?cards?\b|\bscore ?cards?\b.{0,20}\b(?:stars?|hedis|quality measures?|mips|kpis?)\b', q):
         return None  # performance / quality scorecards are other engines

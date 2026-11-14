@@ -50,7 +50,8 @@ requirement quotes/how, while definitions describe stable source/measure meaning
 Authoritative definitions: use {{condition:concept_id}} for patients with a named condition (governed diagnosis
 policy), {{drug_fill:drug_class}} for patients with a picked-up fill of a class, and {{as_of}} for the snapshot date.
 Each macro expands to a subquery returning patient_id; use it as  patient_id IN {{condition:heart_failure}}.
-Dose: {{medication_dose}} is a governed relation (patient_id, source_stream, record_id, event_date, drug_text, status,
+Dose: drug_group_member(medicine_text, registered_group) returns registered group membership, or NULL when the name cannot be classified. For normalized drug_key use replace(drug_key,'_',' '). Derive a requested dose domain from the registered group (for example 'gdmt'), never from a list of names seen in a row preview. Group membership does not establish current use or dose tolerance.
+{{medication_dose}} is a governed relation (patient_id, source_stream, record_id, event_date, drug_text, status,
 per_admin_mg, times_per_day, daily_mg, target_daily_mg, target_max_daily_mg) built from structured order/list/label dose fields; use it for
 dose and target comparisons (never parse strengths with LIKE). SQL functions dose_mg(text), per_day(text) and
 target_mg(drug_text) parse other dose text deterministically.
@@ -266,6 +267,10 @@ patient table. This monitor measures simulated progress and exceptions, never ac
 only: {"equivalent":true|false,"issues":["specific mismatch"]}. Same-model review is an engineering
 check, not independent qualification.'''
 
+# Review uses the same owner definitions as planning and native execution.
+from .decision_context import prompt_block as _decision_block
+AUDIT_SYSTEM += '\n' + _decision_block() + '\n'
+
 
 def _macro_sql(kind, arg, catalog):
     from . import concepts, drug_classes
@@ -458,6 +463,9 @@ def _inspect(catalog, query, population, *, trace=None):
             cte = 'population(patient_id) AS (SELECT value FROM json_each(:population))'
             text = ('WITH ' + cte + ', ' + text[4:].lstrip()) if re.match(r'(?is)^with\b', text) else 'WITH ' + cte + ' ' + text
             args['population'] = json.dumps(sorted(population or []))
+        issues = sql_query.source_tuple_issues(text) + sql_query.date_arithmetic_issues(db, text)
+        if issues:
+            raise PlanError('; '.join(issues))
         db.set_authorizer(authorize)
         cursor = db.execute('SELECT * FROM (' + text + ') LIMIT 0', args)
         columns = [c[0] for c in cursor.description]
@@ -466,6 +474,191 @@ def _inspect(catalog, query, population, *, trace=None):
     finally:
         db.close()
     return {t: sorted(c) for t, c in sorted(reads.items()) if t in catalog.tables}, columns
+
+
+def scope_sql(db, query, population, *, views_only=False):
+    """Scope patient-linked inputs before aggregation, including inputs hidden in views.
+
+    Resolve real relations using SQL scope, so user CTEs keep their meaning. Views
+    are expanded from this connection's schema; filtering only their output would
+    miss aggregates over patients they no longer expose. Reference dimensions
+    remain available. None and an explicitly empty membership are distinct.
+    """
+    if population is None:
+        return query
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.optimizer.scope import traverse_scope
+    from .request_plan import identifier
+
+    def parse(text):
+        statements = sqlglot.parse(text, read='sqlite')
+        if len(statements) != 1 or not isinstance(statements[0], exp.Query):
+            raise ValueError('Use one read-only SELECT or WITH statement')
+        return statements[0]
+
+    try:
+        tree = parse(query)
+        if any(t.db or t.catalog for t in tree.find_all(exp.Table)):
+            raise ValueError('Use unqualified source tables so selected population scope can be applied')
+        # Metadata is read by code, never supplied by the model. The existing
+        # authorizer is restored before any analytical statement can execute.
+        db.set_authorizer(None)
+        try:
+            relations = {}
+            for schema in ('main', 'temp'):
+                for name, kind, definition in db.execute(
+                        f"SELECT name,type,sql FROM {schema}.sqlite_master WHERE type IN ('table','view')"):
+                    cols = [r[1] for r in db.execute(f'PRAGMA {schema}.table_info({identifier(name)})')]
+                    relations[(schema,name.lower())] = (schema, name, kind, definition, cols)
+        finally:
+            from .semantic_analyst import SemanticWarehouse
+            db.set_authorizer(SemanticWarehouse._authorize)
+
+        membership = json.dumps(sorted(set(population)), allow_nan=False).replace("'", "''")
+        # A literal relation is portable in the saved execution receipt and cannot
+        # be shadowed by a model-supplied cohort/population CTE.
+        predicate = "patient_id IN (SELECT value FROM json_each('" + membership + "'))"
+
+        def rewrite(node, ancestors=(), view_schema=None):
+            for scope in traverse_scope(node) or []:
+                for _, (reference, source) in scope.selected_sources.items():
+                    if not isinstance(source, exp.Table) or not isinstance(reference, exp.Table):
+                        continue
+                    schemas = (source.db.lower(),) if source.db else ('main',) if view_schema=='main' else ('temp','main')
+                    relation = next((relations[(s,source.name.lower())] for s in schemas
+                                     if (s,source.name.lower()) in relations), None)
+                    if relation is None:
+                        continue  # SQLite diagnoses unknown names/table functions.
+                    schema, name, kind, definition, cols = relation
+                    if source.db and source.db.lower() != schema:
+                        raise ValueError('A view references an unavailable source schema')
+                    alias = reference.alias or reference.name
+                    if kind == 'view':
+                        identity = (schema, name.lower())
+                        if identity in ancestors:
+                            raise ValueError('Recursive source view cannot establish selected population scope')
+                        created = sqlglot.parse_one(definition, read='sqlite')
+                        inner = created.expression
+                        if not isinstance(inner, exp.Query):
+                            raise ValueError('Source view has no readable query')
+                        inner = rewrite(inner, (*ancestors, identity), schema)
+                        # SQLite views can declare names different from their
+                        # SELECT expressions. Keep that exact output contract.
+                        target = created.this
+                        if isinstance(target, exp.Schema):
+                            declared = ','.join(identifier(c.name) for c in target.expressions)
+                            inner = parse('WITH scoped_view(' + declared + ') AS (' + inner.sql(dialect='sqlite') +
+                                          ') SELECT * FROM scoped_view')
+                        if any(c.lower()=='patient_id' for c in cols):
+                            inner = parse('SELECT * FROM (' + inner.sql(dialect='sqlite') + ') WHERE ' + predicate)
+                        replacement = inner.subquery(alias=alias)
+                    elif any(c.lower() == 'patient_id' for c in cols):
+                        if views_only and not ancestors:
+                            continue  # prepare() already scopes direct tables through named CTEs.
+                        replacement = parse(f'SELECT * FROM {schema}.{identifier(name)} WHERE {predicate}').subquery(alias=alias)
+                    else:
+                        continue
+                    reference.replace(replacement)
+            return node
+
+        return rewrite(tree).sql(dialect='sqlite')
+    except (sqlglot.errors.ParseError, sqlglot.errors.TokenError, sqlglot.errors.OptimizeError) as exc:
+        raise ValueError('Cannot establish selected population scope: ' + str(exc)) from exc
+
+
+def grouped_self_counts(query):
+    """Decorrelate a conservative literal self COUNT(DISTINCT column).
+
+    Equality keys must be identical expressions over the same relation. A
+    grouped left join preserves one outer row and COUNT's zero-on-no-match
+    behavior, including null keys/record IDs. Other correlation stays intact.
+    This changes execution, never source interpretation or clinical meaning.
+    """
+    import sqlglot
+    from sqlglot import exp
+    tree = sqlglot.parse_one(query, read='sqlite')
+    used = {i.name.casefold() for i in tree.find_all(exp.Identifier)}
+    rewrites = []
+    def fresh(stem):
+        name = stem
+        while name.casefold() in used: name += '_'
+        used.add(name.casefold())
+        return name
+    def key(expression, alias):
+        allowed = (exp.Column, exp.Identifier, exp.Lower, exp.Trim, exp.Paren, exp.Literal, exp.Var)
+        if not all(isinstance(n, allowed) for n in expression.walk()): return None
+        columns = list(expression.find_all(exp.Column))
+        if not columns or any(c.table.casefold() != alias.casefold() for c in columns): return None
+        value = expression.copy()
+        for c in value.find_all(exp.Column):
+            c.set('table', None); c.set('this', exp.to_identifier(c.name.casefold()))
+        return value.sql(dialect='sqlite')
+    # Inspect the original scopes before adding our own one-row-per-key joins.
+    scopes = list(tree.find_all(exp.Select))
+    for outer in scopes:
+        source = (outer.args.get('from_') or exp.From()).this
+        if (not isinstance(source, exp.Table) or source.db or source.catalog
+                or any(outer.args.get(k) for k in ('joins','group','having','distinct','qualify'))
+                or any(isinstance(p, exp.Star) for p in outer.expressions)
+                or any(a.find_ancestor(exp.Select) is outer for a in outer.find_all(exp.AggFunc,exp.Window))):
+            continue
+        outer_alias = source.alias_or_name
+        candidates = [s for s in outer.find_all(exp.Subquery) if s.find_ancestor(exp.Select) is outer]
+        for sub in candidates:
+            inner = sub.this
+            if not isinstance(inner, exp.Select) or len(inner.expressions) != 1: continue
+            if any(inner.args.get(k) for k in ('joins','group','having','distinct','limit','offset','order','qualify','with_')): continue
+            relation = (inner.args.get('from_') or exp.From()).this
+            if (not isinstance(relation, exp.Table) or relation.db or relation.catalog
+                    or relation.name.casefold() != source.name.casefold()): continue
+            inner_alias = relation.alias_or_name
+            if inner_alias.casefold() == outer_alias.casefold(): continue
+            count = inner.expressions[0]
+            if isinstance(count, exp.Alias): count = count.this
+            if not isinstance(count, exp.Count) or not isinstance(count.this, exp.Distinct): continue
+            values = count.this.expressions
+            if len(values) != 1 or not isinstance(values[0], exp.Column) or values[0].table.casefold() != inner_alias.casefold(): continue
+            where = inner.args.get('where')
+            if where is None: continue
+            pairs, local, valid = [], [], True
+            for predicate in where.this.flatten() if isinstance(where.this, exp.And) else [where.this]:
+                matched = False
+                if isinstance(predicate, exp.EQ):
+                    for inside, outside, reversed_keys in ((predicate.this,predicate.expression,False),(predicate.expression,predicate.this,True)):
+                        k = key(inside, inner_alias)
+                        if k is not None and k == key(outside, outer_alias):
+                            pairs.append((inside,outside,reversed_keys)); matched = True; break
+                if not matched:
+                    if any(c.table.casefold() != inner_alias.casefold() for c in predicate.find_all(exp.Column)):
+                        valid = False; break
+                    if any(not isinstance(f,(exp.Lower,exp.Trim,exp.And,exp.Or,exp.Not)) for f in predicate.find_all(exp.Func)):
+                        valid = False; break  # unknown/volatile functions cannot move across outer rows
+                    local.append(predicate)
+            if not valid or not pairs: continue
+            alias = fresh('__agere_self_count_' + str(len(rewrites)))
+            count_name = fresh(alias + '_value')
+            group_names = [fresh(alias + '_key_' + str(i)) for i in range(len(pairs))]
+            grouped = inner.copy()
+            grouped.set('expressions', [exp.alias_(count.copy(),count_name),
+                *[exp.alias_(inside.copy(),name) for (inside,_,_),name in zip(pairs,group_names)]])
+            grouped.set('where', exp.Where(this=exp.and_(*[p.copy() for p in local])) if local else None)
+            grouped.set('group', exp.Group(expressions=[inside.copy() for inside,_,_ in pairs]))
+            conditions = []
+            for (_,outside,reversed_keys), name in zip(pairs,group_names):
+                inside = exp.column(name, table=alias)
+                conditions.append(exp.EQ(this=outside.copy() if reversed_keys else inside,
+                                         expression=inside if reversed_keys else outside.copy()))
+            outer.append('joins', exp.Join(this=grouped.subquery(alias=alias),side='LEFT',on=exp.and_(*conditions)))
+            sub.replace(exp.Coalesce(this=exp.column(count_name,table=alias),expressions=[exp.Literal.number(0)]))
+            rewrites.append({'source':source.name,'kind':'grouped_self_count_distinct',
+                             'equality_keys':[key(inside,inner_alias) for inside,_,_ in pairs]})
+    if not rewrites: return query, None
+    from ...contracts import digest
+    result = tree.sql(dialect='sqlite')
+    return result, {'schema':'native-self-count-rewrite/1','rewrites':rewrites,
+                    'stage':'before_scope_inspection',
+                    'original_query_digest':digest(query),'rewritten_query_digest':digest(result)}
 
 
 def prepare(catalog, question, spec, *, population=None, relaxed=False):
@@ -484,11 +677,13 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
         name = step.get('name')
         if not isinstance(name, str) or not _NAME.match(name) or name in names or name in catalog.tables or name == 'population':
             raise PlanError('Step names must be new unique snake_case identifiers: ' + str(name))
-        code = re.sub(r'--[^\n]*', '', step['sql']).strip().rstrip(';').strip()
+        code = step['sql'].strip().rstrip(';').strip()
+        try:boundary_code=sql_query.statement_code(code).strip()
+        except ValueError as exc:raise PlanError(str(exc)) from exc
         # A step may carry its own nested WITH; SQLite evaluates it inside the step's CTE.
-        if not re.match(r'(?is)^(?:select|with|values)\b', code) or ';' in code or re.search(r'(?i)\bwith\s+recursive\b|\bage_latest\b', code):
+        if not re.match(r'(?is)^(?:select|with|values)\b', boundary_code) or ';' in boundary_code or re.search(r'(?i)\bwith\s+recursive\b|\bage_latest\b', boundary_code):
             raise PlanError(f'Step {name} must be one SELECT or WITH ... SELECT statement (no ;, recursion or age_latest)')
-        qualifiers = re.sub(r'/\*.*?\*/', ' ', code, flags=re.S)
+        qualifiers = boundary_code
         if re.search(r'(?i)\b(?:main|temp)\s*\.', qualifiers) or re.search(r'(?i)["\[`](?:main|temp)["\]`]\s*\.', qualifiers):
             raise PlanError('Use unqualified catalog tables so saved population scope cannot be bypassed')
         parts.append((name, _expand(code, catalog, macros, parameters)))
@@ -541,7 +736,27 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
         query = parts[0][1]
     else:
         query = 'WITH ' + ', '.join(f'{n} AS ({s})' for n, s in parts) + f' SELECT * FROM {final}'
-    sql_query.validate({'query': query, 'returns': returns})
+    try:sql_query.validate({'query': query, 'returns': returns})
+    except ValueError as exc:raise PlanError(str(exc)) from exc
+    query, native_optimization = grouped_self_counts(query)
+    if native_optimization:
+        try:sql_query.validate({'query':query,'returns':returns})
+        except ValueError as exc:raise PlanError(str(exc)) from exc
+    from .source_scope import problem as source_scope_problem
+    scope_gap=source_scope_problem(question,query)
+    if scope_gap:raise PlanError(scope_gap)
+    from .literal_check import aggregate_misfit
+    measure_gap = aggregate_misfit(question, query)
+    if measure_gap:
+        raise PlanError(measure_gap)
+    if population is not None:
+        db=register(sqlite3.connect(f'file:{catalog.target}?mode=ro',uri=True))
+        try:
+            query=scope_sql(db,query,population,views_only=True)
+        except ValueError as exc:
+            raise PlanError(str(exc)) from exc
+        finally:
+            db.close()
     trace = {}
     sources, columns = _inspect(catalog, query, population, trace=trace)
     if population is not None:
@@ -609,6 +824,7 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
                          'workflow': workflow, 'patient_selection': selection, 'parameters': spec.get('parameters', [])},
             'governed_macros': sorted(macros), 'query': query, 'returns': returns, 'sources': sources,
             'evidence_completeness': evidence,
+            **({'native_optimization':native_optimization} if native_optimization else {}),
             'source_identity': catalog.identity, 'output_columns': columns,
             'population': None if population is None else sorted(set(population)),
             'population_digest': None if population is None else fingerprint(sorted(set(population)))}
@@ -952,29 +1168,10 @@ def _swap(text, old, new, *, strict=True):
     return _SLOT.sub(lambda m: mapping.get(m.group(), m.group()), str(text))
 
 
-def lookup_shape(path, catalog, question, policy, population=None):
-    from .learning import correction_context
-    if correction_context(path, question): return None
-    text, values = template(question)
-    scope = None if population is None else sorted(set(population))
-    key = fingerprint({'template': text, 'policy': policy, 'source': catalog.identity, 'population': scope})
-    carried = False
-    with _shapes(path) as db:
-        row = db.execute("SELECT payload FROM analysis_shapes WHERE id=? AND status='active'", (key,)).fetchone()
-        if not row:
-            # A checked shape saved under an earlier code release; it is recompiled under the current code below.
-            for (payload,) in db.execute("SELECT payload FROM analysis_shapes WHERE template=? AND source=? AND "
-                                         "status='active' ORDER BY rowid DESC", (text, fingerprint(catalog.identity))):
-                if json.loads(payload).get('population') == scope:
-                    row, carried = (payload,), True
-                    break
-    if not row: return None
-    saved = json.loads(row[0])
-    from .clinical_definitions import superseded
-    if superseded(question, {'analysis': saved['analysis']}, catalog.tables): return None
+def _rebind_shape(catalog, question, saved, values, population):
+    """Recompile one stored shape without changing its SQL or evidence authority."""
     old = saved['values']
-    if (not saved.get('slots') or len(old) != len(values) or len(set(old)) != len(old)
-            or saved.get('population') != scope): return None
+    if not saved.get('slots') or len(old) != len(values) or len(set(old)) != len(old): return None
     spec = copy.deepcopy(saved['analysis'])
     changed = {o for o, n in zip(old, values) if o != n}
     def mentions_changed(value):
@@ -1013,9 +1210,35 @@ def lookup_shape(path, catalog, question, policy, population=None):
         contract = prepare(catalog, question, spec, population=population)
     except PlanError:
         return None
+    return contract
+
+
+def lookup_shape(path, catalog, question, policy, population=None):
+    from .learning import correction_context
+    if correction_context(path, question): return None
+    text, values = template(question)
+    scope = None if population is None else sorted(set(population))
+    with _shapes(path) as db:
+        rows = db.execute("SELECT id,payload,policy FROM analysis_shapes WHERE template=? AND source=? "
+                          "AND status='active' ORDER BY rowid DESC",
+                          (text, fingerprint(catalog.identity))).fetchall()
+    from .clinical_definitions import superseded
+    matches = []
+    for ident, payload, saved_policy in rows:
+        saved = json.loads(payload)
+        if saved.get('population') != scope: continue
+        if superseded(question, {'analysis': saved['analysis']}, catalog.tables): continue
+        contract = _rebind_shape(catalog, question, saved, values, population)
+        if contract is not None:
+            matches.append((ident, saved_policy, saved, contract))
+    # A release boundary is not evidence that a disagreeing teacher is right.
+    # Compare complete recompiled contracts, including workflow/unknown states;
+    # ambiguous active interpretations must return to the ordinary planner.
+    if not matches or len({c['id'] for _, _, _, c in matches}) != 1: return None
+    ident, saved_policy, saved, contract = next((m for m in matches if m[1] == (policy or '')), matches[0])
     return contract, {'interpreter': 'learned_analysis_shape', 'review': 'explicit_parameter_recompile',
-                      'analysis_shape_id': key, 'shape_source_question': saved['question'],
+                      'analysis_shape_id': ident, 'shape_source_question': saved['question'],
                       'qualified_interpretation': False, 'acceptance_scope': saved['qualification'],
                       'execution_accepted': True, 'attempts': [],
                       **({'carry_forward': 'Shape saved under an earlier code release; recompiled under the current code.'}
-                         if carried else {})}
+                         if saved_policy != (policy or '') else {})}

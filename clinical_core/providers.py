@@ -19,6 +19,9 @@ class EvidenceTask:
     as_of: str
     options: dict
     evidence: list
+    select_source: bool = True
+    long_context: bool | None = False  # None: select transport from the rendered request's capacity bounds
+    questions: dict | None = None
 
     def state(self):
         if not self.options or "unknown" not in self.options:
@@ -130,27 +133,54 @@ class JevProvider:
 
     def request(self, task):
         state = task.state()
-        return {"model": self.model, "state": state, "questions": {
-            "reason": {"type": "choice", "instructions": instruction_for(task), "criteria": task.options},
-            "support": {"type": "choice", "instructions": "Select the source passage most directly supporting the documented state of `subject`. Select unknown if none supports it.",
-                        "criteria": {"unknown": "No supporting passage", **{e["id"]: e["text"] for e in task.evidence}}}}}
+        if task.questions is not None:
+            if not task.questions or any(not isinstance(k,str) or not isinstance(q,dict) or q.get('type')!='choice'
+                                        or not isinstance(q.get('criteria'),dict) or 'unknown' not in q['criteria'] for k,q in task.questions.items()):
+                raise ValueError('Named choices require explicit criteria including unknown')
+            return {'model':self.model,'state':state,'questions':task.questions}
+        questions={"reason": {"type": "choice", "instructions": instruction_for(task), "criteria": task.options}}
+        if task.select_source:
+            questions['support']={"type": "choice", "instructions": "Select the source passage most directly supporting the documented state of `subject`. Select unknown if none supports it.",
+                                  "criteria": {"unknown": "No supporting passage", **{e["id"]: f'Source {e["id"]}, note {e["note_id"]}, dated {e["date"]} (text in state.evidence)' for e in task.evidence}}}
+        return {"model":self.model,"state":state,"questions":questions}
 
     def classify(self, task):
         response = self.gateway.send(self.name, self.request(task))
         answers = response["answers"]
-        reason, support = answers["reason"], answers["support"]
-        for key, answer, choices in (("reason", reason, task.options), ("support", support, {"unknown": None, **{e["id"]: None for e in task.evidence}})):
+        if task.questions is not None:
+            if not isinstance(answers,dict):raise ValueError('Named choice response must be an object')
+            judgments={};invalid={}
+            for key,q in task.questions.items():
+                answer=answers.get(key)
+                probs=answer.get('probabilities') if isinstance(answer,dict) else None
+                choices=q['criteria']
+                valid=isinstance(probs,dict) and answer.get('type')=='choice' and answer.get('choice') in choices and set(probs)==set(choices)
+                valid=valid and all(type(p) in (int,float) and math.isfinite(p) and 0<=p<=1 for p in probs.values())
+                valid=valid and abs(sum(probs.values())-1)<=.001 and probs[answer['choice']]>=max(probs.values())
+                if valid:judgments[key]={'label':answer['choice'],'probabilities':probs}
+                else:
+                    invalid[key]='Missing or invalid named Choice; unresolved, not evidence'
+                    judgments[key]={'label':'unknown','probabilities':{},'error':invalid[key]}
+            return {'judgments':judgments,'invalid_fields':invalid,
+                    'unexpected_fields':sorted(set(answers)-set(task.questions)),
+                    'provider':self.name,'model':response.get('model'),'acceptance':'unvalidated_proposal'}
+        reason = answers["reason"]
+        required=[('reason',reason,task.options)]
+        if task.select_source:
+            required.append(('support',answers['support'],{"unknown": None, **{e["id"]: None for e in task.evidence}}))
+        for key, answer, choices in required:
             if answer.get("type") != "choice" or answer.get("choice") not in choices:
                 raise ValueError(f"Invalid {key} choice")
             probabilities = answer.get("probabilities", {})
             if set(probabilities) != set(choices) or any(type(p) not in (int, float) or not math.isfinite(p) or not 0 <= p <= 1 for p in probabilities.values()) or abs(sum(probabilities.values())-1) > 0.001:
-                raise ValueError("Invalid probability distribution")
+                raise ValueError(f"Invalid {key} probability distribution")
         label = reason["choice"]
-        source = support["choice"]
-        return {"label": label, "evidence_ids": [] if source == "unknown" else [source],
+        source = answers['support']['choice'] if task.select_source else None
+        return {"label": label, "evidence_ids": [] if source in (None,"unknown") else [source],
                 "uncertain": label == "unknown" or source == "unknown", "probabilities": reason["probabilities"],
                 "provider": self.name, "model": response.get("model"), "acceptance": "unvalidated_proposal",
-                "support_check": "Source selection is not an independent entailment check"}
+                "support_check": "Source selection is not an independent entailment check" if task.select_source else
+                                 "Closed judgment only; all received evidence retained, no citation selected"}
 
 
 class ClaudeProvider:

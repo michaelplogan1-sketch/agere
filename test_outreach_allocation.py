@@ -47,13 +47,17 @@ class Allocation(unittest.TestCase):
         self.assertFalse(r['solver']['floor_dropped'])
         self.assertGreater(r['shadow_prices'][0]['usd_per_extra_hour_per_week'], 0)
         self.assertLess(r['objective_usd'], r['greedy_baseline']['objective_usd'])  # floor costs value vs unconstrained greedy
+        self.assertFalse(r['greedy_baseline']['comparable'])
+        self.assertIsNone(r['greedy_baseline']['milp_lift_usd'])
 
-    def test_infeasible_floor_heals(self):
+    def test_infeasible_floor_preserves_constraints_and_explains_a_separate_scenario(self):
         r = self.run_({'channels': [{'channel': 'phone', 'hours_per_week': 0.4, 'minutes_per_contact': 20}], 'weeks': 1, 'min_per_practice': 3})
-        self.assertTrue(r['solver']['floor_dropped'])
-        self.assertEqual(r['assigned'], 1)
+        self.assertFalse(r['solver']['floor_dropped'])
+        self.assertEqual(r['assigned'], 0)
+        self.assertEqual(r['relaxed_scenario']['assigned'],1)
+        self.assertEqual(r['status'],'partial')
         a = A.answer(r, {'coverage': 'supported_observation'}, 'q')
-        self.assertTrue(any('dropped' in x for x in a['limitations']))
+        self.assertEqual(a['status'],'partial');self.assertTrue(a['missing'])
 
     def test_unlogged_channel_falls_back_to_prior(self):
         r = self.run_({'channels': [{'channel': 'portal', 'hours_per_week': 1, 'minutes_per_contact': 10}], 'weeks': 1})

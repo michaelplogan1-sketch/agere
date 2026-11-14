@@ -177,7 +177,10 @@ class Worklist(unittest.TestCase):
             self.assertIn(w['practice'], ('PR1', 'PR2'))
         # rising-risk evidence states the forecast
         ckd = next(r for r in self.rows['ckd']['reasons'] if r['code'] == 'RISING_EGFR')
-        self.assertIn('P(cross 30)', ckd['evidence'])
+        self.assertIn('P(endpoint below 30)', ckd['evidence'])
+        self.assertEqual(ckd['probability_target']['event'], 'endpoint_exceedance')
+        self.assertEqual(ckd['value_basis']['event'], 'endpoint_exceedance')
+        self.assertFalse(ckd['value_basis']['clinical_value_qualified'])
 
     def test_worklist_is_ranked_and_complete(self):
         values = [w['expected_value'] for w in self.result['worklist']]

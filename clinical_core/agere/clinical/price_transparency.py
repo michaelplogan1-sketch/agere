@@ -8,7 +8,8 @@ with >= 20 claims, 147.212(b)(1)(ii)(B) -- pass min_lines=20 for that rule).
 Source B, optional: a CMS Transparency-in-Coverage in-network rate file (mrf_path, JSON schema of the CMS price-transparency-guide
 "in-network-rates": in_network[].billing_code / billing_code_type / negotiated_rates[].negotiated_prices[].negotiated_rate,
 provider_groups[].npi / tin, or provider_references resolved against the top-level provider_references). Each published rate
-is matched to warehouse organizations by NPI or TIN and shown beside the observed allowed median for the same code.
+is matched to warehouse organizations by NPI or TIN and shown beside an explicitly pooled market benchmark for the same code.
+The publishing entity is not assumed to identify a received claims payer or plan.
 Benchmarks per code
   market median            median of provider-cell medians within the payer (and across payers)
   % of Medicare            cell median / observed Medicare FFS median allowed for the code (product medicare_ffs; observed
@@ -94,6 +95,8 @@ def parse_mrf(path, codes=None):
                 except (TypeError, ValueError): continue
                 out.append({'payer': payer, 'code': code, 'code_type': item.get('billing_code_type'), 'arrangement': item.get('negotiation_arrangement'),
                             'negotiated_type': price.get('negotiated_type'), 'billing_class': price.get('billing_class'), 'rate': rate,
+                            'service_code': price.get('service_code') or [], 'setting': price.get('setting'),
+                            'billing_code_modifier': price.get('billing_code_modifier') or [],
                             'npis': npis, 'tins': tins, 'expiration_date': price.get('expiration_date')})
     return out
 
@@ -182,16 +185,35 @@ def merge_mrf(mrf, rows, orgs):
     for n, o in orgs.items():
         if o['tin']: by_tin[str(o['tin'])].add(n)
     obs = defaultdict(list)
-    for r in rows: obs[(r['code'], r['npi'])].append(r['median_allowed'])
+    for r in rows: obs[(r['code'], r['npi'])].append(r)
     out = []
     for m in mrf:
         npis = set(m['npis']) | {n for t in m['tins'] for n in by_tin.get(t, ())}
         matched = [n for n in npis if n in orgs]
-        observed = [x for n in matched for x in obs.get((m['code'], n), [])]
-        out.append({**{k: m[k] for k in ('payer', 'code', 'negotiated_type', 'billing_class', 'rate', 'expiration_date')},
+        contributors = sorted([r for n in matched for r in obs.get((m['code'], n), [])], key=lambda r: (str(r['payer']), str(r['npi'])))
+        observed = statistics.median([r['median_allowed'] for r in contributors]) if contributors else None
+        kind = m.get('negotiated_type')
+        unit = 'percent_of_billed_charges' if kind == 'percentage' else 'USD_per_day' if kind == 'per diem' else \
+               'USD_per_item_or_service' if kind in ('negotiated', 'derived', 'fee schedule') else 'unknown'
+        compatible = (unit == 'USD_per_item_or_service' and m.get('arrangement') == 'ffs'
+                      and m.get('code_type') in ('CPT', 'HCPCS') and not m.get('billing_code_modifier'))
+        reasons = ['Publisher-to-claims payer/plan identity is not verified; this is a pooled market benchmark.',
+                   'Billing class, setting, service modifiers and contract/service-period alignment are not verified against claims cells; '
+                   'a descriptive market ratio does not establish contractual reimbursement or underpayment.']
+        if not compatible: reasons.append('Rate unit or arrangement does not support comparison to allowed dollars per claim unit; required charge/day/bundle basis is unavailable.')
+        out.append({**{k: m.get(k) for k in ('payer', 'code', 'negotiated_type', 'billing_class', 'rate', 'expiration_date',
+                                          'arrangement', 'code_type', 'service_code', 'setting', 'billing_code_modifier')},
+                    'published_rate_unit': unit,
                     'matched_organizations': sorted({orgs[n]['organization_id'] for n in matched}),
-                    'observed_allowed_median': round(statistics.median(observed), 2) if observed else None,
-                    'published_vs_observed': round(m['rate'] / statistics.median(observed) - 1, 4) if observed else None})
+                    'comparison_basis': 'pooled_market_provider_payer_cell_medians',
+                    'weighting': 'Each received payer x provider cell median has equal weight; not a claims-weighted median.',
+                    'observed_allowed_median': round(observed, 2) if observed is not None else None,
+                    'observed_contributors': [{'payer': r['payer'], 'npi': r['npi'], 'lines': r.get('lines'), 'median_allowed': r['median_allowed']}
+                                              for r in contributors],
+                    'same_payer_observed_allowed_median': None, 'published_vs_observed': None,
+                    'published_vs_pooled_market': round(m['rate'] / observed - 1, 4) if compatible and observed else None,
+                    'comparison_qualification': 'descriptive_market_ratio' if compatible and observed else 'unsupported_comparison',
+                    'limitations': reasons})
     return out
 
 

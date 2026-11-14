@@ -34,20 +34,26 @@ class Classification(unittest.TestCase):
     def test_fallback_model_defaults_to_next_family_model(self):
         with patch.dict(os.environ, {'AGERE_FALLBACK_MODEL': '', 'AGERE_INTERPRETER_FALLBACK': ''}):
             self.assertEqual(G.fallback_model('claude-opus-5-5'), 'claude-sonnet-5-5')
-            self.assertEqual(G.fallback_model('claude-sonnet-5-5'), 'claude-haiku-5-5')
+            self.assertIsNone(G.fallback_model('claude-sonnet-5-5'))
             self.assertIsNone(G.fallback_model('claude-haiku-5-5'))  # never falls back to a more expensive model
             self.assertIsNone(G.fallback_model('jev-1.13.0'))
         with patch.dict(os.environ, {'AGERE_FALLBACK_MODEL': 'claude-opus-5'}):
             self.assertEqual(G.fallback_model('claude-opus-5-5'), 'claude-opus-5')
             self.assertIsNone(G.fallback_model('claude-opus-5'))
         with patch.dict(os.environ, {'AGERE_FALLBACK_MODEL': '', 'AGERE_INTERPRETER_FALLBACK': 'claude-haiku-5-5'}):
-            self.assertEqual(G.fallback_model('claude-opus-5-5'), 'claude-haiku-5-5')
+            self.assertEqual(G.fallback_model('claude-opus-5-5'), 'claude-sonnet-5-5')
         self.assertTrue(issubclass(G.ProviderUnavailable, RuntimeError))
 
 
 class Fallback(unittest.TestCase):
     def setUp(self):
         e = patch.dict(os.environ, {'AGERE_FALLBACK_MODEL': '', 'AGERE_INTERPRETER_FALLBACK': ''}); e.start(); self.addCleanup(e.stop)
+
+    def test_cancelled_request_never_retries_or_calls_a_fallback_model(self):
+        error=G.ProviderUnavailable('request_cancelled: retained prefix',kind='cancelled')
+        with self.assertRaises(G.ProviderUnavailable) as raised:self.run_calls([error])
+        self.assertIs(raised.exception,error)
+        self.assertEqual(error.calls,['claude-opus-5-5']);self.assertEqual(error.sleeps,[])
 
     def run_calls(self, outcomes, model='claude-opus-5-5'):
         calls, sleeps = [], []
@@ -97,14 +103,14 @@ class HostedModelFallback(unittest.TestCase):
         seen = []
         def fake_send(body, provider, ledger, out, **kw):
             seen.append(body['model'])
-            if body['model'] == 'claude-sonnet-5-5': raise RuntimeError('HTTP 529: Overloaded')
+            if body['model'] == 'claude-opus-5-5': raise RuntimeError('HTTP 529: Overloaded')
             return 'text', {'cost_estimate': {'estimated_usd': 0.001}}
         with tempfile.TemporaryDirectory() as d, patch('clinical_core.agere.clinical.context_student.send', fake_send), \
                 patch.dict(os.environ, {'AGERE_PROVIDER_BACKOFF_SECONDS': '0', 'AGERE_FALLBACK_MODEL': ''}):
-            m = nl2sql.HostedModel(None, Path(d), model='claude-sonnet-5-5')
+            m = nl2sql.HostedModel(None, Path(d), model='claude-opus-5-5')
             text, stats = m('sys', 'user')
-        self.assertEqual(seen, ['claude-sonnet-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'])
-        self.assertEqual((text, stats['model'], stats['fallback_from'], m.identity), ('text', 'claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'))
+        self.assertEqual(seen, ['claude-opus-5-5', 'claude-opus-5-5', 'claude-sonnet-5-5'])
+        self.assertEqual((text, stats['model'], stats['fallback_from'], m.identity), ('text', 'claude-sonnet-5-5', 'claude-opus-5-5', 'claude-sonnet-5-5'))
 
     def test_graph_planner_call_uses_fallback(self):
         src = (Path(__file__).resolve().parent / 'clinical_core/agere/clinical/graph_planner.py').read_text()

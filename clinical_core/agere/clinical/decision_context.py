@@ -4,8 +4,8 @@ The definitions an answer silently depends on are decided once, here, as data, a
 the local compiler, the governed and generated metrics, the engines, the cohort and specialist families, the atomic questions and the
 Claude / System One planners (told in their prompts, checked in their SQL).
 
-  patients        LIVING patients: no row in the semantic `death` table. The deceased are included only when the question asks
-                  ("including deceased", "who died", "deceased", "death", "mortality", "all patients ever", ...).
+  patients        LIVING patients by default. An explicitly dated event-selected cohort retains every received subject;
+                  present survival cannot remove a historical referral, discharge or encounter. Explicit living scope still applies.
   labs            the LATEST result (measurement_latest: one row per patient and concept). "ever / any / at any time / history of /
                   highest / lowest / trend" means any result (measurement).
   conditions      ONE definition of condition evidence everywhere: an EHR diagnosis (condition rows with is_diagnosis = 1, plus
@@ -29,7 +29,7 @@ import re
 import threading
 from pathlib import Path
 
-VERSION = 'decision-context/3'  # 2 (2026-10-24): diabetes / CKD by lab rule, duplicate charts once, on-medication = 12-month fill
+VERSION = 'decision-context/9'  # 9: historical exposure retains its received subjects
 # 3 (2026-10-25, Mike): event counts include everyone (the living rule is for counts / lists of patients); observation stays are hospital
 # stays and admissions; pharmacy spend = net of reversals over all pharmacy claim transactions; medical spend = paid on counted claims
 DECIDED_BY = 'Mike (clinical owner), 2026-10-23 / 2026-10-25'
@@ -39,6 +39,25 @@ DECEASED_ASK = re.compile(
     r"\b(?:deceased|died|dead|death|deaths|dying|die|dies|mortality|passed away|fatal(?:ity|ities)?|survival|survivors?|vital status|"
     r"all patients ever|ever[- ]enrolled|everyone ever|including (?:the )?(?:deceased|dead|death))\b", re.I)
 LIVING_ASK = re.compile(r'\b(?:living|alive)\b', re.I)
+HISTORICAL_EXPOSURE = re.compile(
+    r'\bhistorical\s+(?:(?:eligible|enrolled|recorded)\s+)?'
+    r'(?:exposure|eligibility|enrollment|member[- ]months?)\b', re.I)
+ALL_RECEIVED_ROWS = re.compile(
+    r'\b(?:all|every)\s+(?:the\s+)?received\s+(?:[a-z_]+[ -]+){0,5}'
+    r'(?:rows?|records?|events?|claims?|stays?|appointments?|encounters?|observations?)\b', re.I)
+RECORD_OBJECT = (r'(?:rows?|records?|accounts?|assertions?|annotations?|statements?|documents?|reports?|'
+                 r'notes?|correspondence|observations?|events?|claims?)')
+RECEIVED_RECORD_HEAD = re.compile(
+    r'^\s*(?:(?:identify|show|list|find|review|audit|compare|count|reconcile)\s+)?'
+    r'(?:(?:all|every|the)\s+)?(?:received|recorded)\s+'
+    r'(?:[a-z0-9_-]+\s+){0,5}?'+RECORD_OBJECT+r'\b', re.I)
+# Financial records remain the requested objects even when patient attribution
+# is a requested field. A patient-first count/list still keeps its usual scope.
+FINANCIAL_RECORD_HEAD = re.compile(
+    r'^\s*(?:reconcile|review|audit|show|list|find|compare|count|summari[sz]e|aggregate|sum|'
+    r'how many|number of|count of|total|sum of)\s+'
+    r'(?:(?:all|every|the|received|recorded|patient|payer|account|remaining)\s+){0,4}'
+    r'(?:payments?|refunds?|balances?|remittances?|charges?|credits?)\b', re.I)
 PATIENT_WORDS = re.compile(r'\b(?:patients?|people|persons?|individuals?|who|whom|whose|adults?|children|women|men|females?|males?|seniors?|elderly)\b', re.I)
 # questions about money or membership months are not patient counts: the living rule does not apply to them (they say "members",
 # "claims", "paid", "PMPM", never a count of patients)
@@ -77,7 +96,38 @@ ANY_LAB = re.compile(r"\b(?:ever|at any (?:time|point|visit)|any (?:time|result|
 ROLLING_YEAR = re.compile(r"\b(?:in |during |within |over |for )?the (?:last|past|previous|trailing) (?:year|12 months|twelve months|365 days)\b|"
                           r"\b(?:last|past) year\b|\bin the last 12 months\b|\btrailing 12 months\b", re.I)
 CALENDAR_YEAR = re.compile(r"\b(?:in|during|for|of)\s+((?:19|20)\d\d)\b", re.I)
+RECEIPT_YEAR = re.compile(r'\b(?:received|arrived|available)\s+(?:(?:in|during)\s+)?((?:19|20)\d{2})\b',re.I)
 ROLLING_YEAR_SQL = "date({as_of}, '-12 months')"  # an event date d is in the window when d > ROLLING_YEAR_SQL and d <= {as_of}
+
+
+def receipt_window_request(question,as_of=None):
+    """Bind only a directly stated, single receipt year; never guess other clocks."""
+    q=question or ''
+    head=RECEIVED_RECORD_HEAD.search(re.sub(r'^\s*(?:for|among)\s+','',q,flags=re.I))
+    matches=[m for m in RECEIPT_YEAR.finditer(q)
+        if(head is not None and m.group()in head.group()
+           or re.search(r'\b'+RECORD_OBJECT+r'(?:\s+(?:that\s+)?(?:were|was))?\s*$',q[:m.start()],re.I))]
+    years=set(re.findall(r'\b(?:19|20)\d{2}\b',q))
+    if not matches or len(years)!=1:return None
+    year=matches[0][1]
+    contract={'source_clause':matches[0].group(),
+            'assertion_window':{'basis':'arrival','start':year+'-01-01','end':year+'-12-31'},
+            'authority':'explicit_question_receipt_year',
+            'meaning':'Receipt/availability is distinct from source-event and clinical/reference dates.'}
+    cutoff=str(as_of)[:10]if as_of is not None else None
+    if cutoff and year+'-01-01'<=cutoff<year+'-12-31':
+        contract['requested_calendar_end']=year+'-12-31'
+        contract['unobserved_remainder_after_snapshot']=True
+        contract['assertion_window']['end']=cutoff
+    return contract
+
+
+def validate_receipt_window(question,parameters,as_of=None):
+    requested=receipt_window_request(question,as_of)
+    if requested is not None and parameters.get('assertion_window')!=requested['assertion_window']:
+        raise ValueError('Assertion receipt-window binding: '+repr(requested['source_clause'])+
+            ' requires assertion_window='+str(requested['assertion_window'])+
+            '. Correct the typed window before source acquisition; retain source-event and clinical/reference dates separately.')
 
 # --- conditions ----------------------------------------------------------------------------------------------------------------
 CONDITION_EVIDENCE = {
@@ -148,10 +198,59 @@ def counts_events(question):
     return bool(EVENT_COUNT.search(q)) and not PATIENT_COUNT.search(q)
 
 
-def population(question):
-    """-> {'living_only': bool, 'reason': str}. Counts and lists of patients are living patients unless the question asks for the
-    deceased; counts of events include every patient who had them (Mike 2026-10-25)."""
+def event_selected_cohort(question):
+    """A dated event in a For/Among membership clause selects its subjects.
+
+    This is not a new default for an unqualified count/list of current patients.
+    Read only the membership clause: a request to show current responsibility
+    later in the sentence must not erase its historical source population.
+    """
     q = question or ''
+    if not re.match(r'^\s*(?:for|among)\b', q, re.I):return False
+    selection = re.split(r'[,;.?!]|\b(?:show|compare|distinguish|describe|report|identify)\b', q, maxsplit=1, flags=re.I)[0]
+    received_subjects = PATIENT_WORDS.search(selection) or re.search(r'\b(?:members?|received|recorded)\b', selection, re.I)
+    current_people = re.search(r'\bcurrent\s+(?:patients?|members?|people|population|cohort)\b', selection, re.I)
+    # The date belongs to membership when it follows the subject's selecting
+    # predicate. New source families (history updates, interviews, assessments)
+    # must not silently revert to present survival because their noun is absent
+    # from the event-count vocabulary. A report year before membership alone
+    # does not select historical subjects.
+    dated_membership = re.search(
+        r'\b(?:patients?|members?|people|persons?|individuals?|adults?|children)\s+'
+        r'(?:with|who|whose|having|receiving|discharged|admitted|aged|born)\b.*\b(?:19|20)\d{2}\b', selection, re.I)
+    received_membership = re.match(r'^\s*(?:for|among)\s+(?:the\s+)?(?:received|recorded)\b', selection, re.I)
+    event_membership = re.search(r'\b(?:' + EVENT_NOUN + r'|referrals?|requests?|observations?|discharged|admitted)\b', selection, re.I)
+    return (bool(received_subjects) and bool(re.search(r'\b(?:19|20)\d{2}\b', selection))
+            and bool(dated_membership or received_membership or event_membership)
+            and not bool(LIVING_ASK.search(selection) or current_people))
+
+
+def population(question):
+    """Default patient counts are living-only; event-selected cohorts keep their subjects.
+
+    Explicit living scope takes precedence over the historical-event exception.
+    """
+    q = question or ''
+    if not LIVING_ASK.search(q):
+        from .engine_suite import requested_population
+        registered = requested_population(q)
+        if registered is not None:
+            return registered
+    if ALL_RECEIVED_ROWS.search(q) and not LIVING_ASK.search(q):
+        return {'living_only': False, 'all_received_rows': True,
+                'reason': 'explicit all-received-row scope includes every received patient ID in those rows'}
+    if RECEIVED_RECORD_HEAD.search(q) and not LIVING_ASK.search(q):
+        return {'living_only': False, 'record_subject_scope': True,
+                'reason': 'received records are the requested objects; present survival does not remove their subjects'}
+    if FINANCIAL_RECORD_HEAD.search(q) and not LIVING_ASK.search(q):
+        return {'living_only': False, 'record_subject_scope': True,
+                'reason': 'financial records are the requested objects; patient attribution does not remove their subjects'}
+    if event_selected_cohort(q) and not LIVING_ASK.search(q):
+        return {'living_only': False, 'event_selected_cohort': True,
+                'reason': 'dated event-selected cohort retains every subject; present survival does not remove historical records'}
+    if HISTORICAL_EXPOSURE.search(q) and not LIVING_ASK.search(q):
+        return {'living_only': False, 'historical_exposure': True,
+                'reason': 'historical exposure retains its subjects regardless of present survival; eligibility remains month-specific'}
     if counts_events(q) and not LIVING_ASK.search(q):
         return {'living_only': False, 'reason': 'a count of events, not of patients: the events of every patient count (Mike 2026-10-25)'}
     if asks_deceased(q):
@@ -237,7 +336,16 @@ def prompt_block():
         '1. Counts and lists of PATIENTS are LIVING patients. Exclude anyone with a row in the death table: add patient_id NOT IN (SELECT patient_id FROM death) '
         'to every patient-keyed table a patient count or list reads. Include the deceased only when the question asks (deceased, died, death, '
         'mortality, "including deceased", "all patients ever"). Counts, volumes, rates and shares of EVENTS (admissions, ED visits, stays, fills, '
-        'appointments, no-shows, discharges) include every patient who had them: no living filter on events.\n'
+        'appointments, no-shows, discharges) include every patient who had them: no living filter on events. '
+        'An explicit all-received-row scope also includes all patient IDs within those rows, including distinct-patient '
+        'counts inside grouped event summaries. Do not add living_patient or death exclusions there unless the question asks for living patients.\n'
+        'A request to identify/show/audit received records, statements, accounts or documents also retains their subjects; '
+        'a relative clause such as "whose interpretation changes" refers to those records, not a living-patient population.\n'
+        'A reconciliation/count/list of payments, refunds, account balances or remittances also retains every record subject, '
+        'including when patient attribution is requested. A count/list of patients with those records keeps its own patient scope.\n'
+        'A For/Among cohort selected by a dated recorded event (such as patients receiving a referral in a named year) also retains '
+        'every subject of that historical event. Current survival/enrollment does not establish eligibility at the event. '
+        'Keep subsequent deaths, ended relationships and unknown dates visible; apply living-only scope only when requested.\n'
         '2. Labs: the LATEST result per patient and concept (measurement_latest). Use measurement (every result) only when the question says ever, '
         'any, at any time, history of, at least once, highest, lowest or asks for a trend.\n'
         '3. A condition is documented by ONE evidence rule: an EHR diagnosis (condition with is_diagnosis = 1, plus problem-list rows whose flag is '
@@ -255,7 +363,12 @@ def prompt_block():
         "own period or asks 'ever'. A drug that was only ordered or listed ('prescribed') is a received mention, not current use.\n"
         "8. Money: pharmacy spend = net payer spend over ALL pharmacy claim transactions, reversals and recoupments netted "
         "(pharmacy_claim_event: SUM(payer_paid_delta_cents) by event_date). Medical spend and cost per claim = the payer paid amount on COUNTED "
-        "medical claims (payer_claim with counts_in_metrics = 1: final, non-duplicate) by service date.")
+        "medical claims (payer_claim with counts_in_metrics = 1: final, non-duplicate) by service date.\n"
+        "9. Eligibility, coverage, payer or attribution at each event date requires the same subject's validity interval at that date. "
+        "member_month describes coverage on ANY day of a month and its monthly selected attributes; joining its month to a truncated "
+        "event date does not establish eligibility on that day. Use enrollment_span.coverage_start <= event date AND "
+        "(coverage_end IS NULL OR coverage_end >= event date), retain unknown and overlapping assignments, and state any "
+        "assignment convention. Monthly exposure remains a separate valid denominator; do not silently substitute it for event-date membership.")
 
 
 # --- the scope an answer runs in -------------------------------------------------------------------------------------------------
@@ -555,11 +668,120 @@ def event_source_findings(question, sqls):
     return list(dict.fromkeys(out))
 
 
+def _living_restriction(sql, restricted_views=()):
+    """Known population exclusions, not a ban on reading death as evidence."""
+    try:
+        from sqlglot import exp, parse_one
+        from sqlglot.optimizer.scope import traverse_scope
+        from .analyst_definitions import LIVING_VIEWS
+        from .clinical_definitions import PHENOTYPES
+        from .plan_fence import _dependency_sql
+        policies={*LIVING_VIEWS,*restricted_views,*('phenotype_'+name for name in PHENOTYPES)}
+        tree=parse_one(_dependency_sql(sql),read='sqlite');scopes=list(traverse_scope(tree)or[]);restricted={}
+        for scope in scopes:
+            query=scope.expression;nullable=set();seen=[]
+            origin=query.args.get('from_')
+            if origin is not None and origin.this is not None:seen.append(origin.this.alias_or_name.casefold())
+            for join in query.args.get('joins')or[]:
+                right=join.this.alias_or_name.casefold();side=join.side.upper()
+                if side in ('RIGHT','FULL'):nullable.update(seen)
+                if side in ('LEFT','FULL'):nullable.add(right)
+                seen.append(right)
+            filters=[query.args[k]for k in ('where','having','qualify')if query.args.get(k)is not None]
+            def filtered(alias):
+                return any(not column.table or column.table.casefold()==alias.casefold()
+                           for clause in filters for column in clause.find_all(exp.Column))
+            narrowed=False
+            for alias,(_,source)in scope.selected_sources.items():
+                bound=(isinstance(source,exp.Table)and isinstance(source.this,exp.Identifier)
+                       and not source.catalog and source.db.casefold()in ('','temp')and source.name.casefold()in policies)
+                bound=bound or restricted.get(source,False)
+                if bound and (alias.casefold()not in nullable or filtered(alias)):narrowed=True
+            # Scalar/CASE projections do not change outer membership. A
+            # filtered subquery does, including one reached through a CTE.
+            for child in scope.subquery_scopes:
+                if not restricted.get(child):continue
+                parent=child.expression.parent
+                while parent is not None and parent is not query:
+                    if isinstance(parent,(exp.Where,exp.Having)):narrowed=True;break
+                    parent=parent.parent
+            narrowed=narrowed or any(restricted.get(child,False)for child in scope.set_operation_scopes)
+            for predicate in query.find_all(exp.Not):
+                if predicate.find_ancestor(exp.Select)is not query or not isinstance(predicate.this,(exp.In,exp.Exists)):continue
+                if not any(t.name.casefold()=='death'for t in predicate.this.find_all(exp.Table)):continue
+                parent=predicate.parent
+                while parent is not None and parent is not query:
+                    if isinstance(parent,(exp.Where,exp.Having)):narrowed=True;break
+                    parent=parent.parent
+            restricted[scope]=narrowed
+        return bool(scopes and restricted[scopes[-1]])
+    except Exception:  # native SQL validity is checked by its executor
+        pass
+    return False
+
+
+def living_policy_results(calls):
+    """Follow actual native population producers, not unused exploration.
+
+    This detects known survival restrictions only. It does not certify general
+    cohort completeness, clinical evidence or an arbitrary unknown operator.
+    """
+    narrowed=set()
+    for call in calls or []:
+        result=call.get('result')or{}
+        if not isinstance(result,dict)or result.get('error')or not result.get('result_view'):continue
+        args=call.get('input')or{};name=result['result_view'];restricted=False
+        if call.get('name')=='query_sql':
+            queries=[args.get('sql'),result.get('declared_executed_query')or result.get('executed_query')or call.get('sql')]
+            restricted=any(isinstance(q,str)and _living_restriction(q,narrowed)for q in queries)
+        elif call.get('name')=='compose_table':
+            base=(result.get('assembly')or{}).get('base_result_view')or args.get('base')
+            restricted=base in narrowed
+        elif args.get('patient_query_sql'):
+            restricted=_living_restriction(args['patient_query_sql'],narrowed)
+        if restricted:narrowed.add(name)
+    return narrowed
+
+
+def population_scope_issues(question, *, calls=(), query=None, result_view=None):
+    state=population(question)
+    if not any(state.get(k)for k in ('all_received_rows','event_selected_cohort','record_subject_scope')):return []
+    narrowed=living_policy_results(calls)
+    if result_view in narrowed or isinstance(query,str)and _living_restriction(query,narrowed):
+        return ['The requested historical/received population is narrowed by a living-only membership dependency. '
+                'Retain its source subjects, including subsequent deaths. Use registered evidence with the requested time scope '
+                '(condition_evidence preserves canonical condition evidence without condition_member survival filtering). '
+                'Current membership does not establish historical eligibility. Preserve prior observations as history; '
+                'repair the population and its affected native dependencies before source interpretation.']
+    return []
+
+
 def verify(question, answer, state=None, db=None, sqls=()):
     """The answer check. -> {'ok': bool, 'reasons': [...], 'deceased': [ids]}. Fails when the scope recorded a query it could not
     restrict, when a patient list of a living-only answer holds a deceased patient, or when an event is read from an EHR-only table."""
     state = state or _SCOPE.get() or Scope(question)
     reasons = [*state.problems, *event_source_findings(question, sqls)]
+    if any(state.population.get(k)for k in ('all_received_rows','event_selected_cohort','record_subject_scope')):
+        # Native bindings describe the returned fields. Earlier exploratory
+        # queries remain in the audit but must not poison a repaired answer.
+        bound = []
+        for key in ('table_binding', 'query_evidence'):
+            query = (answer.get(key) or {}).get('query') if isinstance(answer, dict) else None
+            if isinstance(query, str): bound.append(query)
+        def bound_prose(value):
+            if isinstance(value, dict):
+                source_input = value.get('input')
+                query = source_input.get('sql') if isinstance(source_input, dict) else None
+                if isinstance(query, str): bound.append(query)
+                for child in value.values(): bound_prose(child)
+            elif isinstance(value, list):
+                for child in value: bound_prose(child)
+        if isinstance(answer, dict): bound_prose(answer.get('computed_prose') or [])
+        for sql in bound or sqls or []:
+            if _living_restriction(sql):
+                reasons.append('an all-received-row or dated event-selected cohort is narrowed by a living-patient exclusion; '
+                               'include every patient ID in the requested received rows unless living patients were requested')
+                break
     dead = []
     if state.living_only and db is not None and isinstance(answer, dict):
         ids = [*(answer.get('patient_ids') or []), *(answer.get('unknown_patient_ids') or [])]

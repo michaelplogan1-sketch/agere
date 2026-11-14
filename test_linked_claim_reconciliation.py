@@ -40,6 +40,14 @@ class LinkedClaims(unittest.TestCase):
     self.assertEqual([self.job['excerpt_pool'][k]['quote'] for k in claims[f['id']][5]],[c['quote'] for c in f['citations']])
   self.assertEqual(w['typed_source_links'],self.parent['dependencies']['edges'])
   self.assertEqual(self.parent,self.original)
+ def test_linked_transport_uses_same_effective_model_as_its_request(self):
+  from clinical_core.agere import model_policy as policy
+  for scope,expected in [(policy.first_rung,policy.SONNET),(policy.question_path,policy.HAIKU),(policy.deliverable,policy.OPUS)]:
+   with scope():
+    job=L.request(self.parent,self.row,self.refs,self.received)
+    self.assertEqual(job['body']['model'],expected)
+    G.validate(job['body'])
+    L.parse(self.raw(job['body'],self.result()),job,self.refs)
  def test_canonical_identity_explicit_and_wrong_patient_rejected(self):
   w=json.loads(self.job['body']['messages'][0]['content']);self.assertEqual(w['canonical_patient'],'p');self.assertIn('raw source_patient_id',self.job['body']['system'])
   r=copy.deepcopy(self.row);next(iter(r['model_context']['sources'].values()))['source']['patient_id']='other'
@@ -49,6 +57,29 @@ class LinkedClaims(unittest.TestCase):
   with patch.object(G,'send') as send:
    with self.assertRaisesRegex(ValueError,'32768'):L.request(parent,self.row,self.refs,self.received)
    send.assert_not_called()
+ def test_complete_declared_source_inventory_has_no_record_count_cap(self):
+  row=copy.deepcopy(self.row);sources=row['model_context']['sources']
+  template=copy.deepcopy(next(iter(sources.values())))
+  for n in range(133-len(sources)):
+   key='additional-'+str(n);item=copy.deepcopy(template);item['source']['record_id']=key;sources[key]=item
+  job=L.request(self.parent,row,self.refs,self.received)
+  self.assertEqual(len(job['source_records']),133)
+  self.assertEqual(set(job['source_records']),set(sources))
+ def test_subscription_keeps_every_cross_group_claim_and_duplicate_guard(self):
+  parent=copy.deepcopy(self.parent);template=parent['passes'][0]['result']['findings'][0]
+  parent['passes'][0]['result']['findings']=[{**copy.deepcopy(template),'id':'g'+str(n)}for n in range(133)]
+  parent['passes']=parent['passes'][:1]
+  with patch.object(G,'maximum_request_bytes',return_value=None):
+   job=L.request(parent,self.row,self.refs,self.received)
+   self.assertEqual(len(job['finding_ids']),133)
+   rows=json.loads(job['body']['messages'][0]['content'])['claims']['rows']
+   self.assertEqual([r[0]for r in rows],['g'+str(n)for n in range(133)])
+   self.assertTrue(all(r[3:5]==[template['text'],template['unresolved']]for r in rows))
+   parent['passes'][0]['result']['findings'][-1]['id']='g0'
+   with self.assertRaisesRegex(ValueError,'Unique'):L.request(parent,self.row,self.refs,self.received)
+  parent['passes'][0]['result']['findings'][-1]['id']='g132'
+  with patch.object(G,'maximum_request_bytes',return_value=32768):
+   with self.assertRaisesRegex(ValueError,'bounded'):L.request(parent,self.row,self.refs,self.received)
  def test_missing_duplicate_unknown_claim_dispositions_rejected(self):
   for kind in ['missing','duplicate','unknown']:
    v=self.result()

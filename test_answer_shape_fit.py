@@ -86,6 +86,36 @@ class RequestedShape(unittest.TestCase):
         self.assertFalse(S.requested('What was the average LDL in 2029?')['percent'])
 
 
+class EntityAttribution(unittest.TestCase):
+    def test_aggregate_cannot_replace_requested_entity_detail(self):
+        from clinical_core.agere.clinical.literal_check import shape_misfit
+        for q,fields in [
+            ('Show conservation checks, patient/account attribution and lifecycle dates.',{'patients':12,'accounts':20}),
+            ('Return customer/order attribution.',{'customer_count':12,'order_count':20}),
+            ('Include payer and provider attribution.',{'payer_total':12,'provider_total':20})]:
+            with self.subTest(q=q):self.assertIsNotNone(shape_misfit(q,ans('table',table=[fields]),analyst=True))
+
+    def test_every_row_needs_the_requested_identity_but_unknown_values_are_preserved(self):
+        from clinical_core.agere.clinical.literal_check import shape_misfit
+        q='Show patient/account attribution.'
+        rows=[{'patient_id':'a','account_id':'same'},{'patient_id':'b','account_id':None}]
+        self.assertIsNone(shape_misfit(q,ans('table',table=rows)))
+        rows[1].pop('account_id');self.assertIsNotNone(shape_misfit(q,ans('table',table=rows)))
+
+    def test_named_nested_identities_and_other_industry_entities_are_supported(self):
+        from clinical_core.agere.clinical.literal_check import shape_misfit
+        self.assertIsNone(shape_misfit('Report customer/order attribution.',ans('table',table=[
+            {'customer':{'identifier':'c'},'order_number':'o'}])))
+
+    def test_counts_source_qualifiers_empty_results_and_declines_keep_their_shape(self):
+        from clinical_core.agere.clinical.literal_check import shape_misfit
+        for q in ('How many accounts lack patient/account attribution?',
+                  'Show the total paid using source/date attribution.'):
+            self.assertIsNone(shape_misfit(q,ans('value',value=10)))
+        self.assertIsNone(shape_misfit('Show patient/account attribution.',ans('table',table=[])))
+        self.assertIsNone(shape_misfit('Show patient/account attribution.',{'status':'unsupported'}))
+
+
 class Conformance(unittest.TestCase):
     def test_one_row_table_collapses_to_its_named_column(self):
         q = 'What percentage of eligible women had a cervical screening? Round to one decimal.'

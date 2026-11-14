@@ -3,6 +3,7 @@
 Frozen cohort plans and labels remain untouched. Every sampled field stays in an
 append-only acquisition inventory, including excluded, failed and abstained rows.
 """
+from .case_synthesis import token_count_calls
 from collections import Counter
 from pathlib import Path
 import fcntl
@@ -194,7 +195,7 @@ class Session:
                     **result,'provider':'claude','model':p['body']['model'],'request_bytes':p['request_bytes'],
                     'token_check':tokens,'usage':usage,'elapsed_seconds':time.perf_counter()-started,
                     'new_paid_api_calls':int(not usage.get('cache_hit',False)),
-                    'new_token_count_calls':int(not tokens['provider_count_cached']),'cache_hit':False,
+                    'new_token_count_calls':token_count_calls(tokens),'cache_hit':False,
                     'human_reviews_created':0,'training_labels_created':0,'clinical_execution_authorized':False,'limits':LIMITS}
                 row['result_digest']=digest(row);storage.save(dest,row);return row
             except Exception as exc:

@@ -34,13 +34,14 @@ VERSION = 'agere-together/1'
 ENGINE_OPERATIONS = frozenset({'survival', 'risk_adjustment', 'target_trial', 'forecast', 'program_effect', 'trajectory',
                                'demand', 'monitor'})
 DEFAULT_HYBRID_BUDGET_S = 900
-DEFAULT_SEMANTIC_MODEL = 'claude-haiku-5-5'   # semantic-analyst bake-off winner
-DEFAULT_RECONCILE_MODEL = 'claude-haiku-5-5'   # Haiku-first ladder (model_policy): a reconcile that errors or gives no verdict is retried once on Sonnet
+DEFAULT_SEMANTIC_MODEL = 'claude-sonnet-5-5'
+DEFAULT_RECONCILE_MODEL = 'claude-sonnet-5-5'
 DEFAULT_BUDGET_S = 90.0
 DEFAULT_RECONCILE_BUDGET_S = 60.0
-SEND_TIMEOUT_S = 180
-# The documented semantic model is ~141K characters; the tool loop adds at most 8 tool results of <= 60K characters.
-REQUEST_MAX_BYTES = 1_200_000
+# No invented sender deadline or request-size ceiling. Explicit caller settings
+# remain available; the provider enforces its actual context window.
+SEND_TIMEOUT_S = None
+REQUEST_MAX_BYTES = None
 CONTRACT_KEYS = ('status', 'answer_type', 'count', 'patient_ids', 'value', 'table', 'unknown_count', 'missing', 'grounding', 'readings')
 STATUSES = ('answered', 'partial', 'unsupported', 'grounding_failed', 'clarify')
 TRANSPORT = None   # urlopen-compatible transport for context_student.send; tests install a fake (no paid calls)
@@ -102,11 +103,12 @@ def warehouse(path):
 
 
 def _ledger_path(stack):
+    from .cost_telemetry import bind_ledger_path, QuestionLedgerPath
     explicit = getattr(stack, 'ledger_path', None)
     if explicit:
-        return Path(explicit)
+        return bind_ledger_path(explicit if isinstance(explicit, QuestionLedgerPath) else Path(explicit))
     from ..gateway import default_ledger_path
-    return default_ledger_path()
+    return bind_ledger_path(default_ledger_path())
 
 
 def _ledgered_send(stack, ledger, receipts):

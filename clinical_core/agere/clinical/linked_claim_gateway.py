@@ -1,26 +1,34 @@
-"""Dedicated bounded excerpt-only reconciliation transport.
+"""Dedicated complete-claim/excerpt reconciliation transport.
 
 The historical 20 KB source-pass gateways stay unchanged. This explicit route
-allows at most 32 KiB for all linked saved claims, never complete chart units.
-It retains the shared ledger, native token checks and failed-request protection.
+retains its 32 KiB API admission. Configured subscription requests use the
+service context window and exact local preflight; no saved claim is dropped.
+Both retain the shared ledger, native checks and failed-request protection.
 """
 from pathlib import Path
 import json, os, time, urllib.request, urllib.error
 from ...contracts import digest
 from ..gateway import PersistentGateway
 from ..economics import usage_cost
+from .case_synthesis import valid_token_preflight
+from ..model_policy import claude_model
 
 MAX_BYTES=32768
 CONTRACT='linked-claim-reconciliation/1'
 
 def request_key(body):return digest({'contract':CONTRACT,'provider':'claude','body':body})
 
+def maximum_request_bytes():
+    from ..subscription_transport import enabled
+    return None if enabled() else MAX_BYTES
+
 def validate(body):
     wire=json.loads(body['messages'][0]['content'])
     if wire.get('schema')!=CONTRACT or wire.get('stage')!='saved_claims_and_exact_excerpts' or wire.get('synthetic') is not True:
         raise ValueError('Exact synthetic claim-reconciliation contract required')
-    if len(json.dumps(body,allow_nan=False).encode())>MAX_BYTES:raise ValueError('Linked claim request exceeds 32768 bytes')
-    if body['model']!=PersistentGateway.MODELS['claude'] or body['max_tokens']!=8192:raise ValueError('Unexpected model or output bound')
+    limit=maximum_request_bytes()
+    if limit is not None and len(json.dumps(body,allow_nan=False).encode())>limit:raise ValueError('Linked claim request exceeds 32768 bytes')
+    if body['model']!=claude_model(PersistentGateway.MODELS['claude']) or body['max_tokens']!=8192:raise ValueError('Unexpected model or output bound')
 
 def send(body,ledger,out,*,parse):
     validate(body);key=request_key(body)
@@ -31,8 +39,8 @@ def send(body,ledger,out,*,parse):
     # The exact complete request must already have a successful native token check.
     count_key=digest({k:body[k] for k in ('model','messages','system','output_config')})
     tokens=json.loads((out/(count_key+'-tokens.json')).read_text())
-    if tokens['request_hash']!=count_key or type(tokens['input_tokens']) is not int or not 0<tokens['input_tokens']<=16000:
-        raise ValueError('Native token receipt required')
+    if not valid_token_preflight(body,tokens):
+        raise ValueError('Native token or subscription preflight receipt required')
     endpoint,var=PersistentGateway.ENDPOINTS['claude']
     if not os.environ.get(var):raise ValueError('Missing '+var)
     raced=ledger.reserve(key,'claude',body['model'])
@@ -41,7 +49,10 @@ def send(body,ledger,out,*,parse):
     raw=None;start=time.perf_counter()
     try:
         request=urllib.request.Request(endpoint,data=json.dumps(body,allow_nan=False).encode(),headers={'Content-Type':'application/json','x-api-key':os.environ[var],'anthropic-version':'2023-06-01'})
-        with urllib.request.urlopen(request,timeout=150) as response:raw=json.load(response)
+        # Complete claim accounting can legitimately take longer than the old
+        # API timeout. Subscription completion is governed by its own service
+        # boundary; retain every returned/partial attempt through that transport.
+        with urllib.request.urlopen(request,timeout=None if maximum_request_bytes() is None else 150) as response:raw=json.load(response)
         (out/(key+'.json')).write_text(json.dumps({'response':raw,'status':'received_pending_validation'},indent=2))
         result=parse(raw);seconds=time.perf_counter()-start;ledger.finish(key,response=raw,seconds=seconds)
         receipt={'request_hash':key,'model':raw['model'],'seconds':seconds,'usage':raw.get('usage'),'cost_estimate':usage_cost(raw['model'],raw.get('usage'))}

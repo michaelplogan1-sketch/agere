@@ -41,6 +41,91 @@ def snapshot(path, row):
             'dependency': digest([identity(), meta['snapshot'], records])}
 
 
+def historical_snapshot(received, row, historical):
+    """Keep an immutable implementation stamp only inside exact saved replay.
+
+    The caller has freshly verified this entire context and its patient-source
+    fingerprint. Every current link, request hash and parsed result must still
+    equal its saved counterpart before any old answer is returned. New source
+    dispatch never supplies this argument and always uses the current stamp.
+    """
+    if historical is None:return received
+    dependency=(historical.get('dependencies')or{}).get('availability_dependency')
+    # Earlier source contracts carry no availability stamp. In that case there
+    # is no historical value to preserve: retain the entire current snapshot.
+    if dependency is None:return received
+    if dependency==received['dependency']:return received
+    if historical.get('context_digest')!=digest(row):raise ValueError('Historical source context changed')
+    if not isinstance(dependency,str)or not re.fullmatch('[a-f0-9]{64}',dependency):
+        raise ValueError('Historical source availability provenance missing')
+    if row.get('patient_source_fingerprint')!=digest(list(received['records'].values())):
+        raise ValueError('Historical availability requires the exact complete patient-source fingerprint')
+    return {**received,'dependency':dependency}
+
+
+def verify_stage(path, key, saved, *, prepare, current_identity, location, parser, schema, meaning_contract=None):
+    """Rebuild a saved stage from current sources, exact requests and strict parsing."""
+    from .case_synthesis import input_token_total, LIMITS
+    historical=saved.get('code_identity')
+    if (saved.get('id')!=key or saved.get('schema')!=schema or saved.get('status')!='complete'
+        or not isinstance(historical,str)or not re.fullmatch('[a-f0-9]{64}',historical)
+        or saved.get('source_stage_digest')!=digest({k:v for k,v in saved.items()if k!='source_stage_digest'})):
+        raise ValueError('Source-stage result integrity changed')
+    row,bundle,links,packets,expected=prepare(path,saved['context_id'],historical=saved)
+    if expected!=key or links!=saved['dependencies'] or len(saved['passes'])!=len(packets):
+        raise ValueError('Source-stage input dependencies changed')
+    stages=[]
+    for packet,stage,(body,units)in zip(bundle['passes'],saved['passes'],packets):
+        request=digest({'contract':'context-student/1','provider':'claude','body':body})
+        if stage['usage']['request_hash']!=request:raise ValueError('Source-stage exact request changed')
+        raw=json.loads((location(path,key).parent/'provider'/(request+'.json')).read_text())['response']
+        result=passes._rename(parser(raw,body,units,row),'p'+str(packet['pass_number'])+'_')
+        wire=json.loads(body['messages'][0]['content'])
+        rebuilt={'pass_number':packet['pass_number'],'source_units':[u['id']for u in packet['evidence']],
+                 'result':result,'source_availability':wire['received_source_availability'],
+                 'usage':stage['usage'],'token_check':stage['token_check'],'request_bytes':passes.request_bytes(body)}
+        if meaning_contract is not None:rebuilt['canonical_identity']=wire['canonical_identity']
+        if rebuilt!=stage:raise ValueError('Source-stage parser, scope or output changed')
+        stages.append(rebuilt)
+    reviews=[r for p in stages for r in p['result']['unit_reviews']]
+    if sorted(r['source_unit_id']for r in reviews)!=sorted(bundle['unit_manifest']):
+        raise ValueError('Source-stage coverage mismatch')
+    unanswered=list(dict.fromkeys(u for p in stages for u in p['result']['unanswered']))
+    if len(stages)>1:unanswered.append('Cross-pass relationships have not yet been reconciled in this source-stage receipt.')
+    rebuilt={'schema':schema,'id':key,'status':'complete','synthetic':True,'patient_id':row['patient_id'],
+        'question':row['parameters']['question'],'context_id':row['id'],'context_digest':digest(row),'code_identity':historical,
+        'source_availability':{'schema':VERSION,'snapshot_digest':links['availability_dependency'],
+            'received_records':stages[0]['source_availability']['received_records'],'selected_records':len(row['model_context']['sources']),
+            'received_records_outside_selection':stages[0]['source_availability']['received_records_outside_selection'],
+            'clinical_meaning_validated':False},'source_scope':row['parameters']['streams'],
+        'dependencies':links,'passes':stages,'findings':[f for p in stages for f in p['result']['findings']],
+        'unanswered':unanswered,'review_steps':[ {**s,'id':digest([key,i,s]),'status':'proposed','execution_authorized':False}
+            for i,s in enumerate(s for p in stages for s in p['result']['review_steps'])],
+        'reconciliation':{'result':{'findings':[],'unanswered':[],'review_steps':[]},'groups':[]},
+        'coverage':{'received_units':len(reviews),'submitted_units':len(reviews),'model_accounted_units':len(reviews),
+            'unit_dispositions':dict(Counter(r['status']for r in reviews)),'unassessed_units':[r for r in reviews if r['status']=='unresolved'],
+            'complete_declared_scope':True,'complete_categories':'record_scope'not in row,'complete_chart':False,
+            'reconciliation_groups':0,'cross_group_relations_assessed':len(stages)==1,
+            'interpretation_accuracy_assessed':False,'retrieval_recall_assessed':False},
+        'provider':'claude','model':packets[0][0]['model'],'usage':[p['usage']for p in stages],
+        'token_check':{'input_tokens':input_token_total(p['token_check']for p in stages)},
+        'new_paid_api_calls':saved['new_paid_api_calls'],'new_token_count_calls':saved['new_token_count_calls'],
+        'cache_hit':False,'clinical_state_established':False,'clinical_execution_authorized':False,
+        'limits':LIMITS+['Source-stage completion accounts for submitted units only; multi-pass reconciliation is a separate stage.']}
+    if 'record_scope'in row:rebuilt['record_scope']=row['record_scope']
+    if meaning_contract is not None:rebuilt.update(source_meaning_contract=meaning_contract,meaning_judgments_validated=False)
+    rebuilt['source_stage_digest']=digest(rebuilt)
+    if rebuilt!=saved:raise ValueError('Source-stage complete current reconstruction differs')
+    if historical!=current_identity:
+        proof={'schema':'source-stage-current-revalidation/1','status':'passed','answer_id':key,
+               'context_id':row['id'],'context_digest':digest(row),'historical_identity':historical,
+               'current_identity':current_identity,'exact_requests_and_current_parser_results':True,
+               'complete_current_reconstruction_equal':True,'provider_calls':0,'clinical_qualification_transferred':False}
+        target=location(path,key).parent/'current-revalidation'/(key+'.json');target.parent.mkdir(exist_ok=True)
+        if not target.exists()or json.loads(target.read_text())!=proof:passes.atomic_write(target,proof)
+    return saved
+
+
 def envelope(body, units, links, received, *, excerpts=None):
     """Include this envelope in packing measurements; overflow never drops metadata."""
     packet = received['packet']; ix = received['records']

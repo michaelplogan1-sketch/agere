@@ -56,6 +56,21 @@ class GrammarFirst(Base):
 class HaikuFiller(Base):
     UNKNOWN = 'How many patients have pump failure?'  # a term the grammar does not know
 
+    def test_failed_typed_proposals_and_each_failure_survive_the_filler_receipt(self):
+        bad=spec_count_hf(Q);bad['where']['quote']='not in this question'
+        other=copy.deepcopy(bad);other['source']['table']='not_received'
+        with self.assertRaises(F.SpecNotFilled) as caught:
+            self.fill(Q,haiku=FakeModel([json.dumps(bad),json.dumps(other)]),fillers=('haiku',))
+        receipt=caught.exception.receipt;notes=receipt['fillers']['haiku']['notes']
+        self.assertEqual(receipt['calls'],2)
+        self.assertEqual([r['proposal']for r in notes['rejected_proposals']],[bad,other])
+        self.assertEqual(len(notes['calls']),2)
+        for item in notes['rejected_proposals']:
+            self.assertEqual(item['question_fingerprint'],R.fingerprint(Q))
+            self.assertEqual(item['proposal_fingerprint'],R.fingerprint(item['proposal']))
+            self.assertEqual(item['authority'],'unverified_proposal')
+            self.assertFalse(item['executed']);self.assertTrue(item['validation_error'])
+
     def spec_for(self, q):
         spec = spec_count_hf(q)
         spec['where']['quote'] = 'pump failure'

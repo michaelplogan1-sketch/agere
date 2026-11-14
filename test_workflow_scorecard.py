@@ -140,7 +140,8 @@ class ComputedAcceptance(unittest.TestCase):
  def test_six_passed_cases_cannot_complete_broader_release(self):
   from clinical_core.agere.workflow_scorecard import release_acceptance,CONTRACT
   c=json.loads(CONTRACT.read_text());rows=[{'id':n,'acceptance':{'status':'passed'}} for n in c['individual_cases']]
-  r=release_acceptance(rows);self.assertEqual(r['engineering_requirements_passed'],1);self.assertEqual(r['engineering_status'],'unassessed')
+  r=release_acceptance(rows);self.assertEqual(r['engineering_requirements_passed'],0);self.assertEqual(r['engineering_status'],'blocked')
+  self.assertIn('individual_question_to_followup',r['invalid_evidence_requirements'])
   self.assertEqual(r['scope_areas'],list(range(1,11)))
   with self.assertRaises(ValueError):release_acceptance(rows[:-1])
  def test_capability_receipts_require_snapshot_all_checks_and_unchanged_raw_evidence(self):

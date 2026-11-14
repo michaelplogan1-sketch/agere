@@ -3,44 +3,26 @@
 One self-contained HTML page (no external assets; charts are hand-written SVG). It reads only existing routes:
 /api/stack/compose (with conversation_id), /api/stack/conversation, /api/stack/briefing, /api/stack/economics and
 /api/stack/correct, /api/stack/learning-loop (read-only loop summary pill), plus /api/stack/briefing-feedback (opened / asked follow-up / dismissed per briefing card,
-the briefing ranker's implicit feedback). /ask?demo=1 adds the scripted buyer walkthrough in DEMO_STEPS; every step asks a real question.
+the briefing ranker's implicit feedback). /ask?demo=1 adds the scripted buyer walkthrough in DEMO_STEPS; it follows one saved contract analysis.
 """
 import json
 from pathlib import Path
 
-# Scripted buyer walkthrough for /ask?demo=1. Edit freely: kind is "briefing" (asks the top briefing card's follow-up),
-# "ask" (a standalone question) or "followup" (a follow-up resolved against the previous turn). "focus" scrolls the
-# answer card to a section (settlement, allocation, worklist, reasons, effect, curve).
+# The first synthetic release follows one versioned input and one saved answer.
+# Navigating buyer/evidence views never starts another analytical request.
 DEMO_STEPS = [
-    {'id': 'briefing', 'kind': 'briefing', 'label': 'Morning briefing',
-     'note': 'Agere scans the data release with no question asked and ranks what stands out. The top card\'s follow-up is asked for real.'},
-    {'id': 'settlement', 'kind': 'ask', 'label': 'VBC settlement risk', 'focus': 'settlement',
-     'question': 'What would our shared savings be with a benchmark of $90 PMPM and a sharing rate of 50%?',
-     'note': 'Exact contract arithmetic on the supplied terms, then 4,000 bootstrap draws through the same arithmetic: chance of earning savings, owing a loss, value at risk.'},
-    {'id': 'allocation', 'kind': 'ask', 'label': 'Fair allocation', 'focus': 'allocation',
-     'question': 'What would our shared savings be with a benchmark of $90 PMPM and a sharing rate of 50%, by practice?',
-     'note': 'Shapley values split the pooled settlement by each practice\'s marginal contribution, compared with a pro-rata split by member-months.'},
-    {'id': 'drivers', 'kind': 'ask', 'label': 'Which practices drove it',
-     'question': 'What is the allowed PMPM by practice?',
-     'note': 'Completion-adjusted allowed cost per member per month. Click a bar to drill into that practice in the same conversation.'},
-    {'id': 'worklist', 'kind': 'ask', 'label': 'Who to call this week', 'focus': 'worklist',
-     'question': 'who should our care managers call this week? we have 40 slots',
-     'note': 'An optimised 40-slot worklist: expected value, engagement probability, minutes and a certificate that the selection is optimal for the stated objective.'},
-    {'id': 'why', 'kind': 'ask', 'label': 'Why: reasons and drivers', 'focus': 'reasons',
-     'question': 'What drives emergency department visits in our population?',
-     'note': 'Each worklist row carries its own reason chips (previous step). This asks what drives ED use across the whole population.'},
-    {'id': 'effect', 'kind': 'ask', 'label': 'Did care management work?', 'focus': 'effect',
-     'question': 'Did care management reduce ED visits?',
-     'note': 'Matched difference-in-differences with placebo, pre-trend and synthetic-control checks. Warnings and the inference status are shown, not hidden.'},
-    {'id': 'curve', 'kind': 'ask', 'label': 'Readmission curve by payer', 'focus': 'curve',
-     'question': 'What does the readmission curve look like by payer?',
-     'note': 'Kaplan-Meier time to readmission after discharge, with censoring and a log-rank comparison across payers.'},
-    {'id': 'notes', 'kind': 'ask', 'label': 'EF < 40 from notes',
-     'question': 'How many heart failure patients have an EF under 40 documented in notes?',
-     'note': 'Ejection fraction lives in free text. Agere reads it from note-extracted facts and states the definition it used.'},
-    {'id': 'drill', 'kind': 'followup', 'label': 'Drill down: list them',
-     'question': 'list them',
-     'note': 'A follow-up in the same conversation. The console shows the standalone question it was answered as.'},
+    {'id': 'input', 'kind': 'input', 'label': 'Choose contract inputs',
+     'note': 'Choose the versioned synthetic terms in the conversation, or open an existing contract answer. No payer terms or attribution are guessed.'},
+    {'id': 'provider', 'kind': 'view', 'label': 'Population health view', 'section': 'provider',
+     'note': 'Native cost, member-months and approximate quality share one attributed population and period. Review needs are separate from clinical eligibility.'},
+    {'id': 'payer', 'kind': 'view', 'label': 'Payer view', 'section': 'payer',
+     'note': 'Inspect the other buyer view of the same calculation. Scenario variance is not realized savings, cash or payment entitlement.'},
+    {'id': 'drivers', 'kind': 'view', 'label': 'Trace the drivers', 'section': 'practices',
+     'note': 'Open practice contributions, monthly exposure and the complete member list. These describe recorded data; they do not establish causation.'},
+    {'id': 'inputs', 'kind': 'view', 'label': 'Inspect and revise assumptions', 'section': 'assumptions',
+     'note': 'The editor saves a versioned change only when you submit it. Recalculation checks current inputs; older answers and work retain their original bindings.'},
+    {'id': 'work', 'kind': 'work', 'label': 'Continue into saved work',
+     'note': 'Open the saved answer’s action workspace for evidence and internal review follow-up. No outreach or care is executed by this walkthrough.'},
 ]
 
 PAGE = r"""__EXPLORE_SHELL__
@@ -62,7 +44,7 @@ const fmt=(v,d)=>{if(!isNum(v))return v==null?'—':String(v);const a=Math.abs(v
 const usdK=v=>!isNum(v)?'—':Math.abs(v)>=1e6?(v<0?'−':'')+'$'+fmt(Math.abs(v)/1e6,1)+'M':Math.abs(v)>=1e3?(v<0?'−':'')+'$'+fmt(Math.abs(v)/1e3,0)+'k':(v<0?'−$':'$')+fmt(Math.abs(v),0);
 const usd=v=>isNum(v)?(v<0?'−$':'$')+Math.abs(v).toLocaleString(undefined,{maximumFractionDigits:0}):'—';
 const pct=(v,d)=>isNum(v)?(100*v).toFixed(d==null?1:d)+'%':'—';
-const label=k=>String(k).replace(/_/g,' ');
+const label=k=>fieldLabel(k);
 const store={get(k){try{return sessionStorage.getItem(k)}catch(_){return null}},set(k,v){try{v==null?sessionStorage.removeItem(k):sessionStorage.setItem(k,v)}catch(_){}}};
 const newId=()=>(window.crypto&&crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2)).replace(/[^A-Za-z0-9_-]/g,'');
 const state={cid:store.get('agere-conversation'),turns:[],active:-1,busy:false,csv:{},seq:0,briefing:null,outFilter:null};
@@ -121,7 +103,7 @@ function intervals(rows,opt){opt=opt||{};const W=CW(),lh=40,L=Math.min(Math.roun
  return s+'</svg>'}
 
 /* ---------- tables + CSV ---------- */
-function cols(rows,skip){const seen=[];rows.slice(0,50).forEach(r=>Object.keys(r||{}).forEach(k=>{if(!seen.includes(k)&&!(skip||[]).includes(k))seen.push(k)}));return seen}
+function cols(rows,skip){const seen=[];rows.forEach(r=>Object.keys(r||{}).forEach(k=>{if(!seen.includes(k)&&!(skip||[]).includes(k))seen.push(k)}));return seen}
 function cell(v){if(v==null)return '';if(Array.isArray(v))return v.map(x=>typeof x==='object'?JSON.stringify(x):x).join(', ');if(typeof v==='object')return JSON.stringify(v);return v}
 function tableHTML(rows,opt){opt=opt||{};if(!rows||!rows.length)return '';const id='csv'+(++state.seq);state.csv[id]={rows,name:opt.name||'agere-table'};
  const cs=opt.cols||cols(rows,opt.skip);const lim=opt.limit||200;
@@ -260,18 +242,17 @@ function worklist(a){const labels=((a.overall||{}).reason_labels)||{};let rows=a
     top_reasons:(v,r)=>(v||[]).map(c=>{const l=labels[c]||{};return '<span class="rchip '+esc(l.category||'')+'" title="'+esc(c)+'">'+esc(l.label||c)+'</span>'}).join('')+
      (r.reason_detail?'<details class="why"><summary>Evidence</summary><span class="muted" style="font-size:12px">'+esc(r.reason_detail)+'</span></details>':''),
     suggested_action:v=>'<span style="font-size:12px">'+esc(v)+'</span>'}})}
-function vizTrajectory(a){const rows=a.table||[];if(!rows.length||!('patient_id' in rows[0]))return null;const metric=['probability','change','slope_per_year'].find(k=>isNum(rows[0][k]));
- let h='<section class="sec"><div class="kpis"><div class="kpi"><div class="l">Patients flagged</div><div class="v">'+fmt(a.count!=null?a.count:rows.length)+'</div></div></div>';
- if(metric){const top=rows.slice().sort((x,y)=>Math.abs(y[metric])-Math.abs(x[metric])).slice(0,15);h+='<h3 style="margin-top:12px">Largest '+esc(label(metric))+' (top '+top.length+')</h3>'+
-  hbars(top.map(r=>({label:r.patient_id,value:r[metric]})),{fmt:v=>metric==='probability'?pct(v,0):fmt(v),title:label(metric)+' by patient'})}
- return h+tableHTML(rows,{name:'trajectory-patients'})+'</section>'}
+function vizTrajectory(a){const rows=a.table||[];if(!rows.length||!('patient_id' in rows[0]))return null;
+ const metric=['probability','change','slope_per_year'].find(k=>isNum(rows[0][k]));let h='';
+ if(metric){const top=rows.slice().sort((x,y)=>Math.abs(y[metric])-Math.abs(x[metric])).slice(0,15);h+='<section class="sec"><h3>Largest '+esc(label(metric))+' (top '+top.length+')</h3>'+hbars(top.map(r=>({label:r.patient_id,value:r[metric]})),{fmt:v=>metric==='probability'?pct(v,0):fmt(v),title:label(metric)+' by patient'})+'</section>'}
+ return h+patientOverview(a)}
 function vizTable(a){const rows=a.table||[];if(!rows.length)return '';const columns=[...new Set(rows.flatMap(r=>Object.keys(r)))];const key=GROUP_KEYS.find(k=>columns.includes(k)&&rows.some(r=>r[k]!=null&&typeof r[k]!=='object'))||columns.find(k=>rows.some(r=>typeof r[k]==='string'));
  const metric=pickMetric(rows,a.question||a.interpretation);let h='<section class="sec">';
  if(key&&metric&&rows.length>1&&rows.length<=60){const drillable=['group','segment','practice','pcp','payer','coverage_type','facility','organization_id','month','year','quarter'].includes(key);
   if(rows.every(r=>isTime(r[key]))){const cats=rows.map(r=>String(r[key]));h+='<h3>'+esc(label(metric))+' by '+esc(label(key))+'</h3>'+lines([{name:label(metric),pts:rows.map((r,i)=>[i,r[metric]])}],{title:label(metric)+' over time',cats,ylabel:label(metric)})}
   else{const sorted=rows.slice().sort((x,y)=>(y[metric]||0)-(x[metric]||0));h+='<h3>'+esc(label(metric))+' by '+esc(label(key))+'</h3>'+hbars(sorted.slice(0,30).map(r=>({label:r[key]??'Not recorded',value:r[metric],ask:drillable&&r[key]!=null?drill(r[key]):null})),{title:label(metric)+' by '+label(key),ref:/ratio/.test(metric)?1:null,refLabel:'no difference (1.0)'})+
    (drillable?'<p class="hint">Select a bar to ask a follow-up about that '+esc(label(key))+'.</p>':'')}}
- h+=tableHTML(rows,{name:'agere-answer',cols:a.table_columns,ask:key&&['group','segment','practice','pcp','payer','coverage_type','facility'].includes(key)?(r=>drill(r[key])):null});
+ h+='<details class="overview-records"><summary>Explore returned data ('+rows.length.toLocaleString()+' rows)</summary>'+tableHTML(rows,{name:'agere-answer',cols:a.table_columns,ask:key&&['group','segment','practice','pcp','payer','coverage_type','facility'].includes(key)?(r=>drill(r[key])):null})+'</details>';
  return h+'</section>'}
 function vizScalar(a){if(a.answer_type==='count'||a.answer_type==='value'){const v=a.answer_type==='count'?a.count:a.value;if(v==null||typeof v==='string')return '';
   return '<section class="sec"><div class="big">'+esc(fmt(v))+(a.unit?esc(a.unit):'')+'</div><div class="muted">'+(a.answer_type==='count'?'count':'value')+(a.unknown_count?' · '+fmt(a.unknown_count)+' patients could not be evaluated':'')+'</div></section>'}
@@ -375,6 +356,14 @@ function vizQueueing(a){const o=(a.overall||{}).queueing||{},st=o.staffing||{},s
  let h='<section class="sec" data-focus="staffing"><h3>'+(blk?'Bed capacity':'Staffing')+' · '+esc(o.source||'')+'</h3>';
  if(scope){const w=scope.window||{},population=scope.population==='selected'?fmt(scope.patient_count,0)+' selected patients':'All received patients';
   h+='<p class="hint"><b>Analysis scope.</b> '+esc(population)+' · arrivals '+esc(w.start||'start of available history')+' to '+esc(w.end||scope.as_of||'end of available history')+' (inclusive)'+(scope.as_of?' · snapshot '+esc(scope.as_of):'')+(scope.organization_id?' · organization '+esc(scope.organization_id):'')+'.</p>'}
+ if(o.status==='insufficient_data'){
+  h+='<p class="alert warn"><b>Capacity remains unknown.</b> '+esc(o.reason||'Required inputs are unavailable.')+'. Completed demand observations are retained below.</p>';
+  h+='<div class="kpis">'+[['Observed arrivals',fmt(inp.arrivals_used,0)],['Baseline arrivals / week',rate(inp.weekly_arrivals_base)],['Scaled arrivals / week',rate(inp.weekly_arrivals_scaled)],['Required servers','Unknown'],['Capacity gap','Unknown']].map(k=>'<div class="kpi"><div class="l">'+esc(k[0])+'</div><div class="v">'+esc(k[1])+'</div></div>').join('')+'</div>';
+  h+='<p class="hint">Demand scaling is arithmetic, not a forecast or a staffing estimate. '+(inp.all_arrivals_timed===false?'Hour-of-day peaks are not fully observed. ':'')+'Service duration is needed for a capacity scenario; an approved service target is needed to interpret that scenario, and current staffing is needed for a capacity gap. Explicit assumptions remain assumptions.</p>';
+  if(rows.length)h+=tableHTML(rows,{name:'queueing-demand-observations',caption:'Completed demand observations · staffing unresolved',cols:['source','arrivals_used','rate_window_start_date','rate_window_end_date','weekly_arrivals_base','arrival_scale_applied','weekly_arrivals_scaled','mean_service_minutes','required_servers','capacity_gap_servers']});
+  if((a.warnings||[]).length)h+='<details><summary>Source and assumption limits</summary><ul>'+a.warnings.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
+  if(rows.length&&rows[0].configured_parameters_json)h+='<details><summary>Configured engine inputs · service targets are not approved</summary><pre>'+esc(rows[0].configured_parameters_json)+'</pre></details>';
+  return h+'</section>'}
  h+='<div class="kpis">'+
   [['Peak '+(blk?'beds':'servers'),fmt(st.peak_servers)+(st.peak_hour?' ('+st.peak_hour+')':'')],[(blk?'Bed':'Server')+'-hours / week',fmt(st.total_server_hours_per_week)],
    ['Arrivals / week',rate(inp.weekly_arrivals_planned)],['Observed arrivals',fmt(inp.arrivals_used,0)],['Mean service (min)',isNum(inp.mean_service_minutes)?fmt(inp.mean_service_minutes,1):'—'],
@@ -625,6 +614,22 @@ function vizNetwork(a){const o=(a.overall||{}).provider_network||{},g=o.graph||{
  return h}
 /* contract strategy: KPI tiles, net-value distribution per option (step histograms), 5th-95th intervals, ranking flips,
    Nash negotiation frontier (MSR x sharing rate: break-even and equal-value curves, bargaining bounds, Nash point) */
+function vizContractPerformance(a){const c=a.overall.contract_performance,s=c.summary||{},q=c.quality||{},qo=q.overall||{},terms=c.contract||{};
+ const money=v=>v==null?'Unresolved':usd(v/100),kp=(l,v)=>'<div class="kpi"><div class="l">'+esc(l)+'</div><div class="v">'+esc(v)+'</div></div>';
+ let h='<section class="sec" data-focus="contract"><h3>'+esc(terms.label||'Contract performance')+'</h3><p class="hint">Authored synthetic terms · '+esc(terms.id)+' · version '+esc(terms.version)+' · '+esc((c.period||{}).start)+' to '+esc((c.period||{}).end)+'. Both views use the same saved cohort and calculations.</p>';
+ h+='<div class="kpis">'+kp('Attributed members',fmt(s.members))+kp('Recorded member-months',fmt(s.recorded_member_months))+kp('Observed allowed cost',money(s.observed_allowed_cents))+kp('Authored benchmark',money(s.benchmark_cents))+kp('Approximate quality',qo.denominator==null?'Unresolved':fmt(qo.numerator)+' / '+fmt(qo.denominator))+'</div>';
+ h+='<details open data-contract-section="provider"><summary>Provider / population health view</summary><p>Illustrative provider share: <strong>'+esc(money(s.illustrative_provider_share_cents))+'</strong>. Quality target '+(s.approximate_quality_target_met==null?'is unresolved':s.approximate_quality_target_met?'is met':'is not met')+' under the authored demo rule. Review observed cost and quality evidence before choosing internal follow-up.</p></details>';
+ h+='<details data-contract-section="payer"><summary>Payer view</summary><p>Illustrative retained positive benchmark variance: <strong>'+esc(money(s.illustrative_payer_retained_positive_variance_cents))+'</strong>. This is scenario arithmetic, not realized savings, cash or settlement. Nonmetric claims and claims without the same attributed member-month remain outside the ledger.</p></details>';
+ h+='<details data-contract-section="monthly"><summary>Monthly cost and exposure</summary>'+tableHTML((c.monthly||[]).map(r=>({'Month':r.month,'Member-months':r.recorded_member_months,'Allowed cost':money(r.observed_allowed_cents),'Benchmark':money(r.benchmark_cents)})),{name:'contract-monthly'})+'</details>';
+ h+='<details data-contract-section="practices"><summary>Practice contributions · descriptive drivers</summary>'+tableHTML((c.practice_drivers||[]).map(r=>({'Practice':r.practice_id,'Member-months':r.recorded_member_months,'Allowed cost':money(r.observed_allowed_cents),'Benchmark variance':money(r.observed_variance_cents)})),{name:'contract-practices'})+'</details>';
+ h+='<details data-contract-section="members"><summary>Members and internal review needs</summary>'+tableHTML(a.table||[],{name:'contract-members'})+'</details>';
+ if(c.editing_available)h+='<details data-contract-section="assumptions"><summary>Revise demo assumptions</summary><div data-contract-editor="'+esc(terms.id)+'" data-binding="'+esc(c.contract_digest)+'"><p class="hint">Save a versioned authored assumption and recalculate this report. Earlier answers and work remain in history; affected work needs a current binding. These inputs are not a payer offer or care instruction.</p><div class="contract-input-grid"><label>Benchmark per member-month ($)<input data-contract-benchmark value="'+esc(terms.benchmark_pmpm_cents/100)+'" inputmode="decimal"></label><label>Sharing rate (%)<input data-contract-sharing value="'+esc(terms.sharing_rate_bps/100)+'" inputmode="decimal"></label><label>Approximate quality target (%)<input data-contract-quality value="'+esc(terms.quality.target_bps/100)+'" inputmode="decimal"></label><label>Reason for the change<input data-contract-reason></label></div><div class="tools"><button type="button" class="btn primary" data-contract-save>Save assumptions and recalculate</button><button type="button" class="btn" data-contract-restore="base">Restore packaged demo inputs</button></div><p data-contract-message role="status"></p></div></details>';
+ h+='<p class="hint">Quality uses the registered approximation. Clinical suitability, complete capture and payment entitlement are unestablished. Save or reopen the evidence and internal review work from this answer.</p></section>';return h;}
+async function saveContractInput(el){const box=el.closest('[data-contract-editor]'),message=box.querySelector('[data-contract-message]');
+ const scaled=selector=>{const text=box.querySelector(selector).value.trim(),m=/^(\d+)(?:\.(\d{1,2}))?$/.exec(text);if(!m)throw Error('Use a nonnegative amount with at most two decimal places.');const n=Number(m[1])*100+Number((m[2]||'').padEnd(2,'0'));if(!Number.isSafeInteger(n))throw Error('This value cannot be represented exactly by this input.');return n};
+ try{const reason=box.querySelector('[data-contract-reason]').value.trim();if(!reason)throw Error('Enter a reason so the change remains traceable.');const restore=el.dataset.contractRestore||'',changes=restore?{}:{benchmark_pmpm_cents:scaled('[data-contract-benchmark]'),sharing_rate_bps:scaled('[data-contract-sharing]'),quality_target_bps:scaled('[data-contract-quality]')};el.disabled=true;message.textContent='Saving the versioned demo input…';
+ const response=await fetch('/api/stack/contract-input/save',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({contract_id:box.dataset.contractEditor,expected_digest:box.dataset.binding,changes,restore_revision:restore,reason})});const data=await response.json();if(!response.ok||data.error)throw Error(data.error||'The input could not be saved.');message.textContent='Input saved. Recalculating from the current version…';await ask(data.question,{standalone:true});
+ }catch(error){message.textContent=String(error.message||error);el.disabled=false}}
 function vizContract(a){const cs=(a.overall||{}).contract_strategy||{},rows=a.table||[],p=cs.parameters||{},n=cs.negotiation,sim=cs.simulation||{};
  const kp=(l,v)=>'<div class="kpi"><div class="l">'+l+'</div><div class="v">'+esc(v)+'</div></div>',b=rows[0]||{},lam=cs.risk_aversion,cf=cs.confidence;
  let h='<section class="sec" data-focus="contract"><h3>Contract strategy — benchmark $'+fmt(p.benchmark_pmpm,2)+' PMPM, base cost $'+fmt(sim.base_pmpm,2)+' PMPM, '+
@@ -827,7 +832,16 @@ function vizFunnel(a){const o=(a.overall||{}).risk_outcomes||{},p=o.parameters||
  if((o.notes||[]).length)h+='<ul class="hint">'+o.notes.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
  if((o.data_gaps||[]).length)h+='<details><summary>Data limits ('+o.data_gaps.length+')</summary><ul>'+o.data_gaps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
  return h}
+function vizMonitorComparison(a){const c=a.overall.monitor_comparison,rows=Array.isArray(c.rows)?c.rows:(a.table||[]),charts=(c.registered_chart||{}).chart_status||[],base=c.baseline||{};
+ const months=new Set(rows.map(r=>r.month)),flags=rows.filter(r=>r.stable_family_flag===true).length,patterns=charts.filter(r=>r.status==='rate_signal'),missing=rows.filter(r=>r.rate==null).length;
+ const kp=(name,value)=>'<div class="kpi"><div class="l">'+esc(name)+'</div><div class="v">'+esc(value)+'</div></div>';
+ let h='<section class="sec" data-focus="monitor-comparison"><h3>Rate changes and source evidence</h3><p class="hint">Complete native comparison. Model verification and clinical significance remain separate.</p><div class="kpis">'+kp('Months examined',months.size)+kp('Corrected stable-rate flags',flags)+kp('Charts with exploratory patterns',patterns.length)+kp('Months with unknown rates',missing)+'</div>';
+ h+='<p>The stable-rate comparison tests each month against the remaining reporting period. Bonferroni covers '+esc(base.family_tests)+' tests. Registered run-pattern rules can flag a chart even when no single point crosses its limits.</p>';
+ if(patterns.length)h+='<details open><summary>Registered exploratory patterns</summary>'+tableHTML(patterns.map(r=>({'Series':r.series,'Group':r.group,'Rules':(r.rate_rules||[]).join(', '),'Months':(r.rate_signal_months||[]).join(', ')})),{name:'registered-rate-patterns'})+'</details>';
+ h+='<details open><summary>Monthly rates and baseline comparison</summary>'+tableHTML(rows.map(r=>({'Month':r.month,'Series':r.series,'Group':r.group,'Events':r.numerator,'Member-months':r.exposure,'Rate per 1,000':r.rate,'Adjusted p':r.stable_bonferroni_p,'Corrected flag':r.stable_family_flag,'Source records':r.received_source_records})),{name:'native-monitor-comparison'})+'</details>';
+ h+='<details><summary>Assumptions and source limits</summary><ul>'+(base.assumptions||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'<li>'+esc(c.source_limitation||'')+'</li><li>'+esc((c.registered_chart||{}).multiplicity||'')+'</li></ul></details></section>';return h;}
 function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
+ if(o.monitor_comparison)return vizMonitorComparison(a);
  if(a.answer_type==='table'&&a.table_columns)return '<p class="hint">'+esc(a.interpretation||'')+'</p>'+vizTable(a);
   if(o.loop_closure)return vizLoops(a);
   if(o.diagnostic_delay)return vizDelay(a);
@@ -835,6 +849,7 @@ function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.ove
   if(o.target_trial)return vizTargetTrial(a);
   if(o.line_of_therapy)return vizLines(a);
   if(o.trial_feasibility)return vizFunnel(a);
+  if(o.contract_performance)return vizContractPerformance(a);
   if(o.contract_strategy)return vizContract(a);
   if(o.knowledge)return vizKnowledge(a);
   if(o.early_signal)return vizEarlySignal(a);
@@ -869,25 +884,28 @@ function details(a){let h='';
  if(a.query)h+='<details><summary>Query</summary><pre>'+esc(a.query)+'</pre></details>';
  return h}
 function executionInfo(d){d=d||{};const pr=d.planner_receipt||{},econ=d.planning_economics||{},tg=d.together||{},analyst=tg.analyst||{},hybrid=tg.hybrid||{};
- const calls=isNum(d.new_paid_api_calls)?d.new_paid_api_calls:isNum(pr.new_paid_api_calls)?pr.new_paid_api_calls:null;
- const total=econ.failed_or_unpriced_api_cost?null:isNum(econ.new_api_estimate_usd)?econ.new_api_estimate_usd:null;
- const known=isNum(econ.known_api_estimate_usd)?econ.known_api_estimate_usd:null;
+ const cr=d.cost_receipt,authoritative=!!(cr&&cr.version==='cost-receipt/1');
+ const calls=authoritative?(isNum(cr.paid_calls)?cr.paid_calls:null):isNum(d.new_paid_api_calls)?d.new_paid_api_calls:isNum(pr.new_paid_api_calls)?pr.new_paid_api_calls:null;
+ const total=authoritative?(cr.ledger_consistent===true&&cr.accounting_complete!==false&&cr.usd_known===true&&isNum(cr.usd)?cr.usd:null):econ.failed_or_unpriced_api_cost?null:isNum(econ.new_api_estimate_usd)?econ.new_api_estimate_usd:null;
+ const known=authoritative?(isNum((d.cost_telemetry||{}).api_usd)?d.cost_telemetry.api_usd:null):isNum(econ.known_api_estimate_usd)?econ.known_api_estimate_usd:null;
  const cost=total!=null?'$'+total.toFixed(4):'Unknown'+(known>0?' (known portion $'+known.toFixed(4)+')':'');
  const models=new Set();function model(v){if(typeof v==='string'&&v)models.add(v)}
  function walk(r){if(!r||typeof r!=='object')return;model(r.model);(r.stages||[]).forEach(walk);if(r.receipt)walk(r.receipt)}
  (pr.steps||[]).forEach(walk);if(pr.model)model(pr.model);
  if(analyst.state&&!String(analyst.state).startsWith('skipped')){model(analyst.model);Object.values(hybrid.models||{}).forEach(model)}
  if(tg.reconcile)model(tg.reconcile.model);
+ if(authoritative)Object.entries(cr.calls_by_model||{}).filter(([_,n])=>isNum(n)&&n>0).forEach(([name])=>model(name));
  const raw=pr.route||d.route||'',route=tg.winner==='analyst'?'Executed analyst SQL':ROUTES[raw]||raw||'Not recorded';
  const graph=d.graph||{},nodes=Array.isArray(graph.nodes)?graph.nodes:[],operations=[...new Set(nodes.map(n=>n.operation).filter(Boolean))];
- return {route,calls,total,known,cost,models:[...models],operations,reason:tg.reason||pr.escalation_reason||'',
+ return {route,calls,total,known,cost,scope:typeof econ.scope==='string'?econ.scope:'',models:[...models],operations,reason:tg.reason||pr.escalation_reason||'',
   analystState:analyst.state||tg.analyst_state||'',decision:hybrid.decision||tg.decision||'',cached:!!(d.cache_hit||pr.cache_hit)}}
 function executionDetails(d){const x=executionInfo(d),rows=[['Answer route',x.route],['Executed operators',x.operations.join(', ')||'Not recorded'],
- ['Models recorded',x.models.join(', ')||'None recorded'],['New paid API calls',x.calls==null?'Unknown':String(x.calls)],['New API cost estimate',x.cost]];
+ ['Models recorded',x.models.join(', ')||'None recorded'],['New paid API calls',x.calls==null?'Unknown':String(x.calls)],['This step · API cost estimate',x.cost]];
+ if(x.scope)rows.push(['Cost coverage',x.scope]);
  if(x.analystState)rows.push(['Analyst dispatch',label(x.analystState)]);if(x.decision)rows.push(['Selection / repair',label(x.decision)]);
  if(x.cached)rows.push(['Reuse','Cached result reused']);if(x.reason)rows.push(['Route explanation',x.reason]);
  return '<details data-execution><summary>How Agere answered</summary><div class="tablewrap"><table><tbody>'+rows.map(([k,v])=>'<tr><th scope="row">'+esc(k)+'</th><td class="wrap">'+esc(v)+'</td></tr>').join('')+
- '</tbody></table></div><p class="hint">API estimates cover this request; reused calls are not new charges. Local compute, setup and review are excluded. Unknown cost is not zero. Execution checks do not establish clinical accuracy.</p></details>'}
+ '</tbody></table></div><p class="hint">This estimate covers the recorded step, not necessarily the full history of this answer. Earlier attempts and reused work may have separate costs. Subscription figures are API equivalents, not cash charges. Local compute, setup and review are excluded. Unknown cost is not zero. Execution checks do not establish clinical accuracy.</p></details>'}
 function badges(t){const d=t.data||{},a=d.answer||{},x=executionInfo(d);const st=t.error?'error':(a.status||'');
  const b=['<span class="badge '+esc(st)+'">'+esc(label(st||'unknown'))+'</span>',
   '<span class="badge">Route: '+esc(x.route)+'</span>','<span class="badge">Paid API calls: '+(x.calls==null?'Unknown':fmt(x.calls))+'</span>',
@@ -896,33 +914,40 @@ function badges(t){const d=t.data||{},a=d.answer||{},x=executionInfo(d);const st
 function resolvedLine(t){const c=(t.data||{}).conversation;const r=c?c.resolved_question:t.resolved;if(!r||r===t.question)return '';
  return '<div class="resolved">Answered as: <b>'+esc(r)+'</b>'+(c&&c.method==='hosted'?' (follow-up rewritten by a hosted model, then planned normally)':'')+'</div>'}
 function headlineHTML(a){let hl=String(a.headline||a.status||'');const cut=hl.indexOf(' Warnings (');if(cut>0&&(a.warnings||[]).length)hl=hl.slice(0,cut);
- return '<h2 class="headline'+(hl.length>200?' long':'')+'">'+esc(hl)+'</h2>'}
+ const boundary=hl.search(/[.!?](?=\s+[A-Z0-9])/),short=hl.length>280&&boundary>0?hl.slice(0,boundary+1):hl,remaining=short===hl?'':hl.slice(boundary+1).trim();
+ return '<div class="answer-narrative"><h2 class="headline">What the answer shows</h2><p>'+esc(short)+'</p>'+(remaining?'<details><summary>Read the full saved summary</summary><p>'+esc(remaining)+'</p></details>':'')+'</div>'}
 function warnBox(a){const w=(a.warnings||[]),m=(a.missing||[]);let h='';
  if(a.status==='clarify'&&(a.readings||[]).length&&typeof a.readings[0]==='string')h+='<div class="alert warn" role="note"><h3>Which do you mean?</h3><p>Agere\'s independent analysts found more than one defensible reading of this question. Ask again with the one you mean:</p><ul>'+a.readings.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
  if(w.length)h+='<div class="alert warn" role="note"><h3>Warnings ('+w.length+')</h3><ul>'+w.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
  if(m.length)h+='<div class="alert '+(a.status==='unsupported'?'bad':'warn')+'" role="note"><h3>Not covered</h3><ul>'+m.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';return h}
 function readingsBox(a,q){const r=a.readings||[];if(r.length<2||typeof r[0]==='string')return '';const show=v=>typeof v==='number'?fmt(v):v&&v.patients!=null?fmt(v.patients)+' patients':v&&v.rows?v.rows.length+' rows':esc(JSON.stringify(v));let h='<div class="sec" data-readings><h3>Two defensible readings</h3>'+(a.clarifying_question?'<p class="hint">'+esc(a.clarifying_question)+'</p>':'')+'<div class="readings">';r.forEach((x,i)=>{h+='<div class="reading'+(x.default?' default':'')+'"><div class="muted">'+(x.default?'Shown (default)':'Alternative')+'</div>'+'<div class="val">'+show(x.result)+'</div><p>'+esc(x.definition||'')+'</p>'+(x.query?'<details><summary>Query</summary><pre>'+esc(x.query)+'</pre></details>':'')+(q&&x.definition?'<button type="button" class="btn small" data-ask="'+esc(q+' (definition: '+x.definition+')')+'">Use this reading</button>':'')+'</div>'});return h+'</div></div>'}
-function actionLink(c){if(!c||!/^ANS-[0-9a-f]{24}$/.test(c.id||''))return '';return '<section class="next-step"><div><h3>Take this answer further</h3><p>Create an interactive view, explore the saved cohort, or prepare synthetic follow-up work.</p></div><a class="btn primary" href="/action-center?context='+encodeURIComponent(c.id)+'">Open action workspace ↗</a></section>'}
+function actionLink(c,blocked=false){if(!c||!/^ANS-[0-9a-f]{24}$/.test(c.id||''))return '';return '<section class="next-step"><div><h3>'+esc(blocked?'Review this saved answer':'Choose your next step')+'</h3><p>'+esc(blocked?'This answer is unavailable for follow-ups. Inspect the saved evidence or start a new question.':'Ask a follow-up below, or open the workspace to prepare a report or synthetic review work.')+'</p></div><a class="btn primary" href="/action-center?context='+encodeURIComponent(c.id)+'">Open action workspace ↗</a></section>'}
+function clarificationCard(c){if(!c)return '';const pending=c.status==='pending',tid='intent-'+c.id;
+ const message={complete:'Your response was saved. The continued analysis appears below.',running:'Your response was saved and the analysis is continuing.',failed:'The continuation stopped. Completed work and the failed attempt are saved. Start a new analysis to try again.',pending:'Completed work is saved. Choose what you mean to continue the affected analysis.'}[c.status]||'This clarification is unavailable.';
+ return '<section class="sec clarification-card" data-clarification="'+esc(c.id)+'"><h3>'+esc(c.question)+'</h3><p>'+esc(c.reason)+'</p><p class="hint" role="status">'+esc(message)+'</p>'+
+ (!pending?'':(c.options||[]).map(o=>'<p><button type="button" class="btn" data-clarification-option="'+esc(o.id)+'">'+esc(o.label)+'</button> <span class="hint">'+esc(o.meaning)+'</span></p>').join('')+'<label for="'+esc(tid)+'">Or describe what you mean</label><textarea id="'+esc(tid)+'"></textarea><button type="button" class="btn primary" data-clarification-text="1">Continue this analysis</button>')+'</section>'}
 function requestPlan(d){const c=d.request_contract||(d.planner_receipt||{}).request_contract;if(!c)return '';
  const r=c.request||{},seen=new Set(),items=(c.bindings||[]).filter(b=>{const k=b.kind+':'+b.quote;if(seen.has(k)||b.path==='where'&&b.quote===c.original_question)return false;seen.add(k);return true});
  const interpretation=((d.planner_receipt||{}).interpretation||{});
  const review=interpretation.review==='fully_consumed_grammar'?'Fully parsed request':interpretation.review==='checked_hosted_interpretation'?'Model interpretation checked against the schema and compiled query':'Candidate interpretation · review required';
- return '<details class="sec" open><summary><strong>How I interpreted your question</strong></summary><p class="hint">'+esc(review)+(c.population?' · limited to '+c.population.length+' saved patients':'')+'</p><ul>'+items.map(b=>'<li>'+esc(b.quote)+' <span class="hint">— '+esc(b.disposition==='unresolved'?'unresolved':b.kind)+'</span></li>').join('')+'</ul><details><summary>Inspect computation</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(c.query)+'</pre><p class="hint">Request '+esc(c.id.slice(0,12))+' · source '+esc((c.source_identity||{}).source_digest||'')+'</p></details></details>'}
-function renderTurn(i){const t=state.turns[i];const box=$('#answer');state.active=i;renderThread();if(!t){box.innerHTML='';setResultMode(false);return}
+ return '<details class="sec" open><summary><strong>How I interpreted your question</strong></summary><p class="hint">'+esc(review)+(c.population?' · limited to '+c.population.length+' saved patients':'')+'</p><ul>'+items.map(b=>'<li>'+esc(b.quote)+' <span class="hint">— '+esc(b.disposition==='unresolved'?'unresolved':b.kind)+'</span></li>').join('')+'</ul><details><summary>Inspect computation</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(c.query||JSON.stringify(c.graph||c.native_reference||{},null,2))+'</pre><p class="hint">Request '+esc(typeof c.id==='string'?c.id.slice(0,12):'Not recorded')+' · source '+esc((c.source_identity||{}).source_digest||'')+'</p></details></details>'}
+function renderTurn(i){const t=state.turns[i];const box=$('#answer');state.active=i;renderThread();paintTranscript(i);if(!t){box.innerHTML='';setResultMode(false);return}
  setResultMode(true);syncScope(t);
- if(t.pending){box.innerHTML='<div class="q">'+esc(t.question)+'</div><div class="working-state"><div class="working-title"><span class="working-ring" aria-hidden="true"></span>Working through your question</div><p>Interpreting the request and computing against the warehouse. This can take a moment.</p><div class="loading-bars" aria-hidden="true"><i></i><i></i><i></i></div></div>';return}
- if(t.error){box.innerHTML='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+'<h2 class="headline">This question needs another look.</h2><div class="alert bad">'+esc(t.error)+'</div><p class="hint">Your earlier answers are still in the conversation. Edit the question or start a new analysis.</p><button class="btn" data-edit-question="'+esc(t.question)+'">Edit question</button>';return}
+ if(t.pending){box.innerHTML='<div class="q">'+esc(t.question)+'</div>'+workingHTML(t);paintWork(t);return}
+ if(t.error){box.innerHTML=requestProblem(t);return}
  if(!t.data){box.innerHTML='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+'<h2 class="headline">'+esc(t.summary||'Saved result')+'</h2>'+actionLink(t.action_context)+'<div class="tools">'+(t.action_context?'<a class="btn primary" href="/ask?context='+encodeURIComponent(t.action_context.id)+'">Open full analysis ↗</a>':'')+'<button type="button" class="btn small" data-ask-standalone="'+esc(t.resolved||t.question)+'">Ask again</button></div>';return}
- const a=t.data.answer||{};state.csv={};const x=executionInfo(t.data),status={answered:'Answer ready',partial:'Partial answer',not_understood:'Needs clarification',unsupported:'Not supported',low_confidence:'Needs review'}[a.status]||label(a.status||'Unknown status');
- let h='<div class="answer-topline"><span class="eyebrow">'+(t.archive?'SAVED ANALYSIS':'ANALYSIS RESULT')+'</span><button class="text-button" data-edit-question="'+esc(t.question)+'">Edit question ↗</button></div><div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+headlineHTML(a)+
- '<div class="badges"><span class="badge '+esc(a.status)+'">'+esc(status)+'</span><span class="badge">'+(t.archive?'Recorded API cost: ':'API estimate: ')+esc(x.cost)+'</span>'+(t.seconds!=null?'<span class="badge">'+t.seconds.toFixed(1)+' seconds</span>':'')+'</div>'+
- (t.archiveNotice?'<div class="alert warn">'+esc(t.archiveNotice)+'</div>':'')+warnBox(a)+readingsBox(a,t.resolved||t.question);
- h+='<div class="answer-tabs" role="tablist" aria-label="Answer views">'+['overview','data','method'].map((n,j)=>'<button type="button" id="tab-'+n+'" role="tab" aria-controls="result-'+n+'" aria-selected="'+(j===0)+'" tabindex="'+(j===0?0:-1)+'" data-answer-tab="'+n+'">'+({overview:'Overview',data:'Data',method:'Method & sources'}[n])+'</button>').join('')+'</div><section class="answer-panel" id="result-overview" data-answer-panel="overview" role="tabpanel" aria-labelledby="tab-overview">';
- try{h+=visual(a)||'<p class="hint">See the method and sources for the available evidence.</p>'}catch(err){h+='<div class="alert warn">Visual unavailable: '+esc(err.message)+'</div>'+tableHTML(a.table||[],{name:'agere-answer'})}
- h+='</section><section class="answer-panel" id="result-data-panel" data-answer-panel="data" role="tabpanel" aria-labelledby="tab-data" hidden><div class="result-search"><label class="sr" for="result-search">Search returned rows</label><input id="result-search" type="search" placeholder="Search returned rows"><span id="result-count" class="result-status"></span></div><div id="result-data"></div></section><section class="answer-panel" id="result-method" data-answer-panel="method" role="tabpanel" aria-labelledby="tab-method" hidden>'+requestPlan(t.data)+executionDetails(t.data)+details(a)+'</section>';
+ if(t.data.clarification){box.innerHTML='<div class="q">'+esc(t.data.clarification.original_question||t.question)+'</div>'+clarificationCard(t.data.clarification)+'<div data-recorded-work>'+recordedWork(t)+'</div>';return}
+ const a=t.data.answer||{},ds=decisionState(t);state.csv={};const x=executionInfo(t.data),status=ds.blocked?'Historical result':ds.interrupted?'Review paused':a.verification==='unverified'?'Needs review':{answered:'Analysis saved',partial:'Partial answer',not_understood:'Needs clarification',unsupported:'Not supported',low_confidence:'Needs review'}[a.status]||label(a.status||'Unknown status');
+ let h='<div class="answer-topline"><span class="eyebrow">'+(t.archive?'SAVED ANSWER':'YOUR ANSWER')+'</span><button class="text-button" data-edit-question="'+esc(t.question)+'">Edit request ↗</button></div><details class="answer-request"><summary>'+esc(t.question)+'</summary><p>'+esc(t.question)+'</p>'+resolvedLine(t)+'</details>'+
+ '<div class="brief-status-row"><span class="badge '+esc(ds.blocked?'partial':a.status)+'">'+esc(status)+'</span><button type="button" class="text-button" data-open-answer-tab="method">Evidence &amp; usage ↗</button></div>'+
+ (t.archiveNotice?'<div class="archive-message" role="note"><span>'+esc(t.archiveNotice)+'</span></div>':'')+decisionHero(t)+(a.status==='clarify'?warnBox(a):'');
+ h+='<div class="answer-tabs" role="tablist" aria-label="Answer views">'+['overview','data','method'].map((n,j)=>'<button type="button" id="tab-'+n+'" role="tab" aria-controls="result-'+n+'" aria-selected="'+(j===0)+'" tabindex="'+(j===0?0:-1)+'" data-answer-tab="'+n+'">'+({overview:'Summary',data:ds.patient?'Patients & data':'Data',method:'Evidence'}[n])+'</button>').join('')+'</div><section class="answer-panel" id="result-overview" data-answer-panel="overview" role="tabpanel" aria-labelledby="tab-overview">';
+ h+=requestedOutputs(t)+decisionActions(t)+(ds.interrupted?'<p class="hint"><button class="text-button" data-open-answer-tab="method">Review paused · inspect saved progress ↗</button></p>':'')+(Object.keys(a.facts||{}).length?'<details class="answer-details"><summary>Findings</summary>'+answerSummary(a,{noMetric:true})+'</details>':'')+resultLimitations(a);
+ if(a.answer_type!=='patient_set')try{h+=visual(a)||''}catch(err){h+='<details class="answer-details"><summary>View result as a table</summary>'+tableHTML(a.table||[],{name:'agere-answer'})+'</details>'}
+ h+='</section><section class="answer-panel" id="result-data-panel" data-answer-panel="data" role="tabpanel" aria-labelledby="tab-data" hidden><div class="data-view-heading"><div><h3>'+esc(ds.patient?'Patients in this result':'Returned data')+'</h3></div><div id="result-downloads"></div></div><div class="result-search"><label class="sr" for="result-search">Search returned rows</label><input id="result-search" type="search" placeholder="Search returned rows"><span id="result-count" class="result-status" role="status"></span><label class="column-toggle"><input type="checkbox" id="result-all-columns"> Show all columns</label></div><div id="result-data"></div></section><section class="answer-panel" id="result-method" data-answer-panel="method" role="tabpanel" aria-labelledby="tab-method" hidden>'+verificationProgressHTML(t.data.verification_progress)+readingsBox(a,t.resolved||t.question)+sourceDetails(a)+requestPlan(t.data)+executionDetails(t.data)+(t.seconds!=null?'<p class="hint">Recorded latency: '+esc(t.seconds.toFixed(1))+' seconds</p>':'')+(x.scope?'<p class="hint" data-cost-scope>'+esc(x.scope)+'</p>':'')+details(a)+'</section>';
  const sg=activeContext&&!t.archiveBlocked&&activeContext.result_scope_available!==false?suggestions(a):[];if(sg.length)h+='<div class="chips" aria-label="Follow-ups">'+sg.map(v=>'<button type="button" class="chip" data-ask="'+esc(v)+'">'+esc(v)+' ↗</button>').join('')+'</div>';
- h+=(t.data.workflow?.length?'<section class="answer-workflow"><h3>Your requested workflow</h3>'+t.data.workflow.map(s=>'<p><strong>'+esc(label(s.kind))+' · '+esc(label(s.status))+'</strong> — '+esc(s.title)+(s.reason?'<small>'+esc(s.reason)+'</small>':'')+'</p>').join('')+'</section>':'')+actionLink(t.data.action_context)+'<div class="sec flag" data-flag><button type="button" class="btn small" data-flagopen="1">Flag as wrong</button></div>';
- box.innerHTML=h;$('#tab-data').setAttribute('aria-controls','result-data-panel');renderResultData();showAnswerTab(activeTab);
+ h+='<div class="sec flag" data-flag>'+(t.data.learning?.components?.component_learning&&t.data.action_context?.id?'<button type="button" class="btn small" data-answercorrect="1">Mark answer correct</button> ':'')+'<button type="button" class="btn small" data-flagopen="1">Flag as wrong</button></div>';
+ box.innerHTML=h+'<div data-recorded-work>'+recordedWork(t)+'</div>';$('#tab-data').setAttribute('aria-controls','result-data-panel');renderResultData();showAnswerTab(activeTab);
  if(t.focus){const el=box.querySelector('[data-focus="'+t.focus+'"]');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}}
 function renderThread(){const ul=$('#thread');ul.innerHTML=state.turns.map((t,i)=>{const a=(t.data||{}).answer||{};const st=t.pending?'pending':t.error?'error':(a.status||t.status||'');
  const r=((t.data||{}).conversation||{}).resolved_question||t.resolved;
@@ -933,23 +958,24 @@ function renderThread(){const ul=$('#thread');ul.innerHTML=state.turns.map((t,i)
 /* ---------- asking ---------- */
 async function ask(question,opt){opt=opt||{};question=String(question||'').trim();if(!question||state.busy)return null;
  const selectedScope=$('#question-scope').value;
- const parent=opt.standalone?null:(['saved','input'].includes(selectedScope)?activeContext:null);
+ const parent=opt.standalone||opt.clarification?null:(['saved','input','auto'].includes(selectedScope)||selectedScope.startsWith('population:')?activeContext:null);
  state.busy=true;$('#askb').disabled=true;$('#newconv').disabled=true;$('#q').readOnly=true;activeTab='overview';
  if(!state.cid){state.cid=newId();store.set('agere-conversation',state.cid)}
- const t={question,pending:true,focus:opt.focus,scopeBefore:parent?{context:parent,value:selectedScope}:null};state.turns.push(t);renderTurn(state.turns.length-1);const t0=performance.now();
- try{const r=await fetch('/api/stack/compose',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,conversation_id:state.cid,...(parent?{answer_context_id:parent.id,...(selectedScope==='input'?{answer_scope:'input'}:{})}:{}),...(!parent?{scope:'warehouse'}:{})})});
+ const t={question,pending:true,progressKey:progressKey(),focus:opt.focus,scopeBefore:parent?{context:parent,value:selectedScope}:null};state.turns.push(t);renderTurn(state.turns.length-1);const t0=performance.now();const stopWork=beginWork(t);
+ try{const r=await fetch('/api/stack/compose',{method:'POST',headers:{'content-type':'application/json','X-Agere-Response-View':'answer','X-Agere-Progress-Key':t.progressKey},body:JSON.stringify(opt.clarification?{conversation_id:state.cid,clarification_response:opt.clarification,interaction_mode:$('#interaction-mode').value}:{question,delivery_generation:$('#delivery-generation').value,conversation_id:state.cid,interaction_mode:$('#interaction-mode').value,...(parent?{answer_context_id:parent.id,...(selectedScope!=='saved'?{answer_scope:selectedScope}:{})}:{}),...(!parent?{scope:'warehouse'}:{})})});
   let d;try{d=await r.json()}catch(_){d={error:'HTTP '+r.status}}t.seconds=(performance.now()-t0)/1000;t.pending=false;
-  if(d.error||!r.ok){t.error=d.error||('HTTP '+r.status)}else{t.data=d;t.resolved=(d.conversation||{}).resolved_question}}
- catch(err){t.pending=false;t.error=String(err)}finally{state.busy=false;$('#askb').disabled=false;$('#newconv').disabled=false;$('#q').readOnly=false}
- state.outFilter=null;renderTurn(state.turns.indexOf(t));loadEcon();loadSaved();document.dispatchEvent(new Event('agere-activity-changed'));return t}
+  if(d.error||!r.ok){t.error=d.error||('HTTP '+r.status);t.action_context=d.action_context}else{t.data=d;t.resolved=(d.conversation||{}).resolved_question;if(opt.clarification)state.turns.forEach(old=>{if(old.data?.clarification?.id===opt.clarification.id)old.data.clarification.status='complete'})}}
+ catch(err){t.pending=false;t.error=String(err)}finally{stopWork();state.busy=false;$('#askb').disabled=false;$('#newconv').disabled=false;$('#q').readOnly=false}
+ if(opt.clarification)try{const r=await fetch('/api/stack/conversation?id='+encodeURIComponent(state.cid));if(r.ok){const d=await r.json();for(const item of d.turns||[]){const c=item.answer_summary?.clarification;if(c)for(const old of state.turns)if(old.data?.clarification?.id===c.id)old.data.clarification=c}}}catch(_){}
+ state.outFilter=null;renderTurn(state.turns.indexOf(t));completeWork(t);syncContractDemo();loadEcon();loadSaved();document.dispatchEvent(new Event('agere-activity-changed'));return t}
 function loadConversation(){if(!state.cid)return;const epoch=conversationEpoch;fetch('/api/stack/conversation?id='+encodeURIComponent(state.cid)).then(r=>r.ok?r.json():null).then(d=>{if(!d||state.turns.length||epoch!==conversationEpoch)return;
- state.turns=(d.turns||[]).map(x=>({question:x.question,resolved:x.resolved_question,error:x.error||null,summary:(x.answer_summary||{}).headline||'',status:(x.answer_summary||{}).status,action_context:(x.answer_summary||{}).action_context}));
- renderThread()}).catch(()=>{})}
-function newConversation(){if(state.busy)return;conversationEpoch++;state.cid=null;store.set('agere-conversation',null);state.turns=[];state.active=-1;activeContext=null;activeTab='overview';renderThread();syncScope(null);setResultMode(false);$('#answer').innerHTML='';$('#q').value='';history.replaceState(null,'','/ask');$('#q').focus()}
+ state.turns=(d.turns||[]).map(x=>({question:x.question,resolved:x.resolved_question,error:x.error||null,summary:(x.answer_summary||{}).headline||'',status:(x.answer_summary||{}).status,action_context:(x.answer_summary||{}).action_context,...(x.answer_summary?.clarification?{data:{answer:x.answer_summary,clarification:x.answer_summary.clarification}}:{})}));
+ renderThread();const pending=state.turns.map((t,i)=>t.data?.clarification?.status==='pending'?i:-1).filter(i=>i>=0);if(pending.length)renderTurn(pending[pending.length-1])}).catch(()=>{})}
+function newConversation(){if(state.busy)return;conversationEpoch++;state.cid=null;store.set('agere-conversation',null);state.turns=[];state.active=-1;activeContext=null;activeTab='overview';renderThread();paintTranscript(-1);syncScope(null);setResultMode(false);$('#answer').innerHTML='';$('#q').value='';history.replaceState(null,'','/ask'+(demo.on?'?demo=1':''));$('#q').focus()}
 function loadEcon(){fetch('/api/stack/economics').then(r=>r.ok?r.json():null).then(e=>{if(!e)return;
  $('#econ').innerHTML='<span class="pill" title="Questions answered by this installation"><b>'+fmt(e.questions||0)+'</b> questions</span>'+
   '<span class="pill" title="Answered without any paid model call"><b>'+(e.share_without_api_calls!=null?Math.round(100*e.share_without_api_calls)+'%':'—')+'</b> without paid calls</span>'+
-  '<span class="pill" title="Known hosted model spend"><b>$'+(e.api_usd||0).toFixed(2)+'</b> spend</span><span id="loop"></span>';loadLoop()}).catch(()=>{})}
+  '<span class="pill" title="Known API-equivalent usage estimates; subscription allocation and local compute are excluded"><b>$'+(e.api_usd||0).toFixed(2)+'</b> known usage estimate</span>'+(e.unknown_usage_questions?'<span class="pill">'+fmt(e.unknown_usage_questions)+' unpriced question(s)</span>':'')+'<span id="loop"></span>';loadLoop()}).catch(()=>{})}
 function loadLoop(){Promise.all(['/api/stack/learning','/api/stack/learning-loop'].map(url=>fetch(url).then(r=>r.ok?r.json():null))).then(([learning,loop])=>{
  if(!$('#loop'))return;const shapes=learning?.reusable_structures||{},stored=Object.values(shapes).reduce((n,s)=>n+(s.active||0),0),revoked=Object.values(shapes).reduce((n,s)=>n+(s.revoked||0),0);
  let html=learning?'<span class="pill" title="'+esc(learning.learning_mode||'Checked structures remain source- and policy-bound; counts are not a quality score.')+'"><b>'+fmt(stored)+'</b> saved plan structures · <b>'+fmt(learning.corrections||0)+'</b> corrections · <b>'+fmt(revoked)+'</b> suspended</span>':'';
@@ -968,22 +994,46 @@ function loadBriefing(){return fetch('/api/stack/briefing').then(r=>r.ok?r.json(
  $('#brief').querySelectorAll('[data-brief-path]').forEach(b=>b.onclick=async()=>{b.disabled=true;const old=b.textContent;b.textContent='Preparing…';try{const r=await fetch('/api/stack/briefing-pathway',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({card_id:b.dataset.card,pathway:b.dataset.briefPath})});const v=await r.json();if(!r.ok)throw Error(v.error||'Unable to prepare this pathway');location.href=v.action_context.url}catch(e){$('#brief-status').textContent=e.message;b.textContent=old;b.disabled=false}});return cards;
  }).catch(()=>{$('#brief-status').textContent='The briefing could not load. Your question workspace is still available.';$('#brief').innerHTML='<button class="btn" id="retry-brief">Retry briefing</button>';$('#retry-brief').onclick=loadBriefing;return []})}
 
-/* ---------- demo ---------- */
+/* ---------- one saved contract workflow ---------- */
 const demo={on:/[?&]demo=1\b/.test(location.search),i:0,done:new Set()};
 function renderDemo(){if(!demo.on)return;const el=$('#demo');el.hidden=false;
- el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><b>Buyer walkthrough</b><span class="muted" style="font-size:13px">Every step asks a real question.</span>'+
-  '<button type="button" class="btn primary small" id="demonext"'+(demo.i>=DEMO.length?' disabled':'')+'>'+(demo.i>=DEMO.length?'Walkthrough complete':'Run step '+(demo.i+1)+': '+esc(DEMO[demo.i].label))+'</button>'+
-  '<button type="button" class="btn small" id="demoreset">Restart</button></div><ol>'+DEMO.map((s,i)=>'<li><button type="button" data-demo="'+i+'"'+(i===demo.i?' aria-current="step"':'')+(demo.done.has(i)?' class="done"':'')+'>'+(i+1)+'. '+esc(s.label)+(demo.done.has(i)?' ✓':'')+'</button></li>').join('')+'</ol>'}
-async function runStep(i){const s=DEMO[i];if(!s||state.busy)return;if(i===0){newConversation()}demo.i=i;renderDemo();
- $('#demonote').innerHTML='<div class="demonote"><b>Step '+(i+1)+' of '+DEMO.length+' · '+esc(s.label)+'.</b> '+esc(s.note||'')+'</div>';
- let q=s.question;if(s.kind==='briefing'){const cards=state.briefing||await loadBriefing();const r=$('#right');r.classList.add('flash');r.scrollIntoView({behavior:'smooth',block:'nearest'});setTimeout(()=>r.classList.remove('flash'),2200);
-  q=cards.length?cards[0].follow_up:null;if(!q){demo.done.add(i);demo.i=i+1;renderDemo();return}}
- await ask(q,{focus:s.focus});demo.done.add(i);demo.i=i+1;renderDemo()}
+ el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><b>Population contract walkthrough</b><span class="muted" style="font-size:13px">One analysis. Two buyer views. Saved follow-up.</span>'+
+  '<button type="button" class="btn primary small" id="demonext"'+(demo.i>=DEMO.length?' disabled':'')+'>'+(demo.i>=DEMO.length?'Walkthrough complete':'Step '+(demo.i+1)+': '+esc(DEMO[demo.i].label))+'</button>'+
+  '<button type="button" class="btn small" id="demoreset">Restart walkthrough</button></div><ol>'+DEMO.map((s,i)=>'<li><button type="button" data-demo="'+i+'"'+(i===demo.i?' aria-current="step"':'')+(demo.done.has(i)?' class="done"':'')+'>'+(i+1)+'. '+esc(s.label)+(demo.done.has(i)?' ✓':'')+'</button></li>').join('')+'</ol>'}
+function demoContract(){const t=state.turns[state.active];return t&&!t.archiveBlocked&&t.data?.answer?.overall?.contract_performance?t:null}
+function syncContractDemo(){if(demo.on&&demoContract()){demo.done.add(0);if(demo.i===0)demo.i=1;renderDemo()}}
+async function runStep(i){const s=DEMO[i];if(!s||state.busy)return;demo.i=i;renderDemo();
+ const note=$('#demonote');note.innerHTML='<div class="demonote" role="status"><b>Step '+(i+1)+' of '+DEMO.length+' · '+esc(s.label)+'.</b> '+esc(s.note||'')+'</div>';
+ if(s.kind==='input'){
+  if(demoContract()){syncContractDemo();return}
+  const t=state.turns[state.active];
+  if(!t?.data?.clarification||t.data.clarification.status!=='pending')await ask('Show contract performance',{standalone:true});
+  syncContractDemo();return;
+ }
+ const t=demoContract();
+ if(!t){note.insertAdjacentHTML('beforeend','<p class="hint" role="status">Choose contract inputs above or reopen a current contract answer before continuing. An unresolved or stale answer cannot complete this step.</p>');return}
+ if(s.kind==='work'){
+  const c=t.data.action_context||t.action_context;
+  if(!c||!/^ANS-[0-9a-f]{24}$/.test(c.id||'')){note.insertAdjacentHTML('beforeend','<p role="status">This answer has no saved work context yet.</p>');return}
+  note.insertAdjacentHTML('beforeend','<p><a class="btn primary" href="/action-center?context='+encodeURIComponent(c.id)+'">Open this answer’s review workspace ↗</a></p>');
+ }else{
+  const target=$('[data-contract-section="'+s.section+'"]');
+  if(!target){note.insertAdjacentHTML('beforeend','<p role="status">This section is unavailable in the current answer. Reopen its full overview; no new calculation has been started.</p>');return}
+  target.open=true;
+  if(s.id==='drivers')for(const name of ['monthly','members']){const other=$('[data-contract-section="'+name+'"]');if(other)other.open=true}
+  target.scrollIntoView({behavior:'smooth',block:'center'});
+ }
+ demo.done.add(i);const next=DEMO.findIndex((_,index)=>!demo.done.has(index));demo.i=next<0?DEMO.length:next;renderDemo();
+}
 
 __EXPLORE_JS__
 
 /* ---------- events (delegated; buttons and role=button elements are keyboard reachable) ---------- */
 function activate(el){if(el.dataset.csv){downloadCSV(el.dataset.csv);return}
+ if(el.hasAttribute('data-contract-save')||el.hasAttribute('data-contract-restore')){saveContractInput(el);return}
+ if(el.dataset.clarificationOption!=null||el.dataset.clarificationText!=null){const card=el.closest('[data-clarification]');if(!card)return;
+  const response=el.dataset.clarificationOption!=null?{id:card.dataset.clarification,option_id:el.dataset.clarificationOption}:{id:card.dataset.clarification,text:card.querySelector('textarea').value.trim()};
+  if(response.text===''){card.querySelector('textarea').focus();return}ask(el.dataset.clarificationOption!=null?el.textContent:'Clarification: '+response.text,{clarification:response});return}
  if(el.dataset.briefDismiss){briefFeedback(el.dataset.briefDismiss,'dismissed');const b=el.closest('.bcard');if(b)b.remove();return}
  if(el.dataset.askStandalone!=null){if(el.dataset.briefCard)briefFeedback(el.dataset.briefCard,'asked_follow_up');ask(el.dataset.askStandalone,{standalone:true});return}
  if(el.dataset.ask!=null){if(activeContext&&$('#question-scope').value!=='input')$('#question-scope').value='saved';ask(el.dataset.ask);return}
@@ -997,6 +1047,8 @@ function activate(el){if(el.dataset.csv){downloadCSV(el.dataset.csv);return}
  if(el.dataset.pick!=null){const mon=el.closest('#answer')&&document.querySelector('[data-monsel]');
   if(mon&&el.tagName==='TR'){if(+el.dataset.pick>=0){mon.value=el.dataset.pick;mon.dispatchEvent(new Event('change',{bubbles:true}));mon.scrollIntoView({behavior:'smooth',block:'center'})}return}
   state.outFilter=el.dataset.pick;refreshWorklist();return}
+ if(el.dataset.answercorrect){const t=state.turns[state.active]||{},box=el.closest('[data-flag]');el.disabled=true;
+  fetch('/api/stack/correct',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({context_id:t.data.action_context.id,question:t.data.conversation?.resolved_question||t.question,accepted:true,note:'User marked this saved answer correct'})}).then(r=>r.json()).then(d=>{box.innerHTML='<p role="status" class="'+(d.error?'badc':'goodc')+'">'+esc(d.error||d.effect)+'</p>'}).catch(e=>{el.disabled=false;box.insertAdjacentHTML('beforeend','<p class="badc">'+esc(e)+'</p>')});return}
  if(el.dataset.flagopen){const box=el.closest('[data-flag]');box.innerHTML='<label for="flagnote"><b>What is wrong with this answer?</b></label><textarea id="flagnote"></textarea><div class="tools"><button type="button" class="btn small primary" data-flagsend="1">Record correction</button><button type="button" class="btn small" data-flagcancel="1">Cancel</button></div>';$('#flagnote').focus();
   const t=state.turns[state.active]||{},question=((t.data||{}).conversation||{}).resolved_question||t.question;
   fetch('/api/stack/healthcare-learning?question='+encodeURIComponent(question||'')).then(r=>r.ok?r.json():null).then(d=>{
@@ -1015,10 +1067,10 @@ function activate(el){if(el.dataset.csv){downloadCSV(el.dataset.csv);return}
   const question=((t.data||{}).conversation||{}).resolved_question||t.question;el.disabled=true;
   const selected=box.querySelector('[data-flagrule]'),chosen=selected&&selected.value!==''?box._economicsRules?.[+selected.value]:null;
   const rule=chosen?(chosen.entry_id?{scope:chosen.scope,entry_id:chosen.entry_id,field:chosen.field,value:chosen.value,source_digest:chosen.source_digest}:{program:chosen.program,parameter:chosen.parameter,value:chosen.value,source_digest:chosen.source_digest}):null;
-  fetch('/api/stack/correct',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,note,...(rule?{rule}:{})})}).then(r=>r.json()).then(d=>{
+  fetch('/api/stack/correct',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,note,...(t.data?.learning?.components?.component_learning&&t.data.action_context?.id?{context_id:t.data.action_context.id}:{}),...(rule?{rule}:{})})}).then(r=>r.json()).then(d=>{
    document.dispatchEvent(new Event('agere-activity-changed'));loadLoop();box.innerHTML='<p class="'+(d.error||d.rule_verification?.status==='rejected'?'badc':'goodc')+'" role="status">'+esc(d.error||d.effect||'Correction recorded; related answers require revalidation.')+'</p>'}).catch(e=>{box.innerHTML='<p class="badc">'+esc(e)+'</p>'})}}
 function refreshWorklist(){const t=state.turns[state.active];const box=document.querySelector('[data-worklist]');if(t&&t.data&&box){box.innerHTML=worklist(t.data.answer);box.scrollIntoView({behavior:'smooth',block:'nearest'})}}
-const ACT='[data-edit-question],[data-csv],[data-ask],[data-ask-standalone],[data-turn],[data-demo],#demonext,#demoreset,[data-clearfilter],[data-series],[data-pick],[data-flagopen],[data-flagcancel],[data-flagsend],[data-brief-dismiss]';
+const ACT='[data-contract-save],[data-contract-restore],[data-clarification-option],[data-clarification-text],[data-edit-question],[data-csv],[data-ask],[data-ask-standalone],[data-turn],[data-demo],#demonext,#demoreset,[data-clearfilter],[data-series],[data-pick],[data-answercorrect],[data-flagopen],[data-flagcancel],[data-flagsend],[data-brief-dismiss]';
 document.addEventListener('click',e=>{const el=e.target.closest(ACT);if(el){e.preventDefault();activate(el)}});
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target.closest(ACT);if(!el||el.tagName==='BUTTON')return;if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT')return;e.preventDefault();activate(el)});
 document.addEventListener('change',e=>{const d=e.target.closest('[data-demsel]');if(!d)return;const st=state[d.dataset.demsel];const box=document.querySelector('[data-chart="'+d.dataset.demsel+'"]');if(st&&box)box.innerHTML=fanChart(st.series[+d.value],st.o)});
@@ -1031,10 +1083,11 @@ renderThread();loadEcon();setupExplorer();renderDemo();
 
 
 def page():
+    from .deliverables.patient_dashboard import PATIENT_WORKSPACE_CSS, PATIENT_WORKSPACE_JS
     assets = Path(__file__).parent / 'assets'
     shell = (assets / 'explore.html').read_text().replace('/* EXPLORE_CSS */',
-        (assets / 'answer.css').read_text() + '\n' + (assets / 'explore.css').read_text())
+        (assets / 'answer.css').read_text() + '\n' + (assets / 'explore.css').read_text() + '\n' + (assets / 'answer_presentation.css').read_text() + '\n' + PATIENT_WORKSPACE_CSS + (assets / 'verification_progress.css').read_text() + '\n' + (assets / 'workspace.css').read_text())
     return (PAGE.replace('__EXPLORE_SHELL__', shell)
-            .replace('__EXPLORE_JS__', (assets / 'neural-field.bundle.js').read_text() + '\n' + (assets / 'explore.js').read_text() + '\n' +
-                     (assets / 'experience.js').read_text())
+            .replace('__EXPLORE_JS__', (assets / 'verification_progress.js').read_text() + '\n' + (assets / 'answer_presentation.js').read_text() + '\n' + PATIENT_WORKSPACE_JS + '\n' + (assets / 'explore.js').read_text() + '\n' +
+                     (assets / 'experience.js').read_text() + '\n' + (assets / 'gallery.js').read_text())
             .replace('__DEMO_STEPS__', json.dumps(DEMO_STEPS).replace('</', '<\\/')))

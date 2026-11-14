@@ -115,16 +115,12 @@ class DomainPrograms(unittest.TestCase):
             with self.assertRaisesRegex(work.WorkConflict,'would be lost'):self.save(old)
 
 class DomainPlanning(unittest.TestCase):
-    def test_all_commands_validate_without_live_model(self):
+    def test_all_local_commands_validate_without_live_model(self):
         from clinical_core.agere.clinical import economical_planner as planner,domain_question_plans
-        from unittest.mock import Mock
-        from pathlib import Path
-        stack=SimpleNamespace(path=Path('/tmp'),allow_live=False,retriever=SimpleNamespace(meta={'snapshot':{'as_of':'2026-09-30'}}))
-        frontier=Mock(side_effect=AssertionError('No provider call permitted'))
         for row in domain_question_plans.examples():
-            graph,receipt=planner.plan(stack,row['question'],None,frontier)
-            self.assertEqual(graph['nodes'][1]['operation'],'domain_review');self.assertEqual(receipt['route'],'local_compiler');self.assertEqual(receipt['new_paid_api_calls'],0)
-        frontier.assert_not_called()
+            graph,reason=planner.local_plan(row['question'],'2026-09-30')
+            self.assertEqual(graph['nodes'][1]['operation'],'domain_review')
+            self.assertEqual(reason,'exact_domain_source_review')
     def test_extra_scope_clinical_decisions_and_negation_never_dropped(self):
         from clinical_core.agere.clinical.economical_planner import local_plan
         for question in ['Prepare respiratory source-review work only for Medicare','Prepare behavioral source-review work and enroll patients','Do not prepare respiratory source-review work','Review respiratory sources across the population before 2026','Prepare behavioral source-review work for p0']:

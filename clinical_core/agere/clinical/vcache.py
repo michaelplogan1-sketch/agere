@@ -1,21 +1,10 @@
-"""vCache-style per-entry learned similarity thresholds for the semantic cache (Schroeder et al., ICLR 2026).
+"""Per-entry semantic-cache cutoff proposals, with explicit policy and evidence identity.
 
-The semantic cache reuses a verified query for a slot-identical paraphrase when the encoder similarity clears a cut.
-One global cut (calibrated_thresholds 'semantic_cache.similarity') is either too strict for entries whose paraphrases are
-always safe or too loose for entries with near-miss neighbours. vCache learns a cut PER CACHED ENTRY under a user-set
-error bound delta:
-  * every observation is (entry question, similarity of a later question, was reusing the entry's plan correct?);
-  * per entry, P(correct | s) = sigmoid(gamma * (s - t)) is fitted by MAP with a Gaussian prior centred on the global fit
-    (entries with little evidence shrink to the global curve);
-  * the entry's cut is the smallest s whose one-sided lower confidence bound (Laplace posterior, z=1.645) on P(correct)
-    is >= 1 - delta; it never goes below FLOOR, and an entry with no observations uses the global gate unchanged.
-Observations come from (a) the labelled cache cases (tools/calibration/data/semantic_cache_cases.json: adversarial
-pairs, minimal differences, paraphrases; key = the cached base question), (b) online: each reuse is logged
-(stack/vcache.sqlite3); a user correction of a reused answer is an error observation for that entry, and a later
-verified plan that agrees with the reused plan is a correct observation (learning.record_correction / record_verified).
-The fitted cuts live in vcache_thresholds.json (bound to the encoder identity); AGERE_VCACHE=off falls back to the global
-gate; AGERE_VCACHE_DELTA sets the error bound (default 0.02, the cache certificate's alpha).
+MAP/Laplace and rule-of-three proposals are heuristic. They do not certify the
+post-selection reuse error, clinical correctness, or the randomized vCache paper's
+all-request guarantee. Unqualified reuse retains the ordinary answer review path.
 """
+import hashlib
 import json
 import math
 import os
@@ -26,7 +15,11 @@ from .evaluation import active as _evaluating
 
 import numpy as np
 
-VERSION = 'vcache/1'
+VERSION = 'vcache/2'
+POLICY_VERSION = 'semantic-cache-headroom/2'
+METHOD = 'map-laplace-or-entry-rule-of-three-proposal/2'
+LOSS = 'independently-verified-reference-plan-disagreement'
+DENOMINATOR = 'admitted-cache-reuse-requests'
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 THRESHOLDS = HERE / 'vcache_thresholds.json'
@@ -43,10 +36,22 @@ def enabled():
 
 
 def delta():
-    try:
-        return min(max(float(os.environ.get('AGERE_VCACHE_DELTA', '0.02')), 1e-4), 0.5)
-    except ValueError:
-        return 0.02
+    value = float(os.environ.get('AGERE_VCACHE_DELTA', '0.02'))
+    if not math.isfinite(value) or not 0 < value < 1:
+        raise ValueError('AGERE_VCACHE_DELTA must be a finite error target between zero and one')
+    return value
+
+
+def policy(encoder_identity=None, bound=None):
+    bound = delta() if bound is None else float(bound)
+    if not math.isfinite(bound) or not 0 < bound < 1:
+        raise ValueError('invalid cache error target')
+    return {'version': POLICY_VERSION, 'error_target': bound, 'scorer': encoder_identity,
+            'loss': LOSS, 'denominator': DENOMINATOR, 'method': METHOD}
+
+
+def _binding(value):
+    return json.dumps(value, sort_keys=True, separators=(',', ':')) if value else None
 
 
 def key(question):
@@ -103,29 +108,38 @@ def cut_for(t, g, cov, bound):
 def fit(cases, *, bound=None, min_obs=3, encoder_identity=None, global_threshold=None):
     """cases: [{'key', 'score', 'correct'}] (score -1 = no slot-identical candidate: not an observation).
     -> {'version', 'delta', 'global': {...}, 'entries': {key: {...}}}."""
-    bound = delta() if bound is None else bound
+    binding = policy(encoder_identity, bound)
+    bound = binding['error_target']
+    cases = list(cases)
+    data_identity = hashlib.sha256(json.dumps(cases, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
     obs = [c for c in cases if c['score'] is not None and c['score'] >= 0]
-    out = {'version': VERSION, 'delta': bound, 'floor': FLOOR, 'encoder_identity': encoder_identity,
+    out = {'version': VERSION, 'policy': binding, 'data_identity': data_identity,
+           'qualification': {'qualified': False, 'method': METHOD, 'reason': 'proposal; post-selection reuse risk is not certified'}, 'delta': bound, 'floor': FLOOR, 'encoder_identity': encoder_identity,
            'written_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'observations': len(obs), 'entries': {}}
     if len(obs) < 5:
         out['global'] = {'threshold': global_threshold, 'reason': 'too few labelled observations'}
+        by = {}
+        for c in obs: by.setdefault(c['key'], []).append(c)
+        out['entries'] = {k: {'threshold': None, 'n': len(rows), 'errors': sum(not r['correct'] for r in rows),
+                              'reason': 'entry evidence insufficient for a cutoff'}
+                          for k, rows in by.items() if len(rows) >= min_obs}
         return out
     if len({c['correct'] for c in obs}) < 2:
         # Every labelled reuse was right (the slot gate already removed the adversarial pairs): no curve exists, so use
         # the rule of three -- n clean observations bound the error rate by 3/n at 95% -- and loosen only where that clears delta.
         n = len(obs)
         clean = bool(obs[0]['correct']) and 3.0 / n <= bound
-        out['global'] = {'threshold': global_threshold, 'n': n, 'errors': 0 if clean else n, 'basis': 'rule_of_three',
+        out['global'] = {'threshold': global_threshold, 'n': n, 'errors': sum(not c['correct'] for c in obs), 'basis': 'rule_of_three',
                          'rule_of_three_error_bound': round(3.0 / n, 4)}
-        if clean:
-            by = {}
-            for c in obs: by.setdefault(c['key'], []).append(c)
-            for k, rows in by.items():
-                if len(rows) < min_obs: continue
-                lo = min(r['score'] for r in rows)
-                out['entries'][k] = {'threshold': round(max(FLOOR, lo - 0.02), 4), 'n': len(rows), 'errors': 0,
-                                     'basis': 'rule_of_three', 'min_right_similarity': lo,
-                                     '_points': [[round(r['score'], 4), 1] for r in rows]}
+        by = {}
+        for c in obs: by.setdefault(c['key'], []).append(c)
+        for k, rows in by.items():
+            if len(rows) < min_obs: continue
+            lo = min(r['score'] for r in rows)
+            out['entries'][k] = {'threshold': round(max(FLOOR, lo - 0.02), 4) if clean and 3.0 / len(rows) <= bound else None,
+                                 'n': len(rows), 'errors': sum(not r['correct'] for r in rows),
+                                 'basis': 'rule_of_three', 'min_right_similarity': lo if clean else None,
+                                 '_points': [[round(r['score'], 4), int(bool(r['correct']))] for r in rows]}
         return out
     t, g, cov = fit_curve([c['score'] for c in obs], [c['correct'] for c in obs])
     gcut = cut_for(t, g, cov, bound)
@@ -152,80 +166,109 @@ def cases_from_file(path=CASES):
 
 
 # ---- the store and the runtime gate ---------------------------------------------------------------------------------
-_LOADED = {'mtime': None, 'doc': None}
+_LOADED = {}
 
 
 def table():
-    if not THRESHOLDS.exists(): return None
-    m = THRESHOLDS.stat().st_mtime
-    if _LOADED['mtime'] != m:
-        _LOADED.update(mtime=m, doc=json.loads(THRESHOLDS.read_text()))
-    return _LOADED['doc']
+    path = Path(os.environ.get('AGERE_VCACHE_THRESHOLDS') or THRESHOLDS)
+    try:
+        stamp = (str(path.resolve()), path.stat().st_mtime_ns)
+        if stamp not in _LOADED:
+            doc = json.loads(path.read_text())
+            _LOADED.clear()
+            _LOADED[stamp] = doc if isinstance(doc, dict) else {}
+        return _LOADED[stamp]
+    except (OSError, ValueError):
+        return None
 
 
 def _db(path):
     db = sqlite3.connect(Path(path) / 'vcache.sqlite3', timeout=5)
     db.executescript(DDL)
+    for name in ('reuse', 'observation'):
+        if 'binding' not in {r[1] for r in db.execute('PRAGMA table_info(' + name + ')')}:
+            db.execute('ALTER TABLE ' + name + ' ADD COLUMN binding TEXT')
     return db
 
 
-def online_observations(path, entry):
+def online_observations(path, entry, binding=None):
     target = Path(path) / 'vcache.sqlite3'
     if not target.exists(): return []
     db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
     try:
-        return [{'key': entry, 'score': s, 'correct': bool(c)} for s, c in
-                db.execute('SELECT similarity, correct FROM observation WHERE entry = ?', (entry,))]
+        columns = {r[1] for r in db.execute('PRAGMA table_info(observation)')}
+        field = 'binding' if 'binding' in columns else 'NULL'
+        rows = db.execute('SELECT similarity, correct, ' + field + ' FROM observation WHERE entry = ?', (entry,))
+        # Legacy positives cannot loosen a new policy. Legacy negative feedback
+        # may conservatively raise a cutoff, and never confers qualification.
+        return [{'key': entry, 'score': s, 'correct': bool(c)} for s, c, b in rows
+                if binding is None or b == _binding(binding) or b is None and not c]
     finally:
         db.close()
 
 
 def entry_threshold(path, entry_question, default, encoder_identity=None):
-    """The cut for one cached entry -> (threshold, receipt). Fitted entry cut (file) refined by online observations;
-    entries without evidence keep `default` (the global gate)."""
-    receipt = {'vcache': VERSION, 'delta': delta(), 'entry': key(entry_question)}
-    if not enabled(): return default, {**receipt, 'source': 'disabled'}
-    doc = table() or {}
-    if encoder_identity and doc.get('encoder_identity') and doc['encoder_identity'] != encoder_identity:
-        return default, {**receipt, 'source': 'global (fitted with another encoder)'}
-    k = key(entry_question)
-    row = (doc.get('entries') or {}).get(k)
-    online = []
+    """Return the actual cutoff (None means unresolved), never a fabricated safe cut."""
+    receipt = {'vcache': VERSION, 'entry': key(entry_question), 'qualified': False,
+               'qualification_reason': 'adaptive proposal; post-selection reuse risk is not certified'}
     try:
-        online = online_observations(path, k) if path else []
+        binding = policy(encoder_identity)
+    except (ValueError, TypeError):
+        return default, {**receipt, 'effective': 'global', 'source': 'global (invalid error policy)', 'policy': None}
+    receipt.update(policy=binding, delta=binding['error_target'])
+    if not enabled(): return default, {**receipt, 'effective': 'global', 'source': 'disabled'}
+    doc = table() or {}
+    matches = (bool(encoder_identity) and doc.get('version') == VERSION and doc.get('policy') == binding
+               and doc.get('delta') == binding['error_target'] and doc.get('encoder_identity') == encoder_identity
+               and isinstance(doc.get('data_identity'), str) and len(doc['data_identity']) == 64
+               and (doc.get('qualification') or {}).get('method') == METHOD)
+    k = key(entry_question)
+    raw_row = (doc.get('entries') or {}).get(k)
+    row = (doc.get('entries') or {}).get(k) if matches else None
+    if raw_row and raw_row.get('threshold') is None and doc.get('encoder_identity') == encoder_identity and not matches:
+        return None, {**receipt, 'effective': 'unresolved',
+                      'source': 'unresolved entry requires new matching evidence'}
+    receipt['data_identity'] = doc.get('data_identity') if matches else None
+    try:
+        online = online_observations(path, k, binding) if path else []
     except sqlite3.Error:
         online = []
-    if online:
+    if online and matches:
         offline = [{'key': k, 'score': s, 'correct': c} for s, c in (row or {}).get('_points', [])]
         g = doc.get('global') or {}
         prior = (g['t'], g['gamma']) if 't' in g else None
         pts = offline + online
         if len(pts) >= 3 and prior:
             te, ge, ce = fit_curve([p['score'] for p in pts], [p['correct'] for p in pts], prior=prior)
-            cut = cut_for(te, ge, ce, delta())
-            if cut is not None:
-                return cut, {**receipt, 'source': 'entry (offline + online)', 'n': len(pts), 'online': len(online)}
-            return max(default, 0.99), {**receipt, 'source': 'entry evidence too unsafe', 'n': len(pts)}
+            cut = cut_for(te, ge, ce, binding['error_target'])
+            return cut, {**receipt, 'effective': 'adaptive' if cut is not None else 'unresolved',
+                         'source': 'entry (offline + matching online)' if cut is not None else 'entry evidence unresolved',
+                         'n': len(pts), 'online': len(online)}
+    if row and row.get('threshold') is None:
+        return None, {**receipt, 'effective': 'unresolved', 'source': 'entry evidence unresolved',
+                      'n': row.get('n'), 'errors': row.get('errors')}
+    cut = row['threshold'] if row else default
+    if row and (not isinstance(cut, (int, float)) or not math.isfinite(cut) or not FLOOR <= cut <= 1):
+        return None, {**receipt, 'effective': 'unresolved', 'source': 'invalid entry cutoff'}
     errs = [o['score'] for o in online if not o['correct']]
-    if row and row.get('threshold') is not None and errs:  # no fitted curve: an online error pushes the cut above it
-        return max(row['threshold'], round(max(errs) + 0.0025, 4)), {**receipt, 'source': 'entry (fitted, raised by online error)',
-                                                                   'n': row['n'], 'online': len(online)}
-    if not row and errs:
-        return max(default, round(max(errs) + 0.0025, 4)), {**receipt, 'source': 'global raised by online error', 'online': len(online)}
-    if row and row.get('threshold') is not None:
-        return row['threshold'], {**receipt, 'source': 'entry (fitted)', 'n': row['n'], 'errors': row['errors']}
-    if row:  # observed, but no similarity meets the bound for this entry
-        return max(default, 0.99), {**receipt, 'source': 'entry evidence too unsafe', 'n': row['n'], 'errors': row['errors']}
-    return default, {**receipt, 'source': 'global (no entry evidence)'}
+    if errs:
+        cut = max(cut, round(max(errs) + 0.0025, 4))
+        return cut if cut <= 1 else None, {**receipt, 'effective': 'adaptive' if cut <= 1 else 'unresolved',
+                'source': 'cut raised by online error', 'online': len(online)}
+    if row:
+        return cut, {**receipt, 'effective': 'adaptive', 'source': 'entry (fitted proposal)',
+                     'n': row.get('n'), 'errors': row.get('errors')}
+    reason = 'no entry evidence' if matches or not doc else 'stale or incomplete policy/scorer/evidence binding'
+    return default, {**receipt, 'effective': 'global', 'source': 'global (' + reason + ')'}
 
 
-def log_reuse(path, question, entry_question, similarity, plan):
+def log_reuse(path, question, entry_question, similarity, plan, binding=None):
     if _evaluating(): return
     try:
         db = _db(path)
         try:
-            db.execute('INSERT INTO reuse VALUES (?,?,?,?,?)', (key(question), key(entry_question), float(similarity),
-                                                              _digest(plan), time.time()))
+            db.execute('INSERT INTO reuse(question,entry,similarity,plan_digest,created,binding) VALUES (?,?,?,?,?,?)', (key(question), key(entry_question), float(similarity),
+                                                              _digest(plan), time.time(), _binding(binding)))
             db.commit()
         finally:
             db.close()
@@ -233,12 +276,12 @@ def log_reuse(path, question, entry_question, similarity, plan):
         pass  # the cache answer stands; only the learning signal is lost
 
 
-def observe(path, entry_question, similarity, correct, source, question=None):
+def observe(path, entry_question, similarity, correct, source, question=None, binding=None):
     if _evaluating(): return
     db = _db(path)
     try:
-        db.execute('INSERT INTO observation VALUES (?,?,?,?,?,?)', (key(entry_question), float(similarity), int(bool(correct)),
-                                                                   source, key(question or ''), time.time()))
+        db.execute('INSERT INTO observation(entry,similarity,correct,source,question,created,binding) VALUES (?,?,?,?,?,?,?)', (key(entry_question), float(similarity), int(bool(correct)),
+                                                                   source, key(question or ''), time.time(), _binding(binding)))
         db.commit()
     finally:
         db.close()
@@ -247,7 +290,7 @@ def observe(path, entry_question, similarity, correct, source, question=None):
 def _digest(plan):
     import hashlib
     q = plan.get('query') if isinstance(plan, dict) else plan
-    return hashlib.sha256(' '.join(str(q).split()).encode()).hexdigest()[:16]
+    return hashlib.sha256(str(q).encode()).hexdigest()[:16]
 
 
 def _reuses(path, question):
@@ -255,8 +298,10 @@ def _reuses(path, question):
     if not target.exists(): return []
     db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
     try:
-        return db.execute('SELECT entry, similarity, plan_digest FROM reuse WHERE question = ? ORDER BY created DESC',
-                          (key(question),)).fetchall()
+        field = 'binding' if 'binding' in {r[1] for r in db.execute('PRAGMA table_info(reuse)')} else 'NULL'
+        return [(e, s, d, json.loads(b) if b else None) for e, s, d, b in db.execute(
+            'SELECT entry, similarity, plan_digest, ' + field + ' FROM reuse WHERE question = ? ORDER BY created DESC',
+            (key(question),))]
     finally:
         db.close()
 
@@ -264,16 +309,16 @@ def _reuses(path, question):
 def on_correction(path, question):
     """A user corrected a question the cache answered by reuse -> one error observation per reused entry."""
     n = 0
-    for entry, sim, _ in _reuses(path, question):
-        observe(path, entry, sim, False, 'user_correction', question); n += 1
+    for entry, sim, _, binding in _reuses(path, question):
+        observe(path, entry, sim, False, 'user_correction', question, binding); n += 1
     return n
 
 
 def on_verified(path, question, plan):
-    """A question the cache answered was later verified independently: same query -> correct, different -> error."""
+    """Later independently verified query agrees exactly: reference-plan agreement, not clinical truth."""
     n = 0
-    for entry, sim, digest in _reuses(path, question):
-        observe(path, entry, sim, digest == _digest(plan), 'later_verification', question); n += 1
+    for entry, sim, digest, binding in _reuses(path, question):
+        observe(path, entry, sim, digest == _digest(plan), 'later_verification', question, binding); n += 1
     return n
 
 

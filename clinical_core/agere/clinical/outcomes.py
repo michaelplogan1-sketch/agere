@@ -18,7 +18,7 @@ from ...contracts import digest
 from . import longitudinal as ledger
 from .clinical_events import iso
 
-VERSION = 'observed-outcomes/1'
+VERSION = 'observed-outcomes/2'
 FILTERS = {'all', 'indexed', 'mature_labeled', 'observed', 'not_observed_mature', 'unresolved'}
 LIMITS = [
     'All current data and definitions are synthetic development inputs; these are not validated clinical or payer measures.',
@@ -127,13 +127,17 @@ def encounter_key(e):
 def deduplicate(events, clock):
     """Collapse repeated identified events, retaining every supporting record.
 
+    `event` is a stable display representative only. Availability and endpoint
+    predicates must inspect the actual copies in `evidence`, not its arbitrary ID.
     Different records without an encounter key are not declared duplicates simply
     because their dates look alike. Conflicting dates remain separate candidates.
     """
     groups = defaultdict(list)
     for e in events:
         encounter = encounter_key(e)
-        key = (encounter, e['event_type'], e[clock]) if encounter else ('record', e['id'])
+        key = (e['patient_id'], encounter, e['event_type'], e[clock]) if encounter else (
+            'record', e['patient_id'], tuple(e['source'].get(k) for k in ('source_system','organization_id','source_table','record_id')),
+            e['id'], e['event_type'], e.get(clock))
         groups[key].append(e)
     return [{'event': sorted(rows,key=lambda e:e['id'])[0], 'evidence': sorted(rows,key=lambda e:e['id'])}
             for rows in groups.values()]
@@ -155,15 +159,22 @@ def evaluate(pid, index_events, endpoint_events, spec, p):
         'clinical_outcome_established': False, 'clinical_negative_established': False,
         'model_training_authorized_by_receipt': False, 'evidence': evidence}
     received = lambda e: bool(iso(e.get('arrival_date')) and e['arrival_date'] <= p['available_by'])
-    candidate = [e for e in index_events if received(e) and e.get(clock)
-                 and p['index_from'] <= e[clock] <= p['index_through']]
-    # An undated index could precede the apparent first index inside this window.
-    uncertain = [e for e in index_events if (not iso(e.get('arrival_date')) or (received(e) and not e.get(clock)))]
-    row['index_evidence_ids'] = sorted(e['id'] for e in candidate+uncertain)
+    candidate_groups, uncertain = [], []
+    for group in deduplicate(index_events, clock):
+        known = [e for e in group['evidence'] if received(e) and e.get(clock)]
+        # Same explicit encounter/role/selected-date copies cannot introduce an
+        # earlier source/clinical index date. A received witness preserves it.
+        if not known:
+            uncertain.extend(e for e in group['evidence'] if not iso(e.get('arrival_date')) or received(e) and not e.get(clock))
+        eligible = [e for e in known if p['index_from'] <= e[clock] <= p['index_through']]
+        if eligible:
+            witness = min(eligible, key=lambda e:(e['arrival_date'],e['id']))
+            candidate_groups.append({**group, 'event':witness, 'witness_ids':sorted(e['id'] for e in eligible)})
+    row['index_evidence_ids'] = sorted({e['id'] for g in candidate_groups for e in g['evidence']} | {e['id'] for e in uncertain})
     if uncertain:
         row.update(status='unresolved_index_timing', indexed=None)
         return row
-    groups = deduplicate(candidate, clock)
+    groups = candidate_groups
     if not groups: return row
     earliest = min(g['event'][clock] for g in groups)
     tied = [g for g in groups if g['event'][clock] == earliest]
@@ -175,38 +186,54 @@ def evaluate(pid, index_events, endpoint_events, spec, p):
     day = date.fromisoformat(earliest); end = day+timedelta(days=spec['max_days'])
     row.update(indexed=True, index={'event_id':anchor['id'], 'date':earliest,
         'evidence_ids':[e['id'] for e in tied[0]['evidence']],
+        'qualifying_witness_ids':tied[0]['witness_ids'],
         'encounter_identity':'explicit_source_scoped' if ek else 'unavailable'},
         window={'start':str(day+timedelta(days=spec['min_days'])), 'end':str(end),
                 'bounds':'inclusive', 'basis':spec['basis'], 'feature_cutoff':earliest,
                 'available_by':p['available_by']}, calendar_mature=str(end) <= p['available_by'])
+    index_ids = set(row['index']['evidence_ids'])
+    index_records = {row['evidence'][i]['source']['record_id'] for i in index_ids}
     for group in deduplicate(endpoint_events, clock):
-        e = group['event']; ids = [v['id'] for v in group['evidence']]; reason = None; unresolved = None
-        delta = (date.fromisoformat(e[clock])-day).days if e.get(clock) else None
-        source_a = tuple(anchor['source'].get(k) for k in ('source_system','organization_id'))
-        source_b = tuple(e['source'].get(k) for k in ('source_system','organization_id'))
-        other = encounter_key(e)
-        if e['id'] == anchor['id'] or (e['source']['record_id'] == anchor['source']['record_id']
-                and not (spec['basis']=='clinical' and e['event_type']!=anchor['event_type'])):
-            reason = 'same_source_record'
-        elif iso(e.get('arrival_date')) and not received(e): reason = 'not_received_by_cutoff'
-        elif e.get(clock) and e[clock] > p['available_by']: reason = 'event_after_availability_cutoff'
-        elif delta is not None and not spec['min_days'] <= delta <= spec['max_days']: reason = 'outside_declared_window'
-        elif spec['source_scope'] == 'same_source_organization' and all(source_a+source_b) and source_a != source_b:
-            reason = 'different_source_organization'
-        elif ek and other and spec['encounter_rule'] == 'same_when_present' and ek != other: reason = 'different_encounter'
-        elif ek and other and spec['encounter_rule'] == 'different_when_present' and ek == other: reason = 'same_encounter'
-        elif not iso(e.get('arrival_date')): unresolved = 'unknown_arrival_date'
-        elif delta is None: unresolved = 'missing_selected_clock'
-        elif delta == 0: unresolved = 'within_day_order_unknown'
-        elif spec['source_scope'] == 'same_source_organization' and not all(source_a+source_b): unresolved = 'source_organization_unknown'
-        if reason:
-            row['excluded_endpoint_evidence'].append({'evidence_ids':ids,'reason':reason})
-        elif unresolved:
-            row['unresolved_endpoint_evidence'].append({'evidence_ids':ids,'reason':unresolved})
-        else:
-            row['matches'].append({'endpoint_id':e['id'],'date':e[clock],'days_after_index':delta,
-                'evidence_ids':ids, 'link':'explicit_source_scoped_encounters' if ek and other else 'provisional_observation_link',
+        ids = [v['id'] for v in group['evidence']]
+        assessments = []
+        for e in group['evidence']:
+            reason = unresolved = None
+            delta = (date.fromisoformat(e[clock])-day).days if e.get(clock) else None
+            source_a = tuple(anchor['source'].get(k) for k in ('source_system','organization_id'))
+            source_b = tuple(e['source'].get(k) for k in ('source_system','organization_id'))
+            other = encounter_key(e)
+            if e['id'] in index_ids or (e['source']['record_id'] in index_records
+                    and not (spec['basis']=='clinical' and e['event_type']!=anchor['event_type'])):
+                reason = 'same_source_record'
+            elif iso(e.get('arrival_date')) and not received(e): reason = 'not_received_by_cutoff'
+            elif e.get(clock) and e[clock] > p['available_by']: reason = 'event_after_availability_cutoff'
+            elif delta is not None and not spec['min_days'] <= delta <= spec['max_days']: reason = 'outside_declared_window'
+            elif spec['source_scope'] == 'same_source_organization' and all(source_a+source_b) and source_a != source_b:
+                reason = 'different_source_organization'
+            elif ek and other and spec['encounter_rule'] == 'same_when_present' and ek != other: reason = 'different_encounter'
+            elif ek and other and spec['encounter_rule'] == 'different_when_present' and ek == other: reason = 'same_encounter'
+            elif not iso(e.get('arrival_date')): unresolved = 'unknown_arrival_date'
+            elif delta is None: unresolved = 'missing_selected_clock'
+            elif delta == 0: unresolved = 'within_day_order_unknown'
+            elif spec['source_scope'] == 'same_source_organization' and not all(source_a+source_b): unresolved = 'source_organization_unknown'
+            assessments.append({'event_id':e['id'], 'arrival_date':e.get('arrival_date'), 'selected_date':e.get(clock),
+                                'days_after_index':delta, 'disposition':'excluded' if reason else 'unresolved' if unresolved else 'qualifying',
+                                'reason':reason or unresolved})
+        qualifying = [a for a in assessments if a['disposition']=='qualifying']
+        witness_ids = sorted(a['event_id'] for a in qualifying)
+        if qualifying:
+            chosen = min(qualifying, key=lambda a:(a['arrival_date'],a['event_id']))
+            e = row['evidence'][chosen['event_id']]; other = encounter_key(e)
+            row['matches'].append({'endpoint_id':e['id'],'date':e[clock],'days_after_index':chosen['days_after_index'],
+                'evidence_ids':ids, 'qualifying_witness_ids':witness_ids, 'copy_assessments':assessments,
+                'link':'explicit_source_scoped_encounters' if ek and other else 'provisional_observation_link',
                 'verified_new_stay':False, 'verified_episode':False})
+        for disposition, field in [('excluded','excluded_endpoint_evidence'),('unresolved','unresolved_endpoint_evidence')]:
+            reasons = sorted({a['reason'] for a in assessments if a['disposition']==disposition})
+            for why in reasons:
+                row[field].append({'evidence_ids':[a['event_id'] for a in assessments if a['disposition']==disposition and a['reason']==why],
+                    'group_evidence_ids':ids, 'reason':why, 'qualifying_witness_ids':witness_ids,
+                    'matched_by_other_witness':bool(qualifying), 'copy_assessments':assessments})
     row['matches'].sort(key=lambda x:(x['date'],x['endpoint_id']))
     if row['matches']: row.update(status='observed', recorded_label=1)
     elif row['unresolved_endpoint_evidence']: row['status']='unresolved_endpoint_timing_or_link'

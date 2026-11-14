@@ -23,6 +23,8 @@ reported backtested coverage comes from calibrating one window earlier and scori
 no reported number uses data from after the moment it would have been issued.
 """
 import math
+import hashlib
+import json
 
 import numpy as np
 
@@ -62,6 +64,45 @@ def interval(pred, q, scale=None, lower=None, upper=None):
 def coverage(y, lo, hi):
     y, lo, hi = (np.asarray(a, dtype=float) for a in (y, lo, hi))
     return float(np.mean((y >= lo) & (y <= hi))) if len(y) else None
+
+
+def evaluation_population(patient_ids=None):
+    """Identity of requested evaluation membership; None and empty are distinct."""
+    selected = None if patient_ids is None else sorted({str(pid) for pid in patient_ids})
+    identity = hashlib.sha256(json.dumps(selected, separators=(',', ':')).encode()).hexdigest()
+    return {'mode': 'all_available' if selected is None else 'selected',
+            'requested_patients': None if selected is None else len(selected), 'membership_identity': identity}
+
+
+def scoped_interval_coverage(pairs, lo=None, hi=None, patient_ids=None):
+    """Descriptive interval hits on requested members; never refit the reference.
+
+    A selected member with no pair or finite interval is not a covered case or a
+    failed prediction. Infinite/unknown bounds do not manufacture 100% coverage.
+    This diagnostic does not establish unrestricted conditional coverage.
+    """
+    pairs = list(pairs)
+    keep = None if patient_ids is None else {str(pid) for pid in patient_ids}
+    in_scope = np.array([keep is None or q.get('patient_id') is not None and str(q['patient_id']) in keep for q in pairs], bool)
+    y = np.array([q['y'] for q in pairs], float)
+    lo = np.full(len(pairs), np.nan) if lo is None else np.asarray(lo, float)
+    hi = np.full(len(pairs), np.nan) if hi is None else np.asarray(hi, float)
+    if lo.shape != y.shape or hi.shape != y.shape:
+        raise ValueError('One interval per evaluation pair is required')
+    valid = in_scope & np.isfinite(y) & np.isfinite(lo) & np.isfinite(hi) & (lo <= hi)
+    hit = valid & (y >= lo) & (y <= hi)
+    n = int(valid.sum())
+    ids = {str(q['patient_id']) for i, q in enumerate(pairs) if valid[i] and q.get('patient_id') is not None}
+    groups = np.array([q.get('group') for q in pairs], object)
+    return {'population': evaluation_population(keep), 'available_pairs': len(pairs),
+            'selected_pairs': int(in_scope.sum()), 'evaluable_pairs': n, 'covered_pairs': int(hit.sum()),
+            'excluded_outside_population': int((~in_scope).sum()), 'excluded_nonestimable_pairs': int((in_scope & ~valid).sum()),
+            'requested_without_evaluable_pair': len(keep - ids) if keep is not None else None,
+            'evaluable_patients': len(ids), 'coverage': round(int(hit.sum()) / n, 4) if n else None,
+            'by_group': {str(g): {'cases': int((valid & (groups == g)).sum()),
+                                  'coverage': round(int((hit & (groups == g)).sum()) / int((valid & (groups == g)).sum()), 4)}
+                         for g in sorted(set(groups[valid].tolist()), key=str)},
+            'qualification': 'retrospective requested-population diagnostic; no unrestricted conditional-coverage guarantee'}
 
 
 def _plus_interval(loo_pred_new, loo_resid, alpha):
@@ -180,14 +221,21 @@ def venn_abers(cal_p, cal_y, test_p):
     calibrated in the Venn sense under exchangeability."""
     cal_p, cal_y = np.asarray(cal_p, dtype=float), np.asarray(cal_y, dtype=float)
     test_p = np.asarray(test_p, dtype=float)
+    if cal_p.ndim != 1 or cal_y.shape != cal_p.shape or test_p.ndim != 1:
+        raise ValueError('Aligned one-dimensional calibration scores/labels and test scores required')
+    if not np.all(np.isfinite(cal_p)) or not np.all(np.isfinite(test_p)) or not np.all(np.isin(cal_y, [0, 1])):
+        raise ValueError('Finite scores and settled binary calibration labels required')
+    unique = np.unique(cal_p)
     cache, p0, p1 = {}, np.empty(len(test_p)), np.empty(len(test_p))
     for j, t in enumerate(test_p):
-        key = round(float(t), 4)
+        # Isotonic fitting depends on order and ties, not distance. Keep the exact insertion/tie class;
+        # decimal rounding changes that class and can reverse a calibrated probability.
+        key = (int(np.searchsorted(unique, t, side='left')), int(np.searchsorted(unique, t, side='right')))
         if key not in cache:
             vals = []
             for label in (0.0, 1.0):
-                ux, f = _pav(np.append(cal_p, key), np.append(cal_y, label))
-                vals.append(float(f[np.searchsorted(ux, key)]))
+                ux, f = _pav(np.append(cal_p, t), np.append(cal_y, label))
+                vals.append(float(f[np.searchsorted(ux, t)]))
             cache[key] = vals
         p0[j], p1[j] = cache[key]
     merged = p1 / np.maximum(1 - p0 + p1, 1e-12)

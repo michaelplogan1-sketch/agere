@@ -88,6 +88,10 @@ _MODEL = {}
 
 
 def load(path=None):
+    if path is None and os.environ.get('AGERE_COMPONENT_RELEASE_ROOT'):
+        from .component_learning import runtime_model
+        path=runtime_model('router')
+        if path is None:return None
     path = Path(path or MODEL_FILE)
     key = (str(path), path.stat().st_mtime_ns if path.exists() else None)
     if key not in _MODEL:
@@ -121,8 +125,13 @@ def gate_threshold(model):
 def predict(question, encoder, model=None):
     model = model or load()
     if model is None: raise ValueError('No learned router model for the current capability list')
-    if getattr(encoder, 'identity', None) != model['encoder_identity']: raise ValueError('Encoder differs from the one the router was trained with')
-    p = probabilities(model, features([question], encoder))[0]
+    if model.get('feature_kind')=='lexical':X=np.asarray([LEXICAL_SCALE*lexical(question)])
+    else:
+        from .component_learning import model_encoder
+        encoder=model_encoder(model,encoder)
+        if getattr(encoder, 'identity', None) != model['encoder_identity']: raise ValueError('Encoder differs from the one the router was trained with')
+        X=features([question],encoder)
+    p = probabilities(model, X)[0]
     best = int(p.argmax())
     gate = gate_threshold(model)
     return {'label': LABELS[best], 'probability': float(p[best]), 'threshold': gate['threshold'], 'threshold_calibrated': gate['calibrated'],
@@ -132,9 +141,10 @@ def predict(question, encoder, model=None):
 
 def decide(question, encoder, model=None):
     """-> (label | None, receipt). label is returned only when the calibrated probability clears the threshold."""
-    if encoder is None or os.environ.get('AGERE_LEARNED_ROUTER', 'on') == 'off':
-        return None, {'used': False, 'reason': 'disabled' if encoder is not None else 'no local encoder'}
     try:
+        if os.environ.get('AGERE_LEARNED_ROUTER','on')=='off':return None,{'used':False,'reason':'disabled'}
+        model=model or load()
+        if encoder is None and (model or {}).get('feature_kind')!='lexical' and not (model or {}).get('encoder_reference'):return None,{'used':False,'reason':'no local encoder'}
         result = predict(question, encoder, model)
     except (ValueError, RuntimeError, OSError, KeyError) as exc:
         return None, {'used': False, 'reason': str(exc)[:200]}

@@ -1,0 +1,123 @@
+"""Regressions for the observed ordinary-run render and prose repair failures."""
+import copy,json,tempfile,unittest
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
+from pypdf import PdfReader
+from clinical_core.agere.deliverables import patient_evidence as P, patient_report_pdf as PDF,workflow as W,saved_report
+from clinical_core.agere.clinical import execution_state as E,backstop_agent as B,system_one_gate as G
+import test_computed_answer_prose as prose_fixture
+import test_patient_review_profiles as profile_fixture
+
+class ClinicalInputs(unittest.TestCase):
+ def test_detailed_medication_deliverable_requires_all_collection_bindings_together(self):
+  row={'patient_id':'A','on_mra_pillar':1,'dose_rows':0,'gdmt_dose_rows':None,
+       'fill_drug_names':'Example medicine','care_relationships':'CLIN-A [referral]'}
+  a={'table':[row],'workflow':[{'kind':'deliverable'}]}
+  issue=P.clinical_collection_issues(a)[0]
+  self.assertIn('recent_gdmt_fill_observations',issue);self.assertIn('care_assignments',issue)
+  row.update(recent_gdmt_fill_observations=[],care_assignments=None)
+  self.assertIn('positive fill flag',P.clinical_collection_issues(a)[0])
+  row['recent_gdmt_fill_observations']=[{'drug_class':'mra','drug_name':'Example medicine','latest_fill_date_in_window':'2030-01-01','observed_fill_count':1}]
+  self.assertEqual(P.clinical_collection_issues(a),[])
+  row['care_assignments']=[{'note':'placeholder'}]
+  self.assertIn('dated relationship objects',P.clinical_collection_issues(a)[0])
+ def test_available_native_care_is_not_replaced_by_null_or_another_patient(self):
+  row={'patient_id':'A','on_mra_pillar':0,'gdmt_dose_rows':None,'care_assignments':None,'recent_gdmt_fill_observations':None}
+  a={'table':[row],'workflow':[{'kind':'deliverable'}]}
+  native=[{'result':{'columns':['patient_id','clinician_id','role','assignment_status','assigned_at_snapshot','effective_start','effective_end','source_date','source_record_ids'],
+                     'rows':[['A','CLIN-A','primary_care','documented_assignment',1,'2030-01-01',None,'2030-01-01','["R1"]']]}}]
+  self.assertIn('native investigation',P.clinical_collection_issues(a,native_calls=native)[0])
+  row['care_assignments']=[dict(zip(native[0]['result']['columns'],native[0]['result']['rows'][0]))]
+  self.assertEqual(P.clinical_collection_issues(a,native_calls=native),[])
+  row['care_assignments']=None
+  native[0]['result']['rows'][0][0]='B'
+  self.assertEqual(P.clinical_collection_issues(a,native_calls=native),[])
+ def test_flag_only_report_does_not_opt_into_unrequested_detailed_collections(self):
+  a={'table':[{'patient_id':'A','on_mra_pillar':0}],'workflow':[{'kind':'deliverable'}]}
+  self.assertEqual(P.clinical_collection_issues(a),[])
+ def test_available_doses_and_relationships_cannot_be_replaced_by_counts_and_ids(self):
+  row={'patient_id':'A','on_rasi_pillar':0,'dose_rows':1,'documented_pcp_ids':'CLIN-A'}
+  self.assertIn('dose objects',P.clinical_collection_issues({'table':[row]})[0])
+  row['gdmt_dose_rows']=[]
+  self.assertTrue(P.clinical_collection_issues({'table':[row]}))
+  row['gdmt_dose_rows']=json.dumps([{'drug_key':'lisinopril','daily_mg':5,'dose_date':'2030-05-01'}])
+  self.assertIn('relationship objects',P.clinical_collection_issues({'table':[row]})[0])
+  row['care_assignments']=[{'clinician_id':'CLIN-A','assignment_status':'referral_only'}]
+  self.assertEqual(P.clinical_collection_issues({'table':[row]}),[])
+ def test_zero_unknown_and_nonclinical_counts_do_not_invent_missing_objects(self):
+  for row in ({'patient_id':'A','on_rasi_pillar':0,'dose_rows':0,'documented_pcp_ids':None},
+              {'patient_id':'A','on_rasi_pillar':None,'dose_rows':None},
+              {'group':'B','dose_rows':12,'documented_pcp_ids':'historical ID list'}):
+   self.assertEqual(P.clinical_collection_issues({'table':[row]}),[])
+ def test_count_only_clinical_table_is_rejected_before_paid_review(self):
+  row={'patient_id':'A','on_rasi_pillar':0,'dose_rows':1}
+  calls=[{'result':{'result_view':'agere_result_1','columns':list(row),'rows':[row],'truncated':False}}]
+  a={'status':'partial','answer_type':'table','table_from_tool':'agere_result_1','headline':'Source review remains pending.'}
+  with patch.object(G,'check',side_effect=AssertionError('Missing wiring must fail locally')):
+   review=B.review_final(SimpleNamespace(),'Review medication evidence',a,calls,SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
+  self.assertEqual(review['status'],'repair');self.assertEqual(review['calls'],0)
+  self.assertIn('gdmt_dose_rows',review['feedback'])
+ def test_missing_name_is_unbound_but_received_null_is_a_supported_unknown(self):
+  fill={'drug_class':'mra','latest_fill_date_in_window':'2030-05-08','observed_fill_count':10}
+  a={'table':[{'patient_id':'A','recent_gdmt_fill_observations':[fill]}]}
+  self.assertTrue(P.clinical_collection_issues(a))
+  fill['drug_name']=None;self.assertEqual(P.clinical_collection_issues(a),[])
+  a['table'][0]['recent_gdmt_fill_observations']=json.dumps([fill]);self.assertEqual(P.clinical_collection_issues(a),[])
+  self.assertNotEqual(P.fill_name({'drug_class':'mra'}),P.fill_name(fill))
+ def test_malformed_collections_fail_before_paid_review(self):
+  for value in (["mra"],[{'drug_name':'Example'}],{'drug_name':'Example'},'[bad'):
+   row={'patient_id':'A','recent_gdmt_fill_observations':value}
+   calls=[{'result':{'result_view':'agere_result_1','columns':list(row),'rows':[row],'truncated':False}}]
+   a={'status':'partial','answer_type':'table','table_from_tool':'agere_result_1','headline':'Source review remains pending.'}
+   with patch.object(G,'check',side_effect=AssertionError('Structural failure is free')):
+    review=B.review_final(SimpleNamespace(),'Review medication evidence',a,calls,SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
+   self.assertEqual(review['status'],'repair');self.assertEqual(review['calls'],0)
+   self.assertIn('drug_name',review['feedback'])
+ def test_historical_missing_name_renders_without_inventing_a_medicine(self):
+  c=profile_fixture.CurrentNativeCardContracts().context();c['id']='ANS-authored';c['question']='Review received medicines';c['source']={'as_of':'2030-05-27'}
+  c['answer']['table'][0]['recent_gdmt_fill_observations']=[{'drug_class':'ace_inhibitor','latest_fill_date_in_window':'2030-05-08','observed_fill_count':10}]
+  with tempfile.TemporaryDirectory()as t:
+   output=Path(t)/'report.pdf';PDF.render(c,output)
+   text='\n'.join(p.extract_text()or''for p in PdfReader(output).pages)
+  self.assertIn('Medicine name not returned in this result',text)
+  self.assertIn('Alex Example',text)
+
+class RetainedProse(unittest.TestCase):
+ def setUp(self):
+  self.f=prose_fixture.ComputedProse();self.f.setUp()
+ def test_unchanged_compiled_objects_round_trip_and_are_recomputed(self):
+  a=self.f.answer();B.bind_computed_prose(a,self.f.calls);before=copy.deepcopy(a)
+  draft=E.draft_state(a)['last_draft'];self.assertEqual(draft['headline'],self.f.template());self.assertEqual(a,before)
+  draft['table_binding']=a['table_binding'];B.bind_computed_prose(draft,self.f.calls);self.assertEqual(draft['headline'],a['headline'])
+  calls=copy.deepcopy(self.f.calls);calls[0]['result']['rows'][0][1]=19
+  draft=E.draft_state(a)['last_draft'];draft['table_binding']=a['table_binding'];B.bind_computed_prose(draft,calls)
+  self.assertIn('19 visits',draft['headline'])
+ def test_edited_fields_cannot_inherit_stale_proof_or_bypass_number_words(self):
+  for text in ('all four pillars','current_responsibility_verified=0','not an absent one'):
+   a=self.f.answer();B.bind_computed_prose(a,self.f.calls);a['headline']=text
+   draft=E.draft_state(a)['last_draft'];self.assertEqual(draft['headline'],text)
+   draft['table_binding']=a['table_binding']
+   with self.assertRaisesRegex(ValueError,'unbound literals'):B.bind_computed_prose(draft,self.f.calls)
+
+class LocalFailureBoundary(unittest.TestCase):
+ def context(self):
+  return {'answer':{'status':'partial','missing':['Unresolved interpretation']},'patient_ids':['A'],
+   'workflow':[{'kind':'deliverable','title':'Received evidence','template':'patient_review','purpose':'inspection','unresolved':[]}]}
+ def test_failure_keeps_context_costs_and_explicit_retry_never_uses_frontier(self):
+  records=[]
+  with patch.object(W.A,'load',return_value=self.context()),patch.object(W,'read',side_effect=lambda *a:copy.deepcopy(records[-1])if records else{}),patch.object(W,'_save',side_effect=lambda *a:records.append(copy.deepcopy(a[-1]))),patch.object(W.A,'compose_frontier',side_effect=AssertionError('Local retry cannot buy inference')):
+   with patch.object(saved_report,'create',side_effect=KeyError('drug_name')):
+    first=W.materialize(Path('/authored'),'ANS-authored',generation='saved_report')
+   self.assertTrue(first['initialized']);self.assertEqual(first['steps'][0]['render_error']['context_id'],'ANS-authored')
+   self.assertEqual(first['new_paid_api_calls'],0);self.assertEqual(first['known_api_estimate_usd'],0)
+   with patch.object(saved_report,'create',return_value={'id':'D-fixed','status':'delivered','costs':{'known_api_estimate_usd':0,'api_cost_known':True},'new_paid_api_calls':0}):
+    fixed=W.retry_deliverable(Path('/authored'),{'context_id':'ANS-authored','index':0,'attempt':2})
+   step=fixed['steps'][0];self.assertEqual(step['status'],'ready');self.assertNotIn('render_error',step)
+   self.assertEqual(step['attempts'][0]['render_error']['type'],'KeyError');self.assertEqual(len(step['attempts']),2)
+   self.assertEqual(fixed['new_paid_api_calls'],0)
+ def test_frontier_unexpected_error_is_not_swallowed_as_local_rendering(self):
+  with patch.object(W.A,'load',return_value=self.context()),patch.object(W,'read',return_value={}),patch.object(W.A,'compose_frontier',side_effect=KeyError('provider response')):
+   with self.assertRaises(KeyError):W.materialize(Path('/authored'),'ANS-authored',allow_live=True,generation='frontier')
+
+if __name__=='__main__':unittest.main()

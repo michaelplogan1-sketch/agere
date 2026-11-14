@@ -1,0 +1,11 @@
+const fs=require('fs'),assert=require('assert');
+const s=fs.readFileSync(require('path').join(__dirname,'clinical_core/agere/ask_view.py'),'utf8');
+const source=s.slice(s.indexOf('function executionInfo(d)'),s.indexOf('function executionDetails(d)'));
+const isNum=x=>typeof x==='number'&&Number.isFinite(x),ROUTES={};eval(source);
+let r=executionInfo({new_paid_api_calls:1,planning_economics:{new_api_estimate_usd:.1},cost_receipt:{version:'cost-receipt/1',paid_calls:12,usd:2.5,usd_known:true,ledger_consistent:true,accounting_complete:true,calls_by_model:{'claude-haiku-5-5':8,'jev-1.13.0':4}}});
+assert.equal(r.calls,12);assert.equal(r.total,2.5);assert.equal(r.models.length,2);
+r=executionInfo({planning_economics:{new_api_estimate_usd:0},cost_receipt:{version:'cost-receipt/1',paid_calls:3,usd:null,usd_known:false,ledger_consistent:true},cost_telemetry:{api_usd:.3}});assert.equal(r.total,null);assert(r.cost.includes('Unknown'));assert(r.cost.includes('.3000'));
+r=executionInfo({cost_receipt:{version:'cost-receipt/1',paid_calls:4,usd:2,usd_known:true,ledger_consistent:false},planning_economics:{new_api_estimate_usd:1}});assert.equal(r.total,null);
+r=executionInfo({new_paid_api_calls:1,planning_economics:{new_api_estimate_usd:.1}});assert.equal(r.total,.1);assert.equal(r.calls,1);
+assert(s.includes('known usage estimate'));assert(!s.includes('Known hosted model spend'));
+console.log('5 request-wide cost UI assertions passed; no network or model calls.');

@@ -555,7 +555,31 @@ def execute(stack_or_semantic, params=None, *, patient_ids=None, as_of=None):
         mean_min, service_source = p['mean_service_minutes'], 'user-provided mean_service_minutes'
         assumptions.append(f"Mean service time {mean_min:g} minutes is user-provided; no start/end durations were available to estimate it.")
     else:
-        return finish(_insufficient(p, src, warnings, assumptions, 'no service times observed and no mean_service_minutes provided'))
+        # Missing service duration prevents staffing, not observation of demand.
+        # Keep the actual arrival scope and scalar arithmetic available to the
+        # shared analyst without substituting another event source or duration.
+        observations = {
+            'source': src, 'observation_kind': 'arrival_baseline_without_service_time',
+            'arrivals_used': len(arrivals) + len(untimed) if profile else None,
+            'timed_arrivals': len(arrivals) if profile else None,
+            'date_only_arrivals': len(untimed) if profile else None,
+            'first_arrival_date': min(d.date().isoformat() for d in arrivals + untimed) if profile else None,
+            'last_arrival_date': max(d.date().isoformat() for d in arrivals + untimed) if profile else None,
+            'rate_window_start_date': profile['first'].isoformat() if profile else None,
+            'rate_window_end_date': profile['last'].isoformat() if profile else None,
+            'window_start': p['window']['start'] or None, 'window_end': p['window']['end'] or None,
+            'weeks_observed': round(profile['weeks'], 4) if profile else None,
+            'arrival_rate_source': rate_source,
+            'weekly_arrivals_base': round(sum(rates), 4),
+            'arrival_scale_applied': p['arrival_scale'],
+            'weekly_arrivals_scaled': round(sum(rates) * p['arrival_scale'], 4),
+            'scaling_basis': 'Arrival-scale arithmetic only; no demand forecast or staffing estimate.',
+            'all_arrivals_timed': not bool(untimed) if profile else None,
+            'undated_arrivals': flags['undated'] if profile else None,
+            'usable_service_observations': 0, 'mean_service_minutes': None,
+            'supplied_servers': p['servers'], 'staffing_established': False}
+        return finish(_insufficient(p, src, warnings, assumptions,
+            'no service times observed and no mean_service_minutes provided', observations=observations))
     if cv and p['mean_service_minutes'] and abs(p['mean_service_minutes'] - cv['mean_minutes']) > 1e-9:
         mean_min, service_source = p['mean_service_minutes'], 'user-provided mean_service_minutes (overrides observed)'
         assumptions.append(f"Mean service time {mean_min:g} minutes is user-provided and overrides the observed mean of {cv['mean_minutes']:.1f}.")
@@ -730,8 +754,9 @@ def _min_c_for_pwait(a, alpha, cap):
     return None
 
 
-def _insufficient(p, src, warnings, assumptions, reason):
-    return {'schema': VERSION, 'answer': {'objective': p['objective'], 'source': src, 'status': 'insufficient_data', 'reason': reason},
+def _insufficient(p, src, warnings, assumptions, reason, *, observations=None):
+    return {'schema': VERSION, 'answer': {'objective': p['objective'], 'source': src, 'status': 'insufficient_data', 'reason': reason,
+                **({'inputs': observations} if observations is not None else {})},
             'warnings': warnings + [f'No staffing answer: {reason}.'], 'assumptions': assumptions, 'notes': [], 'inference_status': 'insufficient_data',
             'optimality_claimed': False, 'parameters': {k: v for k, v in p.items() if k not in ('arrivals', 'service_minutes')},
             'method': '', 'limitations': []}
@@ -744,8 +769,42 @@ def engine_execute(path, patient_ids, params, as_of=None):
 
 
 def table(report):
-    """Staffing by hour of week (the evidence table of the answer), one row per hour block."""
+    """Staffing blocks, or retained demand observations with staffing unknown."""
+    answer = report.get('answer') or {}
+    if answer.get('status') == 'insufficient_data' and answer.get('inputs'):
+        return [{**answer['inputs'], 'required_servers': None, 'capacity_gap_servers': None,
+                 'configured_parameters_json': json.dumps(report['parameters'], sort_keys=True, allow_nan=False),
+                 'parameter_authority': 'Configured engine inputs, not approved service targets. No staffing objective was evaluated.'}]
     return list(((report.get('answer') or {}).get('staffing') or {}).get('by_hour_of_week') or [])
+
+
+def attach_outcome(answer, calls):
+    """Restore native capacity context only for an exact server-bound table.
+
+    Unknown staffing must not become a zero chart. Model prose and review
+    statuses remain untouched; the native report is no clinical qualification.
+    """
+    value=answer.get('overall');overall=dict(value)if isinstance(value,dict)else{}
+    if 'queueing'in overall:
+        overall.pop('queueing');answer['overall']=overall
+    answer.pop('native_queueing_binding',None)
+    binding=answer.get('table_binding')or{}
+    if not binding.get('copied_from_executed_result')or binding.get('interpreted_columns'):return False
+    for call in calls:
+        if call.get('name')!='execute_analysis'or(call.get('input')or{}).get('operation')!='queueing':continue
+        result=call.get('result')or{};native=(result.get('engine_result')or{}).get('answer')or{}
+        context=native.get('overall')or{}
+        if ('queueing'not in context or result.get('result_view')!=binding.get('result_view')
+            or answer.get('table')!=result.get('rows')or native.get('table')!=result.get('rows')):continue
+        overall.update({k:context[k]for k in ('queueing','input_scope','input_membership','inference_status','assumptions')if k in context})
+        answer['overall']=overall
+        for key in ('warnings','assumptions'):
+            answer[key]=list(dict.fromkeys([*(answer.get(key)or[]),*(native.get(key)or[])]))
+        answer['native_queueing_binding']={'result_view':binding['result_view'],'rows':len(result['rows']),
+            'source':'complete executed queueing result matched to the final native table',
+            'model_verification_changed':False,'clinical_qualification':False}
+        return True
+    return False
 
 
 def summary(report):

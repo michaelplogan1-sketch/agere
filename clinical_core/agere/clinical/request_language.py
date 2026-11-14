@@ -43,6 +43,7 @@ SOURCES = {
     'payer-feed medical claims': ('payer_claim', ('counts_in_metrics', 1)),
     'payer medical claims': ('payer_claim', ('counts_in_metrics', 1)),
     'provider medical claims': ('claim', ('claim_source', 'medical_claims')),
+    'provider claims': ('claim', ('claim_source', 'medical_claims')),
     'diabetics': ('patient', ('condition', 'diabetes')),
     'cardiologists': ('clinician', ('specialty', 'Cardiology')), 'nephrologists': ('clinician', ('specialty', 'Nephrology')),
     'endocrinologists': ('clinician', ('specialty', 'Endocrinology')), 'oncologists': ('clinician', ('specialty', 'Oncology')),
@@ -531,10 +532,15 @@ class Parser(AnalystForms, SdohComposition, ComparisonForms, ClaimFrames, RateFo
         return value, tail
 
     def concept_period(self, value, tail):
-        rolling = re.match(r'^\s*(?:in|during|over|within)\s+the\s+(?:last|past)\s+(?:year|12\s+months|twelve\s+months)\b', tail, re.I)
+        rolling = re.match(r'^\s*(?:in|during|over|within)\s+the\s+(?:last|past)\s+(?:(\d+|'+'|'.join(NUMBER_WORDS)+r')\s+(years?|months?)|(year|month))\b', tail, re.I)
         if rolling and value.get('kind') == 'drug_fill' and self.base == 'patient' and self.catalog.identity.get('as_of'):
-            from . import decision_context  # the one 12-month rule: the day after date(as_of, '-12 months') through as_of
-            start, end = decision_context.rolling_year(self.catalog.identity['as_of'])
+            from . import decision_context
+            from datetime import timedelta
+            n=1 if rolling[1]is None else int(rolling[1])if rolling[1].isdigit()else int(NUMBER_WORDS[rolling[1].lower()])
+            months=n*(12 if(rolling[2]or rolling[3]).lower().startswith('year')else 1)
+            if months<=0:raise PlanError('A rolling medication-fill period needs a positive number of months')
+            end=str(self.catalog.identity['as_of'])[:10]
+            start=(decision_context.add_months(end,-months)+timedelta(days=1)).isoformat()
             value['period'] = {'start': start, 'end': end}
             value['quote'] = [value['quote'], rolling.group().strip()] if isinstance(value['quote'], str) else [*value['quote'], rolling.group().strip()]
             return value, tail[rolling.end():]
@@ -1152,6 +1158,17 @@ class Parser(AnalystForms, SdohComposition, ComparisonForms, ClaimFrames, RateFo
         rest = re.sub(r"^[\u2019']s?\s+(?=\S)", '', rest)  # "diabetics' most recent A1c": the possessive of the population noun
         base_filter = None
         if default: base_filter = self.preset_filter(default, source_quote)
+        # A source qualifier names this catalog, not a clinical concept. Bind
+        # its exact wording rather than silently deleting it as filler. This
+        # composes with any received source, filters and grouping; it cannot
+        # broaden an explicitly inherited cohort.
+        catalog_scope = re.match(r'^(?:in|from|across)\s+(?:the|our|this)\s+'
+                                 r'(?:(?:connected|current|active)\s+)?(?:warehouse|dataset|database)\b', rest, re.I)
+        if catalog_scope:
+            if self.bound:
+                raise PlanError('Explicit warehouse scope conflicts with an inherited population; select warehouse scope first')
+            source_quote = [source_quote, catalog_scope.group()]
+            rest = rest[catalog_scope.end():].lstrip()
         where, tail = self.expression(rest)
         if tail.strip(): raise PlanError('Unconsumed request: '+tail)
         if modifiers and self.base != 'patient': raise PlanError('Population adjectives apply to patients: ' + ' '.join(modifiers))

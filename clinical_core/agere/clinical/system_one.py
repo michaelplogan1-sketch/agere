@@ -48,11 +48,49 @@ def _gateway(ledger, allow_live):
     return PersistentGateway(ledger, allow_live=allow_live)
 
 
+def _classify(provider,task,ledger,allow_live,cache_evidence=None):
+    """Reuse only producer-proven timing equivalents, retaining actual charges."""
+    from .evidence_projection import native_timing_legacy_evidence
+    legacy=native_timing_legacy_evidence(task.evidence,cache_evidence)
+    if legacy is None:return _gateway(ledger,allow_live).classify(provider,task)
+    current=_gateway(ledger,False).classify(provider,task)
+    if current.get('status')!='prepared':return current
+    key=current['request_hash'];model=PersistentGateway.MODELS[provider]
+    blocked=ledger.db.execute('SELECT 1 FROM calls WHERE id=?',(key,)).fetchone()or ledger.db.execute(
+        'SELECT 1 FROM request_retries WHERE attempt_key=?',(key,)).fetchone()
+    if blocked:return _gateway(ledger,allow_live).classify(provider,task)if allow_live else current
+    cached=BudgetLedger.cached_equivalent(ledger,key,provider,model)
+    if cached is None:
+        from dataclasses import replace
+        old=_gateway(ledger,False).classify(provider,replace(task,evidence=legacy))
+        if old.get('status')=='prepared':
+            prior=ledger.db.execute('SELECT status FROM calls WHERE id=?',(old['request_hash'],)).fetchone()
+            if prior and prior[0]!='validated':
+                if allow_live:raise ValueError('Prior compatible request pending/failed; explicit new attempt required, no silent paid retry')
+                return current
+            return _gateway(ledger,allow_live).classify(provider,task)if allow_live else current
+        if type(ledger)is not BudgetLedger:
+            return {**old,'cache_compatibility':{'schema':'native-query-timing-cache/1','canonical_request_hash':key,
+                'original_request_hash':old['request_hash'],'binding_persisted':False}}
+        BudgetLedger.remember_equivalent(ledger,key,old['request_hash'],provider,model,cache_evidence)
+        cached=BudgetLedger.cached_equivalent(ledger,key,provider,model)
+        if cached is None:return _gateway(ledger,allow_live).classify(provider,task)if allow_live else current
+    from ...providers import JevProvider
+    parser=JevProvider(None,model=model);parser.name=provider
+    raw=cached['raw'];parsed=PersistentGateway._parse(parser,task,raw)
+    from .cost_telemetry import tag
+    tag(ledger,cached['request_hash'],reused=True)
+    return {**parsed,'request_hash':cached['request_hash'],'cache_hit':True,'new_paid_api_usd':0,
+            'usage':raw.get('usage'),'cache_compatibility':cached['cache_compatibility']}
+
+
 def _open_ledger(ledger):
     """(ledger, owned): a BudgetLedger passes through; a path or None opens one (closed by the caller)."""
     if isinstance(ledger, BudgetLedger) or (ledger is not None and hasattr(ledger, 'db')):
         return ledger, False
-    return BudgetLedger(Path(ledger) if ledger else default_ledger_path()), True
+    from .cost_telemetry import QuestionLedgerPath
+    path = ledger or default_ledger_path()
+    return BudgetLedger(path if isinstance(path, QuestionLedgerPath) else Path(path)), True
 
 
 def _options(options):
@@ -69,7 +107,10 @@ def _evidence(evidence, as_of):
         if eid in seen:
             eid = f'{eid}#{i}'
         seen.add(eid)
-        out.append({'id': eid, 'text': str(e.get('text') or ''), 'date': str(e.get('date') or e.get('event_date') or as_of)[:10],
+        observed=e.get('date') or e.get('event_date')
+        # The typed task already carries its snapshot cutoff separately. Keep
+        # the source clock explicitly unknown within its existing string schema.
+        out.append({'id': eid, 'text': str(e.get('text') or ''), 'date':str(observed)[:10] if observed else 'unknown',
                     'note_id': str(e.get('note_id') or e.get('record_id') or eid)})
     return out
 
@@ -81,10 +122,12 @@ def _result(raw, provider, task_key):
             'calibrated_probabilities': calibrate(task_key, probabilities, provider=provider) if task_key else dict(probabilities),
             'evidence_ids': list(raw.get('evidence_ids') or []), 'provider': provider, 'model': raw.get('model'),
             'cost_usd': 0.0 if raw.get('cache_hit') else cost.get('estimated_usd'), 'cache_hit': bool(raw.get('cache_hit')),
-            'request_hash': raw.get('request_hash'), 'task_key': task_key}
+            'request_hash': raw.get('request_hash'), 'task_key': task_key,
+            **({'cache_compatibility':raw['cache_compatibility']}if raw.get('cache_compatibility')else{})}
 
 
-def choice(question, options, evidence, *, as_of, provider='jev', ledger=None, allow_live=True, task_key=None):
+def choice(question, options, evidence, *, as_of, provider='jev', ledger=None, allow_live=True, task_key=None, select_source=True,
+           long_context=False,cache_evidence=None):
     """One typed Choice. Returns {'label','probabilities','calibrated_probabilities','evidence_ids','provider','model',
     'cost_usd','cache_hit','request_hash'}; with allow_live=False and no cached answer, status='prepared' and label None.
     Provider/request errors raise (decide() turns them into steps)."""
@@ -92,10 +135,10 @@ def choice(question, options, evidence, *, as_of, provider='jev', ledger=None, a
         raise ValueError(f'System One provider must be one of {PROVIDERS}')
     as_of = str(as_of)[:10]
     date.fromisoformat(as_of)
-    task = EvidenceTask(str(question), as_of, _options(options), _evidence(evidence, as_of))
+    task = EvidenceTask(str(question), as_of, _options(options), _evidence(evidence, as_of),select_source=select_source,long_context=long_context)
     handle, owned = _open_ledger(ledger)
     try:
-        raw = _gateway(handle, allow_live).classify(provider, task)
+        raw = _classify(provider,task,handle,allow_live,cache_evidence)
     finally:
         if owned:
             handle.close()
@@ -106,7 +149,8 @@ def choice(question, options, evidence, *, as_of, provider='jev', ledger=None, a
     return _result(raw, provider, task_key)
 
 
-def decide(question, options, evidence, *, as_of, order=None, threshold=0.8, task_key=None, ledger=None, allow_live=True):
+def decide(question, options, evidence, *, as_of, order=None, threshold=0.8, task_key=None, ledger=None, allow_live=True,
+           select_source=True,long_context=False,cache_evidence=None):
     """Cheapest typed provider first; the next one only when the previous is below threshold (calibrated), says 'unknown',
     or fails. Returns the accepted (else best) choice plus 'decided_by' (None when nobody cleared the bar), 'steps' and
     total 'cost_usd'. Never raises for a provider failure: when every provider fails the label is 'unknown'.
@@ -119,7 +163,7 @@ def decide(question, options, evidence, *, as_of, order=None, threshold=0.8, tas
     steps, results = [], []
     student = None
     try:
-        student = system_one_student.predict(task_key, question, _options(options), evidence) if task_key else None
+        student = system_one_student.predict(task_key, question, _options(options), evidence,as_of=as_of) if task_key else None
     except Exception as exc:  # noqa: BLE001 - the student is an optimization; providers still answer
         steps.append({'provider': 'local_student', 'status': 'error', 'error': f'{type(exc).__name__}: {str(exc)[:200]}'})
     if student and student.get('label'):
@@ -134,19 +178,23 @@ def decide(question, options, evidence, *, as_of, order=None, threshold=0.8, tas
     for provider in order:
         try:
             r = choice(question, options, evidence, as_of=as_of, provider=provider, ledger=ledger, allow_live=allow_live,
-                       task_key=task_key)
+                       task_key=task_key,select_source=select_source,long_context=long_context,
+                       **({'cache_evidence':cache_evidence}if cache_evidence else{}))
         except Exception as exc:  # one provider failing never walls the caller out
-            steps.append({'provider': provider, 'status': 'error', 'error': f'{type(exc).__name__}: {str(exc)[:200]}'})
+            steps.append({'provider': provider, 'status': 'error', 'error': f'{type(exc).__name__}: {str(exc)[:200]}',
+                          **getattr(exc,'provider_receipt',{})})
             continue
         p = r['calibrated_probabilities'].get(r['label']) if r['label'] else None
         steps.append({'provider': provider, 'status': r.get('status', 'answered'), 'label': r['label'], 'probability': p,
-                      'cost_usd': r['cost_usd'], 'cache_hit': r['cache_hit'], 'request_hash': r['request_hash']})
+                      'cost_usd': r['cost_usd'], 'cache_hit': r['cache_hit'], 'request_hash': r['request_hash'],
+                      **({'cache_compatibility':r['cache_compatibility']}if r.get('cache_compatibility')else{})})
         if r.get('status') == 'prepared':
             results.append(r)
             continue
         results.append(r)
         if r['label'] != 'unknown' and p is not None and p >= threshold:
-            if task_key: system_one_student.record(task_key, question, options, evidence, r['label'], p, provider)
+            if task_key: system_one_student.record(task_key,question,_options(options),evidence,r['label'],p,provider,
+                                                  as_of=as_of,model=r.get('model'),request_hash=r.get('request_hash'))
             return {**r, 'decided_by': provider, 'steps': steps, 'cost_usd': _total(steps)}
     answered = [r for r in results if r.get('status') != 'prepared']
     if answered:
@@ -162,6 +210,63 @@ def decide(question, options, evidence, *, as_of, order=None, threshold=0.8, tas
 
 def _total(steps):
     return sum(s.get('cost_usd') or 0.0 for s in steps)
+
+
+def judge_fields(subject,questions,evidence,*,as_of,ledger=None,allow_live=True,threshold=.8,order=None,long_context=False,cache_evidence=None):
+    """Independent named Choices share one state; only unresolved fields fall back.
+
+    This does not fit calibration, create physician labels, or certify a complete
+    clinical answer. Each accepted field retains its actual provider/threshold.
+    """
+    if not questions:return {'judgments':{},'steps':[],'cost_usd':0.0}
+    pending=dict(questions);accepted={};steps=[];observed={}
+    providers=list(PROVIDERS if order is None else order)
+    if long_context is None:
+        # Transport repair must not buy a new primary vote when an exact,
+        # validated fallback observation already exists. Cached-only lookups
+        # neither reserve nor send a provider request; normal field acceptance
+        # below still consumes only deciding judgments.
+        cached=[]
+        task=EvidenceTask(str(subject),str(as_of)[:10],{'unknown':UNKNOWN},_evidence(evidence,as_of),
+                          select_source=False,long_context=None,questions=pending)
+        handle,owned=_open_ledger(ledger)
+        try:
+            for provider in providers:
+                try:
+                    if _classify(provider,task,handle,False,cache_evidence).get('cache_hit'):cached.append(provider)
+                except Exception:pass  # ordinary provider handling below retains failures
+        finally:
+            if owned:handle.close()
+        providers=cached+[p for p in providers if p not in cached]
+    for provider in providers:
+        task=EvidenceTask(str(subject),str(as_of)[:10],{'unknown':UNKNOWN},_evidence(evidence,as_of),
+                          select_source=False,long_context=long_context,questions=pending)
+        handle,owned=_open_ledger(ledger)
+        try:
+            raw=_classify(provider,task,handle,allow_live,cache_evidence)
+            if raw.get('status')=='prepared':
+                steps.append({'provider':provider,'status':'prepared','cost_usd':0.0,'request_hash':raw.get('request_hash')});continue
+            usd=0.0 if raw.get('cache_hit') else (raw.get('cost_estimate') or {}).get('estimated_usd')
+            steps.append({'provider':provider,'status':'partial' if raw.get('invalid_fields') or raw.get('unexpected_fields') else 'answered',
+                          'invalid_fields':raw.get('invalid_fields')or{},'unexpected_fields':raw.get('unexpected_fields')or[],
+                          'cost_usd':usd,'cache_hit':bool(raw.get('cache_hit')),
+                          'request_hash':raw.get('request_hash'),'fields':list(pending),
+                          **({'cache_compatibility':raw['cache_compatibility']}if raw.get('cache_compatibility')else{})})
+            for key,result in raw['judgments'].items():
+                p=result['probabilities'].get(result['label'],0)
+                row={**result,'probability':p,'provider':provider,'model':raw.get('model'),'decided_by':None,'threshold':threshold}
+                observed[key]=row
+                if result['label']!='unknown' and p>=threshold:
+                    accepted[key]={**row,'decided_by':provider}
+            pending={k:v for k,v in pending.items() if k not in accepted}
+            if not pending:break
+        except Exception as exc:
+            steps.append({'provider':provider,'status':'error','error':f'{type(exc).__name__}: {str(exc)[:200]}',
+                          **getattr(exc,'provider_receipt',{})})
+        finally:
+            if owned:handle.close()
+    return {'judgments':{k:accepted.get(k) or observed.get(k) or {'label':'unknown','decided_by':None} for k in questions},
+            'steps':steps,'cost_usd':_total(steps),'scope':'Per-field model judgments, not independent clinical acceptance'}
 
 
 def typed_question(question, options, *, as_of, order=None, threshold=0.8, task_key=None, ledger=None, allow_live=True):
@@ -295,8 +400,9 @@ def _batch(jobs, workers):
             return None
     if workers <= 1 or len(jobs) <= 1:
         return [run(j) for j in jobs]
+    from .cost_telemetry import inherit_context
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        return list(pool.map(run, jobs))
+        return list(pool.map(inherit_context(run), jobs))
 
 
 def attribute(question, options, evidence, label, *, as_of, ledger=None, allow_live=True, max_sentences=12, provider='jev',
@@ -309,7 +415,8 @@ def attribute(question, options, evidence, label, *, as_of, ledger=None, allow_l
     opts = _options(options)
     parts = sentences(ev, max_sentences=max_sentences)
     path = getattr(ledger, 'path', ledger)  # per-worker connections: sqlite handles are not shared across threads
-    path = str(path) if path else None
+    from .cost_telemetry import bind_ledger_path
+    path = bind_ledger_path(path) if path else None
     workers = workers or int(os.environ.get('AGERE_SYSTEM_ONE_WORKERS', '8'))
 
     def job(items):

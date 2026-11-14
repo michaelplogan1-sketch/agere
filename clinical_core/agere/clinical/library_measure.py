@@ -12,7 +12,7 @@ import re
 import sqlite3
 from pathlib import Path
 
-VERSION = 'agere-library-measure/1'
+VERSION = 'agere-library-measure/2'
 OUTPUTS = ('rate', 'gaps', 'patients')
 GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'payer', 'age_band', 'sex', 'race', 'ethnicity', 'language')
 
@@ -57,6 +57,10 @@ def validate(p):
     if not isinstance(period, dict) or set(period) - {'start', 'end'} or any(
             v and not re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(v)) for v in period.values()):
         raise ValueError('period: {start, end} as YYYY-MM-DD')
+    for value in period.values():
+        if value:dt.date.fromisoformat(value)
+    if period.get('start') and period.get('end') and period['start']>period['end']:
+        raise ValueError('Measure period is reversed')
     if p.get('group_by', 'none') not in GROUP_BY: raise ValueError(f'group_by: {GROUP_BY}')
     if p.get('output', 'rate') not in OUTPUTS: raise ValueError(f'output: {OUTPUTS}')
     return {'measure': p['measure'], 'period': {'start': period.get('start', ''), 'end': period.get('end', '')},
@@ -67,18 +71,20 @@ def validate(p):
 def execute(path, patient_ids, params, as_of):
     from . import measures, semantic_layer
     p = validate(params)
+    start, end = p['period']['start'], p['period']['end']
+    if not start or not end:
+        s0, e0 = measures.default_period(str(as_of)[:10])
+        start, end = start or s0, end or e0
+    if start>end:raise ValueError('Measure period is reversed')
+    if end>str(as_of)[:10]:raise ValueError('Measure period exceeds the snapshot cutoff')
     target = semantic_layer.ensure(path) if (Path(path)/'run.json').exists() else Path(path)/'semantic.sqlite3'
     db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
     try:
         from .age import register
         register(db)
-        start, end = p['period']['start'], p['period']['end']
-        if not start or not end:
-            s0, e0 = measures.default_period(str(as_of)[:10])
-            start, end = start or s0, end or e0
         m = measures.library()[p['measure']]
         rep = measures.evaluate_db(db, m, start[:10], end[:10], str(as_of)[:10], p['group_by'],
-                                   set(patient_ids) if patient_ids is not None else None, output=p['output'])
+                                   set(patient_ids) if patient_ids is not None else None, output=p['output'],top=None)
     finally:
         db.close()
     return {**rep, 'parameters': p, 'period': {'start': start[:10], 'end': end[:10]}, 'measure_id': p['measure'],
@@ -88,22 +94,34 @@ def execute(path, patient_ids, params, as_of):
 def answer(report, plan, question):
     cite = '; '.join(c['url'] for c in report.get('citations') or [])
     used = f"Measure used ({report['measure_name']}, {report['measure_status']}): {report.get('certification') or ''}".strip()
-    if report.get('declined'):
+    if report.get('declined') and not report.get('partial'):
         return {'status': 'unsupported', 'answer_type': 'unsupported', 'value': report['reading'], 'headline': report['reading'],
                 'missing': report.get('missing_inputs') or [], 'patient_ids': [], 'limitations': [used]}
     o = report['overall']
     gaps = sorted({g['patient_id'] for g in report.get('care_gaps') or []})
-    partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
-    out = {'status': 'partial' if partial else 'answered', 'answer_type': 'table', 'table': report['rows'],
+    output=report['parameters']['output']
+    table=(report.get('patient_rows') or []) if output=='patients' else report['rows']
+    ids=sorted({r['patient_id'] for r in table if r.get('patient_id')}) if output=='patients' else gaps
+    partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or report.get('partial')
+    missing=list(report.get('missing_inputs') or [])
+    complete_projection=True
+    if output=='patients' and 'patient_rows' not in report:
+        table=report['rows']
+        partial=True
+        complete_projection=False
+        missing=['Complete patient-status rows were not computed for this measure output; aggregate observations are retained.']
+    out = {'status': 'partial' if partial else 'answered', 'answer_type': 'table', 'table': table,
            'value': report['reading'], 'headline': report['reading'], 'method': report.get('method'),
+           'missing':missing,
            'definitions': [{'term': report['measure_name'], 'basis': report.get('method'), 'citations': cite}],
-           'limitations': [used, *(report.get('warnings') or [])][:12], 'patient_ids': gaps, 'membership_role': 'gap',
+           'limitations': [used, *(report.get('warnings') or [])][:12], 'patient_ids': ids,
+           'membership_role': 'evaluated' if output=='patients' else 'gap',
            'denominator': f"{o.get('denominator')} eligible index events/patients" if 'denominator' in o else None,
            'measure': {'id': report['measure_id'], 'numerator': o.get('numerator'), 'denominator': o.get('denominator'),
                        'rate': o.get('rate'), 'excluded': o.get('excluded'), 'follow_up_days': report['parameters']['follow_up_days']}}
     if report['parameters']['output'] == 'rate' and o.get('rate') is not None and report['parameters']['group_by'] == 'none':
         out['value'] = round(o['rate'] * 100, 1); out['unit'] = 'percent'
-    if report['parameters']['output'] != 'rate': out['count'] = len(gaps)
+    if output != 'rate': out['count'] = len(ids) if complete_projection else None
     return out
 
 

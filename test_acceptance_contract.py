@@ -39,6 +39,27 @@ def unmet(question, request, query=PLAIN, **kw):
 class Operators(unittest.TestCase):
     Q_AND = 'How many patients have diabetes and CKD?'
 
+    def test_proof_caution_is_not_a_data_exclusion_and_keeps_coordinated_filters(self):
+        from clinical_core.agere.clinical.literal_check import missing
+        from clinical_core.agere.clinical import requirement_ledger as R
+        query='SELECT balance_cents FROM accounts'
+        cautions=[
+            'Show balances. Do not treat a payer remittance or account balance as proof of patient payment.',
+            "Show balances. Don't interpret recorded revenue as evidence of cash receipt.",
+            'Show balances. Never use a billing balance as confirmation of payment.']
+        for question in cautions:
+            with self.subTest(question=question):
+                self.assertFalse(any('negates' in g for g in missing(question,query)))
+                self.assertFalse(any('negates' in g for g in R.gaps(question,query)))
+        for question in [
+            'Show patients without payments. Do not treat remittances as proof of payment.',
+            'Show balances. Do not treat remittances as proof of payment and exclude reversed records.',
+            'Show balances. Do not include reversed records.',
+            'Show patients with no evidence of payment.']:
+            with self.subTest(question=question):
+                self.assertTrue(any('negates' in g for g in missing(question,query)))
+                self.assertFalse(any('negates' in g for g in missing(question,query+" WHERE status <> 'reversed'")))
+
     def test_and_asked_and_or_planned_is_unmet(self):
         r = unmet(self.Q_AND, spec({'op': 'or', 'args': [concept('diabetes'), concept('chronic_kidney_disease')]}))
         self.assertFalse(r['ok'])
@@ -106,6 +127,24 @@ class Windows(unittest.TestCase):
 
 
 class Outputs(unittest.TestCase):
+    def test_named_nonpatient_rows_keep_their_shape_with_measure_words(self):
+        questions=[
+            'Build a review agenda. Show the populations behind each total and which payer inputs are needed before estimating savings.',
+            'Show which supplier contracts account for the total procurement cost.',
+            'Identify which inventory sources contribute to the average lead time.']
+        table={'status':'partial','answer_type':'table','table':[{'source':'a'},{'source':'b'}]}
+        for question in questions:
+            with self.subTest(question=question):
+                self.assertEqual(AC.requested_output(question),'table')
+                self.assertIsNone(AC.output_misfit(question,table))
+
+    def test_direct_scalar_and_patient_requests_are_not_overridden_by_which(self):
+        for question,wanted in [
+            ('How many reports state which inputs are needed?','count'),
+            ('What is the total cost of reports stating which inputs are missing?','value'),
+            ('Which patients have unpaid balances?','patient_set')]:
+            with self.subTest(question=question):self.assertEqual(AC.requested_output(question),wanted)
+
     def share(self, denominator_where=None, where=None):
         measure = {'kind': 'ratio', 'alias': 'percent', 'scale': 100,
                    'numerator': {'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'meeting',
@@ -186,6 +225,33 @@ class Outputs(unittest.TestCase):
         r = AC.evaluate('Which patients have diabetes?', contract=contract(spec(concept('diabetes'))), answer={'status': 'answered', 'answer_type': 'count', 'count': 5}, as_of=AS_OF)
         self.assertFalse(r['ok'])
         self.assertTrue(any('patient set' in u for u in r['unmet']), r['unmet'])
+
+    def test_patient_list_with_measures_keeps_rows_and_requested_columns(self):
+        from clinical_core.agere.clinical import answer_shape
+        table={'status':'answered','answer_type':'table','table':[
+            {'patient_id':'A','total_allowed_cents':150}, {'patient_id':'B','total_allowed_cents':None}]}
+        scalar={'status':'answered','answer_type':'value','value':150}
+        ids={'status':'answered','answer_type':'patient_set','patient_ids':['A','B']}
+        for q in ['List patients with at least 3 provider claims in 2029 and their total allowed_cents.',
+                  'List patients with diabetes and at least three provider claims during the requested calendar year and show their average cost.',
+                  'Show patients with pharmacy fills received during the reporting period and include their total spending.']:
+            with self.subTest(question=q):
+                self.assertEqual(answer_shape.requested(q)['shape'],'table')
+                self.assertEqual(AC.requested_output(q),'table')
+                self.assertIsNone(AC.output_misfit(q,table))
+                self.assertIsNotNone(AC.output_misfit(q,scalar))
+                self.assertIsNotNone(AC.output_misfit(q,ids))
+
+    def test_measure_filters_and_scalar_questions_keep_their_distinct_shape(self):
+        for q in ['List patients with total claims above 500 dollars',
+                  'Which patients have an average cost above 500?']:
+            with self.subTest(question=q):self.assertEqual(AC.requested_output(q),'patient_set')
+        table={'status':'answered','answer_type':'table','table':[{'patient_id':'A','total':100},{'patient_id':'B','total':200}]}
+        for q in ['What is the total paid for patients on the list?',
+                  'What was the average cost of patients who had at least 3 claims?']:
+            with self.subTest(question=q):
+                self.assertEqual(AC.requested_output(q),'value')
+                self.assertIsNotNone(AC.output_misfit(q,table))
 
     def test_a_decline_is_not_rejected(self):
         r = AC.evaluate('Which patients have diabetes?', answer={'status': 'unsupported', 'answer_type': 'unsupported'})

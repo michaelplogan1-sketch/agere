@@ -358,6 +358,15 @@ FOLLOWUP_MARKERS = re.compile(r"^(?:now|and|also|only|just|what about|how about|
                               r"|\b(?:that|them|those|these|it|ones|they|same)\b")
 
 
+def _bounded_only(planning):
+    """Mike 2026-11-13: an unbounded run must never happen. Called where the older deep path (no time limit) would
+    start after every tier and the bounded frontier takeover have declined. Raises unless that path is switched on."""
+    from ..tiered import app as tiered_app
+    if planning == 'auto' and tiered_app.enabled() and os.environ.get('AGERE_DEEP_PATH', 'on') == 'off':
+        raise QuestionNotUnderstood('No method answered this inside the time limit, including the frontier model. '
+                                    'Ask a narrower question (one measure, one period, or one patient).')
+
+
 def is_followup(text):
     low = ' '.join(text.lower().split())
     if re.search(r'\b(?:them|those|these|they|their)\b', low) and not requires_saved_cohort(low):
@@ -411,6 +420,14 @@ def requires_saved_cohort(question, catalog=None):
     if reference.group() in ('they', 'their', 'them') and re.match(r'\s*(?:look|looks|seem|seems|appear|appears)\b', link):
         return False
     if reference.group() == 'their' and re.search(r'\b(?:have|has|are|were|with|without|attributed|assigned|completed|received|got|had|filled|went|visited|underwent|screened|documented|recorded|listed|carry|carries)\b', link):
+        return False
+    # A reduced relative clause can define the population before a temporal
+    # possessive: "invoices submitted after their ...", "patients discharged
+    # after their ...". This is a local antecedent, not a prior result. Explicit
+    # saved/previous references above still take precedence; "claims for their
+    # patients" supplies no such local clause and remains protected.
+    if reference.group()=='their' and re.fullmatch(
+            r'\s*(?:\w+ly\s+)*\w+(?:ed|ing)\b.*\b(?:before|after|during|following|since)\s*',link):
         return False
     # A noun alone is insufficient: "count claims for those patients" still
     # refers outside this question. Only recognize an explicit clause link.
@@ -554,8 +571,13 @@ def turns(path, conversation_id):
     finally:
         db.close()
     load = lambda s: json.loads(s) if s else None
-    return [{'turn': r[0], 'created': r[1], 'question': r[2], 'resolved_question': r[3], 'method': r[4], 'edits': load(r[5]),
+    out=[{'turn': r[0], 'created': r[1], 'question': r[2], 'resolved_question': r[3], 'method': r[4], 'edits': load(r[5]),
              'frame': load(r[6]), 'plan_summary': load(r[7]), 'answer_summary': load(r[8]), 'error': r[9]} for r in rows]
+    from .clarification import refresh_public
+    for row in out:
+        answer=row.get('answer_summary')or{}
+        if answer.get('clarification'):answer['clarification']=refresh_public(path,conversation_id,answer['clarification'])
+    return out
 
 
 def prior_context(path, conversation_id):
@@ -605,6 +627,7 @@ def summaries(result):
               'subject': a.get('subject'),
               'rows': len(a['table']) if isinstance(a.get('table'), list) else None,
               'patients': len(a['patient_ids']) if isinstance(a.get('patient_ids'), list) else None}
+    if result.get('clarification'):answer['clarification']=result['clarification']
     return plan, answer
 
 
@@ -614,6 +637,13 @@ def compose_shape(body):
     keys = set(body)
     if not isinstance(body.get('question'), str): raise ValueError('Explicit composition question and supported optional candidate policy required')
     conv = False
+    if 'interaction_mode'in keys:
+        if body['interaction_mode']not in ('interactive','autonomous'):raise ValueError('Choose interactive or autonomous interaction')
+        keys-={'interaction_mode'}
+    if 'delivery_generation' in keys:
+        if body['delivery_generation'] not in ('saved_report','frontier'):
+            raise ValueError('Choose saved_report or frontier delivery')
+        keys -= {'delivery_generation'}
     if 'conversation_id' in keys:
         conv = check_id(body['conversation_id']); keys = keys - {'conversation_id'}
     if 'scope' in keys:
@@ -625,8 +655,10 @@ def compose_shape(body):
             raise ValueError('A conversation and exact saved answer identity are required')
         keys -= {'answer_context_id'}
     if 'answer_scope' in keys:
-        if body['answer_scope'] not in ('result', 'input') or 'answer_context_id' not in body:
-            raise ValueError('Answer scope must select result or input from an exact saved answer')
+        scope=body['answer_scope']
+        if ('answer_context_id'not in body or not isinstance(scope,str)or
+            scope not in ('result','input','auto')and not re.fullmatch(r'population:POP-[0-9a-f]{24}',scope)):
+            raise ValueError('Answer scope must select an available population from an exact saved answer')
         keys -= {'answer_scope'}
     if keys == {'question'}: return body['question'], 'auto', conv
     if keys == {'question', 'planning'} and body['planning'] in ('auto', 'frontier'):
@@ -913,9 +945,51 @@ def _stated_absence(stack, question, exc):
         return None
 
 
-def handle_compose(stack, body, hosted_factory=None):
+def handle_compose(stack,body,hosted_factory=None):
+    from . import clarification
+    with clarification.interaction(body.get('interaction_mode','interactive')):
+        if 'clarification_response'in body:return _resume_compose(stack,body)
+        return _handle_compose(stack,body,hosted_factory=hosted_factory)
+
+
+def _resume_compose(stack,body):
+    from . import clarification,cost_telemetry
+    if set(body)-{'conversation_id','clarification_response','interaction_mode'}or 'conversation_id'not in body:
+        raise ValueError('Clarification reply requires its conversation and exact pending request')
+    response=body['clarification_response']
+    if not isinstance(response,dict)or set(response)not in ({'id','option_id'},{'id','text'}):
+        raise ValueError('Supply the exact clarification ID and an option or intent text')
+    conv=check_id(body['conversation_id'])
+    row,reply,cached=clarification.claim(stack.path,conv,response['id'],{k:v for k,v in response.items()if k!='id'})
+    if cached is not None:
+        return {**cached,'cache_hit':True,'new_paid_api_calls':0,
+            'clarification_replay':{'new_paid_api_calls':0,'new_api_estimate_usd':0,'original_result_preserved':True,
+                'original_phase_paid_api_calls':cached.get('new_paid_api_calls'),
+                'original_phase_economics':cached.get('planning_economics')}}
+    probe=cost_telemetry.start(row['question']);t0=time.time()
+    try:
+        result=clarification.resume_investigator(stack,row['checkpoint'],reply,origin=row.get('origin'))
+        result['clarification_history']=[*row.get('history',[]),{'id':row['id'],'slot':row['checkpoint']['pause']['request']['slot'],
+            'response':reply,'authority':'user_intent_only','source_facts_established':False,
+            'previous_phase_accounting':row['phase_accounting']}]
+        resolution={'standalone':row['checkpoint']['question'],'method':'clarification_resumed','follow_up':True,
+            'frame':None,'edits':['Resolved intent: '+row['checkpoint']['pause']['request']['slot']],
+            'reason':'Continued the same saved investigation; completed native tools were restored without execution.'}
+        if row['checkpoint'].get('kind') == 'registered_input':
+            resolution['reason']='The selected server-registered input continues the original request; the choice supplies intent, not new source facts.'
+        out=_finish_compose(stack,{**row.get('request_options',{}),**body},row['question'],conv,resolution,result,probe,t0)
+        clarification.finish(stack.path,row['id'],result=out)
+        return out
+    except Exception as exc:
+        clarification.finish(stack.path,row['id'],result=getattr(exc,'partial_result',None),error=exc)
+        exc.cost_telemetry=probe.finish(error=str(exc))
+        cost_telemetry.record(stack.path,exc.cost_telemetry)
+        raise
+
+
+def _handle_compose(stack, body, hosted_factory=None):
     """Run /api/stack/compose with optional conversation context. Logging matches the single-question route."""
-    from . import answer_log, learning
+    from . import answer_log, learning, clarification
     question, conv = str(body.get('question', '')), False
     resolution, t0 = None, time.time()
     hosted_usd, hosted_calls = 0.0, 0
@@ -935,17 +1009,34 @@ def handle_compose(stack, body, hosted_factory=None):
         if refers and getattr(stack, 'shared_request_planning', False) is True:
             from .request_plan import Catalog
             refers = requires_saved_cohort(routing, Catalog.load(stack.path))
+        if not refers and not body.get('answer_context_id'):
+            pending_input = clarification.registered_input_pause(stack, question)
+            if pending_input is not None:
+                resolution={'standalone':question,'method':'registered_input_selection','frame':None,
+                            'follow_up':False,'edits':[],'reason':'Required versioned input is unresolved; no analysis was run.'}
+                return _finish_compose(stack, body, question, conv, resolution, pending_input, probe, t0)
         if conv is False:
             if refers:
                 raise QuestionNotUnderstood('This question refers to a previous cohort. Open that conversation or ask a complete question; no whole-population substitution was run.')
-            result = stack.compose(question) if planning == 'auto' else stack.compose(question, planning=planning)
+            # Cheapest tier first (Mike 2026-11-13): bottles, deterministic recipes, System One and the small model,
+            # then a frontier-written recipe. Only a question that core cannot answer continues to the existing path.
+            from ..tiered import app as tiered_app
+            result = tiered_app.try_answer(stack, question) if planning == 'auto' else None
+            if result is None: _bounded_only(planning)
+            if result is None:
+                result = stack.compose(question) if planning == 'auto' else stack.compose(question, planning=planning)
         else:
             prior = None if body.get('scope') == 'warehouse' else prior_context(stack.path, conv)
             explicit_context = body.get('answer_context_id')
+            selected_answer = None
+            if explicit_context and body.get('answer_scope')=='auto'and not(refers or is_followup(question)or answer_context.saved_followup_edit(question)):
+                # A complete independent question remains independent. A bare
+                # saved-set edit keeps the context and must resolve its scope.
+                explicit_context=None;prior=None
             if explicit_context:
                 # The UI may reopen a saved answer or select an earlier turn.
                 # Resolve the server-owned immutable membership, never client IDs.
-                answer_context.load(stack.path, explicit_context, current=True)
+                selected_answer = answer_context.load(stack.path, explicit_context, current=True)
                 prior = {'action_context': {'id': explicit_context}}
             saved = (prior or {}).get('action_context')
             bound = None
@@ -970,11 +1061,21 @@ def handle_compose(stack, body, hosted_factory=None):
             used_temporal = False
             if explicit_context and not shared:
                 raise QuestionNotUnderstood('This service cannot apply an explicitly selected saved cohort. The saved population was preserved; no warehouse-wide query was run.')
-            rescoped = ((rescope(stack, question, saved) or regroup(stack, question, saved)) if shared and saved and not explicit_context
+            # Cheapest tier first inside a conversation too: a follow-up is made complete from the previous question and
+            # goes through the tiered core. Saved-cohort references and explicit contexts stay on the existing path.
+            from ..tiered import app as tiered_app
+            # The app sends the answer a follow-up was typed under. When that answer is a number or table with no patient
+            # cohort, the follow-up edits its question; a selected patient cohort stays on the existing path.
+            cohort_selected = bool(explicit_context) and bool((selected_answer or {}).get('patient_ids'))
+            previous_question = (selected_answer or {}).get('question') if explicit_context else (prior or {}).get('resolved_question')
+            tiered = (tiered_app.try_in_conversation(stack, question, previous_question, is_followup(question), conversation=conv)
+                      if planning == 'auto' and not cohort_selected and not refers and not reference else None)
+            rescoped = tiered or ((rescope(stack, question, saved) or regroup(stack, question, saved)) if shared and saved and not explicit_context
                         and body.get('scope') != 'warehouse' else None)
             if rescoped:
                 result, standalone, note = rescoped
-                resolution = {'standalone': standalone, 'method': 'rescoped', 'frame': None, 'follow_up': True,
+                resolution = {'standalone': standalone, 'method': 'tiered_core' if tiered else 'rescoped', 'frame': None,
+                              'follow_up': standalone != question if tiered else True,
                               'edits': [note], 'reason': note, 'hosted_receipt': None}
             else:
                 shared_edit = bool(explicit_context) or (body.get('scope') != 'warehouse' and
@@ -984,11 +1085,17 @@ def handle_compose(stack, body, hosted_factory=None):
                         raise QuestionNotUnderstood('No saved cohort is available for this edit. Ask a complete question first.')
                     parent = answer_context.load(stack.path, saved['id'], current=True, follow_up=True)
                     selected_scope = body.get('answer_scope', 'result')
+                    if selected_scope=='auto':selected_scope='result'
                     parent = answer_context.reference_scope(parent, selected_scope)
                     # Legacy finite transforms remain useful for literal list/count and
                     # grouping. They operate on immutable membership, never text rewrites.
                     bound = answer_context.followup(stack.path, saved['id'], question, scope=selected_scope)
+                    if bound is None and planning == 'auto' and not temporal:
+                        # Cheapest tier first for the selected patients too: code restricts every table to the saved
+                        # membership and the tiers answer inside it. Anything they cannot answer continues below.
+                        bound = tiered_app.try_in_cohort(stack, question, parent, saved['id'], selected_scope)
                     if bound is None:
+                        _bounded_only(planning)
                         bound = stack.compose(effective_question, population=parent['patient_ids'], parent=parent, planning=planning)
                         used_temporal = temporal is not None
                     bound['cohort_transform']['scope'] = selected_scope
@@ -1016,6 +1123,7 @@ def handle_compose(stack, body, hosted_factory=None):
                     resolution['standalone'] = effective_question
                     used_temporal = temporal is not None
                 standalone = resolution['standalone']
+                if not bound: _bounded_only(planning)
                 result = bound if bound else stack.compose(standalone) if planning == 'auto' else stack.compose(standalone, planning=planning)
                 if measurement and bound is None:
                     resolution.update(standalone=effective_question,method='inherited_measure',follow_up=True,
@@ -1046,9 +1154,19 @@ def handle_compose(stack, body, hosted_factory=None):
                               'reason': 'Stated absence: the received catalog holds no such data'}
         else:
             logged = resolution['standalone'] if resolution else str(question)
+            partial=getattr(exc,'partial_result',None)
+            if partial is not None and not _evaluating():
+                # Persist unfinished work without executing its workflow or
+                # converting a provider failure into a successful answer.
+                from ..deliverables import answer_context
+                try:
+                    exc.action_context=answer_context.capture(stack.path,logged,partial,original_question=question)
+                except (OSError,ValueError,sqlite3.Error) as capture_error:
+                    exc.action_context_error=str(capture_error)
             from .question_input import failure
             usage = getattr(exc, 'planner_receipt', {})
             failed = failure(exc)
+            if getattr(exc,'action_context',None):failed['action_context']=exc.action_context
             logged_failure = None
             if hasattr(exc, 'planner_receipt'):
                 from .shared_planner import economics as planner_economics
@@ -1064,7 +1182,7 @@ def handle_compose(stack, body, hosted_factory=None):
             probe.mark('compose')
             answer_log.record(stack.path, logged, result=logged_failure,
                               error=f'{type(exc).__name__}: {exc}', seconds=time.time() - t0, question_id=probe.question_id)
-            learning.record_outcome(stack.path, logged, 'shared_planner' if getattr(stack, 'shared_request_planning', False) else failure(exc)['status'],
+            if os.environ.get('AGERE_COMPONENT_LEARNING','off')!='on':learning.record_outcome(stack.path, logged, 'shared_planner' if getattr(stack, 'shared_request_planning', False) else failure(exc)['status'],
                                     failed['status'], str(exc),
                                     usage.get('new_paid_api_calls', 0)+hosted_calls,
                                     None if usage.get('api_cost_known') is False else usage.get('known_api_estimate_usd', 0)+hosted_usd)
@@ -1077,6 +1195,8 @@ def handle_compose(stack, body, hosted_factory=None):
                     # The user must see what was attempted even when it was not answered.
                     exc.args = (f'Resolved question: "{resolution["standalone"]}". {exc}',)
             from .learning_hooks import after_failure
+            from .harness_improvement import failed as failed_harness
+            failed_harness(stack.path,logged,exc)
             after_failure(stack, logged, exc)
             probe.mark('learning')
             exc.cost_telemetry = probe.finish(logged_failure, error=f'{type(exc).__name__}: {exc}')
@@ -1084,6 +1204,11 @@ def handle_compose(stack, body, hosted_factory=None):
             exc.evaluation = evaluation.receipt()
             cost_telemetry.record(stack.path, exc.cost_telemetry)
             raise
+    return _finish_compose(stack,body,question,conv,resolution,result,probe,t0,hosted_calls,hosted_usd)
+
+
+def _finish_compose(stack,body,question,conv,resolution,result,probe,t0,hosted_calls=0,hosted_usd=0):
+    from . import answer_log,learning,cost_telemetry,evaluation,clarification
     probe.mark('compose')
     if hosted_calls or hosted_usd:
         econ = dict(result.get('planning_economics') or {})
@@ -1091,34 +1216,30 @@ def handle_compose(stack, body, hosted_factory=None):
         econ['follow_up_resolution_usd'] = hosted_usd
         result = {**result, 'planning_economics': econ, 'new_paid_api_calls': (result.get('new_paid_api_calls') or 0) + hosted_calls}
     from ..deliverables import answer_context
+    awaiting=clarification.pending(result)
+    if awaiting:
+        if conv is False:conv=check_id(None)
+        resolution=resolution or {'standalone':question,'method':'clarification','frame':None,'follow_up':False,'edits':[],'reason':'Material user intent is unresolved.'}
+        result=clarification.publish(stack.path,conv,question,result,
+            request_options={k:body[k]for k in ('delivery_generation',)if k in body})
     try:
-        if result.get('program_results') and not _evaluating():
+        # Request principals may permit analysis while withholding work creation.
+        # This authority comes from the server's stack view, never a JSON option.
+        allow_work = getattr(stack, 'allow_workflow_actions', True)
+        if not awaiting and allow_work and result.get('program_results') and not _evaluating():
             from . import request_program
             request_program.materialize(stack, result)
-        # evaluation mode saves the cohort in the evaluation scratch directory (answer_context.root), so a follow-up can use it
-        action_context = answer_context.capture(
-            stack.path, resolution['standalone'] if resolution else question, result, original_question=question)
-        if action_context:
-            result = {**result, 'action_context': action_context}
-        if action_context and not _evaluating():  # evaluation mode: no workflow / program materialization into the stack
-            if result.get('workflow') and result.get('program_results'):
-                from ..deliverables.workflow import save_program_workflow
-                save_program_workflow(stack.path, action_context['id'], result['workflow'])
-            elif result.get('workflow'):
-                from ..deliverables.workflow import materialize
-                delivered = materialize(stack.path, action_context['id'],
-                                        generation='frontier', allow_live=bool(getattr(stack, 'allow_live', False)))
-                result['workflow'] = delivered['steps']
-                result['new_paid_api_calls'] = (result.get('new_paid_api_calls') or 0) + delivered['new_paid_api_calls']
-                econ = dict(result.get('planning_economics') or {})
-                prior_new = econ.get('new_api_estimate_usd')
-                cost_known = prior_new is not None and econ.get('api_cost_known') is not False and delivered['api_cost_known']
-                econ['workflow_api_estimate_usd'] = delivered['known_api_estimate_usd'] if delivered['api_cost_known'] else None
-                econ['workflow_known_api_estimate_usd'] = delivered['known_api_estimate_usd']
-                econ['known_api_estimate_usd'] = (econ.get('known_api_estimate_usd') or 0) + delivered['known_api_estimate_usd']
-                econ['new_api_estimate_usd'] = prior_new + delivered['known_api_estimate_usd'] if cost_known else None
-                econ['api_cost_known'] = cost_known
-                result['planning_economics'] = econ
+        from ..deliverables.workflow import fulfill
+        if not awaiting and allow_work:
+            result=fulfill(stack,resolution['standalone'] if resolution else question,result,original_question=question,
+                           generation=body.get('delivery_generation'))
+        elif not awaiting:
+            result = {**result, 'workflow': [{**step, 'status': 'requires_analyst',
+                'reason': 'An analyst role is required to create work or deliverables.'} for step in result.get('workflow') or []]}
+            ref = answer_context.capture(stack.path, resolution['standalone'] if resolution else question,
+                                         result, original_question=question)
+            if ref:
+                result['action_context'] = ref
     except (OSError, ValueError, sqlite3.Error) as exc:
         result = {**result, 'action_context_error': str(exc)}
     if conv is not False:
@@ -1131,17 +1252,20 @@ def handle_compose(stack, body, hosted_factory=None):
     logged = resolution['standalone'] if resolution else question
     probe.mark('capture')
     answer_log.record(stack.path, logged, result=result, seconds=time.time() - t0, question_id=probe.question_id)
+    if awaiting:
+        telemetry=probe.finish(result);cost_telemetry.record(stack.path,telemetry)
+        return {**result,'cost_telemetry':telemetry,'cost_receipt':cost_telemetry.receipt(telemetry,result)}
     pr = result.get('planner_receipt') or {}
     local = pr.get('local_compiler_declined') or {}
     economics = result.get('planning_economics') or {}
     outcome_cost = economics.get('new_api_estimate_usd', economics.get('known_api_estimate_usd'))
     if not result.get('new_paid_api_calls') and outcome_cost is None:
         outcome_cost = 0
-    learning.record_outcome(stack.path, logged, pr.get('route') or 'unknown',
+    if os.environ.get('AGERE_COMPONENT_LEARNING','off')!='on':learning.record_outcome(stack.path, logged, pr.get('route') or 'unknown',
                             (result.get('answer') or {}).get('status') or 'answered',
                             local.get('reason') if isinstance(local, dict) else None,
                             result.get('new_paid_api_calls') or 0, outcome_cost)
-    if pr.get('route') == 'hosted_verified_sql':
+    if os.environ.get('AGERE_COMPONENT_LEARNING','off')!='on' and pr.get('route') == 'hosted_verified_sql':
         # FM-23: the verified pair is captured only now, after the answer was built and its checks ran; quarantine stays as a
         # backstop for pairs captured earlier (or by older code) that a later check flags.
         try:
@@ -1149,14 +1273,17 @@ def handle_compose(stack, body, hosted_factory=None):
         except (OSError, ValueError, KeyError, sqlite3.Error):
             pass  # capture is learning bookkeeping; it never fails an answer
         learning.quarantine(stack.path, logged, result.get('answer'))
-    if isinstance(local, dict) and local.get('operator_router'):
+    if os.environ.get('AGERE_COMPONENT_LEARNING','off')!='on' and isinstance(local, dict) and local.get('operator_router'):
         learning.record_routing(stack.path, logged, local['operator_router'], executed=pr.get('route') == 'operator_router')
     from .learning_hooks import after_answer  # every answer feeds learning: saved pairs, question learning, training corpus
-    result = {**result, 'learning': after_answer(stack, logged, result, body=body)}
+    from .harness_improvement import finish as finish_harness
+    result = {**result, 'learning': ({'status':'not_captured','reason':'This answer depends on explicit user intent. Reuse needs qualified intent parameters; it must not become a default label for the ambiguous original question.'}
+        if result.get('clarification_history')else after_answer(stack, logged, result, body=body))}
     probe.mark('learning')
     telemetry = probe.finish(result)
     cost_telemetry.record(stack.path, telemetry)
     out = {**result, 'cost_telemetry': telemetry, 'cost_receipt': cost_telemetry.receipt(telemetry, result)}
+    finish_harness(stack.path,out)  # complete readers/reviews/artifacts cost, not actor-only savings
     if evaluation.active(): out['evaluation'] = evaluation.receipt()
     return out
 

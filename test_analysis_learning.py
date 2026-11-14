@@ -82,6 +82,62 @@ class AnalysisLearning(unittest.TestCase):
         self.assertIn('earlier code release', carried[1]['carry_forward'])
         self.assertIn('2028', carried[0]['query'])
 
+    def test_carried_shape_uses_stored_identity_and_then_exact_cache(self):
+        ident = self.seed(policy='old-policy')
+        changed = Q.replace('2029', '2028')
+        with patch.object(S, 'policy_identity', return_value='current-policy'), \
+             patch.object(S, 'checked_interpret', side_effect=AssertionError('unexpected new planning')):
+            first = S.compose(self.stack, changed)
+            again = S.compose(self.stack, changed)
+        interpretation = first['planner_receipt']['interpretation']
+        self.assertEqual(interpretation['analysis_shape_id'], ident)
+        self.assertTrue(G.valid_shape(self.path, interpretation['analysis_shape_id']))
+        self.assertTrue(again['planner_receipt']['interpretation']['exact_contract_cache_hit'])
+        self.assertEqual(first['answer']['count'], again['answer']['count'])
+        learning.record_correction(self.path, Q, 'The event clock needs review')
+        self.assertFalse(G.valid_shape(self.path, ident))
+        with sqlite3.connect(self.path/'question-plans.sqlite3') as db:
+            self.assertEqual(db.execute('SELECT count(*) FROM shared_requests').fetchone()[0], 0)
+
+    def test_disagreeing_active_release_shapes_require_new_interpretation(self):
+        first = self.seed(policy='earlier-policy')
+        different = spec()
+        different['steps'][1]['sql'] = different['steps'][1]['sql'].replace('>= 2', '>= 3')
+        second = self.seed(policy='current-policy', analysis=different)
+        self.assertTrue(G.valid_shape(self.path, first))
+        self.assertTrue(G.valid_shape(self.path, second))
+        for policy in ('earlier-policy', 'current-policy', 'future-policy'):
+            with self.subTest(policy=policy):
+                self.assertIsNone(G.lookup_shape(self.path, self.catalog, Q.replace('2029','2028'), policy))
+        # Lookup cannot silently revoke or rewrite either historical candidate.
+        self.assertTrue(G.valid_shape(self.path, first))
+        self.assertTrue(G.valid_shape(self.path, second))
+
+    def test_equivalent_releases_and_three_bindings_preserve_scope_and_source(self):
+        first = self.seed(policy='earlier-policy')
+        current = self.seed(policy='current-policy')
+        for year, expected in [('2028', 0), ('2029', 1), ('2030', 0)]:
+            with self.subTest(year=year):
+                question = Q.replace('2029', year)
+                contract, interpretation = G.lookup_shape(self.path, self.catalog, question, 'current-policy')
+                self.assertEqual(interpretation['analysis_shape_id'], current)
+                self.assertEqual(contract['source_identity'], self.catalog.identity)
+                self.assertEqual(contract['analysis']['steps'], spec()['steps'])
+                self.assertEqual(G.preview(self.catalog, contract)[0]['value'], expected)
+        self.assertEqual(G.lookup_shape(self.path, self.catalog, Q, 'future-policy')[1]['analysis_shape_id'], current)
+        self.assertIsNone(G.lookup_shape(self.path, self.catalog, Q, 'current-policy', ['A']))
+        changed_catalog = copy.copy(self.catalog)
+        changed_catalog.identity = {**self.catalog.identity, 'source_digest': 'different-received-source'}
+        self.assertIsNone(G.lookup_shape(self.path, changed_catalog, Q, 'current-policy'))
+        self.assertTrue(G.valid_shape(self.path, first))
+
+    def test_release_conflict_checks_non_sql_contract_meaning(self):
+        self.seed(policy='earlier-policy')
+        different = spec()
+        different['definitions'].append({'term': 'coverage', 'basis': 'restricted observed events'})
+        self.seed(policy='current-policy', analysis=different)
+        self.assertIsNone(G.lookup_shape(self.path, self.catalog, Q.replace('2029','2028'), 'current-policy'))
+
     def test_invalid_parameters_and_unreviewed_shapes_cannot_enter_learning(self):
         for parameter in [{'name': 'year', 'value': True, 'quote': '2029'},
                           {'name': 'year', 'value': 2028, 'quote': '2029'},

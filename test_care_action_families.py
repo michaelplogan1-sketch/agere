@@ -90,6 +90,33 @@ class Families(unittest.TestCase):
             self.assertIn('absent', T.headline(T.execute(d, None, {}, AS_OF)))
             self.assertEqual(PA.execute(d, None, {}, AS_OF)['unavailable'], ['payer_pharmacy_claim'])
 
+    def test_complete_roster_beyond_old_limit_and_explicit_display_limit(self):
+        with sqlite3.connect(Path(self.path)/'semantic.sqlite3') as db:
+            db.executemany('INSERT INTO patient VALUES(?,?,?,?,?,?,?)', [
+                ('BULK'+str(i), 'F', '1970-01-01', 60, 'active', 'medicare', 'PR1')
+                for i in range(5001)])
+        params={'measures':['breast_cancer_screening_mammogram'],'focus':'all'}
+        complete=G.execute(self.path,None,params,AS_OF)
+        self.assertEqual(len(complete['table']),5004)
+        self.assertEqual(complete['table_rows'],5004)
+        self.assertEqual(complete['open']+complete['closed'],5004)
+        limited=G.execute(self.path,None,{**params,'top':2},AS_OF)
+        self.assertEqual(len(limited['table']),2)
+        self.assertEqual(limited['complete_table'],complete['table'])
+        self.assertEqual(limited['summary'],complete['summary'])
+        self.assertEqual(limited['patient_ids'],complete['patient_ids'])
+        self.assertEqual(len(G.execute(self.path,None,{**params,'top':6000},AS_OF)['table']),5004)
+        self.assertIsNone(G.validate({})['top'])
+        for invalid in [0,-1,True,1.5,'all']:
+            with self.subTest(top=invalid),self.assertRaises(ValueError):G.validate({'top':invalid})
+
+    def test_explicit_subset_and_empty_population_keep_complete_roster_scope(self):
+        params={'measures':['breast_cancer_screening_mammogram'],'focus':'all','top':1}
+        selected=G.execute(self.path,['F2','F3'],params,AS_OF)
+        self.assertEqual({r['patient_id']for r in selected['complete_table']},{'F2','F3'})
+        self.assertEqual(len(selected['table']),1)
+        self.assertEqual(G.execute(self.path,[],params,AS_OF)['complete_table'],[])
+
     def test_transitions(self):
         r = T.execute(self.path, None, {'focus': 'all'}, AS_OF)
         by = {x['patient_id']: x for x in r['table']}

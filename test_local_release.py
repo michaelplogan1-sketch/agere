@@ -7,12 +7,171 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 from clinical_core.agere import local_release as L
+
+class LiveSemanticPolicy(unittest.TestCase):
+    def test_policy_mismatch_stops_before_credentials_or_server_and_never_rebuilds(self):
+        import serve_current_warehouse as launcher
+        from clinical_core.agere.clinical import semantic_layer
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);stack=root/'stack';stack.mkdir()
+            path=stack/'semantic.sqlite3'
+            with sqlite3.connect(path)as db:
+                db.execute('CREATE TABLE meta(key TEXT PRIMARY KEY,value TEXT)')
+                db.execute('INSERT INTO meta VALUES(?,?)',('postprocessing_identity','previous'))
+            before=path.read_bytes()
+            with patch.object(launcher,'validate_config',return_value={'build':str(root)}), \
+                 patch.object(launcher,'serve')as serve, \
+                 patch.object(semantic_layer,'ensure',side_effect=AssertionError('No implicit rebuild')):
+                with self.assertRaisesRegex(ValueError,'pinned configuration'):
+                    launcher.main(['--allow-live-stack'])
+                serve.assert_not_called()
+            self.assertEqual(path.read_bytes(),before)
+            self.assertFalse((stack/'semantic.sqlite3.tmp').exists())
+            with sqlite3.connect(path)as db:
+                db.execute('UPDATE meta SET value=?',(semantic_layer.policy_identity(),))
+            launcher.validate_semantic_policy(stack)
+
+
+class LedgerDependencies(unittest.TestCase):
+    def test_checkpoint_tracks_configured_accounting_instead_of_unused_default(self):
+        with tempfile.TemporaryDirectory()as temp:
+            root=Path(temp).resolve();build=root/'build';(build/'stack').mkdir(parents=True)
+            encoder=root/'encoder';source=root/'source';reranker=root/'models/bge-reranker-v2-m3'
+            for path in (encoder,source,reranker):
+                path.mkdir(parents=True);(path/'run.json').write_text('{"synthetic":true}')
+            (build/'stack/run.json').write_text(json.dumps({'encoder_path':str(encoder)}))
+            legacy=root/'artifacts/agere-full/provider-budget.sqlite3';legacy.parent.mkdir(parents=True);legacy.write_text('unused accounting')
+            current=root/'current/provider-budget.sqlite3';current.parent.mkdir();current.write_text('current accounting')
+            with patch.object(L,'ROOT',root),patch.dict(os.environ,{'AGERE_LEDGER_PATH':str(current)}):
+                deps=L.dependencies(build,{'source_release':str(source)})
+                ledger=[d for d in deps if d['verification']=='current_shared_ledger_never_restored']
+                self.assertEqual(ledger,[{'path':str(current),'verification':'current_shared_ledger_never_restored'}])
+                L.check_dependencies(deps)
+                current.unlink()
+                with self.assertRaisesRegex(ValueError,'Current shared provider ledger required'):
+                    L.dependencies(build,{'source_release':str(source)})
+            self.assertEqual(legacy.read_text(),'unused accounting')
+
+
+class IndependentFileCopies(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == 'darwin', 'native clonefile contract')
+    def test_native_small_file_clone_is_independent_and_preserves_metadata(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source, target = Path(temp)/'source', Path(temp)/'nested/copy'
+            source.write_bytes(b'independent runtime'); source.chmod(0o751)
+            os.utime(source, ns=(1700000000123456789, 1700000000123456789))
+            before = source.stat()
+            with patch.object(L.shutil, 'copy2', side_effect=AssertionError('clone expected')), \
+                 patch.object(L.subprocess, 'run', side_effect=AssertionError('no per-file process')):
+                L.copy_file(source, target)
+            self.assertEqual(target.read_bytes(), source.read_bytes())
+            self.assertEqual(target.stat().st_mtime_ns, before.st_mtime_ns)
+            self.assertEqual(target.stat().st_mode, before.st_mode)
+            self.assertNotEqual(target.stat().st_ino, before.st_ino)
+            target.write_bytes(b'changed installation')
+            self.assertEqual(source.read_bytes(), b'independent runtime')
+            source.write_bytes(b'changed development runtime')
+            self.assertEqual(target.read_bytes(), b'changed installation')
+
+    def test_unsupported_clone_and_existing_destination_keep_copy_semantics(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source, target = Path(temp)/'source', Path(temp)/'copy'
+            source.write_bytes(b'complete data')
+            for clone in (None, lambda *args: -1):
+                with self.subTest(clone=clone), patch.object(L, '_clone_function', return_value=clone):
+                    L.copy_file(source, target)
+                    self.assertEqual(target.read_bytes(), b'complete data')
+                    target.write_bytes(b'old destination')
+            L.copy_file(source, target)
+            self.assertEqual(target.read_bytes(), b'complete data')
+
+    def test_source_symlink_copies_contents_and_same_file_is_not_truncated(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source, link, target = (Path(temp)/n for n in ('source', 'link', 'copy'))
+            source.write_text('runtime'); link.symlink_to(source)
+            L.copy_file(link, target)
+            self.assertFalse(target.is_symlink())
+            self.assertEqual(target.read_text(), 'runtime')
+            import shutil
+            with self.assertRaises(shutil.SameFileError): L.copy_file(source, source)
+            self.assertEqual(source.read_text(), 'runtime')
+
+
+class SavedAnswerRecovery(unittest.TestCase):
+    def test_cold_copy_is_independent_and_retains_observation_clock(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source, target = Path(temp)/'source.sqlite3', Path(temp)/'copy.sqlite3'
+            with sqlite3.connect(source) as db:
+                db.execute('CREATE TABLE state(value)'); db.execute('INSERT INTO state VALUES(1)')
+            before = source.stat()
+            method = L.sqlite_copy(source, target)
+            self.assertIn(method, ('cold_filesystem_clone', 'sqlite_online_backup'))
+            if sys.platform == 'darwin': self.assertEqual(method, 'cold_filesystem_clone')
+            self.assertEqual(source.stat().st_mtime_ns, before.st_mtime_ns)
+            self.assertEqual(target.stat().st_mtime_ns, before.st_mtime_ns)
+            with sqlite3.connect(target) as db: db.execute('UPDATE state SET value=2')
+            with sqlite3.connect(source) as db: self.assertEqual(db.execute('SELECT value FROM state').fetchone(), (1,))
+
+    def test_live_wal_copy_keeps_committed_rows_and_excludes_uncommitted(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source, target = Path(temp)/'source.sqlite3', Path(temp)/'copy.sqlite3'
+            with sqlite3.connect(source) as db:
+                db.execute('CREATE TABLE state(value)'); db.commit()
+            writer = sqlite3.connect(source)
+            try:
+                writer.execute('PRAGMA journal_mode=WAL')
+                writer.execute('INSERT INTO state VALUES(1)'); writer.commit()
+                writer.execute('INSERT INTO state VALUES(2)')
+                self.assertEqual(L.sqlite_copy(source, target), 'sqlite_online_backup')
+                with sqlite3.connect(target) as db:
+                    self.assertEqual(db.execute('SELECT value FROM state').fetchall(), [(1,)])
+            finally: writer.close()
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'APFS clone fence')
+    def test_cold_copy_rejects_source_change_instead_of_publishing(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source, target = Path(temp)/'source.sqlite3', Path(temp)/'copy.sqlite3'
+            with sqlite3.connect(source) as db: db.execute('CREATE TABLE state(value)')
+            run = subprocess.run
+            def change(*args, **kwargs):
+                result = run(*args, **kwargs)
+                s = source.stat(); os.utime(source, ns=(s.st_atime_ns, s.st_mtime_ns+1000000))
+                return result
+            with patch.object(L.subprocess, 'run', side_effect=change):
+                with self.assertRaisesRegex(ValueError, 'Source changed'):
+                    L.sqlite_copy(source, target)
+
+    def test_backup_reopens_current_answer_and_later_source_change_still_invalidates(self):
+        from test_patient_review_profiles import Profiles
+        from clinical_core.agere.deliverables import answer_context as A
+        case = Profiles(); case.setUp(); self.addCleanup(case.doCleanups)
+        ref = A.capture(case.path, 'Inspect the selected patients', {'answer': case.answer})
+        before = A.load(case.path, ref['id'], current=True)
+        source = case.path / 'semantic.sqlite3'
+        backup = case.path / 'backup.sqlite3'
+        L.sqlite_copy(source, backup)
+        source.rename(case.path / 'original.sqlite3')
+        L.copy_file(backup, source)
+        restored = A.load(case.path, ref['id'], current=True)
+        self.assertEqual(restored['source'], before['source'])
+        self.assertFalse(restored['stale'])
+        self.assertEqual(restored['answer'], before['answer'])
+        with sqlite3.connect(source) as db:
+            db.execute('UPDATE measurement_latest SET value_canonical=5.1')
+        with self.assertRaisesRegex(ValueError, 'data changed'):
+            A.load(case.path, ref['id'], current=True)
 
 
 class RecoveryTests(unittest.TestCase):
     def setUp(self):
+        # These authored packages contain kilobytes. Exercise their recovery
+        # behavior independently of the developer machine's free space;
+        # low-space rejection is covered by test_storage_prevention.
+        capacity = patch.object(L.shutil, 'disk_usage', return_value=SimpleNamespace(free=1_000_000_000_000))
+        capacity.start(); self.addCleanup(capacity.stop)
         self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name).resolve(); self.build = self.root / 'active'; self.build.mkdir()
         self.config = self.root / 'config.json'

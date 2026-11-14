@@ -46,8 +46,14 @@ def _cached(path):
         try:
             saved = json.loads(target.read_text())
             if saved.get('identity') == identity:
+                # A relocated/partial installation can retain the cached cards
+                # while their saved answers are missing, stale or corrected.
+                for card in saved.get('cards') or []:
+                    context = A.load(path, card['context_id'], current=True)
+                    if context['question'] != card['follow_up'] or context['source'] != source:
+                        raise ValueError('Briefing card differs from its saved answer')
                 return {**saved, 'cache_hit': True}
-        except (OSError, ValueError):
+        except (OSError, ValueError, KeyError, sqlite3.Error):
             pass
     cards, checks = [], []
     stack = SimpleNamespace(path=path, allow_live=False)

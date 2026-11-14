@@ -16,7 +16,7 @@ _SIMULATE = re.compile(r'\b(?:simulat\w*|what (?:would|will) happen if|what if w
 _DELIVERABLE = re.compile(r'\b(?:build|make|create|design|draft|write|generate|prepare|produce|put together)\b[^.?!]{0,80}?\b'
                           r'(?:deck|story|brief(?:ing)?|report|one[- ]pager|memo|map|simulator|war room|dashboard|terminal|page|'
                           r'cards?|statement|case|presentation|narrative|letter|messages?|scripts?|playbook|game|tool|app|'
-                          r'visuali[sz]ation|infographic|summary|deliverable)\b', re.I)
+                          r'visuali[sz]ation|infographic|summary|deliverable|agent|assistant|html)\b', re.I)
 
 
 def classify(text, answer_type=None):

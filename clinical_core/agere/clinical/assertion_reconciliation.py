@@ -17,7 +17,7 @@ from . import context_builder as context, longitudinal
 from .clinical_events import iso
 from . import source_structure, native_assertions, native_care_assertions
 
-VERSION = 'source-assertion-reconciliation/1'
+VERSION = 'source-assertion-reconciliation/2'
 LIMITS = [
     'All records are synthetic. These are documentary accounts, not verified current clinical state.',
     'Machine interpretations remain proposals; exact source binding does not validate meaning.',
@@ -29,14 +29,22 @@ LIMITS = [
 
 
 def validate(p):
-    if not isinstance(p, dict) or set(p) != {'streams', 'concepts'}:
+    if (not isinstance(p, dict) or not {'streams','concepts'}<=set(p)
+        or set(p)-{'streams','concepts','received_annotations','assertion_window'}):
         raise ValueError('Explicit assertion source streams and concepts required')
-    for key, maximum in [('streams', 30), ('concepts', 20)]:
+    if 'received_annotations'in p and type(p['received_annotations'])is not bool:
+        raise ValueError('Explicit received-annotation mode must be boolean')
+    for key, maximum in [('streams', None), ('concepts', 20)]:
         values = p[key]
-        if (not isinstance(values, list) or not 1 <= len(values) <= maximum or
+        minimum=0 if key=='concepts'and p.get('received_annotations')else 1
+        if (not isinstance(values, list) or len(values)<minimum or maximum is not None and len(values)>maximum or
             any(not isinstance(v, str) or not 1 <= len(v) <= 128 for v in values) or len(set(values)) != len(values)):
             raise ValueError('Bounded nonempty assertion '+key+' required')
-    return {key: sorted(p[key]) for key in p}
+    result={**p,**{key:sorted(p[key])for key in ('streams','concepts')}}
+    if 'assertion_window'in p:
+        from .clinical_events import validate_window
+        result['assertion_window']=validate_window(p['assertion_window'])
+    return result
 
 
 def code_identity():
@@ -45,7 +53,7 @@ def code_identity():
 
 def dependency(path, p):
     p = validate(p)
-    base = {'question': 'Reconcile source assertions', **p, 'contract': '', 'program_ids': [], 'max_bytes': 24000}
+    base = {'question': 'Reconcile source assertions', **{k:p[k]for k in ('streams','concepts')}, 'contract': '', 'program_ids': [], 'max_bytes': 24000}
     events, event_meta = longitudinal.connect(path)
     events.close()
     narrative_concepts = set(event_meta['vocabulary']['concept'])
@@ -55,8 +63,28 @@ def dependency(path, p):
         raise ValueError('Unmapped assertion concept; declare an adapter before interpretation')
     # The source-context dependency validates reader vocabulary. Literal structured
     # bindings extend it explicitly; retain the full declared scope in our identity.
-    identity, meta, _, _ = context.dependency_identity(path, {**base, 'concepts': sorted(set(p['concepts']) & narrative_concepts)})
-    return digest([identity, code_identity(), p]), meta, base
+    identities=[];meta=None
+    # The context transport validates at most 30 streams per packet. That is
+    # not a population or workflow cap: bind every declared source partition.
+    for offset in range(0,len(p['streams']),30):
+        identity,part_meta,_,_=context.dependency_identity(path,{**base,'streams':p['streams'][offset:offset+30],
+            'concepts':sorted(set(p['concepts'])&narrative_concepts)})
+        if meta is not None and meta!=part_meta:raise ValueError('Assertion source partitions changed during preparation')
+        meta=part_meta;identities.append(identity)
+    if 'assertion_window'in p:
+        from .clinical_events import validate_window
+        validate_window(p['assertion_window'],meta['snapshot']['as_of'])
+    annotation_source=None
+    if p.get('received_annotations'):
+        semantic=Path(path)/'semantic.sqlite3'
+        from .request_plan import warehouse_metadata
+        with sqlite3.connect(semantic.resolve().as_uri()+'?mode=ro',uri=True)as db:
+            metadata=warehouse_metadata(semantic,db)
+        if metadata.get('source_digest')!=meta['source_digest']or metadata.get('as_of')!=meta['snapshot']['as_of']:
+            raise ValueError('Derived annotation source differs from the received warehouse')
+        st=semantic.stat();annotation_source={'source_digest':metadata['source_digest'],'as_of':metadata['as_of'],
+            'semantic_version':metadata.get('version'),'size':st.st_size,'mtime_ns':st.st_mtime_ns}
+    return digest([identities, code_identity(), p, annotation_source]), meta, base
 
 
 def extract(patient, records, events, p, as_of):
@@ -69,7 +97,7 @@ def extract(patient, records, events, p, as_of):
         by_record[unit['source']['record_id']].append(unit)
     assertions = []
     def emit(unit, concept, relation, polarity, value, *, event=None, field=None, native=None, care=None):
-        if concept not in p['concepts']:
+        if concept not in p['concepts']and not(event and p.get('received_annotations')):
             return
         source = unit['source']; record = index[source['record_id']]
         date_fields = {'reported_barrier': ('assessment_date',), 'care_completion': ('attendance_date',),
@@ -166,7 +194,8 @@ def extract(patient, records, events, p, as_of):
                  field=binding['field'], care=binding)
     seen = set()
     for event in events:
-        if event['kind'] != 'text' or event['stream'] not in p['streams'] or event['concept'] not in p['concepts']:
+        if (event['kind'] != 'text' or event['stream'] not in p['streams']
+            or event['concept'] not in p['concepts']and not p.get('received_annotations')):
             continue
         if event['id'] in seen:
             raise ValueError('Duplicate narrative assertion')
@@ -180,6 +209,84 @@ def extract(patient, records, events, p, as_of):
             relation = 'reported_barrier'
         emit(matches[0], event['concept'], relation, event['assertion'], event['assertion'], event=event)
     return assertions, units
+
+
+def received_annotation_assertions(patient, records, facts, units, as_of):
+    """Bind derived note facts as proposals, preserving every value/unit and bad binding.
+
+    Neither an extraction confidence nor an exact quote validates the proposed
+    clinical meaning. Missing/invalid spans remain unbound rows, never negatives.
+    """
+    index={r['record_id']:r for r in records};by_record=defaultdict(list)
+    for unit in units:by_record[unit['source']['record_id']].append(unit)
+    assertions=[];unbound=[]
+    for fact in facts:
+        ident=digest(['derived-note-fact/1',patient,fact]);r=index.get(fact['record_id'])
+        reason=None;field=fact.get('source_field');start=fact.get('span_start');end=fact.get('span_end')
+        text=next((p['text']for p in context.narrative_sources.text_fields(r)if p['field']==field),None)if r else None
+        if r is None:reason='source_record_unavailable'
+        elif fact.get('patient_id')!=patient or fact.get('stream')!=r['source_table']:reason='source_identity_mismatch'
+        elif fact.get('event_date')!=r.get('event_date'):reason='source_clock_mismatch'
+        elif (text is None or type(start)is not int or type(end)is not int or not 0<=start<end<=len(text)
+              or text[start:end]!=fact.get('evidence_text')):reason='source_span_mismatch'
+        matching=[u for u in by_record[fact['record_id']]if u['kind']=='narrative'and u['field']==field
+            and type(start)is int and type(end)is int and u['start']<=start<end<=u['end']]
+        if not reason and len(matching)!=1:reason='whole_source_unit_unresolved'
+        if reason:
+            unbound.append({'id':ident,'reason':reason,'annotation':fact,
+                'source_date':r.get('event_date')if r else None,'arrival_date':r.get('available_date')if r else None})
+            continue
+        unit=matching[0];reference=longitudinal.narrative_reference(text,start,end,as_of)
+        polarity='affirmed'if fact.get('negated')in (0,False)else'negated'if fact.get('negated')in (1,True)else'unknown'
+        subject=fact.get('experiencer')or'unknown';temporality=fact.get('temporality')or'unknown'
+        domain={'fact_type':fact['fact_type'],'qualifier':fact.get('qualifier'),
+            'value':fact.get('value'),'unit':fact.get('unit')}
+        structure=source_structure.locate(text,start,end)
+        reasons=[]
+        if subject!='patient':reasons.append('not_patient_or_subject_unresolved')
+        if polarity!='affirmed':reasons.append('not_affirmed_or_polarity_unresolved')
+        if temporality!='current':reasons.append('not_current_or_temporality_unresolved')
+        if reference['reference_status']=='literal_reference'and reference['reference_date']!=r.get('event_date'):
+            reasons.append('reference_date_differs_from_source_statement')
+        elif reference['reference_status']not in ('literal_reference','not_observed','not_applicable'):
+            reasons.append('reference_date_unresolved')
+        if reference['copied_history']or structure['role']=='copied_history':reasons.append('copied_history_cannot_refresh_state')
+        if structure['role']=='family_history'and subject=='patient':reasons.append('subject_conflicts_with_family_history_section')
+        if structure['clinical_account_excluded']:reasons.append('nonclinical_source_role')
+        a={'patient_id':patient,'concept':'received '+fact['fact_type'],'relation':'received_observation',
+            'polarity':polarity,'value':fact.get('value'),'unit':fact.get('unit'),'value_domain':domain,
+            'subject':subject,'temporality':temporality,'source_unit_id':unit['id'],'source':unit['source'],
+            'evidence':{'field':field,'start':start,'end':end,'quote':text[start:end]},
+            'authority':'machine_annotation','semantic_validation':'pending','annotation_origin':'derived_note_fact',
+            'annotation_id':ident,'received_annotation':fact,'reader_model_identity':fact.get('extractor'),
+            'clocks':{'source_date':r.get('event_date'),'arrival_date':r.get('available_date'),
+                'clinical_date':None,'reference_date':reference['reference_date']},
+            'clinical_date_fields':{},'clinical_date_status':'not_observed','source_structure':structure,
+            'copied_history':reference['copied_history']or structure['role']=='copied_history',
+            'reference_status':reference['reference_status'],'reader_review_reasons':reasons,
+            'repeated_statement_family':digest([patient,domain,' '.join(reference['statement']['text'].casefold().split())]),
+            'qualifier_effects':reasons,'mention_only_positive_annotation':True,
+            'positive_under_received_qualifiers':not reasons,'clinical_interpretation_validated':False,
+            'current_clinical_state_established':False}
+        a['id']=digest([VERSION,a]);assertions.append(a)
+    return assertions,unbound
+
+
+def assertion_window(assertions, window, as_of):
+    from .clinical_events import validate_window
+    window=validate_window(window,as_of);kept=[];outside=[];unknown=[]
+    clock={'source_event':'source_date','arrival':'arrival_date','clinical':'clinical_date'}
+    for a in assertions:
+        day=a['clocks'].get(clock.get(window['basis']))
+        state=True if window['basis']=='all_observed'else None if not iso(day)else (
+            (not window['start']or day>=window['start'])and day<=(window['end']or as_of))
+        if state is False:outside.append(a['id']);continue
+        if state is None:unknown.append(a['id'])
+        # The selected date basis never replaces a source/reference/clinical clock.
+        kept.append({**a,'assertion_window_state':'selected'if state else'unknown'})
+    return kept,{'window':window,'assertions_selected':len(kept)-len(unknown),'assertions_with_unknown_date':len(unknown),
+        'unknown_date_assertion_ids':unknown,'assertions_outside_window':len(outside),'outside_window_assertion_ids':outside,
+        'clinical_dates_substituted':False}
 
 
 def documentary_clock(a):
@@ -205,9 +312,10 @@ def reconcile(patient, assertions, as_of):
     for a in assertions:
         if a['patient_id'] != patient or a['source']['patient_id'] != patient:
             raise ValueError('Cross-patient assertion')
-        groups[(a['concept'], a['relation'], a.get('care_request_id') or '')].append(a)
+        domain=digest(a['value_domain'])if a.get('annotation_origin')=='derived_note_fact'else''
+        groups[(a['concept'], a['relation'], a.get('care_request_id') or '',domain)].append(a)
     results = []
-    for (concept, relation, request_id), items in sorted(groups.items()):
+    for (concept, relation, request_id, domain), items in sorted(groups.items()):
         accounts = defaultdict(list); excluded = []; families = defaultdict(list)
         for a in items:
             if a.get('repeated_statement_family'):
@@ -221,10 +329,13 @@ def reconcile(patient, assertions, as_of):
         for a in items:
             basis, day = documentary_clock(a); reason = None
             if source_structure.exclusion(a): reason = source_structure.exclusion(a)
+            elif a.get('assertion_window_state')=='unknown':reason='assertion_window_date_unresolved'
+            elif 'subject_conflicts_with_family_history_section'in a.get('reader_review_reasons',[]):reason='source_subject_unresolved'
             elif a['subject'] != 'patient': reason = 'not_patient_assertion'
             elif a['polarity'] not in ('affirmed', 'negated'): reason = 'qualified_or_unresolved_assertion'
             elif not iso(a['clocks']['arrival_date']) or a['clocks']['arrival_date'] > as_of: reason = 'not_available_at_cutoff'
-            elif a['id'] in repeated_ids: reason = 'repeated_text_cannot_refresh_state'
+            elif a['id'] in repeated_ids or a.get('source_repetition',{}).get('cannot_refresh_state'):
+                reason = 'repeated_text_cannot_refresh_state'
             elif not iso(day): reason = 'documentary_date_unresolved'
             elif day > as_of: reason = 'future_documentary_date'
             if reason: excluded.append({'assertion_id': a['id'], 'reason': reason})
@@ -249,6 +360,7 @@ def reconcile(patient, assertions, as_of):
                   'opposing_reports_over_time_or_unresolved_clock' if len(positive) > 1 else
                   'dated_documentary_accounts' if dated else 'unresolved_documentary_accounts')
         results.append({'concept': concept, 'relation': relation, 'care_request_id': request_id or None, 'status': status,
+            **({'value_domain':items[0]['value_domain']}if domain else{}),
             'dated_accounts': dated, 'latest_by_clock': latest, 'documentary_changes': changes,
             'excluded_from_dated_accounts': excluded,
             'repeated_statement_groups': [{'family': key, 'assertion_ids': [a['id'] for a in value]} for key, value in sorted(families.items()) if len(value) > 1],
@@ -257,10 +369,41 @@ def reconcile(patient, assertions, as_of):
     return results
 
 
-def patient_receipt(patient, records, events, parameters, meta):
+def patient_receipt(patient, records, events, parameters, meta, received_facts=None):
     p = validate(parameters); as_of = meta['snapshot']['as_of']
     assertions, units = extract(patient, records, events, p, as_of)
+    annotation_unbound=[];window_coverage=None
+    if p.get('received_annotations'):
+        derived,annotation_unbound=received_annotation_assertions(patient,records,received_facts or[],units,as_of)
+        assertions.extend(derived)
+    # Keep the first received statement even when it falls outside the output
+    # window. Filtering first would make an old repetition appear newly current.
+    families=defaultdict(list)
+    for a in assertions:
+        if a.get('repeated_statement_family'):families[a['repeated_statement_family']].append(a)
+    for family in families.values():
+        if len(family)<2:continue
+        first=min(a['clocks']['source_date']or''for a in family)
+        anchors=[{'assertion_id':a['id'],'source':a['source']}for a in family if(a['clocks']['source_date']or'')==first]
+        for a in family:
+            a['source_repetition']={'first_received_statement_date':first or None,'anchors':anchors,
+                'cannot_refresh_state':(a['clocks']['source_date']or'')!=first and not a['clocks']['reference_date'],
+                'copying_established':False,'independent_corroboration_established':False}
+            if a.get('annotation_origin')=='derived_note_fact'and a['source_repetition']['cannot_refresh_state']:
+                a['positive_under_received_qualifiers']=False
+                a['qualifier_effects']=[*a['qualifier_effects'],'repeated_text_cannot_refresh_state']
+    if 'assertion_window'in p:
+        assertions,window_coverage=assertion_window(assertions,p['assertion_window'],as_of)
+        for row in annotation_unbound:
+            clock={'source_event':'source_date','arrival':'arrival_date','clinical':'clinical_date'}
+            window=p['assertion_window'];day=row.get(clock.get(window['basis']))
+            row['assertion_window_state']=('selected'if window['basis']=='all_observed'else'unknown'if not iso(day)else
+                'selected'if(not window['start']or day>=window['start'])and day<=(window['end']or as_of)else'outside')
     groups = reconcile(patient, assertions, as_of)
+    repeated={ident for g in groups for family in g['repeated_statement_groups']for ident in family['assertion_ids']}
+    for a in assertions:
+        if a.get('annotation_origin')=='derived_note_fact'and a['id']in repeated:
+            a['qualifier_effects']=[*a['qualifier_effects'],'repetition_is_not_independent_corroboration']
     mapped = {a['source_unit_id'] for a in assertions}
     unbound = [u['id'] for u in units if u['id'] not in mapped]
     represented = {a['concept'] for a in assertions}
@@ -289,6 +432,9 @@ def patient_receipt(patient, records, events, parameters, meta):
             'units_without_in_scope_assertions': len(unbound), 'unmapped_unit_ids': unbound,
             'concepts_without_assertions': missing_concepts, 'streams_without_records': missing_streams,
             'complete_semantic_interpretation': False,
+            **({'assertion_window':window_coverage}if window_coverage is not None else{}),
+            **({'derived_note_fact_rows':len(received_facts or[]),'unbound_annotation_rows':annotation_unbound,
+                'derived_annotation_meaning':'Received derived rows across the declared streams before assertion-window filtering; exact selected/unknown/outside assertion counts are separate. Not qualified clinical facts. Values/units and failed bindings are retained.'}if p.get('received_annotations')else{}),
             'native_fields': native_assertions.coverage(records, p, as_of),
             'native_care_fields': native_care_assertions.coverage(records, p, as_of)},
         'counts': {'assertions': len(assertions), 'structured_assertions': sum(a['authority'] == 'literal_structured_field' for a in assertions),
@@ -312,7 +458,15 @@ def execute(path, patient_ids, parameters, preview_limit=4):
     identity, meta, _ = dependency(path, p)
     db = sqlite3.connect((path/'stack.sqlite3').resolve().as_uri()+'?mode=ro', uri=True)
     events, _ = longitudinal.connect(path); out = storage(path)
-    ids = sorted(set(patient_ids)); statuses = Counter(); counts = Counter(); actions = Counter(); preview = []
+    ids = sorted(set(patient_ids)); statuses = Counter(); counts = Counter(); actions = Counter(); preview = []; members=[]
+    facts=defaultdict(list)
+    if p.get('received_annotations'):
+        with sqlite3.connect((path/'semantic.sqlite3').resolve().as_uri()+'?mode=ro',uri=True)as semantic:
+            semantic.row_factory=sqlite3.Row
+            for offset in range(0,len(ids),500):
+                batch=ids[offset:offset+500]
+                query='SELECT rowid AS native_row_id,* FROM note_fact WHERE patient_id IN ('+','.join('?'for _ in batch)+') AND stream IN ('+','.join('?'for _ in p['streams'])+') ORDER BY rowid'
+                for fact in semantic.execute(query,[*batch,*p['streams']]):facts[fact['patient_id']].append(dict(fact))
     try:
         if set(ids)-{r[0] for r in db.execute('SELECT id FROM patients')}: raise ValueError('Unknown assertion population patient')
         with out:
@@ -324,10 +478,11 @@ def execute(path, patient_ids, parameters, preview_limit=4):
                         'SELECT payload FROM records WHERE patient=? AND stream IN ('+','.join('?' for _ in p['streams'])+') ORDER BY id',
                         (patient, *p['streams']))]
                     ev = [json.loads(r[0]) for r in events.execute('SELECT payload FROM events WHERE patient=? ORDER BY id', (patient,))]
-                    row = patient_receipt(patient, records, ev, p, meta); row.update(id=key, identity=identity)
+                    row = patient_receipt(patient, records, ev, p, meta, received_facts=facts[patient]); row.update(id=key, identity=identity)
                     out.execute('INSERT INTO receipts VALUES (?,?,?,?)', (key, patient, identity, zlib.compress(context.encode(row))))
                     counts['new_receipts'] += 1
                 statuses[row['status']] += 1; counts.update(row['counts'])
+                members.append({'patient_id':patient,'receipt_id':key,'receipt_digest':digest(row),'status':row['status']})
                 counts.update({k: row['coverage'][k] for k in ('received_source_units','units_with_in_scope_assertions','units_without_in_scope_assertions')})
                 actions.update(s['kind'] for s in row['next_evidence_steps'])
                 candidate = {k: row[k] for k in ('id','patient_id','status','counts','next_evidence_steps')}
@@ -338,6 +493,7 @@ def execute(path, patient_ids, parameters, preview_limit=4):
         return {'schema': VERSION, 'synthetic': True, 'identity': identity, 'parameters': p,
             'patients_evaluated': len(ids), 'population_digest': digest(ids), 'statuses': dict(statuses),
             'counts': dict(counts), 'patients_needing_evidence_step': dict(actions), 'patients': preview,
+            'review_members':members,
             'preview_selection': 'Opposing accounts first, then patients with assertions, then patient ID. Preview is not a prevalence sample.',
             'all_receipts_persisted': True, 'new_paid_api_calls': 0, 'elapsed_seconds': time.perf_counter()-start,
             'current_clinical_state_established': False, 'limits': LIMITS}

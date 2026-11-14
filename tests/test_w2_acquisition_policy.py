@@ -30,7 +30,9 @@ class Acquisition(unittest.TestCase):
             pol = {x['family']: x for x in r['policy']}
             self.assertEqual(pol['count']['try_order'][0], 'local_compiler')
             self.assertIn('hosted_verified_sql', pol['count']['try_order'])
-            self.assertGreaterEqual(pol['count']['cumulative_success'], 0.95)
+            self.assertIsNone(pol['count']['cumulative_success'])  # legacy records do not establish episode/source pairing
+            self.assertIn('not identified', pol['count']['sequence_evidence']['reason'])
+            self.assertIsNone(pol['count']['coverage_bounds'])
             self.assertEqual(pol['cost_spend']['try_order'], ['hosted_verified_sql'])  # the only operation that ever answered
             hosted = next(x for x in r['table'] if x['family'] == 'cost_spend' and x['operation'] == 'hosted_verified_sql')
             self.assertEqual(hosted['answered'], 9); self.assertAlmostEqual(hosted['mean_usd'], 0.4)

@@ -149,7 +149,10 @@ def prepare(retriever, body):
     stats_before = deepcopy(recorder.delegate.stats)
     try:
         retriever.reranker = recorder
-        actual = retriever.search(question, patient=patient, patient_ids=selection['patient_ids'], analysis_window=window)
+        # A paired reranker comparison has one candidate universe. Ordinary
+        # evidence-completeness searches rank additional queries; recording
+        # those here would overwrite the outer trace and compare different sets.
+        actual = retriever.search(question, patient=patient, patient_ids=selection['patient_ids'], analysis_window=window, complete=False)
     finally:
         retriever.reranker = recorder.delegate
     if actual['candidate_passages'] != len(recorder.before):
@@ -172,7 +175,8 @@ def prepare(retriever, body):
               'request_key': request_key, 'synthetic': True, 'candidate_set_identical': True,
               'cohort': selection, 'candidates': candidates,
               'variants': {'rrf_baseline': br, 'bge_reranked': rr},
-              'selection': {'limit': 8, 'distinct_source_fields': True, 'per_patient_limit': None if patient else 2},
+              'selection': {'limit': 8, 'distinct_source_fields': True, 'per_patient_limit': None if patient else 2,
+                            'coverage_expansion': 'excluded_from_fixed_candidate_comparison'},
               'changes': {'entered_selected': [x for x in rr if x not in br],
                           'left_selected': [x for x in br if x not in rr],
                           'shared_selected': [x for x in rr if x in br]},

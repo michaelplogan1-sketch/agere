@@ -18,8 +18,43 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def inspect(root, control, owner, automation, intent="review", gate=None):
+def warehouse_read_preflight(root, config_path=None):
+    """Allow pinned native inspection without pretending it will copy a package."""
+    from serve_current_warehouse import runtime_preflight, validate_semantic_policy
+    from clinical_core.agere.model_policy import application_runtime
+    from clinical_core.agere.clinical import semantic_layer
+    config = json.loads((Path(config_path) if config_path is not None else Path(root) / 'config/agere/active_warehouse.json').read_text())
+    stack = Path(config['build']).resolve() / 'stack'
+    with runtime_preflight(application_runtime(config)['environment']):
+        validate_semantic_policy(stack)
+        target = semantic_layer.ensure(stack)  # default is read-only, never materialize
+    return {'path': str(target), 'mode': 'read-only', 'implicit_materialization': False}
+
+
+def saved_continuation_preflight(root, config_path, context_id):
+    """Admit the existing read-only investigation path, never a package/copy.
+
+    Keep the standing 60 GB reserve. The three-times-database reserve applies
+    to databases being copied, not to a warehouse referenced by this route.
+    """
+    from clinical_core.agere.local_release import require_storage
+    from clinical_core.agere.deliverables import answer_context
+    if config_path is None or not context_id:
+        raise ValueError('Saved continuation requires an explicit warehouse configuration and context ID')
+    storage = require_storage(root, largest_file=0)
+    warehouse = warehouse_read_preflight(root, config_path)
+    config = json.loads(Path(config_path).read_text())
+    stack = Path(config['build']).resolve() / 'stack'
+    saved = answer_context.load_unfinished_for_review(stack, context_id)
+    return {'storage': storage, 'warehouse': warehouse, 'context_id': saved['id'],
+            'source': saved['source'], 'database_copy_bytes': 0,
+            'route': '/api/stack/investigation/resume'}
+
+
+def inspect(root, control, owner, automation, intent="review", gate=None, storage_operation="large-run", warehouse_config=None,
+            storage_authorization=None, package_target=None, saved_context_id=None):
     errors = []
+    storage_admission = None
 
     def require(condition, message):
         if not condition:
@@ -109,6 +144,32 @@ def inspect(root, control, owner, automation, intent="review", gate=None):
                     "Build PAUSED: explicit user resumption required before product work")
             require(bool(expected) and gate == expected,
                     "Requested work does not match the current delivery gate")
+            if storage_operation == "large-run":
+                from clinical_core.agere.local_release import require_storage
+                config = json.loads((Path(warehouse_config) if warehouse_config is not None else root / 'config/agere/active_warehouse.json').read_text())
+                build = Path(config['build'])
+                largest = max((p.stat().st_size for p in build.rglob('*') if p.is_file()), default=0)
+                try:
+                    require_storage(root, largest_file=largest)
+                except OSError as exc:
+                    require(False, str(exc))
+            elif storage_operation == "saved-continuation":
+                try:
+                    storage_admission = saved_continuation_preflight(root, warehouse_config, saved_context_id)
+                except (OSError, ValueError, KeyError) as exc:
+                    require(False, 'Saved continuation refused: ' + str(exc))
+            elif storage_operation == "warehouse-read":
+                try:
+                    warehouse_read_preflight(root, warehouse_config)
+                except (OSError, ValueError) as exc:
+                    require(False, 'Pinned read-only warehouse unavailable: ' + str(exc))
+            elif storage_operation == "code-only-package":
+                try:
+                    from clinical_core.agere.runnable_release import code_only_preflight
+                    if package_target is None: raise ValueError('Explicit code-only package target required')
+                    code_only_preflight(package_target, storage_authorization)
+                except (OSError, ValueError) as exc:
+                    require(False, 'Code-only package preflight refused: ' + str(exc))
     except (KeyError, TypeError, ValueError, IndexError) as exc:
         errors.append(f"Incomplete or invalid control data: {exc}")
     return {
@@ -116,6 +177,8 @@ def inspect(root, control, owner, automation, intent="review", gate=None):
         "status": "failed" if errors else "passed",
         "checks_only": "continuity and evidence references; not product or clinical acceptance",
         "build_status": owner.get("build_status"),
+        "storage_operation": storage_operation if intent == "build" else "read-only",
+        **({'storage_admission': storage_admission} if storage_admission is not None else {}),
         "current_gate": control.get("current_gate"),
         "next_action": control.get("checkpoint", {}).get("next_action"),
         "last_sealed_receipt": owner.get("latest_receipt"),
@@ -128,6 +191,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--intent", choices=("review", "build"), default="review")
     parser.add_argument("--gate")
+    parser.add_argument("--warehouse-config", type=Path,
+                        help="Explicit pinned candidate configuration; historical defaults are never silently rebound")
+    parser.add_argument("--storage-operation", choices=("large-run", "source-edit", "small-fixture", "warehouse-read", "saved-continuation", "code-only-package"), default="large-run",
+                        help="Large runs enforce the storage plan; edits/tiny fixtures and pinned read-only warehouse checks remain possible during recovery")
+    parser.add_argument('--storage-authorization', type=Path, help='Explicit user-approved exception bound to code-only archive/rehearsal paths')
+    parser.add_argument('--package-target', type=Path)
+    parser.add_argument('--saved-context-id', help='Exact unfinished saved investigation; no database/package copy')
     args = parser.parse_args()
     root = Path(__file__).resolve().parent
     try:
@@ -143,7 +213,8 @@ def main():
         else:
             with heartbeat_path.open("rb") as source:
                 automation = tomllib.load(source)
-        result = inspect(root, control, owner, automation, args.intent, args.gate)
+        result = inspect(root, control, owner, automation, args.intent, args.gate, args.storage_operation, args.warehouse_config,
+                         args.storage_authorization, args.package_target, args.saved_context_id)
     except (OSError, ValueError, KeyError) as exc:
         result = {"status": "failed", "errors": [str(exc)]}
     print(json.dumps(result, indent=2))

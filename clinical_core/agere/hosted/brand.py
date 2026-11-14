@@ -20,14 +20,7 @@ DARK = {'paper': '#0d241b', 'paper-2': '#123024', 'card': '#14342a', 'ink': '#e9
 FONTS_URL = 'https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=IBM+Plex+Mono:wght@400;500&display=swap'
 FONT_ORIGINS = ('https://fonts.googleapis.com', 'https://fonts.gstatic.com')
 
-GOLD = Path(__file__).resolve().parents[3] / 'docs' / 'agere' / 'gold10' / 'questions.jsonl'
-EXTRA_QUESTIONS = [
-    {'id': 'POP-HF', 'category': 'Population', 'question': 'How many patients have heart failure with reduced ejection fraction?'},
-    {'id': 'POP-EGFR', 'category': 'Forecast', 'question': 'Which eGFR series are projected below 30 at the one-year horizon?'},
-    {'id': 'FIN-IP', 'category': 'Finance', 'question': 'What was the total paid amount for inpatient claims in the last 12 months?'},
-    {'id': 'FIN-ED', 'category': 'Finance', 'question': 'What is the ED cost per member per month by payer product?'},
-    {'id': 'FIN-PMPM', 'category': 'Finance', 'question': 'What is total cost of care per member per month for heart failure patients?'},
-]
+QUESTION_STARTERS = Path(__file__).resolve().parents[3] / 'config' / 'agere' / 'question_starters.json'
 
 PROGRAMS = [
     {'kind': 'pharmacy_gdmt', 'label': 'Heart failure GDMT', 'detail': 'Find HFrEF patients missing GDMT pillars, enroll them with a PharmD program, '
@@ -45,17 +38,12 @@ DELIVERABLE_TEMPLATES = [
 
 
 def example_questions():
-    """Gold questions (docs/agere/gold10/questions.jsonl) plus population and finance examples."""
-    out = []
-    try:
-        for line in GOLD.read_text().splitlines():
-            if line.strip():
-                q = json.loads(line)
-                out.append({'id': q.get('id'), 'category': 'Quality' if q.get('answer_type') == 'patient_set' else 'Population',
-                            'question': q['question'], 'definition': q.get('definition')})
-    except (OSError, ValueError):
-        pass
-    return out + EXTRA_QUESTIONS
+    """Packaged navigation prompts, never definitions or evidence for an answer."""
+    record = json.loads(QUESTION_STARTERS.read_text())
+    if record.get('schema') != 'question-starters/1':
+        raise ValueError('Unsupported question starter configuration')
+    return [{key: row[key] for key in ('id', 'category', 'question')}
+            for row in record['questions']]
 
 
 def css_tokens():

@@ -26,7 +26,7 @@ from pathlib import Path
 
 from . import request_plan
 from .. import model_policy
-from .literal_check import VERSION as CHECK_VERSION, executable_text, missing, shape_misfit
+from .literal_check import VERSION as CHECK_VERSION, executable_text, graph_evidence_text, missing, shape_misfit
 from .question_input import QuestionNotUnderstood
 from .answer_checks import gate as answer_gate
 from .system_one_gate import CLAUDE_TIERS, outage
@@ -44,9 +44,8 @@ TIERS = {
     'cohort_family_early': ('free (Haiku slot filler only when slots are missing)', 'certified 0.71, 752 cases / 0 errors', 'graph'),
     'undelivered_input': ('free', 'deterministic delivered-field check; declines only', 'decline'),
     'paraphrase_reuse': ('free (MiniLM); System One confirms the slot mapping of a reused spec', 'verified interpretation of a slot-identical rewording', 'typed'),
-    'spec_path': ('grammar free; System One slot choices ~$0.0002; ONE Haiku spec call (~$0.01) + one repair; Sonnet only on the escalation rung (after every Haiku attempt failed); '
-                  'System One ~$0.0002 per verified part', 'question spec filled three ways in parallel, compiled, literal-checked, decision-context-checked and '
-                  'verified part by part by System One; uncalibrated', 'typed'),
+    'spec_path': ('grammar free; metered System One slot and part checks; frontier spec writing requires explicit qualification configuration',
+                  'native or System One typed plan, compiled and checked against source/question meaning; unresolved questions continue to the investigator; uncalibrated', 'typed'),
     'terminology_mapping': ('free (saved/deterministic); Jev/Perplexity ~$0.0002 for an unmapped term, live only', 'retrieve-then-classify clinical term (System One p>=0.8 or abstain), then the fully consumed grammar; uncalibrated', 'typed'),
     'semantic_cache': ('free (MiniLM)', 'certified, 0/94 test errors', 'graph'),
     'template_decoding': ('free (MiniLM; local model only to fill slots)', 'TeCoD: verified query structure kept, only typed value slots refilled; literal-bound; uncalibrated', 'graph'),
@@ -75,7 +74,7 @@ TIERS = {
     'operator_router': ('Haiku', 'FAILED calibration: held-out 19/19 wrong; proposes only', 'graph'),
     'local_free_sql': ('free (Qwen3-4B)', 'FAILED calibration: precision too low; proposes only', 'graph'),
     'legacy_cost_ladder': ('free locally; its paid rungs only when live', 'pre-2026-10-19 ladder + together semantics, last resort; uncalibrated', 'graph'),
-    'backstop_agent': ('Sonnet (the escalation rung), one tool loop of up to 20 calls', 'final backstop analyst with SQL + document tools + the '
+    'backstop_agent': ('Haiku tool loop, escalating to Sonnet on failed checks while retaining evidence', 'final backstop analyst with SQL + document tools + the '
                        'conversation; quotes verified verbatim; accepted with checks as annotations (Mike 2026-10-25); uncalibrated', 'answer'),
 }
 # The cascade runs in six stages (CTO, 2026-10-23; Mike, 2026-10-23: the spec path is the main path); a tier never runs before an earlier
@@ -175,7 +174,6 @@ def second_look_fast_path(stack, question, graph, result, *, population=None, st
     if ((result or {}).get('answer') or {}).get('status') not in ('answered', 'partial'): return None
     c = Cascade(stack, request_plan.Catalog.load(stack.path), question, population=population)
     try:
-        if c.one_patient(): return None
         order = list(ORDER)
         found = ({'kind': 'checked_graph', 'graph': graph, 'executed': result}, {'interpreter': 'fast_path'})
         got, name = c.second_look(order, 'fast_path', found)
@@ -192,13 +190,22 @@ def second_look_fast_path(stack, question, graph, result, *, population=None, st
                 'graph': contract['graph'], 'answer': answer, 'request_contract': {k: v for k, v in contract.items() if k != 'executed'},
                 'planner_receipt': receipt, 'new_paid_api_calls': c.calls, 'planning_economics': economics(receipt),
                 'elapsed_seconds': (time.perf_counter() - started) if started else None, 'clinical_execution_authorized': False}
-    except Exception:  # noqa: BLE001 - a second look never takes the first answer down
+    except Exception as exc:  # a failed review preserves the first answer, except Mike's explicit subscription stop
+        if outage(exc) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription': raise
         return None
     finally:
         c.close()
 
 
 FAST_ONE_PATIENT = ('exact_local_plan', 'paraphrase_reuse', 'semantic_cache', 'learned_verified_sql', 'chart_reader', 'data_domain_check')
+
+
+def backstop_limit():
+    """Only an explicitly configured investigation deadline; accuracy takes precedence over an invented time quota."""
+    raw = os.environ.get('AGERE_BACKSTOP_SECONDS', '').strip().lower()
+    if raw in ('', 'off', 'none', 'inf', 'unlimited'): return None
+    try: return max(0.0, float(raw))
+    except ValueError: return None
 
 
 def investigator_first_for_one_patient(order):
@@ -227,6 +234,54 @@ def backstop_before_generalists(order):
     return tuple(order)
 
 
+def nonfrontier_first(order):
+    """Candidate execution order: a permutation with hosted generation last."""
+    hosted=set(CLAUDE_TIERS)|{'spec_path'}
+    return tuple(t for t in order if t not in hosted)+tuple(t for t in order if t in hosted)
+
+
+def adaptive_order(order, *, routing=None, tier_routing=None, corrected=False):
+    """Use task fit before exhaustive fallback, without activating any component.
+
+    A class prediction is enough to try a cheap typed choice, not to justify a
+    population-wide document scan or loading generative weights. A promoted
+    outcome router may nominate a specialist; it still has to pass runnable(),
+    source/plan checks and ordinary acceptance. Every remaining tier is retained.
+    The investigator uses the same native/retrieval/learning tools and escalates
+    in its existing conversation, rather than making each proposer rediscover it.
+    """
+    order = tuple(order)
+    label = (routing or {}).get('label') if (routing or {}).get('applied') else 'unknown'
+    fast = set(STAGES[STAGE_INDEX['reuse_certified']][1]) | set(STAGES[STAGE_INDEX['free_planners']][1])
+    front = [t for t in order if t in fast]
+    # Keep explicit corrections ahead of a formerly accepted fast answer.
+    if corrected:
+        front = [t for t in FEEDBACK_READERS if t in order] + front
+    nominated = (tier_routing or {}).get('tier') if (tier_routing or {}).get('applied') else None
+    if nominated in order and nominated not in CLAUDE_TIERS and nominated != 'spec_path':
+        front.append(nominated)
+    choices = {
+        'literal_lookup': ('typed_decider',),
+        'metric': ('s1_metric_router', 'typed_decider'),
+        'engine_analysis': ('s1_operator_router', 'typed_decider'),
+        'definition_dependent': ('typed_decider',),
+    }.get(label, ())
+    front.extend(t for t in choices if t in order)
+    if 'backstop_agent' in order:
+        front.append('backstop_agent')
+    front = list(dict.fromkeys(front))
+    selected = tuple(front) + tuple(t for t in order if t not in front)
+    return selected, {
+        'policy': 'task-fit-before-exhaustive-fallback/1', 'question_class': label,
+        'qualified_specialist': nominated if nominated in front else None,
+        'correction_first': bool(corrected), 'order': list(selected),
+        'frontier_entry': 'backstop_agent' if 'backstop_agent' in order else None,
+        'reason': 'Try checked reuse/native plans and fitting typed choices; otherwise let one investigator choose tools. '
+                  'Unselected scans and generative proposers remain fallbacks, with unchanged enablement and acceptance.',
+        'cost_optimality_established': False,
+    }
+
+
 def stage_of(tier):
     if tier in STAGE_OF: return STAGE_OF[tier]
     return STAGE_INDEX['system_one_choice'] if tier.startswith(('system_one_', 's1_')) else len(STAGES) - 1
@@ -248,6 +303,11 @@ def staged(order, routed=()):
 
 
 ORDER = tuple(t for _, tiers in STAGES for t in tiers if t in TIERS) + staged(t for t in TIERS if t not in STAGE_OF)  # the stated order within each stage
+# Resolve existing checked plans before asking a model which planner to use.
+# These still pass the ordinary source, literal, execution and answer guards;
+# native compilation may use its bounded ambiguity adjudicator when necessary.
+NATIVE_REUSE_FIRST = ('exact_local_plan', 'learned_verified_sql', 'scoped_review_compiler',
+                      'specialist_families_early', 'local_compiler', 'semantic_cache')
 PAID = {'typed_decider', 'hosted_typed_interpreter', 'hosted_verified_sql', 'frontier_graph_planner', 'hybrid_analysts',
         'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose', 'atomic_system_one', 's1_metric_router',
         's1_operator_router'}
@@ -312,7 +372,14 @@ OFF_DEFAULT = ('metric_router', 'operator_router', 'local_free_sql', 'hosted_ver
 def enabled(name, stack):
     skip = {s.strip() for s in os.environ.get('AGERE_PROPOSER_SKIP', '').split(',') if s.strip()}
     if name in skip or os.environ.get('AGERE_PROPOSERS', 'on') == 'off': return False
-    if name in OFF_DEFAULT and name not in {s.strip() for s in os.environ.get('AGERE_PROPOSER_ON', '').split(',')}: return False
+    if name in OFF_DEFAULT and name not in {s.strip() for s in os.environ.get('AGERE_PROPOSER_ON', '').split(',')}:
+        # An explicitly installed, qualified replacement may use the existing
+        # rung. Old unqualified adapters remain off; skip flags take precedence.
+        qualified=False
+        if name=='bottled_sql' and os.environ.get('AGERE_COMPONENT_RELEASE_ROOT'):
+            from . import adapter_learning,bottled
+            qualified=bottled.enabled() and adapter_learning.runtime_adapter('bottled',bottled.base_dir()) is not None
+        if not qualified:return False
     if name in PAID and not getattr(stack, 'allow_live', False): return False
     return True
 
@@ -387,9 +454,60 @@ class Cascade:
         self.cost_known = self.cost_known and known
 
     # -- the cascade --------------------------------------------------------------------------------------------------
+    def ordered_tiers(self):
+        """Dispatch routing lazily, retaining every existing fallback exactly once.
+
+        An accepted native/reused answer needs no question-classification call.
+        Corrections and owned continuation keep their dedicated existing order.
+        order_used always includes the remaining fallbacks so answer review,
+        reserved investigation and budget deferral see the complete path.
+        """
+        from .harness_improvement import recovering
+        from .learning import correction_context
+        try:
+            self.corrected = bool(correction_context(self.stack.path, self.question))
+        except Exception:  # noqa: BLE001 - fixtures may have no learning store
+            self.corrected = False
+        adaptive = os.environ.get('AGERE_NONFRONTIER_FIRST') == 'adaptive'
+        if not adaptive or self.corrected or recovering(self.question):
+            order = self.order()
+            self.order_used = tuple(t for t in order if not FREE_ONLY.get() or STAGES[stage_of(t)][0] in FREE_STAGES)
+            yield from self.order_used
+            return
+
+        prefix = tuple(t for t in NATIVE_REUSE_FIRST if t in ORDER)
+        fallback, policy = adaptive_order(ORDER)
+        self.order_used = prefix + tuple(t for t in fallback if t not in prefix)
+        if FREE_ONLY.get():
+            self.order_used = tuple(t for t in self.order_used if STAGES[stage_of(t)][0] in FREE_STAGES)
+        self.execution_policy = {**policy, 'order': list(self.order_used),
+            'native_reuse_first': list(prefix), 'router_dispatch': 'not_needed_yet',
+            'reason': 'Try checked native and reusable plans before optional routing. '
+                      'Only unresolved requests need a question classifier and specialist selection.'}
+        yield from prefix
+
+        # A rewording is only an inexpensive preliminary attempt. Let the
+        # original question own classification if these stages cannot answer.
+        if FREE_ONLY.get() or (self.budget is not None and self.budget.expired()):
+            self.execution_policy['router_dispatch'] = ('deferred_to_original_question' if FREE_ONLY.get()
+                                                         else 'not_started_after_budget_expired')
+            yield from (t for t in self.order_used if t not in prefix)
+            return
+        routed = self.order()
+        self.order_used = prefix + tuple(t for t in routed if t not in prefix)
+        self.execution_policy = {**getattr(self, 'execution_policy', {}),
+            'order': list(self.order_used), 'native_reuse_first': list(prefix),
+            'router_dispatch': 'after_native_reuse_declined'}
+        yield from (t for t in self.order_used if t not in prefix)
+
     def order(self):
         """A recorded correction is read only by the hosted interpreter, so it goes first for that question; every other
         proposer still follows in its usual order."""
+        from .harness_improvement import recovering
+        if recovering(self.question):
+            self.routing={'route':'explicit_owned_investigation_continuation','cold_benchmark':False,
+                'reason':'Continue recorded read-only work; reexecute SQL and source-question checks. Prior proposal stages already ran in the owned investigation.'}
+            return ('backstop_agent',)
         from .learning import correction_context
         try:
             corrected = bool(correction_context(self.stack.path, self.question))
@@ -431,6 +549,22 @@ class Cascade:
             from .system_one_gate import ROUTES
             routed = tuple(t for t in ROUTES.get(self.routing.get('label'), ()) if stage_of(t) != len(STAGES) - 1)
         order = backstop_before_generalists(self.heavy_last(self.free_first(staged(order, routed))))
+        if os.environ.get('AGERE_ADAPTER_CANDIDATES'):
+            # Explicit isolated candidates are checked before generative hosted
+            # interpretation. This is a permutation, never model promotion.
+            trained=[t for t in ('qwen_typed_interpreter','bottled_sql') if t in order]
+            rest=[t for t in order if t not in trained]
+            at=min((i for i,t in enumerate(rest) if stage_of(t)>=STAGE_INDEX['spec_path']),default=len(rest))
+            order=tuple(rest[:at]+trained+rest[at:])
+        if os.environ.get('AGERE_NONFRONTIER_FIRST') == 'adaptive':
+            order, self.execution_policy = adaptive_order(order, routing=self.routing,
+                tier_routing=getattr(self, 'tier_routing', None), corrected=corrected)
+            return order
+        if os.environ.get('AGERE_NONFRONTIER_FIRST')=='on':
+            # Keep every applicable component available, but finish the code,
+            # local-model and System One stages before hosted interpretation.
+            # The spec path may generate a Claude request, so it is hosted here.
+            return nonfrontier_first(order)
         return investigator_first_for_one_patient(order) if self.one_patient() else order
 
     def heavy_last(self, order):
@@ -491,7 +625,7 @@ class Cascade:
         try:
             graph, _ = self.ladder.compiled()
             if not graph or not graph.get('nodes') or graph.get('coverage') == 'unsupported': return order
-            if self.gaps(executable_text([n.get('parameters') for n in graph['nodes']])): return order
+            if self.gaps(graph_evidence_text(graph)): return order
         except Exception:  # noqa: BLE001 - no profile / fixture stack: keep the order
             return order
         first = order[min(heavy)]
@@ -505,7 +639,7 @@ class Cascade:
         None when the budget is unlimited."""
         if budget.seconds == float('inf'): return None
         if name == 'backstop_agent':  # the final layer gets its own time, not a share of what the earlier layers left
-            return max(0.5, float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90')))
+            return backstop_limit()
         from .answer_budget import SHARE_BASE_SECONDS
         cap = max(budget.seconds, SHARE_BASE_SECONDS) * TIER_SHARE['heavy' if name in HEAVY or name in PAID else 'other']
         return max(0.5, min(cap, budget.remaining()))
@@ -530,9 +664,13 @@ class Cascade:
             if mx is not None: mx.clear_cache()  # freed GPU buffers go back to the system before the next tier loads a model
 
     def _timed(self, fn, name, limit):
+        from ..request_lineage import component
         t0 = time.perf_counter()  # measured after any local-model lock wait: the tier's own seconds feed its running median
         try:
-            return self._call_tier(fn, name, limit)
+            with component('proposer_tier', tier=name) as metrics:
+                result = self._call_tier(fn, name, limit)
+                metrics['outcome'] = 'declined' if result is None else 'proposal_or_held'
+                return result
         finally:
             self.measured.setdefault(name, []).append(time.perf_counter() - t0)
 
@@ -570,9 +708,14 @@ class Cascade:
         except QuestionNotUnderstood as exc:
             self.note(name, 'declined', str(exc), started)
             cause = exc.__cause__ or exc.__context__  # a decline wrapping a provider outage still means Claude is down
+            if cause is not None and outage(cause)=='cancelled':raise cause
+            if name in CLAUDE_TIERS and cause is not None and outage(cause) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription': raise cause
             if name in CLAUDE_TIERS and cause is not None and outage(cause): self.claude_down = self.claude_down or outage(cause)
             return None
         except Exception as exc:  # noqa: BLE001 - one component failing never stops the others (heal, don't block)
+            if outage(exc)=='cancelled':raise
+            if name in CLAUDE_TIERS and outage(exc) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription':
+                raise  # Mike: a subscription limit ends the request; never try another Claude tier or the external API
             self.note(name, 'error', f'{type(exc).__name__}: {exc}', started)
             from ..fault_containment import on_tier_error  # a malformed state store is quarantined and recreated, not hit again
             healed = on_tier_error(getattr(self.stack, 'path', '.'), exc)
@@ -592,8 +735,10 @@ class Cascade:
         """A proposal passed every check: an independent proposer verifies it unless certified / confirmed by System One. A backstop
         answer whose quotes were verified against their own records is not re-verified by the weaker generalist tiers (matched
         diagnostic 2026-10-26: ~50 s of verifiers on one-patient note answers, none comparable)."""
+        if isinstance(found,tuple)and (found[0].get('executed')or{}).get('clarification_checkpoint'):
+            return found[0],self.finish({**found[1],'execution_accepted':False,'awaiting_user_intent':True},name)
         a = ((found[0] or {}).get('executed') or {}).get('answer') or {} if isinstance(found, tuple) else {}
-        if name == 'backstop_agent' and a.get('verification') in ('quote_verified', 'checked'):
+        if name == 'backstop_agent':  # its continuing investigation owns repair; another analyst cannot repair a failed review service
             contract, interpretation = found
         else:
             contract, interpretation = claim_verification.verify(self, order, name, found)
@@ -640,13 +785,12 @@ class Cascade:
         # a rewording's free-stage attempt gets a short budget of its own: the question as typed then runs with the full answer budget
         budget = self.budget = start_budget(float(os.environ.get('AGERE_REWORDING_BUDGET_SECONDS', '8')) if FREE_ONLY.get() else None)
         try:
-            order = self.order_used = self.order()
             free_only = FREE_ONLY.get()
-            if free_only: order = self.order_used = [t for t in order if STAGES[stage_of(t)][0] in FREE_STAGES]
-            for i, name in enumerate(order):
+            for name in self.ordered_tiers():
+                order = self.order_used
                 if not self.runnable(name): continue
                 if budget.expired():  # out of time: everything that would have run next is deferred, then the honest early reply
-                    for later in order[i:]:
+                    for later in order[order.index(name):]:
                         if self.runnable(later) and not (self.claude_down and later in CLAUDE_TIERS): self.defer(later, 'answer budget used up')
                     break
                 est = self.expected(name)
@@ -684,8 +828,8 @@ class Cascade:
                 raise self.provider_error
             reasons = [f"{e['proposer']}: {e['detail']}" for e in self.log if e['outcome'] == 'rejected']
             exc = QuestionNotUnderstood(
-                'The original question was preserved; no proposer produced a plan that keeps all of it, so nothing was '
-                'executed.' + (' Closest proposals and what they dropped: ' + ' | '.join(reasons[:4]) if reasons else ''))
+                'The original question was preserved, but the available attempts did not produce a complete supported '
+                'answer.' + (' Attempt diagnostics: ' + ' | '.join(reasons[:4]) if reasons else ''))
             self.queue_background()
             exc.planner_receipt = self.usage()
             exc.planner_receipt['answer_timing'] = self.timing()
@@ -706,7 +850,7 @@ class Cascade:
         if name in CERTIFIED_CHART and not unquoted_chart_answer(self.question, found[0]) and not self.system_one_disagrees(found[0]): return found, name
         if 'backstop_agent' not in order or not self.runnable('backstop_agent') or not claude_available() or self.claude_down: return found, name
         if any(e.get('proposer') == 'backstop_agent' and e.get('outcome') not in ('skipped', 'deferred') for e in self.log): return found, name
-        second = self.attempt('backstop_agent', max(0.5, float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90'))))
+        second = self.attempt('backstop_agent', backstop_limit())
         if not isinstance(second, tuple): return found, name
         status = ((second[0] or {}).get('executed') or {}).get('answer', {}).get('status')
         if status in ('answered', 'partial') or unquoted_chart_answer(self.question, found[0]) or not quoted(found[0]): return second, 'backstop_agent'
@@ -748,7 +892,7 @@ class Cascade:
         it). 'answers partially' or 'a different question' (p >= AGERE_SECOND_LOOK_P, default 0.6) hands the question, with that answer and
         the verdict, to the backstop investigation; its answer replaces the first when it answers (audit 2026-10-25: confident wrong engine
         answers were accepted with no second look). -> (found, name)."""
-        if name == 'backstop_agent' or name in CERTIFIED_CHART or not isinstance(found, tuple) or self.one_patient(): return found, name
+        if name == 'backstop_agent' or not isinstance(found, tuple): return found, name
         if os.environ.get('AGERE_SECOND_LOOK', 'on') == 'off': return found, name
         if 'backstop_agent' not in order or not self.runnable('backstop_agent') or not claude_available() or self.claude_down: return found, name
         if any(e.get('proposer') == 'backstop_agent' and e.get('outcome') not in ('skipped', 'deferred') for e in self.log): return found, name
@@ -769,10 +913,9 @@ class Cascade:
         self.note('second_look', 'investigate' if flagged else 'stands', f'System One: {label} p={p:.2f} on {name}', time.perf_counter())
         if not flagged: return found, name
         a = result.get('answer') or {}
-        self.second_look_hint = {'earlier_answer': {'by': name, 'headline': a.get('headline'), 'value': a.get('value', a.get('count')),
-                                                    'method': a.get('method')},
+        self.second_look_hint = {'earlier_answer': {'by': name, 'answer': a, 'graph': contract.get('graph')},
                                  'system_one_verdict': f"{label.replace('_', ' ')} (p={p:.2f})"}
-        second = self.attempt('backstop_agent', max(0.5, float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90'))))
+        second = self.attempt('backstop_agent', backstop_limit())
         if isinstance(second, tuple) and ((second[0] or {}).get('executed') or {}).get('answer', {}).get('status') in ('answered', 'partial'):
             return second, 'backstop_agent'
         return found, name
@@ -791,34 +934,77 @@ class Cascade:
     def reserved_backstop(self, order):
         """The final LLM backstop runs once before any decline (AGERE_BACKSTOP_SECONDS, default 90; 0 turns this off), when the budget ran out
         before it was asked. -> accept() result or None."""
-        name, seconds = 'backstop_agent', float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90'))
-        if seconds <= 0 or name not in order or not self.runnable(name) or not claude_available() or self.claude_down: return None
+        name, seconds = 'backstop_agent', backstop_limit()
+        if (seconds is not None and seconds <= 0) or name not in order or not self.runnable(name) or not claude_available() or self.claude_down: return None
         if any(e.get('proposer') == name and e.get('outcome') not in ('skipped', 'deferred') for e in self.log): return None
         self.deferred = [d for d in self.deferred if d.get('tier') != name]
         found = self.attempt(name, seconds)
         return self.accept(order, name, found) if found is not None else None
 
-    def tier_backstop_agent(self):
-        """The final backstop analyst (backstop_agent.py) on the escalation rung (Sonnet): every Haiku tier before it declined. Its answer is
+    def tier_backstop_agent(self,*,continuation=None,clarification_reply=None):
+        """The final backstop analyst (backstop_agent.py) starts on Haiku and owns its checked escalation. Its answer is
         accepted with the checks as annotations (heal, don't block): it is the last layer, and its document quotes are verified verbatim."""
         if os.environ.get('AGERE_BACKSTOP', 'on') == 'off' or not getattr(self.stack, 'allow_live', False) or not claude_available(): return None
         from . import backstop_agent
-        with model_policy.escalation():
+        from .semantic_analyst import successful_sql_calls
+        checked_in_loop = False
+        final_gate, final_binding = None, None
+        def validate_final(answer, calls):
+            nonlocal checked_in_loop, final_gate, final_binding
+            sqls = [c['sql'] for c in successful_sql_calls(calls)]
+            if not sqls or answer.get('status') == 'unsupported': return None
+            graph = {'interpretation': self.question, 'coverage': 'supported_observation', 'unmet_requirements': [],
+                     'nodes': [{'id': f'backstop_{i}', 'operation': 'sql', 'inputs': [], 'parameters': {'query': sql, 'returns': 'table'},
+                                'purpose': 'Investigator query (executed)'} for i, sql in enumerate(sqls)]}
+            from .answer_checks import investigation_binding
+            receipt = {'route': 'backstop_agent', 'investigation_review': answer.get('investigation_review'),
+                       'investigation_binding': investigation_binding(self.question, graph, answer)}
+            checked = answer_gate(self, 'backstop_agent', graph, receipt, {'answer': answer, 'results': [], 'new_paid_api_calls': 0})
+            checked_in_loop = checked is not None
+            if checked is not None:
+                final_gate, final_binding = checked.get('answer_checks'), receipt['investigation_binding']
+                answer.update(checked['answer'])
+                return None
+            reasons = next((e['detail'] for e in reversed(self.log) if e['proposer'] == 'backstop_agent' and e['outcome'] == 'rejected'), 'final answer checks did not pass')
+            return 'Final answer checks: ' + str(reasons) + '. Repair this in the current investigation using the existing tool results.'
+        hint = dict(getattr(self, 'second_look_hint', None) or {})
+        attempts = [{'proposer': entry['proposer'], 'outcome': entry['outcome'], 'detail': entry.get('detail')}
+                    for entry in self.log if entry.get('outcome') in ('rejected', 'held', 'deferred')]
+        if attempts:
+            hint['prior_attempts'] = attempts
+            hint['execution_policy'] = getattr(self, 'execution_policy', None)
+        with model_policy.question_path(), model_policy.first_rung():
             run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger, population=self.population,
-                                        hint=getattr(self, 'second_look_hint', None))
-        self.spend(run.get('new_paid_api_calls', 0), run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
+                                        hint=hint or None, validate_final=validate_final,
+                                        **({'continuation':continuation,'clarification_reply':clarification_reply}if continuation is not None else {}))
+        self.spend(run.get('new_paid_api_calls', 0), run.get('known_cost_usd') or run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
+        self.last_backstop_run=run
+        if run.get('clarification_checkpoint'):
+            graph={'interpretation':self.question,'coverage':'unresolved_user_intent','unmet_requirements':run['answer']['missing'],'nodes':[]}
+            result={'answer':run['answer'],'results':[],'workflow':[],'clarification_checkpoint':run['clarification_checkpoint'],
+                    'investigation':{k:run.get(k)for k in ('model','tool_calls','document_reviews','answer_reviews')},
+                    'clinical_execution_authorized':False}
+            contract,interpretation=self.contract_of('backstop_agent',graph,{'route':'backstop_agent','awaiting_user_intent':True},result)
+            return contract,{**interpretation,'execution_accepted':False,'awaiting_user_intent':True}
+        limit_error=None
+        interrupted_kind=outage(RuntimeError(run['error'])) if run.get('error') else None
+        if interrupted_kind=='cancelled' or (interrupted_kind=='rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT')=='subscription'):
+            from ..gateway import ProviderUnavailable
+            limit_error=ProviderUnavailable(run['error'],kind=interrupted_kind)
         answer = run.get('answer')
         if not isinstance(answer, dict) or answer.get('status') not in ('answered', 'partial', 'unsupported'):
+            if limit_error is not None:raise limit_error
             return self.reject('backstop_agent', [str(run.get('error') or 'no answer')[:300]])
         if answer.get('answer_type') == 'note': answer['answer_type'] = 'note_answer'
         if answer.get('status') == 'unsupported':
             answer = {**answer, 'status': 'not_available', 'answer_type': 'unsupported', 'data_absence_established': False}
-        sqls = [c.get('sql') for c in run.get('tool_calls') or [] if c.get('sql')]
+        sqls = [c['sql'] for c in successful_sql_calls(run.get('tool_calls') or [])]
         graph = {'interpretation': self.question, 'coverage': 'supported_observation', 'unmet_requirements': [],
                  'nodes': [{'id': f'backstop_{i}', 'operation': 'sql', 'inputs': [], 'parameters': {'query': q, 'returns': 'table'},
-                            'purpose': 'Backstop analyst query (executed)'} for i, q in enumerate(sqls[-6:])]}
+                            'purpose': 'Investigator query (executed)'} for i, q in enumerate(sqls)]}
         receipt = {'route': 'backstop_agent', 'model': run.get('model'), 'new_paid_api_calls': run.get('new_paid_api_calls', 0),
-                   'backstop': {'version': run.get('version'), 'tool_calls': len(run.get('tool_calls') or []), 'seconds': run.get('seconds')}}
+                   'backstop': {'version': run.get('version'), 'tool_calls': len(run.get('tool_calls') or []), 'seconds': run.get('seconds'),
+                                'answer_reviews': run.get('answer_reviews'), 'review_stopped': run.get('review_stopped')}}
         notes = []
         try:  # the checks still run and are recorded, as annotations (never a veto at the last layer)
             misfit = shape_misfit(self.question, answer)
@@ -827,7 +1013,50 @@ class Cascade:
             pass
         if notes: answer = {**answer, 'limitations': [*(answer.get('limitations') or []), *('Check note: ' + n for n in notes)]}
         answer.setdefault('patient_ids', answer.get('patient_ids') or [])
-        result = {'answer': answer, 'results': [], 'new_paid_api_calls': 0}
+        result = {'answer': answer, 'results': [], 'new_paid_api_calls': 0,
+                  'workflow':[{'index':i,**s,'status':'planned'} for i,s in enumerate(answer.get('workflow') or [])],
+                  'investigation': {'model': run.get('model'), 'tool_calls': run.get('tool_calls') or [],
+                                    'answer_reviews': run.get('answer_reviews') or [],
+                                    'review_stopped':run.get('review_stopped'),
+                                    **({'dependency_verification':run['dependency_verification']}if run.get('dependency_verification')else{}),
+                                    'runtime_dependency':run.get('runtime_dependency'),
+                                    'runtime_pause':run.get('runtime_pause'),
+                                    'unaccepted_draft':run.get('unaccepted_draft'),
+                                    'interrupted_review_draft':run.get('interrupted_review_draft'),
+                                    'calls_known':run.get('calls_known',True),
+                                    'recovery_checkpoint':run.get('recovery_checkpoint'),
+                                    'recovery_checkpoint_unavailable':run.get('recovery_checkpoint_unavailable'),
+                                    'error':run.get('error'),
+                                    'document_reviews':run.get('document_reviews') or [],
+                                    'model_escalations':run.get('model_escalations') or [],
+                                    'model_role_transitions':run.get('model_role_transitions') or [],
+                                    'actor_prompt_receipts':run.get('actor_prompt_receipts') or [],
+                                    'prose_repairs':run.get('prose_repairs') or [],
+                                    'protocol_repairs':run.get('protocol_repairs') or [],
+                                    'guarded_continuations':run.get('guarded_continuations') or [],
+                                    'recursive_improvement':run.get('recursive_improvement')}}
+        if limit_error is not None:
+            # Stop before checks, another proposer or downstream work. Preserve
+            # only a server-owned checkpoint; the uncompiled prose stays inside
+            # it, separate from the last structurally complete displayed answer.
+            checkpoint=run.get('recovery_checkpoint')
+            if checkpoint:
+                limit_error.partial_result={**result,'question':self.question,'graph':graph,'workflow':[],
+                    'answer':{**answer,'status':'partial','verification':'unverified'},
+                    'execution_snapshot':checkpoint['source'],
+                    'request_contract':{'population':self.population},
+                    'planner_receipt':{**receipt,**self.usage()}}
+            raise limit_error
+        review = answer.get('investigation_review') or {}
+        if review and review.get('status') != 'confirmed':
+            answer = {**answer, 'verification': 'unverified', 'status': 'partial' if answer.get('status') == 'answered' else answer.get('status'),
+                      'limitations': [*(answer.get('limitations') or []), 'The final investigation review did not confirm the complete answer: ' +
+                                      str(review.get('feedback') or review.get('reason') or review.get('status'))]}
+            return self.contract_of('backstop_agent', graph, receipt, {**result, 'answer': answer})
+        if checked_in_loop:
+            answer['verification'] = 'checked'
+            receipt.update(answer_checks=final_gate, investigation_binding=final_binding)
+            return self.contract_of('backstop_agent', graph, receipt, {**result, 'answer': answer, 'answer_checks': final_gate})
         if answer.get('status') == 'not_available' or not graph['nodes']:
             # no SQL to gate (documents, governed metrics, an absence): the modality's own check (Codex review 2026-10-26). A document answer
             # needs a verified quote; a numeric answer's numbers must appear in what the tools returned; an absence needs a search behind it.
@@ -836,7 +1065,8 @@ class Cascade:
             # of the requested meaning (Codex review 2026-10-26: a list_metrics call does not establish absent mortality data; a ratio of
             # unrelated numbers is not a verified denominator), so those ship unverified and partial with the provenance recorded.
             provenance, why = modality_check(answer, run.get('tool_calls') or [])
-            answer = {**answer, 'provenance': provenance, 'verification': 'quote_verified' if provenance == 'quote_verified' else 'unverified'}
+            answer = {**answer, 'provenance': provenance, 'verification': 'system_one_reviewed' if review.get('status') == 'confirmed' else
+                      'quote_verified' if provenance == 'quote_verified' else 'unverified'}
             if answer['verification'] == 'unverified':
                 answer = {**answer, 'status': 'partial' if answer.get('status') == 'answered' else answer.get('status'),
                           'limitations': [*(answer.get('limitations') or []), 'Unverified: ' + (why or
@@ -871,22 +1101,21 @@ class Cascade:
         return self.accept(order, name, found) if found is not None else None
 
     def escalatable(self, name):
-        """Did this tier spend a Haiku attempt that failed (declined, rejected, errored) and is Claude still reachable?"""
+        """Did this tier spend a frontier attempt that failed, and is Claude still reachable?"""
         if name not in ESCALATABLE or not (self.claude_models or {}).get(name) or self.claude_down: return False
         last = next((e for e in reversed(self.log) if e['proposer'] == name and e.get('rung') != 'escalation'), None)
         return last is not None and last['outcome'] in ('no proposal', 'declined', 'rejected', 'error') and self.runnable(name)
 
     def escalate(self, order, budget):
-        """The ladder's second rung. Runs only after the whole cascade (every Haiku attempt of every tier) found nothing: each tier that spent a
-        Haiku attempt is run again on Sonnet (model_policy.escalation), in cascade order, inside the answer budget. -> accept() result or None."""
+        """Retry eligible failed tiers on the escalation rung, in cascade order, inside the answer budget."""
         if not model_policy.escalation_enabled() or self.claude_down: return None
         for name in order:
             if not self.escalatable(name): continue
             if budget.expired():
-                self.note(name, 'skipped', 'escalation to Sonnet skipped: answer budget used up', time.perf_counter()); break
+                self.note(name, 'skipped', 'frontier escalation skipped: answer budget used up', time.perf_counter()); break
             est = self.expected(name)
             if not budget.allows(est):
-                self.note(name, 'skipped', f'escalation to Sonnet skipped: {budget.remaining():.0f}s left (expected ~{est:g}s)', time.perf_counter()); continue
+                self.note(name, 'skipped', f'frontier escalation skipped: {budget.remaining():.0f}s left (expected ~{est:g}s)', time.perf_counter()); continue
             with model_policy.escalation():
                 found = self.attempt(name, self.tier_seconds(name, budget))
             if self.escalated is None: self.escalated = []
@@ -896,7 +1125,7 @@ class Cascade:
         return None
 
     def ladder_receipt(self):
-        """Which models each tier's Haiku-rung requests used, and which tiers were re-run on Sonnet (model_policy ladder)."""
+        """Resolved entry models and failed tiers retried on the current escalation rung."""
         return {'ladder': model_policy.ladder('planner'), 'first_rung_models': {k: sorted(set(v)) for k, v in (self.claude_models or {}).items()},
                 'escalated': list(self.escalated or [])}
 
@@ -941,7 +1170,7 @@ class Cascade:
         except Exception:  # noqa: BLE001 - extra evidence is optional: the check then reads the SQL alone, as for every other tier
             extra = ''
         plain = lambda: self.gaps(evidence_of(contract or {}) if contract else '\n'.join(
-            t for t in (executable_text([n.get('parameters') for n in graph.get('nodes', [])]), extra) if t))
+            t for t in (graph_evidence_text(graph), extra) if t))
         if AC.mode() == 'off': return plain()
         try:
             as_of = str((getattr(self.catalog, 'identity', None) or {}).get('as_of') or '')[:10] or None
@@ -952,7 +1181,7 @@ class Cascade:
 
     def evidence(self, contract):
         if (contract or {}).get('kind') == 'checked_graph':
-            return executable_text([n.get('parameters') for n in contract['graph'].get('nodes', [])])
+            return graph_evidence_text(contract['graph'])
         return evidence_of(contract or {})
 
     def note(self, name, outcome, detail, started):
@@ -1039,6 +1268,7 @@ class Cascade:
                 'stage_diagnostics': stage_diagnostics.attribute(self.log, answered_by=name),
                 'cascade_routing': {'system_one': self.routing, 'learned': self.learned_routing,
                                     'tier_router': getattr(self, 'tier_routing', None),
+                                    'execution_policy': getattr(self, 'execution_policy', None),
                                     'free_first': getattr(self, 'free_first_receipt', None)}}
 
     # -- typed proposals ------------------------------------------------------------------------------------------------
@@ -1088,6 +1318,10 @@ class Cascade:
 
     def tier_qwen_typed_interpreter(self):
         if os.environ.get('AGERE_LOCAL_TYPED', 'on') == 'off': return None
+        if os.environ.get('AGERE_LOCAL_TYPED_FALLBACK','on')=='off':
+            from .local_request_worker import typed_adapter
+            if typed_adapter()is None:
+                return self.reject('qwen_typed_interpreter',['No qualified typed adapter; base-model fallback is disabled'])
         from .nl2sql import MODEL_DIR
         if not MODEL_DIR.exists(): return None
         from .shared_planner import isolated_local
@@ -1242,11 +1476,28 @@ class Cascade:
         from .evidence_proposers import review_tier
         return self.graph('evidence_review', review_tier(self.stack, self.question, self.population))
     def tier_atomic_system_one(self):
-        from .atomic_questions import tier
+        from .atomic_questions import tier,output_contract_issue
+        from . import system_one_gate
+        issue=output_contract_issue(self.question)
+        if issue:return self.reject('atomic_system_one',[issue])
         def early(graph):  # System One is paid per patient: a plan the literal check will reject is declined before any call
-            gaps = self.gaps(executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
+            gaps = self.gaps(graph_evidence_text(graph))
             if gaps: raise QuestionNotUnderstood('literal pre-check before any System One call: the plan drops ' + '; '.join(gaps)[:300])
-        return self.graph('atomic_system_one', tier(self.stack, self.question, self.population, ledger=self.ledger, early_check=early))
+        def plan_review(graph,planner):
+            try:
+                review=system_one_gate.check_plan(self.question, graph, stack=self.stack, ledger=self.ledger)
+                self.spend(review['calls'],review['cost_usd'])
+                self.note('atomic_system_one','plan_coverage',json.dumps(review),self.started)
+            except Exception as exc:
+                self.note('atomic_system_one','plan_coverage_unavailable',type(exc).__name__,self.started)
+                if planner!='deterministic':
+                    raise QuestionNotUnderstood('Atomic plan coverage unavailable; continue with another existing proposer') from exc
+                return
+            if review['reject']:
+                raise QuestionNotUnderstood('System One plan coverage: '+review['label']+'; continue investigation of the complete request')
+            if planner!='deterministic'and(review.get('label')!='covers_all'or not review.get('provider')):
+                raise QuestionNotUnderstood('Atomic plan coverage is not confirmed; continue with another existing proposer')
+        return self.graph('atomic_system_one', tier(self.stack, self.question, self.population, ledger=self.ledger, early_check=early,plan_review=plan_review))
     def tier_hcc_suspecting(self):
         from .hcc_suspecting import tier
         return self.graph('hcc_suspecting', tier(self.stack, self.question, self.population))
@@ -1313,9 +1564,15 @@ def recompile(catalog, question, contract, population):
     return request_plan.compile_request(catalog, question, contract['request'], population=population)
 
 
-def execute(stack, question, graph, receipt, *, started):
+def execute(stack, question, graph, receipt, *, started,population=None,parent=None):
     """The checked proposal was executed inside the cascade; present that exact result."""
-    contract = receipt['request_contract']
+    contract = dict(receipt['request_contract'])
+    scope=None if population is None else sorted(set(population))
+    if contract.get('population') is not None and contract['population']!=scope:
+        raise request_plan.PlanError('Checked proposal population differs from the execution context')
+    if parent is not None and scope is None:
+        raise request_plan.PlanError('A saved follow-up requires its explicit input membership')
+    contract['population']=scope
     result = dict(contract['executed'])
     answer = dict(result.get('answer') or {})
     answer.setdefault('missing', [])
@@ -1325,12 +1582,170 @@ def execute(stack, question, graph, receipt, *, started):
         *(['Free-form answer: no verified question spec stands behind it; it was shipped because System One confirmed it answers the question.']
           if receipt['interpretation'].get('free_form') else [])]))
     if receipt['interpretation'].get('free_form'): answer['free_form'] = True
+    if result.get('clarification_checkpoint'):
+        answer['limitations']=list(result['answer'].get('limitations')or[])
     if answer.get('headline') is None:
         value = answer.get('count', answer.get('value'))
         answer['headline'] = str(value) if value is not None else f"{len(answer.get('table') or [])} rows"
     from .shared_planner import economics
-    return {**result, 'schema': 'shared-warehouse-planner/5', 'synthetic': True, 'question': question,
+    if scope is not None and not set(answer.get('patient_ids') or [])<=set(scope):
+        raise request_plan.PlanError('Checked proposal output escaped the selected population')
+    compact={k:v for k,v in contract.items() if k!='executed'}
+    out={**result, 'schema': 'shared-warehouse-planner/5', 'synthetic': True, 'question': question,
             'route': 'shared_planner', 'graph': graph, 'answer': answer, 'request_contract': {k: v for k, v in contract.items() if k != 'executed'},
-            'planner_receipt': {k: v for k, v in receipt.items() if k != 'request_contract'},
+            'planner_receipt': {**{k:v for k,v in receipt.items() if k!='request_contract'},'request_contract':compact},
             'new_paid_api_calls': receipt['new_paid_api_calls'], 'planning_economics': economics(receipt),
             'elapsed_seconds': time.perf_counter() - started, 'clinical_execution_authorized': False}
+    if parent is not None:
+        from ..deliverables.answer_context import supports_patient_work
+        out['planner_receipt']['origin_request_contract']=((parent.get('planner_receipt') or {}).get('origin_request_contract')
+                                                         or (parent.get('planner_receipt') or {}).get('request_contract'))
+        answer['actionable_cohort']=bool(answer.get('actionable_cohort')) and supports_patient_work(parent)
+        out['cohort_transform']={'parent_context_id':parent['id'],'input_patient_ids':scope,
+                                 'operations':['Apply checked proposal to exact saved membership']}
+        if answer.get('patient_ids'):
+            old={r['patient_id']:r for r in parent.get('patient_rows',[])}
+            out['cohort_patient_rows']=[old.get(pid,{'patient_id':pid}) for pid in answer['patient_ids']]
+    return out
+
+
+def prior_recovery_review_notes(path,context_id,context):
+    """Find exact machine annotations in the same question/source's saved lineage.
+
+    Historical reviews provide provenance only, never current acceptance. An
+    unavailable or incompatible ancestor leaves its unmatched limitations intact.
+    """
+    from ..deliverables import answer_context as A
+    import re
+    draft=((context.get('investigation')or{}).get('recovery_checkpoint')or{}).get('draft')or{}
+    wanted={v for v in draft.get('limitations')or[] if isinstance(v,str)}
+    current=context;key=context_id;seen=set();notes=[]
+    while wanted and key not in seen:
+        seen.add(key)
+        for i,review in enumerate((current.get('investigation')or{}).get('answer_reviews')or[]):
+            if not isinstance(review,dict):continue
+            text=review.get('feedback')
+            if review.get('status')=='repair' and isinstance(text,str) and text in wanted:
+                notes.append({'context_id':key,'review_index':i,'review':review});wanted.remove(text)
+        parent=(current.get('planner_receipt')or{}).get('artifact_feedback_context')
+        if not isinstance(parent,str)or not re.fullmatch(r'ANS-[0-9a-f]{24}',parent)or parent in seen:break
+        try:ancestor=A.load(path,parent,current=False,source_review=True)
+        except (ValueError,OSError,sqlite3.Error):break
+        if ancestor.get('question')!=context.get('question')or ancestor.get('source')!=context.get('source'):break
+        current=ancestor;key=parent
+    return notes
+
+
+def continue_from_artifact(stack, context_id, feedback=None):
+    """Continue one server-owned investigation, not the full planning cascade.
+
+    Re-execute literal read-only tools and review current evidence. Neither the
+    prior answer nor machine artifact criticism becomes a trusted clinical label.
+    """
+    from ..deliverables import answer_context as A
+    # This path re-investigates source objections; it does not authorize work.
+    # Keep current source/policy checks while allowing the existing read-only
+    # review mode to inspect the very assertion that needs repair.
+    context=(A.load_unfinished_for_review(stack.path,context_id)if feedback is None else
+             A.load(stack.path,context_id,current=True,source_review=True))
+    from . import cost_telemetry as T, together
+    # An artifact continuation inside an existing question keeps its owner.
+    # A direct resume owns its attempts, including downstream worker ledgers.
+    if T.CURRENT.get():
+        return _continue_artifact_context(stack,context_id,feedback,context)
+    probe=T.start(context['question'],ledger_path=together._ledger_path(stack))
+    try:
+        out=_continue_artifact_context(stack,context_id,feedback,context)
+    except Exception as exc:
+        partial=getattr(exc,'partial_result',None)
+        exc.cost_telemetry=probe.finish(partial,error=f'{type(exc).__name__}: {exc}')
+        exc.cost_receipt=T.receipt(exc.cost_telemetry,getattr(exc,'planner_receipt',None),failed=True)
+        T.record(stack.path,exc.cost_telemetry)
+        raise
+    else:
+        telemetry=probe.finish(out);T.record(stack.path,telemetry)
+        return {**out,'cost_telemetry':telemetry,'cost_receipt':T.receipt(telemetry,out)}
+    finally:
+        # Process interruption must not leak a question owner into later work.
+        if probe._token is not None:
+            T.record(stack.path,probe.finish(error='Continuation interrupted before return'))
+
+
+def _continue_artifact_context(stack,context_id,feedback,context):
+    from ..deliverables import answer_context as A
+    from . import harness_improvement as H, decision_context as D
+    question=context['question'];population=context['input_patient_ids']
+    actions=[]
+    for call in (context.get('investigation') or {}).get('tool_calls') or []:
+        if call.get('name') not in H.READ_ONLY or not isinstance(call.get('input'),dict):
+            exc=ValueError('Artifact continuation requires registered read-only native actions: '+str(call.get('name')))
+            exc.planner_receipt={'new_paid_api_calls':0,'known_api_estimate_usd':0.,'api_cost_known':True}
+            raise exc
+        actions.extend(H.recovery_actions([call]))
+    parent_key=(context.get('cohort_transform') or {}).get('parent_context_id')
+    parent=A.load(stack.path,parent_key,current=True,source_review=True) if parent_key else None
+    recovery={}
+    if feedback is None:
+        investigation=context.get('investigation') or {}
+        checkpoint=investigation.get('recovery_checkpoint')
+        if not checkpoint or checkpoint.get('source')!=context['source'] or context.get('workflow'):
+            raise ValueError('This investigation has no current unfinished draft available to resume')
+        contracts={}
+        for review in investigation.get('document_reviews') or []:
+            for name,contract in (review.get('questions') or {}).items():
+                if name in contracts and contracts[name]!=contract:raise ValueError('Saved source-field meaning changed: '+name)
+                contracts[name]=contract
+        recovery={'checkpoint':checkpoint,'origin':{'question':question,'calls':investigation['tool_calls']},
+                  'document_reviews':investigation.get('document_reviews') or [],'field_contracts':contracts or None,
+                  'prior_review_notes':prior_recovery_review_notes(stack.path,context_id,context),
+                  'verification_candidates':investigation.get('answer_reviews')or[]}
+    c=Cascade(stack,request_plan.Catalog.load(stack.path),question,population=population)
+    before={row[0] for row in c.ledger.db.execute('SELECT id FROM calls')}
+    try:
+        with H.owned_recovery(actions,question,feedback,**recovery), D.scope(question,context['source']['as_of']):
+            found=c.attempt('backstop_agent',backstop_limit())
+            if found is None:
+                raise c.provider_error or QuestionNotUnderstood('Artifact feedback investigation did not produce a checked answer')
+            contract,interpretation=c.accept(['backstop_agent'],'backstop_agent',found)
+            receipt={**c.usage(),'route':'backstop_agent','interpretation':interpretation,
+                     'request_contract':contract,'proposers':c.log,'artifact_feedback_context':context_id}
+            out=execute(stack,question,contract['graph'],receipt,started=c.started,population=population,parent=parent)
+            out=D.finalize(stack.path,out,D.current())
+        if A.source_identity(stack.path)!=context['source']:
+            raise ValueError('Source changed during artifact-feedback investigation; prior evidence retained')
+        out['execution_snapshot']=context['source']
+        return out
+    except Exception as exc:
+        usage=c.usage();added=[row for row in c.ledger.db.execute('SELECT id,status FROM calls') if row[0] not in before]
+        usage['new_paid_api_calls']=max(usage['new_paid_api_calls'],len(added))
+        if any(row[1]!='validated' for row in added):usage['api_cost_known']=False
+        exc.planner_receipt={**getattr(exc,'planner_receipt',{}),**usage,'artifact_feedback_context':context_id,'proposers':c.log}
+        from .shared_planner import economics
+        from . import evaluation
+        exc.new_paid_api_calls=usage['new_paid_api_calls']
+        exc.planning_economics=economics(exc.planner_receipt)
+        partial=getattr(exc,'partial_result',None)
+        if isinstance(partial,dict) and not evaluation.active():
+            try:
+                checkpoint=(partial.get('investigation') or {}).get('recovery_checkpoint') or {}
+                draft=checkpoint.get('draft') or {}
+                contract=partial.get('request_contract') or {}
+                if (partial.get('question')!=question or partial.get('execution_snapshot')!=context['source']
+                    or 'population' not in contract or contract['population']!=population
+                    or checkpoint.get('source')!=context['source']
+                    or (checkpoint.get('context') or {}).get('question')!=question
+                    or draft.get('status')!='partial' or checkpoint.get('draft_digest')!=H.digest(draft)
+                    or (partial.get('answer') or {}).get('status')!='partial' or partial.get('workflow')):
+                    raise ValueError('Interrupted analysis does not match the saved question, population, source and unfinished draft')
+                # Keep the original immutable answer and this request's attempts.
+                # A partial result never executes work or becomes accepted prose.
+                retained={**partial,'answer':{**partial['answer'],'verification':'unverified'},
+                    'planner_receipt':{**(partial.get('planner_receipt') or {}),**exc.planner_receipt,
+                                       'request_contract':contract},
+                    'new_paid_api_calls':exc.new_paid_api_calls,'planning_economics':exc.planning_economics}
+                exc.action_context=A.capture(stack.path,question,retained,
+                                             original_question=context.get('original_question'))
+            except (OSError,ValueError,TypeError,KeyError,sqlite3.Error) as capture_error:
+                exc.action_context_error=str(capture_error)
+        raise
+    finally:c.close()

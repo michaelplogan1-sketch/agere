@@ -4,9 +4,11 @@ Every source-pass claim and its unresolved qualifications survives unchanged.
 Full source units and old review questions remain in the immutable parent, not
 in this narrower review. Unassessed source units never become assessed by it.
 """
+from .case_synthesis import input_token_total, token_count_calls
 from pathlib import Path
 import copy, hashlib, json
 from ...contracts import digest
+from ..model_policy import claude_model
 from . import case_passes as P, case_synthesis as C, stable_reconciliation as R
 from . import source_synthesis as S, synthesis_availability as A, interpretation_recovery as recovery
 from . import linked_claim_gateway as G
@@ -27,7 +29,7 @@ def exists(path,key):return location(path,key).exists()
 
 def request(parent,row,refs,received):
     sources=row['model_context']['sources']
-    if not 1<=len(sources)<=24:raise ValueError('Linked review supports at most 24 selected records')
+    if not sources:raise ValueError('Linked review requires selected records')
     if any(v['source'].get('identity_status')!='matched' or v['source'].get('patient_id')!=row['patient_id'] for v in sources.values()):
         raise ValueError('Canonical same-patient source identity required')
     mapped=P.unit_map(row['model_context']);by_id={v['unit']['id']:v for v in mapped.values()}
@@ -46,7 +48,11 @@ def request(parent,row,refs,received):
                 citations.append(pool[token])
             claims.append([f['id'],packet['pass_number'],f['kind'],f['text'],f['unresolved'],citations]);originals.append(f)
     ids=[f['id'] for f in originals]
-    if not 1<=len(ids)<=64 or len(ids)!=len(set(ids)):raise ValueError('Unique bounded source-pass claims required')
+    # Subscription admission follows its complete request/service context
+    # boundary. A multi-group plan must retain every already-validated claim;
+    # the legacy API keeps its existing claim and byte admission limits.
+    if not ids or len(ids)!=len(set(ids)) or (G.maximum_request_bytes() is not None and len(ids)>64):
+        raise ValueError('Unique bounded source-pass claims required')
     cols=['record_id','source_table','source_system','organization_id','event_date','recorded_date','available_date','status','supersedes_record_id']
     coverage={k:parent['coverage'].get(k) for k in ('received_units','submitted_units','model_accounted_units','system_unassessed_units')}
     wire={'schema':VERSION,'stage':'saved_claims_and_exact_excerpts','synthetic':True,'question':row['parameters']['question'],
@@ -59,7 +65,7 @@ def request(parent,row,refs,received):
       'typed_source_links':parent['dependencies']['edges'],'unresolved_typed_references':parent['dependencies']['unresolved_references'],
       'scope':'All source-pass claims, unresolved qualifications and exact cited excerpts are supplied. Full source units, uncited text and historical review questions are NOT supplied; they remain in the parent. No source coverage is upgraded.',
       'quarantined_passes':len(parent.get('quarantined_source_passes',[]))}
-    body={'model':G.PersistentGateway.MODELS['claude'],'max_tokens':8192,'system':INSTRUCTIONS,'messages':[{'role':'user','content':P.context.encode(wire).decode()}],'output_config':{'format':{'type':'json_schema','schema':SCHEMA}}}
+    body={'model':claude_model(G.PersistentGateway.MODELS['claude']),'max_tokens':8192,'system':INSTRUCTIONS,'messages':[{'role':'user','content':P.context.encode(wire).decode()}],'output_config':{'format':{'type':'json_schema','schema':SCHEMA}}}
     G.validate(body)
     job_excerpts={name:{'excerpts':[v['quote'] for v in excerpts.values() if v['unit']==name]} for name in units}
     return {'body':body,'units':units,'excerpts':job_excerpts,'excerpt_pool':excerpts,'row':row,'source_records':sorted(sources),'finding_ids':ids,'original_findings':originals}
@@ -77,9 +83,20 @@ def preview(path,answer_id):
     parent,row,refs,job,key=prepare(path,answer_id)
     return {'schema':VERSION,'parent_answer_id':answer_id,'answer_id':key,'patient_id':row['patient_id'],'context_id':parent['context_id'],
       'source_claims':len(job['finding_ids']),'source_records':len(job['source_records']),'verified_excerpts':len(job['excerpt_pool']),
-      'request_bytes':P.request_bytes(job['body']),'maximum_request_bytes':G.MAX_BYTES,'maximum_input_tokens':16000,'maximum_inference_calls':1,
+      'request_bytes':P.request_bytes(job['body']),'maximum_request_bytes':G.maximum_request_bytes(),'maximum_input_tokens':None if G.maximum_request_bytes() is None else 16000,'maximum_inference_calls':1,
       'saved_answer_available':exists(path,key),'system_unassessed_units':parent['coverage'].get('system_unassessed_units',0),'new_paid_api_calls':0,
       'scope':'Review all saved claims and cited excerpts together; original full-unit interpretation and question results remain unchanged.'}
+
+def citation_batches(citations,kind):
+    """Use the immutable legacy codec without dropping current supplied evidence."""
+    anchors=[]
+    if kind=='conflicting_accounts':
+        for cite in citations:
+            if cite['unit']not in {c['unit']for c in anchors}:anchors.append(cite)
+            if len(anchors)==2:break
+    remaining=[c for c in citations if c not in anchors];room=4-len(anchors)
+    return [anchors+remaining[i:i+room]for i in range(0,len(remaining),room)]or[anchors]
+
 
 def parse(raw,job,refs):
     value=json.loads(''.join(v['text'] for v in raw.get('content',[]) if v.get('type')=='text'))
@@ -88,9 +105,27 @@ def parse(raw,job,refs):
     for f in core['findings']:
         if set(f)!={'id','kind','text','excerpt_ids','unresolved'}:raise ValueError('Invalid consolidated finding fields')
         names=f.pop('excerpt_ids')
-        if not isinstance(names,list) or not 1<=len(names)<=4 or len(names)!=len(set(names)) or any(not isinstance(n,str) or n not in job['excerpt_pool'] for n in names):raise ValueError('Unknown or duplicate excerpt')
+        # Evidence validity depends on exact supplied identities, not a four-
+        # citation display preference. Keep every unique supporting excerpt.
+        if not isinstance(names,list) or not names or len(names)!=len(set(names)) or any(not isinstance(n,str) or n not in job['excerpt_pool'] for n in names):raise ValueError('Unknown or duplicate excerpt')
         f['citations']=[{k:job['excerpt_pool'][n][k] for k in ('unit','quote')} for n in names]
-    cooked={**raw,'content':[{'type':'text','text':json.dumps(core)}]};result=R.parse(cooked,job,refs)
+    # The original source codec admits four citations per validation call. Keep
+    # its historical source/request identities unchanged: validate the complete
+    # result plus every extra citation through that SAME native parser, then
+    # restore all verified citations in their original order. Conflict batches
+    # retain two distinct original-unit anchors, so no semantic check is waived.
+    validating=copy.deepcopy(core);complete=[]
+    for i,f in enumerate(core['findings']):
+        groups=citation_batches(f['citations'],f['kind']);validating['findings'][i]['citations']=groups[0]
+        complete.append((f,groups))
+    cooked={**raw,'content':[{'type':'text','text':json.dumps(validating)}]};result=R.parse(cooked,job,refs)
+    for i,(finding,groups)in enumerate(complete):
+        validated={(c['unit'],c['quote']):c for c in result['findings'][i]['citations']}
+        for group in groups[1:]:
+            piece={'findings':[{**finding,'citations':group}],'unanswered':[],'review_steps':[]}
+            checked=R.parse({**raw,'content':[{'type':'text','text':json.dumps(piece)}]},job,refs)
+            validated.update({(c['unit'],c['quote']):c for c in checked['findings'][0]['citations']})
+        result['findings'][i]['citations']=[validated[(c['unit'],c['quote'])]for c in finding['citations']]
     if not isinstance(reviews,list) or len(reviews)!=len(job['finding_ids']):raise ValueError('Every original claim needs a disposition')
     seen=set();output_ids={f['id'] for f in result['findings']}
     for review in reviews:
@@ -136,8 +171,8 @@ def synthesize(path,answer_id,ledger,*,allow_live=False):
           'coverage':{**parent['coverage'],'reconciliation_groups':1,'cross_group_relations_assessed':True,'all_source_claims_accounted':True,'source_meaning_revalidated':False},
           'citation_context_expansions':[],
           'claim_scope':{'input_claims':len(job['finding_ids']),'cited_excerpts':len(job['excerpt_pool']),'original_claims_unchanged':True,'historical_review_questions_submitted':False,'complete_source_units_submitted':False,'canonical_identity_basis':'verified explicit source crosswalk; prose subject not inferred'},
-          'usage':[p['usage'] for p in parent['passes']]+[usage],'token_check':{'input_tokens':sum(p['token_check']['input_tokens'] for p in parent['passes'])+tokens['input_tokens']},
-          'new_paid_api_calls':int(not usage.get('cache_hit',False)),'new_token_count_calls':int(not tokens['provider_count_cached']),'cache_hit':False,
+          'usage':[p['usage'] for p in parent['passes']]+[usage],'token_check':{'input_tokens':input_token_total([p['token_check'] for p in parent['passes']] + [tokens])},
+          'new_paid_api_calls':int(not usage.get('cache_hit',False)),'new_token_count_calls':token_count_calls(tokens),'cache_hit':False,
           'limits':parent['limits']+['All saved source claims reviewed together against their cited excerpts only. Unit coverage is unchanged. Original source-pass findings are historical, not additional consolidated conclusions. Clinical accuracy is unvalidated.']}
         saved['result_digest']=digest(saved);fresh();P.atomic_write(target,saved);progress.update(status='complete',new_paid_api_calls=saved['new_paid_api_calls']);P.atomic_write(progress_path,progress);return saved
     except Exception as exc:

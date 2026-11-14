@@ -6,7 +6,7 @@ are separated before generation; test families never enter fitting/calibration.
 """
 from pathlib import Path
 from collections import Counter
-import json,math,os,time,urllib.request,urllib.error
+import json,math,os,tempfile,time,urllib.request,urllib.error
 from ...contracts import digest
 from ..gateway import BudgetLedger,PersistentGateway
 from ..economics import usage_cost
@@ -39,10 +39,12 @@ class RequestSizeLimitError(ValueError):
         super().__init__(f'Model request exceeds its {max_bytes}-byte bound ({request_bytes} bytes)')
 
 
-def _revalidate_saved(key, expected, ledger_model, out, parse, reason):
+def _revalidate_saved(key, expected, ledger_model, out, parse, reason, ledger=None):
     raw = json.loads((out/(key+'.json')).read_text())['response']
     if expected and raw.get('model') != expected: raise ValueError('Unexpected saved model revision')
     result = parse(raw)
+    from .cost_telemetry import tag
+    if ledger is not None:tag(ledger,key,reused=True)
     receipt = {'cache_hit': True, 'request_hash': key, 'offline_revalidation': reason,
                'prior_failed_reservation_preserved': True, 'new_paid_api_calls': 0,
                'model': raw.get('model'), 'usage': raw.get('usage'),
@@ -63,7 +65,7 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
         if original and original[0] == 'failed' and (out/(original_key+'.json')).exists():
             expected_original = body.get('model')
             return _revalidate_saved(original_key, expected_original, expected_original or 'preset:'+str(body.get('preset')),
-                                     out, parse, revalidation_reason)
+                                     out, parse, revalidation_reason, ledger)
     # max_bytes: a caller with a larger, deliberately bounded request (the semantic analyst's ~141K-character documented
     # semantic model plus its tool loop) raises the default REQUEST_MAX_BYTES bound explicitly.
     # Preset-routed providers (Perplexity Agent API) choose the model server-side: the ledger
@@ -77,18 +79,27 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
     if limit is not None and len(payload)>limit:raise RequestSizeLimitError(len(payload), limit)
     # `variant` separates calls whose bodies differ only in JSON key ORDER (digest sorts keys): option-order shuffling
     key=digest({'contract':'context-student/1','provider':provider,'body':body,**({'variant':variant} if variant is not None else {})})
+    key=ledger.resolve_request_key(key)
     old=ledger.db.execute('SELECT status,response FROM calls WHERE id=?',(key,)).fetchone()
-    if old and old[0]=='validated':return parse(json.loads(old[1])),{'cache_hit':True,'request_hash':key}
+    if old and old[0]=='validated':
+        from .cost_telemetry import tag
+        tag(ledger,key,reused=True)
+        return parse(json.loads(old[1])),{'cache_hit':True,'request_hash':key}
     saved=out/(key+'.json')
     if old and old[0]=='failed' and allow_failed_response_revalidation and saved.exists():
-        return _revalidate_saved(key, expected, ledger_model, out, parse, revalidation_reason)
-    if old and old[0]=='failed' and not saved.exists():
+        return _revalidate_saved(key, expected, ledger_model, out, parse, revalidation_reason, ledger)
+    if old and old[0]=='failed' and old[1] is None and not saved.exists():
         # Transport failure (timeout, 5xx) with no response: nothing deterministic was learned,
         # so a new explicit attempt is allowed. Failed parses keep their saved response and stay blocked.
-        with ledger.db:ledger.db.execute("UPDATE calls SET status='abandoned' WHERE id=? AND status='failed'",(key,))
+        key=ledger.authorize_retry(key,'Existing transport-only continuation: no provider response was saved; retain the failed reservation and issue a separate attempt')['request_hash']
+        saved=out/(key+'.json')
     endpoint,var=PersistentGateway.ENDPOINTS[provider]
     if not os.environ.get(var):raise ValueError('Missing '+var)
-    # Max 8,192 output tokens and 20KB request keeps the configured token estimate below this hold.
+    # Prove receipt storage is writable before a generation can incur usage.
+    out=Path(out);out.mkdir(parents=True,exist_ok=True)
+    with tempfile.TemporaryFile(dir=out) as probe:
+        probe.write(b'agere receipt storage preflight');probe.flush()
+    # This is an accounting reservation, not a request or output ceiling.
     ledger.reserve(key,provider,ledger_model)
     headers={'Content-Type':'application/json'}
     if provider=='claude':headers.update({'x-api-key':os.environ[var],'anthropic-version':'2023-06-01'})
@@ -108,6 +119,9 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
         (out/(key+'.json')).write_text(json.dumps({'response':raw,'receipt':receipt},indent=2))
         return result,receipt
     except Exception as e:
+        if raw is None and isinstance(getattr(e,'provider_response',None),dict):raw=e.provider_response
+        if raw is not None:
+            (out/(key+'.json')).write_text(json.dumps({'response':raw,'status':'failed'},indent=2))
         error='HTTP '+str(e.code) if isinstance(e,urllib.error.HTTPError) else type(e).__name__+': '+str(e)[:200]
         if isinstance(e,urllib.error.HTTPError):
             try:
@@ -120,7 +134,10 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
                     error+=': '+diagnostic[:600]
             except (ValueError,TypeError,AttributeError):pass
         (out/(key+'-failure.json')).write_text(json.dumps({'status':'failed','error':error,'request_hash':key,'returned_usage':raw.get('usage') if isinstance(raw,dict) else None},indent=2))
-        ledger.finish(key,error=error,seconds=time.perf_counter()-t);raise RuntimeError(error) from None
+        ledger.finish(key,response=raw,error=error,seconds=time.perf_counter()-t)
+        failure=RuntimeError(error)
+        if raw is not None:failure.provider_response=raw
+        raise failure from None
 
 
 def _compact_agent_response(raw):

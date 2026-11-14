@@ -148,7 +148,11 @@ class Fixture(unittest.TestCase):
             for clin in clinicians:
                 for k in range(40 if clin == 'drA0' else 8):
                     pid = f'p{n}'; n += 1
-                    patients[pid] = {'age_reported': 30 + (k * 7) % 50, 'sex_reported': 'F' if k % 2 else 'M'}
+                    age = 30 + (k * 7) % 50
+                    # The governed age definition uses received birth_date at
+                    # AS_OF; a feed's reported age cannot establish eligibility.
+                    patients[pid] = {'age_reported': age, 'birth_date': f'{2029-age}-01-01',
+                                     'sex_reported': 'F' if k % 2 else 'M'}
                     recs.append((pid, 'coverage', {'coverage_type': 'commercial', 'status': 'active', 'effective_start': '2028-01-01',
                                                    'event_date': '2028-01-01'}))
                     recs.append(pcp(pid, clin, practice))

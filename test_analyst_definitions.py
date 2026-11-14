@@ -75,6 +75,33 @@ class Base(unittest.TestCase):
 
 
 class Views(Base):
+    def test_owner_phenotype_matches_compiler_including_note_evidence_and_living_scope(self):
+        from clinical_core.agere.clinical.clinical_definitions import PHENOTYPES
+        self.wh.close()
+        with sqlite3.connect(self.path / 'semantic.sqlite3') as db:
+            db.executescript('''CREATE TABLE note_fact(patient_id TEXT, fact_type TEXT, negated INTEGER,
+                experiencer TEXT, value REAL, event_date TEXT);
+                INSERT INTO note_fact VALUES ('B','ejection_fraction',0,'patient',35,'2029-01-01'),
+                  ('C','ejection_fraction',1,'patient',30,'2029-01-01'),
+                  ('D','ejection_fraction',0,'patient',30,'2029-01-01'),
+                  ('E','ejection_fraction',0,'family',30,'2029-01-01'),
+                  ('F','ejection_fraction',0,'patient',45,'2029-01-01');''')
+            for pid in 'ABCDEFG':
+                code = 'I50.22' if pid in 'AG' else 'I50.9'
+                db.execute('INSERT INTO condition VALUES (?,?,?,?,?,?,?,?)',
+                           ('hf'+pid,pid,'conditions','heart_failure',code,'2028-01-01',1,None))
+        self.wh = SA.SemanticWarehouse(self.path / 'semantic.sqlite3');self.addCleanup(self.wh.close)
+        names = self.wh.define(AS_OF)
+        got = self.q('SELECT * FROM phenotype_hfref ORDER BY patient_id')
+        self.assertEqual([r['patient_id'] for r in got], ['A','B'])
+        macro = PHENOTYPES['hfref']['build'](self.wh.columns)
+        expected = self.q('SELECT h.* FROM '+macro+' h JOIN living_patient l USING(patient_id) ORDER BY patient_id')
+        self.assertEqual(got, expected)
+        docs = AD.definitions_doc(names)
+        self.assertIn('phenotype_hfref', docs)
+        self.assertIn(PHENOTYPES['hfref']['disclosure'], docs)
+        self.assertIn('coded condition membership only', docs)
+
     def test_views_exist_on_the_readonly_connection_and_are_never_written_to_the_stack(self):
         created = self.wh.define(AS_OF)
         self.assertEqual(set(created), set(AD.VIEW_NAMES))
@@ -118,6 +145,16 @@ class Views(Base):
                          self.scoped('How many patients have a potassium above 5.5?',
                                      "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'potassium' AND value_canonical > 5.5"))
 
+    def test_recorded_condition_evidence_keeps_historical_subjects_with_the_same_rules(self):
+        evidence = self.q("SELECT * FROM condition_evidence WHERE concept='diabetes' ORDER BY patient_id")
+        self.assertEqual([r['patient_id'] for r in evidence], ['A','B','C','D','F','G'])
+        members = self.q("SELECT * FROM condition_member WHERE concept='diabetes' ORDER BY patient_id")
+        self.assertEqual(members, [r for r in evidence if r['patient_id'] not in ('D','G')])
+        self.assertEqual(self.q("SELECT patient_id FROM condition_evidence WHERE concept='hyperlipidemia'"), [])
+        self.assertEqual(self.q("SELECT patient_id FROM condition_evidence WHERE concept='copd' ORDER BY patient_id"),
+                         [{'patient_id':'A'},{'patient_id':'D'}])
+        self.assertNotIn('E', [r['patient_id'] for r in evidence])  # encounter diagnosis alone is not canonical evidence
+
     def test_window_and_medicare_views(self):
         row = self.q('SELECT start_exclusive, end_inclusive FROM last_12_months')[0]
         self.assertEqual((row['start_exclusive'], row['end_inclusive']), ('2029-05-27', AS_OF))
@@ -138,7 +175,9 @@ class Views(Base):
 
     def test_the_documentation_leads_with_the_views(self):
         docs, ids = AD.agere_context(self.wh, ('BASE DOCS', frozenset({'ex1'})))
-        self.assertTrue(docs.startswith('AGERE DEFINITION VIEWS: ALWAYS BUILD ON THESE'))
+        self.assertTrue(docs.startswith('AGERE DEFINITION VIEWS: use the registered evidence and membership definitions'))
+        self.assertIn('Evidence is separate from current membership', docs)
+        self.assertNotIn('EVERY count or list', docs)
         self.assertTrue(docs.endswith('BASE DOCS'))
         for name in AD.VIEW_NAMES: self.assertIn(name, docs)
         self.assertEqual(ids, frozenset({'ex1'}))
@@ -180,7 +219,10 @@ class Analyze(Base):
 
     def test_competitor_baseline_documentation_is_unchanged_by_this_module(self):
         self.assertNotIn('DEFINITION VIEWS', SA.SEMANTIC_RULES + SA.CONTRACT)
-        self.assertNotIn('living_patient', SA.SEMANTIC_RULES + SA.CONTRACT)
+        # The later shared decision context mentions living_patient in its
+        # event-scope rule. Only this module's detailed TEMP-view documentation
+        # is excluded from definitions=False, not the owner's shared defaults.
+        self.assertNotIn('- living_patient (all patient columns + age):', SA.SEMANTIC_RULES + SA.CONTRACT)
 
 
 class Arithmetic(Base):

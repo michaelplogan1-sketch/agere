@@ -47,7 +47,7 @@ CONTRACT = {'inputs': ['optional earlier_set'],
             'meaning': 'Doubly robust off-policy value (engagement rate per contact) of candidate outreach policies on the logged '
                        'outreach_attempts decisions; estimated logging propensities (multinomial logistic on risk score, attempt, program; '
                        'not received), cross-fitted reward model, IPS/SNIPS/DM/DR/DR-shrinkage with patient-cluster bootstrap 95% intervals; '
-                       'recommendation only when the DR gain over the logged policy has a positive lower bound.'}
+                       'positive DR lower bounds identify exploratory candidates only; learned target policies require independent validation before recommendation.'}
 NATIVE = ('value',)
 NEEDS_STACK = False
 
@@ -130,16 +130,24 @@ def _fold(pid, k=5):
 def crossfit(X, a, r, pids, k_actions, folds=5):
     """-> (propensity matrix P (n x K), reward matrix Q (n x K)), each row scored by models fitted without its patient fold."""
     n = len(a)
-    P = np.full((n, k_actions), 1.0 / k_actions); Q = np.full((n, k_actions), r.mean() if n else 0.0)
-    fold = np.array([_fold(p, folds) for p in pids])
+    P = np.full((n, k_actions), np.nan); Q = np.full((n, k_actions), np.nan)
+    groups=sorted(set(pids),key=lambda p:hashlib.sha256(str(p).encode()).hexdigest())
+    assigned={p:i%max(1,min(folds,len(groups))) for i,p in enumerate(groups)}
+    fold = np.array([assigned[p] for p in pids])
     for f in range(folds):
         test, train = fold == f, fold != f
-        if not test.any() or train.sum() < 5: continue
+        if not test.any() or not train.any(): continue
         present = np.unique(a[train])
+        # Sparse folds still use only independent training observations. An
+        # unseen action stays unsupported rather than borrowing held-out rewards.
+        if train.sum()<5:
+            P[test]=np.bincount(a[train],minlength=k_actions)/train.sum()
+            for j in present:Q[test,j]=r[train][a[train]==j].mean()
+            continue
         W = _softmax_fit(X[train], a[train], k_actions)
         Pf = _softmax(X[test], W)
         missing = [j for j in range(k_actions) if j not in present]
-        if missing: Pf[:, missing] = 1e-3; Pf /= Pf.sum(axis=1, keepdims=True)
+        if missing: Pf[:, missing] = 0; Pf /= Pf.sum(axis=1, keepdims=True)
         P[test] = Pf
         for j in range(k_actions):
             m = a[train] == j
@@ -252,7 +260,15 @@ def evaluate(rows, p):
     X, features = design(rows)
     a = np.array([actions.index(x['channel']) for x in rows]); r = np.array([float(x['responded']) for x in rows])
     pids = [x['patient_id'] for x in rows]
+    if len(set(pids))<2:
+        return {'status':'insufficient_independent_patients','decisions':len(rows),'patients':len(set(pids)),
+                'actions':actions,'logged_value':float(r.mean()),'policies':[],'recommendation':None,
+                'reason':'Repeated contacts from one patient cannot establish an independent policy comparison.'}
     P, Q = crossfit(X, a, r, pids, len(actions))
+    if not np.isfinite(P).all() or not np.isfinite(Q).all():
+        return {'status':'insufficient_fold_support','decisions':len(rows),'patients':len(set(pids)),
+                'actions':actions,'logged_value':float(r.mean()),'policies':[],'recommendation':None,
+                'reason':'Some patient-held-out folds lack independent training or action support; observed response summaries are retained.'}
     th = _thompson(rows, p['segment_by'], p['seed']) if 'thompson' in p['policies'] else None
     logged_value = float(r.mean())
     out_rows, per_i = [], {}
@@ -289,8 +305,11 @@ def evaluate(rows, p):
     out_rows.sort(key=lambda x: -x['dr'])
     return {'status': 'evaluated', 'decisions': len(rows), 'patients': len(set(pids)), 'actions': actions, 'features': features,
             'logged_value': round(logged_value, 4), 'policies': out_rows,
-            'recommendation': ({'policy': rec['policy'], 'dr': rec['dr'], 'gain': rec['dr_gain_vs_logged'], 'gain_ci95': rec['dr_gain_ci95']}
-                               if rec else None),
+            'recommendation': None,
+            'candidate_for_independent_validation':({'policy':rec['policy'],'dr':rec['dr'],'gain':rec['dr_gain_vs_logged'],
+                                                    'gain_ci95':rec['dr_gain_ci95']} if rec else None),
+            'policy_validation':{'status':'exploratory','independently_confirmed':False,
+                                'reason':'Adaptive target policies and winner selection use this log; reported intervals hold fitted models fixed.'},
             'propensity_source': 'estimated (multinomial logistic on risk score, attempt, program; logged propensities not received)',
             'period': {'start': rows[0]['date'], 'end': rows[-1]['date']}}
 
@@ -334,7 +353,9 @@ def check_recommendation(db, keep=None, as_of=None, segment_by='none', seed=0, b
     by = {x['policy']: x for x in core['policies']}
     return {'status': 'evaluated', 'version': VERSION, 'decisions': core['decisions'], 'logged_value': core['logged_value'],
             'policies': {k: {f: by[k].get(f) for f in ('dr', 'dr_ci95', 'dr_gain_vs_logged', 'dr_gain_ci95', 'ips', 'snips')} for k in by},
-            'recommendation': core['recommendation'], 'propensity_source': core['propensity_source']}
+            'recommendation': core['recommendation'], 'propensity_source': core['propensity_source'],
+            'candidate_for_independent_validation':core.get('candidate_for_independent_validation'),
+            'policy_validation':core.get('policy_validation')}
 
 
 def describe_check(c):
@@ -345,13 +366,13 @@ def describe_check(c):
     text = (f"Off-policy check before recommending (doubly robust, estimated propensities): the Thompson policy would have engaged "
             f"{t.get('dr', 0):.1%} of contacts vs {c['logged_value']:.1%} logged" + (f" (gain 95% CI {ci[0]:+.1%} to {ci[1]:+.1%})" if ci else ''))
     rec = c.get('recommendation')
-    text += (f"; {rec['policy']} demonstrably beats the logged policy" if rec else '; no candidate policy demonstrably beats what was done, so '
-             'the split above is exploration, not a proven improvement')
+    text += '; policy selection remains exploratory and requires independent validation before changing outreach practice'
     return text
 
 
 def headline(r):
     if r['status'] != 'evaluated':
+        if r.get('reason'):return r['reason']+f" Observed {r['decisions']} contacts from {r.get('patients',0)} patients."
         return (f"Off-policy evaluation needs at least 20 logged outreach decisions across two or more channels; found {r['decisions']} "
                 f"({', '.join(r.get('actions') or []) or 'no channels'})")
     parts = [f"{x['policy']} {x['dr']:.1%}" + (f" (95% CI {x['dr_ci95'][0]:.1%}-{x['dr_ci95'][1]:.1%})" if x.get('dr_ci95') else '')
@@ -363,15 +384,16 @@ def headline(r):
         text += (f". Recommend {rec['policy']}: DR gain {rec['gain']:+.1%} (95% CI {rec['gain_ci95'][0]:+.1%} to {rec['gain_ci95'][1]:+.1%}) "
                  'over the logged policy')
     else:
-        text += '. No candidate policy has a DR gain whose 95% lower bound is above zero: none is recommended over the logged policy'
+        text += '. These are exploratory estimates; independent target-policy validation is required before recommending a change.'
     return text
 
 
 def answer(report, plan, question):
-    partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+    partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or report['status']!='evaluated'
     return {'status': 'partial' if partial else 'answered', 'answer_type': 'table', 'table': report['policies'],
             'count': len(report['policies']), 'patient_ids': report['patient_ids'], 'value': headline(report) + '.',
-            'method': report['method'], 'limitations': report['assumptions'], 'membership_role': 'evaluated',
+            'method': report['method'], 'limitations': [*report['assumptions'],
+                'Target-policy selection is exploratory; cross-fitted nuisance estimates and conditional bootstrap intervals do not independently validate a learned policy.'], 'membership_role': 'evaluated',
             'definitions': [{'term': 'policy value', 'basis': 'expected engagement (outcome = engaged) per outreach contact'},
                             {'term': 'doubly robust', 'basis': 'direct-method estimate plus importance-weighted residual correction'}],
             'overall': {'policy_evaluation': {k: report.get(k) for k in ('logged_value', 'recommendation', 'propensity_source', 'decisions', 'actions')}}}

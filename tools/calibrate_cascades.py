@@ -26,8 +26,10 @@ Calibration data (each row: tier, score, error, group, source, provenance):
             definition; a variant the family declines is skipped (the route did not claim it).
   therapy   tools/calibration/data/therapy_barrier_labels.jsonl (reference = claude-opus-5-5 label).
 
-Split: by a hash of each row's group (one trusted definition / one question); 70% calibration, 30% held-out evaluation;
-blind rows evaluation-only. A tier is certified only when Learn-then-Test certifies a threshold on its calibration part and
+Split: by a hash of each row's group (one trusted definition / one question); 70% calibration, 30% evaluation.
+One label/score-independent, hash-selected representative per group enters the binomial tests. Repeated wordings are
+retained in the row audit, not counted as independent observations. Any blind member makes its whole group evaluation-only.
+Unresolved reference labels are not negative supervision. A tier is certified only when Learn-then-Test certifies a threshold on its calibration part and
 the held-out part does not refute alpha (one-sided binomial test at delta). Tiers with too little data stay
 "uncalibrated" (today's behaviour). Synthetic data only.
 """
@@ -50,7 +52,7 @@ THERAPY_LABELS = DATA / 'therapy_barrier_labels.jsonl'
 GOLD = ROOT / 'docs' / 'agere' / 'gold10'
 SLUG = 'pilot-native-v2-12'
 CAL_SHARE = 0.7
-VERSION = 'calibrate-cascades/1'
+VERSION = 'calibrate-cascades/2'
 
 
 def part(group):
@@ -333,37 +335,45 @@ def collect_bench():
 
 
 # ---- therapy tiers ------------------------------------------------------------------------------------------------------
-def therapy_rows(path=THERAPY_LABELS):
-    """Per-tier (score, error) rows from the labelled candidates. Reference = Claude's label at row level ('unknown' counts as
-    no barrier: neither produces a therapy_barrier row); an error = a different row-level label.
+def therapy_rows(path=None, *, audit=None):
+    """Per-tier (score, error) rows with a settled reference label.
+
+    Unknown/missing references cannot establish either a barrier or its absence and never supervise a certificate.
+    A student's unknown is an abstention, not an agreed negative. These are reference-label comparisons, not clinical truth.
     tier1_rules: every rule-decided candidate (score = rule confidence); tier2_classifier: candidates the rules left open
     (score = classifier probability of its label); tier3_jev / tier3_perplexity: candidates the rules left open (the
     leftover population), score = provider probability of its label ('unknown' answers are never accepted)."""
-    if not Path(path).exists(): return []
+    path = Path(path or THERAPY_LABELS)
+    if not path.exists(): return []
     rows = []
-    row_level = lambda l: 'no_barrier' if l == 'unknown' else l  # 'unknown' and no_barrier both produce no barrier row
-    for line in Path(path).read_text().splitlines():
+    for line in path.read_text().splitlines():
         if not line.strip(): continue
         c = json.loads(line)
-        ref = row_level((c['labels'].get('claude') or {}).get('label'))
-        if ref is None: continue
+        ref = (c['labels'].get('claude') or {}).get('label')
+        if ref in (None, 'unknown'):
+            if audit is not None:
+                key = 'missing_reference' if ref is None else 'unresolved_reference'
+                audit[key] = audit.get(key, 0) + 1
+            continue
         g = 'tb:' + c['case_id']
         base = {'group': g, 'item': c['case_id'], 'source': 'therapy_labels', 'reference': ref}
         if c['tier'] == 1 and c['decided_by'] == 'rules':
-            rows.append({**base, 'tier': 'tier1_rules', 'score': c.get('confidence') if c.get('confidence') is not None else 1.0,
-                         'error': row_level(c['label']) != ref, 'label': c['label']})
+            label = c['label']
+            rows.append({**base, 'tier': 'tier1_rules', 'score': -1.0 if label in (None, 'unknown') else
+                         c.get('confidence') if c.get('confidence') is not None else 1.0,
+                         'error': label != ref, 'label': label})
             continue
         if c.get('classifier_label') is not None and c.get('classifier_probability') is not None:
             contradicted = c.get('student_assertion') in ('negated', 'other_person', 'retracted') and (c.get('student_probability') or 0) >= 0.5
             label = c['classifier_label']
-            score = 0.0 if (contradicted and label != 'no_barrier') else c['classifier_probability']
-            rows.append({**base, 'tier': 'tier2_classifier', 'score': score, 'error': row_level(label) != ref, 'label': label})
+            score = -1.0 if label == 'unknown' else 0.0 if (contradicted and label != 'no_barrier') else c['classifier_probability']
+            rows.append({**base, 'tier': 'tier2_classifier', 'score': score, 'error': label != ref, 'label': label})
         for prov, tier in (('jev', 'tier3_jev'), ('perplexity', 'tier3_perplexity')):
             got = c['labels'].get(prov) or {}
             if not got: continue
             label, p = got.get('label'), got.get('probability')
-            rows.append({**base, 'tier': tier, 'score': -1.0 if label == 'unknown' or p is None else float(p),
-                         'error': row_level(label) != ref, 'label': label})
+            rows.append({**base, 'tier': tier, 'score': -1.0 if label in (None, 'unknown') or p is None else float(p),
+                         'error': label != ref, 'label': label})
     return rows
 
 
@@ -390,25 +400,67 @@ def refutes(test, alpha, delta):
     return bool(n) and k > 0 and (1 - binomial_cdf(k - 1, n, alpha)) < delta
 
 
+def independent_rows(rows):
+    """One prespecified representative per independent source group, selected without scores or labels.
+
+    The certificate's population is these group-weighted representatives, not every wording. Other variants remain
+    diagnostic evidence. A group identifier must encode all known shared source/patient/family dependencies; hashing
+    does not establish that different groups are independent. Replicated or reordered rows cannot add sample size.
+    """
+    groups = defaultdict(list)
+    for row in rows:
+        group = row.get('group')
+        if not isinstance(group, str) or not group.strip():
+            raise ValueError('Calibration needs an explicit independent source group')
+        groups[group].append(row)
+    result = []
+    for group, members in sorted(groups.items()):
+        observations = {}
+        for row in members:
+            identity = json.dumps([row.get('tier'), group, row.get('source'), row.get('item'), row.get('question')],
+                                  sort_keys=True, separators=(',', ':'))
+            key = hashlib.sha256(('cascade-representative/1|' + identity).encode()).hexdigest()
+            prior = observations.get(key)
+            if prior is not None and (prior.get('score'), prior.get('error')) != (row.get('score'), row.get('error')):
+                raise ValueError('Conflicting calibration outcomes for the same observation require review')
+            observations[key] = row
+        selected = dict(observations[min(observations)])
+        selected['blind'] = any(r.get('blind') for r in members)
+        result.append(selected)
+    return result
+
+
 def fit_all(alpha=C.DEFAULT_ALPHA, delta=C.DEFAULT_DELTA, write=False, out=None):
     rows = [json.loads(l) for l in ROUTE_SET.read_text().splitlines() if l.strip()] if ROUTE_SET.exists() else []
-    rows += therapy_rows()
+    reference_audit = {}
+    rows += therapy_rows(audit=reference_audit)
+    blind_groups = {r['group'] for r in rows if r.get('blind')}
     by_tier = defaultdict(list)
     for r in rows:
-        if r.get('score') is None: continue
-        by_tier[r['tier']].append(r)
+        if type(r.get('error')) is not bool:
+            raise ValueError('An unresolved outcome cannot enter correctness calibration')
+        # Missing scores remain abstentions before representative selection; dropping them would make selection
+        # depend on score availability. Their identity participates just like every other settled-reference case.
+        by_tier[r['tier']].append({**r, 'score': -1.0 if r.get('score') is None else r['score'],
+                                  'unscored': r.get('score') is None,
+                                  'blind': bool(r.get('blind') or r['group'] in blind_groups)})
     records = []
     for tier in C.ROUTE_TIERS + C.THERAPY_TIERS:
-        rs = by_tier.get(tier, [])
+        raw = by_tier.get(tier, [])
+        rs = independent_rows(raw)
         cal = [r for r in rs if not r.get('blind') and part(r['group']) == 'cal']
         test = [r for r in rs if not r.get('blind') and part(r['group']) == 'test']
         blind = [r for r in rs if r.get('blind')]
         scores = [r['score'] for r in cal]
         grid = sorted({s for s in scores if s >= 0}) or None
         data = {'labelled': len(rs), 'calibration': len(cal), 'heldout': len(test), 'blind': len(blind),
-                'sources': dict(Counter(r['source'] for r in rs)), 'errors_all': sum(r['error'] for r in rs)}
+                'sources': dict(Counter(r['source'] for r in rs)), 'errors_all': sum(r['error'] for r in rs),
+                'sampling': 'one label/score-independent hash-selected representative per independent source group',
+                'raw_rows': len(raw), 'raw_errors': sum(r['error'] for r in raw),
+                'unscored_rows': sum(r.get('unscored', False) for r in raw),
+                'reference_exclusions': reference_audit}
         rec = C.fit(tier, scores, [r['error'] for r in cal], alpha=alpha, delta=delta, grid=grid, data=data,
-                    score_definition=SCORE_DEFS.get(tier, 'route-level (1.0 for every claim): the certificate covers all of the route\'s claims'))
+                    score_definition=SCORE_DEFS.get(tier, 'route-level (1.0 for every claim); qualification applies to the declared representative population'))
         lam = rec['threshold']
         rec['heldout'] = C.evaluate([r['score'] for r in test], [r['error'] for r in test], lam, delta)
         rec['blind_test'] = C.evaluate([r['score'] for r in blind], [r['error'] for r in blind], lam, delta)
@@ -437,7 +489,9 @@ def fit_all(alpha=C.DEFAULT_ALPHA, delta=C.DEFAULT_DELTA, write=False, out=None)
               f"heldout {t['errors_accepted']}/{t['n_accepted']} of {t['n']} cov {t['coverage']} ub {t['error_upper_bound']}"
               + ('' if rec['calibrated'] else f" | {rec.get('reason', '')[:160]}"))
     meta = {'calibrator': VERSION, 'calibration_sets': {'routes': str(ROUTE_SET.relative_to(ROOT)), 'therapy': str(THERAPY_LABELS.relative_to(ROOT))},
-            'split': {'calibration_share': CAL_SHARE, 'group': 'one trusted definition / question / candidate', 'blind': 'bench heldout* first runs, evaluation only'}}
+            'split': {'calibration_share': CAL_SHARE, 'group': 'one trusted definition / question / candidate',
+                      'sampling': 'one prespecified representative per independent group; exchangeability to that population remains an assumption',
+                      'blind': 'groups with any blind member are evaluation only'}, 'reference_exclusions': reference_audit}
     report = therapy_report(records, summary_path=THERAPY_LABELS.with_name('therapy_barrier_reader_summary.json'))
     if report:
         meta['therapy_cascade'] = report
@@ -459,13 +513,21 @@ def therapy_report(records, summary_path=None, ledger_path=None):
                          float('inf') if recs.get(t, {}).get('decision') == 'defer' else fb)
     t1, t2, tj, tp = thr('tier1_rules', None), thr('tier2_classifier', None), thr('tier3_jev', TB.TYPED_ACCEPT), thr('tier3_perplexity', TB.TYPED_ACCEPT)
     cands = [json.loads(l) for l in THERAPY_LABELS.read_text().splitlines() if l.strip()]
-    stats = {k: {'decided': 0, 'errors': 0, 'reached': 0} for k in ('tier1_rules', 'tier2_classifier', 'tier3_jev', 'tier3_perplexity', 'tier3_claude')}
+    stats = {k: {'decided': 0, 'errors': 0, 'reached': 0, 'reference_compared': 0,
+                 'unresolved_reference': 0, 'abstained': 0}
+             for k in ('tier1_rules', 'tier2_classifier', 'tier3_jev', 'tier3_perplexity', 'tier3_claude')}
     for c in cands:
-        rl = lambda l: 'no_barrier' if l == 'unknown' else l
-        ref = rl((c['labels'].get('claude') or {}).get('label'))
+        ref = (c['labels'].get('claude') or {}).get('label')
         def decide(tier, label):
+            if label in (None, 'unknown'):
+                stats[tier]['abstained'] += 1
+                return
             stats[tier]['decided'] += 1
-            stats[tier]['errors'] += int(ref is not None and rl(label) != ref)
+            if ref in (None, 'unknown'):
+                stats[tier]['unresolved_reference'] += 1
+            else:
+                stats[tier]['reference_compared'] += 1
+                stats[tier]['errors'] += int(label != ref)
         stats['tier1_rules']['reached'] += 1
         if c['tier'] == 1 and c['decided_by'] == 'rules' and (t1 is None or (c.get('confidence') or 0) >= t1):
             decide('tier1_rules', c['label']); continue
@@ -490,7 +552,7 @@ def therapy_report(records, summary_path=None, ledger_path=None):
     for k, v in stats.items():
         v['coverage_of_all'] = round(v['decided'] / n, 4) if n else None
         v['coverage_of_reached'] = round(v['decided'] / v['reached'], 4) if v['reached'] else None
-        v['error_vs_claude'] = round(v['errors'] / v['decided'], 4) if v['decided'] else None
+        v['error_vs_claude'] = round(v['errors'] / v['reference_compared'], 4) if v['reference_compared'] else None
     summary = json.loads(Path(summary_path).read_text()) if summary_path and Path(summary_path).exists() else {}
     units = summary.get('text_units')
     led = json.loads(THERAPY_LABELS.with_suffix('.ledger.json').read_text()) if THERAPY_LABELS.with_suffix('.ledger.json').exists() else {}
@@ -511,7 +573,8 @@ def therapy_report(records, summary_path=None, ledger_path=None):
                 'basis': 'measured labelling-run ledger cost per case (Jev, Perplexity); Claude = reader tier3_estimate for its own body'}
     show = lambda v: 'deferred (not certified)' if v == float('inf') else v
     return {'thresholds_in_force': {'tier1_rules': show(t1), 'tier2_classifier': show(t2) if t2 is not None else f'hand-set {TB.TIER2_ACCEPT}/{TB.TIER2_REJECT}',
-                                    'tier3_jev': show(tj), 'tier3_perplexity': show(tp)}, 'tiers': stats, 'cost': cost}
+                                    'tier3_jev': show(tj), 'tier3_perplexity': show(tp)}, 'tiers': stats, 'cost': cost,
+            'qualification': 'Agreement with settled reference labels only; unresolved references are ungraded, not correct negatives. This is not independent clinical truth.'}
 
 
 def main(argv=None):

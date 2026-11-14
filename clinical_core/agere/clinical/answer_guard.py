@@ -1244,7 +1244,8 @@ class PendingCheck:
         self.route = effective_route(receipt)
         self._answer = Future()
         live = bool(getattr(stack, 'allow_live', False)) and ledger is not None
-        self.future = _pool().submit(self._run, stack, question, receipt, ledger, profile, hosted or hosted_sql, live)
+        from .cost_telemetry import inherit_context
+        self.future = _pool().submit(inherit_context(self._run), stack, question, receipt, ledger, profile, hosted or hosted_sql, live)
 
     def _primary(self):
         try:  # never wait for a primary answer that would arrive after the deadline anyway
@@ -1316,7 +1317,8 @@ def start(stack, question, graph, receipt, *, ledger=None, profile=None, hosted=
 def _bounded(fn, deadline):
     """Run fn() in the worker pool; -> (done, value). Never waits past the deadline (and starts nothing once it has passed)."""
     if deadline - time.perf_counter() <= 0: return False, None
-    fut = _pool().submit(fn)
+    from .cost_telemetry import inherit_context
+    fut = _pool().submit(inherit_context(fn))
     try:
         return True, fut.result(timeout=max(0.0, deadline - time.perf_counter()))
     except FutureTimeout:

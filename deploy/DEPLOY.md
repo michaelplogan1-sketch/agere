@@ -1,5 +1,24 @@
 # Deploying hosted Agere
 
+**Current status (November 13): ready to deploy as a synthetic-data demonstration; not a qualified customer release.**
+The hosted server now includes **Ask**: a signed-in user's question goes through the tiered answering stack (saved
+recipes, built-in recipes, System One, the small model, a frontier-written recipe, then a bounded frontier takeover)
+over the synthetic demonstration data. This was run end to end on the workstation through this same server code
+(sign-in, CSRF, usage and audit) with the subscription transport. The paid-key transport used on the server
+(`AGERE_CLAUDE_TRANSPORT=api`) is covered by a model-free test only: its first live call happens on the server, so run
+the smoke test in step 5 before sharing the address. No real patient data; see the data rule below.
+
+## The short version (owner's checklist)
+
+1. Rent a Linux server (Ubuntu 24.04, 4 vCPU, 16 GB memory, 100 GB disk; about $50-100 a month at Hetzner, DigitalOcean
+   or AWS Lightsail). Install Docker (`curl -fsSL https://get.docker.com | sh`).
+2. Point a name at it: an `A` record such as `app.physicianbuilders.com` to the server's address (in the DNS settings
+   where the domain is registered; the existing Vercel site at the main address is not touched).
+3. On the server: clone the repository, `cd deploy`, `cp .env.example .env`, fill in the domain, a new
+   `AGERE_SECRET_KEY`, the Anthropic key and the two System One keys, then `docker compose up -d --build`.
+4. From the workstation: `deploy/send_demo_data.sh user@server` (copies the 9 GB synthetic data and learned recipes).
+5. Create the first login (step 4 below), sign in at `https://<name>/`, and ask the five example questions.
+
 Two containers: `agere` (serve_hosted.py on :8080, internal only) and `caddy` (TLS on 80/443, reverse proxy).
 All state lives in the `agere-data` volume mounted at `/data`:
 
@@ -40,7 +59,7 @@ Caddy needs it resolving before first start to get the certificate.
 git clone <repo> agere && cd agere/deploy
 cp .env.example .env
 python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"   # -> AGERE_SECRET_KEY
-$EDITOR .env          # AGERE_DOMAIN, AGERE_PUBLIC_URL, AGERE_SECRET_KEY, ANTHROPIC_API_KEY
+$EDITOR .env          # AGERE_DOMAIN, AGERE_PUBLIC_URL, AGERE_SECRET_KEY, ANTHROPIC_API_KEY, TYPESAFE_API_KEY, PERPLEXITY_API_KEY
 chmod 600 .env
 docker compose up -d --build
 docker compose ps     # agere should turn "healthy"
@@ -107,7 +126,7 @@ Logs rotate at 20 MB x 5 files per container. App audit events (logins, key use,
 
 ## Key rotation
 
-- **ANTHROPIC_API_KEY**: edit `.env`, then `docker compose up -d agere`.
+- **ANTHROPIC_API_KEY** (hosted only): replace it in `.env` and `docker compose up -d agere`. Keep a monthly limit on it in the Anthropic console.
 - **AGERE_SECRET_KEY** (credential encryption): changing it makes existing stored credentials unreadable. Plan it:
   note which orgs have stored warehouse credentials, set the new key in `.env`, `docker compose up -d agere`, and have
   each org admin re-enter its credentials. Keep the old key with the matching backups.

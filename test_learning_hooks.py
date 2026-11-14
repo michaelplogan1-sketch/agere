@@ -53,6 +53,24 @@ class Hooks(unittest.TestCase):
         self.assertEqual((rows[0]['status'], rows[0]['family'], rows[0]['proposer'], rows[0]['paid']), ('ok', 'traffic', 'typed_decider', True))
         self.assertEqual(rows[0]['provenance']['tables'], ['patient'])
 
+    def test_disabled_model_updates_keep_machine_outcomes_without_fitting(self):
+        with mock.patch.dict(os.environ,{'AGERE_COMPONENT_LEARNING':'off'}),mock.patch('clinical_core.agere.clinical.component_learning.run_plan')as fit:
+            r=H.after_answer(self.stack,'Review the unresolved patient evidence',cascade_result(status='partial'))
+        observation=r['components']['component_learning']
+        self.assertEqual(observation['status'],'recorded');self.assertFalse(observation['eligible'])
+        self.assertEqual(observation['source_kind'],'machine_observation');fit.assert_not_called()
+
+    def test_failure_is_retained_as_ineligible_machine_feedback_when_updates_are_off(self):
+        from clinical_core.agere.clinical import component_learning as C
+        with mock.patch.dict(os.environ,{'AGERE_COMPONENT_LEARNING':'off'}),mock.patch.object(C,'run_plan')as fit:
+            H.after_failure(self.stack,'Review failed source evidence',ValueError('Source identity changed'))
+        with C.database(C.root_for(self.stack.path))as db:
+            rows=[json.loads(r[0])for r in db.execute('SELECT payload FROM component_observations')]
+        self.assertEqual(len(rows),1);self.assertEqual(rows[0]['status'],'failed')
+        self.assertFalse(rows[0]['eligible']);self.assertEqual(rows[0]['source_kind'],'machine_observation')
+        self.assertEqual(rows[0]['accepted_labels'],[]);fit.assert_not_called()
+        self.assertEqual(self.traffic('gaps')[0]['status'],'error')
+
     def test_replays_are_not_saved_under_new_wording(self):
         for proposer in sorted(H.REPLAYS):
             r = H.after_answer(self.stack, f'question via {proposer}', cascade_result(proposer, paid=0))

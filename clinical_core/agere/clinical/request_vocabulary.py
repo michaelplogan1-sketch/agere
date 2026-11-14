@@ -230,10 +230,20 @@ def concept_sql(expr, compiler, scope):
         if 'event_date' not in compiler.catalog.tables[table]: raise PlanError('Concept date unavailable')
         where += f' AND {alias}.event_date BETWEEN {literal(start)} AND {literal(end)}'
         from . import decision_context
-        if (start, end) == tuple(decision_context.rolling_year(compiler.catalog.identity['as_of'])):
+        current_year=(start,end)==tuple(decision_context.rolling_year(compiler.catalog.identity['as_of']))
+        if current_year:
             compiler.window_numbers.add('12')  # "in the last 12 months": the rolling-year period encodes the 12
+        # The fully reparsed leaf has already bound its original wording. A
+        # numeric window may be encoded as calendar endpoints in the SQL;
+        # credit that numeral only when its actual dates agree exactly.
+        from datetime import timedelta
+        for match in re.finditer(r'\b(?:last|past)\s+(\d+)\s+(years?|months?)\b',quoted,re.I):
+            count=int(match[1]);months=count*(12 if match[2].lower().startswith('year')else 1)
+            expected=(decision_context.add_months(compiler.catalog.identity['as_of'],-months)+timedelta(days=1)).isoformat()
+            if start==expected and end==compiler.catalog.identity['as_of']:
+                compiler.window_numbers.add(str(count))
         compiler.notes.append(f'Medication use means at least one picked-up fill dated {start} through {end}'
-                              + (' (the 12 months ending at the as-of date: current use).' if end == compiler.catalog.identity['as_of'] else '.'))
+                              + (' (the 12 months ending at the as-of date: current use).' if current_year else '.'))
     return f'EXISTS (SELECT 1 FROM {table} {alias} WHERE {alias}.patient_id = {outer} AND {where})'
 
 
@@ -288,6 +298,32 @@ def scoped_sql(template, catalog):
     return 'WITH '+','.join(ctes)+(', '+template[4:].lstrip() if template.lstrip().upper().startswith('WITH ') else ' '+template)
 
 
+def measure_population_evidence(report, definition, measure_definition, *, group, population_count, value, as_of):
+    """Copy the engine's actual population accounting, including unknown scope.
+
+    The input roster is not the eligible denominator. A known subset of an
+    indeterminate measure is never promoted to a full-population result.
+    """
+    overall = report.get('overall') or {}
+    known = report.get('known_evaluation_overall') or {}
+    partial = bool(report.get('partial') or report.get('unknown_measurements'))
+    unavailable = bool(report.get('declined'))
+    row = {**group, 'metric_id': definition['id'], 'metric_version': definition['version'],
+           'definition_digest': digest(definition), 'measure_definition_digest': digest(measure_definition),
+           'engine_evidence_digest': digest(report), 'as_of': as_of,
+           'period_start': report['period']['start'], 'period_end': report['period']['end'],
+           'unit': definition['unit'], 'measure_unit': report.get('unit'),
+           'value': None if partial or unavailable else value,
+           'input_population_count': population_count,
+           'population_evidence_status': 'indeterminate' if partial else 'unavailable' if unavailable else 'computed',
+           'unknown_patient_count': (len({r['patient_id'] for r in report['unknown_measurements']})
+                                     if 'unknown_measurements' in report else None if unavailable else 0)}
+    fields = ('eligible', 'excluded', 'denominator', 'numerator', 'rate', 'admissions', 'member_years')
+    row.update({name: None if partial or unavailable else overall.get(name) for name in fields})
+    row.update({'known_subset_' + name: known.get(name) for name in fields})
+    return row
+
+
 def execute(path, patient_ids, p, as_of=None):
     from .request_plan import Catalog
     from . import sql_query
@@ -317,7 +353,7 @@ def execute(path, patient_ids, p, as_of=None):
                 values.append(value)
             groups[tuple(values)].append(row['patient_id'])
     if not p['group_by']: groups.setdefault((), [])
-    rows, evidence, missing, limitations = [], [], [], []
+    rows, evidence, missing, limitations, population_evidence = [], [], [], [], []
     for keys, ids in sorted(groups.items(), key=lambda kv: str(kv[0])):
         row = dict(zip(p['group_by'], keys))
         if m.get('sql_template'):
@@ -329,8 +365,9 @@ def execute(path, patient_ids, p, as_of=None):
             evidence.append({'group': row.copy(), 'query': query})
         elif m.get('engine', {}).get('measures'):
             from . import measures
+            measure_definition = measures.library()[m['engine']['measures']]
             with sqlite3.connect(f'file:{catalog.target}?mode=ro', uri=True) as db:
-                report = measures.evaluate_db(db, measures.library()[m['engine']['measures']],
+                report = measures.evaluate_db(db, measure_definition,
                                               p['period']['start'], p['period']['end'], as_of, keep=set(ids))
             value = (report.get('overall') or {}).get('rate')
             if m['unit'] == 'percent':
@@ -341,6 +378,8 @@ def execute(path, patient_ids, p, as_of=None):
             if report.get('declined'): missing.append(report.get('reason', report.get('reading', 'Measure inputs unavailable')))
             limitations.extend(report.get('warnings') or [])
             evidence.append(report)
+            population_evidence.append(measure_population_evidence(report, m, measure_definition,
+                group=row.copy(), population_count=len(ids), value=value, as_of=as_of))
         else:
             from . import risk_adjustment
             report = risk_adjustment.execute(path, ids, {'year': int(p['period']['start'][:4]), 'focus': 'population'}, as_of)
@@ -361,6 +400,8 @@ def execute(path, patient_ids, p, as_of=None):
                               'period': p['period'], 'unit': m['unit']},
               'headline': m['name'], 'table': rows if p['group_by'] else None}
     if not p['group_by']: answer['count' if m['output']['returns'] == 'count' else 'value'] = rows[0]['value']
+    if population_evidence:
+        answer['population_evidence'] = population_evidence
     if p['id'] in ('ed_visits', 'all_source_ed_visits_per_1000'):
         from .request_plan import literal
         query = ("SELECT sources,in_ehr,count(*) AS events FROM utilization_event WHERE kind='ed_visit' "

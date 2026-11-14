@@ -17,7 +17,7 @@ for every statement DuckDB cannot answer faithfully; nothing here ever blocks an
                                   rows and logs to <stack>/duckdb-shadow.sqlite3; the served answer is never changed
 Synthetic data only; no model calls.
 """
-import datetime, decimal, hashlib, json, os, re, sqlite3, threading, time
+import datetime, decimal, hashlib, json, math, os, re, sqlite3, threading, time
 from pathlib import Path
 
 VERSION = 'agere-duckdb-engine/1'
@@ -30,7 +30,8 @@ SHADOW_DB = 'duckdb-shadow.sqlite3'
 _UDFS = {'age_at': (('VARCHAR', 'VARCHAR'), 'BIGINT'), 'drug_key': (('VARCHAR',), 'VARCHAR'),
          'dose_mg': (('VARCHAR',), 'DOUBLE'), 'per_day': (('VARCHAR',), 'DOUBLE'), 'target_mg': (('VARCHAR',), 'DOUBLE'),
          'target_max_mg': (('VARCHAR',), 'DOUBLE'), 'statement_mg': (('VARCHAR', 'VARCHAR'), 'DOUBLE'),
-         'statement_per_day': (('VARCHAR', 'VARCHAR'), 'DOUBLE'), 'statement_status': (('VARCHAR',), 'VARCHAR'),
+         'statement_per_day': (('VARCHAR', 'VARCHAR'), 'DOUBLE'),
+         'statement_evidence': (('VARCHAR', 'VARCHAR'), 'VARCHAR'), 'statement_status': (('VARCHAR',), 'VARCHAR'),
          'statement_day': (('VARCHAR',), 'VARCHAR')}
 _SQLITE_ONLY_UDFS = ('clinical_measurements',)
 LINT = [
@@ -60,7 +61,33 @@ def shadow_on():
 
 def lint(sql):
     code = re.sub(r'--[^\n]*', '', sql or '')
-    return [{'rule': k, 'reason': why} for k, rx, why in LINT if rx.search(code)]
+    issues=[{'rule': k, 'reason': why} for k, rx, why in LINT if rx.search(code)]
+    try:
+        from sqlglot import parse_one,exp
+        tree=parse_one(sql,read='sqlite')
+        def constant(node):
+            if isinstance(node,exp.Paren):return constant(node.this)
+            if isinstance(node,exp.Neg):
+                value=constant(node.this);return -value if value is not None else None
+            if isinstance(node,exp.Literal) and node.is_number:
+                try:return float(node.this)
+                except ValueError:pass
+            return None
+        def real(node):
+            if isinstance(node,exp.Paren):return real(node.this)
+            if isinstance(node,exp.Literal) and node.is_number:return any(c in str(node.this).lower() for c in '.e')
+            if isinstance(node,exp.Cast):return str(node.args.get('to')).upper() in ('FLOAT','DOUBLE','REAL')
+            if isinstance(node,(exp.Mul,exp.Add,exp.Sub,exp.Div)):return real(node.this) or real(node.expression)
+            return False
+        for division in tree.find_all(exp.Div) if tree is not None else []:
+            denominator=division.expression;value=constant(denominator)
+            protected=isinstance(denominator,exp.Nullif) and constant(denominator.expression)==0
+            if not ((real(division.this) or real(denominator)) and ((value is not None and value!=0) or protected)):
+                issues.append({'rule':'division_semantics','reason':'Integer promotion or zero-denominator compatibility is unproven; retain SQLite. Use explicit real arithmetic and a compatible nonzero/NULLIF denominator when intended.'})
+                break
+    except Exception:
+        issues.append({'rule':'arithmetic_contract_unverified','reason':'Cannot verify numeric expression compatibility; retain SQLite'})
+    return issues
 
 
 def _meta(sqlite_path):
@@ -179,7 +206,8 @@ def run(duck_path, query, patient_ids=None, *, time_limit=600, max_rows=200000):
 
 def _plain(v):
     """DuckDB values in the Python types SQLite would return (Decimal -> float, dates -> ISO text)."""
-    if isinstance(v, decimal.Decimal): return float(v)
+    if isinstance(v, decimal.Decimal):v=float(v)
+    if isinstance(v,float) and not math.isfinite(v):raise ValueError('Nonfinite DuckDB numeric result; SQLite compatibility/undefined-result handling is required')
     if isinstance(v, (datetime.datetime, datetime.date, datetime.time)): return v.isoformat()
     return v
 

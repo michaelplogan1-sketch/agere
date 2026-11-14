@@ -229,6 +229,13 @@ CONVENTIONS = """## Canonical conventions (apply unless the question defines oth
     (sequence, claim_status, carc, adjudication_date, paid_date, signed paid_cents, is_first, is_last, superseded).
     payer_claim, claim and record hold only the CURRENT state, so a denial later reworked and paid is visible only in
     payer_adjudication. Use it for denials or CARCs dated in a period, initial denials (is_first) and overturned denials.
+  - Paid development/runout is a signed-event history, distinct from current claim balances. Sum the received
+    payer_adjudication.paid_cents events, including superseded events and negative reversals/recoupments. Do not apply
+    superseded=0/is_last=1 or subtract LAG of successive signed event amounts to represent full observed development.
+    Select service cohorts with service_from; state the development clock (adjudication_date when requested), and
+    bound received observations with available_date through the snapshot. Keep unknown clocks and incomplete months
+    explicit. A current-version alternative must be named separately. Observed signed payments are distinct from
+    estimated ultimate amounts; an optional completion estimate needs stated assumptions and is not realized cash.
   - Facility settings come from claim lines: revenue 045x = ED, 0762 or HCPCS G0378/G0379 = observation; TOB 011x =
     inpatient, 013x = hospital outpatient; POS 23 ED, 21 inpatient, 22 outpatient, 11 office, 02/10 telehealth.
 - Visits: one real visit = one person + setting + calendar date across EHR (visit), ADT (adt_visit) and claims; stays span
@@ -242,7 +249,9 @@ CONVENTIONS = """## Canonical conventions (apply unless the question defines oth
     with class_key (drug_class, else ingredient), days_supply, supply_end, class_fill_seq, days_since_prev_class_fill,
     gap_after_prev_supply (days between the previous supply's end and this fill), days_of_data_before (pharmacy data
     starts 2026-09-01), new_user_180 and last_class_fill. Prefer it for adherence, gaps, restarts, new users and
-    switches; filter sources when a question names one feed.
+    switches; filter sources when a question names one feed. Unknown/invalid or conflicting days_supply leaves
+    supply_end and duration-dependent gaps NULL; a missing duration is never a one-day supply. duration_status and
+    supply_evidence preserve duration uncertainty and source record IDs. Pickup dates/counts remain observed.
   - New user of a class: a fill with no fill of that class in the prior 180 days AND at least 180 days of data before it.
   - Restart/gap: days without supply = next fill date minus (fill_date + days_supply) between consecutive fills of the
     same class (a fill on day 1 with 30 days covers days 1-30; a next fill on day 31 is a gap of 0). Every drug class
@@ -278,7 +287,28 @@ CONVENTIONS = """## Canonical conventions (apply unless the question defines oth
 
 
 def _conventions_section():
-    return CONVENTIONS
+    return CONVENTIONS + '\nReceived source clock roles:\n' + json.dumps(source_clock_roles(
+        ['event_date','recorded_date','available_date']),ensure_ascii=False) + (
+        '\nAn actual physical warehouse receipt/ingestion timestamp requires its own explicitly defined received field. '
+        'Do not rename reported availability as physical receipt, infer it from file times, or invent a missing clock. '
+        'Current snapshot versions alone do not reconstruct all observations visible at an earlier cutoff; '
+        'state version-history and precision limitations separately.\n')
+
+
+def source_clock_roles(columns):
+    """Meaning supplied by this received-source model, independent of a query."""
+    roles={
+        'event_date':{'role':'reported_event_date','precision':'Use the received event_date_precision when present; do not assume sharper precision. In record, read it with json_extract(payload, \'$.event_date_precision\'); it is not a SQL column. Missing precision stays unknown.'},
+        'recorded_date':{'role':'source_recorded_date','does_not_establish':'Physical warehouse receipt or clinical occurrence.'},
+        'available_date':{'role':'reported_source_availability','does_not_establish':'Physical warehouse receipt/ingestion timestamp. If that distinct clock is absent, keep it unknown.'}}
+    return {name:roles[name]for name in columns if name in roles}
+
+
+def _cash_reconciliation_section():
+    """Publish the same registered source contract to every SQL consumer."""
+    from .analysis_tools import financial_input_contract
+    return ('## Received cash ledger reconciliation\n'
+            +json.dumps(financial_input_contract(),ensure_ascii=False))
 
 
 def build_context(columns, streams, drug_classes, snapshot, examples):
@@ -292,6 +322,7 @@ def build_context(columns, streams, drug_classes, snapshot, examples):
         _concepts_section(concept_library(), drug_classes),
         _definitions_section(),
         _conventions_section(),
+        _cash_reconciliation_section(),
         _metrics_section(),
         _measures_section(),
         _examples_section(examples),

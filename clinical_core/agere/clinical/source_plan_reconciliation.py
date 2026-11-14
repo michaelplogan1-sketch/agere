@@ -4,6 +4,7 @@ Reuses the bounded claim/excerpt gateway, exact citation parser and ledger.
 Original prose and original answers remain unchanged. This cannot enlarge source
 coverage, infer omitted care, or authorize a clinical/work action.
 """
+from .case_synthesis import token_count_calls
 from pathlib import Path
 import copy
 import hashlib
@@ -74,7 +75,8 @@ def prepare(retriever, body):
     row, parent, aliases, claims = assemble(result)
     parent['dependencies'] = P.dependencies(retriever.path, row)
     refs = R.manifest(parent,row)
-    received = V.snapshot(retriever.path,result['contexts'][0])
+    received = V.historical_snapshot(V.snapshot(retriever.path,result['contexts'][0]),
+                                     result['contexts'][0],result['answers'][0])
     job = L.request(parent,row,refs,received)
     # Only cited units are actually supplied in this excerpt request. Reject
     # even syntactically valid global aliases for uncited/unsent source units.
@@ -97,28 +99,71 @@ def prepare(retriever, body):
 
 def preview(retriever, body):
     result, refs, job, claims, key = prepare(retriever,body)
-    return {'schema':VERSION,'id':key,'snapshot_id':result['snapshot']['id'],
+    prior=saved_for_snapshot(retriever,result['snapshot']['id'])
+    return {'schema':VERSION,'id':prior['id']if prior else key,'snapshot_id':result['snapshot']['id'],
         'input_claims':len(claims),'cited_excerpts':len(job['excerpt_pool']),
         'review_groups':len(result['snapshot']['groups']),'source_units':result['snapshot']['source_units'],
         'request_bytes':P.request_bytes(job['body']),'maximum_inference_calls':1,
-        'saved_answer_available':location(retriever.path,key).exists(),
+        'saved_answer_available':prior is not None,'saved_answer_id':prior['id']if prior else None,
         'complete_source_units_submitted':False,'clinical_validated':False,'new_paid_api_calls':0,
         'scope':json.loads(job['body']['messages'][0]['content'])['source_plan']}
 
 
 def inspect(retriever, body):
     A.validate(body, ('id',)); saved=json.loads(location(retriever.path,body['id']).read_text())
-    if (saved.get('id')!=body['id'] or saved.get('code_identity')!=identity() or saved.get('status')!='complete'
+    if (saved.get('id')!=body['id'] or saved.get('status')!='complete'
             or saved.get('result_digest')!=digest({k:v for k,v in saved.items() if k!='result_digest'})):
         raise ValueError('Source-plan reconciliation integrity changed')
-    *_,key=prepare(retriever,{'snapshot_id':saved['snapshot_id']})
-    if key!=body['id']: raise ValueError('Source-plan reconciliation dependencies changed')
+    result,refs,job,claims,key=prepare(retriever,{'snapshot_id':saved['snapshot_id']})
+    historical=digest([VERSION,saved.get('code_identity'),result['snapshot'],job['body'],refs,claims])
+    if historical!=body['id']: raise ValueError('Source-plan reconciliation dependencies changed')
+    if saved['code_identity']!=identity():
+        usage=saved['usage'];request=G.request_key(job['body'])
+        if usage.get('request_hash')!=request:raise ValueError('Historical source-plan wire request changed')
+        raw=json.loads((location(retriever.path,body['id']).parent/'provider'/(request+'.json')).read_text())['response']
+        output=L.parse(raw,job,refs)
+        rebuilt=receipt(result,refs,job,claims,body['id'],output,usage,saved['token_check'])
+        rebuilt['code_identity']=saved['code_identity']
+        rebuilt['result_digest']=digest({k:v for k,v in rebuilt.items()if k!='result_digest'})
+        if rebuilt!=saved:raise ValueError('Historical source-plan output differs from current native parser or composition')
+        proof={'schema':'source-plan-current-revalidation/1','status':'passed','reconciliation_id':body['id'],
+            'historical_code_identity':saved['code_identity'],'current_code_identity':identity(),
+            'raw_response_digest':digest(raw),'result_digest':saved['result_digest'],'provider_calls':0}
+        target=location(retriever.path,body['id']).with_name(body['id']+'-current-revalidation.json')
+        if not target.exists()or json.loads(target.read_text())!=proof:P.atomic_write(target,proof)
+    return saved
+
+
+def saved_for_snapshot(retriever,snapshot_id):
+    for p in sorted(location(retriever.path,'0'*64).parent.glob('*.json'),key=lambda p:(p.stat().st_mtime_ns,p.name)):
+        if len(p.stem)!=64 or any(c not in '0123456789abcdef'for c in p.stem):continue
+        value=json.loads(p.read_text())
+        if value.get('schema')==VERSION and value.get('status')=='complete'and value.get('snapshot_id')==snapshot_id:
+            return inspect(retriever,{'id':p.stem})
+    return None
+
+
+def receipt(result,refs,job,claims,key,output,usage,tokens):
+    saved={'schema':VERSION,'id':key,'snapshot_id':result['snapshot']['id'],'plan_id':result['plan']['id'],
+        'code_identity':identity(),'status':'complete','patient_id':result['snapshot']['patient_id'],
+        'original_question':result['snapshot']['original_question'],'result':output,
+        'input_claim_manifest':claims,'reference_manifest':refs,
+        'scope':json.loads(job['body']['messages'][0]['content'])['source_plan'],
+        'coverage':{'group_answers':len(result['answers']),'input_claims':len(claims),'accounted_claims':len(output['claim_reviews']),
+            'cited_excerpts':len(job['excerpt_pool']),'source_units':result['snapshot']['source_units'],
+            'source_coverage_upgraded':False,'complete_chart':False,'clinical_validated':False},
+        'request_bytes':P.request_bytes(job['body']),'usage':usage,'token_check':tokens,
+        'new_paid_api_calls':int(not usage.get('cache_hit',False)),
+        'new_token_count_calls':token_count_calls(tokens),'cache_hit':False,
+        'clinical_execution_authorized':False,'human_review_created':False}
+    saved['result_digest']=digest(saved)
     return saved
 
 
 def reconcile(retriever, body, ledger, *, allow_live=False):
     result, refs, job, claims, key = prepare(retriever,body); target=location(retriever.path,key)
-    if target.exists(): return {**inspect(retriever,{'id':key}),'cache_hit':True,'new_paid_api_calls':0,'new_token_count_calls':0}
+    prior=saved_for_snapshot(retriever,result['snapshot']['id'])
+    if prior is not None:return {**prior,'cache_hit':True,'new_paid_api_calls':0,'new_token_count_calls':0}
     if not allow_live: raise ValueError('Live source-plan reconciliation is disabled')
     prior=ledger.db.execute('SELECT status FROM calls WHERE id=?',(G.request_key(job['body']),)).fetchone()
     if prior and prior[0]!='validated': raise ValueError('Prior plan reconciliation pending/failed; no silent retry')
@@ -131,19 +176,7 @@ def reconcile(retriever, body, ledger, *, allow_live=False):
     try:
         fresh(); tokens=C.token_check(job['body'],out,allow_live=allow_live);fresh()
         output,usage=G.send(job['body'],ledger,out,parse=lambda raw:L.parse(raw,job,refs));fresh()
-        saved={'schema':VERSION,'id':key,'snapshot_id':body['snapshot_id'],'plan_id':result['plan']['id'],
-            'code_identity':identity(),'status':'complete','patient_id':result['snapshot']['patient_id'],
-            'original_question':result['snapshot']['original_question'],'result':output,
-            'input_claim_manifest':claims,'reference_manifest':refs,
-            'scope':json.loads(job['body']['messages'][0]['content'])['source_plan'],
-            'coverage':{'group_answers':len(result['answers']),'input_claims':len(claims),'accounted_claims':len(output['claim_reviews']),
-                'cited_excerpts':len(job['excerpt_pool']),'source_units':result['snapshot']['source_units'],
-                'source_coverage_upgraded':False,'complete_chart':False,'clinical_validated':False},
-            'request_bytes':P.request_bytes(job['body']),'usage':usage,'token_check':tokens,
-            'new_paid_api_calls':int(not usage.get('cache_hit',False)),
-            'new_token_count_calls':int(not tokens['provider_count_cached']),'cache_hit':False,
-            'clinical_execution_authorized':False,'human_review_created':False}
-        saved['result_digest']=digest(saved);P.atomic_write(target,saved)
+        saved=receipt(result,refs,job,claims,key,output,usage,tokens);P.atomic_write(target,saved)
         progress['status']='complete';P.atomic_write(progress_path,progress);return saved
     except Exception as exc:
         progress.update(status='incomplete',error=str(exc));P.atomic_write(progress_path,progress);raise

@@ -113,7 +113,8 @@ def isolated_local(catalog, question, population, worker=None):
         reply = (worker or _WORKER).call(payload, limit)
         if 'declined' in reply: raise QuestionNotUnderstood(f"{reply['declined']}; no reduced question was executed.")
         if 'ok' not in reply:
-            raise QuestionNotUnderstood('Local interpretation failed in its isolated worker; no reduced question was executed.')
+            detail=str(reply.get('error') or 'No worker error detail')[:500]
+            raise QuestionNotUnderstood('Local interpretation failed in its isolated worker: '+detail+'; no reduced question was executed.')
         try: contract, interpretation = reply['ok']
         except (TypeError, ValueError) as exc: raise QuestionNotUnderstood('Local interpreter returned an invalid contract.') from exc
         return contract, interpretation
@@ -125,24 +126,32 @@ def policy_identity():
     from .request_vocabulary import definitions, concept_definitions
     from .general_analysis import governed_knowledge
     from .clinical_inputs import identity as clinical_input_identity
+    from .component_learning import active_identity
+    from tools.training import datasets as training_messages
     return request_plan.fingerprint({'governed_definitions': definitions(), 'concept_definitions': concept_definitions(),
-        'clinical_input_policy': clinical_input_identity(),
+        'analyst_documentation_mode':os.environ.get('AGERE_ANALYST_CONTEXT','discover'),
+        'clinical_input_policy': clinical_input_identity(),'component_releases':active_identity(),
+        'local_serving_prompt':request_plan.fingerprint(Path(training_messages.__file__).read_text()),
         'governed_knowledge': governed_knowledge(), 'financial_rulebook': rulebook_digest(),
         'answer_context.py': request_plan.fingerprint((Path(__file__).resolve().parents[1]/'deliverables'/'answer_context.py').read_text()), **{
+        'subscription_transport.py':request_plan.fingerprint((Path(__file__).resolve().parents[1]/'subscription_transport.py').read_text()),
         'deliverables/workflow.py': request_plan.fingerprint((Path(__file__).resolve().parents[1]/'deliverables'/'workflow.py').read_text())}, **{
         name: request_plan.fingerprint(Path(__file__).with_name(name).read_text())
-        for name in ('shared_planner.py', 'request_plan.py', 'request_language.py', 'analysis_graph.py',
+        for name in ('shared_planner.py', 'proposers.py', 'economical_planner.py', 'local_compiler.py', 'route_arbiter.py',
+                     'request_plan.py', 'request_language.py', 'analysis_graph.py',
                      'graph_contracts.py', 'graph_planner.py', 'semantic_layer.py', 'sql_query.py',
-                     'decision_context.py', 'claim_count_policy.py', 'sql_read_roles.py', 'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py', 'local_prompt.py',
+                     'decision_context.py', 'source_scope.py', 'literal_check.py', 'claim_count_policy.py', 'sql_read_roles.py', 'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py', 'local_prompt.py',
                      'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py', 'general_analysis.py', 'dose.py', 'clinical_definitions.py',
                      'analysis_evidence.py', 'request_program.py', 'answer_dependencies.py', 'procedural_memory.py', 'clinical_inputs.py',
-                     'conversation.py', 'answer_format.py', 'paraphrase.py', 'local_normalizer.py', 'data_domains.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
+                     'conversation.py', 'clarification.py', 'answer_format.py', 'paraphrase.py', 'local_normalizer.py', 'data_domains.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
                      'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py',
                      'analyst_acceptance.py', 'spec_fill.py', 'spec_verify.py', 'spec_readback.py', 'spec_path.py', 'spec_exec.py',
                      'chart_reader.py', 'chart_intents.py', 'chart_queries.py', 'chart_reader_op.py', 'chart_notes.py',
                      'note_open.py', 'note_evidence.py', 'note_frames.py', 'note_questions.py', 'ocr_passages.py',
                      'atomic_questions.py', 'answer_shape.py', 'semantic_reader.py', 'answer_checks.py', 'system_one_gate.py',
-                     'system_one_cross_check.py', 'acceptance_contract.py', 'requirement_ledger.py')}})
+                     'system_one_cross_check.py', 'acceptance_contract.py', 'requirement_ledger.py',
+                     'backstop_agent.py', 'analyst_context.py', 'semantic_docs.py', 'execution_state.py', 'result_assembly.py', 'evidence_projection.py', 'document_review.py', 'span_repair.py', 'typed_document_review.py', 'analysis_tools.py','component_learning.py','adapter_learning.py',
+                     'learned_router.py','tier_router.py','learning_hooks.py','semantic_analyst.py', 'harness_improvement.py')}})
 
 # Rule text in named parts: the hosted planner sends them all (SYSTEM); the local shaper (local_prompt.py) sends the core and only
 # the parts a question needs.
@@ -285,6 +294,7 @@ requested monitoring metrics are computed by select/analyses or explicitly unres
 A correctly unresolved downstream intention is represented, not silently discarded. Top-level unresolved is for
 missing analytical/population requirements. Never accept a broadened population to compensate for unknown eligibility.
 '''
+AUDIT_SYSTEM += '\n' + _decision_block() + '\n'
 
 
 def graph_for(contract):
@@ -390,15 +400,31 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
     ranked_ops = sorted(operators, key=lambda op: -len(meaningful & set(re.findall(r'[a-z0-9]+', op+' '+operators[op]['meaning'].lower()))))
     suggested = [op for op in ranked_ops[:3] if len(meaningful & set(re.findall(r'[a-z0-9]+', op+' '+operators[op]['meaning'].lower()))) >= 2]
     selected_contracts = {}
+    documentary_catalog=None
     for op in dict.fromkeys([*operations, *suggested]):
         if op not in operators: continue
         selected_contracts[op] = dict(operators[op])
         try:
-            selected_contracts[op]['parameter_schema'] = parameter_schema(op, {
+            parameter_catalog={
                 'cohort_fields': {'record_fields': catalog.stream_fields},
-                'source_streams': sorted(catalog.stream_fields), 'evidence_catalog': {}})
-        except (KeyError, ValueError):
-            pass  # Legacy operators retain their explicit, runtime-validated wire contract.
+                'source_streams': sorted(catalog.stream_fields), 'evidence_catalog': {}}
+            if op in ('assertion_review','source_state','interpretation','pre_event_state'):
+                from .graph_contracts import documentary_parameter_catalog
+                if documentary_catalog is None:
+                    documentary_catalog=documentary_parameter_catalog(catalog.target.parent,catalog.stream_fields)
+                parameter_catalog=documentary_catalog
+            if op in ('requirements','protocol_review','program_document','accountability_review','financial_accounts'):
+                from .analysis_tools import describe as describe_native
+                native=describe_native(op,path=catalog.target.parent)
+                selected_contracts[op]['parameter_schema']=native['parameters']
+                selected_contracts[op].update({k:v for k,v in native.items()
+                    if k in ('criteria_context','buyer_context','protocol_definitions','requirement_definitions',
+                             'financial_source_contract','native_output_contract')})
+            else:selected_contracts[op]['parameter_schema'] = parameter_schema(op,parameter_catalog)
+        except (KeyError, ValueError, OSError, sqlite3.Error) as exc:
+            # A legacy example is not a complete typed contract. Expose a
+            # failed metadata dependency rather than silently inviting a guess.
+            selected_contracts[op]['parameter_schema_unavailable']=str(exc)
         if op in ('aggregate', 'vbc', 'profile', 'survival'):
             selected_contracts[op]['date_bounds'] = 'Window/period start and end dates are inclusive. Calendar-year end is YYYY-12-31.'
     stream_names = sorted(catalog.stream_fields, key=lambda s: (-len(words & set(s.replace('_',' ').split())), s))
@@ -680,7 +706,8 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
                 audit_catalog = schema_prompt_view(schema_slice(catalog, question,
                     extra=list(dict.fromkeys(source_tables)), operations=list(dict.fromkeys(review_operations)), streams=streams))
                 raw_audit, stats = call(request_program.AUDIT_SYSTEM, json.dumps({
-                    'original_question': question, 'program': contract['program'], 'nodes': shown,
+                    'original_question': question, 'as_of': catalog.identity.get('as_of'),
+                    'program': contract['program'], 'nodes': shown,
                     'catalog': audit_catalog, 'discovery': discovery_context,
                     'reported_corrections': corrections,
                     'saved_cohort_size': len(population) if population is not None else None,
@@ -707,7 +734,8 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
                 contract = general_analysis.prepare(catalog, question, plan['analysis'], population=population)
                 _, shown = general_analysis.preview(catalog, contract, population)
                 raw_audit, stats = call(general_analysis.AUDIT_SYSTEM, json.dumps({
-                    'original_question': question, 'analysis': contract['analysis'],
+                    'original_question': question, 'as_of': catalog.identity.get('as_of'),
+                    'analysis': contract['analysis'],
                     'governed_macros': contract['governed_macros'], 'compiled_sql': contract['query'],
                     'result_preview': shown, 'discovery': discovery_context,
                     'source_coverage': catalog_context.get('source_coverage'),
@@ -798,7 +826,8 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
                 contract = general_analysis.prepare(catalog, question, proposal['analysis'], population=population, relaxed=True)
                 _, shown = general_analysis.preview(catalog, contract, population)
                 raw_audit, stats = call(general_analysis.AUDIT_SYSTEM, json.dumps({
-                    'original_question': question, 'analysis': contract['analysis'],
+                    'original_question': question, 'as_of': catalog.identity.get('as_of'),
+                    'analysis': contract['analysis'],
                     'governed_macros': contract['governed_macros'], 'compiled_sql': contract['query'],
                     'result_preview': shown,
                     'source_coverage': catalog_context.get('source_coverage'),
@@ -1055,7 +1084,9 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                     contract, interpretation = Cascade(stack, catalog, question, population=population, ledger=ledger,
                                                        hosted_model=hosted_model, memory_identity=memory_identity).run()
                 except QuestionNotUnderstood as failed:
-                    failed.args = (str(declined) + ' ' + str(failed),)
+                    # The initial reader's "no model called" statement applies
+                    # only to that stage. Keep its native cause without turning
+                    # it into a false claim about the completed paid cascade.
                     raise failed from declined
                 interpretation['deterministic_decline'] = str(declined)
     if not hit and model is None: store_request(cache_path, key, stable_key, question, contract, interpretation)
@@ -1095,6 +1126,10 @@ def start_spec_early(stack, catalog, question, population):
     """The grammar declined: the spec path's paid fillers (System One slots, the Haiku spec writer) start now, in parallel with the cascade's
     earlier stages (spec_fill.start_early). Not for a rewording (free stages only), a question naming one patient (the chart reader answers
     those) or without Claude."""
+    # Adaptive routing chooses one fitting planner after cheap reuse/native
+    # attempts. Speculative spec generation would charge a competing planner
+    # even when the selected route answers without it.
+    if os.environ.get('AGERE_NONFRONTIER_FIRST') in ('on', 'adaptive'): return
     from . import spec_path, spec_fill, patient_ids
     from .proposers import FREE_ONLY, claude_available
     if FREE_ONLY.get() or not getattr(stack, 'allow_live', False) or not spec_path.enabled(stack) or not claude_available(): return
@@ -1172,15 +1207,20 @@ def _compose(stack, question, *, population=None, parent=None, model=None, plann
 
 def _compose_once(stack, question, *, population=None, parent=None, model=None, planning='auto'):
     started = time.perf_counter()
-    if population is None and parent is None:
-        from . import data_domains
-        absent = data_domains.check(request_plan.Catalog.load(stack.path), question)
-        if absent: return data_domains.answer(question, *absent)  # nothing received could answer it
-    graph, receipt = plan(stack, question, population=population, model=model, planning=planning)
+    # An unmapped domain is a discovery clue, not authority to suppress the
+    # answerable requirements of a compound question or its narrative evidence.
+    try:
+        graph, receipt = plan(stack, question, population=population, model=model, planning=planning)
+    except QuestionNotUnderstood as exc:
+        if population is None and parent is None:
+            from . import data_domains
+            absent=data_domains.after_decline(stack.path,question,exc)
+            if absent:return absent
+        raise
     try:
         if receipt['request_contract'].get('kind') == 'checked_graph':
             from . import proposers
-            result = proposers.execute(stack, question, graph, receipt, started=started)
+            result = proposers.execute(stack, question, graph, receipt, started=started,population=population,parent=parent)
         elif receipt['request_contract'].get('kind') == 'request_program':
             result = request_program.execute(stack, question, graph, receipt, population=population,
                                              parent=parent, started=started)
@@ -1196,6 +1236,7 @@ def _compose_once(stack, question, *, population=None, parent=None, model=None, 
             result = execute_contract(stack, question, graph, receipt, population=population, parent=parent, started=started)
             from . import spec_path  # every typed answer carries its read-back; a spec-path answer its verification receipts
             spec_path.attach(result, receipt['interpretation'], receipt['request_contract'], request_plan.Catalog.load(stack.path), question)
+        if result.get('clarification_checkpoint'):return result
         if receipt['request_contract'].get('kind') != 'checked_graph' and parent is None:  # a fast-path answer gets System One's second look
             from .proposers import second_look_fast_path
             replaced = second_look_fast_path(stack, question, graph, result, population=population, started=started)

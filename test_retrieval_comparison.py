@@ -42,7 +42,7 @@ class ComparisonTests(unittest.TestCase):
             self.rows.append({'id': str(i), 'text': text, 'source': source, 'note_id': str(i), 'start': 0, 'protected': False, 'rrf_score': 1/(61+i)})
             self.r.db.execute('INSERT INTO records VALUES (?,?,?)', (str(i), 'P-1', json.dumps(record)))
         self.calls = 0
-        def search(question, *, patient, patient_ids, analysis_window):
+        def search(question, *, patient, patient_ids, analysis_window, complete=True):
             self.calls += 1
             ranked = self.r.reranker.rank(question, deepcopy(self.rows), top_k=len(self.rows)) if self.rows else []
             return {'evidence': R.selected(ranked, patient), 'candidate_passages': len(self.rows), 'elapsed_seconds': 0.1}
@@ -65,6 +65,21 @@ class ComparisonTests(unittest.TestCase):
         again = R.prepare(self.r, self.body)
         self.assertTrue(again['cache_hit']); self.assertEqual(first['comparison'], again['comparison'])
         self.assertEqual(self.calls, 1)
+
+    def test_nested_coverage_search_cannot_overwrite_the_paired_candidate_trace(self):
+        original = self.r.search
+        expansions = []
+        def search(question, *, complete=True, **kwargs):
+            actual = original(question, complete=complete, **kwargs)
+            if complete:
+                expansions.append(question)
+                self.r.reranker.rank('missing source component', deepcopy(list(reversed(self.rows))), top_k=len(self.rows))
+            return actual
+        self.r.search = search
+        result = R.prepare(self.r, self.body)['comparison']
+        self.assertEqual(expansions, [])
+        self.assertEqual(result['variants']['bge_reranked'], list(map(str, range(11, 3, -1))))
+        self.assertEqual(result['selection']['coverage_expansion'], 'excluded_from_fixed_candidate_comparison')
 
     def test_changed_question_gets_distinct_receipt(self):
         first = R.prepare(self.r, self.body)['comparison']
