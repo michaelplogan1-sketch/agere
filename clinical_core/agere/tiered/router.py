@@ -82,6 +82,8 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
             steps.append({'tier': tier, 'outcome': 'execution_error', 'reason': str(exc)[:200], 'tokens': 0, 'usd': 0.0})
             escalations.append({'from': tier, 'reason': 'execution error'})
             return None
+        if not rows and recipe.get('empty'):   # a recipe may declare that no rows is itself the supported answer (an empty call queue)
+            rows = [[recipe['empty']] + [''] * (len(columns) - 1)]
         validation = recipes.validate(question, sql, params, columns, rows, grain=recipe.get('grain'), total=recipe.get('total'), db=db, nullable=recipe.get('nullable', ()))
         steps.append({'tier': 'recipes', 'outcome': 'validated' if validation['ok'] else 'validation_failed', 'recipe': recipe_id,
                       'chosen_by': tier, 'tokens': 0, 'usd': 0.0, 'seconds': round(time.monotonic() - t0, 3)})

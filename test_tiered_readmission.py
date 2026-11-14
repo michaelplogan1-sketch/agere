@@ -147,6 +147,12 @@ class EachStayOnce(unittest.TestCase):
         self.assertEqual(sorted(pairs), [('P1', '2029-03-13', '2029-03-07'),   # one readmission, six days after discharge, not two
                                          ('P4', '2029-08-18', '2029-07-24'), ('P4', '2029-09-10', '2029-08-27')])
 
+    def test_the_instruction_is_quoted_whole_from_a_labelled_field_or_a_sentence(self):
+        long = 'Discharge medications: ' + '; '.join(['metformin 500 mg tablet twice daily'] * 12) + ' Disposition: snf Follow-up: PCP within 7 days.'
+        self.assertEqual(readmission.follow_up_instruction(long), 'Follow-up: PCP within 7 days.')
+        self.assertEqual(readmission.follow_up_instruction('Stable. Primary folow up recommended around 2028-12-28. Diet as tolerated.'), 'Primary folow up recommended around 2028-12-28.')
+        self.assertIsNone(readmission.follow_up_instruction('Stable for discharge. Diet as tolerated.'))
+
     def test_a_misspelled_follow_up_instruction_is_still_an_instruction(self):
         for said in ('Primary folow up recommended around 2028-12-28.', 'Follow-up with cardiology in one week.', 'follow up in clinic', 'FOLLLOW UP arranged'):
             self.assertTrue(readmission.FOLLOW_UP.search(said), said)
@@ -165,6 +171,22 @@ class NoLabsOnRecord(unittest.TestCase):
         failed = lambda **kw: [c['name'] for c in recipes.validate('q', 'SELECT 1', {}, columns, rows, **kw)['checks'] if not c['ok']]
         self.assertIn('no_all_null_column', failed())                                   # the general rule still holds
         self.assertNotIn('no_all_null_column', failed(nullable=recipes.RECIPES['readmission_labs']['nullable']))
+
+
+class Drivers(unittest.TestCase):
+    def test_wording_for_the_emergency_threshold_and_discharge_destination(self):
+        self.assertTrue(readmission.ED_LOW_YIELD.search('78 y/o presented to the ED with pneumonia. Evaluated; workup unremarkable. Admitted for further management.'))
+        self.assertFalse(readmission.ED_LOW_YIELD.search('Labs and CT unremarkable. Treated and released with instructions to follow up.'))
+        self.assertTrue(readmission.FACILITY.search('skilled nursing facility')); self.assertTrue(readmission.FACILITY.search('snf'))
+        self.assertFalse(readmission.FACILITY.search('home health')); self.assertTrue(readmission.HOME_HEALTH.search('home_health'))
+        self.assertEqual(set(readmission.DRIVERS), set(readmission.DRIVER_DEFINITIONS))
+
+
+class CallQueue(unittest.TestCase):
+    def test_an_empty_queue_is_a_declared_answer_and_the_recipes_match_their_wording(self):
+        self.assertEqual(recipes.match('Who is due a bridge call on 2029-08-14?')[0], 'bridge_call_queue')
+        self.assertTrue(recipes.RECIPES['bridge_call_queue']['empty'])
+        self.assertEqual(recipes.match('What is driving the readmissions in 2029?')[0], 'readmission_drivers_summary')
 
 
 if __name__ == '__main__':

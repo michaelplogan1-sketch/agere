@@ -228,6 +228,18 @@ def _label(reason):
     return f"{reason.upper()} ({ICD_NAMES[reason[:3].upper()]})" if ICD.match(reason) and reason[:3].upper() in ICD_NAMES else reason.upper() if ICD.match(reason) else reason.lower()
 
 
+FOLLOW_UP_FIELD = re.compile(r'\bFol{1,3}ow[- ]?up\s*:\s*[^.]{3,200}\.?', re.I)
+
+
+def follow_up_instruction(text):
+    """Code only. The follow-up instruction a discharge summary gives, quoted: a labelled Follow-up field when there is one,
+    otherwise the first whole sentence that says follow up. A sentence is never cut in the middle of a word."""
+    text = ' '.join(str(text or '').split())
+    m = FOLLOW_UP_FIELD.search(text)
+    if m: return m.group(0).strip()
+    return next((x.strip() for x in re.split(r'(?<=[.!?])\s+', text) if 8 <= len(x) <= 400 and FOLLOW_UP.search(x)), None)
+
+
 def _read_cases(sql, params, db):
     """Code only. Every readmission the SQL selects, with what its documents state. -> ([case], document ids, seconds).
     case: patient, readmission date, the two stays, whether an outpatient visit followed within 7 days, the firmest stated
@@ -261,7 +273,7 @@ def _read_cases(sql, params, db):
                 if got and got[0] == 2 and not ADMITTED_ON.search(text) and ended and str(day)[:10] > ended[:10]: got = None
                 if got and (firmest[stay] is None or got[0] < firmest[stay][0]): firmest[stay] = (got[0], got[1], rid)
             if stay == 'stay before the readmission' and 'discharge' in str(doc_type).lower() and told is None:
-                said = next((x.group(0).strip() for x in re.finditer(r'[^.]{8,320}\.?', text) if FOLLOW_UP.search(x.group(0))), None)
+                said = follow_up_instruction(text)
                 if said: told = (said, rid)
         out.append({'patient': pid, 'when': when, 'stays': case['stays'], 'visit7': case['visit7'], 'reason': firmest['readmission'],
                     'prior': firmest['stay before the readmission'], 'told': told})
@@ -442,3 +454,117 @@ def barriers(question, sql, params, read, db, *, readers=(), s1_ledger=None):
     if distinct: steps.append({'tier': 'read', 'reader': 'system1', 'calls': len(distinct), 'decided': len(distinct) - undecided, 'tokens': 0, 'usd': sum(u for _, u in placed.values()),
                                'outcome': 'kind_of_barrier', 'model': 'system-one'})
     return ['finding', 'readmissions', 'share', 'example_from_a_note'], rows, {'ok': all(c['ok'] for c in checks), 'checks': checks}, steps, evidence[:200]
+
+
+# ---- what else is on record that drives a return: illness burden, social need, the emergency department's threshold,
+# ---- a facility sending the patient back, and whether the patient could manage at home. Markers on record, not causes.
+
+SERIOUS = ('heart_failure', 'heart_failure_reduced_ef', 'chronic_kidney_disease', 'copd', 'cancer', 'dementia')
+ED_LOW_YIELD = re.compile(r'workup unremarkable[^.]*\.\s*Admitted', re.I)
+FACILITY = re.compile(r'\b(?:snf|skilled nursing|nursing (?:home|facility)|irf|inpatient rehab\w*|rehab\w* facility|long[- ]term care)\b', re.I)
+HOME_HEALTH = re.compile(r'\bhome[ _]health\b', re.I)
+DRIVERS = ('advanced illness', 'social need', 'emergency department threshold', 'sent back from a facility', 'self-care at home')
+DRIVER_DEFINITIONS = {
+    'advanced illness': 'heart failure, kidney disease, COPD, cancer or dementia on record; or five or more chronic conditions; or three or more admissions in the prior 12 months; or age 85 and over',
+    'social need': 'a positive social-need screen; or no insurance; or low food access or an isolation, transport, housing or financial-stress score of 8 or more out of 10 from the outside social-data vendor',
+    'emergency department threshold': 'the emergency note for this admission says the workup was unremarkable and the patient was admitted',
+    'sent back from a facility': 'the stay before ended in discharge to a skilled nursing or rehabilitation facility (admission-discharge feed or the discharge summary)',
+    'self-care at home': 'the stay before ended in discharge with home health; or dementia on record; or age 75 and over in a one-person household; or low estimated health literacy'}
+
+
+def person_markers(db, pid, as_of, admit, why):
+    """Code only. Fills why[...] with the illness, social and self-care markers on record for one patient by a date."""
+    one = lambda q, *a: db.execute(q, a).fetchone()
+    person = one('SELECT age_latest, coverage_type FROM patient WHERE patient_id = ?', pid) or (None, None)
+    age = int(person[0]) if str(person[0] or '').isdigit() else None
+    chronic = {r[0] for r in db.execute("SELECT DISTINCT concept FROM condition WHERE patient_id = ? AND chronic = 1 AND concept IS NOT NULL AND COALESCE(event_date, '') <= ?", (pid, as_of))}
+    from .recipes import _STAYS                                   # whole hospital stays, the same count the recipes give
+    prior = one("WITH " + _STAYS.rstrip(', ') + " SELECT COUNT(*) FROM st WHERE patient_id = ? AND admit_date < ? AND admit_date >= date(?, '-365 day')", pid, admit, admit)[0]
+    serious = sorted(chronic & set(SERIOUS))
+    if serious: why['advanced illness'].append(', '.join(x.replace('_', ' ') for x in serious))
+    if len(chronic) >= 5: why['advanced illness'].append(f'{len(chronic)} chronic conditions')
+    if prior >= 3: why['advanced illness'].append(f'{prior} admissions in the prior 12 months')
+    if age is not None and age >= 85: why['advanced illness'].append(f'age {age}')
+    needs = [r[0] for r in db.execute('SELECT DISTINCT need FROM social_need WHERE patient_id = ? AND positive = 1 AND event_date <= ?', (pid, as_of))]
+    if needs: why['social need'].append('positive screen: ' + ', '.join(n.replace('_', ' ') for n in sorted(needs)))
+    if str(person[1] or '').lower() == 'uninsured': why['social need'].append('no insurance')
+    vendor = one('SELECT social_isolation_score, transportation_risk_score, housing_instability_score, financial_stress_score, food_access_low, est_household_size, health_literacy_estimate '
+                 'FROM sdoh_vendor WHERE patient_id = ? ORDER BY delivery_date DESC LIMIT 1', pid)
+    if vendor:
+        for name, score in zip(('isolation', 'transport', 'housing', 'financial stress'), vendor[:4]):
+            if score is not None and score >= 8: why['social need'].append(f'{name} score {int(score)} of 10')
+        if vendor[4] in (1, '1'): why['social need'].append('low food access')
+        if vendor[5] in (1, '1') and age is not None and age >= 75: why['self-care at home'].append(f'age {age}, one-person household')
+        if str(vendor[6] or '').lower() == 'low': why['self-care at home'].append('low estimated health literacy')
+    if 'dementia' in chronic: why['self-care at home'].append('dementia')
+
+
+def destination(db, pid, discharge, summaries=()):
+    """Code only. Where a stay discharged the patient to: the admission-discharge feed first, else the summary's Disposition line."""
+    went = db.execute('SELECT discharge_disposition FROM adt_visit WHERE patient_id = ? AND discharge_date = ? AND discharge_disposition IS NOT NULL LIMIT 1', (pid, discharge)).fetchone()
+    went = str(went[0]) if went else ''
+    for text in summaries:
+        if went: break
+        m = DISPOSITION.search(' '.join(text.split()))
+        if m: went = m.group(1)
+    went = went.split(' Follow')[0].strip().lower().replace('_', ' ')
+    return {'home today': 'home', 'snf': 'skilled nursing facility', 'irf': 'rehabilitation facility'}.get(went, went) or 'not recorded'
+
+
+def _driver_cases(sql, params, db):
+    """Code only. Every readmission the SQL selects with the five driver markers and what set each. -> ([case], ids, seconds)."""
+    cases, ids, seconds = _read_cases(sql, params, db)
+    used = set(re.findall(r'(?<![:\w]):([a-z_][a-z0-9_]*)', sql))
+    columns, selected = store.run(sql, {k: v for k, v in (params or {}).items() if k in used}, db)
+    at = {c: columns.index(c) for c in ('patient_id', 'readmit_admit', 'record_id', 'event_date', 'document_type')}
+    docs = {}
+    for r in selected:
+        if r[at['record_id']]: docs.setdefault((r[at['patient_id']], r[at['readmit_admit']]), []).append((r[at['record_id']], r[at['event_date']], str(r[at['document_type']] or '')))
+    texts = store.texts(ids, db)
+    one = lambda q, *a: db.execute(q, a).fetchone()
+    started = time.monotonic()
+    for c in cases:
+        pid, (ia, idis, ra, rdis) = c['patient'], c['stays']
+        why = {d: [] for d in DRIVERS}
+        person_markers(db, pid, ra, ia or ra, why)
+        went = one('SELECT discharge_disposition FROM adt_visit WHERE patient_id = ? AND discharge_date = ? AND discharge_disposition IS NOT NULL LIMIT 1', pid, idis)
+        went = str(went[0]) if went else ''
+        for rid, day, kind in docs.get((pid, c['when']), []):
+            text = ' '.join((texts.get(rid) or {}).get('text', '').split())
+            stay = which_stay(text, day, ia, idis, ra, rdis)
+            if stay == 'readmission' and ED_LOW_YIELD.search(text) and not why['emergency department threshold']:
+                why['emergency department threshold'].append(ED_LOW_YIELD.search(text).group(0))
+            if stay == 'stay before the readmission' and 'discharge' in kind.lower() and not went:
+                m = DISPOSITION.search(text)
+                if m: went = m.group(1)
+        went = went.split(' Follow')[0].strip().lower().replace('_', ' ')
+        went = {'home today': 'home', 'snf': 'skilled nursing facility', 'irf': 'rehabilitation facility'}.get(went, went) or 'not recorded'
+        if FACILITY.search(went): why['sent back from a facility'].append('discharged to a ' + went)
+        elif HOME_HEALTH.search(went): why['self-care at home'].append('discharged with home health')
+        c['why'], c['went'] = why, went
+    return cases, ids, round(seconds + time.monotonic() - started, 2)
+
+
+def drivers(question, sql, params, read, db, *, readers=(), s1_ledger=None):
+    """Reading modes 'readmission_drivers' (the count for each driver) and 'readmission_driver_cases' (one row per readmission).
+    Code only: queries and fixed wording. -> (columns, rows, validation, steps, evidence)."""
+    from collections import Counter
+    cases, ids, seconds = _driver_cases(sql, params, db)
+    n, count = len(cases), Counter()
+    for c in cases:
+        hit = [d for d in DRIVERS if c['why'][d]]
+        for d in hit: count[d] += 1
+        count['none of the five on record' if not hit else 'two or more of the five' if len(hit) > 1 else 'exactly one of the five'] += 1
+        if not c['visit7'] and not hit: count['no visit within 7 days and none of the five on record'] += 1
+        count['prior discharge to: ' + c['went']] += 1
+    checks = [{'name': 'readmissions_selected', 'ok': n > 0, 'detail': f'{n} readmissions, {len(ids)} documents'},
+              {'name': 'counts_add_up', 'ok': count['none of the five on record'] + count['exactly one of the five'] + count['two or more of the five'] == n, 'detail': 'none, one and two-or-more add up to the readmissions'}]
+    steps = [{'tier': 'read', 'reader': 'code', 'calls': len(ids), 'decided': len(ids), 'tokens': 0, 'usd': 0.0, 'outcome': 'read', 'model': 'none (queries and fixed wording)', 'seconds': seconds}]
+    if (read or {}).get('mode') == 'readmission_driver_cases':
+        rows = [[c['patient'], c['stays'][1], c['when'], c['went']] + ['; '.join(c['why'][d]) or 'no' for d in DRIVERS] for c in cases]
+        return ['patient_id', 'prior_discharge_date', 'readmission_date', 'prior_discharge_to'] + [d.replace(' ', '_').replace('-', '_') for d in DRIVERS], rows, {'ok': all(x['ok'] for x in checks), 'checks': checks}, steps, []
+    share = lambda k: round(count[k] / n, 4) if n else None
+    rows = [['readmissions', n, 1.0, '']] + [[d, count[d], share(d), DRIVER_DEFINITIONS[d]] for d in DRIVERS]
+    rows += [[k, count[k], share(k), ''] for k in ('none of the five on record', 'exactly one of the five', 'two or more of the five', 'no visit within 7 days and none of the five on record')]
+    rows += [[k, v, share(k), ''] for k, v in sorted(count.items(), key=lambda kv: -kv[1]) if k.startswith('prior discharge to: ')]
+    return ['finding', 'readmissions', 'share', 'how_it_is_marked'], rows, {'ok': all(x['ok'] for x in checks), 'checks': checks}, steps, []
