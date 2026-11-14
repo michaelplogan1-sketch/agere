@@ -6,7 +6,7 @@ import time
 
 from . import bottles as bottle_store, models, read as reader, recipes, store
 
-ALL_TIERS = ('bottles', 'recipes', 'system1', 'slm', 'llm')
+ALL_TIERS = ('bottles', 'recipes', 'system1', 'slm', 'near', 'llm')
 TOKEN_CEILING = 60000
 
 
@@ -82,7 +82,7 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
             steps.append({'tier': tier, 'outcome': 'execution_error', 'reason': str(exc)[:200], 'tokens': 0, 'usd': 0.0})
             escalations.append({'from': tier, 'reason': 'execution error'})
             return None
-        validation = recipes.validate(question, sql, params, columns, rows, grain=recipe.get('grain'), total=recipe.get('total'), db=db)
+        validation = recipes.validate(question, sql, params, columns, rows, grain=recipe.get('grain'), total=recipe.get('total'), db=db, nullable=recipe.get('nullable', ()))
         steps.append({'tier': 'recipes', 'outcome': 'validated' if validation['ok'] else 'validation_failed', 'recipe': recipe_id,
                       'chosen_by': tier, 'tokens': 0, 'usd': 0.0, 'seconds': round(time.monotonic() - t0, 3)})
         if validation['ok']:
@@ -129,6 +129,26 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
                 if out: return out
             else:
                 escalations.append({'from': 'slm', 'reason': step['outcome'] + ': ' + str(step.get('reason'))[:120]})
+
+    # Near match (near.py): a promoted saved shape answers a rewording of its question, with no frontier call
+    if 'near' in tiers and bottles is not None and spent() < token_ceiling:
+        from . import near
+        if near.enabled():
+            try:
+                bottle, params, near_steps = near.propose(question, bottles, s1_ledger)
+            except Exception as exc:
+                if 'limit' in str(exc).lower(): raise
+                bottle, params, near_steps = None, None, [{'tier': 'near', 'outcome': 'error', 'reason': f'{type(exc).__name__}: {str(exc)[:120]}', 'tokens': 0, 'usd': 0.0}]
+            steps.extend(near_steps)
+            if bottle is not None:
+                got = attempt('near', bottle['sql'], params, grain=bottle['grain'], read=bottle.get('read'))
+                if got and got[3]:
+                    bottles.used(bottle['id'])
+                    return done('answered', 'near', {'bottle_id': bottle['id'], 'sql': bottle['sql'], 'params': params, 'near_match_of': bottle['template'],
+                                                     **({'read': bottle['read']} if bottle.get('read') else {})}, *got[:3])
+                escalations.append({'from': 'near', 'reason': 'the saved shape ran but its result did not pass the checks'})
+            else:
+                escalations.append({'from': 'near', 'reason': str(near_steps[-1].get('outcome'))})
 
     # Tier 4: the frontier model writes a recipe; code executes and validates it
     if 'llm' not in tiers:

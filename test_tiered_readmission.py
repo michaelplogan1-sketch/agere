@@ -21,6 +21,9 @@ class Readmission(unittest.TestCase):
         self.assertEqual(which('Clinic follow-up note.', '2030-05-04'), 'between the two stays')
         self.assertEqual(which('Discharge paperwork.', '2030-05-01'), 'stay before the readmission')  # a discharge document can arrive a few days late
         self.assertEqual(readmission.which_stay('ED summary.', '2030-05-08', '', '', '2030-05-07', ''), 'readmission')  # no prior stay on record
+        # an episode of several rows: the summary names an admission date inside it
+        self.assertEqual(readmission.which_stay('Admission date: 2030-04-24 Discharge date: 2030-04-29 Principal diagnosis: COPD', '2030-04-30', *STAYS), 'stay before the readmission')
+        self.assertEqual(readmission.which_stay('Admission date: 2030-05-08 Discharge date: 2030-05-10 Principal diagnosis: COPD', '2030-05-11', *STAYS), 'readmission')
 
     def test_labelled_fields_are_quoted_by_code_and_loose_sentences_are_left_for_a_reader(self):
         texts = {'R1': doc('Admission date: 2030-05-07 Discharge date: 2030-05-10 Principal diagnosis: Opioid overdose Hospital course: Responded to naloxone. Disposition: home', '2030-05-12'),
@@ -103,6 +106,9 @@ class Readmission(unittest.TestCase):
         with mock.patch.object(store, 'run', lambda sql, params=None, db=None: (columns, rows)), mock.patch.object(store, 'texts', lambda ids, db: {i: texts[i] for i in ids}), \
                 mock.patch.object(readmission, 'group_of', lambda reason, ledger=None: (groups[reason], 0.0001)):
             cols, out, validation, steps, evidence = readmission.patterns('q', 'SELECT 1', {}, {}, None)
+            listed = readmission.case_list('q', 'SELECT 1', {}, {'only': 'instruction_no_visit'}, None)[1]
+            everyone = readmission.case_list('q', 'SELECT 1', {}, {}, None)[1]
+            nothing = readmission.case_list('q', 'SELECT 1', {}, {'only': 'same_problem'}, None)
         got = {r[0]: r[1] for r in out}
         self.assertEqual(got['readmissions'], 3); self.assertEqual(got['a reason for the readmission is stated in the record'], 2)
         self.assertEqual(got['no document states why the patient was readmitted'], 1)
@@ -112,6 +118,53 @@ class Readmission(unittest.TestCase):
         self.assertEqual(got['same problem group as the stay before it'], 1); self.assertEqual(got['a different problem group from the stay before it'], 1)
         self.assertEqual(got['readmitted for: heart failure or fluid overload'], 1); self.assertEqual(got['readmitted for: fall, fracture or injury'], 1)
         self.assertTrue(validation['ok']); self.assertEqual({e['quote'] for e in evidence}, {'I50.9', 'Closed fracture of femoral neck'})
+        self.assertEqual([(r[0], r[2], r[3], r[4], r[6], r[8]) for r in listed], [('P-1', '2030-05-07', 8, 'I50.9', 'same problem group', 'no')])
+        self.assertIn('Primary follow up recommended', listed[0][7])
+        self.assertEqual([r[0] for r in everyone], ['P-1', 'P-2', 'P-3']); self.assertEqual(everyone[2][4], 'not stated in any document')
+        self.assertEqual([r[0] for r in nothing[1]], ['P-1']); self.assertTrue(nothing[2]['ok'])
+
+
+class EachStayOnce(unittest.TestCase):
+    def test_rows_that_repeat_overlap_or_continue_one_stay_are_one_episode(self):
+        import sqlite3
+        db = sqlite3.connect(':memory:')
+        db.execute('CREATE TABLE stay (patient_id, admit_date, discharge_date, type, organization_id)')
+        db.executemany('INSERT INTO stay VALUES (?, ?, ?, ?, ?)', [
+            ('P1', '2029-03-01', '2029-03-07', 'inpatient', 'A'),
+            ('P1', '2029-03-13', None, 'inpatient', 'A'),            # the readmission, written with no discharge date ...
+            ('P1', '2029-03-20', '2029-03-20', 'inpatient', 'A'),    # ... and again as a same-day row on the day it ended
+            ('P2', '2029-05-01', '2029-05-01', 'inpatient', 'A'),    # a real same-day stay: no open row before it
+            ('P3', '2029-06-01', None, 'inpatient', 'A'),            # still in hospital
+            ('P4', '2029-07-20', '2029-07-24', 'inpatient', 'A'),
+            ('P4', '2029-08-18', '2029-08-23', 'inpatient', 'A'),    # readmitted 25 days later ...
+            ('P4', '2029-08-23', '2029-08-27', 'inpatient', 'B'),    # ... and moved the day that stay ended: the same episode
+            ('P4', '2029-08-19', '2029-08-20', 'inpatient', 'A'),    # a second source's copy inside it
+            ('P4', '2029-09-10', '2029-09-12', 'inpatient', 'A')])   # a second readmission, 14 days after the episode ended
+        rows = db.execute('WITH ' + recipes._STAYS.rstrip(', ') + ' SELECT patient_id, admit_date, discharge_date FROM st ORDER BY 1, 2').fetchall()
+        self.assertEqual(rows, [('P1', '2029-03-01', '2029-03-07'), ('P1', '2029-03-13', '2029-03-20'), ('P2', '2029-05-01', '2029-05-01'), ('P3', '2029-06-01', None),
+                                ('P4', '2029-07-20', '2029-07-24'), ('P4', '2029-08-18', '2029-08-27'), ('P4', '2029-09-10', '2029-09-12')])
+        pairs = db.execute(recipes._READMIT_PAIRS + 'SELECT patient_id, readmit_admit, index_discharge FROM pairs', {'year': '2029'}).fetchall()
+        self.assertEqual(sorted(pairs), [('P1', '2029-03-13', '2029-03-07'),   # one readmission, six days after discharge, not two
+                                         ('P4', '2029-08-18', '2029-07-24'), ('P4', '2029-09-10', '2029-08-27')])
+
+    def test_a_misspelled_follow_up_instruction_is_still_an_instruction(self):
+        for said in ('Primary folow up recommended around 2028-12-28.', 'Follow-up with cardiology in one week.', 'follow up in clinic', 'FOLLLOW UP arranged'):
+            self.assertTrue(readmission.FOLLOW_UP.search(said), said)
+        self.assertFalse(readmission.FOLLOW_UP.search('The fellow updated the plan.'))
+
+    def test_barrier_sentences_keep_a_dose_with_a_decimal_point_whole(self):
+        note = ('Seen in clinic. Did not increase {28 (norethindrone 0.35 MG Oral Tablet) } Pack today because the current directions and actual use still need confirmation. '
+                'Weight stable. Says the medication ran out.')
+        self.assertEqual(readmission.barrier_sentences(note), ['Did not increase {28 (norethindrone 0.35 MG Oral Tablet) } Pack today because the current directions and actual use still need confirmation.',
+                                                               'Says the medication ran out.'])
+
+
+class NoLabsOnRecord(unittest.TestCase):
+    def test_a_patient_with_no_lab_results_is_answered_by_the_recipe_not_sent_up_the_ladder(self):
+        columns, rows = ['period', 'concept', 'results', 'lowest', 'highest', 'last_date'], [['readmission', '(any lab or vital)', 0, None, None, '']]
+        failed = lambda **kw: [c['name'] for c in recipes.validate('q', 'SELECT 1', {}, columns, rows, **kw)['checks'] if not c['ok']]
+        self.assertIn('no_all_null_column', failed())                                   # the general rule still holds
+        self.assertNotIn('no_all_null_column', failed(nullable=recipes.RECIPES['readmission_labs']['nullable']))
 
 
 if __name__ == '__main__':

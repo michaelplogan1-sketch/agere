@@ -42,7 +42,8 @@ def latest_readmission(patient):
     """Code only. -> the admission date of the patient's most recent inpatient stay that began 1 to 30 days after an
     earlier inpatient discharge, or None. A stay repeated by a second source on the same day is not a readmission."""
     from . import store
-    rows = store.run("SELECT MAX(b.admit_date) FROM stay a, stay b WHERE a.patient_id = :p AND b.patient_id = :p AND a.type = 'inpatient' AND b.type = 'inpatient' "
+    from .recipes import _STAYS                                   # each stay once: a stay written as two rows is one stay
+    rows = store.run("WITH " + _STAYS.rstrip(', ') + " SELECT MAX(b.admit_date) FROM st a, st b WHERE a.patient_id = :p AND b.patient_id = :p AND a.type = 'inpatient' AND b.type = 'inpatient' "
                      "AND a.discharge_date IS NOT NULL AND a.admit_date < b.admit_date "
                      "AND julianday(b.admit_date) - julianday(a.discharge_date) BETWEEN 1 AND 30", {'p': patient})[1]
     return rows[0][0] if rows and rows[0][0] else None
