@@ -476,6 +476,11 @@ def normalize(recipe_id, raw, db=None):
             out[name] = words[text]
         elif kind == 'patient':  # an identifier that exists, returned as stored; never a near match
             found = store.run('SELECT patient_id FROM document WHERE lower(patient_id) = lower(:p) LIMIT 1', {'p': str(value).strip()}, db)[1]
+            if not found:   # a patient with no documents is still a patient: four readmitted patients in 2029 have none
+                try:
+                    found = store.run('SELECT patient_id FROM patient WHERE lower(patient_id) = lower(:p) LIMIT 1', {'p': str(value).strip()}, db)[1]
+                except Exception:
+                    found = []
             if not found: return None
             out[name] = found[0][0]
         elif kind == 'text':  # free words from the question, kept as written; used only as a reading statement
