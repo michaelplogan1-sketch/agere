@@ -77,10 +77,11 @@ In the answer object you may add "next": ["<question>", ...]: up to 3 follow-up 
 help the user act on the answer. Each must be a complete question. Leave it out if nothing useful follows.'''
 
 
-def answer(question, cohort=None, why=None, may_ask=False):
+def answer(question, cohort=None, why=None, may_ask=False, seconds=None):
     """-> {'text','columns','rows','sql','queries','documents','caveats','unsupported','steps','usd','tokens','seconds','model'}
     or None when the model produced no answer inside the limits."""
     started = time.monotonic()
+    limit = MAX_SECONDS if seconds is None else max(0.0, min(MAX_SECONDS, float(seconds)))  # the question's remaining time budget
     db = store.connect(cohort)
     try:
         system = SYSTEM % (MAX_DOCUMENTS, store.as_of(db), MAX_STEPS, store.schema_text(db), models.definitions())
@@ -91,8 +92,16 @@ def answer(question, cohort=None, why=None, may_ask=False):
         seen, results, documents, steps, corrected = [question], [], [], [], False
         for turn in range(1, MAX_STEPS + 1):
             left = MAX_STEPS - turn
-            if time.monotonic() - started > MAX_SECONDS: break
-            text, step = models._claude(models.LLM, system, '\n\n'.join(log) + f'\n\nTurn {turn} of {MAX_STEPS}.' + ('' if left else ' This is your last turn: answer now.'))
+            remaining = limit - (time.monotonic() - started)
+            if remaining < 5: break
+            hurry = remaining < 45 and results  # little time left and something already computed: answer from it
+            try:
+                text, step = models._claude(models.LLM, system, '\n\n'.join(log) + f'\n\nTurn {turn} of {MAX_STEPS}.'
+                                            + (' Time is almost up: answer now from what you have.' if hurry else '' if left else ' This is your last turn: answer now.'),
+                                            **({'timeout': max(10, int(remaining))} if seconds is not None else {}))
+            except Exception as exc:
+                if 'limit' in str(exc).lower() and 'timeout' not in type(exc).__name__.lower(): raise
+                break  # the call ran past the question's time budget
             steps.append({**step, 'tier': 'takeover'})
             try:
                 out = models._json(text)

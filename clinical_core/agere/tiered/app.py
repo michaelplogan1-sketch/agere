@@ -9,6 +9,20 @@ import os
 
 from . import VERSION, bottles as bottle_store, ledger as ledger_store, router, store
 
+# One time budget per question, shared by every rung (Mike 2026-11-13: an unbounded run must never happen). The cheap
+# rungs finish in seconds; what is left when the last rung starts is all it gets, and it is skipped if too little is left.
+QUESTION_SECONDS = float(os.environ.get('AGERE_TIERED_QUESTION_SECONDS', '90'))
+TAKEOVER_NEEDS = 20.0
+DEADLINE = contextvars.ContextVar('tiered_question_deadline', default=None)
+
+
+def _budget(fresh=False):
+    """Start the question's clock unless one is already running. -> seconds left."""
+    import time
+    if fresh or DEADLINE.get() is None: DEADLINE.set(time.monotonic() + QUESTION_SECONDS)
+    return DEADLINE.get() - time.monotonic()
+
+
 EARLIER = contextvars.ContextVar('tiered_earlier_questions', default=())  # earlier questions of this conversation, for the takeover rung
 TIERS = ('bottles', 'recipes', 'system1', 'slm', 'llm')
 ORDER = ('methods',) + TIERS + ('takeover',)  # methods and takeover are not router tiers: one runs before the router, one after it
@@ -47,6 +61,7 @@ def _in_conversation(stack, question, previous, looks_like_follow_up, earlier=No
     """A question asked inside a conversation. -> (result, complete question, note) or None for the existing path.
     A question the zero-cost tiers recognise is complete. Otherwise a follow-up is first made complete from the
     previous question (followup.rewrite); words that are not an edit of the previous question are tried as they are."""
+    _budget(fresh=True)
     if not enabled(): return None
     from . import followup
     EARLIER.set(tuple(dict.fromkeys(q for q in (earlier or [previous]) if q))[-4:])  # the takeover rung reads a question in its conversation
@@ -87,6 +102,7 @@ def try_in_cohort(stack, question, parent, key, scope='result'):
     """A follow-up about a selected patient group (parent: the saved answer whose patients were selected).
     -> the app's result dict bound to that group, or None for the existing path. Code restricts every table to the
     group's patients; the tiers answer the question as if the group were the whole population."""
+    _budget(fresh=True)
     if not enabled(): return None
     from . import followup
     ids = sorted(set(parent.get('patient_ids') or []))
@@ -125,6 +141,7 @@ def try_answer(stack, question):
     """-> the app's result dict, or None to continue on the existing path.
     A message that asks several separate questions is split (split.parts) and each part goes through the tiers; it
     is answered as one composite only when every part is answered. Otherwise it is tried as one question."""
+    _budget(fresh=True)  # the question's clock starts (or restarts, once a follow-up has been made complete) here
     if not enabled(): return None
     from . import split
     s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
@@ -177,7 +194,20 @@ def _combine(question, parts, results, how):
 
 
 def _single(stack, question, cohort=None, takeover_ok=True):
-    """One question through the tiers, inside a patient cohort when one is given. -> the app's result dict, or None."""
+    """One question through the tiers, inside a patient cohort when one is given. -> the app's result dict, or None.
+    When a purpose-built method could answer a nearby wording that System One would not accept as the same question,
+    that wording is offered on the answer as a next question, so the user can take the exact route in one click."""
+    near = {}
+    result = _climb(stack, question, cohort, takeover_ok, near)
+    answer = (result or {}).get('answer') or {}
+    if near.get('restated') and answer.get('status') in ('answered', 'partial') and (result.get('tiered_core') or {}).get('final_tier') in ('llm', 'takeover'):
+        answer['next_questions'] = [near['restated'], *[q for q in answer.get('next_questions') or [] if q != near['restated']]][:4]
+        answer.setdefault('facts', {})['a_built_in_method_answers_a_nearby_question'] = (
+            f'"{near["restated"]}" runs the {str(near.get("picked")).replace("_", " ")} method, computed by code. It was not used here because it is not exactly what you asked.')
+    return result
+
+
+def _climb(stack, question, cohort, takeover_ok, near):
     s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
     bottles = bottle_store.Bottles()
     assist, prefer = False, None
@@ -214,6 +244,7 @@ def _single(stack, question, cohort=None, takeover_ok=True):
                 done = _method(stack, question, restated=restated, how=how)
                 if done is not None: return done
             elif how:
+                if how.get('method') == 'restatement_not_confirmed' and how.get('restated'): near.update(restated=how['restated'], picked=how.get('picked'))
                 ledger_store.Ledger().write('app_method', question, {'status': 'declined', 'final_tier': None, 'steps': [how], 'seconds': how['seconds'],
                                                                      'validation': {'ok': False, 'reason': how['method']}, 'recipe': None}, config={'tiers': list(ORDER)})
             later = router.answer(question, tiers=('llm',), bottles=bottles, bottle_new=True, s1_ledger=s1_ledger, cohort=cohort)
@@ -426,6 +457,7 @@ def resume(stack, saved, reply):
     """The user answered a question the stack asked (_clarify). -> the app's result dict. The reply is answered, never
     met with a second question: an option that is itself a question runs through the ladder; added detail is joined to
     the original question and tried through the ladder; otherwise the frontier model answers with the exchange in front of it."""
+    _budget(fresh=True)
     from ..clinical import clarification
     context, original, request = saved.get('tiered') or {}, saved['question'], saved['pause']['request']
     option, text = reply.get('option') or {}, ' '.join(str(reply.get('text') or '').split())
@@ -490,8 +522,13 @@ def _takeover(question, cohort, outcome, stack=None):
     earlier = [q for q in EARLIER.get() if q and q != question]
     if earlier and 'previous question in the conversation' not in why:
         why += ' | Earlier questions in this conversation, oldest first (use them only if this question refers to them): ' + ' / '.join(f'"{q}"' for q in earlier)
+    left = (DEADLINE.get() - __import__('time').monotonic()) if DEADLINE.get() is not None else None
+    if left is not None and left < TAKEOVER_NEEDS:
+        import sys
+        print(f'tiered takeover skipped: {left:.0f} seconds of the question budget left', file=sys.stderr, flush=True)
+        return None
     try:
-        got = takeover.answer(question, cohort, why=why, **({'may_ask': True} if stack is not None else {}))
+        got = takeover.answer(question, cohort, why=why, **({'may_ask': True} if stack is not None else {}), **({'seconds': left} if left is not None else {}))
     except Exception as exc:
         if 'limit' in str(exc).lower(): raise
         import sys

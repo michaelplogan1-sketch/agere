@@ -117,7 +117,7 @@ class TakeoverInContext(unittest.TestCase):
     def test_follow_up_no_cheap_method_could_read_goes_to_the_frontier_model_with_the_previous_question(self):
         from clinical_core.agere.tiered import followup
         seen = {}
-        def fake(question, cohort=None, why=None): seen.update(question=question, cohort=cohort, why=why); return dict(GOT)
+        def fake(question, cohort=None, why=None, may_ask=False, **kw): seen.update(question=question, cohort=cohort, why=why); return dict(GOT)
         with mock.patch.dict(os.environ, ON), mock.patch.object(followup, 'complete_question', lambda *a, **k: (None, {'method': 'rewrite_not_confirmed', 'usd': 0.0})), \
                 mock.patch.object(takeover, 'answer', fake), mock.patch.object(app.ledger_store, 'Ledger'), mock.patch.object(app.bottle_store, 'Bottles'), \
                 mock.patch.object(app.store, 'portable', lambda sql, cohort=None: sql):
@@ -129,7 +129,7 @@ class TakeoverInContext(unittest.TestCase):
     def test_group_follow_up_that_is_not_confirmed_is_answered_inside_the_group(self):
         from clinical_core.agere.tiered import followup
         seen = {}
-        def fake(question, cohort=None, why=None): seen.update(cohort=cohort, why=why); return dict(GOT)
+        def fake(question, cohort=None, why=None, may_ask=False, **kw): seen.update(cohort=cohort, why=why); return dict(GOT)
         with mock.patch.dict(os.environ, ON), mock.patch.object(followup, 'group_question', lambda *a, **k: (None, {'method': 'rewrite_not_confirmed', 'usd': 0.0})), \
                 mock.patch.object(takeover, 'answer', fake), mock.patch.object(app.ledger_store, 'Ledger'), mock.patch.object(app.bottle_store, 'Bottles'), \
                 mock.patch.object(app.store, 'portable', lambda sql, cohort=None: sql):

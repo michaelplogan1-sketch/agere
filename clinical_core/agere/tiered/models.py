@@ -50,13 +50,13 @@ def _api(model, system, user):
     return ''.join(b.text for b in message.content if b.type == 'text'), usage
 
 
-def _claude(model, system, user):
+def _claude(model, system, user, timeout=180):
     started = time.monotonic()
     if os.environ.get('AGERE_CLAUDE_TRANSPORT', '').strip().lower() == 'api':
         text, usage = _api(model, system, user)
     else:
         from .. import subscription_transport as transport
-        out = transport.run_cli(model, system, user, timeout=180)
+        out = transport.run_cli(model, system, user, timeout=timeout)
         text, usage = out.get('result') or '', out.get('usage') or {}
     return text, {'model': model, 'tokens': ledger.tokens(usage), 'usd': ledger.claude_usd(model, usage), 'seconds': round(time.monotonic() - started, 2)}
 
