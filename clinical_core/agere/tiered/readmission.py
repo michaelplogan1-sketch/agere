@@ -26,7 +26,7 @@ LOOSE = re.compile(r'\b(?:presented (?:to [^.]{0,40}?)?with|presenting with|admi
                    r'returned (?:to [^.]{0,30}?)?with|brought in (?:with|for|after))\b', re.I)
 NOT_ADMITTED = re.compile(r'\btreated and released\b|\bdischarged (?:home )?from the (?:ed|emergency department)\b|\bnot admitted\b', re.I)  # a visit that did not become a stay
 ADMITTED_ON = re.compile(r'\bAdmission date\s*:\s*(\d{4}-\d{2}-\d{2})', re.I)
-FOLLOW_UP = re.compile(r'\bfollow[- ]?up\b', re.I)
+FOLLOW_UP = re.compile(r'\bfol{1,3}ow[- ]?up\b', re.I)        # notes misspell it ("folow up"); a dropped or doubled l is still the instruction
 DISPOSITION = re.compile(r'\bDisposition\s*:?\s+([^.]{2,80})', re.I)
 IMPRESSION = re.compile(r'\bIMPRESSION\s*:\s*(.{3,400}?)(?=\s+(?:[A-Z][A-Z /-]{3,}:|Electronically|Signed|Dictated)|$)')
 DIRECTIVE = re.compile(r'advance directive|\bpolst\b|\bmolst\b|\bdnr\b|\bdni\b|code status|full code|health ?care proxy|living will|goals of care|power of attorney|'
@@ -49,7 +49,10 @@ def which_stay(doc_text, event_date, index_admit, index_discharge, readmit_admit
     """Code only. The stay a document is about: the admission date it states wins; otherwise its own date decides."""
     stated = ADMITTED_ON.search(doc_text)
     if stated:
-        return 'readmission' if stated.group(1) == readmit_admit else 'stay before the readmission' if stated.group(1) == index_admit else 'another stay'
+        # A hospital episode can be several rows (a transfer, a second source's copy), so a summary may name an admission
+        # date inside the episode rather than its first day.
+        inside = lambda first, last: bool(first) and str(first)[:10] <= stated.group(1) <= str(last or first)[:10]
+        return 'readmission' if inside(readmit_admit, readmit_discharge) else 'stay before the readmission' if inside(index_admit, index_discharge) else 'another stay'
     when, ra, ia = _day(event_date), _day(readmit_admit), _day(index_admit)
     if not when or not ra: return 'another stay'
     if ra <= when <= (_day(readmit_discharge) or ra) + timedelta(days=7): return 'readmission'
@@ -253,6 +256,9 @@ def _read_cases(sql, params, db):
             stay = which_stay(text, day, *case['stays'])
             if stay in firmest and not NOT_ADMITTED.search(text):
                 got = stated_reason(text)
+                # "Presented with ..." describes an arrival. In a document dated after that stay ended it is a later arrival, not this stay's reason.
+                ended = case['stays'][3] if stay == 'readmission' else case['stays'][1]
+                if got and got[0] == 2 and not ADMITTED_ON.search(text) and ended and str(day)[:10] > ended[:10]: got = None
                 if got and (firmest[stay] is None or got[0] < firmest[stay][0]): firmest[stay] = (got[0], got[1], rid)
             if stay == 'stay before the readmission' and 'discharge' in str(doc_type).lower() and told is None:
                 said = next((x.group(0).strip() for x in re.finditer(r'[^.]{8,320}\.?', text) if FOLLOW_UP.search(x.group(0))), None)
@@ -348,3 +354,91 @@ def patterns(question, sql, params, read, db, *, readers=(), s1_ledger=None):
     if distinct: steps.append({'tier': 'read', 'reader': 'system1', 'calls': len(distinct), 'decided': sum(1 for g, _ in placed.values() if g), 'tokens': 0,
                                'usd': sum(u for _, u in placed.values()), 'outcome': 'grouped', 'model': 'system-one'})
     return ['finding', 'readmissions', 'share'], rows, {'ok': all(c['ok'] for c in checks), 'checks': checks}, steps, evidence[:200]
+
+
+# ---- what the notes say got in the way between discharge and readmission ----
+
+BARRIER_WORDS = re.compile(r"\b(?:because|unable to|could not|couldn't|cannot|can't|did not|didn't|not (?:taken|taking|filled|picked up|increased|started|restarted|scheduled|reached)|"
+                           r"missed|no[- ]show|declin\w+|refus\w+|afford\w*|cost|transport\w*|ran out|running out|out of (?:medication|medicine|pills|tablets)|"
+                           r"need(?:s|ed)? confirmation|not confirmed|unverified|could not be (?:clarified|confirmed|verified)|unclear)\b", re.I)
+BARRIERS = {'visit_missed': 'A visit, appointment or follow-up was missed, not scheduled or could not be arranged',
+            'regimen_unclear': 'The medication list, directions or what the patient actually takes could not be confirmed, so a change was not made',
+            'cost_or_supply': 'Cost, insurance coverage, or running out of a medication or supply',
+            'transport_access': 'Transport, distance, language or another access problem',
+            'patient_declined': 'The patient declined, refused or chose not to do something that was advised',
+            'side_effect': 'A side effect or intolerance stopped or limited a treatment',
+            'clinical_limit': 'A lab value, vital sign or clinical state limited a treatment',
+            'not_a_barrier': 'The passage does not describe anything getting in the way of care'}
+BARRIER_NAMES = {'visit_missed': 'a visit missed or not arranged', 'regimen_unclear': 'medication list or directions could not be confirmed', 'cost_or_supply': 'cost or supply',
+                 'transport_access': 'transport or access', 'patient_declined': 'patient declined', 'side_effect': 'side effect or intolerance', 'clinical_limit': 'a lab or vital sign limit'}
+MAX_SENTENCES = 12
+
+
+def barrier_sentences(text):
+    """Code only. The sentences of a note that use wording for something getting in the way. A full stop inside a dose (0.35 MG) does not end a sentence."""
+    return [x for x in re.split(r'(?<=[.!?])\s+', ' '.join(str(text or '').split())) if 15 <= len(x) <= 400 and BARRIER_WORDS.search(x)]
+
+
+def barrier_kind(sentence, s1_ledger=None):
+    """System One places one sentence in one fixed kind of barrier, or says it is not one. -> (kind or None, usd)."""
+    from . import methods
+    try:
+        label, _, usd = methods._system_one('Sentence from a note written between a hospital discharge and a readmission: "' + sentence + '"\nWhat kind of barrier to care does it describe?', BARRIERS, s1_ledger)
+    except Exception:
+        label, usd = None, 0.0
+    return label, usd
+
+
+def barriers(question, sql, params, read, db, *, readers=(), s1_ledger=None):
+    """Reading mode 'readmission_barriers': for every readmission the SQL selects, the sentences in notes dated after the prior
+    discharge and up to the readmission that say something got in the way. Code finds the sentences; System One names the kind
+    of barrier from fixed choices; code counts readmissions. -> (columns, rows, validation, steps, evidence)."""
+    from collections import Counter
+    used = set(re.findall(r'(?<![:\w]):([a-z_][a-z0-9_]*)', sql))
+    columns, selected = store.run(sql, {k: v for k, v in (params or {}).items() if k in used}, db)
+    need = ('patient_id', 'readmit_admit', 'index_discharge', 'record_id', 'event_date')
+    if any(c not in columns for c in need): raise store.RecipeError('A readmission-barriers plan must select the two stays and the documents')
+    at = {c: columns.index(c) for c in need}
+    started = time.monotonic()
+    cases = {}
+    for r in selected:
+        case = cases.setdefault((r[at['patient_id']], r[at['readmit_admit']]), [])
+        if r[at['record_id']] and str(r[at['index_discharge']]) < str(r[at['event_date']]) <= str(r[at['readmit_admit']]): case.append(r[at['record_id']])
+    ids = list(dict.fromkeys(i for docs in cases.values() for i in docs))
+    texts = store.texts(ids, db)
+    found = {}
+    for key, docs in cases.items():
+        seen = []
+        for rid in docs:
+            for sentence in barrier_sentences((texts.get(rid) or {}).get('text', '')):
+                if len(seen) < MAX_SENTENCES and sentence not in [x[0] for x in seen]: seen.append((sentence, rid))
+        found[key] = seen
+    distinct = sorted({sentence for seen in found.values() for sentence, _ in seen})
+    with ThreadPoolExecutor(8) as pool:
+        placed = dict(zip(distinct, pool.map(lambda x: barrier_kind(x, s1_ledger), distinct))) if distinct else {}
+    count, quotes, evidence = Counter(), {}, []
+    for (pid, when), seen in sorted(found.items()):
+        count['readmissions'] += 1
+        kinds = set()
+        for sentence, rid in seen:
+            kind = placed.get(sentence, (None, 0))[0]
+            if kind and kind != 'not_a_barrier':
+                kinds.add(kind); quotes.setdefault(kind, sentence)
+                evidence.append({'record_id': rid, 'label': 'yes', 'by': 'system1', 'value': f'{pid} readmitted {when}: {BARRIER_NAMES[kind]}', 'quote': sentence})
+        if kinds: count['a note between the stays documents something that got in the way'] += 1
+        elif not cases[(pid, when)]: count['no note on record between the stays'] += 1
+        else: count['notes on record between the stays, none documents a barrier'] += 1
+        for kind in kinds: count[kind] += 1
+    n = count['readmissions']
+    rows = [[k, count[k], round(count[k] / n, 4) if n else None, ''] for k in ('readmissions', 'a note between the stays documents something that got in the way',
+                                                                               'notes on record between the stays, none documents a barrier', 'no note on record between the stays')]
+    rows += [[f'documented barrier: {BARRIER_NAMES[k]}', count[k], round(count[k] / n, 4), quotes[k]] for k in sorted(BARRIER_NAMES, key=lambda k: -count[k]) if count[k]]
+    undecided = sum(1 for kind, _ in placed.values() if not kind)
+    checks = [{'name': 'readmissions_selected', 'ok': n > 0, 'detail': f'{n} readmissions, {len(ids)} notes between the stays, {len(distinct)} candidate sentences'},
+              {'name': 'counts_add_up', 'ok': sum(count[k] for k in ('a note between the stays documents something that got in the way', 'notes on record between the stays, none documents a barrier',
+                                                                     'no note on record between the stays')) == n, 'detail': 'the three outcomes add up to the readmissions'},
+              {'name': 'every_sentence_decided', 'ok': undecided <= max(2, len(distinct) // 10), 'detail': f'{undecided} of {len(distinct)} sentences left undecided'}]
+    steps = [{'tier': 'read', 'reader': 'code', 'calls': len(ids), 'decided': len(ids), 'tokens': 0, 'usd': 0.0, 'outcome': 'read', 'model': 'none (fixed wording)', 'seconds': round(time.monotonic() - started, 2)}]
+    if distinct: steps.append({'tier': 'read', 'reader': 'system1', 'calls': len(distinct), 'decided': len(distinct) - undecided, 'tokens': 0, 'usd': sum(u for _, u in placed.values()),
+                               'outcome': 'kind_of_barrier', 'model': 'system-one'})
+    return ['finding', 'readmissions', 'share', 'example_from_a_note'], rows, {'ok': all(c['ok'] for c in checks), 'checks': checks}, steps, evidence[:200]

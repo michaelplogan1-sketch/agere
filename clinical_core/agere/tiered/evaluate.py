@@ -535,10 +535,14 @@ structured records (stays, visits, appointments, lab and vital results, conditio
 document, each starting with its record id in square brackets. Answer from the record only, about the hospital admission
 on the date the question names (the readmission) and the inpatient stay discharged before it.
 Definitions to use:
+- one hospital stay: inpatient stay rows of the patient that overlap, repeat, or begin on the day an earlier row ends are one
+  stay, from the first admission date to the last discharge date; a row with no discharge date followed within 30 days by a
+  row admitted and discharged on one day is one stay ending on that day. The stay before the readmission is the latest such
+  stay discharged 1 to 30 days before the readmission began
 - follow-up visit within 7 days: a visit dated after the prior discharge, within 7 days of it and before the readmission,
   of a type other than inpatient, emergency, observation, telephone or orders_only
-- inpatient admissions in the prior 12 months: distinct inpatient admission dates in the 365 days before the readmission
-  admission date, not counting the readmission itself
+- inpatient admissions in the prior 12 months: hospital stays (as defined above) that began in the 365 days before the
+  readmission admission date, not counting the readmission itself
 - lab resulted during the readmission: any named lab or vital result dated from the readmission admission date through
   one day after its discharge
 - advance directive documented: any document mentions an advance directive, POLST/MOLST, DNR/DNI, code status, full code,
@@ -566,7 +570,22 @@ def _quote_ok(item, want_record, phrase, texts):
     return len(whole) >= 5 and rid == want_record and (whole in doc or quote in doc) and phrase in whole
 
 
-def review(s1_ledger=None, only=None, path='eval/tiered/readmission_review.json'):
+def _review_prompt(db, question, pid, ra, index_admit, readmit_discharge, ids, texts):
+    """The structured rows and every document of one patient, as handed to the frontier model."""
+    table = lambda sql, args: '\n'.join(' | '.join(str(v) for v in r) for r in db.execute(sql, args))
+    window = (pid, index_admit, readmit_discharge or ra)
+    prompt = ('Question: ' + question +
+              '\n\nSTAYS (type | admit_date | discharge_date | organization)\n' + table("SELECT type, admit_date, COALESCE(discharge_date, 'not recorded'), organization_id FROM stay WHERE patient_id = ? ORDER BY admit_date", (pid,)) +
+              '\n\nVISITS in the year before the readmission (date | type)\n' + table("SELECT event_date, type FROM visit WHERE patient_id = ? AND event_date >= date(?, '-365 day') AND event_date <= ? ORDER BY 1", (pid, ra, ra)) +
+              '\n\nAPPOINTMENTS around the two stays (scheduled_date | final_status)\n' + table("SELECT scheduled_date, final_status FROM appointment WHERE patient_id = ? AND scheduled_date >= ? AND scheduled_date <= date(?, '+7 day') ORDER BY 1", window) +
+              '\n\nLAB AND VITAL RESULTS around the two stays (date | concept | value | unit)\n' + table("SELECT event_date, concept, value_canonical, unit_canonical FROM measurement WHERE patient_id = ? AND concept IS NOT NULL AND event_date >= ? AND event_date <= date(?, '+1 day') ORDER BY 1, 2", window) +
+              '\n\nCHRONIC CONDITIONS (concept | first date)\n' + table("SELECT concept, MIN(event_date) FROM condition WHERE patient_id = ? AND chronic = 1 AND concept IS NOT NULL GROUP BY 1", (pid,)) +
+              '\n\nSOCIAL-NEED SCREENS (need | positive | date)\n' + table("SELECT need, positive, event_date FROM social_need WHERE patient_id = ? ORDER BY 3", (pid,)) +
+              '\n\nDOCUMENTS\n\n' + '\n\n'.join(f"[{i}] {texts[i]['event_date']}\n{texts[i]['text'].strip()}" for i in ids if i in texts))
+    return prompt
+
+
+def review(s1_ledger=None, only=None, path='eval/tiered/readmission_review_2.json'):
     """A readmission chart review, eight items per patient: the stack's five-part review against a frontier model handed the
     structured rows and the whole chart."""
     from . import models, readmission as rd, split
@@ -601,16 +620,7 @@ def review(s1_ledger=None, only=None, path='eval/tiered/readmission_review.json'
                 'advance_directive': any(r[1] == 'advance directive or code status' and r[3] for r in rows(1)) == truth['advance_directive']}
         stack = {'items': mine, 'right': sum(mine.values()), 'statuses': [o['status'] for o in outcomes], 'usd': sum(s.get('usd', 0.0) for o in outcomes for s in o['steps']),
                  'seconds': round(sum(o['seconds'] for o in outcomes), 1), 'frontier_calls': sum(s.get('model') == models.LLM for o in outcomes for s in o['steps'])}
-        table = lambda sql, args: '\n'.join(' | '.join(str(v) for v in r) for r in db.execute(sql, args))
-        window = (pid, pt['index_admit'], pt['readmit_discharge'] or ra)
-        prompt = ('Question: ' + question +
-                  '\n\nSTAYS (type | admit_date | discharge_date | organization)\n' + table("SELECT type, admit_date, COALESCE(discharge_date, 'not recorded'), organization_id FROM stay WHERE patient_id = ? ORDER BY admit_date", (pid,)) +
-                  '\n\nVISITS in the year before the readmission (date | type)\n' + table("SELECT event_date, type FROM visit WHERE patient_id = ? AND event_date >= date(?, '-365 day') AND event_date <= ? ORDER BY 1", (pid, ra, ra)) +
-                  '\n\nAPPOINTMENTS around the two stays (scheduled_date | final_status)\n' + table("SELECT scheduled_date, final_status FROM appointment WHERE patient_id = ? AND scheduled_date >= ? AND scheduled_date <= date(?, '+7 day') ORDER BY 1", window) +
-                  '\n\nLAB AND VITAL RESULTS around the two stays (date | concept | value | unit)\n' + table("SELECT event_date, concept, value_canonical, unit_canonical FROM measurement WHERE patient_id = ? AND concept IS NOT NULL AND event_date >= ? AND event_date <= date(?, '+1 day') ORDER BY 1, 2", window) +
-                  '\n\nCHRONIC CONDITIONS (concept | first date)\n' + table("SELECT concept, MIN(event_date) FROM condition WHERE patient_id = ? AND chronic = 1 AND concept IS NOT NULL GROUP BY 1", (pid,)) +
-                  '\n\nSOCIAL-NEED SCREENS (need | positive | date)\n' + table("SELECT need, positive, event_date FROM social_need WHERE patient_id = ? ORDER BY 3", (pid,)) +
-                  '\n\nDOCUMENTS\n\n' + '\n\n'.join(f"[{i}] {texts[i]['event_date']}\n{texts[i]['text'].strip()}" for i in ids if i in texts))
+        prompt = _review_prompt(db, question, pid, ra, pt['index_admit'], pt['readmit_discharge'], ids, texts)
         try:
             text, step = models._claude(models.LLM, REVIEW_READER_SYSTEM, prompt)
             try:
@@ -645,6 +655,182 @@ def review(s1_ledger=None, only=None, path='eval/tiered/readmission_review.json'
     text = '\n'.join(lines)
     (OUT / f'{run_id}.report.txt').write_text(text + '\n'); (OUT / f'{run_id}.results.json').write_text(json.dumps(results, indent=1))
     return text
+
+
+def _episodes(raw):
+    """Hospital episodes worked out in Python, separately from the stack's SQL. raw: (patient, admit, discharge) inpatient rows.
+    A stay written as an open row plus a same-day row on its discharge day is one stay; rows of a patient that overlap, repeat
+    or begin on the day an earlier row ends are one episode. -> [(patient, first admit, last discharge)]."""
+    from collections import defaultdict
+    from datetime import date
+    day = lambda x: date.fromisoformat(str(x)[:10])
+    by = defaultdict(list)
+    for p, a, d in raw: by[p].append((a, d))
+    out = []
+    for p, rows in by.items():
+        opens = [a for a, d in rows if not d]
+        tails = {a for a, d in rows if d and d == a and any(0 < (day(a) - day(b)).days <= 30 for b in opens)}
+        clean = sorted(((a, d or min((b for b in tails if 0 < (day(b) - day(a)).days <= 30), default=None)) for a, d in rows if not (d == a and a in tails)),
+                       key=lambda t: (t[0], t[1] is None, t[1] or ''))
+        current = None
+        for a, d in clean:
+            if current and current[1] and a <= current[1]: current[1] = max(current[1], d or current[1])
+            else:
+                if current: out.append((p, current[0], current[1]))
+                current = [a, d]
+        if current: out.append((p, current[0], current[1]))
+    return out
+
+
+def committee(year='2029', s1_ledger=None, workers=4, limit=None):
+    """Every readmission in one year, two ways. The stack: one case-list question. A frontier model doing all the work: it is
+    handed each readmission's structured rows and whole chart, one call per readmission, and code adds up its answers.
+    Table items are scored against counts made here straight from the stay and visit tables; note items are compared case
+    by case and every disagreement is written out for reading."""
+    from concurrent.futures import ThreadPoolExecutor
+    from datetime import date
+    from . import models
+    run_id = f"committee-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
+    db, bottles, day = store.connect(), bottle_store.Bottles(), lambda x: date.fromisoformat(str(x)[:10])
+    raw = db.execute("SELECT patient_id, admit_date, discharge_date FROM stay WHERE type = 'inpatient'").fetchall()
+    stays = _episodes(raw)
+    cases = {}
+    for pid, admit, _ in stays:                                      # the reference, without the stack's SQL
+        if not str(admit).startswith(year): continue
+        prior = [(d, a) for p, a, d in stays if p == pid and d and a < admit and 1 <= (day(admit) - day(d)).days <= 30]
+        if not prior: continue
+        dis, index_admit = max(prior)
+        visits = [v[0] for v in db.execute("SELECT event_date FROM visit WHERE patient_id = ? AND type NOT IN ('inpatient', 'emergency', 'observation', 'telephone', 'orders_only')", (pid,))]
+        cases[(pid, admit)] = {'patient': pid, 'readmit_admit': admit, 'index_admit': index_admit, 'index_discharge': dis,
+                               'readmit_discharge': max((d for p, a, d in stays if p == pid and a == admit and d), default=None),
+                               'days_between': (day(admit) - day(dis)).days,
+                               'visit7': any(0 < (day(v) - day(dis)).days <= 7 and day(v) < day(admit) for v in visits),
+                               'prior_admissions': len({a for p, a, d in stays if p == pid and a < admit and (day(admit) - day(a)).days <= 365})}
+    keys = sorted(cases)[:limit]
+    outcome = router.answer(f'List the readmissions in {year}', bottles=bottles, s1_ledger=s1_ledger)
+    ledger_store.Ledger().write(run_id, f'List the readmissions in {year}', outcome, eval_id='committee')
+    mine = {(r[0], r[2]): {'visit7': r[8] == 'yes', 'days_between': r[3], 'reason': not str(r[4]).startswith('not stated'), 'reason_text': r[4],
+                           'instruction': r[7] != 'none on record', 'instruction_text': r[7]} for r in outcome.get('rows') or []}
+    stack = {'status': outcome['status'], 'tier': outcome['final_tier'], 'usd': sum(s.get('usd', 0.0) for s in outcome['steps']), 'seconds': outcome['seconds'],
+             'frontier_calls': sum(s.get('model') == models.LLM for s in outcome['steps'])}
+
+    def read(key):
+        c = cases[key]
+        own = store.connect()
+        try:
+            ids = [r[0] for r in own.execute('SELECT record_id FROM document WHERE patient_id = ? ORDER BY event_date, record_id', (c['patient'],))]
+            texts = store.texts(ids, own)
+            question = (f"Review the readmission of patient {c['patient']} on {c['readmit_admit']}: why were they readmitted, what did the chart say, did they get follow-up, "
+                        'what are their risk factors, are there advance directives, and what do the labs and imaging show?')
+            prompt = _review_prompt(own, question, c['patient'], c['readmit_admit'], c['index_admit'], c['readmit_discharge'], ids, texts)
+        finally:
+            own.close()
+        corpus = [_norm_text(t['text']) for t in texts.values()]
+        quoted = lambda item: isinstance(item, dict) and len(_norm_text(item.get('quote'))) >= 5 and any(_norm_text(item['quote']) in doc for doc in corpus)
+        step = {'usd': 0.0, 'tokens': 0, 'seconds': 0.0}
+        try:
+            text, step = models._claude(models.LLM, REVIEW_READER_SYSTEM, prompt)
+            got = models._json(text)
+        except ValueError:
+            return {'unusable': True, 'usd': step['usd'], 'tokens': step['tokens'], 'seconds': step['seconds'], 'characters': len(prompt)}
+        except Exception as exc:
+            if 'limit' in str(exc).lower(): raise
+            return {'error': f'{type(exc).__name__}: {str(exc)[:160]}', 'usd': 0.0, 'tokens': 0, 'seconds': 0.0, 'characters': len(prompt)}
+        said = lambda k: (got.get(k) or {}).get('quote') if isinstance(got.get(k), dict) else None
+        return {'visit7': got.get('follow_up_visit_within_7_days'), 'days_between': got.get('days_between_discharge_and_readmission'),
+                'prior_admissions': got.get('inpatient_admissions_in_prior_12_months'), 'reason': quoted(got.get('readmission_reason')), 'reason_text': said('readmission_reason'),
+                'reason_not_in_chart': bool(said('readmission_reason')) and not quoted(got.get('readmission_reason')),
+                'instruction': quoted(got.get('follow_up_instruction')), 'instruction_text': said('follow_up_instruction'),
+                'instruction_not_in_chart': bool(said('follow_up_instruction')) and not quoted(got.get('follow_up_instruction')),
+                'usd': step['usd'], 'tokens': step['tokens'], 'seconds': step['seconds'], 'characters': len(prompt)}
+
+    started = time.monotonic()
+    with ThreadPoolExecutor(workers) as pool:
+        theirs = dict(zip(keys, pool.map(read, keys)))
+    wall = round(time.monotonic() - started, 1)
+    n = len(keys)
+    failed = [k for k in keys if 'visit7' not in theirs[k]]
+    table = lambda arm, item: sum(1 for k in keys if k in arm and arm[k].get(item) == cases[k][item])
+    tally = lambda arm, test: sum(1 for k in keys if k in arm and 'visit7' in arm[k] and test(arm[k]))
+    lines = [f'READMISSION COMMITTEE COMPARISON  run {run_id}', f'{n} readmissions in {year} (stay and visit tables, each hospital episode counted once, worked out here without the stack)', '',
+             'cost and time for the whole year',
+             f"  stack                       ${stack['usd']:.4f}   {stack['seconds']:.1f}s   frontier calls {stack['frontier_calls']}   ({stack['status']} by {stack['tier']})",
+             f"  frontier model, every chart ${sum(t['usd'] for t in theirs.values()):.2f}   {sum(t['seconds'] for t in theirs.values()):.0f}s of model time ({wall}s on the clock, {workers} at a time)   "
+             f"{sum(t['tokens'] for t in theirs.values())} tokens   {n} calls   {len(failed)} calls gave no usable answer", '',
+             'items with an answer in the tables (right / readmissions)',
+             f"  outpatient visit within 7 days   stack {table(mine, 'visit7')}/{n}   frontier model {table(theirs, 'visit7')}/{n}",
+             f"  days from discharge to readmission   stack {table(mine, 'days_between')}/{n}   frontier model {table(theirs, 'days_between')}/{n}",
+             f"  inpatient admissions in the prior 12 months   stack (not on its list)   frontier model {table(theirs, 'prior_admissions')}/{n}", '',
+             'the counts a committee would be shown (reference from the tables where one exists)',
+             f"  no outpatient visit within 7 days   reference {sum(not cases[k]['visit7'] for k in keys)}   stack {tally(mine, lambda a: not a['visit7'])}   frontier model {tally(theirs, lambda a: a['visit7'] is False)}",
+             f"  chart states a reason for the readmission   stack {tally(mine, lambda a: a['reason'])}   frontier model {tally(theirs, lambda a: a['reason'])}",
+             f"  prior discharge summary gave a follow-up instruction   stack {tally(mine, lambda a: a['instruction'])}   frontier model {tally(theirs, lambda a: a['instruction'])}",
+             f"  instruction given and no visit within 7 days   stack {tally(mine, lambda a: a['instruction'] and not a['visit7'])}   frontier model {tally(theirs, lambda a: a['instruction'] and a['visit7'] is False)}",
+             f"  frontier model quotes not found in the chart   reason {tally(theirs, lambda a: a['reason_not_in_chart'])}   instruction {tally(theirs, lambda a: a['instruction_not_in_chart'])}", '',
+             'note items where the two differ (to be read case by case)']
+    differ = [(k, item) for k in keys for item in ('reason', 'instruction') if k in mine and 'visit7' in theirs[k] and mine[k][item] != theirs[k][item]]
+    lines += [f"  {k[0]} {k[1]} {item}: stack [{str(mine[k][item + '_text'])[:110]}] | frontier model [{str(theirs[k][item + '_text'])[:110]}]" for k, item in differ] or ['  none']
+    text = '\n'.join(lines)
+    (OUT / f'{run_id}.report.txt').write_text(text + '\n')
+    (OUT / f'{run_id}.results.json').write_text(json.dumps([{'case': cases[k], 'stack': mine.get(k), 'frontier': theirs[k]} for k in keys], indent=1))
+    db.close()
+    return text
+
+
+REWORD_SYSTEM = '''Reword one analytics question so it asks exactly the same thing in clearly different words and word order.
+Keep every value exactly as written (years, months, numbers, names of conditions, drug classes, payers, document types).
+Do not add or remove any filter, grouping or measure. Return exactly one JSON object: {"reworded": "<the question>"}.'''
+
+
+def near_eval(limit=60, s1_ledger=None):
+    """Does a saved recipe answer a rewording of its own question? For promoted saved shapes, the small model rewords the
+    original question; the reference is the saved recipe's own rows for the original. Each rewording runs through the tiers
+    below the frontier, with the near-match rung off and then on. Reads the saved recipes; saves nothing."""
+    import os, shutil, tempfile
+    os.environ.pop('ANTHROPIC_API_KEY', None)
+    from run_integrated_stack import keys
+    keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+    from . import models
+    scratch = Path(tempfile.mkdtemp(prefix='near-eval-'))
+    shutil.copy(os.environ.get('AGERE_TIERED_BOTTLES', bottle_store.DEFAULT), scratch / 'bottles.sqlite3')
+    bottles, db = bottle_store.Bottles(scratch / 'bottles.sqlite3'), store.connect()
+    saved = [b for b in bottles.full() if b['status'] == 'promoted' and not b.get('read') and (b.get('provenance') or {}).get('question')]
+    picked = saved[::max(1, len(saved) // int(limit))][:int(limit)]
+    below = ('bottles', 'recipes', 'system1', 'slm', 'near')
+    lines, tally, usd_near, sec_near = [], {'off': {}, 'on': {}}, 0.0, 0.0
+    for b in picked:
+        question = b['provenance']['question']
+        hit = bottles.match(question, statuses=('promoted',))
+        if not hit or hit[0]['id'] != b['id']: continue
+        reference = store.run(b['sql'], hit[1], db)[1]
+        try:
+            text, _ = models._claude(models.SLM, REWORD_SYSTEM, question)
+            reworded = ' '.join(str(models._json(text).get('reworded') or '').split())
+        except Exception as exc:
+            if 'limit' in str(exc).lower(): raise
+            continue
+        if len(reworded) < 12 or bottles.match(reworded, statuses=('promoted',)): continue  # an exact match would not test the rung
+        row = {}
+        for mode in ('off', 'on'):
+            os.environ['AGERE_TIERED_NEAR'] = mode
+            try:
+                o = router.answer(reworded, tiers=below, bottles=bottles, s1_ledger=s1_ledger)
+            except Exception as exc:
+                if 'limit' in str(exc).lower(): raise
+                o = {'status': 'error', 'final_tier': None, 'rows': None, 'steps': [], 'seconds': 0.0}
+            right = o['status'] == 'answered' and correct(reference, o['rows']) and correct(o['rows'], reference)
+            kind = (f"{o['final_tier']} right" if right else f"{o['final_tier']} WRONG") if o['status'] == 'answered' else 'left for the frontier model'
+            tally[mode][kind] = tally[mode].get(kind, 0) + 1; row[mode] = kind
+            if mode == 'on' and o.get('final_tier') == 'near':
+                usd_near += sum(s.get('usd', 0.0) for s in o['steps']); sec_near += o['seconds']
+        line = f"{b['id']:4} off: {row['off']:28} on: {row['on']:28} | {question[:70]} -> {reworded[:90]}"
+        print(line, flush=True); lines.append(line)
+    os.environ['AGERE_TIERED_NEAR'] = 'off'
+    n = sum(tally['on'].values()); near_n = sum(v for k, v in tally['on'].items() if k.startswith('near'))
+    summary = (f"near-match rung on {n} rewordings of saved questions | rung off: {tally['off']} | rung on: {tally['on']} | "
+               f"near answers: ${usd_near / near_n if near_n else 0:.4f} and {sec_near / near_n if near_n else 0:.1f}s each")
+    (OUT / f"near-eval-{time.strftime('%Y%m%d-%H%M%S')}.txt").write_text('\n'.join(lines + [summary]) + '\n')
+    return summary
 
 
 def methods_eval(path='eval/tiered/methods.json', config=None, workers=1):
@@ -706,6 +892,18 @@ def main(argv):
         return
     if argv[0] == 'takeover':
         print('\n' + takeover_eval(tuple(argv[1].split(',')) if len(argv) > 1 else ('novel', 'paraphrase')))
+        return
+    if argv[0] == 'committee':
+        import os
+        os.environ.pop('ANTHROPIC_API_KEY', None)
+        from run_integrated_stack import keys
+        keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+        print('\n' + committee(argv[1] if len(argv) > 1 else '2029', os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'),
+                               limit=int(argv[2]) if len(argv) > 2 else None))
+        return
+    if argv[0] == 'near':
+        import os
+        print('\n' + near_eval(argv[1] if len(argv) > 1 else 60, os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3')))
         return
     if argv[0] == 'review':
         import os

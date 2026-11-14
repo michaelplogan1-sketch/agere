@@ -24,10 +24,10 @@ def _budget(fresh=False):
 
 
 EARLIER = contextvars.ContextVar('tiered_earlier_questions', default=())  # earlier questions of this conversation, for the takeover rung
-TIERS = ('bottles', 'recipes', 'system1', 'slm', 'llm')
+TIERS = ('bottles', 'recipes', 'system1', 'slm', 'near', 'llm')
 ORDER = ('methods',) + TIERS + ('takeover',)  # methods and takeover are not router tiers: one runs before the router, one after it
 MAX_GROUNDING = 200  # evidence lines shown for a document answer
-TIER_NAMES = {'methods': 'a built-in analysis method', 'bottles': 'a saved recipe for this question shape', 'recipes': 'a built-in recipe matched by wording',
+TIER_NAMES = {'methods': 'a built-in analysis method', 'near': 'a saved recipe for the same question in other words (System One picked it, the small model filled its values, System One confirmed the fit)', 'bottles': 'a saved recipe for this question shape', 'recipes': 'a built-in recipe matched by wording',
               'slm': 'a built-in recipe chosen by System One and filled by the small model', 'llm': 'a recipe written by the frontier model and run by code',
               'takeover': 'the frontier model working the question out itself with read-only queries'}
 
