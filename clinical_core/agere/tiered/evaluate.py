@@ -446,7 +446,62 @@ def takeover_eval(shapes=('novel', 'paraphrase'), workers=4):
     return '\n'.join(lines)
 
 
+def methods_eval(path='eval/tiered/methods.json', config=None, workers=1):
+    """Routing check for the methods rung on the real warehouse: each question through the whole app ladder.
+    Scored on which rung answered and which method ran (eval/tiered/methods.json), not on the figures."""
+    import json, os, time
+    from pathlib import Path
+    os.environ.pop('ANTHROPIC_API_KEY', None)
+    from run_integrated_stack import keys
+    keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+    from .. import model_policy
+    os.environ.update({k: v for k, v in model_policy.ECONOMICAL_RUNTIME.items() if isinstance(v, str)})
+    from ..local_release import validate_config
+    from ..clinical.stack_runtime import Stack
+    from . import app, bottles as bottle_store
+    # The run reads the saved recipes but writes to copies: it saves no recipe, starts no learning and keeps its own ledger.
+    import shutil, tempfile
+    scratch = Path(tempfile.mkdtemp(prefix='methods-eval-'))
+    source = Path(os.environ.get('AGERE_TIERED_BOTTLES', bottle_store.DEFAULT))
+    if source.exists(): shutil.copy(source, scratch / 'bottles.sqlite3')
+    os.environ.update({'AGERE_TIERED_BOTTLES': str(scratch / 'bottles.sqlite3'), 'AGERE_TIERED_LEDGER': str(scratch / 'ledger.sqlite3'), 'AGERE_TIERED_AUTO_LEARN': 'off'})
+    config = config or os.environ.get('AGERE_TIERED_STACK_CONFIG') or 'artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/active-config.json'
+    stack = Stack(Path(validate_config(config)['build']) / 'stack', allow_live=False)
+    items = json.loads(Path(path).read_text())['questions']
+    lines, right, usd, seconds, by = [], 0, 0.0, 0.0, {'method_right': 0, 'method_wrong': 0, 'method_missed': 0, 'plain_kept': 0, 'plain_taken': 0}
+    for item in items:
+        t0 = time.monotonic()
+        try:
+            result = app.try_answer(stack, item['question'])
+        except Exception as exc:
+            result = None; print(f"{item['id']} error {type(exc).__name__}: {str(exc)[:160]}", flush=True)
+        took = round(time.monotonic() - t0, 1)
+        core = (result or {}).get('tiered_core') or {}
+        ran = core.get('methods') or []
+        cost = ((result or {}).get('planning_economics') or {}).get('known_api_estimate_usd') or 0.0
+        if item['method']:
+            kind = 'method_right' if item['method'] in ran else 'method_wrong' if ran else 'method_missed'
+        else:
+            kind = 'plain_taken' if ran else 'plain_kept'
+        ok = kind in ('method_right', 'plain_kept')
+        by[kind] += 1; right += ok; usd += cost; seconds += took
+        restated = ((result or {}).get('planner_receipt') or {}).get('recipe', {}).get('restated') if ran else None
+        line = (f"{'ok  ' if ok else 'MISS'} {item['id']} want={item['method'] or 'tiers'} got={','.join(ran) or core.get('final_tier') or 'not answered'} "
+                f"{took}s ${cost:.4f}" + (' (restated)' if restated else '') + f" | {item['question']}")
+        print(line, flush=True); lines.append(line)
+    methods_n = sum(1 for i in items if i['method']); plain_n = len(items) - methods_n
+    summary = (f"methods rung routing: {right}/{len(items)} | method questions {by['method_right']}/{methods_n} right, {by['method_wrong']} wrong method, "
+               f"{by['method_missed']} left to other rungs | plain questions {by['plain_kept']}/{plain_n} left to the tiers, {by['plain_taken']} taken by a method | "
+               f"${usd:.4f}, {seconds:.0f}s total")
+    out = Path('artifacts/agere-tiered-core'); out.mkdir(parents=True, exist_ok=True)
+    (out / f"methods-eval-{time.strftime('%Y%m%d-%H%M%S')}.txt").write_text('\n'.join(lines + [summary]) + '\n')
+    return summary
+
+
 def main(argv):
+    if argv[0] == 'methods':
+        print('\n' + methods_eval(*argv[1:2]))
+        return
     if argv[0] == 'takeover':
         print('\n' + takeover_eval(tuple(argv[1].split(',')) if len(argv) > 1 else ('novel', 'paraphrase')))
         return

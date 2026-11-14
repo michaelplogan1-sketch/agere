@@ -11,9 +11,9 @@ from . import VERSION, bottles as bottle_store, ledger as ledger_store, router, 
 
 EARLIER = contextvars.ContextVar('tiered_earlier_questions', default=())  # earlier questions of this conversation, for the takeover rung
 TIERS = ('bottles', 'recipes', 'system1', 'slm', 'llm')
-ORDER = TIERS + ('takeover',)  # takeover is not a router tier: it runs only after the router has not answered
+ORDER = ('methods',) + TIERS + ('takeover',)  # methods and takeover are not router tiers: one runs before the router, one after it
 MAX_GROUNDING = 200  # evidence lines shown for a document answer
-TIER_NAMES = {'bottles': 'a saved recipe for this question shape', 'recipes': 'a built-in recipe matched by wording',
+TIER_NAMES = {'methods': 'a built-in analysis method', 'bottles': 'a saved recipe for this question shape', 'recipes': 'a built-in recipe matched by wording',
               'slm': 'a built-in recipe chosen by System One and filled by the small model', 'llm': 'a recipe written by the frontier model and run by code',
               'takeover': 'the frontier model working the question out itself with read-only queries'}
 
@@ -129,6 +129,9 @@ def try_answer(stack, question):
     from . import split
     s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
     fixed = split.known(question)
+    from . import methods
+    if not fixed and (methods.claims(stack, question, bottle_store.Bottles()) or methods.needs(stack, question, bottle_store.Bottles())):
+        return _single(stack, question)  # an analysis method reads the whole message; it is not split first
     if fixed or split.candidate(question, bottle_store.Bottles()):
         try:
             found, how = fixed or split.parts(question, s1_ledger)
@@ -177,8 +180,36 @@ def _single(stack, question, cohort=None, takeover_ok=True):
     """One question through the tiers, inside a patient cohort when one is given. -> the app's result dict, or None."""
     s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
     bottles = bottle_store.Bottles()
+    assist = False
+    if cohort is None:
+        from . import methods
+        if methods.claims(stack, question, bottles):
+            done = _method(stack, question, s1_ledger=s1_ledger)
+            if done is not None: return done
+        else:
+            wanted = methods.needs(stack, question, bottles)
+            if wanted: return _needs_input(question, wanted)
+            assist = methods.worth_asking(stack, question, bottles)
     try:
-        outcome = router.answer(question, tiers=TIERS, bottles=bottles, bottle_new=True, s1_ledger=s1_ledger, cohort=cohort)
+        # A question in the vocabulary of the analysis methods goes through the cheap tiers first, then the methods rung
+        # (small model restates, code and System One check), and only then to a recipe written by the frontier model.
+        outcome = router.answer(question, tiers=tuple(t for t in TIERS if t != 'llm') if assist else TIERS, bottles=bottles, bottle_new=True,
+                                s1_ledger=s1_ledger, cohort=cohort)
+        if assist and outcome['status'] != 'answered':
+            try:
+                restated, how = methods.assisted(stack, question, s1_ledger)
+            except Exception as exc:
+                if 'limit' in str(exc).lower(): raise
+                restated, how = None, None
+            if restated:
+                done = _method(stack, question, restated=restated, how=how)
+                if done is not None: return done
+            elif how:
+                ledger_store.Ledger().write('app_method', question, {'status': 'declined', 'final_tier': None, 'steps': [how], 'seconds': how['seconds'],
+                                                                     'validation': {'ok': False, 'reason': how['method']}, 'recipe': None}, config={'tiers': list(ORDER)})
+            later = router.answer(question, tiers=('llm',), bottles=bottles, bottle_new=True, s1_ledger=s1_ledger, cohort=cohort)
+            outcome = {**later, 'steps': outcome['steps'] + ([how] if how else []) + later['steps'], 'escalations': outcome['escalations'] + later['escalations'],
+                       'seconds': round(outcome['seconds'] + (how['seconds'] if how else 0.0) + later['seconds'], 2)}
     except Exception as exc:  # the bridge never blocks a question: any failure falls through to the existing path
         if 'limit' in str(exc).lower(): raise
         return None
@@ -252,6 +283,81 @@ def _single(stack, question, cohort=None, takeover_ok=True):
                                    'scope': 'Tiered core model calls only.'},
             'tiered_core': {'final_tier': tier, 'seconds': outcome['seconds'], 'escalations': outcome['escalations'], 'bottled': outcome.get('bottled'),
                             **({'documents': documents} if documents else {})}}
+
+
+def _method(stack, question, restated=None, how=None, s1_ledger=None):
+    """An analysis method of the wider application answers (methods.py). Code named the method from the question, or from
+    a restatement the small model wrote and System One confirmed; code ran it. -> result or None."""
+    from . import methods
+    steps = [how] if how else []
+    if restated is None:  # the compiler named the method from the user's own words: System One may still say it does not fit
+        found = methods.plan(stack, question)
+        ok, step = methods.fits(stack, question, found[2], s1_ledger) if found else (False, None)
+        if step and step.get('label'): steps.append(step)
+        if not ok:
+            ledger_store.Ledger().write('app_method', question, {'status': 'declined', 'final_tier': None, 'steps': steps, 'seconds': step['seconds'] if step else 0.0,
+                                                                 'validation': {'ok': False, 'reason': 'system_one_says_method_does_not_fit'},
+                                                                 'recipe': {'methods': found[2] if found else []}}, config={'tiers': list(ORDER)})
+            return None
+    got = methods.run(stack, restated or question)
+    if got is None: return None
+    usd, calls = sum(s.get('usd', 0.0) for s in steps), sum(1 for s in steps if s.get('model'))
+    got['seconds'] = round(got['seconds'] + sum(s.get('seconds', 0.0) for s in steps), 2)
+    named = ', '.join(m.replace('_', ' ') for m in got['methods'])
+    if 'result' not in got:
+        import sys
+        print(f"tiered method declined: {got['declined']}", file=sys.stderr, flush=True)
+        ledger_store.Ledger().write('app_method', question, {'status': 'declined', 'final_tier': None, 'steps': steps, 'seconds': got['seconds'],
+                                                             'validation': {'ok': False, 'reason': got['declined']}, 'recipe': {'methods': got['methods']}},
+                                    config={'tiers': list(ORDER)})
+        return None
+    result = got['result']
+    answer = dict(result['answer'])
+    table = answer.get('table') or []
+    columns = list(table[0]) if table and isinstance(table[0], dict) else []
+    ledger_store.Ledger().write('app_method', question, {'status': 'answered', 'final_tier': 'methods', 'steps': steps, 'seconds': got['seconds'],
+                                                         'validation': {'ok': True, 'checks': [{'name': 'method_named_by_code', 'ok': True}]},
+                                                         'recipe': {'methods': got['methods']}, 'columns': columns,
+                                                         'rows': [[r.get(c) for c in columns] for r in table[:50]]},
+                                config={'tiers': list(ORDER)})
+    models_used = ', '.join(dict.fromkeys(str(s['model']) for s in steps if s.get('model'))) or 'none'
+    answer['facts'] = {**(answer.get('facts') or {}),
+                       'answered_by': f"{TIER_NAMES['methods'][0].upper() + TIER_NAMES['methods'][1:]}: {named}. {got['seconds']} seconds, ${usd:.4f} in model calls (models used: {models_used})."}
+    chosen = ('The wording was not one the code recognises, so the small model restated the question as: "' + restated + '". Code checked that the restatement adds no '
+              'number or period and that it names this method; System One confirmed it asks the same thing.'
+              if restated else 'Code read the question and chose the method' + ('; System One confirmed the method fits the question.' if calls else '.'))
+    answer['limitations'] = [f'Answered by the tiered core using {TIER_NAMES["methods"]} ({named}). {chosen} Code ran the method on the warehouse; no model computed any figure.',
+                             'The method states its own assumptions below. Forecasts, simulations and estimated effects are model outputs under those assumptions, not measured facts.',
+                             *(answer.get('limitations') or [])]
+    if restated: answer['verification'] = 'unverified'  # the choice of method rests on a model restatement, so it is not called checked
+    return {**result, 'answer': answer, 'question': question, 'route': 'tiered_core', 'new_paid_api_calls': calls,
+            'planner_receipt': {'route': 'tiered_core', 'version': VERSION, 'final_tier': 'methods', 'recipe': {'methods': got['methods'], **({'restated': restated} if restated else {})}, 'steps': steps,
+                                'escalations': [], 'validation': {'ok': True, 'checks': [{'name': 'method_named_by_code', 'ok': True}]},
+                                'new_paid_api_calls': calls, 'known_api_estimate_usd': usd, 'api_cost_known': True, 'frontier_called': False,
+                                'compiler': {k: v for k, v in got['info'].items() if k in ('compiler', 'recognised', 'route', 'operation')}},
+            'planning_economics': {'new_api_estimate_usd': usd, 'known_api_estimate_usd': usd, 'total_cost_known': True, 'scope': 'Tiered core model calls only.'},
+            'tiered_core': {'final_tier': 'methods', 'seconds': got['seconds'], 'escalations': [], 'bottled': None, 'methods': got['methods']}}
+
+
+def _needs_input(question, wanted):
+    """The application's compiler recognised the question and named what it lacks (methods.needs). The user is told what
+    to add; no model is asked to guess a contract term or a benchmark. Code only, no cost."""
+    listed = '; '.join(wanted)
+    ledger_store.Ledger().write('app_method', question, {'status': 'needs_input', 'final_tier': 'methods', 'steps': [], 'seconds': 0.0,
+                                                         'validation': {'ok': True, 'checks': [{'name': 'missing_input_named_by_code', 'ok': True}]},
+                                                         'recipe': {'requires_input': wanted}}, config={'tiers': list(ORDER)})
+    answer = {'status': 'unsupported', 'answer_type': 'table', 'headline': 'This needs information that is not in the data. Add it to the question and ask again: ' + listed + '.',
+              'table': [{'needed': w} for w in wanted], 'sources': [], 'patient_ids': [], 'missing': [f'Missing input: {w}' for w in wanted],
+              'facts': {'answered_by': 'Code recognised the question and named the inputs it needs. 0 seconds, $0.0000 in model calls (models used: none).'},
+              'limitations': ['Answered by the tiered core: code recognised which analysis this asks for and which inputs it needs that are neither in the question nor in the warehouse. '
+                              'No model was asked to guess them.']}
+    return {'answer': answer, 'results': [], 'new_paid_api_calls': 0, 'workflow': [], 'question': question, 'route': 'tiered_core',
+            'graph': {'interpretation': 'Needs inputs not in the data: ' + question, 'coverage': 'unsupported', 'unmet_requirements': answer['missing'], 'nodes': []},
+            'planner_receipt': {'route': 'tiered_core', 'version': VERSION, 'final_tier': 'methods', 'recipe': {'requires_input': wanted}, 'steps': [], 'escalations': [],
+                                'validation': {'ok': True, 'checks': [{'name': 'missing_input_named_by_code', 'ok': True}]}, 'new_paid_api_calls': 0,
+                                'known_api_estimate_usd': 0.0, 'api_cost_known': True, 'frontier_called': False},
+            'planning_economics': {'new_api_estimate_usd': 0.0, 'known_api_estimate_usd': 0.0, 'total_cost_known': True, 'scope': 'Tiered core model calls only.'},
+            'tiered_core': {'final_tier': 'methods', 'seconds': 0.0, 'escalations': [], 'bottled': None, 'needs_input': wanted}}
 
 
 def _takeover(question, cohort, outcome):
