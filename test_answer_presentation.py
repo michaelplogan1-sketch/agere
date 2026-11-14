@@ -51,7 +51,7 @@ for(let page=0;page<4;page++){
 }
 const answer={table:rows,patient_ids:['P-1'],verification:'unverified',limitations:['Missing evidence <script>'],facts:{source_meaning:'An exact saved finding.'}};
 assert.match(answerSummary(answer),/An exact saved finding/);
-assert.match(resultLimitations(answer),/VERIFICATION INCOMPLETE/);
+assert.match(resultLimitations(answer),/Verification incomplete/);
 assert.match(resultLimitations(answer),/&lt;script&gt;/);
 assert.doesNotMatch(resultLimitations(answer),/<script>/);
 assert.match(sourceDetails({grounding:['Retained native query'],table_binding:{columns:['patient_id']}}),/Retained native query/);
@@ -73,12 +73,12 @@ const cols=rows=>[...new Set(rows.flatMap(r=>Object.keys(r)))];
 const t={question:'Who needs follow-up?',archiveBlocked:true,data:{action_context:{id:'ANS-000000000000000000000001',invalidated:true},answer:{status:'partial',verification:'unverified',headline:'Two source records returned.',patient_ids:['A','B'],table:[{patient_id:'A',on_therapy:0},{patient_id:'B',on_therapy:null}],missing:['Responsible team is unknown.']}}};
 const before=JSON.stringify(t);
 let out=decisionActions(t);
-assert.match(out,/No intervention plan returned/);
-assert.match(out,/Responsible team is unknown/);
+assert.match(out,/Historical result/);
+assert.match(resultLimitations(t.data.answer),/Responsible team is unknown/);
 assert.match(out,/data-decision-draft="refresh"/);
 assert.doesNotMatch(out,/data-suggestion-index|Start treatment|Enroll now/);
 assert.match(decisionHero(t),/>2<\/strong>/);
-assert.match(decisionHero(t),/Saved answer needs updating/);
+assert.equal(decisionState(t).blocked,true);
 assert.equal(JSON.stringify(t),before);
 // These are recorded operational suggestions; the UI must retain the exact scope and qualification.
 t.archiveBlocked=false;t.data.action_context.invalidated=false;
@@ -87,9 +87,9 @@ const actionBefore=JSON.stringify(t.data.answer);
 assert.equal(recordedActionGroups(t.data.answer).length,2);
 assert.equal(recordedActionGroups(t.data.answer)[0].rows.length,2);
 out=decisionActions(t);
-assert.match(out,/Needs evidence review/);
-assert.match(out,/Recorded in 2 returned rows/);
-assert.match(out,/data-decision-draft="options"/);
+assert.match(out,/Evidence review is still required/);
+assert.match(out,/2 records/);
+assert.match(out,/Review work/);
 assert.doesNotMatch(out,/Recommended for all|Approved|Verified intervention|eligible/);
 assert.match(suggestionDetails(t,0),/Source reports a transport barrier/);
 assert.match(suggestionDetails(t,0),/Source needs verification/);
@@ -110,7 +110,7 @@ assert.match(decisionHero(aggregate),/>10<\/strong>/);
 assert.doesNotMatch(answerSummary(aggregate.data.answer,{noMetric:true}),/result-at-a-glance/);
 assert.match(decisionHero({data:{answer:{answer_type:'count',count:0}}}),/>0<\/strong>/);
 assert.match(decisionHero({data:{answer:{answer_type:'count',count:null}}}),/>—<\/strong>/);
-assert.match(decisionHero({data:{answer:{answer_type:'patient_set',count:0,patient_ids:[]}}}),/patients selected/);
+assert.match(decisionHero({data:{answer:{answer_type:'patient_set',count:0,patient_ids:[]}}}),/patients in result/);
 console.log('Recorded suggestions, missing plan, workflow prerequisites and exact counts passed.');
 '''
   result=subprocess.run([shutil.which('node'),'-e',setup+script+checks],text=True,capture_output=True)

@@ -15,7 +15,7 @@ class ConnectedSite(unittest.TestCase):
         pages=[ask_view.page(),action_center.page(),learning_workbench.page()]
         for page in pages:
             with self.subTest(page=page[:80]):
-                for label in ['Wollstonecraft','Saved answers','Patients','Sources','Deliverables','Source review']:
+                for label in ['Wollstonecraft','Saved answers','Patients','Sources','Gallery','Source review']:
                     self.assertIn(label,page)
                 self.assertNotRegex(page,r'<script[^>]+src=|@import')
                 self.assertIn('aria-label="Main navigation"',page)
@@ -30,7 +30,7 @@ class ConnectedSite(unittest.TestCase):
         context='ANS-'+'e'*24
         nav=application_shell.navigation('patients',context)
         self.assertIn('/ask?context='+context+'#patients',nav)
-        self.assertIn('/action-center?context='+context+'#studio',nav)
+        self.assertIn('/ask?context='+context+'#gallery',nav)
         self.assertNotIn('patient=',nav)
         self.assertNotIn('context=',application_shell.navigation('work','malformed-context'))
         source=Path('clinical_core/agere/assets/explore.js').read_text()
@@ -43,10 +43,10 @@ const document={querySelectorAll:()=>links};
 '''
         checks=r'''
 syncAppLinks();assert.equal(links[0].href,'/action-center?context='+activeContext.id);
-assert.equal(links[1].href,'/action-center?context='+activeContext.id+'#studio');
+assert.equal(links[1].href,'/ask?context='+activeContext.id+'#gallery');
 assert.ok(links.every(a=>!a.href.includes('patient=')));
 activeContext=null;syncAppLinks();assert.equal(links[0].href,'/action-center');
-activeContext={id:'bad&context=other'};syncAppLinks();assert.equal(links[1].href,'/action-center#studio');
+activeContext={id:'bad&context=other'};syncAppLinks();assert.equal(links[1].href,'/ask#gallery');
 '''
         result=subprocess.run([shutil.which('node'),'-e',setup+code+checks],capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)

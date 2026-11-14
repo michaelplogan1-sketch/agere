@@ -6,11 +6,11 @@ from pathlib import Path
 
 PAGES = (
     ('ask', 'Ask your data', '/ask'),
-    ('saved', 'Saved answers', '/ask#saved'),
+    ('deliverables', 'Gallery', '/ask#gallery'),
     ('patients', 'Patients', '/ask#patients'),
+    ('work', 'Work', '/action-center'),
+    ('saved', 'Saved answers', '/ask#saved'),
     ('sources', 'Sources', '/ask#data'),
-    ('work', 'Review & work', '/action-center'),
-    ('deliverables', 'Deliverables', '/action-center#studio'),
     ('review', 'Source review', '/learn'),
 )
 
@@ -68,7 +68,7 @@ SHELL_CSS = r'''
 
 
 NAV_SCRIPT = r'''
-(()=>{const q=new URLSearchParams(location.search),context=q.get('context'),valid=/^ANS-[0-9a-f]{24}$/.test(context||'');const routes={ask:'/ask',saved:'/ask#saved',patients:'/ask#patients',sources:'/ask#data',work:'/action-center',deliverables:'/action-center#studio',review:'/learn'};
+(()=>{const q=new URLSearchParams(location.search),context=q.get('context'),valid=/^ANS-[0-9a-f]{24}$/.test(context||'');const routes={ask:'/ask',saved:'/ask#saved',patients:'/ask#patients',sources:'/ask#data',work:'/action-center',deliverables:'/ask#gallery',review:'/learn'};
 if(valid)document.querySelectorAll('[data-app-link]').forEach(a=>{const raw=routes[a.dataset.appLink];if(raw){const [path,fragment]=raw.split('#');a.href=path+'?context='+context+(fragment?'#'+fragment:'')}});
 const button=document.querySelector('.wc-shell-toggle'),nav=document.querySelector('.wc-shell-nav'),mobile=matchMedia('(max-width:800px)');
 const sync=()=>{if(nav)nav.inert=mobile.matches&&!document.body.classList.contains('wc-shell-open')};

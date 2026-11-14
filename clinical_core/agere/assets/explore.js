@@ -26,17 +26,17 @@ const ideas=[
 ];
 let savedAnalyses=[],sourceAtlas=null,sourceError=null,currentPage='explore',activeContext=null,activeTab='overview',lastDialogFocus=null,conversationEpoch=0;
 function showPage(name,focus=false){
- if(!['explore','saved','patients','data'].includes(name))name='explore';
- currentPage=name;
- ['explore','saved','patients','data'].forEach(n=>$('#page-'+n).hidden=n!==name);
+ if(!['explore','gallery','saved','patients','data'].includes(name))name='explore';
+ currentPage=name;document.body.dataset.page=name;
+ ['explore','gallery','saved','patients','data'].forEach(n=>$('#page-'+n).hidden=n!==name);
  document.querySelectorAll('.app-nav [data-page]').forEach(e=>{if(e.dataset.page===name)e.setAttribute('aria-current','page');else e.removeAttribute('aria-current')});
- $('#page-name').textContent={explore:'Ask your data',saved:'Saved answers',patients:'Patients',data:'Sources'}[name];
- if(name==='saved')renderSaved();if(name==='data')loadSources();if(name==='patients')renderPatientLibrary();syncAppLinks();
+ $('#page-name').textContent={explore:'Ask your data',gallery:'Gallery',saved:'Saved answers',patients:'Patients',data:'Sources'}[name];
+ if(name==='gallery')loadGallery(true).catch(()=>{});if(name==='saved')renderSaved();if(name==='data')loadSources();if(name==='patients')renderPatientLibrary();syncAppLinks();
  if(focus){$('#main').focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'})}
 }
 function syncAppLinks(){
  const id=activeContext?.id,valid=/^ANS-[0-9a-f]{24}$/.test(id||'');
- const routes={work:'/action-center',deliverables:'/action-center#studio',review:'/learn'};
+ const routes={work:'/action-center',deliverables:'/ask#gallery',review:'/learn'};
  document.querySelectorAll('[data-app-link]').forEach(a=>{const [path,fragment]=routes[a.dataset.appLink].split('#');a.href=path+(valid?'?context='+encodeURIComponent(id):'')+(fragment?'#'+fragment:'')});
 }
 function renderPatientLibrary(){
@@ -150,7 +150,7 @@ function renderResultData(term='',page=0){
 }
 function openAppDialog(id){lastDialogFocus=document.activeElement;$('#'+id).showModal()}
 function setupExplorer(){
- hydrateUI();renderIdeas();loadSaved();setupExperience();
+ hydrateUI();renderIdeas();loadSaved();setupExperience();setupGallery();
  document.addEventListener('click',e=>{
   const b=e.target.closest('[data-page],[data-topic],[data-idea],[data-close-dialog],[data-answer-tab],[data-reload-saved],[data-reload-sources],[data-source-question]');
   if(!b)return;
@@ -232,5 +232,5 @@ function setupExplorer(){
  $('#patient-library-answer').addEventListener('change',async e=>{if(!e.target.value)return;await openSavedContext(e.target.value);showPage('patients',true);history.replaceState(null,'','/ask?context='+encodeURIComponent(e.target.value)+'#patients')});
  $('#patient-library-back').onclick=()=>{showPage('explore',true);history.replaceState(null,'','/ask?context='+encodeURIComponent(activeContext.id))};
  const params=new URLSearchParams(location.search),initialPage=location.hash.slice(1)||'explore',patient=params.get('patient');
- if(params.get('context'))openSavedContext(params.get('context')).then(()=>{showPage(initialPage);const url=new URL(location.href);url.hash=initialPage==='explore'?'':initialPage;if(patient)url.searchParams.set('patient',patient);history.replaceState(null,'',url);if(patient&&initialPage==='patients')state.patientLibrary?.openPatient(patient)});else{loadConversation();showPage(initialPage)}
+ if(initialPage==='gallery'){showPage('gallery');if(params.get('artifact'))loadGallery().then(()=>openCreation(params.get('context'),params.get('artifact'))).catch(()=>{});}else if(params.get('context'))openSavedContext(params.get('context')).then(()=>{showPage(initialPage);const url=new URL(location.href);url.hash=initialPage==='explore'?'':initialPage;if(patient)url.searchParams.set('patient',patient);history.replaceState(null,'',url);if(patient&&initialPage==='patients')state.patientLibrary?.openPatient(patient)});else{loadConversation();showPage(initialPage)}
 }

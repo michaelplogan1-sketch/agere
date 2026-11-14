@@ -936,6 +936,14 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if connected_stack is None:self.send_error(404);return
                 from .deliverables.action_center import page
                 raw=page().encode();mime='text/html; charset=utf-8'
+            elif parsed.path in ('/api/stack/deliverable-gallery','/api/stack/deliverable-preview'):
+                if connected_stack is None:self.send_error(404);return
+                from .deliverables import gallery
+                try:
+                    result=(gallery.catalog(connected_stack.path) if parsed.path.endswith('/deliverable-gallery') else
+                            gallery.preview(connected_stack.path,params.get('context',[''])[0],params.get('id',[''])[0]))
+                    raw=json.dumps(result,default=str).encode();mime='application/json'
+                except (ValueError,TypeError,KeyError,FileNotFoundError) as exc:self.send_error(400,str(exc)[:200]);return
             elif parsed.path in ('/api/stack/action-contexts','/api/stack/action-context','/api/stack/action-deliverables','/api/stack/action-deliverable'):
                 if connected_stack is None:self.send_error(404);return
                 from .deliverables import answer_context
