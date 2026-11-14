@@ -63,13 +63,28 @@ def _cell(v):
     return v if not isinstance(v, str) or len(v) <= MAX_CELL else v[:MAX_CELL] + '...'
 
 
-def answer(question, cohort=None, why=None):
+ASK = '''
+
+You may instead ask the user ONE question, once, before you answer:
+{"ask": "<one short plain question>", "options": ["<reading or choice 1>", "<reading or choice 2>", ...]}
+Ask only when the question has two or more defensible readings that would give materially different answers, or when it
+depends on something only the user knows (which program, group or period they mean, a contract term, a target). Give 2 to
+4 options, each a complete plain statement the user can pick. Never ask about anything the data can settle, never ask for
+approval, and never ask twice. If a sensible default exists, use it and state it as a caveat instead of asking.'''
+NEXT = '''
+
+In the answer object you may add "next": ["<question>", ...]: up to 3 follow-up questions this data can answer that would
+help the user act on the answer. Each must be a complete question. Leave it out if nothing useful follows.'''
+
+
+def answer(question, cohort=None, why=None, may_ask=False):
     """-> {'text','columns','rows','sql','queries','documents','caveats','unsupported','steps','usd','tokens','seconds','model'}
     or None when the model produced no answer inside the limits."""
     started = time.monotonic()
     db = store.connect(cohort)
     try:
         system = SYSTEM % (MAX_DOCUMENTS, store.as_of(db), MAX_STEPS, store.schema_text(db), models.definitions())
+        system += NEXT + (ASK if may_ask else '')
         log = ['Question: ' + question]
         if why: log.append('Why the automatic methods stopped: ' + str(why)[:1200])
         if cohort is not None: log.append(f'Every patient table is already restricted to the {len(cohort)} selected patients.')
@@ -102,6 +117,14 @@ def answer(question, cohort=None, why=None):
                     if body is None: log.append(f'Document {rid}: not found'); continue
                     documents.append(rid); seen.append(body[:MAX_DOCUMENT_CHARS])
                     log.append(f'Document {rid} ({found[rid]["event_date"]}):\n{body[:MAX_DOCUMENT_CHARS]}')
+            elif may_ask and isinstance(out.get('ask'), str) and out['ask'].strip():
+                options = list(dict.fromkeys(' '.join(str(o).split()) for o in out.get('options') or [] if str(o).strip()))[:4]
+                if len(options) < 2:
+                    may_ask = False
+                    log.append('A question to the user needs 2 to 4 options. Answer with sensible defaults stated as caveats instead.'); continue
+                return {'ask': ' '.join(out['ask'].split()), 'options': options, 'queries': [r['sql'] for r in results], 'steps': steps,
+                        'usd': sum(s['usd'] for s in steps), 'tokens': sum(s['tokens'] for s in steps),
+                        'seconds': round(time.monotonic() - started, 2), 'model': models.LLM}
             elif isinstance(out.get('answer'), str) and out['answer'].strip():
                 written = ' '.join(out['answer'].split())
                 caveats = [str(c) for c in out.get('caveats') or [] if str(c).strip()][:6]
@@ -115,10 +138,11 @@ def answer(question, cohort=None, why=None):
                 table = results[pick - 1] if isinstance(pick, int) and not isinstance(pick, bool) and 1 <= pick <= len(results) else (results[-1] if results else {'columns': [], 'rows': [], 'sql': ''})
                 return {'text': written, 'columns': table['columns'], 'rows': table['rows'], 'sql': table['sql'],
                         'queries': [r['sql'] for r in results], 'documents': list(dict.fromkeys(documents)), 'caveats': caveats,
+                        'next': [' '.join(str(q).split()) for q in (out.get('next') or []) if isinstance(q, str) and len(q.strip()) > 10][:3],
                         'unsupported': unsupported, 'steps': steps, 'usd': sum(s['usd'] for s in steps), 'tokens': sum(s['tokens'] for s in steps),
                         'seconds': round(time.monotonic() - started, 2), 'model': models.LLM}
             else:
-                log.append('Return exactly one JSON object with "sql", "read" or "answer".')
+                log.append('Return exactly one JSON object with "sql", "read" or "answer"' + (' (or "ask")' if may_ask else '') + '.')
         return None
     finally:
         db.close()

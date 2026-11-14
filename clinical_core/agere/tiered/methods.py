@@ -134,6 +134,9 @@ CORE_EXAMPLES = ('Detect anomalies in monthly ED visits', 'Are admission rates o
                  'Which PCPs are truly high on ED use after adjustment?', 'Who should we call first this week?')
 SYSTEM = '''A user typed a question into a healthcare analytics tool. The tool has a menu of analysis methods. Each line of the
 menu is: method id | what it answers | example questions written in the wording the tool understands.
+Methods on the menu can look alike. Choose by what the question asks for, not by shared words: a method that measures
+whether a step happened does not answer whether a program changed an outcome, and a method about how clinicians share
+patients does not answer whether members have enough providers nearby.
 Decide whether exactly one method on the menu answers the question. A plain count, list, rate, total or lookup that a
 database query answers is NOT a method question: return {"method": null}. A question about one named patient's record
 is NOT a method question. If no method clearly fits, return {"method": null}.
@@ -168,8 +171,53 @@ def _menu(stack):
         if named and len(examples.setdefault(named[-1], [])) < 3: examples[named[-1]].append(text)
     ops = {op: ' '.join(str(entry.get('use') or '').split()) for op, entry in PRODUCT.items() if op not in NOT_METHODS and examples.get(op)}
     uses = {op: ' '.join(str(entry.get('use') or '').split())[:400] for op, entry in PRODUCT.items()}
-    _MENU.update(ops=ops, uses=uses, text='\n'.join(f"{op} | {use[:170]} | {' / '.join(examples[op])}" for op, use in sorted(ops.items())))
+    _MENU.update(ops=ops, uses=uses, examples={op: examples[op] for op in ops},
+                 text='\n'.join(f"{op} | {use[:170]} | {' / '.join(examples[op])}" for op, use in sorted(ops.items())))
     return _MENU
+
+
+_WORD = re.compile(r'[a-z0-9]+')
+_STOP = frozenset('a an the of to in on for by with and or is are was were be do does did our we us which what who how many much that this it at from as have has had '
+                  'any each per vs their there than not no if will would should can could may patients patient members member'.split())
+
+
+def _words(text):
+    return [w[:-1] if len(w) > 4 and w.endswith('s') else w for w in _WORD.findall(text.lower()) if w not in _STOP]
+
+
+def _index(stack):
+    """Word weights over each method's description and examples (code only, built once)."""
+    menu = _menu(stack)
+    if 'index' in menu: return menu['index']
+    import math
+    from collections import Counter
+    docs = {op: Counter(_words(menu['ops'][op] + ' ' + ' '.join(menu['examples'][op]))) for op in menu['ops']}
+    df = Counter(w for c in docs.values() for w in c)
+    idf = {w: math.log((1 + len(docs)) / (1 + n)) + 1.0 for w, n in df.items()}
+    vectors = {}
+    for op, c in docs.items():
+        v = {w: (1 + math.log(tf)) * idf[w] for w, tf in c.items()}
+        vectors[op] = (v, math.sqrt(sum(x * x for x in v.values())) or 1.0)
+    menu['index'] = {'idf': idf, 'vectors': vectors}
+    return menu['index']
+
+
+def shortlist(stack, question, k=None, keep=()):
+    """Code only: the k methods whose description and examples share the most distinctive words with the question,
+    most similar first, always including `keep`. A model picks better from a handful of methods than from sixty."""
+    import math
+    from collections import Counter
+    # Off by default (0 = the whole menu): on the second routing set a shortlist of 8 lost three restatements it had made from the full menu.
+    k = int(os.environ.get('AGERE_TIERED_METHODS_SHORTLIST', '0')) if k is None else k
+    ops = _menu(stack)['ops']
+    if k <= 0 or k >= len(ops): return sorted(ops)
+    ix = _index(stack)
+    q = {w: (1 + math.log(tf)) * ix['idf'].get(w, 0.0) for w, tf in Counter(_words(question)).items()}
+    norm = math.sqrt(sum(x * x for x in q.values())) or 1.0
+    score = {op: sum(x * v.get(w, 0.0) for w, x in q.items()) / (norm * vn) for op, (v, vn) in ix['vectors'].items()}
+    ranked = sorted(ops, key=lambda op: (-score[op], op))
+    kept = [op for op in keep if op in ops]
+    return kept + [op for op in ranked if op not in kept][:max(0, k - len(kept))]
 
 
 def _system_one(prompt, options, s1_ledger):
@@ -189,23 +237,34 @@ def _system_one(prompt, options, s1_ledger):
 
 
 def fits(stack, question, named, s1_ledger=None):
-    """System One: does the method the compiler named answer the question? -> (False only on a confident no, step)."""
+    """System One, as a choice among the method the compiler named, its nearest neighbours on the menu and "none of
+    these": is the named method the one that answers the question? -> (False only when it confidently picks another
+    option, step). step['other'] names the neighbour it picked, so the caller can try that method instead."""
     started = time.monotonic()
+    label, p, usd, other = None, 0.0, 0.0, None
     try:
-        uses = '; '.join(f"{op}: {_menu(stack)['uses'].get(op) or op.replace('_', ' ')}" for op in named)
-        label, p, usd = _system_one(f'Question: {question}\nMethod: {uses}\nDoes running this method answer what the question asks?', FIT, s1_ledger)
+        menu = _menu(stack)
+        chosen = named[-1]
+        near = [op for op in shortlist(stack, question, k=int(os.environ.get('AGERE_TIERED_METHODS_NEIGHBOURS', '3')) + 1) if op not in named][:3] \
+            if os.environ.get('AGERE_TIERED_METHODS_NEIGHBOURS', '3') != '0' else []
+        options = {chosen: (menu['uses'].get(chosen) or chosen.replace('_', ' '))[:400]}
+        for op in near: options[op] = menu['uses'].get(op, op.replace('_', ' '))[:400]
+        options['none'] = 'None of these methods answers the question, or it asks for a plain count, list or lookup instead.'
+        label, p, usd = _system_one(f'Question: {question}\nWhich one of these analysis methods answers what the question asks?', options, s1_ledger)
+        if label and label not in (chosen, 'none'): other = label
     except Exception:
         label, p, usd = None, 0.0, 0.0
-    return label != 'no', {'tier': 'methods', 'model': 'system_one' if usd or label else None, 'usd': usd, 'tokens': 0,
-                           'seconds': round(time.monotonic() - started, 2), 'method': 'system_one_method_fit', 'label': label, 'confidence': round(p, 4)}
+    ok = label is None or label == named[-1]
+    return ok, {'tier': 'methods', 'model': 'system_one' if usd or label else None, 'usd': usd, 'tokens': 0, 'seconds': round(time.monotonic() - started, 2),
+                'method': 'system_one_method_fit', 'label': label, 'confidence': round(p, 4), **({'other': other} if other else {})}
 
 
-def worth_asking(stack, question, bottles=None):
+def worth_asking(stack, question, bottles=None, redirected=False):
     """Code only: the compiler declined, no recipe matches and no one patient is named: worth one small-model check."""
     from . import recipes
     if not enabled() or os.environ.get('AGERE_TIERED_METHODS_ASSIST', 'on') != 'on': return False
     if getattr(stack, 'path', None) is None or not hasattr(stack, 'run_graph'): return False
-    if plan(stack, question) is not None: return False
+    if plan(stack, question) is not None and not redirected: return False
     # AGERE_TIERED_METHODS_ASSIST_GATE=words limits this to questions that use the methods' vocabulary (WORDS). The first
     # routing run (2026-11-14) lost 5 of 28 method questions to that gate, so by default every question the cheap tiers
     # leave unanswered gets the one small-model check before the frontier model is asked to write a query.
@@ -215,7 +274,7 @@ def worth_asking(stack, question, bottles=None):
     return not (bottles is not None and bottles.match(question, statuses=('promoted',)) is not None)
 
 
-def assisted(stack, question, s1_ledger=None):
+def assisted(stack, question, s1_ledger=None, prefer=None):
     """-> (restated question or None, {'method','usd','tokens','seconds', ...}). The restated question names a method by code."""
     from . import models
     started = time.monotonic()
@@ -223,19 +282,33 @@ def assisted(stack, question, s1_ledger=None):
         return found, {'tier': 'methods', 'model': models.SLM if tokens else None, 'method': method, 'usd': usd, 'tokens': tokens,
                        'seconds': round(time.monotonic() - started, 2), **extra}
     menu = _menu(stack)
-    text, step = models._claude(models.SLM, SYSTEM, 'Menu:\n' + menu['text'] + '\n\nQuestion: ' + question)
-    try:
-        got = models._json(text)
-    except ValueError:
-        return done(None, 'small_model_unusable', step['usd'], step['tokens'])
-    op, restated = (got.get('method'), ' '.join(str(got.get('restated') or '').split())) if isinstance(got, dict) else (None, '')
-    if not op: return done(None, 'not_a_method_question', step['usd'], step['tokens'])
-    if op not in menu['ops'] or len(restated) < 8: return done(None, 'pick_unusable', step['usd'], step['tokens'], picked=str(op)[:60])
-    invented = sorted({t.rstrip('.,') for t in _TOKEN.findall(restated)} - {t.rstrip('.,') for t in _TOKEN.findall(question)})
-    if invented: return done(None, 'restatement_adds_values', step['usd'], step['tokens'], picked=op, restated=restated, invented=invented[:6])
-    found = plan(stack, restated)
+    # System One preferred a neighbouring method to the one the compiler named: the small model chooses among that
+    # method and its nearest neighbours only. Otherwise it sees the whole menu.
+    listed = shortlist(stack, question, k=4, keep=(prefer,)) if prefer else shortlist(stack, question)
+    shown = menu['text'] if len(listed) >= len(menu['ops']) else '\n'.join(
+        f"{op} | {menu['ops'][op][:500]} | {' / '.join(menu['examples'][op])}" for op in listed)
+    ask, usd, tokens, op, restated, found = 'Menu:\n' + shown + '\n\nQuestion: ' + question, 0.0, 0, None, '', None
+    for attempt in (1, 2):
+        text, step = models._claude(models.SLM, SYSTEM, ask)
+        usd += step['usd']; tokens += step['tokens']
+        try:
+            got = models._json(text)
+        except ValueError:
+            return done(None, 'small_model_unusable', usd, tokens)
+        op, restated = (got.get('method'), ' '.join(str(got.get('restated') or '').split())) if isinstance(got, dict) else (None, '')
+        if not op: return done(None, 'not_a_method_question', usd, tokens)
+        if op not in listed or len(restated) < 8: return done(None, 'pick_unusable', usd, tokens, picked=str(op)[:60])
+        invented = sorted({t.rstrip('.,') for t in _TOKEN.findall(restated)} - {t.rstrip('.,') for t in _TOKEN.findall(question)})
+        if invented: return done(None, 'restatement_adds_values', usd, tokens, picked=op, restated=restated, invented=invented[:6])
+        found = plan(stack, restated)
+        if found is not None and op in found[2]: break
+        if attempt == 1:  # the tool did not read that wording as the picked method: one more try, closer to the method's own examples
+            ask += (f'\n\nYour restatement "{restated}" was not understood by the tool as method {op}. Restate the question again, staying as close as you can to the '
+                    f"wording of that method's examples: {' / '.join(menu['examples'][op])}. Keep every number, period and name from the question and add none. "
+                    'If no method really fits, return {"method": null}.')
     if found is None or op not in found[2]:
-        return done(None, 'compiler_did_not_name_the_method', step['usd'], step['tokens'], picked=op, restated=restated, named=found[2] if found else None)
+        return done(None, 'compiler_did_not_name_the_method', usd, tokens, picked=op, restated=restated, named=found[2] if found else None)
+    step = {'usd': usd, 'tokens': tokens}
     label, p, usd = _system_one(f"Original question: {question}\nRestated question: {restated}\nMethod: {op}: {menu['ops'][op][:400]}\n"
                                 'Does the restated question ask exactly what the original asks, and does the method answer it?', OPTIONS, s1_ledger)
     if label != 'yes':

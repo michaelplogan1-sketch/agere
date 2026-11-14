@@ -360,6 +360,9 @@ def resume_investigator(stack,saved,reply,*,origin=None):
     """Resume through the same cascade's final checks, without replanning tools."""
     if saved.get('kind') == 'registered_input':
         return resume_registered_input(stack, saved, reply)
+    if saved.get('kind') == 'tiered':  # a question the tiered core asked: its reply goes back to the tiered core
+        from ..tiered import app as tiered_app
+        return tiered_app.resume(stack, saved, reply)
     from . import proposers as P,request_plan as R,shared_planner as S,decision_context as D,together
     from ..gateway import BudgetLedger
     from .. import model_policy
