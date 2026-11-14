@@ -151,6 +151,9 @@ def execute(question, sql, params, read, db, *, readers=READERS, s1_ledger=None)
     if mode == 'medication_reasons':
         from . import reasons
         return reasons.execute(question, sql, params, read, db, readers=readers, s1_ledger=s1_ledger)
+    if mode == 'admission_reasons':
+        from . import readmission
+        return readmission.execute(question, sql, params, read, db, readers=readers, s1_ledger=s1_ledger)
     for name, value in (params or {}).items():
         statement = statement.replace('{' + name + '}', str(value))
     wanted = str((read or {}).get('value') or '').strip()

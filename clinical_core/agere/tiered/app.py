@@ -164,6 +164,26 @@ def try_answer(stack, question):
     return _single(stack, question)
 
 
+def _readmission_headline(answers):
+    """Code writes the summary of a readmission answer from the three parts' tables, in the record's own words. No model:
+    the question turns on which statement belongs to which stay, and that is exactly what a reworded summary can blur."""
+    stays, stated, between = ((a.get('table') or []) for a in answers[:3])
+    re = next((r for r in stays if r.get('stay') == 'readmission'), None)
+    before = next((r for r in stays if r.get('stay') == 'stay before the readmission'), None)
+    if not re: return 'No inpatient admission on that date is on record for this patient.'
+    quotes = lambda label: list(dict.fromkeys(str(r.get('passage')) for r in stated if r.get('stay') == label and r.get('stated_as') != '(none)'))
+    text = f"Admitted {re['admit_date']}" + (f", discharged {re['discharge_date']}" if re.get('discharge_date') not in (None, 'not recorded') else '')
+    if before: text += f", {re['days_after_prior_discharge']} days after discharge from the stay of {before['admit_date']} to {before['discharge_date']}"
+    text += '. '
+    said = quotes('readmission')
+    text += ('For this admission the record states: ' + '; '.join(f'"{q}"' for q in said[:4]) + '. ') if said else 'No document states why the patient was admitted on that date. '
+    earlier = quotes('stay before the readmission')
+    if before and earlier: text += 'For the stay before it the record states: ' + '; '.join(f'"{q}"' for q in earlier[:3]) + '. '
+    events = [f"{r.get('event')} {r.get('on_record')}" for r in between if r.get('event')]
+    if before: text += 'On record between the two stays: ' + (', '.join(events) if events else 'nothing') + '.'
+    return text[:1200]
+
+
 def _combine(question, parts, results, how):
     """One composite result from the parts' results. The existing answer view draws each section."""
     answers = [r['answer'] for r in results]
@@ -171,14 +191,19 @@ def _combine(question, parts, results, how):
     calls = sum(r['new_paid_api_calls'] for r in results) + (1 if how['tokens'] else 0)
     tier = max((r['planner_receipt']['final_tier'] for r in results), key=ORDER.index)
     limitations = list(dict.fromkeys(line for a in answers for line in a.get('limitations') or []))
-    answer = {'status': 'answered', 'answer_type': 'composite', 'headline': ' '.join(str(a.get('headline') or '') for a in answers)[:1200],
+    headline = _readmission_headline(answers) if how['method'].startswith('readmission') and len(answers) >= 3 else ' '.join(str(a.get('headline') or '') for a in answers)[:1200]
+    answer = {'status': 'answered', 'answer_type': 'composite', 'headline': headline,
               'sections': [{'title': part, 'answer': a} for part, a in zip(parts, answers)],
               'table': [], 'sources': [], 'missing': [], 'patient_ids': [],
               'verification': 'checked' if all(a.get('verification') == 'checked' for a in answers) else 'unverified',
               'limitations': [f'The message was read as {len(parts)} separate questions ' + ('(a fixed split made by code); ' if how['method'].endswith('by_code') else '(split by the small model, confirmed by System One); ')
                               + 'each was answered on its own.',
                               *(['This reports what the fill records show and what the notes state. It does not judge what should be prescribed or what dose is tolerated.']
-                                if how['method'].startswith('heart_failure') else []), *limitations],
+                                if how['method'].startswith('heart_failure') else []),
+                              *(['This reports what the stay records show and what the documents state for each admission, each as a quote assigned to its stay by code. '
+                                 'It does not judge what caused the readmission or whether it was avoidable.' + (
+                                     ' No date was given, so the most recent readmission on record was used.' if how.get('date_from') != 'question' else '')]
+                                if how['method'].startswith('readmission') else []), *limitations],
               'facts': {'read_as': f'{len(parts)} separate questions: ' + ' | '.join(parts),
                         **{f'part_{i}': f"{part} — {a['facts'].get('answered_by', '')}" for i, (part, a) in enumerate(zip(parts, answers), 1)}},
               'grounding': [line for a in answers for line in a.get('grounding') or []]}

@@ -24,6 +24,16 @@ def _key(mapping, text):
     return next((k for k, names in mapping.items() if text == k or text in names), None)
 
 
+# The readmission is the inpatient stay admitted on the given date (the row with a discharge date when a source repeats the
+# stay); the stay before it is the latest one discharged in the 30 days before that date. Either may be missing.
+_READMIT_CTE = ("WITH re AS (SELECT admit_date, discharge_date, organization_id FROM stay WHERE patient_id = :patient_id AND type = 'inpatient' AND admit_date = :readmit_date "
+                "ORDER BY (discharge_date IS NULL), discharge_date DESC LIMIT 1), "
+                "idx AS (SELECT admit_date, discharge_date, organization_id FROM stay WHERE patient_id = :patient_id AND type = 'inpatient' AND discharge_date IS NOT NULL "
+                "AND admit_date < :readmit_date AND discharge_date < :readmit_date AND julianday(:readmit_date) - julianday(discharge_date) <= 30 "
+                "ORDER BY discharge_date DESC, admit_date LIMIT 1), "
+                "w AS (SELECT (SELECT admit_date FROM re) AS readmit_admit, (SELECT discharge_date FROM re) AS readmit_discharge, (SELECT organization_id FROM re) AS readmit_org, "
+                "(SELECT admit_date FROM idx) AS index_admit, (SELECT discharge_date FROM idx) AS index_discharge, (SELECT organization_id FROM idx) AS index_org) ")
+DATE = r'(?P<readmit_date>20\d{2}-\d{2}-\d{2})'
 RECIPES = {
     'utilization_count': {
         'title': 'Number of utilization events of one kind in one calendar year',
@@ -183,6 +193,39 @@ RECIPES = {
                  'mode': 'medication_reasons'},
         'columns': ['pillar', 'medication', 'reason_kind', 'passage', 'first_date', 'last_date', 'documents'],
         'patterns': [r"what reason does each of patient (?P<patient_id>[a-z0-9-]+)'s documents give for a heart failure medication not being taken"]},
+    # --- one patient's most recent 30-day readmission: the two stays, what happened between them, and what the record states ---
+    'readmission_stays': {
+        'title': "For one patient, the inpatient stay admitted on a given date and the stay discharged in the 30 days before it (discrete stay records)",
+        'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
+        'sql': _READMIT_CTE + "SELECT 'stay before the readmission' AS stay, index_admit AS admit_date, index_discharge AS discharge_date, index_org AS organization_id, "
+               "-1 AS days_after_prior_discharge FROM w WHERE index_admit IS NOT NULL UNION ALL "
+               "SELECT 'readmission', readmit_admit, COALESCE(readmit_discharge, 'not recorded'), readmit_org, "
+               "COALESCE(CAST(julianday(readmit_admit) - julianday(index_discharge) AS INTEGER), -1) FROM w WHERE readmit_admit IS NOT NULL ORDER BY 2",
+        'grain': ['stay'],
+        'patterns': [r"what are patient (?P<patient_id>[a-z0-9-]+)'s readmission on " + DATE + r" and the stay before it"]},
+    'readmission_reasons_in_documents': {
+        'title': "For one patient, what each document states about why the patient was admitted, for the stay admitted on a given date and the stay before it (each document is read)",
+        'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
+        'sql': _READMIT_CTE + "SELECT d.record_id, d.event_date, COALESCE(w.index_admit, '') AS index_admit, COALESCE(w.index_discharge, '') AS index_discharge, "
+               "w.readmit_admit, COALESCE(w.readmit_discharge, '') AS readmit_discharge FROM document d, w WHERE d.patient_id = :patient_id AND w.readmit_admit IS NOT NULL "
+               "AND d.event_date >= COALESCE(w.index_admit, date(w.readmit_admit, '-30 day')) "
+               "AND d.event_date <= date(COALESCE(w.readmit_discharge, w.readmit_admit), '+7 day') ORDER BY d.event_date, d.record_id",
+        # Code finds each admission statement and assigns it to a stay (readmission.py); System One judges the unlabelled sentences.
+        'read': {'statement': 'The passage says why the patient was admitted to hospital.', 'mode': 'admission_reasons'},
+        'columns': ['stay', 'stated_as', 'passage', 'record_id', 'event_date'],
+        'patterns': [r"what do patient (?P<patient_id>[a-z0-9-]+)'s documents state about why the patient was admitted on " + DATE],
+        },
+    'readmission_interval_events': {
+        'title': "For one patient, what is on record between the prior discharge and the admission on a given date: appointments by status, visits by type, pharmacy fills",
+        'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
+        'sql': _READMIT_CTE + "SELECT 'appointments: ' || a.final_status AS event, COUNT(*) AS on_record FROM appointment a, w WHERE a.patient_id = :patient_id "
+               "AND a.scheduled_date > w.index_discharge AND a.scheduled_date < w.readmit_admit GROUP BY 1 "
+               "UNION ALL SELECT 'visits: ' || v.type, COUNT(*) FROM visit v, w WHERE v.patient_id = :patient_id AND v.event_date > w.index_discharge "
+               "AND v.event_date < w.readmit_admit GROUP BY 1 "
+               "UNION ALL SELECT 'pharmacy fills', COUNT(*) FROM fill f, w WHERE f.patient_id = :patient_id AND f.fill_date > w.index_discharge AND f.fill_date < w.readmit_admit "
+               "ORDER BY 1",
+        'grain': ['event'],
+        'patterns': [r"what is on record for patient (?P<patient_id>[a-z0-9-]+) between the prior discharge and the admission on " + DATE]},
 }
 ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS}
 _vocab = {}
@@ -224,6 +267,9 @@ def normalize(recipe_id, raw, db=None):
             out[name] = text
         elif kind == 'month':
             if not re.fullmatch(r'20\d{2}-(0[1-9]|1[0-2])', text): return None
+            out[name] = text
+        elif kind == 'date':
+            if not re.fullmatch(r'20\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])', text): return None
             out[name] = text
         elif kind == 'int':
             if not text.isdigit() or not spec['min'] <= int(text) <= spec['max']: return None
