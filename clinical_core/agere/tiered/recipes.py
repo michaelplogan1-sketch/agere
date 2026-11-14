@@ -34,6 +34,9 @@ _READMIT_CTE = ("WITH re AS (SELECT admit_date, discharge_date, organization_id 
                 "w AS (SELECT (SELECT admit_date FROM re) AS readmit_admit, (SELECT discharge_date FROM re) AS readmit_discharge, (SELECT organization_id FROM re) AS readmit_org, "
                 "(SELECT admit_date FROM idx) AS index_admit, (SELECT discharge_date FROM idx) AS index_discharge, (SELECT organization_id FROM idx) AS index_org) ")
 DATE = r'(?P<readmit_date>20\d{2}-\d{2}-\d{2})'
+_READMIT_PAIRS = ("WITH pairs AS (SELECT b.patient_id, b.admit_date AS readmit_admit, MAX(a.discharge_date) AS index_discharge FROM stay a JOIN stay b ON a.patient_id = b.patient_id "
+                  "WHERE a.type = 'inpatient' AND b.type = 'inpatient' AND a.discharge_date IS NOT NULL AND a.admit_date < b.admit_date "
+                  "AND julianday(b.admit_date) - julianday(a.discharge_date) BETWEEN 1 AND 30 AND substr(b.admit_date, 1, 4) = :year GROUP BY b.patient_id, b.admit_date) ")
 RECIPES = {
     'utilization_count': {
         'title': 'Number of utilization events of one kind in one calendar year',
@@ -264,6 +267,39 @@ RECIPES = {
                "UNION ALL SELECT 'readmission', '(any lab or vital)', COUNT(*), NULL, NULL, COALESCE(MAX(event_date), '') FROM m WHERE period = 'readmission' ORDER BY 1, 2",
         'grain': ['period', 'concept'],
         'patterns': [r"what lab and vital results are on record for patient (?P<patient_id>[a-z0-9-]+) around the admission on " + DATE]},
+    # --- every readmission in a year: the committee view. A readmission is an inpatient stay beginning 1 to 30 days after an
+    #     earlier inpatient discharge; a stay recorded twice on the same day is not one. ---
+    'readmission_review_summary': {
+        'title': "Readmissions in one year (an inpatient stay beginning 1 to 30 days after an earlier inpatient discharge): how many, and how many had an outpatient visit within 7 days of the prior discharge, no contact at all between the stays, came back within 7 days, had two or more prior admissions in 12 months, or a positive social-need screen",
+        'params': {'year': {'type': 'year'}},
+        'sql': _READMIT_PAIRS + ", f AS (SELECT p.*, "
+               "EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = p.patient_id AND v.event_date > p.index_discharge AND v.event_date <= date(p.index_discharge, '+7 day') "
+               "AND v.event_date < p.readmit_admit AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'telephone', 'orders_only')) AS visit7, "
+               "EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = p.patient_id AND v.event_date > p.index_discharge AND v.event_date < p.readmit_admit "
+               "AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'orders_only')) AS any_contact, "
+               "(SELECT COUNT(DISTINCT s.admit_date) FROM stay s WHERE s.patient_id = p.patient_id AND s.type = 'inpatient' AND s.admit_date < p.readmit_admit "
+               "AND s.admit_date >= date(p.readmit_admit, '-365 day')) AS prior12, "
+               "EXISTS (SELECT 1 FROM social_need n WHERE n.patient_id = p.patient_id AND n.positive = 1 AND n.event_date <= p.readmit_admit) AS social, "
+               "CAST(julianday(p.readmit_admit) - julianday(p.index_discharge) AS INTEGER) AS days FROM pairs p) "
+               "SELECT 'readmissions' AS finding, COUNT(*) AS readmissions, 1.0 AS share FROM f "
+               "UNION ALL SELECT 'patients readmitted', COUNT(DISTINCT patient_id), NULL FROM f "
+               "UNION ALL SELECT 'outpatient visit within 7 days of the prior discharge', SUM(visit7), ROUND(1.0 * SUM(visit7) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'no outpatient visit within 7 days', SUM(1 - visit7), ROUND(1.0 * SUM(1 - visit7) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'no visit or telephone contact at all between the stays', SUM(1 - any_contact), ROUND(1.0 * SUM(1 - any_contact) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'readmitted within 7 days of discharge', SUM(days <= 7), ROUND(1.0 * SUM(days <= 7) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'two or more inpatient admissions in the prior 12 months', SUM(prior12 >= 2), ROUND(1.0 * SUM(prior12 >= 2) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'a positive social-need screen on record', SUM(social), ROUND(1.0 * SUM(social) / COUNT(*), 4) FROM f",
+        'patterns': [r'summari[sz]e (?:the |our )?readmissions (?:in|for) ' + YEAR, r'what do (?:the |our )?readmissions (?:in|for) ' + YEAR + r' have in common']},
+    'readmissions_without_follow_up': {
+        'title': "Readmissions in one year with no outpatient visit within 7 days of the prior discharge, one row per readmission (patient, prior discharge date, readmission date, days between)",
+        'params': {'year': {'type': 'year'}},
+        'sql': _READMIT_PAIRS + "SELECT p.patient_id, p.index_discharge AS prior_discharge_date, p.readmit_admit AS readmission_date, "
+               "CAST(julianday(p.readmit_admit) - julianday(p.index_discharge) AS INTEGER) AS days_between FROM pairs p WHERE NOT EXISTS ("
+               "SELECT 1 FROM visit v WHERE v.patient_id = p.patient_id AND v.event_date > p.index_discharge AND v.event_date <= date(p.index_discharge, '+7 day') "
+               "AND v.event_date < p.readmit_admit AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'telephone', 'orders_only')) ORDER BY 3, 1",
+        'grain': ['patient_id', 'readmission_date'],
+        'patterns': [r'which readmissions (?:in|for) ' + YEAR + r' had no (?:outpatient )?follow[- ]up visit within 7 days',
+                     r'list (?:the )?readmissions (?:in|for) ' + YEAR + r' (?:with no|without) (?:outpatient )?follow[- ]up(?: visit)? within 7 days']},
 }
 ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS}
 _vocab = {}
