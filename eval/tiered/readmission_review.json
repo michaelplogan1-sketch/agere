@@ -1,0 +1,413 @@
+{
+ "schema": "tiered-readmission-review/1",
+ "authored": "2026-11-14",
+ "authored_by": "Claude (build owner)",
+ "question": "Review the readmission of patient {patient} on {readmit_admit}: why were they readmitted, what did the chart say, did they get follow-up, what are their risk factors, are there advance directives, and what do the labs and imaging show?",
+ "selection": "The twelve readmitted patients (inpatient stay beginning 1 to 30 days after an earlier inpatient discharge) whose charts hold the most kinds of information: labs during the readmission, a visit and an appointment between the stays, four or more documents in the window, more than one chronic condition, a positive social-need screen. Ranked by how many of those six they have. Chosen by that rule before either arm ran. This favours full charts on purpose: a review of an empty chart tests nothing.",
+ "reference": "Reasons and the follow-up instruction: read by the build owner in the discharge summary of each stay. Follow-up visit, prior admissions, labs, advance-directive wording and social needs: computed by queries written for this key, separately from the recipes the stack uses. Written and committed before the review path existed and before the chart reader ran on any of these patients.",
+ "definitions": {
+  "follow_up_visit_within_7_days": "a visit row dated after the prior discharge, within 7 days of it and before the readmission, of a type other than inpatient, emergency, observation, telephone or orders-only",
+  "inpatient_admissions_in_prior_12_months": "distinct inpatient admission dates in the 365 days before the readmission admission date, not counting the readmission itself",
+  "lab_concepts_resulted_during_readmission": "named lab or vital concepts with a result dated from the readmission admission through one day after its discharge",
+  "advance_directive_documented": "any document of the patient contains advance directive, POLST/MOLST, DNR/DNI, code status, full code, health care proxy, living will, goals of care, power of attorney, comfort care, hospice or palliative"
+ },
+ "rule": "Eight items per patient, each right or wrong: readmission reason (a supported quote containing the phrase, from the accepted document); prior-stay reason (same); follow-up instruction (a supported quote from the prior discharge summary that contains the words follow up); follow-up visit within 7 days (yes/no); days between discharge and readmission; inpatient admissions in the prior 12 months; whether any lab resulted during the readmission (yes/no); whether an advance directive is documented (yes/no). The chart reader is given the same definitions and the same structured rows. This is not a test of any product.",
+ "patients": [
+  {
+   "id": "SYN-E82149A7-5D8",
+   "index_admit": "2028-10-09",
+   "index_discharge": "2028-10-12",
+   "readmit_admit": "2028-11-11",
+   "readmit_discharge": "2028-11-15",
+   "days_between": 30,
+   "readmission_reason": {
+    "phrase": "admitted with fluid overload",
+    "record_id": "WHX-R-12d84d349b6ccaff34d3a1"
+   },
+   "prior_stay_reason": {
+    "phrase": "admitted with community-acquired pneumonia",
+    "record_id": "WHX-R-9e88f00afd2ecea0e6c904"
+   },
+   "follow_up_instruction": {
+    "record_id": "WHX-R-9e88f00afd2ecea0e6c904",
+    "quotes": [
+     "Primary follow up recommended around 2028-10-16"
+    ]
+   },
+   "follow_up_visit_within_7_days": true,
+   "first_follow_up_visit": "2028-10-16",
+   "inpatient_admissions_in_prior_12_months": 1,
+   "lab_concepts_resulted_during_readmission": [
+    "creatinine",
+    "diastolic_bp",
+    "heart_rate",
+    "nt_probnp",
+    "potassium",
+    "sodium",
+    "spo2",
+    "systolic_bp",
+    "weight"
+   ],
+   "advance_directive_documented": false,
+   "positive_social_needs": [
+    "transport"
+   ]
+  },
+  {
+   "id": "SYN-D9F352B2-432",
+   "index_admit": "2028-09-21",
+   "index_discharge": "2028-09-21",
+   "readmit_admit": "2028-10-10",
+   "readmit_discharge": "2028-10-14",
+   "days_between": 19,
+   "readmission_reason": {
+    "phrase": "admitted with fluid overload",
+    "record_id": "WHX-R-1a2d2b97f70c1afa7bb172"
+   },
+   "prior_stay_reason": {
+    "phrase": "principal problem this admission: i50",
+    "record_id": "WHN-PP-14068c70b0d5ca483c0bf1"
+   },
+   "follow_up_instruction": {
+    "record_id": "WHN-PP-14068c70b0d5ca483c0bf1",
+    "quotes": [
+     "Follow-up with primary care within 7 days arranged; transitional care outreach requested"
+    ]
+   },
+   "follow_up_visit_within_7_days": false,
+   "first_follow_up_visit": null,
+   "inpatient_admissions_in_prior_12_months": 3,
+   "lab_concepts_resulted_during_readmission": [
+    "creatinine",
+    "diastolic_bp",
+    "heart_rate",
+    "nt_probnp",
+    "potassium",
+    "sodium",
+    "spo2",
+    "systolic_bp",
+    "weight"
+   ],
+   "advance_directive_documented": false,
+   "positive_social_needs": [
+    "food"
+   ]
+  },
+  {
+   "id": "SYN-B8891612-7DF",
+   "index_admit": "2030-03-01",
+   "index_discharge": "2030-03-07",
+   "readmit_admit": "2030-03-20",
+   "readmit_discharge": "2030-03-20",
+   "days_between": 13,
+   "readmission_reason": {
+    "phrase": "principal problem this admission: a41",
+    "record_id": "WHN-PP-bb27902a1c5a5aab7345c6"
+   },
+   "prior_stay_reason": {
+    "phrase": "admitted with fluid overload",
+    "record_id": "WHX-R-8b067a1e1b1b44bfd5165b"
+   },
+   "follow_up_instruction": {
+    "record_id": "WHX-R-8b067a1e1b1b44bfd5165b",
+    "quotes": [
+     "Home heart-failure medicines to be reviewed at follow up",
+     "Primary follow up recommended around 2030-03-12"
+    ]
+   },
+   "follow_up_visit_within_7_days": true,
+   "first_follow_up_visit": "2030-03-11",
+   "inpatient_admissions_in_prior_12_months": 2,
+   "lab_concepts_resulted_during_readmission": [
+    "phq9"
+   ],
+   "advance_directive_documented": false,
+   "positive_social_needs": [
+    "food"
+   ]
+  },
+  {
+   "id": "SYN-F2A37340-A01",
+   "index_admit": "2027-10-07",
+   "index_discharge": "2027-10-10",
+   "readmit_admit": "2027-10-26",
+   "readmit_discharge": "2027-10-26",
+   "days_between": 16,
+   "readmission_reason": {
+    "phrase": "principal problem this admission: e87",
+    "record_id": "WHN-PP-e43fab81f0acb5bcca3319"
+   },
+   "prior_stay_reason": {
+    "phrase": "admitted with community-acquired pneumonia",
+    "record_id": "WHX-R-ce7f268b6da1c7493b552a"
+   },
+   "follow_up_instruction": {
+    "record_id": "WHX-R-ce7f268b6da1c7493b552a",
+    "quotes": [
+     "Primary follow up recommended around 2027-10-13"
+    ]
+   },
+   "follow_up_visit_within_7_days": true,
+   "first_follow_up_visit": "2027-10-13",
+   "inpatient_admissions_in_prior_12_months": 2,
+   "lab_concepts_resulted_during_readmission": [],
+   "advance_directive_documented": false,
+   "positive_social_needs": [
+    "cost_of_care"
+   ]
+  },
+  {
+   "id": "SYN-F277266E-05F",
+   "index_admit": "2028-01-19",
+   "index_discharge": "2028-01-25",
+   "readmit_admit": "2028-02-09",
+   "readmit_discharge": "2028-02-09",
+   "days_between": 15,
+   "readmission_reason": {
+    "phrase": "principal problem this admission: i50",
+    "record_id": "WHN-PP-f9c6e9009882e46ccf6c23"
+   },
+   "prior_stay_reason": {
+    "phrase": "admitted with fluid overload",
+    "record_id": "WHX-R-6f906b4e0715d74e73c97f"
+   },
+   "follow_up_instruction": {
+    "record_id": "WHX-R-6f906b4e0715d74e73c97f",
+    "quotes": [
+     "Home heart-failure medicines to be reviewed at follow up",
+     "Primary follow up recommended around 2028-01-28"
+    ]
+   },
+   "follow_up_visit_within_7_days": true,
+   "first_follow_up_visit": "2028-01-28",
+   "inpatient_admissions_in_prior_12_months": 2,
+   "lab_concepts_resulted_during_readmission": [],
+   "advance_directive_documented": false,
+   "positive_social_needs": [
+    "food",
+    "transport"
+   ]
+  },
+  {
+   "id": "SYN-C65BCB50-26D",
+   "index_admit": "2027-10-27",
+   "index_discharge": "2027-10-31",
+   "readmit_admit": "2027-11-14",
+   "readmit_discharge": "2027-11-14",
+   "days_between": 14,
+   "readmission_reason": {
+    "phrase": "principal problem this admission: j18",
+    "record_id": "WHN-PP-46e6a225e771c82780700e"
+   },
+   "prior_stay_reason": {
+    "phrase": "admitted with community-acquired pneumonia",
+    "record_id": "WHX-R-d35ca91cdc54917b962009"
+   },
+   "follow_up_instruction": {
+    "record_id": "WHX-R-d35ca91cdc54917b962009",
+    "quotes": [
+     "Primary follow up recommended around 2027-11-05"
+    ]
+   },
+   "follow_up_visit_within_7_days": false,
+   "first_follow_up_visit": null,
+   "inpatient_admissions_in_prior_12_months": 2,
+   "lab_concepts_resulted_during_readmission": [],
+   "advance_directive_documented": false,
+   "positive_social_needs": [
+    "food",
+    "transport"
+   ]
+  },
+  {
+   "id": "SYN-C4C115D0-AB8",
+   "index_admit": "2028-08-27",
+   "index_discharge": "2028-08-31",
+   "readmit_admit": "2028-09-13",
+   "readmit_discharge": "2028-09-13",
+   "days_between": 13,
+   "readmission_reason": {
+    "phrase": "principal problem this admission: j18",
+    "record_id": "WHN-PP-8d3ab90a08cc6a361f1768"
+   },
+   "prior_stay_reason": {
+    "phrase": "admitted with community-acquired pneumonia",
+    "record_id": "WHX-R-63073f1278a522dc777886"
+   },
+   "follow_up_instruction": {
+    "record_id": "WHX-R-63073f1278a522dc777886",
+    "quotes": [
+     "Primary follow up recommended around 2028-09-07"
+    ]
+   },
+   "follow_up_visit_within_7_days": true,
+   "first_follow_up_visit": "2028-09-07",
+   "inpatient_admissions_in_prior_12_months": 2,
+   "lab_concepts_resulted_during_readmission": [],
+   "advance_directive_documented": false,
+   "positive_social_needs": [
+    "transport"
+   ]
+  },
+  {
+   "id": "SYN-BBBCEEB8-F23",
+   "index_admit": "2030-02-01",
+   "index_discharge": "2030-02-05",
+   "readmit_admit": "2030-02-18",
+   "readmit_discharge": "2030-02-18",
+   "days_between": 13,
+   "readmission_reason": {
+    "phrase": "principal problem this admission: i25",
+    "record_id": "WHN-PP-625aebabc01fda5c180b52"
+   },
+   "prior_stay_reason": {
+    "phrase": "admitted with fluid overload",
+    "record_id": "WHX-R-2762de17aca0eaf3e1bb8d"
+   },
+   "follow_up_instruction": {
+    "record_id": "WHX-R-2762de17aca0eaf3e1bb8d",
+    "quotes": [
+     "Home heart-failure medicines to be reviewed at follow up",
+     "Primary follow up recommended around 2030-02-07"
+    ]
+   },
+   "follow_up_visit_within_7_days": true,
+   "first_follow_up_visit": "2030-02-07",
+   "inpatient_admissions_in_prior_12_months": 2,
+   "lab_concepts_resulted_during_readmission": [],
+   "advance_directive_documented": false,
+   "positive_social_needs": [
+    "cost_of_care",
+    "food"
+   ]
+  },
+  {
+   "id": "SYN-A9CC7958-076",
+   "index_admit": "2028-10-05",
+   "index_discharge": "2028-10-09",
+   "readmit_admit": "2028-10-15",
+   "readmit_discharge": null,
+   "days_between": 6,
+   "readmission_reason": {
+    "phrase": "principal problem this admission: i50",
+    "record_id": "WHN-PP-eb693ce4f8785241022a47"
+   },
+   "prior_stay_reason": {
+    "phrase": "admitted with fluid overload",
+    "record_id": "WHX-R-6b6be9b09186e740fa2a47"
+   },
+   "follow_up_instruction": {
+    "record_id": "WHX-R-6b6be9b09186e740fa2a47",
+    "quotes": [
+     "Home heart-failure medicines to be reviewed at follow up",
+     "Primary follow up recommended around 2028-10-12"
+    ]
+   },
+   "follow_up_visit_within_7_days": true,
+   "first_follow_up_visit": "2028-10-12",
+   "inpatient_admissions_in_prior_12_months": 1,
+   "lab_concepts_resulted_during_readmission": [
+    "diastolic_bp",
+    "heart_rate",
+    "systolic_bp",
+    "weight"
+   ],
+   "advance_directive_documented": false,
+   "positive_social_needs": []
+  },
+  {
+   "id": "SYN-A2D26ABB-68B",
+   "index_admit": "2028-05-04",
+   "index_discharge": "2028-05-07",
+   "readmit_admit": "2028-05-12",
+   "readmit_discharge": "2028-05-12",
+   "days_between": 5,
+   "readmission_reason": {
+    "phrase": "principal problem this admission: i25",
+    "record_id": "WHN-PP-466ffbb377d438b2897622"
+   },
+   "prior_stay_reason": {
+    "phrase": "admitted with fluid overload",
+    "record_id": "WHX-R-3247472ac3dba964efc42a"
+   },
+   "follow_up_instruction": {
+    "record_id": "WHX-R-3247472ac3dba964efc42a",
+    "quotes": [
+     "Home heart-failure medicines to be reviewed at follow up",
+     "Primary follow up recommended around 2028-05-09"
+    ]
+   },
+   "follow_up_visit_within_7_days": true,
+   "first_follow_up_visit": "2028-05-09",
+   "inpatient_admissions_in_prior_12_months": 2,
+   "lab_concepts_resulted_during_readmission": [],
+   "advance_directive_documented": false,
+   "positive_social_needs": [
+    "cost_of_care"
+   ]
+  },
+  {
+   "id": "SYN-9581B1D5-964",
+   "index_admit": "2029-03-31",
+   "index_discharge": "2029-04-04",
+   "readmit_admit": "2029-04-13",
+   "readmit_discharge": "2029-04-13",
+   "days_between": 9,
+   "readmission_reason": {
+    "phrase": "principal problem this admission: i50",
+    "record_id": "WHN-PP-f72e3173d87cf042b4ebca"
+   },
+   "prior_stay_reason": {
+    "phrase": "admitted with fluid overload",
+    "record_id": "WHX-R-17a11787d3f2be41edfa28"
+   },
+   "follow_up_instruction": {
+    "record_id": "WHX-R-17a11787d3f2be41edfa28",
+    "quotes": [
+     "Home heart-failure medicines to be reviewed at follow up",
+     "Primary follow up recommended around 2029-04-09"
+    ]
+   },
+   "follow_up_visit_within_7_days": true,
+   "first_follow_up_visit": "2029-04-09",
+   "inpatient_admissions_in_prior_12_months": 2,
+   "lab_concepts_resulted_during_readmission": [],
+   "advance_directive_documented": false,
+   "positive_social_needs": [
+    "food"
+   ]
+  },
+  {
+   "id": "SYN-94759790-D80",
+   "index_admit": "2027-10-17",
+   "index_discharge": "2027-10-21",
+   "readmit_admit": "2027-11-06",
+   "readmit_discharge": "2027-11-06",
+   "days_between": 16,
+   "readmission_reason": {
+    "phrase": "principal problem this admission: i50",
+    "record_id": "WHN-PP-6273b0c2f63b0400e1f65e"
+   },
+   "prior_stay_reason": {
+    "phrase": "admitted with fluid overload",
+    "record_id": "WHX-R-2ed051947fe22f8c49f6eb"
+   },
+   "follow_up_instruction": {
+    "record_id": "WHX-R-2ed051947fe22f8c49f6eb",
+    "quotes": [
+     "Home heart-failure medicines to be reviewed at follow up",
+     "Primary follow up recommended around 2027-10-26"
+    ]
+   },
+   "follow_up_visit_within_7_days": true,
+   "first_follow_up_visit": "2027-10-26",
+   "inpatient_admissions_in_prior_12_months": 2,
+   "lab_concepts_resulted_during_readmission": [],
+   "advance_directive_documented": false,
+   "positive_social_needs": [
+    "cost_of_care",
+    "food"
+   ]
+  }
+ ]
+}
