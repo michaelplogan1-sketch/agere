@@ -72,6 +72,34 @@ def passages(texts):
     return out
 
 
+# A reason can be stated without naming a medication: "SBP 96 limits titration". Code finds such a sentence when it
+# names a vital sign or lab, a limiting word and a therapy word together; a reader then judges it like any passage.
+_LIMIT_SIGN = re.compile(r"\b(?:sbp|dbp|systolic|diastolic|blood pressure|bp|hypotensi\w*|orthostat\w*|potassium|hyperkal\w*|creatinine|e?gfr|"
+                         r"kidney function|renal function|aki|heart rate|bradycardi\w*|hr)\b", re.I)
+_LIMIT_WORD = re.compile(r"\b(?:limit\w*|preclud\w*|prevent\w*|too low|not tolerat\w*|unable to|cannot|can't|held|hold\w*|defer\w*|no room|"
+                         r"not (?:be )?(?:up)?titrat\w*|contraindicat\w*)\b", re.I)
+_LIMIT_THERAPY = re.compile(r"\b(?:(?:up)?titrat\w*|gdmt|guideline[- ]directed|therapy|dos(?:e|es|ing)|escalat\w*|increas\w*|initiat\w*)\b", re.I)
+
+
+def limits(texts, have):
+    """Code only. -> passages (medication unnamed) for sentences that state a vital-sign or lab limit on therapy and lie
+    in no passage found by medication name."""
+    covered = ' '.join(p['text'].lower() for p in have)
+    seen = {}
+    for rid, doc in texts.items():
+        for whole in (x.strip() for x in re.split(r'(?<=\.)\s+', ' '.join(doc['text'].split()))):
+            # the part between colons or semicolons when it carries the whole statement ("recorded: SBP 96 limits titration"), else the sentence
+            parts = [x.strip() for x in re.split(r'(?<=[:;])\s+', whole)]
+            sentence = next((c for c in (*parts, whole) if 20 <= len(c) <= 320 and _LIMIT_SIGN.search(c) and _LIMIT_WORD.search(c) and _LIMIT_THERAPY.search(c)), None)
+            if sentence is None or sentence.lower() in covered: continue
+            hit = seen.setdefault(re.sub(r'\d{4}-\d{2}-\d{2}', '#', sentence.lower()),
+                                  {'pillar': UNNAMED, 'drug': 'heart failure medication', 'text': sentence, 'record_ids': [], 'dates': [], 'found_by': 'limit_statement_by_code'})
+            if rid not in hit['record_ids']: hit['record_ids'].append(rid); hit['dates'].append(str(doc.get('event_date') or ''))
+    out = list(seen.values())
+    for p in out: p['first'], p['last'] = min(p['dates']), max(p['dates'])
+    return out
+
+
 _retrieval_state, _retrieval_lock = {}, threading.Lock()
 
 
@@ -202,6 +230,7 @@ def execute(question, sql, params, read, db, *, readers=('system1', 'slm', 'llm'
     ids = list(dict.fromkeys(r[columns.index('record_id')] for r in selected))
     texts = {i: t for i, t in store.texts(ids, db).items() if t['text'].strip()}
     found = passages(texts)
+    found += limits(texts, found)
     retrieval = None
     if retrieval_available():
         more, retrieval = retrieved(texts, found)

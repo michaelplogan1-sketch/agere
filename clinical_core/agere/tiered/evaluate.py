@@ -407,6 +407,11 @@ def hf(s1_ledger=None, only=None, path='eval/tiered/hf_reasons.json'):
         rows = [r[arm] for r in results]
         lines.append(f"{name}  patients correct {sum(a['correct'] for a in rows)}/{n}   reasons found {sum(len(a['found']) for a in rows)}/{need}   unsupported quotes {sum(a['unsupported'] for a in rows)}   "
                      f"extra reasons {sum(len(a['extra']) for a in rows)}   ${sum(a['usd'] for a in rows) / n:.4f} per patient   {sum(a['seconds'] for a in rows) / n:.1f}s per patient")
+        if data.get('extras_reviewed'):
+            # The extras were read by a person and accepted as true statements from the record: with that review a
+            # patient is complete when every documented reason was found and no quote is unsupported.
+            lines.append(f"{name}  with extras reviewed ({data['extras_reviewed']['by']}, {data['extras_reviewed']['on']}): patients with every documented reason found "
+                         f"and no unsupported quote {sum(1 for r in results if len(r[arm]['found']) == len(r['required']) and not r[arm]['unsupported'] and 'error' not in r[arm])}/{n}")
     text = '\n'.join(lines)
     (OUT / f'{run_id}.report.txt').write_text(text + '\n'); (OUT / f'{run_id}.results.json').write_text(json.dumps(results, indent=1))
     return text
