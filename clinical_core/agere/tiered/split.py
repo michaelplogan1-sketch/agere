@@ -32,8 +32,9 @@ GDMT_WHY = re.compile(r"^why (?:isn't|is not|isnt|is) patient (?P<patient>[A-Za-
                       r"(?:gdmt|guideline|heart failure|hfref|pillar)", re.I)
 
 
-READMIT_WHY = re.compile(r"^why (?:was|did|is) patient (?P<patient>[A-Za-z0-9-]+) (?:re-?admitted|get re-?admitted|being re-?admitted|"
+READMIT_WHY = re.compile(r"^(?:why (?:was|did|is) patient (?P<patient>[A-Za-z0-9-]+) (?:re-?admitted|get re-?admitted|being re-?admitted|"
                          r"(?:come|go|end up) back (?:in|to) (?:the )?hospital|return(?:ed)? to (?:the )?hospital|back in (?:the )?hospital)"
+                         r"|review (?:the )?(?:re-?admission|chart) (?:of|for) patient (?P<patient2>[A-Za-z0-9-]+)(?:'s readmission)?)"
                          r"(?: (?:to (?:the )?hospital )?on (?P<date>20\d{2}-\d{2}-\d{2}))?\b", re.I)
 
 
@@ -54,18 +55,21 @@ def known(question):
     what is recorded and what is written; it does not judge what should be prescribed or what dose is tolerated."""
     readmit = READMIT_WHY.match(' '.join(question.split()).rstrip('?. '))
     if readmit:
-        # "Why was patient X readmitted?" is three questions the tiers can answer: the two stays, what each document states
-        # about each admission, and what is on record between them. With no date in the question, code finds the most
+        # "Why was patient X readmitted?" is a chart review in five questions the tiers can answer: the two stays, what the
+        # documents state (why admitted, discharge instructions, imaging, directives), follow-up between the stays, recorded
+        # risk factors, and labs by period. With no date in the question, code finds the most
         # recent readmission. The stack reports what is recorded and written; it does not judge whether it was avoidable.
-        pid = readmit.group('patient')
+        pid = readmit.group('patient') or readmit.group('patient2')
         try:
             when = readmit.group('date') or latest_readmission(pid)
         except Exception:
             when = None
         if when:
             return ([f"What are patient {pid}'s readmission on {when} and the stay before it?",
-                     f"What do patient {pid}'s documents state about why the patient was admitted on {when}?",
-                     f"What is on record for patient {pid} between the prior discharge and the admission on {when}?"],
+                     f"What do patient {pid}'s documents state about the admission on {when} and the stay before it?",
+                     f"What follow-up is on record for patient {pid} between the prior discharge and the admission on {when}?",
+                     f"What risk factors are on record for patient {pid} as of the admission on {when}?",
+                     f"What lab and vital results are on record for patient {pid} around the admission on {when}?"],
                     {'method': 'readmission_question_split_by_code', 'usd': 0.0, 'tokens': 0, 'seconds': 0.0, 'readmission_date': when,
                      'date_from': 'question' if readmit.group('date') else 'most recent readmission on record'})
     m = GDMT_WHY.match(' '.join(question.split()).rstrip('?. '))

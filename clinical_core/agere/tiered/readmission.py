@@ -1,4 +1,5 @@
-"""Why a patient was readmitted: what the record states about each admission, assigned to the right stay by code.
+"""A readmission chart review: what the record states about each admission, assigned to the right stay by code, with the
+discharge instructions, imaging impressions and any advance-directive wording.
 
   SQL         the latest stay followed by a 30-day readmission, the readmission itself, and the documents from the
               first admission to a week after the readmission discharge
@@ -19,15 +20,22 @@ from datetime import date, timedelta
 from . import store
 
 MAX_PASSAGES = 200
-FIELD = re.compile(r'\b(Principal diagnosis|Admitting diagnosis|Admission diagnosis|Reason for admission|Reason for readmission|Chief complaint)\s*:\s*'
-                   r'(.{3,160}?)(?=\s+(?:[A-Z][A-Za-z-]+(?: [a-z-]+){0,2}:)|\.\s|$)')
+FIELD = re.compile(r'\b(Principal diagnosis|Principal problem(?: this admission)?|Admitting diagnosis|Admission diagnosis|Reason for admission|Reason for readmission|Chief complaint)\s*:\s*'
+                   r'(.{2,160}?)(?=\s+(?:[A-Z][A-Za-z-]+(?: [a-z-]+){0,2}:)|\.\s|\.$|$)')
 LOOSE = re.compile(r'\b(?:presented (?:to [^.]{0,40}?)?with|presenting with|admitted (?:with|for|due to|after|because)|readmitted (?:with|for|due to|after|because)|'
                    r'returned (?:to [^.]{0,30}?)?with|brought in (?:with|for|after))\b', re.I)
 NOT_ADMITTED = re.compile(r'\btreated and released\b|\bdischarged (?:home )?from the (?:ed|emergency department)\b|\bnot admitted\b', re.I)  # a visit that did not become a stay
 ADMITTED_ON = re.compile(r'\bAdmission date\s*:\s*(\d{4}-\d{2}-\d{2})', re.I)
+FOLLOW_UP = re.compile(r'\bfollow[- ]?up\b', re.I)
+DISPOSITION = re.compile(r'\bDisposition\s*:?\s+([^.]{2,80})', re.I)
+IMPRESSION = re.compile(r'\bIMPRESSION\s*:\s*(.{3,400}?)(?=\s+(?:[A-Z][A-Z /-]{3,}:|Electronically|Signed|Dictated)|$)')
+DIRECTIVE = re.compile(r'advance directive|\bpolst\b|\bmolst\b|\bdnr\b|\bdni\b|code status|full code|health ?care proxy|living will|goals of care|power of attorney|'
+                       r'comfort (?:care|measures)|\bhospice\b|\bpalliative\b', re.I)
 OPTIONS = {'yes': 'The passage says why the patient was admitted to hospital, or what problem they came in with.',
            'no': 'The passage does not say why the patient was admitted: it describes treatment, a result, a plan, or a visit that did not lead to an admission.'}
-STAYS = ('readmission', 'stay before the readmission', 'between the two stays', 'another stay')
+STAYS = ('readmission', 'stay before the readmission', 'between the two stays', 'another stay', 'whole record')
+ADMISSION_KINDS = ('principal diagnosis', 'principal problem', 'principal problem this admission', 'admitting diagnosis', 'admission diagnosis', 'reason for admission',
+                   'reason for readmission', 'chief complaint', 'statement')
 
 
 def _day(text):
@@ -50,20 +58,38 @@ def which_stay(doc_text, event_date, index_admit, index_discharge, readmit_admit
     return 'between the two stays' if ia < when < ra else 'another stay'
 
 
-def statements(texts, stays):
-    """-> [{'stay','kind','text','record_id','event_date','by_code'}]: each admission statement, a direct quote."""
+def statements(texts, stays, kinds=None):
+    """-> [{'stay','kind','text','record_id','event_date','by_code'}]: every statement the review reports, each a direct quote.
+    Inside the window (the stay before the readmission through a week after the readmission discharge): why the patient was
+    admitted, follow-up instructions and disposition in a discharge summary, imaging impressions. In any document of the
+    patient: advance directive, code status or goals-of-care wording. kinds: {record_id: (source, document_type)}."""
+    index_admit, index_discharge, readmit_admit, readmit_discharge = stays
+    start = _day(index_admit) or ((_day(readmit_admit) or date.min) - timedelta(days=30))
+    end = (_day(readmit_discharge) or _day(readmit_admit) or date.max) + timedelta(days=7)
     out = []
+    def add(stay, kind, quote, rid, doc, by_code=True):
+        out.append({'stay': stay, 'kind': kind, 'text': quote, 'record_id': rid, 'event_date': str(doc.get('event_date') or ''), 'by_code': by_code})
     for rid, doc in texts.items():
         text = ' '.join(doc['text'].split())
+        source, doc_type = (kinds or {}).get(rid, ('', ''))
+        for sentence in re.finditer(r'[^.]{8,320}\.?', text):
+            if DIRECTIVE.search(sentence.group(0)): add('whole record', 'advance directive or code status', sentence.group(0).strip(), rid, doc)
+        when = _day(doc.get('event_date'))
+        if not when or not start <= when <= end: continue
         stay = which_stay(text, doc.get('event_date'), *stays)
         taken = []
         for m in FIELD.finditer(text):
-            out.append({'stay': stay, 'kind': m.group(1).lower(), 'text': f'{m.group(1)}: {m.group(2).strip()}', 'record_id': rid, 'event_date': str(doc.get('event_date') or ''), 'by_code': True})
-            taken.append((m.start(), m.end()))
+            add(stay, m.group(1).lower(), f'{m.group(1)}: {m.group(2).strip()}', rid, doc); taken.append((m.start(), m.end()))
+        if 'discharge' in str(doc_type).lower():
+            for sentence in re.finditer(r'[^.]{8,320}\.?', text):
+                if FOLLOW_UP.search(sentence.group(0)): add(stay, 'follow-up instruction', sentence.group(0).strip(), rid, doc)
+            for m in DISPOSITION.finditer(text): add(stay, 'disposition', m.group(0).strip(), rid, doc)
+        if 'radiology' in str(doc_type).lower() or 'imaging' in str(doc_type).lower():
+            for m in IMPRESSION.finditer(doc['text'].replace('\n', ' ')): add(stay, 'imaging impression', 'IMPRESSION: ' + ' '.join(m.group(1).split()), rid, doc)
         if NOT_ADMITTED.search(text): continue  # the document itself says the visit did not lead to an admission
         for sentence in re.finditer(r'[^.]{12,320}\.?', text):
             if not LOOSE.search(sentence.group(0)) or any(a < sentence.end() and sentence.start() < b for a, b in taken): continue
-            out.append({'stay': stay, 'kind': 'statement', 'text': sentence.group(0).strip(), 'record_id': rid, 'event_date': str(doc.get('event_date') or ''), 'by_code': False})
+            add(stay, 'statement', sentence.group(0).strip(), rid, doc, by_code=False)
     return out
 
 
@@ -99,8 +125,9 @@ def execute(question, sql, params, read, db, *, readers=('system1',), s1_ledger=
             [{'tier': 'read', 'outcome': 'no_documents_selected', 'tokens': 0, 'usd': 0.0}], []
     stays = tuple(str(selected[0][columns.index(c)] or '') for c in need[1:])
     ids = list(dict.fromkeys(r[columns.index('record_id')] for r in selected))
+    kinds = {r[columns.index('record_id')]: (r[columns.index('source')], r[columns.index('document_type')]) for r in selected} if 'document_type' in columns else {}
     texts = {i: t for i, t in store.texts(ids, db).items() if t['text'].strip()}
-    found = statements(texts, stays)
+    found = statements(texts, stays, kinds)
     if len(found) > MAX_PASSAGES: raise store.RecipeError(f'{len(found)} admission statements; this tier judges at most {MAX_PASSAGES} per question')
     started = time.monotonic()
     with ThreadPoolExecutor(8) as pool:
@@ -108,10 +135,14 @@ def execute(question, sql, params, read, db, *, readers=('system1',), s1_ledger=
     stated = sorted((j for j in judged if j['label'] == 'yes'), key=lambda j: (STAYS.index(j['stay']), j['event_date'], j['record_id']))
     undecided = [j for j in judged if not j['label']]
     rows = [[j['stay'], j['kind'], j['text'], j['record_id'], j['event_date']] for j in stated]
+    if not any(j['kind'] == 'advance directive or code status' for j in stated):
+        rows.append(['whole record', 'advance directive or code status',
+                     f'No advance directive, code status or goals-of-care wording is in any of the {len(texts)} documents on record for this patient', '', ''])
     if not rows: rows = [['(none)', '(none)', f'{len(judged)} passages were read; none states why the patient was admitted', '', '']]
     corpus = {i: ' '.join(t['text'].split()) for i, t in texts.items()}
     checks = [{'name': 'documents_selected', 'ok': bool(ids), 'detail': f'{len(ids)} documents'},
-              {'name': 'passages_are_document_words', 'ok': all(j['text'].split(': ', 1)[-1] in corpus[j['record_id']] for j in judged), 'detail': f'{len(judged)} passages'},
+              {'name': 'passages_are_document_words', 'ok': all(j['text'].split(': ', 1)[-1] in corpus[j['record_id']] or j['kind'] == 'disposition' and j['text'] in corpus[j['record_id']]
+                                                                for j in judged), 'detail': f'{len(judged)} passages'},
               {'name': 'every_passage_decided', 'ok': not undecided, 'detail': f'{len(undecided)} undecided'}]
     coded, asked = sum(1 for j in judged if j['by'] == 'code'), [j for j in judged if not j['by_code']]
     steps = []

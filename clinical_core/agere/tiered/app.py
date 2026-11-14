@@ -165,23 +165,46 @@ def try_answer(stack, question):
 
 
 def _readmission_headline(answers):
-    """Code writes the summary of a readmission answer from the three parts' tables, in the record's own words. No model:
-    the question turns on which statement belongs to which stay, and that is exactly what a reworded summary can blur."""
-    stays, stated, between = ((a.get('table') or []) for a in answers[:3])
+    """Code writes the summary of a readmission review from the parts' tables, in the record's own words. No model: the
+    review turns on which statement belongs to which stay, and that is exactly what a reworded summary can blur."""
+    from . import readmission
+    tables = [(a.get('table') or []) for a in answers] + [[]] * 5
+    stays, stated, follow, risk, labs = tables[:5]
     re = next((r for r in stays if r.get('stay') == 'readmission'), None)
     before = next((r for r in stays if r.get('stay') == 'stay before the readmission'), None)
     if not re: return 'No inpatient admission on that date is on record for this patient.'
-    quotes = lambda label: list(dict.fromkeys(str(r.get('passage')) for r in stated if r.get('stay') == label and r.get('stated_as') != '(none)'))
+    quotes = lambda label, kinds: list(dict.fromkeys(str(r.get('passage')) for r in stated if r.get('stay') == label and r.get('stated_as') in kinds))
     text = f"Admitted {re['admit_date']}" + (f", discharged {re['discharge_date']}" if re.get('discharge_date') not in (None, 'not recorded') else '')
     if before: text += f", {re['days_after_prior_discharge']} days after discharge from the stay of {before['admit_date']} to {before['discharge_date']}"
     text += '. '
-    said = quotes('readmission')
-    text += ('For this admission the record states: ' + '; '.join(f'"{q}"' for q in said[:4]) + '. ') if said else 'No document states why the patient was admitted on that date. '
-    earlier = quotes('stay before the readmission')
-    if before and earlier: text += 'For the stay before it the record states: ' + '; '.join(f'"{q}"' for q in earlier[:3]) + '. '
-    events = [f"{r.get('event')} {r.get('on_record')}" for r in between if r.get('event')]
-    if before: text += 'On record between the two stays: ' + (', '.join(events) if events else 'nothing') + '.'
-    return text[:1200]
+    said = quotes('readmission', readmission.ADMISSION_KINDS)
+    text += ('Why admitted, as the record states it: ' + '; '.join(f'"{q}"' for q in said[:3]) + '. ') if said else 'No document states why the patient was admitted on that date. '
+    earlier = quotes('stay before the readmission', readmission.ADMISSION_KINDS)
+    if before and earlier: text += 'The stay before it: ' + '; '.join(f'"{q}"' for q in earlier[:2]) + '. '
+    told = quotes('stay before the readmission', ('follow-up instruction',))
+    if told: text += 'Discharge instruction: ' + '; '.join(f'"{q}"' for q in told[:2]) + '. '
+    seen = {str(r.get('item')): r for r in follow}
+    visit = seen.get('outpatient visit within 7 days of discharge')
+    if before and visit:
+        text += ('Follow-up: an outpatient visit is on record on ' + str(visit.get('first_date')) + ', within 7 days of discharge. ' if visit.get('on_record') == 'yes'
+                 else 'Follow-up: no outpatient visit is on record within 7 days of discharge. ')
+    facts = {str(r.get('factor')): r.get('on_record') for r in risk}
+    if facts:
+        needs = [k.split(': ', 1)[1] for k in facts if k.startswith('positive social-need screen: ')]
+        text += (f"Risk factors on record: age {facts.get('age')}, {facts.get('chronic conditions on record')} chronic conditions, "
+                 f"{facts.get('inpatient admissions in the prior 12 months')} inpatient admissions in the prior 12 months, "
+                 f"{facts.get('emergency visits in the prior 6 months')} emergency visits in the prior 6 months"
+                 + (', positive social-need screens for ' + ', '.join(needs) if needs else ', no positive social-need screen') + '. ')
+    any_lab = next((r for r in labs if r.get('concept') == '(any lab or vital)'), None)
+    named = sorted({str(r.get('concept')) for r in labs if r.get('period') == 'readmission' and r.get('concept') != '(any lab or vital)'})
+    if any_lab is not None:
+        text += ('Labs and vitals during the readmission: ' + ', '.join(named[:8]) + '. ') if named else 'No lab or vital result is on record during the readmission. '
+    imaging = quotes('readmission', ('imaging impression',)) + quotes('between the two stays', ('imaging impression',)) + quotes('stay before the readmission', ('imaging impression',))
+    text += ('Imaging: ' + '; '.join(f'"{q}"' for q in imaging[:2]) + '. ') if imaging else 'No imaging report is on record around the two stays. '
+    directive = [str(r.get('passage')) for r in stated if r.get('stated_as') == 'advance directive or code status']
+    text += ('Advance directive or code status: ' + '; '.join(f'"{q}"' for q in directive[:2]) + '.') if directive and not directive[0].startswith('No advance directive') \
+        else 'No advance directive or code status is documented anywhere in the record.'
+    return text[:1800]
 
 
 def _combine(question, parts, results, how):

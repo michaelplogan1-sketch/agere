@@ -487,7 +487,8 @@ def readmit(s1_ledger=None, only=None, path='eval/tiered/readmission_reasons_2.j
         for part, o in zip(parts, outcomes): led.write(run_id, part, o, eval_id=pt['id'])
         ids = [r[0] for r in db.execute('SELECT record_id FROM document WHERE patient_id = ? ORDER BY event_date, record_id', (pt['id'],))]
         texts = store.texts(ids, db)
-        mine = [{'quote': r[2], 'record_id': r[3]} for r in outcomes[1].get('rows') or [] if r[0] == 'readmission']
+        from . import readmission as _rd
+        mine = [{'quote': r[2], 'record_id': r[3]} for r in outcomes[1].get('rows') or [] if r[0] == 'readmission' and r[1] in _rd.ADMISSION_KINDS]
         stated = next((r[1] for r in outcomes[0].get('rows') or [] if r[0] == 'readmission'), None)
         ok, unsupported, wrong = _score_readmission(mine, pt['accepted'], texts)
         stack = {'statuses': [o['status'] for o in outcomes], 'correct': ok and outcomes[1]['status'] == 'answered', 'unsupported': unsupported, 'wrong_stay': wrong,

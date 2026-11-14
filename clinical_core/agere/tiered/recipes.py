@@ -203,29 +203,67 @@ RECIPES = {
                "COALESCE(CAST(julianday(readmit_admit) - julianday(index_discharge) AS INTEGER), -1) FROM w WHERE readmit_admit IS NOT NULL ORDER BY 2",
         'grain': ['stay'],
         'patterns': [r"what are patient (?P<patient_id>[a-z0-9-]+)'s readmission on " + DATE + r" and the stay before it"]},
-    'readmission_reasons_in_documents': {
-        'title': "For one patient, what each document states about why the patient was admitted, for the stay admitted on a given date and the stay before it (each document is read)",
+    'readmission_chart_statements': {
+        'title': "For one patient, what the documents state about the admission on a given date and the stay before it: why admitted, discharge instructions, imaging impressions, and any advance directive or code status (each document is read)",
         'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
-        'sql': _READMIT_CTE + "SELECT d.record_id, d.event_date, COALESCE(w.index_admit, '') AS index_admit, COALESCE(w.index_discharge, '') AS index_discharge, "
+        'sql': _READMIT_CTE + "SELECT d.record_id, d.event_date, d.source, d.document_type, COALESCE(w.index_admit, '') AS index_admit, COALESCE(w.index_discharge, '') AS index_discharge, "
                "w.readmit_admit, COALESCE(w.readmit_discharge, '') AS readmit_discharge FROM document d, w WHERE d.patient_id = :patient_id AND w.readmit_admit IS NOT NULL "
-               "AND d.event_date >= COALESCE(w.index_admit, date(w.readmit_admit, '-30 day')) "
-               "AND d.event_date <= date(COALESCE(w.readmit_discharge, w.readmit_admit), '+7 day') ORDER BY d.event_date, d.record_id",
-        # Code finds each admission statement and assigns it to a stay (readmission.py); System One judges the unlabelled sentences.
+               "ORDER BY d.event_date, d.record_id",
+        # Code finds each statement and assigns it to a stay (readmission.py); System One judges only the unlabelled admission sentences.
         'read': {'statement': 'The passage says why the patient was admitted to hospital.', 'mode': 'admission_reasons'},
         'columns': ['stay', 'stated_as', 'passage', 'record_id', 'event_date'],
-        'patterns': [r"what do patient (?P<patient_id>[a-z0-9-]+)'s documents state about why the patient was admitted on " + DATE],
-        },
-    'readmission_interval_events': {
-        'title': "For one patient, what is on record between the prior discharge and the admission on a given date: appointments by status, visits by type, pharmacy fills",
+        'patterns': [r"what do patient (?P<patient_id>[a-z0-9-]+)'s documents state about the admission on " + DATE + r" and the stay before it"]},
+    'readmission_follow_up': {
+        'title': "For one patient, what is on record between the prior discharge and the admission on a given date: an outpatient visit within 7 days, telephone contacts, emergency visits, appointments by status, pharmacy fills",
         'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
-        'sql': _READMIT_CTE + "SELECT 'appointments: ' || a.final_status AS event, COUNT(*) AS on_record FROM appointment a, w WHERE a.patient_id = :patient_id "
-               "AND a.scheduled_date > w.index_discharge AND a.scheduled_date < w.readmit_admit GROUP BY 1 "
-               "UNION ALL SELECT 'visits: ' || v.type, COUNT(*) FROM visit v, w WHERE v.patient_id = :patient_id AND v.event_date > w.index_discharge "
-               "AND v.event_date < w.readmit_admit GROUP BY 1 "
-               "UNION ALL SELECT 'pharmacy fills', COUNT(*) FROM fill f, w WHERE f.patient_id = :patient_id AND f.fill_date > w.index_discharge AND f.fill_date < w.readmit_admit "
+        'sql': _READMIT_CTE +
+               "SELECT 'outpatient visit within 7 days of discharge' AS item, CASE WHEN COUNT(*) > 0 THEN 'yes' ELSE 'no' END AS on_record, COALESCE(MIN(v.event_date), '') AS first_date "
+               "FROM visit v, w WHERE v.patient_id = :patient_id AND v.event_date > w.index_discharge AND v.event_date <= date(w.index_discharge, '+7 day') AND v.event_date < w.readmit_admit "
+               "AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'telephone', 'orders_only') "
+               "UNION ALL SELECT 'outpatient visits between the stays', CAST(COUNT(*) AS TEXT), COALESCE(MIN(v.event_date), '') FROM visit v, w WHERE v.patient_id = :patient_id "
+               "AND v.event_date > w.index_discharge AND v.event_date < w.readmit_admit AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'telephone', 'orders_only') "
+               "UNION ALL SELECT 'telephone contacts between the stays', CAST(COUNT(*) AS TEXT), COALESCE(MIN(v.event_date), '') FROM visit v, w WHERE v.patient_id = :patient_id "
+               "AND v.event_date > w.index_discharge AND v.event_date < w.readmit_admit AND v.type = 'telephone' "
+               "UNION ALL SELECT 'emergency visits between the stays', CAST(COUNT(*) AS TEXT), COALESCE(MIN(v.event_date), '') FROM visit v, w WHERE v.patient_id = :patient_id "
+               "AND v.event_date > w.index_discharge AND v.event_date < w.readmit_admit AND v.type = 'emergency' "
+               "UNION ALL SELECT 'appointments between the stays: ' || a.final_status, CAST(COUNT(*) AS TEXT), MIN(a.scheduled_date) FROM appointment a, w WHERE a.patient_id = :patient_id "
+               "AND a.scheduled_date > w.index_discharge AND a.scheduled_date < w.readmit_admit GROUP BY a.final_status "
+               "UNION ALL SELECT 'pharmacy fills between the stays', CAST(COUNT(*) AS TEXT), COALESCE(MIN(f.fill_date), '') FROM fill f, w WHERE f.patient_id = :patient_id "
+               "AND f.fill_date > w.index_discharge AND f.fill_date < w.readmit_admit ORDER BY 1",
+        'grain': ['item'],
+        'patterns': [r"what follow-up is on record for patient (?P<patient_id>[a-z0-9-]+) between the prior discharge and the admission on " + DATE]},
+    'readmission_risk_factors': {
+        'title': "For one patient, recorded risk factors as of the admission on a given date: age, coverage, chronic conditions, inpatient admissions in the prior 12 months, emergency visits in the prior 6 months, length of the prior stay, medication classes filled, positive social-need screens, interpreter need",
+        'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
+        'sql': _READMIT_CTE +
+               "SELECT 'age' AS factor, CAST(age_latest AS TEXT) AS on_record FROM patient WHERE patient_id = :patient_id "
+               "UNION ALL SELECT 'coverage', COALESCE(coverage_type, 'not recorded') FROM patient WHERE patient_id = :patient_id "
+               "UNION ALL SELECT 'interpreter needed', CASE WHEN interpreter_needed IN (1, '1', 'true', 'yes') THEN 'yes' ELSE 'no' END FROM patient WHERE patient_id = :patient_id "
+               "UNION ALL SELECT 'chronic conditions on record', CAST(COUNT(DISTINCT concept) AS TEXT) FROM condition WHERE patient_id = :patient_id AND chronic = 1 AND concept IS NOT NULL "
+               "UNION ALL SELECT 'chronic condition: ' || concept, MIN(COALESCE(event_date, '')) FROM condition WHERE patient_id = :patient_id AND chronic = 1 AND concept IS NOT NULL GROUP BY concept "
+               "UNION ALL SELECT 'inpatient admissions in the prior 12 months', CAST(COUNT(DISTINCT s.admit_date) AS TEXT) FROM stay s WHERE s.patient_id = :patient_id AND s.type = 'inpatient' "
+               "AND s.admit_date < :readmit_date AND s.admit_date >= date(:readmit_date, '-365 day') "
+               "UNION ALL SELECT 'emergency visits in the prior 6 months', CAST(COUNT(DISTINCT v.event_date) AS TEXT) FROM visit v WHERE v.patient_id = :patient_id AND v.type = 'emergency' "
+               "AND v.event_date < :readmit_date AND v.event_date >= date(:readmit_date, '-183 day') "
+               "UNION ALL SELECT 'length of the prior stay in days', COALESCE(CAST(CAST(julianday(index_discharge) - julianday(index_admit) AS INTEGER) AS TEXT), 'no prior stay') FROM w "
+               "UNION ALL SELECT 'medication classes filled in the prior 120 days', CAST(COUNT(DISTINCT f.drug_class) AS TEXT) FROM fill f WHERE f.patient_id = :patient_id AND f.drug_class IS NOT NULL "
+               "AND f.fill_date < :readmit_date AND f.fill_date >= date(:readmit_date, '-120 day') "
+               "UNION ALL SELECT 'positive social-need screen: ' || n.need, MAX(n.event_date) FROM social_need n WHERE n.patient_id = :patient_id AND n.positive = 1 AND n.event_date <= :readmit_date GROUP BY n.need "
                "ORDER BY 1",
-        'grain': ['event'],
-        'patterns': [r"what is on record for patient (?P<patient_id>[a-z0-9-]+) between the prior discharge and the admission on " + DATE]},
+        'grain': ['factor'],
+        'patterns': [r"what risk factors are on record for patient (?P<patient_id>[a-z0-9-]+) as of the admission on " + DATE]},
+    'readmission_labs': {
+        'title': "For one patient, lab and vital results by period around the admission on a given date: the stay before it, between the stays, and the readmission (count, lowest, highest, last date)",
+        'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
+        'sql': _READMIT_CTE + ", m AS (SELECT x.concept, x.value_canonical, x.event_date, CASE "
+               "WHEN x.event_date >= w.readmit_admit AND x.event_date <= date(COALESCE(w.readmit_discharge, w.readmit_admit), '+1 day') THEN 'readmission' "
+               "WHEN x.event_date >= w.index_admit AND x.event_date <= w.index_discharge THEN 'stay before the readmission' "
+               "WHEN x.event_date > w.index_discharge AND x.event_date < w.readmit_admit THEN 'between the two stays' END AS period "
+               "FROM measurement x, w WHERE x.patient_id = :patient_id AND x.concept IS NOT NULL AND w.readmit_admit IS NOT NULL) "
+               "SELECT period, concept, COUNT(*) AS results, MIN(value_canonical) AS lowest, MAX(value_canonical) AS highest, MAX(event_date) AS last_date FROM m WHERE period IS NOT NULL GROUP BY 1, 2 "
+               "UNION ALL SELECT 'readmission', '(any lab or vital)', COUNT(*), NULL, NULL, COALESCE(MAX(event_date), '') FROM m WHERE period = 'readmission' ORDER BY 1, 2",
+        'grain': ['period', 'concept'],
+        'patterns': [r"what lab and vital results are on record for patient (?P<patient_id>[a-z0-9-]+) around the admission on " + DATE]},
 }
 ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS}
 _vocab = {}
