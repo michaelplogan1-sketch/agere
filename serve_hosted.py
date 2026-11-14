@@ -62,6 +62,7 @@ def main():
         print(f'removed {len(removed)} warehouse credential variable(s) from the environment (tenants supply their own)', flush=True)
     data = Path(os.environ.get('AGERE_DATA_DIR') or Path(__file__).resolve().parent / 'artifacts' / 'hosted')
     os.environ.setdefault('AGERE_LEDGER_PATH', str(data / 'provider-budget.sqlite3'))  # model-call ledger lives with the data
+    (data / 'artifacts').mkdir(parents=True, exist_ok=True)  # default-path writes (background learning logs) land on the volume
     key = os.environ.get('AGERE_SECRET_KEY')
     if not key:
         raise SystemExit('AGERE_SECRET_KEY is required (python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")')
