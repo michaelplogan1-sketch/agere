@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-12T10:29:03.477870+00:00",
+  "updated_at": "2026-11-14T11:11:44.681980+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -33,7 +33,7 @@
       "broader_charter_accepted": false
     }
   },
-  "current_gate": "G5",
+  "current_gate": "G7",
   "gates": [
     {
       "id": "G1",
@@ -766,9 +766,14 @@
         8,
         9
       ],
-      "status": "blocked",
+      "status": "accepted",
       "outcome": "Compare role-appropriate baselines and existing candidates on equivalent visible evidence and protected splits; decompose retrieval, ranking, reading, planning and service errors with coverage, abstention, manual burden and total cost. Integrate further models/math only for measured product needs; retain justified failures and unqualified roles.",
-      "acceptance_evidence": [],
+      "acceptance_evidence": [
+        {
+          "path": "artifacts/agere-tiered-core/g5-owner-acceptance-2026-11-13.json",
+          "sha256": "701ace77f5fe121e62ea1b895f70049684566dad79069ed99f47aa5e6acea5de"
+        }
+      ],
       "progress_evidence": [
         {
           "path": "artifacts/agere-decision-prediction-v1/implementation-receipt.json",
@@ -894,121 +899,150 @@
           "scope": "Current integrated code recovery and runtime prompt/definition fidelity; qualification remains open."
         }
       ],
-      "blocker": "G5 remains blocked for independent source-family/model/method/clinical qualification and actual end-to-end accuracy/cost evidence. Original65-patient answer remains partial/unverified; Claude account-limit reset is unknown and no probe was made. Preliminary student runs but has no accepted automatic-decision threshold; diverse independent source-bound reference outcomes are missing. Selected prediction targets and exact program/contract/capacity inputs remain data-dependent; no fabricated fit or definition. Historical fixed25 outcomes are preserved, not restamped as current whole-case passes. The archive references existing Python, models and mutable stores on this machine; customer deployment and full backup are separate. OWASP/HHS remains deferred.",
-      "previous_blocker": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim.",
-      "next_action": "G5: The identified current engineering consumers and same-machine recovery artifact are now connected. At the next resume inspect owned receipts and any genuinely new provider-availability or reviewed-source evidence. Do not probe the recorded Claude account rate limit, rerun passed workflows, regenerate this archive, or start another inventory/audit while evidence is unchanged. With actual recovery evidence, continue the saved65-patient investigation ANS-87eb0982baaef39dd759d519 through the current mixed native/documentary routing and exact restored judgments, retaining every partial/attempt and stopping again on an actual limit; then assess its unfinished source/work coverage and all-attempt cost, without replaying the original native cohort. Independent source-bound reviews with diverse outcomes are required before student threshold promotion; leave its preliminary role active. No additional missing consumer was established by this scoped reconciliation; concrete newly observed defects can reopen implementation. All ten areas/all25 and principal/October11baseline remain. Keep quiet continuation active through the authorized overnight period, with no routine notifications, questions, Git pushes or real care.",
+      "previous_blocker": "G5 remains blocked for independent source-family/model/method/clinical qualification and actual end-to-end accuracy/cost evidence. Original65-patient answer remains partial/unverified; Claude account-limit reset is unknown and no probe was made. Preliminary student runs but has no accepted automatic-decision threshold; diverse independent source-bound reference outcomes are missing. Selected prediction targets and exact program/contract/capacity inputs remain data-dependent; no fabricated fit or definition. Historical fixed25 outcomes are preserved, not restamped as current whole-case passes. The archive references existing Python, models and mutable stores on this machine; customer deployment and full backup are separate. OWASP/HHS remains deferred.",
+      "next_action": "Accepted on Mike's statement of 2026-11-13. If a review record exists, add it to acceptance_evidence.",
       "current_engineering_delivery": {
         "receipt": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
         "product_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
         "scope": "The current integrated runtime now has a same-machine code-only recovery archive containing routing, typed learning, source navigation, exact reuse and interruption handling. A fresh archived interpreter reopens the unchanged65-patient partial and preserves its service-progress details; the archived authenticated app reopens existing saved work with no analysis replay. A demonstrated packaging defect was repaired: all14question starters now travel as prompt-only runtime configuration instead of depending on development documents. A starter match no longer labels an answer as having an executed definition; that display uses its actual response contract. Stale Q06/Q24/student continuation pointers are reconciled to existing delivery evidence without rerunning cases."
       },
-      "latest_engineering_connection": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json"
+      "latest_engineering_connection": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
+      "acceptance_kind": "owner_statement_reviewed_and_passed_no_review_record_on_file",
+      "accepted_at": "2026-11-13T18:46:07.801270+00:00"
+    },
+    {
+      "id": "G7",
+      "title": "Make the tiered stack ready to sell",
+      "scope_areas": [
+        1,
+        3,
+        4,
+        5,
+        9
+      ],
+      "status": "active",
+      "outcome": "Mike, 2026-11-13: \"finish this so we can sell it ASAP\"; testing by Mike and Claude is accepted. In order: (a) batch learning over generated healthcare questions with a second-model check before any recipe is promoted; (b) a patient list answered by the tiers becomes a selectable group; (c) document questions beyond the 150-document cap; (d) statistical methods as recipes; (e) the learning gate runs without a manual step; (f) a local small model compared with Haiku. Forecasting, tabular prediction and entity models stay off until a real question needs them.",
+      "acceptance_evidence": [],
+      "progress_evidence": [],
+      "opened_at": "2026-11-13T19:12:19.058973+00:00",
+      "opened_by": "Mike (explicit direction)"
     }
   ],
   "checkpoint": {
-    "kind": "current_integrated_recovery_and_case_disposition",
-    "gate_id": "G5",
-    "current_gate_id": "G5",
+    "kind": "g7_no_unbounded_path_and_takeover_measured",
+    "gate_id": "G7",
+    "current_gate_id": "G7",
     "last_delivered_gate": "G5",
-    "product_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
-    "updated_at": "2026-11-12T03:41:14.139421+00:00",
-    "user_behavior_delta": "The current integrated runtime now has a same-machine code-only recovery archive containing routing, typed learning, source navigation, exact reuse and interruption handling. A fresh archived interpreter reopens the unchanged65-patient partial and preserves its service-progress details; the archived authenticated app reopens existing saved work with no analysis replay. A demonstrated packaging defect was repaired: all14question starters now travel as prompt-only runtime configuration instead of depending on development documents. A starter match no longer labels an answer as having an executed definition; that display uses its actual response contract. Stale Q06/Q24/student continuation pointers are reconciled to existing delivery evidence without rerunning cases.",
+    "product_commit": "55dc761bed3d6757044469bf3de692231252ef28",
+    "updated_at": "2026-11-14T01:10:42.534768+00:00",
+    "user_behavior_delta": "No question can start the unbounded older path by default (AGERE_DEEP_PATH off): every tier, then a bounded frontier takeover that sees the conversation or the selected patients, then a clear message. Hosted Ask handles \"those patients\" follow-ups. Takeover answers now keep the stack's units and return only the asked rows.",
     "measured_failure_reduction": {
-      "question_starters_in_first_archive": 5,
-      "question_starters_in_corrected_archive": 14,
-      "both_archived_entry_pages_match_current_source": true,
-      "retained_partial_patient_count": 65,
-      "archived_authenticated_reopen_http": 200,
-      "provider_calls": 0,
-      "analysis_replays": 0,
-      "original_saved_answer_changed": false,
-      "archive_bytes": 6389785,
-      "database_copy_bytes": 0,
-      "model_copy_bytes": 0,
-      "runtime_copy_bytes": 0,
-      "full25_ordinary_acceptance": false,
-      "independent_qualification_established": false
+      "product_failure_reduction_this_handoff": null,
+      "provider_calls_this_handoff": 1046,
+      "whole_answer_accepted": "machine review confirmed; answer status partial by stated unknowns",
+      "attendance_rows_agreeing_with_visit_records_run_8": "75/75",
+      "live_question_seconds_runs_5_7_8_9": [
+        651,
+        255,
+        615,
+        186
+      ],
+      "live_question_usd_runs_5_7_8_9": [
+        22.68,
+        2.8,
+        13.65,
+        1.83
+      ],
+      "machine_review_confirmed_run_9": true,
+      "q08_seconds": 237,
+      "q08_usd": 2.05,
+      "q08_machine_review_confirmed": true,
+      "q06_seconds": 183,
+      "q06_usd": 1.84,
+      "q06_checked": true,
+      "q05_usd_three_runs": [
+        4.14,
+        2.43,
+        17.1
+      ]
     },
     "evidence": [
-      "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
-      "artifacts/agere-analytical-completion-2026-11-11/current-25case-disposition.json",
-      "artifacts/agere-Q06-current-original-2026-11-07/source-transport-completion.json",
-      "artifacts/agere-output-design-2026-11-11/delivery-receipt.json",
-      "artifacts/agere-output-decision-design-2026-11-11/delivery-receipt.json",
-      "artifacts/agere-combined-integration-2026-11-11/delivery-receipt.json",
-      "artifacts/agere-student-activation-2026-11-11/delivery-receipt.json",
-      "artifacts/agere-Q19-retained-2026-11-08/verification-role-assessment.json",
-      "artifacts/agere-source-obligations-2026-11-11/current-integrated-release/receipt.json",
-      "artifacts/agere-source-obligations-2026-11-11/current-integrated-release/error.txt",
-      "artifacts/agere-source-obligations-2026-11-11/current-integrated-release/page-difference.json",
-      "artifacts/agere-source-obligations-2026-11-11/current-release-preflight.json",
-      "artifacts/agere-source-obligations-2026-11-11/question-starter-consumer-check.log",
-      "artifacts/agere-source-obligations-2026-11-11/current-integrated-release-v2/receipt.json",
-      "artifacts/agere-source-obligations-2026-11-11/current-integrated-release-v2/live-runtime.json"
+      "artifacts/agere-tiered-core/takeover-20261114T010008Z.report.txt",
+      "artifacts/agere-tiered-core/takeover-20261114T010128Z.report.txt",
+      "artifacts/agere-tiered-core/takeover-20261114T010211Z.report.txt",
+      "artifacts/agere-tiered-core/all-takeover-20261114T002610Z.report.txt",
+      "artifacts/agere-tiered-core/followups-20261114T002736Z.report.txt",
+      "artifacts/agere-tiered-core/cohort-20261114T002932Z.report.txt",
+      "artifacts/agere-tiered-core/multi-20261114T002821Z.report.txt",
+      "test_tiered_takeover_hosted.py",
+      "artifacts/agere-tiered-core/hf-20261113T215942Z.report.txt",
+      "artifacts/agere-tiered-core/hf-20261113T203136Z.report.txt",
+      "artifacts/agere-tiered-core/hf-20261113T202542Z.report.txt",
+      "artifacts/agere-tiered-core/curriculum/report.txt",
+      "artifacts/agere-tiered-core/hf-20261113T200402Z.report.txt",
+      "artifacts/agere-tiered-core/hf-20261113T195321Z.report.txt"
     ],
-    "remaining_gap": "G5 remains blocked for independent source-family/model/method/clinical qualification and actual end-to-end accuracy/cost evidence. Original65-patient answer remains partial/unverified; Claude account-limit reset is unknown and no probe was made. Preliminary student runs but has no accepted automatic-decision threshold; diverse independent source-bound reference outcomes are missing. Selected prediction targets and exact program/contract/capacity inputs remain data-dependent; no fabricated fit or definition. Historical fixed25 outcomes are preserved, not restamped as current whole-case passes. The archive references existing Python, models and mutable stores on this machine; customer deployment and full backup are separate. OWASP/HHS remains deferred.",
-    "next_action": "G5: The identified current engineering consumers and same-machine recovery artifact are now connected. At the next resume inspect owned receipts and any genuinely new provider-availability or reviewed-source evidence. Do not probe the recorded Claude account rate limit, rerun passed workflows, regenerate this archive, or start another inventory/audit while evidence is unchanged. With actual recovery evidence, continue the saved65-patient investigation ANS-87eb0982baaef39dd759d519 through the current mixed native/documentary routing and exact restored judgments, retaining every partial/attempt and stopping again on an actual limit; then assess its unfinished source/work coverage and all-attempt cost, without replaying the original native cohort. Independent source-bound reviews with diverse outcomes are required before student threshold promotion; leave its preliminary role active. No additional missing consumer was established by this scoped reconciliation; concrete newly observed defects can reopen implementation. All ten areas/all25 and principal/October11baseline remain. Keep quiet continuation active through the authorized overnight period, with no routine notifications, questions, Git pushes or real care.",
+    "remaining_gap": "Nothing is deployed: needs a server, DNS name and keys from Mike. The paid-key transport has never made a live call; the Docker image has not been built (no Docker on this machine). Takeover: 24/24 on the set it was tuned on, 10/12 on the canonical set (the 2 give the asked figure without the recipe's extra columns); its answers are unverified by design. Builder is not on hosted Ask. Synthetic data only; no security, compliance or outside accuracy review; nothing on main; Codex screen edits unreviewed; test_hosted_pages_design and test_summary_followup each have one failure that predates this work.",
+    "next_action": "NEXT (2026-11-14; Mike asked for everything on main so Codex's screens and the tiered stack are one codebase: Codex's Ask, gallery and workspace screens committed with the tiered stack and codex/integration-20261026 merged into main through pull request 2): Mike has no server and synthetic data is accepted, so hosting is not the next step and is not to be raised. Open work: Builder on the hosted Ask page; two older failing tests (test_hosted_pages_design 'Compound', test_summary_followup); no security or outside accuracy review. Further pushes only on a new request from Mike. | Claude Code owns the build (manual turns; Codex scheduler paused). Mike's direction (2026-11-12): one single stack with everything on; fix it, build forward. Run 9 on the default stack (2c46de7f) returned the 65-patient cardiology referral question in 186 s for $1.83 with the machine review confirmed, every row supported without a frontier claim review, and attendance agreeing with visit records on 75 of 75 rows; saved as ANS-3ab840d33bf3fd2947b4a119, status partial/checked because the answer lists three unknowns (artifacts/agere-claude-takeover-2026-11-12/live-run-9/run-summary.json). Q08 (2029 home-health requests) on the same commit: 237 s, $2.05, machine review confirmed after one located repair, 19 requests and 73 treatment records matching the record table; saved as ANS-6f594cf556b23d2ccf4ff006, partial/checked by two stated unmet dependencies (artifacts/agere-claude-takeover-2026-11-12/live-q08-1/run-summary.json). Q05 (anticoagulant fills versus documents): first run stalled on a prose year rule (fixed 002173a6, narrowed a5302ab5); second run confirmed by the review in 226 s for $2.43 with documents read and all 37 rows settled without a frontier claim review, but labelled unverified because product source was edited mid-run (artifacts/agere-claude-takeover-2026-11-12/live-q05-2/run-summary.json). RULE: do not edit product source while a live request is running. Batch 1 on a5302ab5 (artifacts/agere-claude-takeover-2026-11-12/batch-1-summary.json): Q06 answered and checked in 183 s for $1.84; Q05 $17.10 partial (oversized document-review result sent to reviewers); Q10 stalled on a pronoun read as a number; Q21 blocked by two conflicting checks (filtered answer versus every audit account). Fixed in 6865754a: refusals collapsed to one entry per document; pronoun rule. Batch 2 on 6865754a (artifacts/agere-claude-takeover-2026-11-12/batch-2-summary.json): Q10 checked ($3.46), Q01 checked ($0.72, 60 s), Q04 checked ($1.57); Q05, Q02, Q03 ended compiler_unresolved on definitional wording in method notes. Fixed in 31932476 (twice-failed method notes kept as labelled limitations). Checked so far on the default stack: Q01, Q04, Q06, Q07, Q08, Q10. Batch 3 on 31932476 (artifacts/agere-claude-takeover-2026-11-12/batch-3-summary.json): Q05 checked ($3.50, documents read, no Opus), Q03 checked ($0.49, 38 s); Q02 still failing on repeated source_definition repairs; Q09 failed at $11.59 when the Claude subscription session limit was reached (resets 11pm America/Chicago); Q11-Q13 not run. Checked on the default stack: Q01, Q03, Q04, Q05, Q06, Q07, Q08, Q10 (8 of 25). Limit reset 2026-11-13; Mike asked to continue. Q09 analysis: $11.59 was 30 Sonnet claim-support reviews ($5.54), a 400K-token coverage review ($1.66) and 7 Opus repair turns ($2.78); not yet fixed. Batch 4 on 31932476 (artifacts/agere-claude-takeover-2026-11-12/batch-4-summary.json): Q11 checked ($2.32), Q15 checked ($0.35, 44 s); Q12 and Q16 stalled in the prose patch protocol; Q13 and Q14 ended partial on undecided verification (coverage; shared program meaning). Fixed in 64d5b808 (method notes relocated on first failure; request-stated numbers allowed). Checked on the default stack: Q01, Q03, Q04, Q05, Q06, Q07, Q08, Q10, Q11, Q15 (10 of 25). Branch was pushed once to origin at 31932476 at Mike's explicit request on 2026-11-13; any further push needs a new explicit request. Mike 2026-11-13: build the tiered stack per his build brief (bottles, deterministic recipes, System One, small model, frontier last; cost per correct answer; ledger; eval after each stage). Built as a new core in clinical_core/agere/tiered/ with eval/tiered/questions.json (artifacts/agere-tiered-core/build-receipt.json). Stages 1-6 done: all five tiers give 35/36 correct, frontier model on 3/36, $0.0006 per question; baseline (recipes + frontier) was 34/36 at $0.0147. The old cascade is unchanged apart from 55596871 (designed order) and still answers through the Claude analyst; its System One tiers decline. Nothing is running. Stage 7 done (learning loop and promotion gate, clinical_core/agere/tiered/learn.py; artifacts/agere-tiered-core/promotion-log.jsonl). Old-path regressions from 2026-11-13 reverted in 0fcaef3c. App connected: a fresh question now tries the tiered core first (AGERE_TIERED_CORE=on; conversation.py -> tiered/app.py); four live questions through /api/stack/compose were answered by recipes, System One plus small model, a bottle and the frontier tier, each saved. Questions the core does not answer continue on the existing path. Document-reading tier built (4b65f526, clinical_core/agere/tiered/read.py): a reading plan selects documents by SQL and each is read by System One, then the small model with a System One check on its quote, then the frontier model; code counts. Eval now 48 questions: 47/48 correct with all 12 document questions correct; a small-model-only reader got 7/10 on the reading questions. Two new document questions answered live through /api/stack/compose and hand-checked. Value extraction built (f14aca4e): extract mode reads one value out of each selected document (System One screen, small model copy, System One confirm, frontier for the rest); eval now 53 questions, 52/53 correct, 5/5 extraction; two live extraction questions hand-checked. Jev available again (2026-11-13). Answer view (8da060ce): the tier, cost, readers and one line per document read are shown as Findings and Evidence used with no view file edited; document answers now save without the invalidated flag (their saved SQL inlines the document catalog). Conversations (344a8c8a): the UI always sends a conversation id, so UI questions only reach the tiered core from this commit on (the 6b450cbb hook covered requests without one); follow-ups are made complete by code (period swap) or the small model with a System One check, then go through the tiers; verified by typing in the real question box. Narrative (75aee874): code writes one-row summaries; for several rows the small model words facts computed by code and code discards any text with a number not in the result (14 of 15 kept on the eval's multi-row answers). Follow-up eval (4baf7e45): 14 items, 13/14 then 14/14 after System One was added to decide whether typed words stand on their own; full eval rerun 52/53. Chains (add01b64, committed before its first run): 8 chains, 31 turns, first and only run 30/31 turns, 22/23 later turns, 7/8 chains, $0.0021 per turn, frontier on 1 turn; the miss was System One rejecting a correct small-model rewrite (K4.4). Fixed in 1f6c17e3: when System One does not confirm, the frontier model rewrites independently and the small model's rewrite is used only if code finds the same words; rerun after the fix (not an untouched run) chains 31/31, 8/8 chains, $0.0037 per turn, frontier on 2/31 turns; follow-up eval 14/14. Second chain set (96ac2f16, committed before its only run; 8 chains, 42 turns - the commit message says 38 in error): 35/42 turns, 28/34 later turns, 5/8 chains, $0.0057 per turn, 4.4 s per turn, frontier on 6/42 turns. Misses, nothing changed afterwards: \"next year\" read as the year before and confirmed by System One (wrong answer); \"readmission rate that year\" kept \"by organization\"; \"and that a stress test was ordered?\" merged with the earlier statement; one extraction turn scored wrong in the run but returned the reference on a direct rerun (the ledger keeps no rows, so the cause is unknown); a rewrite asking two values at once left every reader undecided; two knock-on misses after it. Fixed in 9d71426a: relative periods by code, rewrite instruction (replace, borrow one detail), completeness verdict needs 0.6 (a 0.485 v 0.468 near-tie had been acted on), ledger keeps rows. Reruns after the fixes (not untouched; the 0.6 was chosen after seeing five verdicts): second set 40/42 (one wrong answer: \"instead\" kept the ever-denied filter and System One confirmed it; one decline), first set 31/31, follow-up set 14/14. Multi-part messages (ae25dae7): split.py - code decides whether to ask, the small model lists the parts, code rejects parts that add values, System One confirms; every part must be answered or the message is tried as one; composite answer with one section per part (existing view). Eval set of 13 committed before its only run: 11/13 (several 8/10, one 3/3), $0.0044 per item, frontier on 2. Misses, unfixed: a three-part list was judged one question and answered by one frontier recipe; a document question followed by \"and how many deaths\" was swallowed whole by the document recipe wording match as its statement and answered wrongly (this defect predates the splitter). Typed into the app page once: composite saved as ANS-e8e57d18d131848faf30ad46 with no error and the saved view shows both sections. Known wrong-answer paths closed in b8446cab: second question inside a reading statement, LIKE and narrowed vocabulary values in frontier recipes, \"instead\" follow-ups, \"that year\" by code, lists of counts split, rejected bottles replaceable. Reruns after the fixes (not untouched): full set 53/53, multi-part 13/13, first chain set 31/31, follow-up set 14/14, second chain set 42/42 on one run and 41/42 on the next (the \"instead\" turn varies between correct and declined; no wrong answer). Mike asked on 2026-11-13 to stop the test-and-fix loop after this pass. Patient-group follow-ups (d6da1177; Mike said \"keep going\" on 2026-11-13): store.connect(cohort) restricts every patient table by a temporary view so recipes, bottles and frontier SQL run unchanged inside the group; store.portable inlines the cohort so saved SQL returns the same result; followup.group_question makes the words a complete question (code where a zero-cost tier knows the result, else small model + System One); app.try_in_cohort binds the result to the parent answer (cohort_transform) and conversation.py tries it before the existing compose-with-population path. Eval set of 13 committed before its only run: 13/13, $0.0061 per item, 6.9 s, frontier on 3. Verified in the running app on 2026-11-13: a fresh existing-path answer (ANS-41361a9bc635a3a54c838b81, COPD question, 80 patients, 496 s, $8.92 - Claude had told Mike about $2) was followed up twice on its patients through /api/stack/compose with answer_context_id: \"how many of them have diabetes?\" -> 27 (recipe, 2.3 s, $0) and \"How many ED visits did these patients have in 2029?\" -> 137 (small model, 11 s, $0.0005); both equal reference SQL over the 80 ids, both saved with no error and bound to the parent (cohort_transform). Older saved patient-group answers remain invalidated under current planning definitions (existing rule). Tiered-core answers themselves never carry a selectable patient group. G5 marked accepted on 2026-11-13 on Mike's statement \"G5 is reviewed and passed\" (record of the statement only; no review record on file; Claude claims no clinical review or qualification). All six gates are accepted and there is no current gate. G7 opened 2026-11-13 on Mike's direction (\"finish this so we can sell it ASAP\"; testing by Mike and Claude is fine): batch learning with a second-model check, patient lists as selectable groups, documents beyond the 150 cap, statistical methods as recipes, automatic learning gate, local small model versus Haiku. Batch learner built (d9da507c): curriculum.py generate/run/confirm/merge/report with its own stores under artifacts/agere-tiered-core/curriculum/; a frontier recipe is confirmed only when a different model reproduces its rows; learn.promote no longer promotes an unexercised, unconfirmed recipe. First batch of 300 generated questions started in the background on 2026-11-13 (generate, run, confirm); results not yet in. G7 progress on 2026-11-13 (e64c873b): (b) patient lists - no code needed: a list answered by the tiers with a patient_id column already saves as a selectable group; checked in the app (90 patients, follow-up \"how many of them have diabetes?\" -> 48 = reference SQL); Claude's earlier statement that tiered answers carry no group was wrong for lists. (c) documents beyond 150 - count/list plans up to 3000 documents: System One screens all, only undecided go to model readers (up to 400); year-level scanned-document recipe; in the app 267 radiology reports for 2029 -> 13 stating a pulmonary nodule in 8 s for $0.011, equal to a keyword check (13, same documents). (e) automatic learning - a newly saved recipe starts second-model check plus promotion gate in the background (AGERE_TIERED_AUTO_LEARN on by default). (d) statistical methods NOT wired into the tiers: the existing survival, uplift, queueing and causal engines need long parameter specifications and already run on the existing path; the tiers decline such questions to it. (f) local model versus Haiku not started. Evals after these changes: full 53/53, cohort 13/13, follow-ups 14/14, multi-part 12/13 (one split reworded \"show claims by payer\" as a count; varies by run), second chain set 41/42. First learning batch still running (72 of 302 at last look, mostly frontier-written recipes, about $0.02 per question). App restarted on e64c873b at 127.0.0.1:8908. Hosting direction from Mike on 2026-11-13 (changes the standing \"no external publication / no new services / subscription only\" boundaries by explicit instruction): (1) a password-protected demo link to the app on this Mac now, reachable from physicianbuilders.com; (2) then an always-on hosted version on one rented server chosen by Claude, with Mike creating the account and payment; (3) a paid Anthropic API key is allowed for the hosted server only - this Mac stays on the subscription. Facts found: Vercel and Supabase cannot run the app (Python server, 8.8 GB semantic layer, minute-long requests); no Vercel or Supabase tool or connector is available to this session (they are linked to the site repository michaelplogan1-sketch/phys-build-flow at /Users/mikel/pb-course-panel); the repository already holds a login/tenancy server (clinical_core/agere/hosted, serve_hosted.py, deploy/Dockerfile) that does not call the tiered core and requires the subscription transport. Done: serve_demo_gate.py password gate, running on 127.0.0.1:8909 in front of the app on 8908, tested (401 without or with a wrong password, page and a question with the right one); password in artifacts/agere-demo/password.txt, never printed. Not done: a tunnel (needs Mike's permission to download cloudflared), the physicianbuilders.com address (needs a change pushed to the site repository), the hosted build. Learning batch at 115 of 302. Mike on 2026-11-13 declined the tunnel download for now (\"no, let's make sure it's completed\") and asked that builds can reach Opus and Fable and that the stack page show the whole stack. Done (53b94380, f02ff2b8): the deliverable writer ladder is Haiku, Sonnet, Opus, Fable (Fable unpriced in config/agere/pricing.json, so a build reaching it reports cost as unknown); \"agent\", \"assistant\" and \"html\" build requests are routed to the builder; 109 affected tests pass. No live build has been run through the new rung. Stack page republished (https://claude.ai/artifact/KS8ShRmYEooBktRtZh8qG6, private) as a full map with live / deep path / bench labels; the deep-path labels for retrieval and analytical engines rest on the second-encoder switch and the module inventory, not on a traced run today. App restarted on f02ff2b8. Learning batch at 189 of 302 ($4.19). Head-to-head asked for by Mike on 2026-11-13 (stack versus \"an LLM reading the chart\", on why a heart-failure patient is not on guideline therapy, mixing discrete fields and free text). Built (13ad1e50): recipes hf_pillar_fill_status, hf_safety_labs, hf_medication_reasons_in_notes; a fixed code split for \"Why isn't patient X on all ... guideline/GDMT ...\"; eval/tiered/hf_reasons.json (12 curated patients P-HF01..12, answer key committed before either arm ran) and evaluate hf; the chart-reader arm is Claude Sonnet given the same discrete rows plus every document of the patient in one prompt. An earlier 18-question document comparison (cbb672d4, evaluate compare) is committed but NOT run. Single run hf-20261113T195321Z: stack 3/12 patients correct, 2/4 keyed reasons found, 0 unsupported quotes, 11 extras, $0.0682 and 16.5 s per patient; chart reader 7/12, 4/4, 0 unsupported, 9 extras, $0.0749 and 11.3 s. The chart reader did better at about the same cost. Caveats, nothing changed after the run: (1) the answer key is incomplete - many extras in both arms are real documented reasons the keyword sweeps missed (\"SBP 96 limits titration\", \"Reports running out\", \"Did not increase ... because ...\", \"Does not agree to restarting\"), so both scores are understated and the key needs a hand review; (2) the stack's reading part was partial for 7 patients: Perplexity was rate-limited while the learning batch ran alongside, and the per-document verbatim check left documents undecided (both P-HF03 reasons missed); (3) per-document escalation makes the stack no cheaper than one frontier call on a single chart. \"Why was a patient readmitted\" and \"maximum tolerated dose\" are not built. Learning batch at 278 of 302 ($6.21). Mike then pointed out System One should answer these, and he is right: the first design asked it for a yes/no per document and needed a second model to copy the reason out. Rebuilt (3cdb4151): reasons.py - code finds each passage about a pillar medication, judges each distinct passage once, System One (Perplexity then Jev) picks the kind of reason from fixed options, the passage is the quote; Haiku then Sonnet only for passages System One cannot decide. Answer key corrected after the first run (eval/tiered/hf_reasons_2.json, 25 required reasons, committed before the rerun; disclosed as post-hoc). Rerun hf-20261113T200402Z after the learning batch left System One: stack found 24/25 reasons, 0 unsupported, 63 extras, 1/12 patients fully right, $0.0116 and 8.8 s per patient; chart reader (Sonnet with the chart) found 14/25, 0 unsupported, 3 extras, 3/12 patients, $0.0119 and 11.2 s. So the stack is now far more complete but over-reports: most extras are passages that mention a medication without a real reason (reported use, unverified directions). The chart reader's cost fell from $0.075 to $0.012 because the same charts were cached from the first run, so cost is not comparable on this rerun. Mike asked why the \"entire stack as built\" is not in the comparison: the stack arm is the tiered core only; the older deep path (retrieval encoders, analyst, readers) and the bench (Qwen, rerankers) are not in it. Population-scale comparison NOT yet built. Mike on 2026-11-13: wire the other components in, in the right order - that is the job. Done (a6cd9cef plus the policy commit), each measured on the 12-patient heart-failure test (corrected key): (1) learning batch finished - 302 generated questions, 226 answered (222 by a frontier-written recipe, 4 by the small model, none by saved or built-in recipes), $6.75; second model confirmed 149 recipes; 148 merged and promoted by the gate (test set stayed 53/53); the app store now holds 177 promoted recipes. (2) reasons step order is now: code finds passages by medication name -> System One (Perplexity, Jev) -> local Qwen3-4B (accepted only when it agrees with the option System One leaned to) -> Haiku -> Sonnet; a \"non-use reported, no reason given\" category; barrier records stored by the earlier extraction as a fourth part of the answer. (3) measurements: typed judgments only 24/25 reasons, 63 extras, $0.0116/patient (hf-20261113T200402Z); plus local model, encoder+reranker and the no-reason category 24/25, 38 extras, $0.0105, 14.7 s (hf-20261113T202542Z; local model decided 67 of 115 passages at no cost; encoder+reranker considered 1,705 sentences, kept 96, did not recover the missed \"SBP 96 limits titration\" and added wrong candidates); kept configuration - local model on, encoder off - 24/25, 35 extras, $0.0017 and 8.9 s per patient (hf-20261113T203136Z; System One judgments were cached from the earlier runs, so this is also the repeat-run cost). Chart reader on the same runs 13/25 at about $0.011 (its charts were cached too). Policy: AGERE_TIERED_LOCAL on, AGERE_TIERED_ENCODER off. (4) Deep-path arm: one patient (P-HF07) sent to a copy of the app with the tiers off. It finished after about 75 minutes (the client gave up at 28) and saved ANS-a4743cb8777182f75507a28e: route local_compiler, status answered, known cost $0.0013, headline \"CT-02 Documented reasons for GDMT gaps on 2030-05-27: 57 patients\" - it answered for a 57-patient population, not the one patient asked about; its saved answer contains \"held for K 5.2\" but not the carvedilol titration reason (1 of 2 keyed reasons). It used hundreds of System One judgments and six Sonnet calls. The other eleven patients were not sent. Deep-only copy stopped; main app restarted on 7c9f3ddb. Not wired: rerankers elsewhere, clinical entity models, forecasting, tabular models, analytical engines; the encoder is wired but off. Population-scale comparison not built. Mike on 2026-11-13: make sure everything is live and finish for go to market. Done (50b4487a, local only): plain use reports (\"reports use on 0 of 14 days\") are labelled by code as non-use without a reason, no model. 12-patient heart-failure test, corrected key, run hf-20261113T215942Z: stack 24/25 reasons, 6/12 patients fully right, 10 extras, 0 unsupported quotes, $0.0025 and 4.5 s per patient; chart reader (Sonnet with the chart, cache expired) 12/25, 1/12, 2 extras, 0 unsupported, $0.0762 and 10 s. Regression after all of today's changes: full set 53/53 ($0.0020, 1.7 s; 27 saved recipes, 17 built-in, 8 small model, 1 frontier), patient-group 13/13, multi-part 13/13, follow-ups 14/14, chains 31/31; 93 model-free tests pass. Local site restarted on 50b4487a and checked live with seven requests (single question, follow-up, two questions, 267 documents, saved recipe, heart-failure why, and one through the password gate): all answered by the tiered core and saved with no error. Stack page republished (version 4) with the head-to-head. Go-to-market blockers that building on this machine cannot close: no hosted deployment (login server not connected to the tiers, no API-key transport, no server rented), synthetic data only, no customer data connector exercised, no security or compliance review, no outside clinical or accuracy review, nothing on main, Codex screen edits unreviewed. Not built: population-scale comparison, readmission reasons, maximum tolerated dose, statistical questions in the tiers. Next: hosted build (connect the login server to the tiers, API-key transport for hosted only, deploy with the semantic layer) once Mike creates the server account; population version; with his go-ahead, hand-review the extras into a corrected key (disclosed as post-hoc), make single-chart \"why\" questions one verified frontier read inside the stack, and test the cohort-scale version where the stack should differ; no tunnel until Mike asks; then the hosted build: connect the login server to the tiered core, API-key transport for hosted only, deploy the image with the semantic layer on the rented server; when the batch ends, run curriculum confirm (if not chained), merge, learn auto; report answered/declined by topic; then decide with Mike on statistical recipes, merge to main and Codex's uncommitted screens; tighten promotion for bottle shapes no eval question covers. Nothing is running. Branch pushed to origin at 7c9f3ddb on 2026-11-13 at Mike's explicit request (eighth one-off push); any further push needs a new explicit request.",
     "last_observation": {
       "status": "failed",
-      "started_at": "2026-11-12T00:18:37.057519+00:00",
-      "pid": 91959,
+      "started_at": "2026-11-12T12:24:41.391712+00:00",
+      "pid": 11615,
       "source_frozen": false,
-      "context_id": "ANS-3f2a0af0a03e3d9dac158612",
-      "progress_key": "0a4c543bea9c46dc88ac3c9534f221e4",
+      "context_id": "ANS-9a1d5cfd7e62a2e0bd1277a8",
+      "progress_key": "cbb06226149d40f8ad4c15d8ef134a70",
       "route": "/api/stack/investigation/resume",
       "api_attempts": 1,
       "http_status": 502,
       "answer_status": null,
       "verification": null,
-      "new_paid_api_calls": 255,
+      "new_paid_api_calls": 15,
       "planning_economics": {
         "new_api_estimate_usd": null,
-        "known_api_estimate_usd": 61.380557,
+        "known_api_estimate_usd": 4.613581,
         "total_cost_known": false,
         "scope": "Known new API usage only. Local compute, development and review costs are not measured."
       },
       "cost_receipt": {
         "version": "cost-receipt/1",
         "accounting_complete": true,
-        "paid_calls": 255,
-        "usd": 69.740623,
+        "paid_calls": 15,
+        "usd": 4.613937,
         "usd_known": true,
-        "claude_calls": 100,
-        "system_one_calls": 155,
+        "claude_calls": 9,
+        "system_one_calls": 6,
         "calls_by_model": {
-          "claude-sonnet-5-5": 72,
-          "claude-opus-5-5": 28,
-          "jev-1.13.0": 155
+          "claude-sonnet-5-5": 9,
+          "jev-1.13.0": 6
         },
         "claude_calls_by_model": {
-          "claude-sonnet-5-5": 72,
-          "claude-opus-5-5": 28
+          "claude-sonnet-5-5": 9
         },
         "windowed_attempts": 0,
         "ownership_complete": true,
-        "attributed_paid_calls": 255,
-        "known_owned_api_estimate_usd": 69.740623,
+        "attributed_paid_calls": 15,
+        "known_owned_api_estimate_usd": 4.613937,
         "ambiguous_attempt_ids": [],
         "attribution_issues": [],
         "ledger_consistent": true,
-        "planner_reported_calls": 255,
+        "planner_reported_calls": 15,
         "background": null,
-        "question_id": "q-d73c348c43cf47808698d414"
+        "question_id": "q-9873596c8a5c41a686948cd4"
       },
       "action_context": {
-        "id": "ANS-87eb0982baaef39dd759d519",
+        "id": "ANS-b8e49475cfb299a5d49c0eb2",
         "patients": 65,
-        "url": "/action-center?context=ANS-87eb0982baaef39dd759d519",
+        "url": "/action-center?context=ANS-b8e49475cfb299a5d49c0eb2",
         "result_scope_available": true,
         "input_patients": null,
         "population_scopes": [],
         "population_scope_discovery_available": true
       },
-      "error": "ProviderUnavailable: RuntimeError: ProviderUnavailable: Claude subscription limit reached: API Error: This request would exceed your account's rate limit. Please try again later.",
+      "error": "ProviderUnavailable: RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your session limit \u00b7 resets 9:50am (America/Chicago)",
       "action_context_error": null,
       "request_execution_id": null,
-      "finished_at": "2026-11-12T00:33:52.338362+00:00",
-      "elapsed_seconds": 915.2761568748392
+      "finished_at": "2026-11-12T12:27:56.966096+00:00",
+      "elapsed_seconds": 195.5836670838762
     },
     "whitepaper_delivery": {
       "receipt": "artifacts/agere-workspace-continuity-2026-11-11/final-delivery-receipt.json",
@@ -1031,34 +1065,12 @@
       "scope_impact": "No acceptance area removed, no lowered source thresholds, no unknown result promoted."
     },
     "latest_resume_observation": {
-      "at": "2026-11-12T10:29:03.477870+00:00",
-      "gate": "G5",
-      "status": "unchanged_recorded_dependencies",
-      "product_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
-      "owned_server_pid": 99468,
-      "runtime_status": "running_idle",
-      "active_requests": 0,
-      "owned_jobs": [],
-      "source_frozen": false,
-      "last_sealed_receipt": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
-      "last_provider_attempt": "artifacts/agere-source-obligations-2026-11-11/bound-question-continuation/run-receipt.json",
-      "provider_status_recorded": "subscription_rate_limit",
-      "provider_reset_known": false,
-      "new_recovery_evidence_in_canonical_state": false,
-      "workflow_change": null,
-      "measured_failure_removed": null,
-      "reason_no_implementation": "Current next action prohibits unchanged campaigns or another inventory; no new concrete defect, source-review or provider-recovery evidence is recorded. Prior integrated code recovery is sealed.",
-      "provider_calls": 0,
-      "provider_probes": 0,
-      "product_edits": 0,
-      "product_tests": 0,
-      "next_action": "G5: The identified current engineering consumers and same-machine recovery artifact are now connected. At the next resume inspect owned receipts and any genuinely new provider-availability or reviewed-source evidence. Do not probe the recorded Claude account rate limit, rerun passed workflows, regenerate this archive, or start another inventory/audit while evidence is unchanged. With actual recovery evidence, continue the saved65-patient investigation ANS-87eb0982baaef39dd759d519 through the current mixed native/documentary routing and exact restored judgments, retaining every partial/attempt and stopping again on an actual limit; then assess its unfinished source/work coverage and all-attempt cost, without replaying the original native cohort. Independent source-bound reviews with diverse outcomes are required before student threshold promotion; leave its preliminary role active. No additional missing consumer was established by this scoped reconciliation; concrete newly observed defects can reopen implementation. All ten areas/all25 and principal/October11baseline remain. Keep quiet continuation active through the authorized overnight period, with no routine notifications, questions, Git pushes or real care.",
-      "receipts_observed": {
-        "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json": "local_engineering_delivery_qualification_dependencies_remain",
-        "artifacts/agere-source-obligations-2026-11-11/bound-question-continuation/run-receipt.json": "failed",
-        "artifacts/agere-source-obligations-2026-11-11/current-integrated-release-v2/receipt.json": "passed"
-      }
-    }
+      "at": "2026-11-12T12:38:09.567580+00:00",
+      "status": "failed_subscription_limit_then_user_handoff",
+      "receipt": "artifacts/agere-saved-continuation-2026-11-12/reference-corrected-resume/run-receipt.json",
+      "next_action": "Codex remains PAUSED. Mike can give CLAUDE_BUILD_TAKEOVER_2026-11-12.md to Claude for sole-owner takeover. The receiving owner must reconcile controls and correct the economical native/System One/frontier orchestration before any further live continuation. Latest saved65-patient result ANS-b8e49475cfb299a5d49c0eb2 is partial/unverified; last run ended on an actual Claude session limit, reported reset09:50 America/Chicago. No automatic retry, new provider job, scheduler restart or Git push. Retain allten/all25/current principal/October11 and every attempt."
+    },
+    "at": "2026-11-14T01:10:42.534768+00:00"
   },
   "decisions": [
     {
@@ -1585,8 +1597,8 @@
     },
     {
       "at": "2026-10-19T15:56:24.839223+00:00",
-      "basis": "Mike: put Data → Information → Intelligence → Wisdom in the LinkedIn visual; remove sections 9 and 11 so it shows the stack and classic computer science.",
-      "change": "Create unbranded nine-panel analytics-only public visual and update the post’s image pointer.",
+      "basis": "Mike: put Data \u2192 Information \u2192 Intelligence \u2192 Wisdom in the LinkedIn visual; remove sections 9 and 11 so it shows the stack and classic computer science.",
+      "change": "Create unbranded nine-panel analytics-only public visual and update the post\u2019s image pointer.",
       "scope_impact": "Presentation scope only. Full product charter and implementation next action preserved; no publishing or runtime changes."
     },
     {
@@ -1658,7 +1670,7 @@
     },
     {
       "at": "2026-10-20T11:41:16.361279+00:00",
-      "basis": "Mike explicitly requests a substantially more impressive TextQL/TypeSafe-inspired interface organized around Data → Information → Intelligence → Wisdom.",
+      "basis": "Mike explicitly requests a substantially more impressive TextQL/TypeSafe-inspired interface organized around Data \u2192 Information \u2192 Intelligence \u2192 Wisdom.",
       "change": "Prioritize and activate this connected interface increment on :8885; correct null-first-group chart rendering discovered in browser validation.",
       "scope_impact": "No charter narrowing or planner-qualification claim. G3 remains active, G5 blocked; all ten areas retained. Shared planning remains the next functional increment.",
       "evidence": "artifacts/agere-wisdom-design-v1/implementation-receipt.json"
@@ -2047,7 +2059,7 @@
     {
       "at": "2026-10-21T01:30:58.960365+00:00",
       "decision": "Activate summary-scope release f16b208 at /ask with rollback8e83d0d; close the explicit original-input preservation defect and resume original compound current-state semantics.",
-      "basis": "121 primary/frozen tests, five authored received-source fixtures, six actual HTTP checks, candidate browser and live292→118events/67patients→292 input-follow-up with independent source match and zero calls.",
+      "basis": "121 primary/frozen tests, five authored received-source fixtures, six actual HTTP checks, candidate browser and live292\u2192118events/67patients\u2192292 input-follow-up with independent source match and zero calls.",
       "scope_impact": "Specific B2 failure reduction; no new clinical authority or interpretation qualification. All ten areas retained, G3 active, G5 blocked/full acceptancefalse. No further helper/UI detour before the recorded clinical semantic requirement.",
       "evidence": "artifacts/agere-summary-scope-v1/implementation-receipt.json"
     },
@@ -2161,7 +2173,7 @@
     {
       "at": "2026-10-26T20:04:27.389968+00:00",
       "decision": "Stop immediately at the Claude subscription weekly limit; preserve source and current-run receipts without an external API fallback.",
-      "basis": "RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your weekly limit · resets Oct 28 at 6am (America/Chicago)",
+      "basis": "RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your weekly limit \u00b7 resets Oct 28 at 6am (America/Chicago)",
       "scope_impact": "No activation, completed-workflow claim or narrowed charter. G3 stays incomplete. No automatic retry or heartbeat created.",
       "evidence": "artifacts/agere-auto-workflow-2026-10-26/stop-receipt.json"
     },
@@ -2262,14 +2274,14 @@
       "at": "2026-10-27T20:00:45.204194+00:00",
       "gate": "G3",
       "decision": "Stage independently reviewed shared workflow fixes outside the frozen training source",
-      "basis": "Mike authorized parallel review and sent its workflow/component/company qualification approach back to the build owner. First measured increment preserves selected patients, full evidence and report meaning; findings9–21 remain within the connected G3 sequence. No new architecture or protected evaluation.",
+      "basis": "Mike authorized parallel review and sent its workflow/component/company qualification approach back to the build owner. First measured increment preserves selected patients, full evidence and report meaning; findings9\u201321 remain within the connected G3 sequence. No new architecture or protected evaluation.",
       "impact": "Canonical source495525e3 and PID29583 remain unchanged; provider calls0, runtime/default models unpromoted. Staged commit fcbc798 and offline receipts preserve progress."
     },
     {
       "at": "2026-10-27T20:58:17.594226+00:00",
       "gate": "G3",
       "decision": "Keep frozen finite learning jobs unchanged and preserve verified shared workflow fixes3c8780e as a staged candidate",
-      "basis": "Mike requested continued offline work; 388/390 surrounding checks pass with2live skips;63affected checks pass; identical17known-defect fixtures now pass vs16assertions/one provider-limit resend exception before. New normalization/correction/bounded-value findings36–38 remain explicit.",
+      "basis": "Mike requested continued offline work; 388/390 surrounding checks pass with2live skips;63affected checks pass; identical17known-defect fixtures now pass vs16assertions/one provider-limit resend exception before. New normalization/correction/bounded-value findings36\u201338 remain explicit.",
       "scope_impact": "No runtime/model promotion or providers. All ten acceptance areas retained; code/evidence bundle preserved separately from model source495525e3.",
       "evidence": "artifacts/agere-schema-repair-2026-10-27/workflow-followup/3c8780e/workflow-receipt-v3.json"
     },
@@ -2277,7 +2289,7 @@
       "at": "2026-10-27T21:46:37.643706+00:00",
       "gate": "G3",
       "decision": "Extend the same independently reviewed workflow increment through measurement and optimization integrity; stage outside frozen studies",
-      "basis": "Nine authored measurement tests fail before/pass after; 482of484surrounding checks pass with2live skips atfa570b3. Latest42–44 defects remain explicitly queued.",
+      "basis": "Nine authored measurement tests fail before/pass after; 482of484surrounding checks pass with2live skips atfa570b3. Latest42\u201344 defects remain explicitly queued.",
       "scope_impact": "No new layers, providers, runtime/model promotion or narrowed acceptance. Source495525e3 and existing finite studies unchanged.",
       "evidence": "artifacts/agere-schema-repair-2026-10-27/workflow-followup/fa570b3/workflow-receipt-v5.json"
     },
@@ -2630,7 +2642,7 @@
     {
       "at": "2026-10-30T17:57:18.967745+00:00",
       "gate": "G5",
-      "decision": "Prioritize one connected clinician-readable full-question/cost increment under Mike’s explicit new acceptance request. Diagnose before calls:1.37MB expanded draft entered original request, repeated1.9MB prompts and fourClaude calls8.6791282USD API-equivalent. Native cached source reexecution5.48s and typed final contract compile preserve57rows/facts/unknowns with0providers;32.5KB actor-state candidate remains offline/unpromoted.",
+      "decision": "Prioritize one connected clinician-readable full-question/cost increment under Mike\u2019s explicit new acceptance request. Diagnose before calls:1.37MB expanded draft entered original request, repeated1.9MB prompts and fourClaude calls8.6791282USD API-equivalent. Native cached source reexecution5.48s and typed final contract compile preserve57rows/facts/unknowns with0providers;32.5KB actor-state candidate remains offline/unpromoted.",
       "evidence": [
         "artifacts/agere-claude-cost-diagnostic-2026-10-30/diagnostic.json"
       ],
@@ -2809,7 +2821,7 @@
     {
       "at": "2026-10-31T13:44:30.534739+00:00",
       "gate": "G5",
-      "decision": "Hold implementation for independent blueprint/code/plan audit; after review proceed autonomously under Mike’s latest explicit instruction.",
+      "decision": "Hold implementation for independent blueprint/code/plan audit; after review proceed autonomously under Mike\u2019s latest explicit instruction.",
       "reason": "Repeated partial runs and recovery/actor overhead justify reassessment. Send actual code, full ten-area scope, earlier reviews, measured failures and a challengeable proposed sequence through existing Claude subscription. Do not assume either reviewer is correct without code evidence.",
       "evidence": "artifacts/agere-blueprint-review-2026-10-31/review-request.md",
       "all_ten_areas_retained": true
@@ -3607,7 +3619,7 @@
     {
       "at": "2026-11-03T20:36:08.825946+00:00",
       "gate": "G3",
-      "decision": "Honor Mike’s latest request for another use of bottling by inspecting a previously completed financial task and running an offline component check before returning to harder-question repair.",
+      "decision": "Honor Mike\u2019s latest request for another use of bottling by inspecting a previously completed financial task and running an offline component check before returning to harder-question repair.",
       "evidence": [
         "artifacts/agere-financial-bottle-current-2026-11-03/receipt.json"
       ],
@@ -6796,7 +6808,7 @@
     {
       "at": "2026-11-11T18:33:46.010028+00:00",
       "gate": "G5",
-      "decision": "Consolidate the demonstrated branch/runtime gaps as one connected integration, per Mike’s explicit instruction to do all of this now.",
+      "decision": "Consolidate the demonstrated branch/runtime gaps as one connected integration, per Mike\u2019s explicit instruction to do all of this now.",
       "reason": "Six research commits remain outside integration, newest learning code is not in the running process, and separately authorized UI changes are in progress. Missing independent qualification does not prevent these engineering connections.",
       "scope_impact": "Retain all ten areas, October11 baseline and current principal review; no automatic model qualification, new services, pushes or broad campaigns.",
       "evidence": "artifacts/agere-combined-integration-2026-11-11/research-integration.patch"
@@ -7044,10 +7056,249 @@
         "Q06_status": "Current ordinary request returned81rowpartial after36.7min/$76.424399468;9storage failures and premature Opus escalation diagnosed. Native snapshot/stop repair qualified0providers; cohort83-vs81 diagnostic and source/prose recovery still require correction. No whole-case acceptance."
       },
       "scope_impact": "Allten/all25 retained without restamping dated cases; no model promotion, provider probe, new comparison campaign or customer-readiness claim."
+    },
+    {
+      "at": "2026-11-12T10:53:14.181113+00:00",
+      "gate": "G5",
+      "decision": "Replace idle dependency loop with user-confirmed provider continuation. Correct copy-sized admission for an operation that copies no databases while retaining the60GBreserve.",
+      "evidence": "artifacts/agere-saved-continuation-2026-11-12/saved-continuation-admission.json",
+      "scope_impact": "No acceptance area, source guard, role qualification or standing boundary removed."
+    },
+    {
+      "at": "2026-11-12T11:06:26.558676+00:00",
+      "decision": "Interrupt only the owned investigation after a concrete inflated-context failure; preserve partial and implement the shared handoff correction.",
+      "evidence": "artifacts/agere-saved-continuation-2026-11-12/live-resume/run-receipt.json",
+      "scope_impact": "No acceptance area or source obligation removed; no new caps.",
+      "next_action": "G5: Repair the demonstrated shared verification handoff before continuing ANS-940247f0aaf03c9d54c4435b. The cancelled saved request preserved all65patients and expanded source readings; coverage copied whole native basis rows twice and binding-only repairs resent the source-navigation inventory. Use native references for those non-source-reading roles while preserving complete source support and exact draft/source guards. Verify on the retained request payload and narrow boundary checks, then resume the saved investigation once on the corrected runtime. All ten areas/all25 and independent qualification/deployment dependencies remain; no Git pushes or new caps."
+    },
+    {
+      "at": "2026-11-12T11:26:39.146559+00:00",
+      "decision": "Returned saved workflow reduced coverage and binding context but remained compiler_unresolved on a non-cardinal indefinite pronoun. Correct shared compiler grammar before further model dispatch.",
+      "evidence": "artifacts/agere-saved-continuation-2026-11-12/corrected-resume/run-receipt.json",
+      "scope_impact": "No quantity/source guard or acceptance area removed. No numeric fact may bypass binding.",
+      "next_action": "G5: Correct the demonstrated shared quantity-compiler defect: indefinite pronoun \"No one has checked\" was treated as a measured scalar, causing empty binding repairs and compiler_unresolved. Preserve the returned 65-patient partial ANS-ed55291dc893d313b0eb6275 and all26 attempts. Verify unchanged retained draft compilation plus real-quantity rejection, then continue the saved workflow only after that concrete correction. No full25 rerun, qualification claim, new cap or Git push; all ten areas/current principal/October11 baseline retained."
+    },
+    {
+      "at": "2026-11-12T11:34:29.296062+00:00",
+      "decision": "Reassess repeated saved workflow restarts: a full-code runtime hash changes an otherwise identical navigation identity and withholds all downstream saved work. Fix native recovery rather than repeating the analyst campaign.",
+      "evidence": "artifacts/agere-saved-continuation-2026-11-12/navigation-recovery-diagnosis.json",
+      "scope_impact": "Exact source/data/field/scope matching and current final review remain mandatory; no verdict transfer.",
+      "next_action": "G5: Repair explicit saved-continuation navigation replay. Actual recovery stopped at action31 although navigation inventory, source review, question and selected documents were identical; only runtime guard/id changed after a compiler edit. Revalidate that native operational navigation against current source before retaining its stable saved address; never inherit an answer verdict or accept changed evidence. Demonstrate complete existing43-action recovery without provider dispatch before another continuation. Current partial ANS-ed55291dc893d313b0eb6275 remains preferred over the latest cancelled prefix; preserve all86morning attempts. Allten/all25/currentprincipal/October11 remain; no caps or Git pushes."
+    },
+    {
+      "at": "2026-11-12T12:13:00.327389+00:00",
+      "reason": "Native recovery/retention failures reduced but whole workflow remains partial; prompt-only repair hints demonstrably returned42/41/42/39 instead of corrected36, consuming18owned attempts with interrupted cost unknown.",
+      "correction": "Use exact-value native assembly rebinding, not more model votes for unchanged table selection. New source facts or field meanings remain subject to full current verification.",
+      "scope_impact": "No acceptance area removed, guard lowered, cap introduced or qualification inferred."
+    },
+    {
+      "at": "2026-11-12T12:38:09.567580+00:00",
+      "reason": "Mike explicitly stopped further Claude usage by Codex and requested a Claude build handoff. Codex implementation and automatic continuation are paused; handoff preparation only.",
+      "correction": "Pause Codex and scheduler, stop owned idle app, preserve failed/partial results and supply source-linked takeover prompt instead of starting another repair or provider run.",
+      "scope_impact": "No product acceptance, scope removal, new cap, code change, transfer claim or Git push. Receiver may resume only after accepting the user-delivered handoff."
+    },
+    {
+      "at": "2026-11-12T14:13:09.011694+00:00",
+      "decision": "Claude Code accepted sole build ownership at Mike's explicit request (CLAUDE_BUILD_TAKEOVER_2026-11-12.md). Manual build resumed at G5; Codex scheduler left paused; no provider work before the reported subscription reset.",
+      "basis": "Direct user instruction in the Claude Code session, 2026-11-12."
+    },
+    {
+      "at": "2026-11-12T14:17:23.800254+00:00",
+      "decision": "First takeover increment targets measured prompt retransmission in the analyst loop before any live continuation; escalation policy and cache wiring wait for a small live probe rather than unverified changes.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/navigation-state-receipt.json"
+    },
+    {
+      "at": "2026-11-12T16:19:28.979422+00:00",
+      "gate": "G5",
+      "decision": "Stopped the single live resume and suspended further live runs until review-packet size, repeated re-review, cache/wire-encoding conflict and sticky Opus are corrected offline.",
+      "reason": "Two takeover increments (navigation references, prefix cache) produced no measured live reduction; the run showed the dominant cost is elsewhere.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/live-resume/stopped-run-receipt.json",
+      "scope_impact": "none; all ten areas and all25 retained"
+    },
+    {
+      "at": "2026-11-12T17:00:14.124513+00:00",
+      "gate": "G5",
+      "decision": "Suspend live resumes of the 65-patient question; next increment is offline measurement of System One versus frontier agreement on retained patient packets and persistence of supported verdicts across interruption.",
+      "reason": "Two live resumes (about $27.38 and $23.03 API-equivalent) ended without a saved answer. Candidates reduced analyst and round-one cost, but a full per-patient frontier pass alone exceeds the cap.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/live-resume-2/run-receipt-summary.json",
+      "scope_impact": "none; all ten areas and all25 retained"
+    },
+    {
+      "at": "2026-11-12T18:46:06.483246+00:00",
+      "gate": "G5",
+      "decision": "User direction: do not accept about $18-22 per 65-patient frontier pass; pursue System One first, conditional on comparable accuracy.",
+      "reason": "Mike, 2026-11-12, after the third resume started.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/system-one-first-receipt.json",
+      "scope_impact": "none; changes verification routing only, all ten areas and all25 retained"
+    },
+    {
+      "at": "2026-11-12T19:25:41.186170+00:00",
+      "gate": "G5",
+      "decision": "Reassessed after four live resumes without acceptance: stop tuning the review loop; the scale lever is removing the per-patient frontier review, which needs a user decision on a native acceptance rule.",
+      "reason": "Batched reporting is not supported by the saved rounds; per-round cost is already down; remaining cost is repair-introduced rounds and one frontier review per patient.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/repair-loop-analysis-receipt.json",
+      "scope_impact": "none"
+    },
+    {
+      "at": "2026-11-12T22:17:26.085905+00:00",
+      "gate": "G5",
+      "decision": "Sequence the document-reader authorship binding ahead of further native acceptance work; hold the copy-proof flag for incomplete reviews.",
+      "reason": "Source records show the empty documentary lists are reader refusals, not absence; Sonnet caught it in 2 of 19 identical rows.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/disputed-copy-claims-receipt.json",
+      "scope_impact": "none; no acceptance area removed"
+    },
+    {
+      "at": "2026-11-13T00:09:13.539512+00:00",
+      "gate": "G5",
+      "decision": "Author link built as a candidate; do not pursue document reading as the source of attendance for these notes. Treat visit records as native evidence and fix the unresolved-candidate accounting next.",
+      "reason": "System One decided all 480 sampled statements irrelevant; all 10 notes have an encounter ID.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/structured-links-receipt.json",
+      "scope_impact": "none; no acceptance area removed"
+    },
+    {
+      "at": "2026-11-13T00:11:58.874625+00:00",
+      "gate": "G5",
+      "decision": "Visit records by the referred clinician count as attendance (Mike). Route follow-up facts to the existing loop_closure engine; build forward with fewer offline measurements.",
+      "reason": "User direction; the engine already exists and saved runs never used it.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/native-routing-receipt.json",
+      "scope_impact": "none; no acceptance area removed"
+    },
+    {
+      "at": "2026-11-13T00:14:07.252091+00:00",
+      "gate": "G5",
+      "decision": "Dropped the plan to change focused-review status; built document-free packet composition instead; next step is a live run rather than more offline measurement.",
+      "reason": "Focused reviews are incomplete by design and the row states it; user direction to build forward.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/native-routing-receipt.json",
+      "scope_impact": "none; no acceptance area removed"
+    },
+    {
+      "at": "2026-11-13T00:16:58.524855+00:00",
+      "gate": "G5",
+      "decision": "Activated the nine candidates in the default economical profile at explicit user direction, ahead of live workflow evidence.",
+      "reason": "Mike: this should be one single stack; turn it all on.",
+      "basis": "user instruction 2026-11-12; recovery point commit 121dee40",
+      "scope_impact": "none; no acceptance area removed. Four tests in test_claim_local_review.py assert the previous route when AGERE_SETTLED_PACKET_COMPOSE is set."
+    },
+    {
+      "at": "2026-11-13T00:30:56.416454+00:00",
+      "gate": "G5",
+      "decision": "Stopped model escalation on located patient-claim faults and kept oversized complete readings native; reran.",
+      "reason": "First default-stack run: $18.48 of $22.68 was Opus repair turns with 250K-975K-token readings.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/live-run-5/run-summary.json",
+      "scope_impact": "none. The reading envelope reuses the existing 230,000-byte provider envelope; all rows stay native and queryable."
+    },
+    {
+      "at": "2026-11-13T00:32:31.278990+00:00",
+      "gate": "G5",
+      "decision": "Bound source-review repair at two rounds and deliver the retained partial answer with located faults.",
+      "reason": "Reassessment after repeated live runs without acceptance: one fault in any of ~650 patient claims or any prose sentence rejects the whole answer, and each model repair can introduce new faults, so the loop has no reason to converge.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/live-run-5/run-summary.json; artifacts/agere-claude-takeover-2026-11-12/repair-loop-analysis-receipt.json",
+      "scope_impact": "none; faults stay visible in answer_reviews; acceptance criteria unchanged"
+    },
+    {
+      "at": "2026-11-13T00:55:42.260843+00:00",
+      "gate": "G5",
+      "decision": "Turned the lead-review hold off in the default profile and proved the review-status carrier cell natively.",
+      "reason": "Run 8: 38 rows left awaiting at delivery; document_review was the field sending rows to Sonnet.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/live-run-8/run-summary.json",
+      "scope_impact": "none"
+    },
+    {
+      "at": "2026-11-13T01:21:26.167061+00:00",
+      "gate": "G5",
+      "decision": "Freeze product source during live runs; run cases in batches and fix between batches.",
+      "reason": "Editing backstop_agent.py during Q05 invalidated a review-confirmed answer at delivery.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/live-q05-2/run-summary.json",
+      "scope_impact": "none"
+    },
+    {
+      "at": "2026-11-13T11:08:32.524234+00:00",
+      "gate": "G5",
+      "decision": "Pushed codex/integration-20261026 to origin (6e6522d5..31932476, 159 commits) once, at Mike's explicit request on 2026-11-13.",
+      "reason": "Explicit user instruction for this push.",
+      "basis": "user message 2026-11-13",
+      "scope_impact": "none; main untouched; the recorded push_authorization is unchanged and any further push needs a new explicit request"
+    },
+    {
+      "at": "2026-11-13T11:45:55.878236+00:00",
+      "gate": "G5",
+      "decision": "Restore the designed route order (System One stages before the Claude analyst) in the default profile; checks label and never withhold the analyst's answer.",
+      "reason": "Mike 2026-11-13; all 23 live runs were answered by the backstop under adaptive ordering.",
+      "basis": "artifacts/agere-claude-takeover-2026-11-12/routing-inversion-receipt.json",
+      "scope_impact": "none; reverses the 2026-11-10 routing change"
+    },
+    {
+      "at": "2026-11-13T12:10:12.753445+00:00",
+      "gate": "G5",
+      "decision": "Build the tiered stack as a new small core beside the existing cascade, following Mike's build brief, with an owner-authored structured eval set.",
+      "reason": "Mike 2026-11-13: build the stack; the old cascade routes everything to the Claude analyst and its System One tiers decline.",
+      "basis": "artifacts/agere-tiered-core/build-receipt.json",
+      "scope_impact": "The brief narrows current work to structured analytics answering; document reading, deliverables and follow-ups are not yet in the new core and are recorded as not built, not removed."
+    },
+    {
+      "at": "2026-11-13T12:36:08.562566+00:00",
+      "gate": "G5",
+      "decision": "Reverted four checks loosened in the old path during 2026-11-13 (year-as-noun rule, request-number exemption, reading envelope, method-note relocation).",
+      "reason": "Full test comparison against 121dee40: 12 new failures in 4 modules, each showing a real protection weakened. The pushed branch at 31932476 still contains the year rule and the twice-failed relocation.",
+      "basis": "scratch comparison of every test module, baseline 121dee40 versus ffc5b42b",
+      "scope_impact": "Old path again stalls on those wording checks (Q02, Q03, Q05, Q12, Q16 behaviour); the analyst summary is still delivered with a label. Earlier \"checked\" results for Q03, Q05 and Q11 were obtained with a loosened check."
+    },
+    {
+      "at": "2026-11-13T18:46:07.801270+00:00",
+      "gate": "G5",
+      "decision": "G5 marked accepted on Mike's explicit statement \"G5 is reviewed and passed\".",
+      "reason": "Gate status is the product owner's decision. No review record was supplied; the acceptance evidence is a record of the statement only, and Claude makes no claim of clinical review or model qualification.",
+      "scope_impact": "All six delivery gates are now accepted, so there is no current gate; a build-intent check will refuse product work until a new gate or direction is recorded. full_queue_acceptance was not set."
+    },
+    {
+      "at": "2026-11-13T19:12:19.058973+00:00",
+      "gate": "G7",
+      "decision": "Opened G7 \"Make the tiered stack ready to sell\" on Mike's direction to finish for sale as soon as possible.",
+      "reason": "All earlier gates are accepted and the build check refuses product work without a current gate. Mike accepted testing by himself and Claude in place of outside test questions.",
+      "scope_impact": "No acceptance area removed. Sequence follows Claude's recommendation given to Mike on 2026-11-13."
+    },
+    {
+      "at": "2026-11-13T19:35:10.182547+00:00",
+      "gate": "G7",
+      "decision": "Mike authorized a password-protected public demo link, one rented server for an always-on hosted version, and a paid Anthropic API key for the hosted server only.",
+      "reason": "Mike's explicit answers on 2026-11-13 to go live on physicianbuilders.com. These alter the standing boundaries (no external publication, no new services, subscription-only transport) only to this extent.",
+      "scope_impact": "This Mac and all evals stay on the subscription transport. No real patient data: the hosted and demo versions carry the synthetic warehouse only. Each external step (download, account, deploy, DNS or site change) still needs Mike's confirmation when it is taken."
+    },
+    {
+      "at": "2026-11-14T00:32:48.777121+00:00",
+      "decision": "Frontier takeover replaces the deep path as the fallback for questions the tiers decline; hosted service is the tiered core only",
+      "reason": "Mike 2026-11-13: a 75-minute answer must never happen; when a normal run cannot answer, the LLM takes over. The deep path stays in the local app only for the rare case takeover returns nothing.",
+      "evidence": [
+        "commit 46f930b9",
+        "three takeover questions answered in 35-55 s for $0.15-0.26",
+        "local hosted run: sign-in, CSRF, five questions, usage recorded"
+      ],
+      "scope_impact": "No acceptance area removed. Hosted Ask does not yet include patient-group follow-ups or Builder."
+    },
+    {
+      "at": "2026-11-14T01:10:42.534768+00:00",
+      "decision": "AGERE_DEEP_PATH off in the economical policy; takeover given conversation and patient-group context; takeover instructions tightened after measurement",
+      "reason": "Mike 2026-11-13: an unbounded run must never happen and the LLM takes over when the stack cannot answer. First takeover measurement was 16/24 exact because it added comparison rows or changed units.",
+      "evidence": [
+        "commits 2df2790d, c68df00f, 64854b99",
+        "takeover eval reports listed in checkpoint evidence"
+      ],
+      "scope_impact": "The older deep path is still in the code and returns with AGERE_DEEP_PATH=on; no acceptance area removed."
+    },
+    {
+      "at": "2026-11-14T11:11:44.681980+00:00",
+      "decision": "Codex's uncommitted Ask, gallery and workspace screens committed on codex/integration-20261026 and the branch merged into main (pull request 2, merge commit, no history rewritten)",
+      "reason": "Mike 2026-11-14: 'make sure everything is pushed to main so the user interface codex made is connected to this'. Explicit user direction supersedes the standing rule against committing Codex's screens and against merging to main. Also Mike 2026-11-14: he has no server and synthetic data is fine.",
+      "evidence": [
+        "commit 5864c97b plus the two commits made for this merge",
+        "test_answer_presentation 3, test_connected_site 4, test_creation_gallery 6, test_tiered_core 17, test_tiered_takeover_hosted 14 pass with the screens in place",
+        "running site: /ask 200 posts to /api/stack/compose (tiers); /api/stack/deliverable-gallery 200"
+      ],
+      "scope_impact": "No acceptance area removed. Codex's screens were committed as found, not reviewed line by line. Hosting deferred until Mike raises it."
     }
   ],
   "unsealed_work": {
-    "status": "no_active_run_remaining_qualification_and_availability_dependencies",
+    "status": "claude_candidate_navigation_state_reduction_unsealed",
     "source_frozen": false,
     "active_jobs": [],
     "last_completed_receipt": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
@@ -7055,12 +7306,13 @@
       "AGERE_STORAGE_PLAN.md",
       "docs/agere/reviews/2026-11-10-audit-response.md"
     ],
-    "remaining_verification": "G5 remains blocked for independent source-family/model/method/clinical qualification and actual end-to-end accuracy/cost evidence. Original65-patient answer remains partial/unverified; Claude account-limit reset is unknown and no probe was made. Preliminary student runs but has no accepted automatic-decision threshold; diverse independent source-bound reference outcomes are missing. Selected prediction targets and exact program/contract/capacity inputs remain data-dependent; no fabricated fit or definition. Historical fixed25 outcomes are preserved, not restamped as current whole-case passes. The archive references existing Python, models and mutable stores on this machine; customer deployment and full backup are separate. OWASP/HHS remains deferred.",
+    "remaining_verification": "Economical ordinary routing is not established: the frontier analyst still owns planning/composition, every turn still rewrites its state to cache, and Opus stays on after one failed review. No live run has checked the smaller state. All earlier dependencies (all25 semantic acceptance, independent references, student threshold, program/contract/capacity inputs) are unchanged.",
     "separate_presentation_commit_preserved": "9efe9b37d1ccd36cd0b8cb2197d12d9b8c0b5bae",
-    "candidate_commit": "200bfc58d073e3b7e906c03c225bcbc8783cbcbf",
+    "candidate_commit": "55dc761bed3d6757044469bf3de692231252ef28",
     "admission_receipt": "artifacts/agere-source-obligations-2026-11-11/bound-question-continuation/admission-receipt.json",
-    "last_attempt": "artifacts/agere-source-obligations-2026-11-11/bound-question-continuation/run-receipt.json",
-    "latest_saved_partial": "ANS-87eb0982baaef39dd759d519"
+    "last_attempt": "artifacts/agere-saved-continuation-2026-11-12/reference-corrected-resume/run-receipt.json",
+    "latest_saved_partial": "ANS-b8e49475cfb299a5d49c0eb2",
+    "handoff_receipt": "artifacts/agere-saved-continuation-2026-11-12/claude-handoff-receipt.json"
   },
   "current_visual_request": {
     "status": "completed",
@@ -7096,7 +7348,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G5: The identified current engineering consumers and same-machine recovery artifact are now connected. At the next resume inspect owned receipts and any genuinely new provider-availability or reviewed-source evidence. Do not probe the recorded Claude account rate limit, rerun passed workflows, regenerate this archive, or start another inventory/audit while evidence is unchanged. With actual recovery evidence, continue the saved65-patient investigation ANS-87eb0982baaef39dd759d519 through the current mixed native/documentary routing and exact restored judgments, retaining every partial/attempt and stopping again on an actual limit; then assess its unfinished source/work coverage and all-attempt cost, without replaying the original native cohort. Independent source-bound reviews with diverse outcomes are required before student threshold promotion; leave its preliminary role active. No additional missing consumer was established by this scoped reconciliation; concrete newly observed defects can reopen implementation. All ten areas/all25 and principal/October11baseline remain. Keep quiet continuation active through the authorized overnight period, with no routine notifications, questions, Git pushes or real care.",
+  "next_action": "NEXT (2026-11-14; Mike asked for everything on main so Codex's screens and the tiered stack are one codebase: Codex's Ask, gallery and workspace screens committed with the tiered stack and codex/integration-20261026 merged into main through pull request 2): Mike has no server and synthetic data is accepted, so hosting is not the next step and is not to be raised. Open work: Builder on the hosted Ask page; two older failing tests (test_hosted_pages_design 'Compound', test_summary_followup); no security or outside accuracy review. Further pushes only on a new request from Mike. | Claude Code owns the build (manual turns; Codex scheduler paused). Mike's direction (2026-11-12): one single stack with everything on; fix it, build forward. Run 9 on the default stack (2c46de7f) returned the 65-patient cardiology referral question in 186 s for $1.83 with the machine review confirmed, every row supported without a frontier claim review, and attendance agreeing with visit records on 75 of 75 rows; saved as ANS-3ab840d33bf3fd2947b4a119, status partial/checked because the answer lists three unknowns (artifacts/agere-claude-takeover-2026-11-12/live-run-9/run-summary.json). Q08 (2029 home-health requests) on the same commit: 237 s, $2.05, machine review confirmed after one located repair, 19 requests and 73 treatment records matching the record table; saved as ANS-6f594cf556b23d2ccf4ff006, partial/checked by two stated unmet dependencies (artifacts/agere-claude-takeover-2026-11-12/live-q08-1/run-summary.json). Q05 (anticoagulant fills versus documents): first run stalled on a prose year rule (fixed 002173a6, narrowed a5302ab5); second run confirmed by the review in 226 s for $2.43 with documents read and all 37 rows settled without a frontier claim review, but labelled unverified because product source was edited mid-run (artifacts/agere-claude-takeover-2026-11-12/live-q05-2/run-summary.json). RULE: do not edit product source while a live request is running. Batch 1 on a5302ab5 (artifacts/agere-claude-takeover-2026-11-12/batch-1-summary.json): Q06 answered and checked in 183 s for $1.84; Q05 $17.10 partial (oversized document-review result sent to reviewers); Q10 stalled on a pronoun read as a number; Q21 blocked by two conflicting checks (filtered answer versus every audit account). Fixed in 6865754a: refusals collapsed to one entry per document; pronoun rule. Batch 2 on 6865754a (artifacts/agere-claude-takeover-2026-11-12/batch-2-summary.json): Q10 checked ($3.46), Q01 checked ($0.72, 60 s), Q04 checked ($1.57); Q05, Q02, Q03 ended compiler_unresolved on definitional wording in method notes. Fixed in 31932476 (twice-failed method notes kept as labelled limitations). Checked so far on the default stack: Q01, Q04, Q06, Q07, Q08, Q10. Batch 3 on 31932476 (artifacts/agere-claude-takeover-2026-11-12/batch-3-summary.json): Q05 checked ($3.50, documents read, no Opus), Q03 checked ($0.49, 38 s); Q02 still failing on repeated source_definition repairs; Q09 failed at $11.59 when the Claude subscription session limit was reached (resets 11pm America/Chicago); Q11-Q13 not run. Checked on the default stack: Q01, Q03, Q04, Q05, Q06, Q07, Q08, Q10 (8 of 25). Limit reset 2026-11-13; Mike asked to continue. Q09 analysis: $11.59 was 30 Sonnet claim-support reviews ($5.54), a 400K-token coverage review ($1.66) and 7 Opus repair turns ($2.78); not yet fixed. Batch 4 on 31932476 (artifacts/agere-claude-takeover-2026-11-12/batch-4-summary.json): Q11 checked ($2.32), Q15 checked ($0.35, 44 s); Q12 and Q16 stalled in the prose patch protocol; Q13 and Q14 ended partial on undecided verification (coverage; shared program meaning). Fixed in 64d5b808 (method notes relocated on first failure; request-stated numbers allowed). Checked on the default stack: Q01, Q03, Q04, Q05, Q06, Q07, Q08, Q10, Q11, Q15 (10 of 25). Branch was pushed once to origin at 31932476 at Mike's explicit request on 2026-11-13; any further push needs a new explicit request. Mike 2026-11-13: build the tiered stack per his build brief (bottles, deterministic recipes, System One, small model, frontier last; cost per correct answer; ledger; eval after each stage). Built as a new core in clinical_core/agere/tiered/ with eval/tiered/questions.json (artifacts/agere-tiered-core/build-receipt.json). Stages 1-6 done: all five tiers give 35/36 correct, frontier model on 3/36, $0.0006 per question; baseline (recipes + frontier) was 34/36 at $0.0147. The old cascade is unchanged apart from 55596871 (designed order) and still answers through the Claude analyst; its System One tiers decline. Nothing is running. Stage 7 done (learning loop and promotion gate, clinical_core/agere/tiered/learn.py; artifacts/agere-tiered-core/promotion-log.jsonl). Old-path regressions from 2026-11-13 reverted in 0fcaef3c. App connected: a fresh question now tries the tiered core first (AGERE_TIERED_CORE=on; conversation.py -> tiered/app.py); four live questions through /api/stack/compose were answered by recipes, System One plus small model, a bottle and the frontier tier, each saved. Questions the core does not answer continue on the existing path. Document-reading tier built (4b65f526, clinical_core/agere/tiered/read.py): a reading plan selects documents by SQL and each is read by System One, then the small model with a System One check on its quote, then the frontier model; code counts. Eval now 48 questions: 47/48 correct with all 12 document questions correct; a small-model-only reader got 7/10 on the reading questions. Two new document questions answered live through /api/stack/compose and hand-checked. Value extraction built (f14aca4e): extract mode reads one value out of each selected document (System One screen, small model copy, System One confirm, frontier for the rest); eval now 53 questions, 52/53 correct, 5/5 extraction; two live extraction questions hand-checked. Jev available again (2026-11-13). Answer view (8da060ce): the tier, cost, readers and one line per document read are shown as Findings and Evidence used with no view file edited; document answers now save without the invalidated flag (their saved SQL inlines the document catalog). Conversations (344a8c8a): the UI always sends a conversation id, so UI questions only reach the tiered core from this commit on (the 6b450cbb hook covered requests without one); follow-ups are made complete by code (period swap) or the small model with a System One check, then go through the tiers; verified by typing in the real question box. Narrative (75aee874): code writes one-row summaries; for several rows the small model words facts computed by code and code discards any text with a number not in the result (14 of 15 kept on the eval's multi-row answers). Follow-up eval (4baf7e45): 14 items, 13/14 then 14/14 after System One was added to decide whether typed words stand on their own; full eval rerun 52/53. Chains (add01b64, committed before its first run): 8 chains, 31 turns, first and only run 30/31 turns, 22/23 later turns, 7/8 chains, $0.0021 per turn, frontier on 1 turn; the miss was System One rejecting a correct small-model rewrite (K4.4). Fixed in 1f6c17e3: when System One does not confirm, the frontier model rewrites independently and the small model's rewrite is used only if code finds the same words; rerun after the fix (not an untouched run) chains 31/31, 8/8 chains, $0.0037 per turn, frontier on 2/31 turns; follow-up eval 14/14. Second chain set (96ac2f16, committed before its only run; 8 chains, 42 turns - the commit message says 38 in error): 35/42 turns, 28/34 later turns, 5/8 chains, $0.0057 per turn, 4.4 s per turn, frontier on 6/42 turns. Misses, nothing changed afterwards: \"next year\" read as the year before and confirmed by System One (wrong answer); \"readmission rate that year\" kept \"by organization\"; \"and that a stress test was ordered?\" merged with the earlier statement; one extraction turn scored wrong in the run but returned the reference on a direct rerun (the ledger keeps no rows, so the cause is unknown); a rewrite asking two values at once left every reader undecided; two knock-on misses after it. Fixed in 9d71426a: relative periods by code, rewrite instruction (replace, borrow one detail), completeness verdict needs 0.6 (a 0.485 v 0.468 near-tie had been acted on), ledger keeps rows. Reruns after the fixes (not untouched; the 0.6 was chosen after seeing five verdicts): second set 40/42 (one wrong answer: \"instead\" kept the ever-denied filter and System One confirmed it; one decline), first set 31/31, follow-up set 14/14. Multi-part messages (ae25dae7): split.py - code decides whether to ask, the small model lists the parts, code rejects parts that add values, System One confirms; every part must be answered or the message is tried as one; composite answer with one section per part (existing view). Eval set of 13 committed before its only run: 11/13 (several 8/10, one 3/3), $0.0044 per item, frontier on 2. Misses, unfixed: a three-part list was judged one question and answered by one frontier recipe; a document question followed by \"and how many deaths\" was swallowed whole by the document recipe wording match as its statement and answered wrongly (this defect predates the splitter). Typed into the app page once: composite saved as ANS-e8e57d18d131848faf30ad46 with no error and the saved view shows both sections. Known wrong-answer paths closed in b8446cab: second question inside a reading statement, LIKE and narrowed vocabulary values in frontier recipes, \"instead\" follow-ups, \"that year\" by code, lists of counts split, rejected bottles replaceable. Reruns after the fixes (not untouched): full set 53/53, multi-part 13/13, first chain set 31/31, follow-up set 14/14, second chain set 42/42 on one run and 41/42 on the next (the \"instead\" turn varies between correct and declined; no wrong answer). Mike asked on 2026-11-13 to stop the test-and-fix loop after this pass. Patient-group follow-ups (d6da1177; Mike said \"keep going\" on 2026-11-13): store.connect(cohort) restricts every patient table by a temporary view so recipes, bottles and frontier SQL run unchanged inside the group; store.portable inlines the cohort so saved SQL returns the same result; followup.group_question makes the words a complete question (code where a zero-cost tier knows the result, else small model + System One); app.try_in_cohort binds the result to the parent answer (cohort_transform) and conversation.py tries it before the existing compose-with-population path. Eval set of 13 committed before its only run: 13/13, $0.0061 per item, 6.9 s, frontier on 3. Verified in the running app on 2026-11-13: a fresh existing-path answer (ANS-41361a9bc635a3a54c838b81, COPD question, 80 patients, 496 s, $8.92 - Claude had told Mike about $2) was followed up twice on its patients through /api/stack/compose with answer_context_id: \"how many of them have diabetes?\" -> 27 (recipe, 2.3 s, $0) and \"How many ED visits did these patients have in 2029?\" -> 137 (small model, 11 s, $0.0005); both equal reference SQL over the 80 ids, both saved with no error and bound to the parent (cohort_transform). Older saved patient-group answers remain invalidated under current planning definitions (existing rule). Tiered-core answers themselves never carry a selectable patient group. G5 marked accepted on 2026-11-13 on Mike's statement \"G5 is reviewed and passed\" (record of the statement only; no review record on file; Claude claims no clinical review or qualification). All six gates are accepted and there is no current gate. G7 opened 2026-11-13 on Mike's direction (\"finish this so we can sell it ASAP\"; testing by Mike and Claude is fine): batch learning with a second-model check, patient lists as selectable groups, documents beyond the 150 cap, statistical methods as recipes, automatic learning gate, local small model versus Haiku. Batch learner built (d9da507c): curriculum.py generate/run/confirm/merge/report with its own stores under artifacts/agere-tiered-core/curriculum/; a frontier recipe is confirmed only when a different model reproduces its rows; learn.promote no longer promotes an unexercised, unconfirmed recipe. First batch of 300 generated questions started in the background on 2026-11-13 (generate, run, confirm); results not yet in. G7 progress on 2026-11-13 (e64c873b): (b) patient lists - no code needed: a list answered by the tiers with a patient_id column already saves as a selectable group; checked in the app (90 patients, follow-up \"how many of them have diabetes?\" -> 48 = reference SQL); Claude's earlier statement that tiered answers carry no group was wrong for lists. (c) documents beyond 150 - count/list plans up to 3000 documents: System One screens all, only undecided go to model readers (up to 400); year-level scanned-document recipe; in the app 267 radiology reports for 2029 -> 13 stating a pulmonary nodule in 8 s for $0.011, equal to a keyword check (13, same documents). (e) automatic learning - a newly saved recipe starts second-model check plus promotion gate in the background (AGERE_TIERED_AUTO_LEARN on by default). (d) statistical methods NOT wired into the tiers: the existing survival, uplift, queueing and causal engines need long parameter specifications and already run on the existing path; the tiers decline such questions to it. (f) local model versus Haiku not started. Evals after these changes: full 53/53, cohort 13/13, follow-ups 14/14, multi-part 12/13 (one split reworded \"show claims by payer\" as a count; varies by run), second chain set 41/42. First learning batch still running (72 of 302 at last look, mostly frontier-written recipes, about $0.02 per question). App restarted on e64c873b at 127.0.0.1:8908. Hosting direction from Mike on 2026-11-13 (changes the standing \"no external publication / no new services / subscription only\" boundaries by explicit instruction): (1) a password-protected demo link to the app on this Mac now, reachable from physicianbuilders.com; (2) then an always-on hosted version on one rented server chosen by Claude, with Mike creating the account and payment; (3) a paid Anthropic API key is allowed for the hosted server only - this Mac stays on the subscription. Facts found: Vercel and Supabase cannot run the app (Python server, 8.8 GB semantic layer, minute-long requests); no Vercel or Supabase tool or connector is available to this session (they are linked to the site repository michaelplogan1-sketch/phys-build-flow at /Users/mikel/pb-course-panel); the repository already holds a login/tenancy server (clinical_core/agere/hosted, serve_hosted.py, deploy/Dockerfile) that does not call the tiered core and requires the subscription transport. Done: serve_demo_gate.py password gate, running on 127.0.0.1:8909 in front of the app on 8908, tested (401 without or with a wrong password, page and a question with the right one); password in artifacts/agere-demo/password.txt, never printed. Not done: a tunnel (needs Mike's permission to download cloudflared), the physicianbuilders.com address (needs a change pushed to the site repository), the hosted build. Learning batch at 115 of 302. Mike on 2026-11-13 declined the tunnel download for now (\"no, let's make sure it's completed\") and asked that builds can reach Opus and Fable and that the stack page show the whole stack. Done (53b94380, f02ff2b8): the deliverable writer ladder is Haiku, Sonnet, Opus, Fable (Fable unpriced in config/agere/pricing.json, so a build reaching it reports cost as unknown); \"agent\", \"assistant\" and \"html\" build requests are routed to the builder; 109 affected tests pass. No live build has been run through the new rung. Stack page republished (https://claude.ai/artifact/KS8ShRmYEooBktRtZh8qG6, private) as a full map with live / deep path / bench labels; the deep-path labels for retrieval and analytical engines rest on the second-encoder switch and the module inventory, not on a traced run today. App restarted on f02ff2b8. Learning batch at 189 of 302 ($4.19). Head-to-head asked for by Mike on 2026-11-13 (stack versus \"an LLM reading the chart\", on why a heart-failure patient is not on guideline therapy, mixing discrete fields and free text). Built (13ad1e50): recipes hf_pillar_fill_status, hf_safety_labs, hf_medication_reasons_in_notes; a fixed code split for \"Why isn't patient X on all ... guideline/GDMT ...\"; eval/tiered/hf_reasons.json (12 curated patients P-HF01..12, answer key committed before either arm ran) and evaluate hf; the chart-reader arm is Claude Sonnet given the same discrete rows plus every document of the patient in one prompt. An earlier 18-question document comparison (cbb672d4, evaluate compare) is committed but NOT run. Single run hf-20261113T195321Z: stack 3/12 patients correct, 2/4 keyed reasons found, 0 unsupported quotes, 11 extras, $0.0682 and 16.5 s per patient; chart reader 7/12, 4/4, 0 unsupported, 9 extras, $0.0749 and 11.3 s. The chart reader did better at about the same cost. Caveats, nothing changed after the run: (1) the answer key is incomplete - many extras in both arms are real documented reasons the keyword sweeps missed (\"SBP 96 limits titration\", \"Reports running out\", \"Did not increase ... because ...\", \"Does not agree to restarting\"), so both scores are understated and the key needs a hand review; (2) the stack's reading part was partial for 7 patients: Perplexity was rate-limited while the learning batch ran alongside, and the per-document verbatim check left documents undecided (both P-HF03 reasons missed); (3) per-document escalation makes the stack no cheaper than one frontier call on a single chart. \"Why was a patient readmitted\" and \"maximum tolerated dose\" are not built. Learning batch at 278 of 302 ($6.21). Mike then pointed out System One should answer these, and he is right: the first design asked it for a yes/no per document and needed a second model to copy the reason out. Rebuilt (3cdb4151): reasons.py - code finds each passage about a pillar medication, judges each distinct passage once, System One (Perplexity then Jev) picks the kind of reason from fixed options, the passage is the quote; Haiku then Sonnet only for passages System One cannot decide. Answer key corrected after the first run (eval/tiered/hf_reasons_2.json, 25 required reasons, committed before the rerun; disclosed as post-hoc). Rerun hf-20261113T200402Z after the learning batch left System One: stack found 24/25 reasons, 0 unsupported, 63 extras, 1/12 patients fully right, $0.0116 and 8.8 s per patient; chart reader (Sonnet with the chart) found 14/25, 0 unsupported, 3 extras, 3/12 patients, $0.0119 and 11.2 s. So the stack is now far more complete but over-reports: most extras are passages that mention a medication without a real reason (reported use, unverified directions). The chart reader's cost fell from $0.075 to $0.012 because the same charts were cached from the first run, so cost is not comparable on this rerun. Mike asked why the \"entire stack as built\" is not in the comparison: the stack arm is the tiered core only; the older deep path (retrieval encoders, analyst, readers) and the bench (Qwen, rerankers) are not in it. Population-scale comparison NOT yet built. Mike on 2026-11-13: wire the other components in, in the right order - that is the job. Done (a6cd9cef plus the policy commit), each measured on the 12-patient heart-failure test (corrected key): (1) learning batch finished - 302 generated questions, 226 answered (222 by a frontier-written recipe, 4 by the small model, none by saved or built-in recipes), $6.75; second model confirmed 149 recipes; 148 merged and promoted by the gate (test set stayed 53/53); the app store now holds 177 promoted recipes. (2) reasons step order is now: code finds passages by medication name -> System One (Perplexity, Jev) -> local Qwen3-4B (accepted only when it agrees with the option System One leaned to) -> Haiku -> Sonnet; a \"non-use reported, no reason given\" category; barrier records stored by the earlier extraction as a fourth part of the answer. (3) measurements: typed judgments only 24/25 reasons, 63 extras, $0.0116/patient (hf-20261113T200402Z); plus local model, encoder+reranker and the no-reason category 24/25, 38 extras, $0.0105, 14.7 s (hf-20261113T202542Z; local model decided 67 of 115 passages at no cost; encoder+reranker considered 1,705 sentences, kept 96, did not recover the missed \"SBP 96 limits titration\" and added wrong candidates); kept configuration - local model on, encoder off - 24/25, 35 extras, $0.0017 and 8.9 s per patient (hf-20261113T203136Z; System One judgments were cached from the earlier runs, so this is also the repeat-run cost). Chart reader on the same runs 13/25 at about $0.011 (its charts were cached too). Policy: AGERE_TIERED_LOCAL on, AGERE_TIERED_ENCODER off. (4) Deep-path arm: one patient (P-HF07) sent to a copy of the app with the tiers off. It finished after about 75 minutes (the client gave up at 28) and saved ANS-a4743cb8777182f75507a28e: route local_compiler, status answered, known cost $0.0013, headline \"CT-02 Documented reasons for GDMT gaps on 2030-05-27: 57 patients\" - it answered for a 57-patient population, not the one patient asked about; its saved answer contains \"held for K 5.2\" but not the carvedilol titration reason (1 of 2 keyed reasons). It used hundreds of System One judgments and six Sonnet calls. The other eleven patients were not sent. Deep-only copy stopped; main app restarted on 7c9f3ddb. Not wired: rerankers elsewhere, clinical entity models, forecasting, tabular models, analytical engines; the encoder is wired but off. Population-scale comparison not built. Mike on 2026-11-13: make sure everything is live and finish for go to market. Done (50b4487a, local only): plain use reports (\"reports use on 0 of 14 days\") are labelled by code as non-use without a reason, no model. 12-patient heart-failure test, corrected key, run hf-20261113T215942Z: stack 24/25 reasons, 6/12 patients fully right, 10 extras, 0 unsupported quotes, $0.0025 and 4.5 s per patient; chart reader (Sonnet with the chart, cache expired) 12/25, 1/12, 2 extras, 0 unsupported, $0.0762 and 10 s. Regression after all of today's changes: full set 53/53 ($0.0020, 1.7 s; 27 saved recipes, 17 built-in, 8 small model, 1 frontier), patient-group 13/13, multi-part 13/13, follow-ups 14/14, chains 31/31; 93 model-free tests pass. Local site restarted on 50b4487a and checked live with seven requests (single question, follow-up, two questions, 267 documents, saved recipe, heart-failure why, and one through the password gate): all answered by the tiered core and saved with no error. Stack page republished (version 4) with the head-to-head. Go-to-market blockers that building on this machine cannot close: no hosted deployment (login server not connected to the tiers, no API-key transport, no server rented), synthetic data only, no customer data connector exercised, no security or compliance review, no outside clinical or accuracy review, nothing on main, Codex screen edits unreviewed. Not built: population-scale comparison, readmission reasons, maximum tolerated dose, statistical questions in the tiers. Next: hosted build (connect the login server to the tiers, API-key transport for hosted only, deploy with the semantic layer) once Mike creates the server account; population version; with his go-ahead, hand-review the extras into a corrected key (disclosed as post-hoc), make single-chart \"why\" questions one verified frontier read inside the stack, and test the cohort-scale version where the stack should differ; no tunnel until Mike asks; then the hosted build: connect the login server to the tiered core, API-key transport for hosted only, deploy the image with the semantic layer on the rented server; when the batch ends, run curriculum confirm (if not chained), merge, learn auto; report answered/declined by topic; then decide with Mike on statistical recipes, merge to main and Codex's uncommitted screens; tighten promotion for bottle shapes no eval question covers. Nothing is running. Branch pushed to origin at 7c9f3ddb on 2026-11-13 at Mike's explicit request (eighth one-off push); any further push needs a new explicit request.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -7185,53 +7437,67 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 99468,
-  "owned_server_session": 87481,
+  "owned_server_pid": null,
+  "owned_server_session": null,
   "last_run_observation": {
-    "schema": "agere-continuation-observation/1",
-    "at": "2026-11-11T22:04:24.808765+00:00",
-    "gate": "G5",
-    "status": "partial_provider_limit",
-    "new_product_delivery": false,
-    "product_source_changed": false,
-    "provider_work_stopped": true,
-    "actual_limit": "RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your session limit · resets 8:30pm (America/Chicago)",
-    "reported_reset": "8:30pm America/Chicago",
-    "result": {
-      "context_id": "ANS-3f2a0af0a03e3d9dac158612",
-      "patients": 65,
-      "same_original_patient_set": true,
-      "native_actions": 34,
-      "document_review_contexts": 3,
-      "recovery_loader": "passed",
-      "recovered_native_actions": 26,
-      "changed_review_patient_rows": 11,
-      "expanded_review_record_ids": 716,
-      "answer_status": "partial"
-    },
-    "attempt": {
-      "elapsed_seconds": 494.51652066688985,
-      "reported_calls": 48,
-      "known_api_equivalent_subtotal_usd": 15.381867,
-      "total_cost_known": false,
-      "invoice_verified": false
-    },
-    "previous_app_request": "completed_with_application_answered_disposition_not_independent_qualification",
-    "canceled_attempt": "Preserved; overlapping ledger window cannot determine its exact calls/cost.",
-    "evidence": [
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/run-receipt.json",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/response.json.gz",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/saved-partial-observation.json",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/action26-difference.json",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/http-attempt-2/action26-nested-difference.json",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/restored-context-receipt.json",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/run-receipt.json",
-      "artifacts/agere-source-escalation-2026-11-11/reset-continuation/preceding-app-completion.json"
-    ],
+    "status": "failed",
+    "started_at": "2026-11-12T12:24:41.391712+00:00",
+    "pid": 11615,
     "source_frozen": false,
-    "active_jobs": [],
-    "heartbeat_status": "PAUSED",
-    "git_pushes": false
+    "context_id": "ANS-9a1d5cfd7e62a2e0bd1277a8",
+    "progress_key": "cbb06226149d40f8ad4c15d8ef134a70",
+    "route": "/api/stack/investigation/resume",
+    "api_attempts": 1,
+    "http_status": 502,
+    "answer_status": null,
+    "verification": null,
+    "new_paid_api_calls": 15,
+    "planning_economics": {
+      "new_api_estimate_usd": null,
+      "known_api_estimate_usd": 4.613581,
+      "total_cost_known": false,
+      "scope": "Known new API usage only. Local compute, development and review costs are not measured."
+    },
+    "cost_receipt": {
+      "version": "cost-receipt/1",
+      "accounting_complete": true,
+      "paid_calls": 15,
+      "usd": 4.613937,
+      "usd_known": true,
+      "claude_calls": 9,
+      "system_one_calls": 6,
+      "calls_by_model": {
+        "claude-sonnet-5-5": 9,
+        "jev-1.13.0": 6
+      },
+      "claude_calls_by_model": {
+        "claude-sonnet-5-5": 9
+      },
+      "windowed_attempts": 0,
+      "ownership_complete": true,
+      "attributed_paid_calls": 15,
+      "known_owned_api_estimate_usd": 4.613937,
+      "ambiguous_attempt_ids": [],
+      "attribution_issues": [],
+      "ledger_consistent": true,
+      "planner_reported_calls": 15,
+      "background": null,
+      "question_id": "q-9873596c8a5c41a686948cd4"
+    },
+    "action_context": {
+      "id": "ANS-b8e49475cfb299a5d49c0eb2",
+      "patients": 65,
+      "url": "/action-center?context=ANS-b8e49475cfb299a5d49c0eb2",
+      "result_scope_available": true,
+      "input_patients": null,
+      "population_scopes": [],
+      "population_scope_discovery_available": true
+    },
+    "error": "ProviderUnavailable: RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your session limit \u00b7 resets 9:50am (America/Chicago)",
+    "action_context_error": null,
+    "request_execution_id": null,
+    "finished_at": "2026-11-12T12:27:56.966096+00:00",
+    "elapsed_seconds": 195.5836670838762
   },
   "ordinary_curriculum_progress": {
     "total_fixed_cases": 25,
@@ -7430,13 +7696,13 @@
       "receipt": "artifacts/agere-documentary-nomination-2026-11-06/owner-inclusion-review.json"
     }
   },
-  "server_status": "running",
+  "server_status": "stopped",
   "automatic_pushes": "disabled_by_explicit_user_2026-11-09",
   "push_authorization": "Revoked November9: do not git push without a new explicit Mike request.",
   "build_status": "ACTIVE",
-  "paused_at": "2026-11-09T18:35:52.790981+00:00",
-  "pause_reason": null,
-  "heartbeat_status": "ACTIVE",
+  "paused_at": "2026-11-12T12:38:09.567580+00:00",
+  "pause_reason": "Mike explicitly stopped further Claude usage by Codex and requested a Claude build handoff. Codex implementation and automatic continuation are paused; handoff preparation only.",
+  "heartbeat_status": "PAUSED",
   "product_market_audit": {
     "as_of": "2026-11-09T18:42:05.848258+00:00",
     "scope": "Owner product/architecture/market audit against saved receipts and selected current public primary sources. Not independent clinical/model qualification, patent/FTO search, full research review or customer discovery.",
@@ -7475,14 +7741,14 @@
       "https://www.cms.gov/data-research/statistics-trends-and-reports/national-health-expenditure-data/nhe-fact-sheet"
     ]
   },
-  "resumed_at": "2026-11-09T19:10:06.211706+00:00",
+  "resumed_at": "2026-11-12T14:13:09.011694+00:00",
   "latest_receipt": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
   "code_only_storage_exception": {
     "authorization": "artifacts/agere-contract-release-2026-11-10/code-only-storage-authorization.json",
     "scope": "One code-only archive and fresh-code rehearsal from the linked proposal; existing source/model/Python/work/ledger stores referenced, never copied. General60GBguard unchanged.",
     "approved": true
   },
-  "continuation_mode": "quiet_overnight_continuation",
+  "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
   "continuation_authorization": {
     "at": "2026-11-12T01:42:22.547928+00:00",
     "basis": "Mike explicitly authorized continuing without routine questions until morning in the latest message; supersedes prior scheduler pause.",
@@ -7560,15 +7826,16 @@
     "presentation_receipt": "artifacts/agere-output-decision-design-2026-11-11/delivery-receipt.json"
   },
   "provider_credit_status": {
-    "at": "2026-11-12T00:34:48.236870+00:00",
-    "status": "subscription_rate_limit",
+    "at": "2026-11-12T12:38:09.567580+00:00",
+    "status": "actual_subscription_limit_observed",
     "provider_work_stopped": true,
-    "reset_time_unknown": true,
     "retry_probes_allowed": false,
-    "evidence": "artifacts/agere-source-obligations-2026-11-11/bound-question-continuation/run-receipt.json",
-    "latest_saved_partial": "ANS-87eb0982baaef39dd759d519"
+    "reported_reset": "2026-11-12 09:50 America/Chicago",
+    "evidence": "artifacts/agere-saved-continuation-2026-11-12/reference-corrected-resume/run-receipt.json",
+    "error": "ProviderUnavailable: RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your session limit \u00b7 resets 9:50am (America/Chicago)",
+    "user_stop_supersedes_automatic_resume": true
   },
   "latest_continuity_receipt": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
   "usage_diagnosis": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/usage-diagnosis.json",
-  "continuation_session": "Quiet overnight continuation ACTIVE by latest user authorization; no Git pushes."
+  "continuation_session": "Paused for user-requested Claude handoff; no provider work or automatic continuation."
 }
