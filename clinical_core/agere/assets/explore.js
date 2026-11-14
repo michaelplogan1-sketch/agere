@@ -52,7 +52,7 @@ function renderPatientLibrary(){
 function setResultMode(on){document.body.classList.toggle('has-result',on);$('#answer').hidden=!on;showPage('explore')}
 function renderIdeas(topic='All topics'){
  $('#topic-filters').innerHTML=['All topics','Patients','Costs','Operations','Outcomes'].map(t=>'<button type="button" data-topic="'+esc(t)+'" aria-pressed="'+(topic===t)+'">'+esc(t)+'</button>').join('');
- $('#examples').innerHTML=ideas.map((x,i)=>(topic==='All topics'?i<3:topic===x.topic)?'<button type="button" class="question-card" data-idea="'+i+'" data-color="'+x.color+'"><span class="tile-icon">'+uiIcon(x.icon)+'</span><span class="card-arrow" aria-hidden="true">↗</span><strong>'+esc(x.title)+'</strong><span class="question-detail">'+esc(x.detail)+'</span></button>':'').join('');
+ $('#examples').innerHTML=ideas.map((x,i)=>(topic==='All topics'?[0,2,4].includes(i):topic===x.topic)?'<button type="button" class="question-card" data-idea="'+i+'" data-color="'+x.color+'"><span class="tile-icon">'+uiIcon(x.icon)+'</span><span class="card-arrow" aria-hidden="true">↗</span><strong>'+esc(x.title)+'</strong><span class="question-detail">'+esc(x.detail)+'</span></button>':'').join('');
 }
 function draftQuestion(q){if(state.busy)return;newConversation();$('#q').value=q;$('#q').focus();$('#q').scrollIntoView({block:'center',behavior:'smooth'})}
 function shortDate(s){return s?new Date(s).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}):'Saved answer'}

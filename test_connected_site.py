@@ -25,6 +25,11 @@ assert.match(html,/disabled aria-describedby="ckd-agent-reason"/);assert.match(h
 ckdWorkspace.view='patients';renderCKDView();assert.match($('#ckd-patient-browser').innerHTML,/Synthetic Example/);
 assert.equal(ckdFilteredRows()[0],c.answer.table[0]);ckdWorkspace.search='P-2';assert.deepEqual(ckdFilteredRows(),[c.answer.table[1]]);ckdWorkspace.search='no match';assert.equal(ckdFilteredRows().length,0);ckdWorkspace.search='';
 assert.match(ckdPatientPreview(c),/Synthetic Example/);assert.match(ckdPatientPreview(c),/Unknown/);assert.match(ckdPatientPreview(c),/>0</);
+ckdWorkspace.stage='labs';ckdWorkspace.view='pathway';renderCKDView();
+assert.match($('#ckd-view').innerHTML,/data-ckd-stage="labs" aria-pressed="true"/);
+assert.match($('#ckd-view').innerHTML,/Separate lab-completion and pickup states/);
+assert.match($('#ckd-view').innerHTML,/No mock run has been created/);
+assert.match($('#ckd-view').innerHTML,/disabled>Mock service unavailable/);
 assert.equal(JSON.stringify(c),before);assert.equal(ckdIsContext('../other'),false);
 assert.ok(ckdURL(c.id).includes('?app=ckd&context='+c.id));
 const wrong={patient_profiles:{patients:{'P-1':{patient_id:'P-2',display_name:'Wrong person'}}}};assert.equal(ckdIdentity(wrong,{patient_id:'P-1'}),'P-1');

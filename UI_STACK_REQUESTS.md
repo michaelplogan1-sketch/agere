@@ -280,3 +280,105 @@ The continuity check in this isolated clone reports a missing ignored build
 receipt at `artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json`.
 No control file or artifact was changed to satisfy it. Mike's explicit UI-lane
 authorization applies; this candidate does not seal a stack gate.
+
+## Reconfiguration after Mike's design review — 2026-11-14
+
+Mike rejected the first UI treatment and clarified that CKD is one example,
+not the product's full scope. This increment replaces the main workspace's
+visual system and composition as well as the CKD example. Population health,
+value-based care, costs, outcomes, operations, saved creations, work and
+source review remain part of the product. No stack capability is removed or
+claimed complete by this design change.
+
+### References actually consulted
+
+These are design references, not evidence of Agere's clinical accuracy or
+competitive superiority. No competitor assets or code were copied.
+
+- [TextQL Ana](https://textql.com/products/ana): visually reviewed; strong type,
+  restrained line work, and a clear question as the starting point.
+- [System Health](https://www.system.com/health): visually reviewed; large
+  typographic hierarchy and a connected visual identity.
+- [TypeSafe AI](https://typesafe.ai/): visually reviewed; a distinctive identity
+  and deliberate interactive objects rather than a generic card template.
+- [Innovaccer](https://innovaccer.com/): visually reviewed; a strong platform
+  narrative and explicit grouping of operational roles.
+- [Arcadia](https://arcadia.io/): visually reviewed; human context and clear
+  progression between its platform areas.
+- [Databricks Genie Agents](https://www.databricks.com/product/genie/agents):
+  product content reviewed; continuity from question to governed evidence
+  and work. The unauthenticated homepage's animated hero did not finish
+  rendering in the initial screenshot; no authenticated product was audited.
+- [shadcn dashboard source](https://github.com/shadcn-ui/ui/blob/main/apps/v4/app/%28app%29/examples/dashboard/page.tsx):
+  source reviewed for separation of navigation, header, measures and a real
+  data table. [Dash sample applications](https://github.com/plotly/dash-sample-apps)
+  were consulted as an additional open-source dashboard reference.
+
+### Changed user behavior and presentation
+
+- Main workspace: ink navigation, citron selection, a larger question canvas,
+  broad population/VBC/outcomes starters, topic filters for costs and
+  operations, and a gallery with distinct document previews. CKD is explicitly
+  labelled an example program. Shared Work and Source review navigation uses
+  the same palette and wordmark.
+- Answers: the new canvas retains the actual returned result, scalar figures,
+  evidence/data tabs, limitations, exact messages, tier, time, cost and the
+  persistent takeover warning. The same conversation API contract remains.
+- CKD: replaces the introductory landing page with a working population console.
+  The original table and selected patient's evidence are visible together.
+  Search, returned selection-basis filtering and pagination operate on the
+  retained rows without recomputing eligibility or clinical measures.
+- Care journey: selecting a stage opens a capability inspector. Selecting a
+  mock-agent role opens that stage's requirements. Requested capability
+  descriptions are UI copy, not patient results or fabricated execution.
+  Every run control remains unavailable; the stack requirements above remain
+  the integration contract.
+- Original patient profile binding, unknown values, source fields, raw JSON,
+  original-row CSV and the historical population restriction remain intact.
+
+### Verification and limits of this increment
+
+All 17 screen tests pass. The connected-screen check now also verifies that
+selecting the lab/medication stage shows the corresponding required states,
+keeps the run disabled and leaves the original context unchanged.
+`git diff --check` passes. No answering-stack or evaluation code was changed.
+
+Fresh browser questions after the redesign:
+
+- ED visits in 2029: 1501, deterministic recipe, returned tier time 0.02 s,
+  model estimate $0.
+- Same-conversation follow-up, "And in 2028?": 1465, deterministic recipe,
+  returned tier time 0 s, model estimate $0. Zero is shown as returned.
+- Retained takeover answer: Unchecked remains visible after switching Data
+  and Summary. This remains a retained response, not a new takeover run.
+
+CKD browser checks: selecting Mateo Hill updates the evidence panel to his
+exact ID; name search returns his row; eGFR-only filtering returns the original
+observed eGFR values (including 3.6, 4.5 and 4.9); pagination opens page 2;
+selecting Labs & medications opens its separate completion/pickup requirements;
+Run mock outreach remains disabled with an explicit unavailable-service
+message. No agent mutation was sent. The prior 308-row CSV identity check
+continues to apply; export code and the underlying rows are unchanged.
+
+Desktop 1439 CSS-pixel views were inspected with no page-wide overflow.
+At 727 CSS pixels the main navigation opens/closes and the layout has no
+page-wide overflow. A new 390-pixel check could not be completed: the in-app
+browser reports a 0.33 device scale and clamps the viewport, while a local
+file-based inspection harness was blocked by browser policy. No workaround
+was attempted after that rejection. The prior version's 390-pixel check is
+not claimed as verification of this new design. Narrow-screen CSS is present;
+final phone-size visual acceptance remains open.
+
+New review screenshots, outside the repository:
+`/private/tmp/agere-ui-v2-workspace.png`,
+`/private/tmp/agere-ui-v2-answer.png`,
+`/private/tmp/agere-ui-v2-program.png`.
+The main screenshot captured part of its initial entrance state; the answer
+and program screenshots show the stable navigation and content.
+
+Gate remains G7, UI candidate only. Mike's visual acceptance is still open;
+"award winning" and superior usability have not been established by these
+engineering checks. Remaining stack gaps are the current-source refresh,
+saved-conversation restoration, operational program contracts and persisted
+mock agents described above. Claude retains build ownership; the control
+checkpoint and owner receipt are deliberately untouched in this lane.

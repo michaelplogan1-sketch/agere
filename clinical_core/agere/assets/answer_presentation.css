@@ -2,10 +2,10 @@
 /* Wollstonecraft palette shared by home, saved answers, sources, results and dialogs.
    Semantic status colors and categorical chart series retain their distinct meanings. */
 :root,:root[data-theme="light"]{
- --wc-paper:#faf9f6;--wc-surface:#fff;--wc-sidebar:#f4f1f8;
- --wc-ink:#28262c;--wc-muted:#625c6b;--wc-line:#e5e1e9;
- --wc-primary:#7251b8;--wc-primary-hover:#62439f;--wc-primary-ink:#543582;
- --wc-tint:#f1eef5;--wc-panel:#eee7f8;--wc-panel-line:#d8cbea;--wc-selected:#e7e0f0;
+ --wc-paper:#f7f8f5;--wc-surface:#fff;--wc-sidebar:#132b30;
+ --wc-ink:#182c30;--wc-muted:#647477;--wc-line:#dfe5e1;
+ --wc-primary:#345b43;--wc-primary-hover:#264636;--wc-primary-ink:#234435;
+ --wc-tint:#f0f4eb;--wc-panel:#edf2e4;--wc-panel-line:#d8e2cb;--wc-selected:#dcf88c;
  --wc-warning:#86550c;--wc-warning-bg:#fff5df;--wc-warning-line:#e8d7b1;
  --wc-success:#347c68;--wc-success-bg:#eaf5ef;
  --wc-shadow:#3f2d4e18;--wc-shadow-soft:#3f2d4e08;--wc-backdrop:#31263e60;
