@@ -173,8 +173,10 @@ class DeepPathSwitch(unittest.TestCase):
 
     def test_the_question_entry_checks_the_switch_before_the_old_path(self):
         source = Path('clinical_core/agere/clinical/conversation.py').read_text()
-        gate, old = source.index("os.environ.get('AGERE_DEEP_PATH', 'on') == 'off'"), source.index('result = stack.compose(question) if planning')
-        self.assertLess(gate, old)
+        self.assertIn("os.environ.get('AGERE_DEEP_PATH', 'on') == 'off'", source)
+        for old in ('result = stack.compose(question) if planning', "bound = stack.compose(effective_question, population=parent['patient_ids']", 'result = bound if bound else stack.compose(standalone)'):
+            at = source.index(old)
+            self.assertIn('_bounded_only(planning)', source[at - 200:at])  # each start of the old path is preceded by the switch
 
 
 if __name__ == '__main__':

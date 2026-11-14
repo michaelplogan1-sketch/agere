@@ -358,6 +358,15 @@ FOLLOWUP_MARKERS = re.compile(r"^(?:now|and|also|only|just|what about|how about|
                               r"|\b(?:that|them|those|these|it|ones|they|same)\b")
 
 
+def _bounded_only(planning):
+    """Mike 2026-11-13: an unbounded run must never happen. Called where the older deep path (no time limit) would
+    start after every tier and the bounded frontier takeover have declined. Raises unless that path is switched on."""
+    from ..tiered import app as tiered_app
+    if planning == 'auto' and tiered_app.enabled() and os.environ.get('AGERE_DEEP_PATH', 'on') == 'off':
+        raise QuestionNotUnderstood('No method answered this inside the time limit, including the frontier model. '
+                                    'Ask a narrower question (one measure, one period, or one patient).')
+
+
 def is_followup(text):
     low = ' '.join(text.lower().split())
     if re.search(r'\b(?:them|those|these|they|their)\b', low) and not requires_saved_cohort(low):
@@ -1013,10 +1022,7 @@ def _handle_compose(stack, body, hosted_factory=None):
             # then a frontier-written recipe. Only a question that core cannot answer continues to the existing path.
             from ..tiered import app as tiered_app
             result = tiered_app.try_answer(stack, question) if planning == 'auto' else None
-            if result is None and planning == 'auto' and tiered_app.enabled() and os.environ.get('AGERE_DEEP_PATH', 'on') == 'off':
-                # Mike 2026-11-13: an unbounded run must never happen. Every tier and the bounded frontier takeover were
-                # tried; the older deep path (no time limit) runs only when it is switched on explicitly.
-                raise QuestionNotUnderstood('No method answered this inside the time limit, including the frontier model. Ask a narrower question (one measure, one period, or one patient).')
+            if result is None: _bounded_only(planning)
             if result is None:
                 result = stack.compose(question) if planning == 'auto' else stack.compose(question, planning=planning)
         else:
@@ -1089,6 +1095,7 @@ def _handle_compose(stack, body, hosted_factory=None):
                         # membership and the tiers answer inside it. Anything they cannot answer continues below.
                         bound = tiered_app.try_in_cohort(stack, question, parent, saved['id'], selected_scope)
                     if bound is None:
+                        _bounded_only(planning)
                         bound = stack.compose(effective_question, population=parent['patient_ids'], parent=parent, planning=planning)
                         used_temporal = temporal is not None
                     bound['cohort_transform']['scope'] = selected_scope
@@ -1116,6 +1123,7 @@ def _handle_compose(stack, body, hosted_factory=None):
                     resolution['standalone'] = effective_question
                     used_temporal = temporal is not None
                 standalone = resolution['standalone']
+                if not bound: _bounded_only(planning)
                 result = bound if bound else stack.compose(standalone) if planning == 'auto' else stack.compose(standalone, planning=planning)
                 if measurement and bound is None:
                     resolution.update(standalone=effective_question,method='inherited_measure',follow_up=True,
