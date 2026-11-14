@@ -226,7 +226,7 @@ class Core(unittest.TestCase):
                                              ('composite',['How many ED visits were there in 2029?','Show monthly ED visits in 2029'],'count',2))
             self.assertEqual(out['planner_receipt']['split']['parts'][1],'Show monthly ED visits in 2029')
             with said('{"parts": ["How many ED visits were there in 2029?", "What is the meaning of it all in 2029?"]}'),s1('yes'),mock.patch.object(A.router,'answer',wraps=A.router.answer) as ran:
-                with mock.patch.object(A,'_single',side_effect=lambda st,part:None if 'meaning' in part or part==q else {'answer':{}}) as single:
+                with mock.patch.object(A,'_single',side_effect=lambda st,part,**kw:None if 'meaning' in part or part==q else {'answer':{}}) as single:
                     self.assertIsNone(A.try_answer(stack,q))  # one part unanswered: not answered in pieces; tried once more as one question
                     self.assertEqual([c.args[1] for c in single.call_args_list][-1],q)
 

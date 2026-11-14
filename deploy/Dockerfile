@@ -25,6 +25,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements-hosted.txt && rm /tmp/requir
 # Application code only. No artifacts/, models/, tmp/, private/, .venv or databases (see /.dockerignore).
 COPY clinical_core/ /app/clinical_core/
 COPY config/ /app/config/
+COPY eval/tiered/ /app/eval/tiered/
 COPY serve_hosted.py /app/serve_hosted.py
 COPY docs/agere/HOSTED_DESIGN.md /app/docs/agere/HOSTED_DESIGN.md
 

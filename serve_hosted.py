@@ -6,7 +6,9 @@
     AGERE_SECRET_KEY    Fernet key for stored warehouse credentials (required)
     AGERE_COOKIE_SECURE 1 (default) sets Secure cookies and HSTS; 0 only for local http testing
     AGERE_TRUST_PROXY   1 when behind a proxy that sets X-Forwarded-For (default 1 with AGERE_COOKIE_SECURE)
-    AGERE_CLAUDE_TRANSPORT subscription (required transport; uses the signed-in Claude subscription)
+    AGERE_CLAUDE_TRANSPORT subscription (default; the signed-in Claude subscription) or api (paid key in ANTHROPIC_API_KEY; hosted only)
+    AGERE_TIERED_DB     demonstration semantic layer for Ask (synthetic); with AGERE_TIERED_BOTTLES and AGERE_TIERED_LEDGER
+    TYPESAFE_API_KEY, PERPLEXITY_API_KEY   System One providers used by Ask
 
 First organization and owner:  python -m clinical_core.agere.hosted.auth bootstrap --db <data>/hosted.sqlite3 --org NAME --email E
 See deploy/DEPLOY.md and docs/agere/HOSTED_DESIGN.md.
@@ -30,17 +32,28 @@ def scrub_environment(environ=os.environ):
 
 
 def configure_models():
-    """Use the existing economical routing and authorized subscription transport."""
-    from clinical_core.agere import model_policy, subscription_transport
-    transport = os.environ.get('AGERE_CLAUDE_TRANSPORT', 'subscription')
+    """Economical routing plus one Claude transport.
+    subscription (default): the signed-in Claude subscription through the CLI; any external key is removed.
+    api: a paid Anthropic API key from the environment. Allowed here only (Mike, 2026-11-13: hosted server only);
+         the tiered core uses it, and the older workspace question path is refused in this mode."""
+    from clinical_core.agere import model_policy
+    transport = os.environ.get('AGERE_CLAUDE_TRANSPORT', 'subscription').strip().lower()
+    os.environ.update(model_policy.application_runtime({})['environment'])
+    os.environ['AGERE_HOSTED'] = '1'
+    if transport == 'api':
+        if not (os.environ.get('ANTHROPIC_API_KEY') or '').startswith('sk-ant-'):
+            raise ValueError('AGERE_CLAUDE_TRANSPORT=api needs ANTHROPIC_API_KEY in the server environment')
+        os.environ['AGERE_CLAUDE_TRANSPORT'] = 'api'
+        return 'api'
     if transport != 'subscription':
-        raise ValueError('Hosted Agere requires Claude subscription transport; external Anthropic API keys are not used')
+        raise ValueError('AGERE_CLAUDE_TRANSPORT must be subscription or api')
+    from clinical_core.agere import subscription_transport
     os.environ['AGERE_CLAUDE_TRANSPORT'] = 'subscription'
     os.environ.pop('ANTHROPIC_API_KEY', None)
-    os.environ.update(model_policy.application_runtime({})['environment'])
     if not subscription_transport.install():
         raise RuntimeError('Claude subscription transport could not be installed')
     os.environ['ANTHROPIC_API_KEY'] = 'subscription-transport'  # internal availability marker, never an external key
+    return 'subscription'
 
 
 def main():
@@ -55,9 +68,11 @@ def main():
     secure = os.environ.get('AGERE_COOKIE_SECURE', '1') != '0'
     trust = os.environ.get('AGERE_TRUST_PROXY', '1' if secure else '0') == '1'
     host, port = os.environ.get('AGERE_HOST', '0.0.0.0'), int(os.environ.get('AGERE_PORT', '8080'))
-    configure_models()
+    transport = configure_models()
     server = make_server(host, port, data, secret_key=key, cookie_secure=secure, trust_proxy=trust)
-    print(f'Agere hosted on {host}:{port} (data {data}, secure cookies {"on" if secure else "off"})', flush=True)
+    from clinical_core.agere.hosted import ask
+    print(f'Agere hosted on {host}:{port} (data {data}, secure cookies {"on" if secure else "off"}, Claude transport {transport}, '
+          f'Ask {"on" if ask.available() else "off: set AGERE_TIERED_DB to the demonstration semantic layer"})', flush=True)
     server.serve_forever()
 
 

@@ -114,7 +114,7 @@ async function loadMe(){ME=await api('/api/auth/me');const b=document.getElement
  b.innerHTML='<div class="wrap"><a class="brand" href="/app">'+_esc(PRODUCT)+'<small>/ '+_esc(TAGLINE)+'</small></a>'+
  '<span class="pill">'+_esc(ME.org)+' · '+_esc(ME.role)+'</span>'+
  (orgs.length>1?'<select id="orgsel" aria-label="Organization">'+orgs.map(o=>'<option value="'+_esc(o.slug)+'"'+(o.slug===ME.org?' selected':'')+'>'+_esc(o.name||o.slug)+'</option>').join('')+'</select>':'')+
- '<nav><a href="/app"'+(here==='/app'||here==='/'?' class="on"':'')+'>Workspaces</a>'+(['admin','owner'].includes(ME.role)?'<a href="/admin"'+(here==='/admin'?' class="on"':'')+'>Admin</a>':'')+
+ '<nav><a href="/ask"'+(here==='/ask'?' class="on"':'')+'>Ask</a><a href="/app"'+(here==='/app'||here==='/'?' class="on"':'')+'>Workspaces</a>'+(['admin','owner'].includes(ME.role)?'<a href="/admin"'+(here==='/admin'?' class="on"':'')+'>Admin</a>':'')+
  '<a href="/account"'+(here==='/account'?' class="on"':'')+'>'+_esc((ME.user||{}).email||'Account')+'</a><button class="ghost" id="logout" style="margin:0;padding:6px 14px">Sign out</button></nav></div>';
  document.getElementById('logout').onclick=async()=>{await api('/api/auth/logout',{});location.href='/login'};
  const s=document.getElementById('orgsel');if(s)s.onchange=async()=>{await api('/api/auth/switch',{org:s.value});location.reload()};return ME}
@@ -155,7 +155,7 @@ def login():
 <button type="submit" class="accent">Sign in</button><p id="msg" class="err" role="alert"></p></form>
 <p class="notice">This environment accepts synthetic data only. Do not upload patient information.</p></div></section></main>'''
     script = r'''document.getElementById('f').onsubmit=async e=>{e.preventDefault();const m=document.getElementById('msg');m.textContent='';
- try{await api('/api/auth/login',{email:document.getElementById('email').value,password:document.getElementById('password').value});location.href='/app'}
+ try{await api('/api/auth/login',{email:document.getElementById('email').value,password:document.getElementById('password').value});location.href='/'}
  catch(err){m.textContent=err.message}}'''
     return _page(f'{NAME} Sign In', body, script)
 

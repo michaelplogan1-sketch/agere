@@ -260,15 +260,23 @@ def make_handler(ctx):
                 if path == '/favicon.ico':
                     return self.send(204, b'', mime='image/x-icon')
                 p = self.principal()
-                if path in ('/', '/app', '/admin', '/account'):
+                if path in ('/', '/app', '/admin', '/account', '/ask'):
                     if p is None or p['via'] != 'session':
                         return self.send(303, b'', mime='text/plain', location='/login')
+                    from . import ask
+                    if path == '/' and ask.available():
+                        return self.send(303, b'', mime='text/plain', location='/ask')
+                    if path == '/ask':
+                        return self.send(200, ask.page(), mime='text/html')
                     page = {'/': pages.app, '/app': pages.app, '/admin': pages.admin, '/account': pages.account}[path]()
                     return self.send(200, page, mime='text/html')
                 if p is None:
                     return self.error(401, 'Sign in required')
                 if path == '/api/auth/me':
                     return self.send(200, self.me(p))
+                if path == '/api/ask/status':
+                    from . import ask
+                    return self.send(200, ask.status())
                 if path == '/api/uploads':
                     root = ctx.uploads_root(self.org_slug(p))
                     items = [{'name': x.name, 'kind': 'folder' if x.is_dir() else 'file',
@@ -366,7 +374,13 @@ def make_handler(ctx):
                     return self.switch(body, p)
                 if path == '/api/account/password':
                     return self.change_password(body, p)
+                if path == '/api/ask':
+                    from . import ask
+                    code, payload = ask.answer(ctx, self.org_slug(p), self.user_id(p), body, ip=self.client_ip())
+                    return self.send(code, payload)
                 if path.startswith('/api/workspaces'):
+                    if path.endswith('/ask') and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'api':
+                        return self.error(409, 'Workspace questions use the older path, which is not run on the paid API. Use Ask.')
                     return self.workspaces('POST', path, body, p)
                 if path.startswith('/api/admin/'):
                     return self.admin_post(path, body, p)

@@ -9,9 +9,11 @@ import os
 from . import VERSION, bottles as bottle_store, ledger as ledger_store, router, store
 
 TIERS = ('bottles', 'recipes', 'system1', 'slm', 'llm')
+ORDER = TIERS + ('takeover',)  # takeover is not a router tier: it runs only after the router has not answered
 MAX_GROUNDING = 200  # evidence lines shown for a document answer
 TIER_NAMES = {'bottles': 'a saved recipe for this question shape', 'recipes': 'a built-in recipe matched by wording',
-              'slm': 'a built-in recipe chosen by System One and filled by the small model', 'llm': 'a recipe written by the frontier model and run by code'}
+              'slm': 'a built-in recipe chosen by System One and filled by the small model', 'llm': 'a recipe written by the frontier model and run by code',
+              'takeover': 'the frontier model working the question out itself with read-only queries'}
 
 
 def enabled():
@@ -104,7 +106,7 @@ def try_answer(stack, question):
         if found:
             results = []
             for part in found:
-                results.append(_single(stack, part))
+                results.append(_single(stack, part, takeover_ok=False))  # the takeover rung answers the whole message, never a part
                 if results[-1] is None: break  # one unanswered part: the message is not answered in pieces
             if all(results): return _combine(question, found, results, how)
     return _single(stack, question)
@@ -115,7 +117,7 @@ def _combine(question, parts, results, how):
     answers = [r['answer'] for r in results]
     usd = sum(r['planner_receipt']['known_api_estimate_usd'] for r in results) + how['usd']
     calls = sum(r['new_paid_api_calls'] for r in results) + (1 if how['tokens'] else 0)
-    tier = max((r['planner_receipt']['final_tier'] for r in results), key=TIERS.index)
+    tier = max((r['planner_receipt']['final_tier'] for r in results), key=ORDER.index)
     limitations = list(dict.fromkeys(line for a in answers for line in a.get('limitations') or []))
     answer = {'status': 'answered', 'answer_type': 'composite', 'headline': ' '.join(str(a.get('headline') or '') for a in answers)[:1200],
               'sections': [{'title': part, 'answer': a} for part, a in zip(parts, answers)],
@@ -139,7 +141,7 @@ def _combine(question, parts, results, how):
                             'escalations': [e for r in results for e in r['tiered_core']['escalations']]}}
 
 
-def _single(stack, question, cohort=None):
+def _single(stack, question, cohort=None, takeover_ok=True):
     """One question through the tiers, inside a patient cohort when one is given. -> the app's result dict, or None."""
     s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
     bottles = bottle_store.Bottles()
@@ -152,7 +154,8 @@ def _single(stack, question, cohort=None):
         from . import learn
         learn.spawn_auto()  # a new recipe was saved: check and promote it in the background, with no manual step
     ledger_store.Ledger().write('app', question, outcome, config={'tiers': list(TIERS), **({'cohort_patients': len(cohort)} if cohort is not None else {})})
-    if outcome['status'] != 'answered': return None
+    if outcome['status'] != 'answered':
+        return _takeover(question, cohort, outcome) if takeover_ok else None
     columns, rows, tier = outcome['columns'], outcome['rows'], outcome['final_tier']
     usd = sum(s.get('usd', 0.0) for s in outcome['steps'])
     calls = sum(1 for s in outcome['steps'] if s.get('model'))
@@ -217,3 +220,45 @@ def _single(stack, question, cohort=None):
                                    'scope': 'Tiered core model calls only.'},
             'tiered_core': {'final_tier': tier, 'seconds': outcome['seconds'], 'escalations': outcome['escalations'], 'bottled': outcome.get('bottled'),
                             **({'documents': documents} if documents else {})}}
+
+
+def _takeover(question, cohort, outcome):
+    """No tier answered: the frontier model takes over, bounded by turns and seconds (takeover.py). -> result or None."""
+    from . import takeover
+    if not takeover.enabled(): return None
+    try:
+        got = takeover.answer(question, cohort, why=outcome.get('missing') or '; '.join(e.get('reason', '') for e in outcome.get('escalations') or [])[-400:])
+    except Exception as exc:
+        if 'limit' in str(exc).lower(): raise
+        import sys
+        print(f'tiered takeover failed: {type(exc).__name__}: {str(exc)[:200]}', file=sys.stderr, flush=True)
+        return None
+    if got is None: return None
+    spent = sum(s.get('usd', 0.0) for s in outcome['steps'])
+    usd, calls = spent + got['usd'], sum(1 for s in outcome['steps'] if s.get('model')) + len(got['steps'])
+    seconds = round(outcome['seconds'] + got['seconds'], 2)
+    ledger_store.Ledger().write('app_takeover', question, {**outcome, 'status': 'answered', 'final_tier': 'takeover', 'columns': got['columns'], 'rows': got['rows'],
+                                                           'steps': outcome['steps'] + got['steps'], 'seconds': seconds},
+                                config={'tiers': list(ORDER), **({'cohort_patients': len(cohort)} if cohort is not None else {})})
+    sql = store.portable(got['sql'], cohort) if got['sql'] else ''
+    answer = {'status': 'answered', 'answer_type': 'table', 'headline': got['text'], 'table': [dict(zip(got['columns'], r)) for r in got['rows'][:500]],
+              'sources': [], 'missing': [], 'patient_ids': [], 'verification': 'unverified',
+              'limitations': [f"No cheaper tier could answer this, so the frontier model took over: it ran {len(got['queries'])} read-only queries"
+                              + (f" and read {len(got['documents'])} documents" if got['documents'] else '') + ', then wrote this answer. It is not checked against a reference.',
+                              *([f"These numbers in the answer were not found in any query result and should not be relied on: {', '.join(got['unsupported'][:12])}."] if got['unsupported'] else
+                                ['Code checked that every number in the answer appears in a query result, a document it read, or the question.']),
+                              *got['caveats']],
+              'facts': {'answered_by': f"{TIER_NAMES['takeover'][0].upper() + TIER_NAMES['takeover'][1:]}. {seconds} seconds, ${usd:.4f} in model calls (model: {got['model']})."},
+              'grounding': [f'Query {i}: {q}' for i, q in enumerate(got['queries'], 1)] + [f'Document read: {d}' for d in got['documents']]}
+    if sql: answer['table_binding'] = {'computation': sql, 'parameters': {}, 'checks_passed': []}
+    return {'answer': answer, 'results': [], 'new_paid_api_calls': calls, 'workflow': [], 'question': question, 'route': 'tiered_core',
+            'graph': {'interpretation': question, 'coverage': 'supported_observation', 'unmet_requirements': [],
+                      'nodes': [{'id': 'tiered_0', 'operation': 'sql', 'inputs': [], 'parameters': {'query': sql, 'returns': 'table'},
+                                 'purpose': 'Frontier model takeover (queries executed by code)'}]},
+            'planner_receipt': {'route': 'tiered_core', 'version': VERSION, 'final_tier': 'takeover', 'recipe': {'sql': got['sql']}, 'steps': outcome['steps'] + got['steps'],
+                                'escalations': outcome['escalations'] + [{'from': 'tiers', 'reason': 'no tier answered; frontier model took over'}],
+                                'validation': {'ok': not got['unsupported'], 'checks': [{'name': 'numbers_in_answer_are_in_results', 'ok': not got['unsupported']}]},
+                                'new_paid_api_calls': calls, 'known_api_estimate_usd': usd, 'api_cost_known': True, 'frontier_called': True,
+                                'takeover': {'queries': got['queries'], 'documents': got['documents'], 'unsupported_numbers': got['unsupported']}},
+            'planning_economics': {'new_api_estimate_usd': usd, 'known_api_estimate_usd': usd, 'total_cost_known': True, 'scope': 'Tiered core model calls only.'},
+            'tiered_core': {'final_tier': 'takeover', 'seconds': seconds, 'escalations': outcome['escalations'], 'bottled': None}}

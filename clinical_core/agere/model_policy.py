@@ -46,7 +46,7 @@ ECONOMICAL_RUNTIME = {
     # One ordinary path (Mike, 2026-11-12): native code first, System One next, the frontier
     # only for what remains. Recovery point before activation: commit 121dee40.
     'AGERE_TIERED_CORE': 'on',                    # questions try the tiered core first (clinical_core/agere/tiered)
-    'AGERE_TIERED_AUTO_LEARN': 'on',              # a newly saved recipe is checked and promoted in the background
+    'AGERE_TIERED_AUTO_LEARN': 'on', 'AGERE_TIERED_TAKEOVER': 'on',              # a newly saved recipe is checked and promoted in the background
     'AGERE_TIERED_LOCAL': 'on',                   # the local Qwen model decides passages System One leaves open, when the two agree (measured 2026-11-13)
     'AGERE_TIERED_ENCODER': 'off',                # local encoder + reranker for passage finding: no gain on the 12-patient test, so off
     'AGERE_NATIVE_ROUTING': 'on',                 # follow-up facts go to the native loop-closure engine

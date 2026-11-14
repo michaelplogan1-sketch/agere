@@ -25,13 +25,40 @@ def _json(text):
     return json.loads(text[start:end + 1])
 
 
+_client = None
+
+
+def _api(model, system, user):
+    """Paid Anthropic API. Hosted server only (serve_hosted sets AGERE_HOSTED=1); never on a workstation."""
+    if os.environ.get('AGERE_HOSTED') != '1':
+        raise RuntimeError('The paid Anthropic API transport is for the hosted server only')
+    import anthropic
+    global _client
+    if _client is None: _client = anthropic.Anthropic(max_retries=3, timeout=180.0)
+    try:
+        message = _client.messages.create(model=model, max_tokens=16000, system=system, messages=[{'role': 'user', 'content': user}])
+    except anthropic.RateLimitError as exc:
+        raise RuntimeError('Claude API rate limit reached') from exc
+    except anthropic.APIStatusError as exc:
+        raise RuntimeError(f'Claude API error {exc.status_code}') from exc
+    except anthropic.APIConnectionError as exc:
+        raise RuntimeError('Claude API could not be reached') from exc
+    if message.stop_reason == 'refusal':
+        raise RuntimeError('The model declined this request')
+    u = message.usage
+    usage = {k: getattr(u, k, 0) or 0 for k in ('input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens')}
+    return ''.join(b.text for b in message.content if b.type == 'text'), usage
+
+
 def _claude(model, system, user):
-    from .. import subscription_transport as transport
     started = time.monotonic()
-    out = transport.run_cli(model, system, user, timeout=180)
-    usage = out.get('usage') or {}
-    return out.get('result') or '', {'model': model, 'tokens': ledger.tokens(usage), 'usd': ledger.claude_usd(model, usage),
-                                    'seconds': round(time.monotonic() - started, 2)}
+    if os.environ.get('AGERE_CLAUDE_TRANSPORT', '').strip().lower() == 'api':
+        text, usage = _api(model, system, user)
+    else:
+        from .. import subscription_transport as transport
+        out = transport.run_cli(model, system, user, timeout=180)
+        text, usage = out.get('result') or '', out.get('usage') or {}
+    return text, {'model': model, 'tokens': ledger.tokens(usage), 'usd': ledger.claude_usd(model, usage), 'seconds': round(time.monotonic() - started, 2)}
 
 
 def definitions():
