@@ -44,7 +44,7 @@ class Conversation(unittest.TestCase):
                         mock.patch.object(methods, 'fits', lambda *a, **k: (True, {'seconds': 0.0, 'usd': 0.0, 'model': None, 'label': None})),
                         mock.patch.object(router, 'answer', lambda *a, **k: dict(UNANSWERED))]
         for p in self.patches: p.start()
-        methods._PLANS.clear()
+        methods._PLANS.clear(); app.DEADLINE.set(None)
 
     def tearDown(self):
         for p in reversed(self.patches): p.stop()
@@ -74,7 +74,7 @@ class Conversation(unittest.TestCase):
     def test_answer_without_it_goes_to_the_frontier_model_with_the_missing_inputs_named_and_no_second_question(self):
         saved = app._single(self.stack, 'Contract performance for MSSP')['clarification_checkpoint']
         seen = {}
-        def answer(question, cohort=None, why=None, may_ask=False): seen.update(why=why, may_ask=may_ask, question=question); return dict(ANSWER)
+        def answer(question, cohort=None, why=None, may_ask=False, **kw): seen.update(why=why, may_ask=may_ask, question=question); return dict(ANSWER)
         with mock.patch.object(takeover, 'answer', answer):
             got = app.resume(self.stack, saved, {'option': {'id': 'without', 'label': 'Answer without it', 'meaning': 'Give the best answer'}})
         self.assertEqual(got['tiered_core']['final_tier'], 'takeover'); self.assertFalse(seen['may_ask']); self.assertEqual(seen['question'], 'Contract performance for MSSP')
@@ -82,7 +82,7 @@ class Conversation(unittest.TestCase):
 
     def test_the_frontier_model_may_ask_once_and_the_reply_is_answered_on_that_reading(self):
         calls = []
-        def answer(question, cohort=None, why=None, may_ask=False):
+        def answer(question, cohort=None, why=None, may_ask=False, **kw):
             calls.append((may_ask, why))
             return {'ask': 'Which visits do you mean?', 'options': ['Emergency department visits', 'All outpatient visits'], 'queries': [], 'steps': [dict(STEP)],
                     'usd': 0.01, 'tokens': 10, 'seconds': 2.0, 'model': 'm'} if may_ask else dict(ANSWER)
@@ -106,6 +106,27 @@ class Conversation(unittest.TestCase):
             app.resume(self.stack, asked['clarification_checkpoint'], {'option': {'id': 'monitor', 'label': 'x', 'meaning': 'y'}})
             app.resume(self.stack, asked['clarification_checkpoint'], {'text': 'Were ED visits unusually high in March 2029?'})
         self.assertEqual(seen, ['Detect anomalies in monthly ED visits', 'Were ED visits unusually high in March 2029?'])
+
+    def test_one_time_budget_per_question_is_passed_to_the_last_rung_and_skips_it_when_spent(self):
+        import time
+        seen = {}
+        def answer(question, cohort=None, why=None, may_ask=False, **kw): seen.update(kw); return dict(ANSWER)
+        with mock.patch.object(takeover, 'answer', answer), clarification.interaction('autonomous'):
+            app.try_answer(self.stack, 'How many visits were avoidable?')
+            self.assertTrue(0 < seen['seconds'] <= app.QUESTION_SECONDS)
+            seen.clear()
+            app.DEADLINE.set(time.monotonic() + 5)  # five seconds of the question's budget left
+            self.assertIsNone(app._takeover('How many visits were avoidable?', None, dict(UNANSWERED)))
+            self.assertEqual(seen, {})
+
+    def test_a_restatement_system_one_rejects_is_offered_as_a_next_question_not_used(self):
+        how = {'tier': 'methods', 'model': 'm', 'method': 'restatement_not_confirmed', 'picked': 'vbc', 'restated': 'What are our shared savings under MSSP ENHANCED?',
+               'usd': 0.001, 'tokens': 5, 'seconds': 1.0}
+        with mock.patch.dict(os.environ, {'AGERE_TIERED_METHODS_ASSIST': 'on'}), mock.patch.object(methods, 'assisted', lambda *a, **k: (None, dict(how))), \
+                mock.patch.object(takeover, 'answer', lambda *a, **k: dict(ANSWER)), clarification.interaction('autonomous'):
+            got = app._single(self.stack, 'How is our accountable care contract doing?')
+        self.assertEqual(got['tiered_core']['final_tier'], 'takeover'); self.assertEqual(got['answer']['next_questions'][0], 'What are our shared savings under MSSP ENHANCED?')
+        self.assertIn('not exactly what you asked', got['answer']['facts']['a_built_in_method_answers_a_nearby_question'])
 
     def test_a_reply_that_still_cannot_be_answered_says_so(self):
         saved = app._single(self.stack, 'Contract performance for MSSP')['clarification_checkpoint']

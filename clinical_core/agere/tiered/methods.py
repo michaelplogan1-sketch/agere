@@ -131,7 +131,9 @@ CORE_EXAMPLES = ('Detect anomalies in monthly ED visits', 'Are admission rates o
                  'Where do patients go after an ED visit?', 'Which patients are heading toward an admission?',
                  'What is the risk-standardized readmission rate by hospital?', 'How much should each clinic overbook?',
                  'Which providers bill unusually compared with their peers?', 'What are the lines of therapy for diabetes?',
-                 'Which PCPs are truly high on ED use after adjustment?', 'Who should we call first this week?')
+                 'Which PCPs are truly high on ED use after adjustment?', 'Who should we call first this week?',
+                 'What are our shared savings under MSSP ENHANCED with a benchmark of $950 PMPM?',
+                 'Shared savings for 2029 at a $950 PMPM benchmark and 75% sharing rate')
 SYSTEM = '''A user typed a question into a healthcare analytics tool. The tool has a menu of analysis methods. Each line of the
 menu is: method id | what it answers | example questions written in the wording the tool understands.
 Methods on the menu can look alike. Choose by what the question asks for, not by shared words: a method that measures
