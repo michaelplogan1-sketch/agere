@@ -225,67 +225,121 @@ def _label(reason):
     return f"{reason.upper()} ({ICD_NAMES[reason[:3].upper()]})" if ICD.match(reason) and reason[:3].upper() in ICD_NAMES else reason.upper() if ICD.match(reason) else reason.lower()
 
 
-def patterns(question, sql, params, read, db, *, readers=(), s1_ledger=None):
-    """Reading mode 'readmission_patterns': every readmission the SQL selects, read by code only. For each one, the reason the
-    record states for the readmission and for the stay before it, whether the prior discharge summary gave a follow-up
-    instruction, and whether an outpatient visit followed within 7 days. Code counts. No model reads anything.
-    -> (columns, rows, validation, steps, evidence)."""
+def _read_cases(sql, params, db):
+    """Code only. Every readmission the SQL selects, with what its documents state. -> ([case], document ids, seconds).
+    case: patient, readmission date, the two stays, whether an outpatient visit followed within 7 days, the firmest stated
+    reason for the readmission and for the stay before it as (rank, words, record id) or None, and whether the prior
+    discharge summary gave a follow-up instruction."""
     used = set(re.findall(r'(?<![:\w]):([a-z_][a-z0-9_]*)', sql))
     columns, selected = store.run(sql, {k: v for k, v in (params or {}).items() if k in used}, db)
     need = ('patient_id', 'readmit_admit', 'index_admit', 'index_discharge', 'readmit_discharge', 'visit7', 'record_id', 'event_date', 'document_type')
-    if any(c not in columns for c in need): raise store.RecipeError('A readmission-patterns plan must select the two stays, the follow-up flag and the documents')
+    if any(c not in columns for c in need): raise store.RecipeError('A readmission plan must select the two stays, the follow-up flag and the documents')
     at = {c: columns.index(c) for c in need}
     started = time.monotonic()
-    cases = {}
+    found = {}
     for r in selected:
-        case = cases.setdefault((r[at['patient_id']], r[at['readmit_admit']]), {'stays': tuple(str(r[at[c]] or '') for c in ('index_admit', 'index_discharge', 'readmit_admit', 'readmit_discharge')),
+        case = found.setdefault((r[at['patient_id']], r[at['readmit_admit']]), {'stays': tuple(str(r[at[c]] or '') for c in ('index_admit', 'index_discharge', 'readmit_admit', 'readmit_discharge')),
                                                                               'visit7': bool(r[at['visit7']]), 'docs': []})
         if r[at['record_id']]: case['docs'].append((r[at['record_id']], r[at['event_date']], r[at['document_type']]))
-    ids = list(dict.fromkeys(d[0] for c in cases.values() for d in c['docs']))
+    ids = list(dict.fromkeys(d[0] for c in found.values() for d in c['docs']))
     texts = store.texts(ids, db)
-    from collections import Counter
-    count, reasons, evidence, pairs = Counter(), Counter(), [], []
-    for (pid, when), case in sorted(cases.items()):
-        found = {'readmission': None, 'stay before the readmission': None}  # the firmest statement on record for each stay
-        told = False
+    out = []
+    for (pid, when), case in sorted(found.items()):
+        firmest = {'readmission': None, 'stay before the readmission': None}
+        told = None
         for rid, day, doc_type in case['docs']:
             text = ' '.join((texts.get(rid) or {}).get('text', '').split())
             if not text: continue
             stay = which_stay(text, day, *case['stays'])
-            if stay in found and not NOT_ADMITTED.search(text):
+            if stay in firmest and not NOT_ADMITTED.search(text):
                 got = stated_reason(text)
-                if got and (found[stay] is None or got[0] < found[stay][0]): found[stay] = (got[0], got[1], rid)
-            if stay == 'stay before the readmission' and 'discharge' in str(doc_type).lower() and FOLLOW_UP.search(text): told = True
+                if got and (firmest[stay] is None or got[0] < firmest[stay][0]): firmest[stay] = (got[0], got[1], rid)
+            if stay == 'stay before the readmission' and 'discharge' in str(doc_type).lower() and told is None:
+                said = next((x.group(0).strip() for x in re.finditer(r'[^.]{8,320}\.?', text) if FOLLOW_UP.search(x.group(0))), None)
+                if said: told = (said, rid)
+        out.append({'patient': pid, 'when': when, 'stays': case['stays'], 'visit7': case['visit7'], 'reason': firmest['readmission'],
+                    'prior': firmest['stay before the readmission'], 'told': told})
+    return out, ids, round(time.monotonic() - started, 2)
+
+
+def _grouped(cases, s1_ledger):
+    """System One places each distinct stated reason in one fixed problem group. -> {words: (group or None, usd)}."""
+    distinct = sorted({r[1] for c in cases for r in (c['reason'], c['prior']) if r})
+    with ThreadPoolExecutor(8) as pool:
+        return dict(zip(distinct, pool.map(lambda r: group_of(r, s1_ledger), distinct))) if distinct else {}
+
+
+def _compared(case, placed):
+    a, b = case['reason'], case['prior']
+    if not a or not b: return None
+    ga, gb = placed.get(a[1], (None, 0))[0], placed.get(b[1], (None, 0))[0]
+    return 'same' if ga and gb and ga == gb and ga != 'other' else 'different' if ga and gb and ga != gb else 'not comparable'
+
+
+ONLY = {'instruction_no_visit': lambda c, cmp: bool(c['told']) and not c['visit7'], 'no_stated_reason': lambda c, cmp: not c['reason'],
+        'same_problem': lambda c, cmp: cmp == 'same', 'no_instruction_no_visit': lambda c, cmp: not c['told'] and not c['visit7']}
+
+
+def case_list(question, sql, params, read, db, *, readers=(), s1_ledger=None):
+    """Reading mode 'readmission_cases': one row per readmission, the worklist behind each line of the committee view.
+    read['only'] keeps the readmissions one line counts. Code reads and quotes; System One only names the problem group."""
+    cases, ids, seconds = _read_cases(sql, params, db)
+    placed = _grouped(cases, s1_ledger)
+    keep = ONLY.get((read or {}).get('only'))
+    rows, evidence = [], []
+    for c in cases:
+        cmp = _compared(c, placed)
+        if keep and not keep(c, cmp): continue
+        group = placed.get(c['reason'][1], (None, 0))[0] if c['reason'] else None
+        days = (_day(c['when']) - _day(c['stays'][1])).days if _day(c['when']) and _day(c['stays'][1]) else None
+        rows.append([c['patient'], c['stays'][1], c['when'], days, c['reason'][1] if c['reason'] else 'not stated in any document',
+                     GROUP_NAMES.get(group, 'not grouped') if c['reason'] else '', {'same': 'same problem group', 'different': 'different problem group',
+                                                                                    'not comparable': 'not comparable', None: 'no stated reason to compare'}[cmp],
+                     c['told'][0] if c['told'] else 'none on record', 'yes' if c['visit7'] else 'no'])
+        if c['reason']: evidence.append({'record_id': c['reason'][2], 'label': 'yes', 'by': 'code', 'value': f"{c['patient']} readmitted {c['when']}", 'quote': c['reason'][1]})
+    checks = [{'name': 'readmissions_selected', 'ok': bool(cases), 'detail': f'{len(cases)} readmissions read, {len(rows)} listed, {len(ids)} documents'},
+              {'name': 'one_row_per_readmission', 'ok': len({(r[0], r[2]) for r in rows}) == len(rows), 'detail': f'{len(rows)} rows'}]
+    steps = [{'tier': 'read', 'reader': 'code', 'calls': len(ids), 'decided': len(ids), 'tokens': 0, 'usd': 0.0, 'outcome': 'read', 'model': 'none (labelled fields and fixed wording)', 'seconds': seconds}]
+    if placed: steps.append({'tier': 'read', 'reader': 'system1', 'calls': len(placed), 'decided': sum(1 for g, _ in placed.values() if g), 'tokens': 0,
+                             'usd': sum(u for _, u in placed.values()), 'outcome': 'grouped', 'model': 'system-one'})
+    columns = ['patient_id', 'prior_discharge_date', 'readmission_date', 'days_between', 'stated_reason', 'problem_group', 'compared_with_prior_stay',
+               'follow_up_instruction', 'outpatient_visit_within_7_days']
+    if not rows: rows = [['(none)', '', '', None, f'none of the {len(cases)} readmissions read meets this description', '', '', '', '']]
+    return columns, rows, {'ok': all(c['ok'] for c in checks), 'checks': checks}, steps, evidence[:200]
+
+
+def patterns(question, sql, params, read, db, *, readers=(), s1_ledger=None):
+    """Reading mode 'readmission_patterns': every readmission the SQL selects, read by code only. For each one, the reason the
+    record states for the readmission and for the stay before it, whether the prior discharge summary gave a follow-up
+    instruction, and whether an outpatient visit followed within 7 days. Code counts; System One only names the problem group.
+    -> (columns, rows, validation, steps, evidence)."""
+    from collections import Counter
+    cases, ids, seconds = _read_cases(sql, params, db)
+    placed = _grouped(cases, s1_ledger)
+    count, grouped, compare, evidence = Counter(), Counter(), Counter(), []
+    for c in cases:
         count['readmissions'] += 1
-        a, b = found['readmission'], found['stay before the readmission']
-        if a:
-            count['a reason for the readmission is stated in the record'] += 1; reasons[_label(a[1])] += 1
-            evidence.append({'record_id': a[2], 'label': 'yes', 'by': 'code', 'value': f'{pid} readmitted {when}', 'quote': a[1]})
+        if c['reason']:
+            count['a reason for the readmission is stated in the record'] += 1
+            grouped[placed.get(c['reason'][1], (None, 0))[0] or 'not grouped'] += 1
+            evidence.append({'record_id': c['reason'][2], 'label': 'yes', 'by': 'code', 'value': f"{c['patient']} readmitted {c['when']}", 'quote': c['reason'][1]})
         else: count['no document states why the patient was readmitted'] += 1
-        pairs.append((a, b))
-        if told: count['the prior discharge summary gives a follow-up instruction'] += 1
-        if told and not case['visit7']: count['a follow-up instruction was given and no outpatient visit followed within 7 days'] += 1
-        if not told and not case['visit7']: count['no follow-up instruction on record and no outpatient visit within 7 days'] += 1
+        cmp = _compared(c, placed)
+        if cmp: compare[{'same': 'same problem group as the stay before it', 'different': 'a different problem group from the stay before it',
+                         'not comparable': 'the two reasons could not be compared (one is unclear or not grouped)'}[cmp]] += 1
+        if c['told']: count['the prior discharge summary gives a follow-up instruction'] += 1
+        if c['told'] and not c['visit7']: count['a follow-up instruction was given and no outpatient visit followed within 7 days'] += 1
+        if not c['told'] and not c['visit7']: count['no follow-up instruction on record and no outpatient visit within 7 days'] += 1
     n = count['readmissions']
     order = ('readmissions', 'a reason for the readmission is stated in the record', 'no document states why the patient was readmitted',
              'the prior discharge summary gives a follow-up instruction', 'a follow-up instruction was given and no outpatient visit followed within 7 days',
              'no follow-up instruction on record and no outpatient visit within 7 days')
     rows = [[k, count[k], round(count[k] / n, 4) if n else None] for k in order]
-    # Group the stated reasons: code quoted them, System One places each distinct wording in one fixed group, code counts.
-    distinct = sorted({r[1] for pair in pairs for r in pair if r})
-    with ThreadPoolExecutor(8) as pool:
-        placed = dict(zip(distinct, pool.map(lambda r: group_of(r, s1_ledger), distinct))) if distinct else {}
-    grouped, compare = Counter(), Counter()
-    for a, b in pairs:
-        ga = placed.get(a[1], (None, 0))[0] if a else None
-        gb = placed.get(b[1], (None, 0))[0] if b else None
-        if a: grouped[ga or 'not grouped'] += 1
-        if a and b:
-            compare['same problem group as the stay before it' if ga and gb and ga == gb and ga != 'other' else
-                    'a different problem group from the stay before it' if ga and gb and ga != gb else 'the two reasons could not be compared (one is unclear or not grouped)'] += 1
     rows += [[k, compare[k], round(compare[k] / n, 4) if n else None] for k in ('same problem group as the stay before it', 'a different problem group from the stay before it',
                                                                                 'the two reasons could not be compared (one is unclear or not grouped)')]
     rows += [[f"readmitted for: {GROUP_NAMES.get(g, g)}", k, round(k / n, 4)] for g, k in grouped.most_common()]
+    distinct = list(placed)
+    started = time.monotonic() - seconds
     checks = [{'name': 'readmissions_selected', 'ok': n > 0, 'detail': f'{n} readmissions, {len(ids)} documents'},
               {'name': 'counts_add_up', 'ok': count['a reason for the readmission is stated in the record'] + count['no document states why the patient was readmitted'] == n
                and sum(grouped.values()) == count['a reason for the readmission is stated in the record'], 'detail': 'stated + not stated = readmissions; groups add up to stated'}]

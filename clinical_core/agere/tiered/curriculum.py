@@ -32,7 +32,20 @@ TOPICS = ('emergency visits, admissions and observation stays', 'readmissions an
           'claims, billed, allowed and paid amounts, denials by payer', 'enrollment, member months and payers', 'appointments, no-shows and cancellations',
           'conditions and how many patients have them', 'deaths', 'immunizations, wellness visits and cancer screening', 'social needs and smoking status',
           'what scanned radiology reports, consult notes and letters say', 'what HIE discharge summaries and ED summaries give for one patient',
-          'facts and therapy changes already extracted from notes', 'encounters and visits by type and organization', 'patients by sex, coverage type and age')
+          'facts and therapy changes already extracted from notes', 'encounters and visits by type and organization', 'patients by sex, coverage type and age',
+          # added 2026-11-14: tables and shapes the saved recipes barely cover (latest labs, visits, prescriptions, allergies, clinicians, organizations)
+          'latest lab and vital values: how many patients have a latest HbA1c, eGFR, LDL, blood pressure or potassium above or below a stated threshold',
+          'outpatient visits by type, by month and by organization, and patients with no visit in a year',
+          'prescriptions ordered versus filled: fill status, days supply, refills and ordering organization',
+          'allergies on record and how many patients have each',
+          'clinicians and organizations: patients, visits, stays or appointments per clinician or per organization',
+          'patients who have two things at once: a condition and a medication class, a condition and an ED visit, two conditions, a condition and a social need',
+          'month by month trends across one year for visits, fills, claims, appointments or stays',
+          'care gaps: patients with a condition who have no fill of a stated drug class, no wellness visit, no immunization or no screening in a year',
+          'time between events: days from discharge to the next visit, days between fills, length of stay, lead time of appointments',
+          'cost and utilisation per patient or per member month by payer, coverage type or condition',
+          'high-need patients: counts of patients with three or more ED visits, two or more stays, or five or more chronic conditions in a year',
+          'enrollment churn: members gained and lost by month, continuous enrollment through a year, coverage gaps')
 GENERATE = '''Write %d different questions that a %s at a health system or health plan would type into an analytics tool.
 Topic for this batch: %s.
 Each question must be answerable from the tables below with one count, one table, or by reading a bounded set of

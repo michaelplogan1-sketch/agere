@@ -151,6 +151,9 @@ def execute(question, sql, params, read, db, *, readers=READERS, s1_ledger=None)
     if mode == 'medication_reasons':
         from . import reasons
         return reasons.execute(question, sql, params, read, db, readers=readers, s1_ledger=s1_ledger)
+    if mode == 'readmission_cases':
+        from . import readmission
+        return readmission.case_list(question, sql, params, read, db, readers=readers, s1_ledger=s1_ledger)
     if mode == 'readmission_patterns':
         from . import readmission
         return readmission.patterns(question, sql, params, read, db, readers=readers, s1_ledger=s1_ledger)

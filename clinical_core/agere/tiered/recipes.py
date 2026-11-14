@@ -34,9 +34,23 @@ _READMIT_CTE = ("WITH re AS (SELECT admit_date, discharge_date, organization_id 
                 "w AS (SELECT (SELECT admit_date FROM re) AS readmit_admit, (SELECT discharge_date FROM re) AS readmit_discharge, (SELECT organization_id FROM re) AS readmit_org, "
                 "(SELECT admit_date FROM idx) AS index_admit, (SELECT discharge_date FROM idx) AS index_discharge, (SELECT organization_id FROM idx) AS index_org) ")
 DATE = r'(?P<readmit_date>20\d{2}-\d{2}-\d{2})'
+# Each inpatient stay once (one row per patient and admission date, with its latest discharge date), discharged in the year, and
+# whether an inpatient admission followed 1 to 30 days after that discharge.
+_STAY_ONCE = ("WITH s AS (SELECT patient_id, admit_date, MAX(discharge_date) AS discharge_date FROM stay WHERE type = 'inpatient' AND discharge_date IS NOT NULL GROUP BY patient_id, admit_date), "
+              "d AS (SELECT s.patient_id, s.admit_date, s.discharge_date, EXISTS (SELECT 1 FROM stay b WHERE b.patient_id = s.patient_id AND b.type = 'inpatient' AND b.admit_date > s.admit_date "
+              "AND julianday(b.admit_date) - julianday(s.discharge_date) BETWEEN 1 AND 30) AS readmitted FROM s WHERE substr(s.discharge_date, 1, 4) = :year) ")
 _READMIT_PAIRS = ("WITH pairs AS (SELECT b.patient_id, b.admit_date AS readmit_admit, MAX(a.discharge_date) AS index_discharge FROM stay a JOIN stay b ON a.patient_id = b.patient_id "
                   "WHERE a.type = 'inpatient' AND b.type = 'inpatient' AND a.discharge_date IS NOT NULL AND a.admit_date < b.admit_date "
                   "AND julianday(b.admit_date) - julianday(a.discharge_date) BETWEEN 1 AND 30 AND substr(b.admit_date, 1, 4) = :year GROUP BY b.patient_id, b.admit_date) ")
+# Every readmission in a year with its two stays, the 7-day visit flag and every document from the prior admission to 30 days after the readmission.
+_READMIT_DOCS = (_READMIT_PAIRS + ", c AS (SELECT p.patient_id, p.readmit_admit, p.index_discharge, "
+               "(SELECT MAX(s.admit_date) FROM stay s WHERE s.patient_id = p.patient_id AND s.type = 'inpatient' AND s.discharge_date = p.index_discharge) AS index_admit, "
+               "(SELECT MAX(s.discharge_date) FROM stay s WHERE s.patient_id = p.patient_id AND s.type = 'inpatient' AND s.admit_date = p.readmit_admit) AS readmit_discharge, "
+               "EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = p.patient_id AND v.event_date > p.index_discharge AND v.event_date <= date(p.index_discharge, '+7 day') "
+               "AND v.event_date < p.readmit_admit AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'telephone', 'orders_only')) AS visit7 FROM pairs p) "
+               "SELECT c.patient_id, c.readmit_admit, COALESCE(c.index_admit, '') AS index_admit, c.index_discharge, COALESCE(c.readmit_discharge, '') AS readmit_discharge, c.visit7, "
+               "d.record_id, d.event_date, d.document_type FROM c LEFT JOIN document d ON d.patient_id = c.patient_id AND d.event_date >= COALESCE(c.index_admit, c.index_discharge) "
+               "AND d.event_date <= date(COALESCE(c.readmit_discharge, c.readmit_admit), '+30 day') ORDER BY c.patient_id, c.readmit_admit, d.event_date, d.record_id")
 RECIPES = {
     'utilization_count': {
         'title': 'Number of utilization events of one kind in one calendar year',
@@ -293,18 +307,84 @@ RECIPES = {
     'readmission_documented_patterns': {
         'title': "What the charts state across every readmission in one year: how many have a stated reason, whether it is the same problem as the stay before, whether the prior discharge summary gave a follow-up instruction and whether a visit followed, and the most common stated reasons (every document around each readmission is read by code)",
         'params': {'year': {'type': 'year'}},
-        'sql': _READMIT_PAIRS + ", c AS (SELECT p.patient_id, p.readmit_admit, p.index_discharge, "
-               "(SELECT MAX(s.admit_date) FROM stay s WHERE s.patient_id = p.patient_id AND s.type = 'inpatient' AND s.discharge_date = p.index_discharge) AS index_admit, "
-               "(SELECT MAX(s.discharge_date) FROM stay s WHERE s.patient_id = p.patient_id AND s.type = 'inpatient' AND s.admit_date = p.readmit_admit) AS readmit_discharge, "
-               "EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = p.patient_id AND v.event_date > p.index_discharge AND v.event_date <= date(p.index_discharge, '+7 day') "
-               "AND v.event_date < p.readmit_admit AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'telephone', 'orders_only')) AS visit7 FROM pairs p) "
-               "SELECT c.patient_id, c.readmit_admit, COALESCE(c.index_admit, '') AS index_admit, c.index_discharge, COALESCE(c.readmit_discharge, '') AS readmit_discharge, c.visit7, "
-               "d.record_id, d.event_date, d.document_type FROM c LEFT JOIN document d ON d.patient_id = c.patient_id AND d.event_date >= COALESCE(c.index_admit, c.index_discharge) "
-               "AND d.event_date <= date(COALESCE(c.readmit_discharge, c.readmit_admit), '+30 day') ORDER BY c.patient_id, c.readmit_admit, d.event_date, d.record_id",
+        'sql': _READMIT_DOCS,
         'read': {'statement': 'The document states why the patient was admitted to hospital.', 'mode': 'readmission_patterns'},
         'columns': ['finding', 'readmissions', 'share'],
         'patterns': [r'what do the charts say about (?:the |our )?readmissions (?:in|for) ' + YEAR, r'why were patients readmitted (?:in|during) ' + YEAR,
                      r'what reasons do the charts give for (?:the |our )?readmissions (?:in|for) ' + YEAR]},
+    'readmission_case_list': {
+        'title': "Every readmission in one year, one row each: the reason its chart states, the problem group, whether it is the same problem as the stay before, the follow-up instruction given and whether a visit followed within 7 days (documents read by code)",
+        'params': {'year': {'type': 'year'}},
+        'sql': _READMIT_DOCS,
+        'read': {'statement': 'The document states why the patient was admitted to hospital.', 'mode': 'readmission_cases'},
+        'columns': ['patient_id', 'prior_discharge_date', 'readmission_date', 'days_between', 'stated_reason', 'problem_group', 'compared_with_prior_stay',
+                    'follow_up_instruction', 'outpatient_visit_within_7_days'],
+        'patterns': [r'list (?:the |every |all )?readmissions (?:in|for) ' + YEAR + r'(?: with what (?:the|their) charts? (?:state|say)s?)?', r'show (?:me )?(?:the |every |all )?readmissions (?:in|for) ' + YEAR + r' (?:one by one|case by case)']},
+    'readmissions_instruction_no_visit': {
+        'title': "Readmissions in one year where the prior discharge summary gave a follow-up instruction and no outpatient visit followed within 7 days, one row each with the instruction quoted",
+        'params': {'year': {'type': 'year'}},
+        'sql': _READMIT_DOCS,
+        'read': {'statement': 'The document states why the patient was admitted to hospital.', 'mode': 'readmission_cases', 'only': 'instruction_no_visit'},
+        'columns': ['patient_id', 'prior_discharge_date', 'readmission_date', 'days_between', 'stated_reason', 'problem_group', 'compared_with_prior_stay',
+                    'follow_up_instruction', 'outpatient_visit_within_7_days'],
+        'patterns': [r'which readmissions (?:in|for) ' + YEAR + r' had a follow[- ]up instruction (?:but|and) no (?:outpatient )?visit(?: within 7 days)?']},
+    'readmissions_same_problem': {
+        'title': "Readmissions in one year whose stated reason is in the same problem group as the stay before, one row each",
+        'params': {'year': {'type': 'year'}},
+        'sql': _READMIT_DOCS,
+        'read': {'statement': 'The document states why the patient was admitted to hospital.', 'mode': 'readmission_cases', 'only': 'same_problem'},
+        'columns': ['patient_id', 'prior_discharge_date', 'readmission_date', 'days_between', 'stated_reason', 'problem_group', 'compared_with_prior_stay',
+                    'follow_up_instruction', 'outpatient_visit_within_7_days'],
+        'patterns': [r'which readmissions (?:in|for) ' + YEAR + r' were for the same problem as the (?:stay|admission) before']},
+    'readmissions_no_stated_reason': {
+        'title': "Readmissions in one year for which no document states why the patient was admitted, one row each",
+        'params': {'year': {'type': 'year'}},
+        'sql': _READMIT_DOCS,
+        'read': {'statement': 'The document states why the patient was admitted to hospital.', 'mode': 'readmission_cases', 'only': 'no_stated_reason'},
+        'columns': ['patient_id', 'prior_discharge_date', 'readmission_date', 'days_between', 'stated_reason', 'problem_group', 'compared_with_prior_stay',
+                    'follow_up_instruction', 'outpatient_visit_within_7_days'],
+        'patterns': [r'which readmissions (?:in|for) ' + YEAR + r' have no (?:stated|documented) reason']},
+    'readmission_barriers_summary': {
+        'title': "What is on record before each readmission in one year that could have got in the way: a missed or cancelled appointment, no appointment at all, no pharmacy fill, a documented medication barrier in the prior 90 days, a positive social-need screen",
+        'params': {'year': {'type': 'year'}},
+        'sql': _READMIT_PAIRS + ", f AS (SELECT p.*, "
+               "EXISTS (SELECT 1 FROM appointment a WHERE a.patient_id = p.patient_id AND a.scheduled_date > p.index_discharge AND a.scheduled_date < p.readmit_admit AND a.final_status = 'no_show') AS no_show, "
+               "EXISTS (SELECT 1 FROM appointment a WHERE a.patient_id = p.patient_id AND a.scheduled_date > p.index_discharge AND a.scheduled_date < p.readmit_admit AND a.final_status = 'cancelled') AS cancelled, "
+               "NOT EXISTS (SELECT 1 FROM appointment a WHERE a.patient_id = p.patient_id AND a.scheduled_date > p.index_discharge AND a.scheduled_date < p.readmit_admit) AS no_appointment, "
+               "NOT EXISTS (SELECT 1 FROM fill x WHERE x.patient_id = p.patient_id AND x.fill_date > p.index_discharge AND x.fill_date < p.readmit_admit) AS no_fill, "
+               "EXISTS (SELECT 1 FROM therapy_barrier b WHERE b.patient_id = p.patient_id AND b.event_date <= p.readmit_admit AND b.event_date >= date(p.readmit_admit, '-90 day')) AS barrier, "
+               "EXISTS (SELECT 1 FROM social_need n WHERE n.patient_id = p.patient_id AND n.positive = 1 AND n.event_date <= p.readmit_admit) AS social FROM pairs p) "
+               "SELECT 'readmissions' AS on_record_before_the_readmission, COUNT(*) AS readmissions, 1.0 AS share FROM f "
+               "UNION ALL SELECT 'no appointment scheduled between the stays', SUM(no_appointment), ROUND(1.0 * SUM(no_appointment) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'a no-show appointment between the stays', SUM(no_show), ROUND(1.0 * SUM(no_show) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'a cancelled appointment between the stays', SUM(cancelled), ROUND(1.0 * SUM(cancelled) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'no pharmacy fill between the stays', SUM(no_fill), ROUND(1.0 * SUM(no_fill) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'a documented medication barrier in the prior 90 days', SUM(barrier), ROUND(1.0 * SUM(barrier) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'a positive social-need screen on record', SUM(social), ROUND(1.0 * SUM(social) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'medication barrier: ' || b.barrier_type, COUNT(DISTINCT p.patient_id || p.readmit_admit), ROUND(1.0 * COUNT(DISTINCT p.patient_id || p.readmit_admit) / (SELECT COUNT(*) FROM pairs), 4) "
+               "FROM pairs p JOIN therapy_barrier b ON b.patient_id = p.patient_id AND b.event_date <= p.readmit_admit AND b.event_date >= date(p.readmit_admit, '-90 day') GROUP BY b.barrier_type "
+               "UNION ALL SELECT 'social need: ' || n.need, COUNT(DISTINCT p.patient_id || p.readmit_admit), ROUND(1.0 * COUNT(DISTINCT p.patient_id || p.readmit_admit) / (SELECT COUNT(*) FROM pairs), 4) "
+               "FROM pairs p JOIN social_need n ON n.patient_id = p.patient_id AND n.positive = 1 AND n.event_date <= p.readmit_admit GROUP BY n.need",
+        'patterns': [r'what got in the way before (?:the |our )?readmissions (?:in|for) ' + YEAR, r'what barriers are on record (?:for|before) (?:the |our )?readmissions (?:in|for) ' + YEAR]},
+    'readmission_rate_each_stay_once': {
+        'title': "30-day readmission rate for inpatient stays discharged in one year, counting each stay once (a stay recorded by two sources is one stay) and a readmission as an inpatient admission 1 to 30 days after discharge",
+        'params': {'year': {'type': 'year'}},
+        'sql': _STAY_ONCE + "SELECT COUNT(*) AS stays, SUM(readmitted) AS readmitted_within_30_days, ROUND(1.0 * SUM(readmitted) / COUNT(*), 4) AS rate FROM d",
+        'patterns': [r'what was the 30[- ]day readmission rate (?:in|for) ' + YEAR + r' counting each stay once', r'what was the true 30[- ]day readmission rate (?:in|for) ' + YEAR]},
+    'readmission_rate_by_condition': {
+        'title': "30-day readmission rate by condition for inpatient stays discharged in one year, each stay counted once: stays, readmitted within 30 days and rate for patients with each condition",
+        'params': {'year': {'type': 'year'}},
+        'sql': _STAY_ONCE + "SELECT c.concept AS condition, COUNT(*) AS stays, SUM(d.readmitted) AS readmitted_within_30_days, ROUND(1.0 * SUM(d.readmitted) / COUNT(*), 4) AS rate "
+               "FROM d JOIN concept_patient c ON c.patient_id = d.patient_id AND c.kind = 'condition' GROUP BY c.concept HAVING COUNT(*) >= 10 ORDER BY 2 DESC, 1",
+        'grain': ['condition'],
+        'patterns': [r'what was the 30[- ]day readmission rate by condition (?:in|for) ' + YEAR, r'which conditions had the highest readmission rates? (?:in|for) ' + YEAR]},
+    'frequent_readmitters': {
+        'title': "Patients with two or more readmissions in one year (an inpatient admission 1 to 30 days after an earlier inpatient discharge), with how many",
+        'params': {'year': {'type': 'year'}},
+        'sql': _READMIT_PAIRS + "SELECT patient_id, COUNT(*) AS readmissions, MIN(readmit_admit) AS first_readmission, MAX(readmit_admit) AS last_readmission FROM pairs "
+               "GROUP BY patient_id HAVING COUNT(*) >= 2 ORDER BY 2 DESC, 1",
+        'grain': ['patient_id'],
+        'patterns': [r'which patients were readmitted (?:more than once|two or more times|repeatedly) (?:in|during) ' + YEAR, r'who are the frequent readmitters (?:in|for) ' + YEAR]},
     'readmissions_without_follow_up': {
         'title': "Readmissions in one year with no outpatient visit within 7 days of the prior discharge, one row per readmission (patient, prior discharge date, readmission date, days between)",
         'params': {'year': {'type': 'year'}},

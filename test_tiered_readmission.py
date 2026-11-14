@@ -103,6 +103,9 @@ class Readmission(unittest.TestCase):
         with mock.patch.object(store, 'run', lambda sql, params=None, db=None: (columns, rows)), mock.patch.object(store, 'texts', lambda ids, db: {i: texts[i] for i in ids}), \
                 mock.patch.object(readmission, 'group_of', lambda reason, ledger=None: (groups[reason], 0.0001)):
             cols, out, validation, steps, evidence = readmission.patterns('q', 'SELECT 1', {}, {}, None)
+            listed = readmission.case_list('q', 'SELECT 1', {}, {'only': 'instruction_no_visit'}, None)[1]
+            everyone = readmission.case_list('q', 'SELECT 1', {}, {}, None)[1]
+            nothing = readmission.case_list('q', 'SELECT 1', {}, {'only': 'same_problem'}, None)
         got = {r[0]: r[1] for r in out}
         self.assertEqual(got['readmissions'], 3); self.assertEqual(got['a reason for the readmission is stated in the record'], 2)
         self.assertEqual(got['no document states why the patient was readmitted'], 1)
@@ -112,6 +115,10 @@ class Readmission(unittest.TestCase):
         self.assertEqual(got['same problem group as the stay before it'], 1); self.assertEqual(got['a different problem group from the stay before it'], 1)
         self.assertEqual(got['readmitted for: heart failure or fluid overload'], 1); self.assertEqual(got['readmitted for: fall, fracture or injury'], 1)
         self.assertTrue(validation['ok']); self.assertEqual({e['quote'] for e in evidence}, {'I50.9', 'Closed fracture of femoral neck'})
+        self.assertEqual([(r[0], r[2], r[3], r[4], r[6], r[8]) for r in listed], [('P-1', '2030-05-07', 8, 'I50.9', 'same problem group', 'no')])
+        self.assertIn('Primary follow up recommended', listed[0][7])
+        self.assertEqual([r[0] for r in everyone], ['P-1', 'P-2', 'P-3']); self.assertEqual(everyone[2][4], 'not stated in any document')
+        self.assertEqual([r[0] for r in nothing[1]], ['P-1']); self.assertTrue(nothing[2]['ok'])
 
 
 if __name__ == '__main__':
