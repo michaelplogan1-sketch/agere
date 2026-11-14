@@ -290,6 +290,21 @@ RECIPES = {
                "UNION ALL SELECT 'two or more inpatient admissions in the prior 12 months', SUM(prior12 >= 2), ROUND(1.0 * SUM(prior12 >= 2) / COUNT(*), 4) FROM f "
                "UNION ALL SELECT 'a positive social-need screen on record', SUM(social), ROUND(1.0 * SUM(social) / COUNT(*), 4) FROM f",
         'patterns': [r'summari[sz]e (?:the |our )?readmissions (?:in|for) ' + YEAR, r'what do (?:the |our )?readmissions (?:in|for) ' + YEAR + r' have in common']},
+    'readmission_documented_patterns': {
+        'title': "What the charts state across every readmission in one year: how many have a stated reason, whether it is the same problem as the stay before, whether the prior discharge summary gave a follow-up instruction and whether a visit followed, and the most common stated reasons (every document around each readmission is read by code)",
+        'params': {'year': {'type': 'year'}},
+        'sql': _READMIT_PAIRS + ", c AS (SELECT p.patient_id, p.readmit_admit, p.index_discharge, "
+               "(SELECT MAX(s.admit_date) FROM stay s WHERE s.patient_id = p.patient_id AND s.type = 'inpatient' AND s.discharge_date = p.index_discharge) AS index_admit, "
+               "(SELECT MAX(s.discharge_date) FROM stay s WHERE s.patient_id = p.patient_id AND s.type = 'inpatient' AND s.admit_date = p.readmit_admit) AS readmit_discharge, "
+               "EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = p.patient_id AND v.event_date > p.index_discharge AND v.event_date <= date(p.index_discharge, '+7 day') "
+               "AND v.event_date < p.readmit_admit AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'telephone', 'orders_only')) AS visit7 FROM pairs p) "
+               "SELECT c.patient_id, c.readmit_admit, COALESCE(c.index_admit, '') AS index_admit, c.index_discharge, COALESCE(c.readmit_discharge, '') AS readmit_discharge, c.visit7, "
+               "d.record_id, d.event_date, d.document_type FROM c LEFT JOIN document d ON d.patient_id = c.patient_id AND d.event_date >= COALESCE(c.index_admit, c.index_discharge) "
+               "AND d.event_date <= date(COALESCE(c.readmit_discharge, c.readmit_admit), '+30 day') ORDER BY c.patient_id, c.readmit_admit, d.event_date, d.record_id",
+        'read': {'statement': 'The document states why the patient was admitted to hospital.', 'mode': 'readmission_patterns'},
+        'columns': ['finding', 'readmissions', 'share'],
+        'patterns': [r'what do the charts say about (?:the |our )?readmissions (?:in|for) ' + YEAR, r'why were patients readmitted (?:in|during) ' + YEAR,
+                     r'what reasons do the charts give for (?:the |our )?readmissions (?:in|for) ' + YEAR]},
     'readmissions_without_follow_up': {
         'title': "Readmissions in one year with no outpatient visit within 7 days of the prior discharge, one row per readmission (patient, prior discharge date, readmission date, days between)",
         'params': {'year': {'type': 'year'}},

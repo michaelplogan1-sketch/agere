@@ -84,6 +84,35 @@ class Readmission(unittest.TestCase):
         self.assertIn('No lab or vital result is on record during the readmission', text); self.assertIn('No advance directive or code status is documented', text)
         self.assertIn('No document states why', app._readmission_headline([answers[0], {'table': []}, {'table': []}]))
 
+    def test_the_firmest_statement_of_a_reason_wins_and_a_bare_code_is_named(self):
+        self.assertEqual(readmission.stated_reason('Admission date: 2030-05-07 Principal diagnosis: Opioid overdose Hospital course: Responded.'), (0, 'Opioid overdose'))
+        self.assertEqual(readmission.stated_reason('Admitted with fluid overload; diuresed with IV furosemide.'), (1, 'fluid overload'))
+        self.assertEqual(readmission.stated_reason('67 y/o presented to the ED with drug overdose. Admitted for further management.'), (2, 'drug overdose'))
+        self.assertIsNone(readmission.stated_reason('Stable for discharge with primary care follow up.'))
+        self.assertEqual(readmission._label('i50.9'), 'I50.9 (heart failure)'); self.assertEqual(readmission._label('Fluid Overload'), 'fluid overload')
+
+    def test_population_patterns_are_counted_by_code_and_grouped_by_system_one(self):
+        from clinical_core.agere.tiered import store
+        columns = ['patient_id', 'readmit_admit', 'index_admit', 'index_discharge', 'readmit_discharge', 'visit7', 'record_id', 'event_date', 'document_type']
+        rows = [['P-1', '2030-05-07', '2030-04-23', '2030-04-29', '2030-05-10', 0, 'A', '2030-04-29', 'discharge_summary'], ['P-1', '2030-05-07', '2030-04-23', '2030-04-29', '2030-05-10', 0, 'B', '2030-05-10', 'discharge_summary'],
+                ['P-2', '2030-06-01', '2030-05-20', '2030-05-22', '2030-06-03', 1, 'C', '2030-05-22', 'discharge_summary'], ['P-2', '2030-06-01', '2030-05-20', '2030-05-22', '2030-06-03', 1, 'D', '2030-06-03', 'discharge_summary'],
+                ['P-3', '2030-07-01', '2030-06-20', '2030-06-22', '2030-07-02', 0, None, None, None]]
+        texts = {'A': doc('Admitted with fluid overload; diuresed. Primary follow up recommended around 2030-05-02.', '2030-04-29'), 'B': doc('Principal problem this admission: I50.9', '2030-05-10'),
+                 'C': doc('Admitted with community-acquired pneumonia; improved.', '2030-05-22'), 'D': doc('Admission date: 2030-06-01 Principal diagnosis: Closed fracture of femoral neck', '2030-06-03')}
+        groups = {'fluid overload': 'heart_failure', 'I50.9': 'heart_failure', 'community-acquired pneumonia': 'respiratory_infection', 'Closed fracture of femoral neck': 'injury'}
+        with mock.patch.object(store, 'run', lambda sql, params=None, db=None: (columns, rows)), mock.patch.object(store, 'texts', lambda ids, db: {i: texts[i] for i in ids}), \
+                mock.patch.object(readmission, 'group_of', lambda reason, ledger=None: (groups[reason], 0.0001)):
+            cols, out, validation, steps, evidence = readmission.patterns('q', 'SELECT 1', {}, {}, None)
+        got = {r[0]: r[1] for r in out}
+        self.assertEqual(got['readmissions'], 3); self.assertEqual(got['a reason for the readmission is stated in the record'], 2)
+        self.assertEqual(got['no document states why the patient was readmitted'], 1)
+        self.assertEqual(got['the prior discharge summary gives a follow-up instruction'], 1)
+        self.assertEqual(got['a follow-up instruction was given and no outpatient visit followed within 7 days'], 1)
+        self.assertEqual(got['no follow-up instruction on record and no outpatient visit within 7 days'], 1)  # P-3: nothing on record at all
+        self.assertEqual(got['same problem group as the stay before it'], 1); self.assertEqual(got['a different problem group from the stay before it'], 1)
+        self.assertEqual(got['readmitted for: heart failure or fluid overload'], 1); self.assertEqual(got['readmitted for: fall, fracture or injury'], 1)
+        self.assertTrue(validation['ok']); self.assertEqual({e['quote'] for e in evidence}, {'I50.9', 'Closed fracture of femoral neck'})
+
 
 if __name__ == '__main__':
     unittest.main()
