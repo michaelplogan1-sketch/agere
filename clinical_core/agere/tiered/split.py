@@ -32,11 +32,46 @@ GDMT_WHY = re.compile(r"^why (?:isn't|is not|isnt|is) patient (?P<patient>[A-Za-
                       r"(?:gdmt|guideline|heart failure|hfref|pillar)", re.I)
 
 
+READMIT_WHY = re.compile(r"^(?:why (?:was|did|is) patient (?P<patient>[A-Za-z0-9-]+) (?:re-?admitted|get re-?admitted|being re-?admitted|"
+                         r"(?:come|go|end up) back (?:in|to) (?:the )?hospital|return(?:ed)? to (?:the )?hospital|back in (?:the )?hospital)"
+                         r"|review (?:the )?(?:re-?admission|chart) (?:of|for) patient (?P<patient2>[A-Za-z0-9-]+)(?:'s readmission)?)"
+                         r"(?: (?:to (?:the )?hospital )?on (?P<date>20\d{2}-\d{2}-\d{2}))?\b", re.I)
+
+
+def latest_readmission(patient):
+    """Code only. -> the admission date of the patient's most recent inpatient stay that began 1 to 30 days after an
+    earlier inpatient discharge, or None. A stay repeated by a second source on the same day is not a readmission."""
+    from . import store
+    rows = store.run("SELECT MAX(b.admit_date) FROM stay a, stay b WHERE a.patient_id = :p AND b.patient_id = :p AND a.type = 'inpatient' AND b.type = 'inpatient' "
+                     "AND a.discharge_date IS NOT NULL AND a.admit_date < b.admit_date "
+                     "AND julianday(b.admit_date) - julianday(a.discharge_date) BETWEEN 1 AND 30", {'p': patient})[1]
+    return rows[0][0] if rows and rows[0][0] else None
+
+
 def known(question):
     """A question whose parts code already knows. -> (parts, how) or None. No model.
     "Why isn't patient X on all guideline heart-failure therapy?" is three questions the tiers can answer: what the
     fill records show for each pillar, the latest safety labs, and what reason each note states. The stack reports
     what is recorded and what is written; it does not judge what should be prescribed or what dose is tolerated."""
+    readmit = READMIT_WHY.match(' '.join(question.split()).rstrip('?. '))
+    if readmit:
+        # "Why was patient X readmitted?" is a chart review in five questions the tiers can answer: the two stays, what the
+        # documents state (why admitted, discharge instructions, imaging, directives), follow-up between the stays, recorded
+        # risk factors, and labs by period. With no date in the question, code finds the most
+        # recent readmission. The stack reports what is recorded and written; it does not judge whether it was avoidable.
+        pid = readmit.group('patient') or readmit.group('patient2')
+        try:
+            when = readmit.group('date') or latest_readmission(pid)
+        except Exception:
+            when = None
+        if when:
+            return ([f"What are patient {pid}'s readmission on {when} and the stay before it?",
+                     f"What do patient {pid}'s documents state about the admission on {when} and the stay before it?",
+                     f"What follow-up is on record for patient {pid} between the prior discharge and the admission on {when}?",
+                     f"What risk factors are on record for patient {pid} as of the admission on {when}?",
+                     f"What lab and vital results are on record for patient {pid} around the admission on {when}?"],
+                    {'method': 'readmission_question_split_by_code', 'usd': 0.0, 'tokens': 0, 'seconds': 0.0, 'readmission_date': when,
+                     'date_from': 'question' if readmit.group('date') else 'most recent readmission on record'})
     m = GDMT_WHY.match(' '.join(question.split()).rstrip('?. '))
     if not m: return None
     pid = m.group('patient')

@@ -24,6 +24,19 @@ def _key(mapping, text):
     return next((k for k, names in mapping.items() if text == k or text in names), None)
 
 
+# The readmission is the inpatient stay admitted on the given date (the row with a discharge date when a source repeats the
+# stay); the stay before it is the latest one discharged in the 30 days before that date. Either may be missing.
+_READMIT_CTE = ("WITH re AS (SELECT admit_date, discharge_date, organization_id FROM stay WHERE patient_id = :patient_id AND type = 'inpatient' AND admit_date = :readmit_date "
+                "ORDER BY (discharge_date IS NULL), discharge_date DESC LIMIT 1), "
+                "idx AS (SELECT admit_date, discharge_date, organization_id FROM stay WHERE patient_id = :patient_id AND type = 'inpatient' AND discharge_date IS NOT NULL "
+                "AND admit_date < :readmit_date AND discharge_date < :readmit_date AND julianday(:readmit_date) - julianday(discharge_date) <= 30 "
+                "ORDER BY discharge_date DESC, admit_date LIMIT 1), "
+                "w AS (SELECT (SELECT admit_date FROM re) AS readmit_admit, (SELECT discharge_date FROM re) AS readmit_discharge, (SELECT organization_id FROM re) AS readmit_org, "
+                "(SELECT admit_date FROM idx) AS index_admit, (SELECT discharge_date FROM idx) AS index_discharge, (SELECT organization_id FROM idx) AS index_org) ")
+DATE = r'(?P<readmit_date>20\d{2}-\d{2}-\d{2})'
+_READMIT_PAIRS = ("WITH pairs AS (SELECT b.patient_id, b.admit_date AS readmit_admit, MAX(a.discharge_date) AS index_discharge FROM stay a JOIN stay b ON a.patient_id = b.patient_id "
+                  "WHERE a.type = 'inpatient' AND b.type = 'inpatient' AND a.discharge_date IS NOT NULL AND a.admit_date < b.admit_date "
+                  "AND julianday(b.admit_date) - julianday(a.discharge_date) BETWEEN 1 AND 30 AND substr(b.admit_date, 1, 4) = :year GROUP BY b.patient_id, b.admit_date) ")
 RECIPES = {
     'utilization_count': {
         'title': 'Number of utilization events of one kind in one calendar year',
@@ -183,6 +196,110 @@ RECIPES = {
                  'mode': 'medication_reasons'},
         'columns': ['pillar', 'medication', 'reason_kind', 'passage', 'first_date', 'last_date', 'documents'],
         'patterns': [r"what reason does each of patient (?P<patient_id>[a-z0-9-]+)'s documents give for a heart failure medication not being taken"]},
+    # --- one patient's most recent 30-day readmission: the two stays, what happened between them, and what the record states ---
+    'readmission_stays': {
+        'title': "For one patient, the inpatient stay admitted on a given date and the stay discharged in the 30 days before it (discrete stay records)",
+        'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
+        'sql': _READMIT_CTE + "SELECT 'stay before the readmission' AS stay, index_admit AS admit_date, index_discharge AS discharge_date, index_org AS organization_id, "
+               "-1 AS days_after_prior_discharge FROM w WHERE index_admit IS NOT NULL UNION ALL "
+               "SELECT 'readmission', readmit_admit, COALESCE(readmit_discharge, 'not recorded'), readmit_org, "
+               "COALESCE(CAST(julianday(readmit_admit) - julianday(index_discharge) AS INTEGER), -1) FROM w WHERE readmit_admit IS NOT NULL ORDER BY 2",
+        'grain': ['stay'],
+        'patterns': [r"what are patient (?P<patient_id>[a-z0-9-]+)'s readmission on " + DATE + r" and the stay before it"]},
+    'readmission_chart_statements': {
+        'title': "For one patient, what the documents state about the admission on a given date and the stay before it: why admitted, discharge instructions, imaging impressions, and any advance directive or code status (each document is read)",
+        'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
+        'sql': _READMIT_CTE + "SELECT d.record_id, d.event_date, d.source, d.document_type, COALESCE(w.index_admit, '') AS index_admit, COALESCE(w.index_discharge, '') AS index_discharge, "
+               "w.readmit_admit, COALESCE(w.readmit_discharge, '') AS readmit_discharge FROM document d, w WHERE d.patient_id = :patient_id AND w.readmit_admit IS NOT NULL "
+               "ORDER BY d.event_date, d.record_id",
+        # Code finds each statement and assigns it to a stay (readmission.py); System One judges only the unlabelled admission sentences.
+        'read': {'statement': 'The passage says why the patient was admitted to hospital.', 'mode': 'admission_reasons'},
+        'columns': ['stay', 'stated_as', 'passage', 'record_id', 'event_date'],
+        'patterns': [r"what do patient (?P<patient_id>[a-z0-9-]+)'s documents state about the admission on " + DATE + r" and the stay before it"]},
+    'readmission_follow_up': {
+        'title': "For one patient, what is on record between the prior discharge and the admission on a given date: an outpatient visit within 7 days, telephone contacts, emergency visits, appointments by status, pharmacy fills",
+        'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
+        'sql': _READMIT_CTE +
+               "SELECT 'outpatient visit within 7 days of discharge' AS item, CASE WHEN COUNT(*) > 0 THEN 'yes' ELSE 'no' END AS on_record, COALESCE(MIN(v.event_date), '') AS first_date "
+               "FROM visit v, w WHERE v.patient_id = :patient_id AND v.event_date > w.index_discharge AND v.event_date <= date(w.index_discharge, '+7 day') AND v.event_date < w.readmit_admit "
+               "AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'telephone', 'orders_only') "
+               "UNION ALL SELECT 'outpatient visits between the stays', CAST(COUNT(*) AS TEXT), COALESCE(MIN(v.event_date), '') FROM visit v, w WHERE v.patient_id = :patient_id "
+               "AND v.event_date > w.index_discharge AND v.event_date < w.readmit_admit AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'telephone', 'orders_only') "
+               "UNION ALL SELECT 'telephone contacts between the stays', CAST(COUNT(*) AS TEXT), COALESCE(MIN(v.event_date), '') FROM visit v, w WHERE v.patient_id = :patient_id "
+               "AND v.event_date > w.index_discharge AND v.event_date < w.readmit_admit AND v.type = 'telephone' "
+               "UNION ALL SELECT 'emergency visits between the stays', CAST(COUNT(*) AS TEXT), COALESCE(MIN(v.event_date), '') FROM visit v, w WHERE v.patient_id = :patient_id "
+               "AND v.event_date > w.index_discharge AND v.event_date < w.readmit_admit AND v.type = 'emergency' "
+               "UNION ALL SELECT 'appointments between the stays: ' || a.final_status, CAST(COUNT(*) AS TEXT), MIN(a.scheduled_date) FROM appointment a, w WHERE a.patient_id = :patient_id "
+               "AND a.scheduled_date > w.index_discharge AND a.scheduled_date < w.readmit_admit GROUP BY a.final_status "
+               "UNION ALL SELECT 'pharmacy fills between the stays', CAST(COUNT(*) AS TEXT), COALESCE(MIN(f.fill_date), '') FROM fill f, w WHERE f.patient_id = :patient_id "
+               "AND f.fill_date > w.index_discharge AND f.fill_date < w.readmit_admit ORDER BY 1",
+        'grain': ['item'],
+        'patterns': [r"what follow-up is on record for patient (?P<patient_id>[a-z0-9-]+) between the prior discharge and the admission on " + DATE]},
+    'readmission_risk_factors': {
+        'title': "For one patient, recorded risk factors as of the admission on a given date: age, coverage, chronic conditions, inpatient admissions in the prior 12 months, emergency visits in the prior 6 months, length of the prior stay, medication classes filled, positive social-need screens, interpreter need",
+        'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
+        'sql': _READMIT_CTE +
+               "SELECT 'age' AS factor, CAST(age_latest AS TEXT) AS on_record FROM patient WHERE patient_id = :patient_id "
+               "UNION ALL SELECT 'coverage', COALESCE(coverage_type, 'not recorded') FROM patient WHERE patient_id = :patient_id "
+               "UNION ALL SELECT 'interpreter needed', CASE WHEN interpreter_needed IN (1, '1', 'true', 'yes') THEN 'yes' ELSE 'no' END FROM patient WHERE patient_id = :patient_id "
+               "UNION ALL SELECT 'chronic conditions on record', CAST(COUNT(DISTINCT concept) AS TEXT) FROM condition WHERE patient_id = :patient_id AND chronic = 1 AND concept IS NOT NULL "
+               "UNION ALL SELECT 'chronic condition: ' || concept, MIN(COALESCE(event_date, '')) FROM condition WHERE patient_id = :patient_id AND chronic = 1 AND concept IS NOT NULL GROUP BY concept "
+               "UNION ALL SELECT 'inpatient admissions in the prior 12 months', CAST(COUNT(DISTINCT s.admit_date) AS TEXT) FROM stay s WHERE s.patient_id = :patient_id AND s.type = 'inpatient' "
+               "AND s.admit_date < :readmit_date AND s.admit_date >= date(:readmit_date, '-365 day') "
+               "UNION ALL SELECT 'emergency visits in the prior 6 months', CAST(COUNT(DISTINCT v.event_date) AS TEXT) FROM visit v WHERE v.patient_id = :patient_id AND v.type = 'emergency' "
+               "AND v.event_date < :readmit_date AND v.event_date >= date(:readmit_date, '-183 day') "
+               "UNION ALL SELECT 'length of the prior stay in days', COALESCE(CAST(CAST(julianday(index_discharge) - julianday(index_admit) AS INTEGER) AS TEXT), 'no prior stay') FROM w "
+               "UNION ALL SELECT 'medication classes filled in the prior 120 days', CAST(COUNT(DISTINCT f.drug_class) AS TEXT) FROM fill f WHERE f.patient_id = :patient_id AND f.drug_class IS NOT NULL "
+               "AND f.fill_date < :readmit_date AND f.fill_date >= date(:readmit_date, '-120 day') "
+               "UNION ALL SELECT 'positive social-need screen: ' || n.need, MAX(n.event_date) FROM social_need n WHERE n.patient_id = :patient_id AND n.positive = 1 AND n.event_date <= :readmit_date GROUP BY n.need "
+               "ORDER BY 1",
+        'grain': ['factor'],
+        'patterns': [r"what risk factors are on record for patient (?P<patient_id>[a-z0-9-]+) as of the admission on " + DATE]},
+    'readmission_labs': {
+        'title': "For one patient, lab and vital results by period around the admission on a given date: the stay before it, between the stays, and the readmission (count, lowest, highest, last date)",
+        'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
+        'sql': _READMIT_CTE + ", m AS (SELECT x.concept, x.value_canonical, x.event_date, CASE "
+               "WHEN x.event_date >= w.readmit_admit AND x.event_date <= date(COALESCE(w.readmit_discharge, w.readmit_admit), '+1 day') THEN 'readmission' "
+               "WHEN x.event_date >= w.index_admit AND x.event_date <= w.index_discharge THEN 'stay before the readmission' "
+               "WHEN x.event_date > w.index_discharge AND x.event_date < w.readmit_admit THEN 'between the two stays' END AS period "
+               "FROM measurement x, w WHERE x.patient_id = :patient_id AND x.concept IS NOT NULL AND w.readmit_admit IS NOT NULL) "
+               "SELECT period, concept, COUNT(*) AS results, MIN(value_canonical) AS lowest, MAX(value_canonical) AS highest, MAX(event_date) AS last_date FROM m WHERE period IS NOT NULL GROUP BY 1, 2 "
+               "UNION ALL SELECT 'readmission', '(any lab or vital)', COUNT(*), NULL, NULL, COALESCE(MAX(event_date), '') FROM m WHERE period = 'readmission' ORDER BY 1, 2",
+        'grain': ['period', 'concept'],
+        'patterns': [r"what lab and vital results are on record for patient (?P<patient_id>[a-z0-9-]+) around the admission on " + DATE]},
+    # --- every readmission in a year: the committee view. A readmission is an inpatient stay beginning 1 to 30 days after an
+    #     earlier inpatient discharge; a stay recorded twice on the same day is not one. ---
+    'readmission_review_summary': {
+        'title': "Readmissions in one year (an inpatient stay beginning 1 to 30 days after an earlier inpatient discharge): how many, and how many had an outpatient visit within 7 days of the prior discharge, no contact at all between the stays, came back within 7 days, had two or more prior admissions in 12 months, or a positive social-need screen",
+        'params': {'year': {'type': 'year'}},
+        'sql': _READMIT_PAIRS + ", f AS (SELECT p.*, "
+               "EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = p.patient_id AND v.event_date > p.index_discharge AND v.event_date <= date(p.index_discharge, '+7 day') "
+               "AND v.event_date < p.readmit_admit AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'telephone', 'orders_only')) AS visit7, "
+               "EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = p.patient_id AND v.event_date > p.index_discharge AND v.event_date < p.readmit_admit "
+               "AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'orders_only')) AS any_contact, "
+               "(SELECT COUNT(DISTINCT s.admit_date) FROM stay s WHERE s.patient_id = p.patient_id AND s.type = 'inpatient' AND s.admit_date < p.readmit_admit "
+               "AND s.admit_date >= date(p.readmit_admit, '-365 day')) AS prior12, "
+               "EXISTS (SELECT 1 FROM social_need n WHERE n.patient_id = p.patient_id AND n.positive = 1 AND n.event_date <= p.readmit_admit) AS social, "
+               "CAST(julianday(p.readmit_admit) - julianday(p.index_discharge) AS INTEGER) AS days FROM pairs p) "
+               "SELECT 'readmissions' AS finding, COUNT(*) AS readmissions, 1.0 AS share FROM f "
+               "UNION ALL SELECT 'patients readmitted', COUNT(DISTINCT patient_id), NULL FROM f "
+               "UNION ALL SELECT 'outpatient visit within 7 days of the prior discharge', SUM(visit7), ROUND(1.0 * SUM(visit7) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'no outpatient visit within 7 days', SUM(1 - visit7), ROUND(1.0 * SUM(1 - visit7) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'no visit or telephone contact at all between the stays', SUM(1 - any_contact), ROUND(1.0 * SUM(1 - any_contact) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'readmitted within 7 days of discharge', SUM(days <= 7), ROUND(1.0 * SUM(days <= 7) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'two or more inpatient admissions in the prior 12 months', SUM(prior12 >= 2), ROUND(1.0 * SUM(prior12 >= 2) / COUNT(*), 4) FROM f "
+               "UNION ALL SELECT 'a positive social-need screen on record', SUM(social), ROUND(1.0 * SUM(social) / COUNT(*), 4) FROM f",
+        'patterns': [r'summari[sz]e (?:the |our )?readmissions (?:in|for) ' + YEAR, r'what do (?:the |our )?readmissions (?:in|for) ' + YEAR + r' have in common']},
+    'readmissions_without_follow_up': {
+        'title': "Readmissions in one year with no outpatient visit within 7 days of the prior discharge, one row per readmission (patient, prior discharge date, readmission date, days between)",
+        'params': {'year': {'type': 'year'}},
+        'sql': _READMIT_PAIRS + "SELECT p.patient_id, p.index_discharge AS prior_discharge_date, p.readmit_admit AS readmission_date, "
+               "CAST(julianday(p.readmit_admit) - julianday(p.index_discharge) AS INTEGER) AS days_between FROM pairs p WHERE NOT EXISTS ("
+               "SELECT 1 FROM visit v WHERE v.patient_id = p.patient_id AND v.event_date > p.index_discharge AND v.event_date <= date(p.index_discharge, '+7 day') "
+               "AND v.event_date < p.readmit_admit AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'telephone', 'orders_only')) ORDER BY 3, 1",
+        'grain': ['patient_id', 'readmission_date'],
+        'patterns': [r'which readmissions (?:in|for) ' + YEAR + r' had no (?:outpatient )?follow[- ]up visit within 7 days',
+                     r'list (?:the )?readmissions (?:in|for) ' + YEAR + r' (?:with no|without) (?:outpatient )?follow[- ]up(?: visit)? within 7 days']},
 }
 ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS}
 _vocab = {}
@@ -224,6 +341,9 @@ def normalize(recipe_id, raw, db=None):
             out[name] = text
         elif kind == 'month':
             if not re.fullmatch(r'20\d{2}-(0[1-9]|1[0-2])', text): return None
+            out[name] = text
+        elif kind == 'date':
+            if not re.fullmatch(r'20\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])', text): return None
             out[name] = text
         elif kind == 'int':
             if not text.isdigit() or not spec['min'] <= int(text) <= spec['max']: return None

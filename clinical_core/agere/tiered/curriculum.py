@@ -152,6 +152,81 @@ def run(limit=None):
     return report()
 
 
+SUBSET_SHARES = (0.5, 0.5, 0.1, 0.02)  # shares of patients; two different halves, a tenth and a fiftieth
+
+
+def patient_subsets(seed, db=None):
+    """Code only. Repeatable random subsets of the patients, for testing whether two queries agree beyond the full data.
+    Two queries that mean different things can return the same rows on one database; they rarely do on several."""
+    import hashlib, random
+    own = db is None
+    db = db or store.connect()
+    try:
+        try:
+            everyone = sorted(r[0] for r in db.execute('SELECT patient_id FROM main.patient'))
+        except Exception:
+            return []  # no patient table to take subsets of: the subset test does not apply to this database
+        if not everyone: return []
+    finally:
+        if own: db.close()
+    out = []
+    for n, share in enumerate(SUBSET_SHARES):
+        rng = random.Random(int(hashlib.sha256(f'{seed}|{n}'.encode()).hexdigest()[:12], 16))
+        out.append(rng.sample(everyone, max(1, int(len(everyone) * share))))
+    return out
+
+
+def agree_on_subsets(first_sql, first_params, second_sql, second_params, seed):
+    """-> (all subsets agree, [per-subset detail]). Each query runs unchanged inside each subset of patients."""
+    detail = []
+    for cohort in patient_subsets(seed):
+        db = store.connect(cohort)
+        try:
+            a, b = store.run(first_sql, first_params, db)[1], store.run(second_sql, second_params, db)[1]
+            same = evaluate.correct(a, b) and evaluate.correct(b, a)
+        except store.RecipeError as exc:
+            same = False; a = b = []
+            detail.append({'patients': len(cohort), 'same': False, 'error': str(exc)[:120]}); continue
+        finally:
+            db.close()
+        detail.append({'patients': len(cohort), 'same': same, 'rows': [len(a), len(b)]})
+    return all(d['same'] for d in detail), detail
+
+
+def audit(limit=None):
+    """Measure the promotion test itself. For each promoted recipe that a second model once confirmed, a second model
+    writes a fresh query; where the two agree on the full data, do they still agree on subsets of patients? Changes no
+    recipe's status. -> counts, and a report file."""
+    _keys(); _preload()
+    bottles, db, out, lines = bottle_store.Bottles(), store.connect(), Counter(), []
+    todo = [b for b in bottles.full() if b['status'] == 'promoted' and not b.get('read') and (b.get('provenance') or {}).get('question')][:limit]
+    for bottle in todo:
+        question = bottle['provenance']['question']
+        try:
+            hit = bottles.match(question, statuses=('promoted',))
+            if not hit or hit[0]['id'] != bottle['id']: out['question no longer selects this recipe'] += 1; continue
+            first = store.run(bottle['sql'], hit[1], db)[1]
+            second, step = models.llm_recipe(question, model=models.SLM)
+            if second is None or second.get('read'): out['second model wrote no query'] += 1; continue
+            params = {k: (int(v['value']) if v.get('type') == 'int' else str(v.get('value'))) for k, v in second['params'].items()}
+            rows = store.run(second['sql'], params, db)[1]
+            if not (evaluate.correct(first, rows) and evaluate.correct(rows, first)):
+                out['differ on the full data'] += 1
+                lines.append(f"{bottle['id']} DIFFER ON FULL DATA | {question}\n   saved ({len(first)} rows, first {str(first[:2])[:160]}):  {bottle['sql'][:300]}\n"
+                             f"   second ({len(rows)} rows, first {str(rows[:2])[:160]}): {second['sql'][:300]}")
+                continue
+            ok, detail = agree_on_subsets(bottle['sql'], hit[1], second['sql'], params, question)
+            out['agree on the full data and every subset' if ok else 'agree on the full data, differ on a subset'] += 1
+            if not ok: lines.append(f"{bottle['id']} | {question} | {[d for d in detail if not d['same']][:2]}\n   saved:  {bottle['sql'][:300]}\n   second: {second['sql'][:300]}")
+        except Exception as exc:
+            if 'limit' in str(exc).lower(): print('stopped on a usage limit', flush=True); break
+            out[f'error: {type(exc).__name__}'] += 1
+        print(f"{sum(out.values())}/{len(todo)} {dict(out)}", flush=True)
+    HOME.mkdir(parents=True, exist_ok=True)
+    (HOME / f"gate-audit-{time.strftime('%Y%m%d-%H%M%S')}.txt").write_text(json.dumps(dict(out), indent=1) + '\n\n' + '\n\n'.join(lines) + '\n')
+    return dict(out)
+
+
 def confirm(limit=None, main=False):
     """Each provisional recipe is checked by a different model writing its own query for the same question.
     Equal rows (order and column names ignored) -> 'confirmed'. A reading plan is not confirmed this way and stays provisional.
@@ -178,6 +253,11 @@ def confirm(limit=None, main=False):
                     rows = store.run(second['sql'], params, db)[1]
                     same = evaluate.correct(first, rows) and evaluate.correct(rows, first)
                     verdict = 'confirmed' if same and first else 'unconfirmed: the second query returned different rows' if first else 'unconfirmed: empty result'
+                    if verdict == 'confirmed' and os.environ.get('AGERE_TIERED_GATE_SUBSETS', 'on') == 'on':
+                        # Same rows on the full data is not enough: the two queries must also agree inside several subsets of patients.
+                        held, detail = agree_on_subsets(bottle['sql'], hit[1] if hit else {}, second['sql'], params, question)
+                        prov = {**prov, 'second_query': {'sql': second['sql'], 'params': params, 'subsets': detail}}
+                        if not held: verdict = 'unconfirmed: the two queries agree on the full data but differ on a subset of patients'
             except Exception as exc:
                 if 'limit' in str(exc).lower():
                     print('stopped on a usage limit', flush=True); break
@@ -240,6 +320,7 @@ def main(argv):
     elif command == 'library': print(json.dumps(library(argv[1:])))
     elif command == 'run': print('\n' + run(number))
     elif command == 'confirm': print(json.dumps(confirm(number)))
+    elif command == 'audit': print(json.dumps(audit(number)))
     elif command == 'merge': print(json.dumps(merge()))
     else: print(report())
 

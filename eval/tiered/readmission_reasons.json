@@ -1,0 +1,207 @@
+{
+ "schema": "tiered-readmission-reasons-comparison/1",
+ "authored": "2026-11-14",
+ "authored_by": "Claude (build owner)",
+ "question": "Why was patient {patient} readmitted to hospital?",
+ "selection": "The twelve most recent distinct patients with a 30-day readmission whose readmission stay has a known discharge date and whose record holds at least three documents from the index admission to seven days after the readmission discharge, at least one dated on or after the readmission admission. Chosen by that rule before either arm ran.",
+ "reference": "Every document in that window was read by the build owner. The accepted reason is what a document about the readmission stay itself states: the principal diagnosis in the discharge summary whose admission date is the readmission admission date, or the presenting problem in the emergency summary for that admission. Written and committed before the readmission path existed and before the chart reader ran on any of these patients.",
+ "arms": {
+  "stack": "split.known -> stays by SQL, events between discharge and readmission by SQL, admission statements found by code and assigned to a stay, judged by System One",
+  "chart_reader": "the frontier model given the stay fields and every document of the patient in one prompt"
+ },
+ "rule": "An arm is correct for a patient when a reason it gives for the READMISSION is a quote that is in the named document, the named document is one of the accepted documents, and the quote contains the accepted phrase. A reason for the readmission quoted from a document about a different stay counts as wrong_stay. The readmission admission date an arm states is scored separately. This is not a test of any product.",
+ "patients": [
+  {
+   "id": "WHP-85D78D3616CC",
+   "index_admit": "2030-04-23",
+   "index_discharge": "2030-04-29",
+   "readmit_admit": "2030-05-07",
+   "readmit_discharge": "2030-05-10",
+   "accepted": [
+    {
+     "phrase": "opioid overdose",
+     "record_id": "WHN-R-4a0adeda440467d3870db6"
+    },
+    {
+     "phrase": "drug overdose",
+     "record_id": "WHN-R-e4187e070bb15a749582ea"
+    }
+   ]
+  },
+  {
+   "id": "WHP-6B251B6BB566",
+   "index_admit": "2030-04-10",
+   "index_discharge": "2030-04-14",
+   "readmit_admit": "2030-05-05",
+   "readmit_discharge": "2030-05-10",
+   "accepted": [
+    {
+     "phrase": "acute on chronic heart failure",
+     "record_id": "WHN-R-10a10701eeb66cf1aadfe8"
+    },
+    {
+     "phrase": "heart failure",
+     "record_id": "WHN-R-dc690de0daf5cad0103466"
+    }
+   ]
+  },
+  {
+   "id": "WHP-7A0193F03065",
+   "index_admit": "2030-03-25",
+   "index_discharge": "2030-03-27",
+   "readmit_admit": "2030-04-26",
+   "readmit_discharge": "2030-04-29",
+   "accepted": [
+    {
+     "phrase": "type 2 diabetes with hyperglycemia",
+     "record_id": "WHN-R-276a29a2830ebc72695150"
+    },
+    {
+     "phrase": "diabetes",
+     "record_id": "WHN-R-b8ebade13db1cf87a46f3c"
+    }
+   ]
+  },
+  {
+   "id": "WHP-8E44D529F3FA",
+   "index_admit": "2030-03-25",
+   "index_discharge": "2030-03-25",
+   "readmit_admit": "2030-04-07",
+   "readmit_discharge": "2030-04-12",
+   "accepted": [
+    {
+     "phrase": "acute illness",
+     "record_id": "WHN-R-7323a7f934a81ba4bdbfad"
+    }
+   ]
+  },
+  {
+   "id": "WHP-C6DECCEAB48D",
+   "index_admit": "2030-03-07",
+   "index_discharge": "2030-03-13",
+   "readmit_admit": "2030-04-11",
+   "readmit_discharge": "2030-04-14",
+   "accepted": [
+    {
+     "phrase": "acute kidney injury on ckd",
+     "record_id": "WHN-R-4589b7e9c81f8a3835467e"
+    },
+    {
+     "phrase": "renal failure",
+     "record_id": "WHN-R-537d4c9900732de78ca6da"
+    }
+   ]
+  },
+  {
+   "id": "WHP-20BC580B73BB",
+   "index_admit": "2030-02-01",
+   "index_discharge": "2030-02-07",
+   "readmit_admit": "2030-02-25",
+   "readmit_discharge": "2030-03-02",
+   "accepted": [
+    {
+     "phrase": "renal failure",
+     "record_id": "WHN-R-666ea6468efa8f6476f7da"
+    }
+   ]
+  },
+  {
+   "id": "WHP-5C106E9BDFCC",
+   "index_admit": "2030-01-25",
+   "index_discharge": "2030-02-05",
+   "readmit_admit": "2030-02-21",
+   "readmit_discharge": "2030-02-21",
+   "accepted": [
+    {
+     "phrase": "closed fracture of femoral neck",
+     "record_id": "WHN-R-c29019d44886d9050e438a"
+    },
+    {
+     "phrase": "hip fracture",
+     "record_id": "WHN-R-f96571a056ce5239abc730"
+    }
+   ]
+  },
+  {
+   "id": "WHP-752774940B25",
+   "index_admit": "2030-01-20",
+   "index_discharge": "2030-01-23",
+   "readmit_admit": "2030-02-14",
+   "readmit_discharge": "2030-02-16",
+   "accepted": [
+    {
+     "phrase": "type 2 diabetes with hyperglycemia",
+     "record_id": "WHN-R-cda6ccd03b06fb0a2fc4fe"
+    }
+   ]
+  },
+  {
+   "id": "WHP-491D8DC4A850",
+   "index_admit": "2029-12-04",
+   "index_discharge": "2029-12-04",
+   "readmit_admit": "2030-01-22",
+   "readmit_discharge": "2030-01-22",
+   "accepted": [
+    {
+     "phrase": "chest pain",
+     "record_id": "WHN-R-ff65d502d8f37208a781ee"
+    },
+    {
+     "phrase": "chest pain",
+     "record_id": "WHN-R-59c37316260b793044d53b"
+    }
+   ]
+  },
+  {
+   "id": "WHP-DAB42314A78A",
+   "index_admit": "2029-11-21",
+   "index_discharge": "2029-11-22",
+   "readmit_admit": "2029-12-05",
+   "readmit_discharge": "2029-12-08",
+   "accepted": [
+    {
+     "phrase": "acute kidney injury on ckd",
+     "record_id": "WHN-R-c5fecb1b63e82035d82f15"
+    },
+    {
+     "phrase": "renal failure",
+     "record_id": "WHN-R-812fe5a967b4cdb568dca2"
+    }
+   ]
+  },
+  {
+   "id": "WHP-0374A32F6EE0",
+   "index_admit": "2029-10-27",
+   "index_discharge": "2029-10-27",
+   "readmit_admit": "2029-11-03",
+   "readmit_discharge": "2029-11-07",
+   "accepted": [
+    {
+     "phrase": "community-acquired pneumonia",
+     "record_id": "WHN-R-6275c0d47d08aab761a020"
+    },
+    {
+     "phrase": "pneumonia",
+     "record_id": "WHN-R-41ad2bc45a6977e5d09f09"
+    }
+   ]
+  },
+  {
+   "id": "WHP-05A7E92C34B1",
+   "index_admit": "2029-10-22",
+   "index_discharge": "2029-10-26",
+   "readmit_admit": "2029-11-23",
+   "readmit_discharge": "2029-11-28",
+   "accepted": [
+    {
+     "phrase": "copd exacerbation",
+     "record_id": "WHN-R-b9a53df8ad6c034f75349b"
+    },
+    {
+     "phrase": "copd",
+     "record_id": "WHN-R-dfa701710d6d84ca50e31b"
+    }
+   ]
+  }
+ ]
+}

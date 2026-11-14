@@ -451,6 +451,202 @@ def takeover_eval(shapes=('novel', 'paraphrase'), workers=4):
     return '\n'.join(lines)
 
 
+READMIT_READER_SYSTEM = '''You are a clinical assistant reviewing one patient's record: the inpatient stays first, then every document, each
+starting with its record id in square brackets. Answer the question from the record only. The question is about the
+hospital admission the question names; when it names no date, the patient's most recent readmission within 30 days of an earlier discharge.
+Return exactly one JSON object and nothing else:
+{"summary": "<two or three sentences answering the question>",
+ "readmission_admit_date": "<YYYY-MM-DD admission date of that readmission>",
+ "reasons": [{"reason": "<the documented reason for the READMISSION>", "record_id": "<id of the document that states it>",
+              "quote": "<the words from that document, copied exactly>"}]}
+List a reason only when a document states it for that readmission. If the record documents none, return "reasons": [].'''
+
+
+def _score_readmission(items, accepted, texts):
+    """items: [{'quote','record_id'}] given as reasons for the readmission. -> (correct, unsupported, wrong_stay)."""
+    corpus = {i: _norm_text(t['text']) for i, t in texts.items()}
+    quote = lambda it: _norm_text(it.get('quote')).split(': ', 1)[-1]
+    supported = [it for it in items if len(quote(it)) >= 5 and quote(it) in corpus.get(str(it.get('record_id')), '')]
+    good = {a['record_id']: a['phrase'] for a in accepted}
+    right = [it for it in supported if str(it['record_id']) in good and good[str(it['record_id'])] in _norm_text(it['quote'])]
+    wrong = [it for it in supported if str(it['record_id']) not in good]
+    return bool(right), len(items) - len(supported), len(wrong)
+
+
+def readmit(s1_ledger=None, only=None, path='eval/tiered/readmission_reasons_2.json'):
+    """Why was a patient readmitted: the stack's readmission path against a frontier model handed the stays and the whole chart."""
+    from . import models, split
+    data = json.loads(Path(path).read_text())
+    run_id = f"readmit-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
+    led, bottles, results, db = ledger_store.Ledger(), bottle_store.Bottles(), [], store.connect()
+    for pt in data['patients']:
+        if only and pt['id'] not in only: continue
+        question = data['question'].format(patient=pt['id'], readmit_admit=pt['readmit_admit'])
+        parts, _ = split.known(question)
+        outcomes = [router.answer(part, bottles=bottles, s1_ledger=s1_ledger) for part in parts]
+        for part, o in zip(parts, outcomes): led.write(run_id, part, o, eval_id=pt['id'])
+        ids = [r[0] for r in db.execute('SELECT record_id FROM document WHERE patient_id = ? ORDER BY event_date, record_id', (pt['id'],))]
+        texts = store.texts(ids, db)
+        from . import readmission as _rd
+        mine = [{'quote': r[2], 'record_id': r[3]} for r in outcomes[1].get('rows') or [] if r[0] == 'readmission' and r[1] in _rd.ADMISSION_KINDS]
+        stated = next((r[1] for r in outcomes[0].get('rows') or [] if r[0] == 'readmission'), None)
+        ok, unsupported, wrong = _score_readmission(mine, pt['accepted'], texts)
+        stack = {'statuses': [o['status'] for o in outcomes], 'correct': ok and outcomes[1]['status'] == 'answered', 'unsupported': unsupported, 'wrong_stay': wrong,
+                 'admit_date_right': stated == pt['readmit_admit'], 'reasons_reported': len(mine), 'usd': sum(s.get('usd', 0.0) for o in outcomes for s in o['steps']),
+                 'seconds': round(sum(o['seconds'] for o in outcomes), 1), 'frontier_calls': sum(s.get('model') == models.LLM for o in outcomes for s in o['steps']),
+                 'reasons': [m['quote'][:120] for m in mine][:6]}
+        stays = '\n'.join(' | '.join(str(v) for v in r) for r in db.execute(
+            "SELECT type, admit_date, COALESCE(discharge_date, 'not recorded'), organization_id, readmitted_30d FROM stay WHERE patient_id = ? ORDER BY admit_date", (pt['id'],)))
+        prompt = ('Question: ' + question + '\n\nINPATIENT AND OBSERVATION STAYS\ntype | admit_date | discharge_date | organization | followed_by_readmission_within_30_days\n' + stays +
+                  '\n\nDOCUMENTS\n\n' + '\n\n'.join(f"[{i}] {texts[i]['event_date']}\n{texts[i]['text'].strip()}" for i in ids if i in texts))
+        try:
+            text, step = models._claude(models.LLM, READMIT_READER_SYSTEM, prompt)
+            try:
+                got = models._json(text)
+            except ValueError:
+                got = {'reasons': [], 'unusable': text[:200]}
+            theirs = [{'quote': x.get('quote'), 'record_id': x.get('record_id')} for x in got.get('reasons') or [] if isinstance(x, dict)]
+            ok2, u2, w2 = _score_readmission(theirs, pt['accepted'], texts)
+            reader = {'correct': ok2 and 'unusable' not in got, 'unsupported': u2, 'wrong_stay': w2, 'admit_date_right': str(got.get('readmission_admit_date')) == pt['readmit_admit'],
+                      'reasons_reported': len(theirs), 'usd': step['usd'], 'tokens': step['tokens'], 'seconds': step['seconds'], 'reasons': [str(t['quote'])[:120] for t in theirs][:6],
+                      'stated_admit_date': str(got.get('readmission_admit_date'))[:12], 'summary': str(got.get('summary'))[:400], **({'unusable': got['unusable']} if 'unusable' in got else {})}
+        except Exception as exc:
+            if 'limit' in str(exc).lower(): raise
+            reader = {'correct': False, 'unsupported': 0, 'wrong_stay': 0, 'admit_date_right': False, 'reasons_reported': 0, 'usd': 0.0, 'tokens': 0, 'seconds': 0.0,
+                      'error': f'{type(exc).__name__}: {str(exc)[:160]}'}
+        results.append({'patient': pt['id'], 'documents': len(ids), 'characters': len(prompt), 'stack': stack, 'chart_reader': reader})
+        show = lambda a: f"{'ok' if a['correct'] else 'MISS':4} date {'ok' if a['admit_date_right'] else 'no':2} unsupported {a['unsupported']} wrong-stay {a['wrong_stay']} ${a['usd']:.4f} {a['seconds']:5.1f}s"
+        print(f"{pt['id']} docs {len(ids):3d} | stack {show(stack)} | reader {show(reader)}", flush=True)
+    db.close()
+    n = len(results)
+    lines = [f'READMISSION REASONS COMPARISON  run {run_id}', f'{n} patients; one documented readmission reason each']
+    for arm, name in (('stack', 'stack       '), ('chart_reader', 'chart reader')):
+        rows = [r[arm] for r in results]
+        lines.append(f"{name}  reason right {sum(a['correct'] for a in rows)}/{n}   readmission date right {sum(a['admit_date_right'] for a in rows)}/{n}   "
+                     f"quotes not in the named document {sum(a['unsupported'] for a in rows)}   reasons taken from another stay {sum(a['wrong_stay'] for a in rows)}   "
+                     f"${sum(a['usd'] for a in rows) / n:.4f} per patient   {sum(a['seconds'] for a in rows) / n:.1f}s per patient")
+    text = '\n'.join(lines)
+    (OUT / f'{run_id}.report.txt').write_text(text + '\n'); (OUT / f'{run_id}.results.json').write_text(json.dumps(results, indent=1))
+    return text
+
+
+REVIEW_READER_SYSTEM = '''You are a clinical assistant doing a readmission chart review for one patient. You are given the patient's
+structured records (stays, visits, appointments, lab and vital results, conditions, social-need screens) and then every
+document, each starting with its record id in square brackets. Answer from the record only, about the hospital admission
+on the date the question names (the readmission) and the inpatient stay discharged before it.
+Definitions to use:
+- follow-up visit within 7 days: a visit dated after the prior discharge, within 7 days of it and before the readmission,
+  of a type other than inpatient, emergency, observation, telephone or orders_only
+- inpatient admissions in the prior 12 months: distinct inpatient admission dates in the 365 days before the readmission
+  admission date, not counting the readmission itself
+- lab resulted during the readmission: any named lab or vital result dated from the readmission admission date through
+  one day after its discharge
+- advance directive documented: any document mentions an advance directive, POLST/MOLST, DNR/DNI, code status, full code,
+  health care proxy, living will, goals of care, power of attorney, comfort care, hospice or palliative care
+Return exactly one JSON object and nothing else:
+{"summary": "<three or four sentences>",
+ "readmission_reason": {"quote": "<words copied exactly from a document about the readmission>", "record_id": "<its id>"},
+ "prior_stay_reason": {"quote": "<words copied exactly from a document about the stay before it>", "record_id": "<its id>"},
+ "follow_up_instruction": {"quote": "<the follow-up instruction copied exactly from the prior stay's discharge summary>", "record_id": "<its id>"},
+ "follow_up_visit_within_7_days": true or false,
+ "days_between_discharge_and_readmission": <integer>,
+ "inpatient_admissions_in_prior_12_months": <integer>,
+ "any_lab_resulted_during_readmission": true or false,
+ "advance_directive_documented": true or false}
+Use null for a quote the record does not contain.'''
+REVIEW_ITEMS = ('readmission_reason', 'prior_stay_reason', 'follow_up_instruction', 'follow_up_visit_within_7_days', 'days_between', 'prior_admissions', 'any_lab', 'advance_directive')
+
+
+def _quote_ok(item, want_record, phrase, texts):
+    """A quote counts when it is words of the named document, the document is the accepted one, and it contains the phrase."""
+    if not isinstance(item, dict): return False
+    quote, rid = _norm_text(item.get('quote')).split(': ', 1)[-1] if ': ' in _norm_text(item.get('quote'))[:40] else _norm_text(item.get('quote')), str(item.get('record_id'))
+    whole = _norm_text(item.get('quote'))
+    doc = _norm_text((texts.get(rid) or {}).get('text'))
+    return len(whole) >= 5 and rid == want_record and (whole in doc or quote in doc) and phrase in whole
+
+
+def review(s1_ledger=None, only=None, path='eval/tiered/readmission_review.json'):
+    """A readmission chart review, eight items per patient: the stack's five-part review against a frontier model handed the
+    structured rows and the whole chart."""
+    from . import models, readmission as rd, split
+    data = json.loads(Path(path).read_text())
+    run_id = f"review-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
+    led, bottles, results, db = ledger_store.Ledger(), bottle_store.Bottles(), [], store.connect()
+    for pt in data['patients']:
+        if only and pt['id'] not in only: continue
+        pid, ra = pt['id'], pt['readmit_admit']
+        question = data['question'].format(patient=pid, readmit_admit=ra)
+        parts, _ = split.known(question)
+        outcomes = [router.answer(part, bottles=bottles, s1_ledger=s1_ledger) for part in parts]
+        for part, o in zip(parts, outcomes): led.write(run_id, part, o, eval_id=pid)
+        ids = [r[0] for r in db.execute('SELECT record_id FROM document WHERE patient_id = ? ORDER BY event_date, record_id', (pid,))]
+        texts = store.texts(ids, db)
+        want = {'readmission_reason': (pt['readmission_reason']['record_id'], pt['readmission_reason']['phrase']),
+                'prior_stay_reason': (pt['prior_stay_reason']['record_id'], pt['prior_stay_reason']['phrase']),
+                'follow_up_instruction': (pt['follow_up_instruction']['record_id'], 'follow')}
+        truth = {'follow_up_visit_within_7_days': pt['follow_up_visit_within_7_days'], 'days_between': pt['days_between'], 'prior_admissions': pt['inpatient_admissions_in_prior_12_months'],
+                 'any_lab': bool(pt['lab_concepts_resulted_during_readmission']), 'advance_directive': pt['advance_directive_documented']}
+        rows = lambda n: (outcomes[n].get('rows') or []) if len(outcomes) > n else []
+        said = lambda stay, kinds: [{'quote': r[2], 'record_id': r[3]} for r in rows(1) if r[0] == stay and r[1] in kinds]
+        fact = lambda n, name: next((r[1] for r in rows(n) if r[0] == name), None)
+        num = lambda v: int(v) if str(v).lstrip('-').isdigit() else None
+        mine = {'readmission_reason': any(_quote_ok(q, *want['readmission_reason'], texts) for q in said('readmission', rd.ADMISSION_KINDS)),
+                'prior_stay_reason': any(_quote_ok(q, *want['prior_stay_reason'], texts) for q in said('stay before the readmission', rd.ADMISSION_KINDS)),
+                'follow_up_instruction': any(_quote_ok(q, *want['follow_up_instruction'], texts) for q in said('stay before the readmission', ('follow-up instruction',))),
+                'follow_up_visit_within_7_days': (fact(2, 'outpatient visit within 7 days of discharge') == 'yes') == truth['follow_up_visit_within_7_days'],
+                'days_between': num(next((r[4] for r in rows(0) if r[0] == 'readmission'), None)) == truth['days_between'],
+                'prior_admissions': num(fact(3, 'inpatient admissions in the prior 12 months')) == truth['prior_admissions'],
+                'any_lab': ((num(next((r[2] for r in rows(4) if r[1] == '(any lab or vital)'), None)) or 0) > 0) == truth['any_lab'],
+                'advance_directive': any(r[1] == 'advance directive or code status' and r[3] for r in rows(1)) == truth['advance_directive']}
+        stack = {'items': mine, 'right': sum(mine.values()), 'statuses': [o['status'] for o in outcomes], 'usd': sum(s.get('usd', 0.0) for o in outcomes for s in o['steps']),
+                 'seconds': round(sum(o['seconds'] for o in outcomes), 1), 'frontier_calls': sum(s.get('model') == models.LLM for o in outcomes for s in o['steps'])}
+        table = lambda sql, args: '\n'.join(' | '.join(str(v) for v in r) for r in db.execute(sql, args))
+        window = (pid, pt['index_admit'], pt['readmit_discharge'] or ra)
+        prompt = ('Question: ' + question +
+                  '\n\nSTAYS (type | admit_date | discharge_date | organization)\n' + table("SELECT type, admit_date, COALESCE(discharge_date, 'not recorded'), organization_id FROM stay WHERE patient_id = ? ORDER BY admit_date", (pid,)) +
+                  '\n\nVISITS in the year before the readmission (date | type)\n' + table("SELECT event_date, type FROM visit WHERE patient_id = ? AND event_date >= date(?, '-365 day') AND event_date <= ? ORDER BY 1", (pid, ra, ra)) +
+                  '\n\nAPPOINTMENTS around the two stays (scheduled_date | final_status)\n' + table("SELECT scheduled_date, final_status FROM appointment WHERE patient_id = ? AND scheduled_date >= ? AND scheduled_date <= date(?, '+7 day') ORDER BY 1", window) +
+                  '\n\nLAB AND VITAL RESULTS around the two stays (date | concept | value | unit)\n' + table("SELECT event_date, concept, value_canonical, unit_canonical FROM measurement WHERE patient_id = ? AND concept IS NOT NULL AND event_date >= ? AND event_date <= date(?, '+1 day') ORDER BY 1, 2", window) +
+                  '\n\nCHRONIC CONDITIONS (concept | first date)\n' + table("SELECT concept, MIN(event_date) FROM condition WHERE patient_id = ? AND chronic = 1 AND concept IS NOT NULL GROUP BY 1", (pid,)) +
+                  '\n\nSOCIAL-NEED SCREENS (need | positive | date)\n' + table("SELECT need, positive, event_date FROM social_need WHERE patient_id = ? ORDER BY 3", (pid,)) +
+                  '\n\nDOCUMENTS\n\n' + '\n\n'.join(f"[{i}] {texts[i]['event_date']}\n{texts[i]['text'].strip()}" for i in ids if i in texts))
+        try:
+            text, step = models._claude(models.LLM, REVIEW_READER_SYSTEM, prompt)
+            try:
+                got = models._json(text)
+            except ValueError:
+                got = {'unusable': text[:200]}
+            theirs = {'readmission_reason': _quote_ok(got.get('readmission_reason'), *want['readmission_reason'], texts),
+                      'prior_stay_reason': _quote_ok(got.get('prior_stay_reason'), *want['prior_stay_reason'], texts),
+                      'follow_up_instruction': _quote_ok(got.get('follow_up_instruction'), *want['follow_up_instruction'], texts),
+                      'follow_up_visit_within_7_days': got.get('follow_up_visit_within_7_days') is truth['follow_up_visit_within_7_days'],
+                      'days_between': got.get('days_between_discharge_and_readmission') == truth['days_between'],
+                      'prior_admissions': got.get('inpatient_admissions_in_prior_12_months') == truth['prior_admissions'],
+                      'any_lab': got.get('any_lab_resulted_during_readmission') is truth['any_lab'],
+                      'advance_directive': got.get('advance_directive_documented') is truth['advance_directive']}
+            reader = {'items': theirs, 'right': sum(theirs.values()), 'usd': step['usd'], 'tokens': step['tokens'], 'seconds': step['seconds'], 'summary': str(got.get('summary'))[:500],
+                      'stated': {k: got.get(k) for k in ('follow_up_visit_within_7_days', 'days_between_discharge_and_readmission', 'inpatient_admissions_in_prior_12_months',
+                                                         'any_lab_resulted_during_readmission', 'advance_directive_documented')}, **({'unusable': got['unusable']} if 'unusable' in got else {})}
+        except Exception as exc:
+            if 'limit' in str(exc).lower(): raise
+            reader = {'items': {k: False for k in REVIEW_ITEMS}, 'right': 0, 'usd': 0.0, 'tokens': 0, 'seconds': 0.0, 'error': f'{type(exc).__name__}: {str(exc)[:160]}'}
+        results.append({'patient': pid, 'documents': len(ids), 'characters': len(prompt), 'stack': stack, 'chart_reader': reader})
+        miss = lambda a: ','.join(k for k, v in a['items'].items() if not v) or '-'
+        print(f"{pid} docs {len(ids):3d} | stack {stack['right']}/8 ${stack['usd']:.4f} {stack['seconds']:5.1f}s miss {miss(stack)} | reader {reader['right']}/8 ${reader['usd']:.4f} {reader['seconds']:5.1f}s miss {miss(reader)}", flush=True)
+    db.close()
+    n = len(results)
+    lines = [f'READMISSION REVIEW COMPARISON  run {run_id}', f'{n} patients; 8 items each ({n * 8} in all)']
+    for arm, name in (('stack', 'stack       '), ('chart_reader', 'chart reader')):
+        rows_ = [r[arm] for r in results]
+        lines.append(f"{name}  items right {sum(a['right'] for a in rows_)}/{n * 8}   patients with all 8 right {sum(a['right'] == 8 for a in rows_)}/{n}   "
+                     f"${sum(a['usd'] for a in rows_) / n:.4f} per patient   {sum(a['seconds'] for a in rows_) / n:.1f}s per patient")
+        lines.append(f"{name}  by item: " + '  '.join(f"{k} {sum(a['items'][k] for a in rows_)}/{n}" for k in REVIEW_ITEMS))
+    text = '\n'.join(lines)
+    (OUT / f'{run_id}.report.txt').write_text(text + '\n'); (OUT / f'{run_id}.results.json').write_text(json.dumps(results, indent=1))
+    return text
+
+
 def methods_eval(path='eval/tiered/methods.json', config=None, workers=1):
     """Routing check for the methods rung on the real warehouse: each question through the whole app ladder.
     Scored on which rung answered and which method ran (eval/tiered/methods.json), not on the figures."""
@@ -510,6 +706,22 @@ def main(argv):
         return
     if argv[0] == 'takeover':
         print('\n' + takeover_eval(tuple(argv[1].split(',')) if len(argv) > 1 else ('novel', 'paraphrase')))
+        return
+    if argv[0] == 'review':
+        import os
+        os.environ.pop('ANTHROPIC_API_KEY', None)
+        from run_integrated_stack import keys
+        keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+        pick = [x for x in argv[1:] if not x.endswith('.json')]
+        print('\n' + review(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'), set(pick[0].split(',')) if pick else None))
+        return
+    if argv[0] == 'readmit':
+        import os
+        os.environ.pop('ANTHROPIC_API_KEY', None)
+        from run_integrated_stack import keys
+        keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+        paths = [x for x in argv[1:] if x.endswith('.json')]; pick = [x for x in argv[1:] if not x.endswith('.json')]
+        print('\n' + readmit(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'), set(pick[0].split(',')) if pick else None, *paths[:1]))
         return
     if argv[0] == 'hf':
         import os
