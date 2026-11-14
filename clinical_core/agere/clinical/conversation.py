@@ -1068,7 +1068,7 @@ def _handle_compose(stack, body, hosted_factory=None):
             # cohort, the follow-up edits its question; a selected patient cohort stays on the existing path.
             cohort_selected = bool(explicit_context) and bool((selected_answer or {}).get('patient_ids'))
             previous_question = (selected_answer or {}).get('question') if explicit_context else (prior or {}).get('resolved_question')
-            tiered = (tiered_app.try_in_conversation(stack, question, previous_question, is_followup(question))
+            tiered = (tiered_app.try_in_conversation(stack, question, previous_question, is_followup(question), conversation=conv)
                       if planning == 'auto' and not cohort_selected and not refers and not reference else None)
             rescoped = tiered or ((rescope(stack, question, saved) or regroup(stack, question, saved)) if shared and saved and not explicit_context
                         and body.get('scope') != 'warehouse' else None)

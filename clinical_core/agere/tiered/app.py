@@ -28,13 +28,28 @@ def _headline(columns, rows):
     return f"{len(rows)} rows by {columns[0].replace('_', ' ')}; see the table."
 
 
-def try_in_conversation(stack, question, previous, looks_like_follow_up, earlier=None):
+_HISTORY, _HISTORY_MAX = {}, 2000  # conversation id -> its last complete questions (oldest first); memory only
+
+
+def _remember(conversation, question):
+    if not conversation or not question: return
+    if len(_HISTORY) >= _HISTORY_MAX and conversation not in _HISTORY: _HISTORY.pop(next(iter(_HISTORY)))
+    _HISTORY[conversation] = [q for q in _HISTORY.get(conversation, []) if q != question][-3:] + [question]
+
+
+def try_in_conversation(stack, question, previous, looks_like_follow_up, earlier=None, conversation=None):
+    got = _in_conversation(stack, question, previous, looks_like_follow_up, earlier or [*_HISTORY.get(conversation, []), previous])
+    if got: _remember(conversation, got[1])
+    return got
+
+
+def _in_conversation(stack, question, previous, looks_like_follow_up, earlier=None):
     """A question asked inside a conversation. -> (result, complete question, note) or None for the existing path.
     A question the zero-cost tiers recognise is complete. Otherwise a follow-up is first made complete from the
     previous question (followup.rewrite); words that are not an edit of the previous question are tried as they are."""
     if not enabled(): return None
     from . import followup
-    EARLIER.set(tuple(q for q in (earlier or [previous]) if q)[-4:])  # the takeover rung reads a question in its conversation
+    EARLIER.set(tuple(dict.fromkeys(q for q in (earlier or [previous]) if q))[-4:])  # the takeover rung reads a question in its conversation
     s1_ledger = getattr(getattr(stack, 'ledger', None), 'path', None) or os.environ.get('AGERE_TIERED_S1_LEDGER')
     try:
         standalone, how = followup.complete_question(question, previous, looks_like_follow_up, bottle_store.Bottles(), s1_ledger)
