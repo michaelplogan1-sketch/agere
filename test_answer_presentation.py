@@ -61,6 +61,46 @@ console.log(JSON.stringify({checks:'passed',rows:57,pages:4,unknown_zero_empty_d
   self.assertEqual(result.returncode,0,result.stderr)
 
 class DecisionBrief(unittest.TestCase):
+ def test_provenance_keeps_takeover_unchecked_and_preserves_returned_figures(self):
+  script=(Path(ask_view.__file__).parent/'assets/answer_presentation.js').read_text()
+  setup="const assert=require('node:assert/strict'),esc=s=>String(s??''),isNum=v=>typeof v==='number',fmt=String,state={seq:0},cols=rows=>[...new Set(rows.flatMap(Object.keys))];\n"
+  checks=r'''
+const t={data:{answer:{verification:'checked',headline:'The result is available.',table:[{reported_count:0,reported_amount:0.000123456}],facts:{}},planner_receipt:{final_tier:'takeover',api_cost_known:true,known_api_estimate_usd:0.000123456},tiered_core:{seconds:1.23456}}};
+const before=JSON.stringify(t),html=answerProvenance(t);
+assert.match(html,/Unchecked/);assert.match(html,/Frontier takeover/);assert.match(html,/1.23456 s/);assert.match(html,/\$0.000123456/);
+assert.ok(!html.includes('<details'));assert.doesNotMatch(html,/Code checks passed/);
+assert.doesNotMatch(decisionHero(t),/returned rows|result-metric/);
+assert.match(answerSnapshot(t.data.answer),/>0</);assert.match(answerSnapshot(t.data.answer),/>0.000123456</);
+assert.equal(JSON.stringify(t),before);
+const saved={data:{answer:{verification:'unverified',facts:{answered_by:'Original timing and cost as returned.'}},planner_receipt:{final_tier:'takeover'}}};
+assert.match(answerProvenance(saved),/Original timing and cost as returned/);
+assert.doesNotMatch(answerProvenance({data:{answer:{}}}),/✓/);
+'''
+  r=subprocess.run([shutil.which('node'),'-e',setup+script+checks],capture_output=True,text=True)
+  self.assertEqual(r.returncode,0,r.stderr)
+
+ def test_questions_share_one_conversation_and_failure_is_not_retried(self):
+  html=ask_view.page();code=html[html.index('async function ask('):html.index('function loadConversation(')]
+  script=r'''
+const assert=require('node:assert/strict');let ids=0;const requests=[];
+const state={turns:[],busy:false,cid:null},fields={};let activeTab,activeContext=null;
+const $=key=>fields[key]||(fields[key]={value:'warehouse'}),store={set(){}},performance={now:()=>0};
+function newId(){return 'conversation-'+(++ids)}function progressKey(){return 'p'}
+function renderTurn(i){state.active=i}function beginWork(){return ()=>{}}
+function completeWork(){}function syncContractDemo(){}function loadEcon(){}function loadSaved(){}
+const document={dispatchEvent(){}};
+async function fetch(url,opt){requests.push([url,JSON.parse(opt.body)]);const bad=requests.length===3;return {ok:!bad,status:bad?503:200,text:async()=>bad?'The stack stopped.\nOriginal failure.':JSON.stringify({answer:{status:'answered'},conversation:{resolved_question:'Returned question'}})}}
+'''+code+r'''
+(async()=>{
+ await ask('Count the patients.');await ask('And those patients?');const failed=await ask('A hard question.');
+ assert.equal(ids,1);assert.equal(requests.length,3);
+ for(const [url,body] of requests){assert.equal(url,'/api/stack/compose');assert.deepEqual(Object.keys(body).sort(),['conversation_id','question']);assert.equal(body.conversation_id,'conversation-1')}
+ assert.equal(failed.error,'The stack stopped.\nOriginal failure.');
+})().catch(e=>{console.error(e);process.exitCode=1});
+'''
+  r=subprocess.run([shutil.which('node'),'-e',script],capture_output=True,text=True)
+  self.assertEqual(r.returncode,0,r.stderr)
+
  def test_actions_remain_bound_to_returned_suggestions_and_workflow_requirements(self):
   script=(Path(ask_view.__file__).parent/'assets/answer_presentation.js').read_text()
   setup=r'''
@@ -77,7 +117,8 @@ assert.match(out,/Historical result/);
 assert.match(resultLimitations(t.data.answer),/Responsible team is unknown/);
 assert.match(out,/data-decision-draft="refresh"/);
 assert.doesNotMatch(out,/data-suggestion-index|Start treatment|Enroll now/);
-assert.match(decisionHero(t),/>2<\/strong>/);
+assert.doesNotMatch(decisionHero(t),/>2<\/strong>/); // Row count is not a returned clinical measure.
+assert.match(decisionHero(t),/Two source records returned/);
 assert.equal(decisionState(t).blocked,true);
 assert.equal(JSON.stringify(t),before);
 // These are recorded operational suggestions; the UI must retain the exact scope and qualification.

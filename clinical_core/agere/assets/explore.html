@@ -8,6 +8,7 @@
  <nav class="app-nav" aria-label="Workspace">
   <button data-page="explore" aria-current="page"><span data-ui-icon="compass"></span>Ask your data</button>
   <button data-page="gallery"><span data-ui-icon="file"></span>Gallery</button>
+  <a href="/ask?app=ckd#program"><span data-ui-icon="activity"></span>CKD program</a>
   <button data-page="patients"><span data-ui-icon="users"></span>Patients</button>
   <a data-app-link="work" href="/action-center"><span data-ui-icon="board"></span>Work</a>
   <span class="nav-section-label">WORKSPACE</span>
@@ -35,7 +36,7 @@
    </div>
    <div id="home-content">
     <div class="section-row idea-heading"><h2>Start with an idea</h2><a class="text-button" href="/ask?demo=1">Try the guided workflow ↗</a></div><div id="topic-filters" class="topic-filters" aria-label="Filter example topics"></div><div id="examples" class="question-grid" aria-label="Example questions"></div>
-    <section class="home-gallery"><div class="section-row"><h2>Your recent creations</h2><button class="text-button" data-page="gallery">Open gallery ↗</button></div><div id="home-creations" class="home-creations"><p class="hint">Loading your creations…</p></div></section>
+    <div id="home-programs"></div><section class="home-gallery"><div class="section-row"><h2>Your recent creations</h2><button class="text-button" data-page="gallery">Open gallery ↗</button></div><div id="home-creations" class="home-creations"><p class="hint">Loading your creations…</p></div></section>
     <div class="live-data-strip"><span class="connection-dot"></span><span>Your connected warehouse</span><dl><div><dd id="live-patients">—</dd><dt>patients</dt></div><div><dd id="live-records">—</dd><dt>records</dt></div><div><dd id="live-sources">—</dd><dt>source categories</dt></div></dl><button class="text-button" data-page="data">Explore sources ↗</button></div>
     <section class="recent-section"><div class="section-row"><h2>Pick up where you left off</h2><button class="text-button" data-page="saved">All saved answers ↗</button></div><div id="recent-analyses" class="recent-list"><p class="hint">Loading saved answers…</p></div></section>
    </div>
@@ -45,6 +46,7 @@
   <section id="page-saved" hidden><div class="view-heading"><div class="eyebrow">HISTORY</div><h1>Saved answers</h1><p>Pick up where you left off.</p></div><label class="search-box"><span data-ui-icon="search"></span><input id="saved-search" type="search" placeholder="Search saved questions" aria-label="Search saved analyses"></label><p id="saved-caption" class="hint"></p><div id="saved-list" class="analysis-list"></div></section>
   <section id="page-patients" hidden><div class="view-heading"><div class="eyebrow">POPULATIONS</div><h1>Patients</h1><p>Choose an analysis to explore its patients and evidence.</p></div><div class="patient-library-context"><label for="patient-library-answer">Saved analysis<select id="patient-library-answer"><option value="">Choose a saved analysis</option></select></label><p id="patient-library-source" class="hint"></p><button type="button" class="text-button" id="patient-library-back">Open this answer ↗</button></div><div id="patient-library-view"><p class="hint">Choose a saved analysis to open its patients and evidence.</p></div></section>
   <section id="page-data" hidden><div class="view-heading"><div class="eyebrow">YOUR CONNECTED DATA</div><h1>Sources</h1><p>Browse what is available to your analyses.</p></div><div id="warehouse-stats" class="warehouse-stats"></div><label class="search-box"><span data-ui-icon="search"></span><input id="source-search" type="search" placeholder="Find a source: claims, appointments, labs…" aria-label="Search data sources"></label><p id="source-caption" class="hint"></p><div id="source-list" class="source-list"></div></section>
+  <section id="page-program" hidden aria-label="CKD program workspace"></section>
  </main>
  <footer class="app-footer"><span>Wollstonecraft</span><span>Many methods. One conversation.</span><button class="text-button" id="footer-usage">Usage &amp; costs</button><span id="turn-count" class="sr">0</span></footer>
 </div>

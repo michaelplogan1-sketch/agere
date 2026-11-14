@@ -50,6 +50,16 @@ class CreationGallery(unittest.TestCase):
         self.assertTrue(any(x['title']=='A new creation <source>' for x in result['items']))
         self.assertTrue(all('context=ANS-' in x['url'] and '#gallery' in x['url'] for x in result['items']))
 
+    def test_program_screen_does_not_upgrade_a_report_into_an_agent_capability(self):
+        self.creation(1,title='Virtual CKD nephrology program')
+        item=gallery.catalog(self.path)['items'][0]
+        self.assertEqual(item['kind'],'brief')
+        self.assertEqual(item['generation'],'saved_report')
+        self.assertEqual(item['experience']['availability'],'population_workspace')
+        self.assertFalse(item['experience']['agent_execution_available'])
+        self.assertIn('?app=ckd&context='+self.context_id,item['experience']['url'])
+        self.assertIsNone(gallery.presentation_experience(self.context_id,'CKD laboratory report','Summarize the laboratory results'))
+
     def test_historical_version_opens_read_only_with_exact_bytes_and_current_warning(self):
         key,folder=self.creation(1)
         before=(folder/'artifact.html').read_bytes()
