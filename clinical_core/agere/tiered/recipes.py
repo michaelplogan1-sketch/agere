@@ -598,6 +598,42 @@ def vocabulary(spec, db=None):
 SECOND_QUESTION = re.compile(r'(?:[,;?]|\band\b|\balso\b|\bplus\b)\s*(?:and\s+|also\s+|then\s+)?(?:how many|how much|what|which|who|show|list|count|give|tell)\b', re.I)
 
 
+_COLUMN_TABLES = {}
+
+
+def unknown_filter_values(sql, params, db=None):
+    """A filter on a text value that occurs nowhere in its column ("GLP-1 agonist" when drug_class holds glp1_agonist) returns
+    zero rows that look like an answer. -> a message naming the value and the column's real values, or None. Code only.
+    Only = and IN on text are checked, and only against the tables the query reads (CTEs and unknown names are left alone);
+    NOT IN, ranges, numbers and dates are not checked."""
+    conn = db or store.connect()
+    q = lambda sql_, args=(): conn.execute(sql_, args).fetchall()
+    text = ' '.join(str(sql).split())
+    read = list(dict.fromkeys(t.lower() for t in re.findall(r'\b(?:from|join)\s+"?([a-z_][a-z0-9_]*)"?', text, re.I)))
+    def columns(t):
+        if t not in _COLUMN_TABLES:
+            try:
+                _COLUMN_TABLES[t] = {c[1].lower() for c in q(f'PRAGMA table_info("{t}")')}
+            except Exception:
+                _COLUMN_TABLES[t] = set()
+        return _COLUMN_TABLES[t]
+    pairs = []
+    for m in re.finditer(r"(?:lower\(\s*)?(?:[a-z_][a-z0-9_]*\.)?([a-z_][a-z0-9_]*)\s*\)?\s*=\s*(?:lower\(\s*)?(?::([a-z_][a-z0-9_]*)|'([^']*)')", text, re.I):
+        pairs.append((m.group(1), params.get(m.group(2)) if m.group(2) else m.group(3)))
+    for m in re.finditer(r"(?<!not )\b(?:[a-z_][a-z0-9_]*\.)?([a-z_][a-z0-9_]*)\s+in\s*\(([^()]*)\)", text, re.I):
+        for item in re.findall(r"'([^']*)'|:([a-z_][a-z0-9_]*)", m.group(2)):
+            pairs.append((m.group(1), item[0] or params.get(item[1])))
+    for column, value in pairs:
+        if not isinstance(value, str) or not value.strip() or len(value) > 80: continue
+        if re.fullmatch(r'[\d\-.:/ ]+', value): continue                     # numbers, years, months, dates
+        tables = [t for t in read if column.lower() in columns(t)]
+        if not tables: continue
+        if any(q(f'SELECT 1 FROM "{t}" WHERE lower(CAST("{column}" AS TEXT)) = lower(?) LIMIT 1', (value,)) for t in tables): continue
+        seen = q(f'SELECT DISTINCT "{column}" FROM "{tables[0]}" WHERE "{column}" IS NOT NULL LIMIT 15')
+        return f"The value '{value}' does not occur in column {column} of {tables[0]}; its values look like: " + ', '.join(str(r[0]) for r in seen)
+    return None
+
+
 def narrowed_vocabulary(question, params, db=None):
     """A recipe value that is a narrower vocabulary value than the question's own word ("type_2_diabetes" when the
     question says "diabetes" and diabetes is itself a value). -> a message, or None."""

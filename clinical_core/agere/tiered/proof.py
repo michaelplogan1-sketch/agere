@@ -280,7 +280,7 @@ def report(results, items, runs, wall, data):
              f"{len({i['id'] for i in items})} questions ({sum(1 for q in data['questions'] if q.get('unanswerable'))} cannot be answered from this warehouse), "
              f"{len(items)} phrasings, {runs} runs each; +1 right, 0 declined, -{PENALTY} wrong", '']
     summary = {}
-    for arm, name in (('stack', 'Agere stack'), ('frontier', 'frontier model writing its own SQL')):
+    for arm, name in (('stack', 'Agere stack'), ('frontier', "frontier model writing its own SQL (run through the stack's checks)")):
         rs = [r for r in results if r['arm'] == arm]
         c = Counter(r['kind'] for r in rs)
         score = c['right'] - PENALTY * c['wrong']

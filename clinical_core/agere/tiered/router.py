@@ -32,6 +32,9 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
             if tier == 'llm':
                 narrowed = recipes.narrowed_vocabulary(question, params, lookup)
                 if narrowed: raise store.RecipeError(narrowed)
+            if tier != 'recipes':   # a filter on a value the data does not hold would return an empty answer that looks real
+                unknown = recipes.unknown_filter_values(sql, params, lookup)
+                if unknown: raise store.RecipeError(unknown)
             if read:
                 columns, rows, validation, read_steps, evidence['documents'] = reader.execute(
                     question, sql, params, read, db, readers=readers, s1_ledger=s1_ledger)

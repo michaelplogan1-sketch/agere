@@ -1,6 +1,7 @@
 """Model-free checks for the value-based-care recipes: wording matches, and the care-gap rules on a tiny warehouse."""
 import sqlite3
 import unittest
+import unittest.mock
 
 from clinical_core.agere.tiered import recipes
 
@@ -15,6 +16,26 @@ class Wording(unittest.TestCase):
                        ('How do the attributed practices compare in 2029 on cost and utilization?', 'attributed_panel_by_practice'),
                        ('Show open statin_cardiovascular gaps in 2029', 'care_gap_list')):
             self.assertEqual(recipes.match(q)[0], rid, q)
+
+
+
+class UnknownValues(unittest.TestCase):
+    def test_a_filter_on_a_value_the_column_never_holds_is_named(self):
+        db = sqlite3.connect(':memory:')
+        db.executescript("CREATE TABLE fill (patient_id, drug_class, fill_date); INSERT INTO fill VALUES ('A', 'glp1_agonist', '2029-01-02'), ('B', 'statin', '2029-02-02');")
+        recipes._COLUMN_TABLES.clear()
+        try:
+            if True:
+                msg = recipes.unknown_filter_values("SELECT COUNT(DISTINCT patient_id) FROM fill WHERE lower(drug_class) = lower(:c) AND substr(fill_date, 1, 4) = :y", {'c': 'GLP-1 agonist', 'y': '2029'}, db)
+                self.assertIn("'GLP-1 agonist' does not occur in column drug_class", msg); self.assertIn('glp1_agonist', msg)
+                db.executescript("CREATE TABLE claim (source); INSERT INTO claim VALUES ('ehr'); CREATE TEMP VIEW document AS SELECT 'scanned_document' AS source;")
+                self.assertIsNone(recipes.unknown_filter_values("SELECT COUNT(*) FROM document d WHERE d.source = 'scanned_document'", {}, db))   # judged against the table read
+                self.assertIsNone(recipes.unknown_filter_values("WITH x AS (SELECT 1 AS kind) SELECT * FROM x WHERE kind = 'abc'", {}, db))        # a CTE column is not checked
+                self.assertIsNone(recipes.unknown_filter_values("SELECT 1 FROM fill WHERE drug_class = :c", {'c': 'GLP1_AGONIST'}, db))
+                self.assertIsNone(recipes.unknown_filter_values("SELECT 1 FROM fill WHERE drug_class NOT IN ('insulin')", {}, db))
+                self.assertIn('insulin', recipes.unknown_filter_values("SELECT 1 FROM fill WHERE drug_class IN ('statin', 'insulin')", {}, db))
+        finally:
+            recipes._COLUMN_TABLES.clear()
 
 
 class CareGaps(unittest.TestCase):
