@@ -285,6 +285,81 @@ RECIPES = {
                "ORDER BY 1",
         'grain': ['factor'],
         'patterns': [r"what risk factors are on record for patient (?P<patient_id>[a-z0-9-]+) as of the admission on " + DATE]},
+    # --- Bridge Call (a day-2 call after discharge). The queue and the call sheet are recipes; the agent's rules are code in
+    # clinical_core/agere/tiered/bridge_call.py. Nothing here contacts anyone. Both show only what was on record by the call
+    # date: a condition, appointment or fill recorded later is not on the sheet.
+    'bridge_call_queue': {
+        'title': "Patients due a day-2 call on a given date: each hospital stay that ended two days earlier, the patient alive and not back in hospital, with what is on record since discharge (outpatient visits, telephone contacts, pharmacy fills, the next appointment)",
+        'params': {'call_date': {'type': 'date'}},
+        'sql': "WITH " + _STAYS + "due AS (SELECT s.patient_id, s.admit_date, s.discharge_date FROM st s WHERE s.discharge_date = date(:call_date, '-2 day') "
+               "AND NOT EXISTS (SELECT 1 FROM death d WHERE d.patient_id = s.patient_id AND d.death_date <= :call_date) "
+               "AND NOT EXISTS (SELECT 1 FROM st b WHERE b.patient_id = s.patient_id AND b.admit_date > s.admit_date AND b.admit_date <= :call_date)) "
+               "SELECT due.patient_id, due.admit_date, due.discharge_date, CAST(julianday(due.discharge_date) - julianday(due.admit_date) AS INTEGER) AS days_in_hospital, "
+               "COALESCE(p.preferred_language, 'not recorded') AS preferred_language, CASE WHEN p.interpreter_needed IN (1, '1', 'true', 'yes') THEN 'yes' ELSE 'no' END AS interpreter_needed, "
+               "(SELECT COUNT(*) FROM st x WHERE x.patient_id = due.patient_id AND x.admit_date < due.admit_date AND x.admit_date >= date(due.admit_date, '-365 day')) AS admissions_in_prior_12_months, "
+               "(SELECT COUNT(*) FROM visit v WHERE v.patient_id = due.patient_id AND v.event_date > due.discharge_date AND v.event_date <= :call_date AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'orders_only')) AS contacts_since_discharge, "
+               "(SELECT COUNT(*) FROM fill f WHERE f.patient_id = due.patient_id AND f.fill_date >= due.discharge_date AND f.fill_date <= :call_date) AS fills_since_discharge, "
+               "COALESCE((SELECT MIN(a.scheduled_date) FROM appointment a WHERE a.patient_id = due.patient_id AND a.scheduled_date > due.discharge_date AND COALESCE(a.booked_date, a.scheduled_date) <= :call_date), 'none on record') AS next_appointment "
+               "FROM due LEFT JOIN patient p ON p.patient_id = due.patient_id ORDER BY admissions_in_prior_12_months DESC, due.patient_id",
+        'grain': ['patient_id'],
+        'empty': 'No patient is due a day-2 call on that date',
+        'patterns': [r'who is due a bridge call on (?P<call_date>20\d{2}-\d{2}-\d{2})', r'which patients are due a (?:day[- ]2|bridge|post[- ]discharge) call on (?P<call_date>20\d{2}-\d{2}-\d{2})']},
+    'bridge_call_sheet': {
+        'title': "For one patient discharged on a given date, what a caller needs on day 2: the stay, language and interpreter need, coverage, age, prior admissions, chronic conditions, positive social-need screens, pharmacy fills and contacts since discharge, and the next appointment",
+        'params': {'patient_id': {'type': 'patient'}, 'discharge_date': {'type': 'date'}},
+        'sql': "WITH " + _STAYS + "s AS (SELECT admit_date, discharge_date FROM st WHERE patient_id = :patient_id AND discharge_date = :discharge_date ORDER BY admit_date DESC LIMIT 1) "
+               "SELECT 'stay' AS item, COALESCE((SELECT admit_date || ' to ' || discharge_date FROM s), 'no stay ending on that date') AS on_record "
+               "UNION ALL SELECT 'age', CAST(age_latest AS TEXT) FROM patient WHERE patient_id = :patient_id "
+               "UNION ALL SELECT 'coverage', COALESCE(coverage_type, 'not recorded') FROM patient WHERE patient_id = :patient_id "
+               "UNION ALL SELECT 'preferred language', COALESCE(preferred_language, 'not recorded') FROM patient WHERE patient_id = :patient_id "
+               "UNION ALL SELECT 'interpreter needed', CASE WHEN interpreter_needed IN (1, '1', 'true', 'yes') THEN 'yes' ELSE 'no' END FROM patient WHERE patient_id = :patient_id "
+               "UNION ALL SELECT 'inpatient admissions in the prior 12 months', CAST(COUNT(*) AS TEXT) FROM st x, s WHERE x.patient_id = :patient_id AND x.admit_date < s.admit_date AND x.admit_date >= date(s.admit_date, '-365 day') "
+               "UNION ALL SELECT 'chronic condition: ' || concept, MIN(COALESCE(event_date, '')) FROM condition WHERE patient_id = :patient_id AND chronic = 1 AND concept IS NOT NULL AND COALESCE(event_date, '') <= date(:discharge_date, '+2 day') GROUP BY concept "
+               "UNION ALL SELECT 'positive social-need screen: ' || n.need, MAX(n.event_date) FROM social_need n WHERE n.patient_id = :patient_id AND n.positive = 1 AND n.event_date <= date(:discharge_date, '+2 day') GROUP BY n.need "
+               "UNION ALL SELECT 'pharmacy fills since discharge (to day 2)', CAST(COUNT(*) AS TEXT) FROM fill f WHERE f.patient_id = :patient_id AND f.fill_date >= :discharge_date AND f.fill_date <= date(:discharge_date, '+2 day') "
+               "UNION ALL SELECT 'medication classes filled in the 120 days before admission', CAST(COUNT(DISTINCT f.drug_class) AS TEXT) FROM fill f, s WHERE f.patient_id = :patient_id AND f.drug_class IS NOT NULL "
+               "AND f.fill_date < s.admit_date AND f.fill_date >= date(s.admit_date, '-120 day') "
+               "UNION ALL SELECT 'visits or telephone contacts since discharge (to day 2)', CAST(COUNT(*) AS TEXT) FROM visit v WHERE v.patient_id = :patient_id AND v.event_date > :discharge_date "
+               "AND v.event_date <= date(:discharge_date, '+2 day') AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'orders_only') "
+               "UNION ALL SELECT 'next appointment', COALESCE((SELECT MIN(a.scheduled_date) FROM appointment a WHERE a.patient_id = :patient_id AND a.scheduled_date > :discharge_date "
+               "AND COALESCE(a.booked_date, a.scheduled_date) <= date(:discharge_date, '+2 day')), 'none on record') ORDER BY 1",
+        'grain': ['item'],
+        'patterns': [r"what is on the (?:bridge )?call sheet for patient (?P<patient_id>[a-z0-9-]+) discharged on (?P<discharge_date>20\d{2}-\d{2}-\d{2})"]},
+    # --- ED Second Look and Facility Line. The trigger lists and the screens are recipes; the rules are code in
+    # clinical_core/agere/tiered/second_look.py. Both show only what was on record by the date asked about.
+    'ed_return_arrivals': {
+        'title': "Emergency department arrivals on a given date by patients discharged from hospital in the previous 30 days: days since discharge, where the stay discharged them to, and what is on record since (contacts, pharmacy fills, the next appointment)",
+        'params': {'arrival_date': {'type': 'date'}},
+        'sql': "WITH " + _STAYS + "ed AS (SELECT DISTINCT patient_id FROM utilization_event WHERE kind = 'ed_visit' AND event_date = :arrival_date), "
+               "last AS (SELECT s.patient_id, MAX(s.discharge_date) AS discharge_date FROM st s JOIN ed ON ed.patient_id = s.patient_id "
+               "WHERE s.discharge_date < :arrival_date AND s.discharge_date >= date(:arrival_date, '-30 day') GROUP BY s.patient_id) "
+               "SELECT last.patient_id, last.discharge_date, CAST(julianday(:arrival_date) - julianday(last.discharge_date) AS INTEGER) AS days_since_discharge, "
+               "COALESCE((SELECT a.discharge_disposition FROM adt_visit a WHERE a.patient_id = last.patient_id AND a.discharge_date = last.discharge_date AND a.discharge_disposition IS NOT NULL LIMIT 1), 'not recorded') AS discharged_to, "
+               "(SELECT COUNT(*) FROM visit v WHERE v.patient_id = last.patient_id AND v.event_date > last.discharge_date AND v.event_date < :arrival_date AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'orders_only')) AS contacts_since_discharge, "
+               "(SELECT COUNT(*) FROM fill f WHERE f.patient_id = last.patient_id AND f.fill_date >= last.discharge_date AND f.fill_date <= :arrival_date) AS fills_since_discharge, "
+               "COALESCE((SELECT MIN(a.scheduled_date) FROM appointment a WHERE a.patient_id = last.patient_id AND a.scheduled_date >= :arrival_date AND COALESCE(a.booked_date, a.scheduled_date) <= :arrival_date), 'none on record') AS next_appointment "
+               "FROM last WHERE NOT EXISTS (SELECT 1 FROM death d WHERE d.patient_id = last.patient_id AND d.death_date < :arrival_date) "
+               "AND NOT EXISTS (SELECT 1 FROM st h WHERE h.patient_id = last.patient_id AND h.admit_date < :arrival_date AND (h.discharge_date IS NULL OR h.discharge_date >= :arrival_date)) "
+               "ORDER BY days_since_discharge, last.patient_id",
+        'grain': ['patient_id'],
+        'empty': 'No patient discharged in the previous 30 days arrived in the emergency department on that date',
+        'patterns': [r'which recently discharged patients (?:arrived|are) in the emergency department on ' + DATE.replace('readmit_date', 'arrival_date'),
+                     r'who (?:came|is) back (?:to|in) the emergency department on ' + DATE.replace('readmit_date', 'arrival_date')]},
+    'facility_census': {
+        'title': "Patients in a skilled nursing or rehabilitation facility after a hospital discharge, on a given date: discharged to a facility in the previous 30 days, alive, and not readmitted since",
+        'params': {'census_date': {'type': 'date'}},
+        'sql': "WITH " + _STAYS + "f AS (SELECT s.patient_id, s.admit_date, s.discharge_date, a.discharge_disposition FROM st s JOIN adt_visit a ON a.patient_id = s.patient_id AND a.discharge_date = s.discharge_date "
+               "WHERE a.discharge_disposition IN ('snf', 'irf') AND s.discharge_date <= :census_date AND s.discharge_date >= date(:census_date, '-30 day') "
+               "AND NOT EXISTS (SELECT 1 FROM st b WHERE b.patient_id = s.patient_id AND b.admit_date > s.admit_date AND b.admit_date <= :census_date) "
+               "AND NOT EXISTS (SELECT 1 FROM death d WHERE d.patient_id = s.patient_id AND d.death_date <= :census_date)) "
+               "SELECT DISTINCT f.patient_id, f.discharge_date, CASE f.discharge_disposition WHEN 'snf' THEN 'skilled nursing facility' ELSE 'rehabilitation facility' END AS facility, "
+               "CAST(julianday(:census_date) - julianday(f.discharge_date) AS INTEGER) AS days_in_facility, "
+               "(SELECT COUNT(*) FROM st x WHERE x.patient_id = f.patient_id AND x.admit_date < f.admit_date AND x.admit_date >= date(f.admit_date, '-365 day')) AS admissions_in_prior_12_months "
+               "FROM f ORDER BY days_in_facility, f.patient_id",
+        'grain': ['patient_id'],
+        'empty': 'No patient is in a facility after a hospital discharge on that date',
+        'patterns': [r'which patients are in a (?:nursing |rehabilitation |post[- ]acute )?facility after discharge on ' + DATE.replace('readmit_date', 'census_date'),
+                     r'who is on the facility line (?:list|census) on ' + DATE.replace('readmit_date', 'census_date')]},
     'readmission_labs': {
         'title': "For one patient, lab and vital results by period around the admission on a given date: the stay before it, between the stays, and the readmission (count, lowest, highest, last date)",
         'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
@@ -360,6 +435,20 @@ RECIPES = {
         'columns': ['patient_id', 'prior_discharge_date', 'readmission_date', 'days_between', 'stated_reason', 'problem_group', 'compared_with_prior_stay',
                     'follow_up_instruction', 'outpatient_visit_within_7_days'],
         'patterns': [r'which readmissions (?:in|for) ' + YEAR + r' have no (?:stated|documented) reason']},
+    'readmission_drivers_summary': {
+        'title': "What else is on record that drives a return, across every readmission in one year: advanced illness, social need, an emergency note saying the workup was unremarkable and the patient was admitted, discharge to a nursing or rehabilitation facility, and whether the patient could manage at home (markers on record, counted by code; how each is marked is stated beside it)",
+        'params': {'year': {'type': 'year'}},
+        'sql': _READMIT_DOCS,
+        'read': {'statement': 'The record carries a marker of what drove the return.', 'mode': 'readmission_drivers'},
+        'columns': ['finding', 'readmissions', 'share', 'how_it_is_marked'],
+        'patterns': [r'what (?:is driving|drives|drove) (?:the |our )?readmissions (?:in|for) ' + YEAR, r'why are patients (?:really )?coming back (?:in|during) ' + YEAR]},
+    'readmission_driver_list': {
+        'title': "Every readmission in one year, one row each, with where the stay before discharged the patient to and which of five drivers the record marks: advanced illness, social need, emergency department threshold, sent back from a facility, self-care at home",
+        'params': {'year': {'type': 'year'}},
+        'sql': _READMIT_DOCS,
+        'read': {'statement': 'The record carries a marker of what drove the return.', 'mode': 'readmission_driver_cases'},
+        'columns': ['patient_id', 'prior_discharge_date', 'readmission_date', 'prior_discharge_to', 'advanced_illness', 'social_need', 'emergency_department_threshold', 'sent_back_from_a_facility', 'self_care_at_home'],
+        'patterns': [r'list (?:the |every |all )?readmissions (?:in|for) ' + YEAR + r' by (?:driver|what drove them)']},
     'readmission_documented_barriers': {
         'title': "What the notes written between discharge and readmission say got in the way, across every readmission in one year: a missed visit, an unconfirmed medication list, cost or supply, transport, a refusal, a side effect, a lab limit (each note is read; one example quoted per kind)",
         'params': {'year': {'type': 'year'}},
@@ -476,6 +565,11 @@ def normalize(recipe_id, raw, db=None):
             out[name] = words[text]
         elif kind == 'patient':  # an identifier that exists, returned as stored; never a near match
             found = store.run('SELECT patient_id FROM document WHERE lower(patient_id) = lower(:p) LIMIT 1', {'p': str(value).strip()}, db)[1]
+            if not found:   # a patient with no documents is still a patient: four readmitted patients in 2029 have none
+                try:
+                    found = store.run('SELECT patient_id FROM patient WHERE lower(patient_id) = lower(:p) LIMIT 1', {'p': str(value).strip()}, db)[1]
+                except Exception:
+                    found = []
             if not found: return None
             out[name] = found[0][0]
         elif kind == 'text':  # free words from the question, kept as written; used only as a reading statement

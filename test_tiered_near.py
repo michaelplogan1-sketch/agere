@@ -47,6 +47,17 @@ class Near(unittest.TestCase):
         self.assertIsNone(near.typed(SAVED[0], {'drug_class': 'statin'}, q))                         # a slot left empty
         self.assertEqual(near.typed(SAVED[1], {'n': '5'}, 'What are the five... top 5 conditions?'), {'n': 5})
 
+    def test_a_table_or_column_the_question_names_must_be_read_by_the_saved_query(self):
+        saved = {'sql': "SELECT COUNT(DISTINCT c.patient_id) FROM concept_patient c WHERE c.concept = :concept AND EXISTS (SELECT 1 FROM utilization_event u WHERE u.patient_id = c.patient_id)"}
+        q = 'How many distinct patients with a utilization_event dated in 2027 also have a heart_failure condition in the condition table?'
+        self.assertEqual(near.named_but_unused(q, saved, {'concept': 'heart_failure', 'year': '2027'}), ['condition'])
+        self.assertEqual(near.named_but_unused('How many patients with a heart_failure condition had a utilization_event in 2027?', saved, {'concept': 'heart_failure'}), [])
+        self.assertEqual(near.named_but_unused('How many fills are flagged new_user_180?', {'sql': 'SELECT COUNT(*) FROM fill WHERE new_user_180 = 1'}, {}), [])
+        with mock.patch.object(near, '_columns', lambda: ['source_field', 'source_stream']):
+            grouped = {'sql': 'SELECT source_field, COUNT(DISTINCT patient_id) FROM social_need GROUP BY 1'}
+            self.assertEqual(near.named_but_unused('How many patients with social need records came from each source stream in 2029?', grouped, {}), ['source_stream'])
+            self.assertEqual(near.named_but_unused('How many patients by source field in 2029?', grouped, {}), [])
+
     def _propose(self, picks, reply='{"drug_class": "statin", "year": "2029"}'):
         picks = iter(picks)
         with mock.patch.object(methods, '_system_one', lambda prompt, options, ledger: next(picks)), \
@@ -59,6 +70,11 @@ class Near(unittest.TestCase):
         self.assertEqual(steps[-1]['read_as'], 'Number of statin fills in 2029 and how many patients had them')
         self.assertEqual(self._propose([('none', 0.9, 0.0)])[2][-1]['outcome'], 'no_saved_shape_asks_the_same')
         self.assertEqual(self._propose([(None, 0.4, 0.0)])[2][-1]['outcome'], 'no_saved_shape_asks_the_same')
+        # With the fallback switched on (off by default), the most similar saved shape still has to pass the small model and the exact-fit check.
+        with mock.patch.object(near, 'FALLBACK', True):
+            self.assertEqual(self._propose([('none', 0.9, 0.0), ('not_exact', 0.9, 0.0)])[2][-1]['outcome'], 'saved_shape_is_not_an_exact_fit')
+            self.assertEqual(self._propose([('none', 0.9, 0.0)], reply='{"fits": false}')[2][-1]['outcome'], 'small_model_says_it_does_not_fit')
+            self.assertIsNotNone(self._propose([('none', 0.9, 0.0), ('exact', 0.93, 0.0)])[0])
         self.assertEqual(self._propose([('1', 0.95, 0.0), ('not_exact', 0.9, 0.0)])[2][-1]['outcome'], 'saved_shape_is_not_an_exact_fit')
         self.assertEqual(self._propose([('1', 0.95, 0.0), (None, 0.5, 0.0)])[2][-1]['outcome'], 'saved_shape_is_not_an_exact_fit')
         self.assertEqual(self._propose([('1', 0.95, 0.0)], reply='{"fits": false}')[2][-1]['outcome'], 'small_model_says_it_does_not_fit')

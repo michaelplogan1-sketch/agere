@@ -22,6 +22,7 @@ from collections import Counter
 from . import bottles as bottle_store, models
 
 K = 5
+FALLBACK = os.environ.get('AGERE_TIERED_NEAR_FALLBACK', 'off') == 'on'   # off: raised recovery 42->51 of 59 but one of three wrong-match flags in 112 came through it (2026-11-15)   # try the most similar saved shape when the first pick says none
 SYSTEM = '''Fill the slots of one saved analytics question from a new question that asks the same thing in other words.
 Return exactly one JSON object mapping each slot name to its value taken from the new question, or {"fits": false} if the
 new question asks for something the saved question does not. A year is YYYY, a month is YYYY-MM, an integer is digits, and
@@ -85,6 +86,35 @@ def typed(bottle, raw, question):
     return out
 
 
+_COLUMNS = []
+
+
+def _columns():
+    """Code only. Warehouse column names of two or more words (source_stream, text_chars), read once from the schema."""
+    if not _COLUMNS:
+        from . import store
+        db = store.connect()
+        try:
+            tables = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')")]
+            _COLUMNS.extend(sorted({r[1] for t in tables for r in db.execute(f'PRAGMA table_info("{t}")') if '_' in r[1] and len(r[1]) > 5}))
+        except Exception:
+            _COLUMNS.append('')
+        finally:
+            db.close()
+    return [c for c in _COLUMNS if c]
+
+
+def named_but_unused(question, bottle, params):
+    """Code only. Tables and columns the question names in the warehouse's own spelling ("in the condition table", new_user_180)
+    that the saved query never reads. A saved recipe that reads a different table is not the same question, however alike
+    the words are. Slot values (heart_failure) are not names."""
+    text, sql = question.lower(), str(bottle.get('sql') or '').lower()
+    values = {str(v).lower() for v in (params or {}).values()}
+    named = set(re.findall(r'\b[a-z][a-z0-9]*_[a-z0-9_]+\b', text)) | set(re.findall(r'\b([a-z][a-z0-9_]*) table\b', text))
+    named |= {c for c in _columns() if ' ' + c.replace('_', ' ') + ' ' in ' ' + re.sub(r'[^a-z0-9 ]', ' ', text) + ' '}   # "source stream" names source_stream
+    return sorted(n for n in named - values - {'the', 'a', 'this', 'that', 'each', 'one', 'same', 'latest'} if not re.search(r'\b' + re.escape(n) + r'\b', sql))
+
+
 def propose(question, bottles, s1_ledger=None):
     """-> (saved shape or None, params or None, steps). Each step is a ledger step; the last says why it stopped."""
     from . import methods
@@ -99,7 +129,13 @@ def propose(question, bottles, s1_ledger=None):
     label, p, usd = methods._system_one('New question: ' + question + '\nWhich saved question asks exactly the same thing, with only the values in braces different?', options, s1_ledger)
     steps.append({'tier': 'near', 'model': 'system_one', 'outcome': 'picked' if label and label != 'none' else 'none_picked', 'label': label, 'confidence': round(p, 4),
                   'tokens': 0, 'usd': usd, 'shortlist': [b['id'] for b in found]})
-    if not label or label == 'none': return stop('no_saved_shape_asks_the_same')
+    # With many similar saved shapes the first pick says "none" too often (8 of 38 rewordings whose shape was in the shortlist,
+    # measured 2026-11-14). The most similar shape then goes forward anyway: the small model can still say it does not fit and
+    # the exact-fit check still has to pass, so the pick is a shortcut, not the guard.
+    if not label or label == 'none':
+        label = str(found[0]['id']) if FALLBACK else None
+        if not label: return stop('no_saved_shape_asks_the_same')
+        steps[-1]['outcome'] = 'none_picked_most_similar_goes_forward'
     bottle = next(b for b in found if str(b['id']) == label)
     params = {}
     if bottle['params']:
@@ -112,6 +148,8 @@ def propose(question, bottles, s1_ledger=None):
         if not isinstance(raw, dict) or raw.get('fits') is False: return stop('small_model_says_it_does_not_fit', bottle_id=bottle['id'])
         params = typed(bottle, raw, question)
         if params is None: return stop('slot_values_failed_type_checks', bottle_id=bottle['id'], raw=json.dumps(raw)[:160])
+    missing = named_but_unused(question, bottle, params)
+    if missing: return stop('question_names_something_the_saved_query_does_not_read', bottle_id=bottle['id'], names=missing)
     filled = bottle['template']
     for name, value in params.items(): filled = filled.replace('{' + name + '}', str(value))
     label, p, usd = methods._system_one('New question: ' + question + '\nSaved question with its values: ' + filled + '\nIs the saved question exactly what the new question asks?', FIT, s1_ledger)
