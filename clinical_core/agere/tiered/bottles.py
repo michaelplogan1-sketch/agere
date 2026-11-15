@@ -116,13 +116,13 @@ class Bottles:
     def record(self, bottle_id):
         """-> {kind: count} for one recipe."""
         out = {k: 0 for k in self.EVENTS}
-        out.update(dict(self.db.execute('SELECT kind, COUNT(*) FROM bottle_event WHERE bottle_id = ? GROUP BY kind', (bottle_id,)).fetchall()))
+        out.update(dict(self.db.execute("SELECT kind, COUNT(*) FROM bottle_event WHERE bottle_id = ? AND (detail_json IS NULL OR detail_json NOT LIKE '%superseded%') GROUP BY kind", (bottle_id,)).fetchall()))
         return out
 
     def records(self):
         """-> {bottle_id: {kind: count}} for every recipe with any event."""
         out = {}
-        for bid, kind, n in self.db.execute('SELECT bottle_id, kind, COUNT(*) FROM bottle_event GROUP BY bottle_id, kind'):
+        for bid, kind, n in self.db.execute("SELECT bottle_id, kind, COUNT(*) FROM bottle_event WHERE detail_json IS NULL OR detail_json NOT LIKE '%superseded%' GROUP BY bottle_id, kind"):
             out.setdefault(bid, {k: 0 for k in self.EVENTS})[kind] = n
         return out
 
