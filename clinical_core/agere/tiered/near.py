@@ -45,8 +45,9 @@ def _words(text):
 
 def _index(bottles):
     """Word weights over the promoted saved shapes (code only; rebuilt when the store changes)."""
-    saved = [b for b in bottles.full() if b['status'] == 'promoted']
-    key = (str(bottles.path), len(saved), max((b['id'] for b in saved), default=0))
+    blocked = bottles.near_blocked() if hasattr(bottles, 'near_blocked') else set()   # applied to questions they do not fit, twice or more
+    saved = [b for b in bottles.full() if b['status'] == 'promoted' and b['id'] not in blocked]
+    key = (str(bottles.path), len(saved), max((b['id'] for b in saved), default=0), len(blocked))
     if _INDEX.get('key') == key: return _INDEX
     docs = {b['id']: Counter(_words(b['template'])) for b in saved}
     df = Counter(w for c in docs.values() for w in c)

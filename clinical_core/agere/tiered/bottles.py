@@ -44,6 +44,11 @@ class Bottles:
             validation_json TEXT, provenance_json TEXT, schema_version TEXT, status TEXT, uses INTEGER DEFAULT 0)''')
         if 'read_json' not in [c[1] for c in self.db.execute('PRAGMA table_info(bottle)')]:
             self.db.execute('ALTER TABLE bottle ADD COLUMN read_json TEXT')
+        # The track record: every use of a saved recipe, every independent re-check of its answer, and every time it was applied
+        # to a question it does not fit. Read by clinical_core/agere/tiered/upkeep.py, which decides whether a recipe keeps answering.
+        self.db.execute('''CREATE TABLE IF NOT EXISTS bottle_event(
+            id INTEGER PRIMARY KEY, at TEXT, bottle_id INTEGER, kind TEXT, question TEXT, params_json TEXT, detail_json TEXT)''')
+        self.db.execute('CREATE INDEX IF NOT EXISTS bottle_event_bottle ON bottle_event(bottle_id, kind)')
         self.db.commit()
 
     def add(self, question, recipe, validation, provenance, *, status='provisional'):
@@ -94,8 +99,45 @@ class Bottles:
             return {'id': bid, 'sql': sql, 'grain': json.loads(grain_json), 'read': json.loads(read_json) if read_json else None}, params
         return None
 
-    def used(self, bottle_id):
+    EVENTS = ('use', 'near_use', 'check_agree', 'check_differ', 'misapplied')
+
+    def used(self, bottle_id, question=None, params=None, via='exact'):
         self.db.execute('UPDATE bottle SET uses = uses + 1 WHERE id=?', (bottle_id,)); self.db.commit()
+        self.event(bottle_id, 'use' if via == 'exact' else 'near_use', question, params)
+
+    def event(self, bottle_id, kind, question=None, params=None, detail=None, at=None):
+        """One line of a recipe's track record. kind: use, near_use, check_agree, check_differ, misapplied."""
+        if kind not in self.EVENTS: raise ValueError(f'unknown track-record event {kind}')
+        self.db.execute('INSERT INTO bottle_event(at, bottle_id, kind, question, params_json, detail_json) VALUES(?,?,?,?,?,?)',
+                        (at or time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), bottle_id, kind, question,
+                         json.dumps(params, default=str) if params is not None else None, json.dumps(detail, default=str) if detail is not None else None))
+        self.db.commit()
+
+    def record(self, bottle_id):
+        """-> {kind: count} for one recipe."""
+        out = {k: 0 for k in self.EVENTS}
+        out.update(dict(self.db.execute("SELECT kind, COUNT(*) FROM bottle_event WHERE bottle_id = ? AND (detail_json IS NULL OR detail_json NOT LIKE '%superseded%') GROUP BY kind", (bottle_id,)).fetchall()))
+        return out
+
+    def records(self):
+        """-> {bottle_id: {kind: count}} for every recipe with any event."""
+        out = {}
+        for bid, kind, n in self.db.execute("SELECT bottle_id, kind, COUNT(*) FROM bottle_event WHERE detail_json IS NULL OR detail_json NOT LIKE '%superseded%' GROUP BY bottle_id, kind"):
+            out.setdefault(bid, {k: 0 for k in self.EVENTS})[kind] = n
+        return out
+
+    def uses(self, bottle_id, limit=20):
+        """-> distinct (question, params) this recipe answered, most recent first."""
+        seen, out = set(), []
+        for q, pj in self.db.execute("SELECT question, params_json FROM bottle_event WHERE bottle_id = ? AND kind IN ('use', 'near_use') AND question IS NOT NULL ORDER BY id DESC", (bottle_id,)):
+            if q.lower() in seen: continue
+            seen.add(q.lower()); out.append((q, json.loads(pj) if pj else {}))
+            if len(out) >= limit: break
+        return out
+
+    def near_blocked(self, at_least=2):
+        """Recipes applied to a question they do not fit at least this many times: the near-match rung no longer offers them."""
+        return {r[0] for r in self.db.execute("SELECT bottle_id FROM bottle_event WHERE kind = 'misapplied' GROUP BY bottle_id HAVING COUNT(*) >= ?", (at_least,))}
 
     def set_status(self, bottle_id, status, reason=None):
         row = self.db.execute('SELECT provenance_json FROM bottle WHERE id=?', (bottle_id,)).fetchone()
