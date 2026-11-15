@@ -307,6 +307,7 @@ def merge():
         recipe = {'sql': b['sql'], 'params': {n: {**p, 'value': None} for n, p in b['params'].items()}, 'grain': b.get('grain') or [], 'question_template': b['template']}
         hit = source.match(prov.get('question', ''), statuses=('confirmed',))
         if not hit: out['skipped: original question no longer matches'] += 1; continue
+        if hit[0]['id'] != b['id']: out['skipped: the question matches another saved recipe first'] += 1; continue   # its slots are not this recipe's slots
         for name, value in hit[1].items(): recipe['params'][name]['value'] = value
         bid, why = main.add(prov['question'], recipe, b.get('validation') or {}, {**prov, 'from': 'curriculum', 'confirmed_by_second_model': True})
         out['merged as provisional' if bid else f'skipped: {why}'] += 1
