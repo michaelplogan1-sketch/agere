@@ -963,6 +963,60 @@ def near_eval(limit=60, s1_ledger=None):
     return summary
 
 
+CHANGE_SYSTEM = '''Change one analytics question so that it asks for something materially different: a different measure, a different
+grouping, one more condition, or a different comparison. Keep the same subject, the same wording style and most of the same
+words, so the new question looks close to the original, but a query that answers the original must give the wrong answer to it.
+Keep it answerable from a healthcare data warehouse. Return exactly one JSON object:
+{"changed": "<the new question>", "difference": "<what is different, in a few words>"}.'''
+
+
+def near_negative(limit=60, s1_ledger=None):
+    """Does the near-match rung answer a question it should leave alone? For promoted saved shapes, the small model changes the
+    original question in one material way. A near-match answer that reuses the original's saved recipe is a wrong match.
+    The rung leaving the question for the frontier model, or matching a different saved recipe, is not counted wrong here
+    (a different recipe is listed for reading). Reads the saved recipes; saves nothing."""
+    import os, shutil, tempfile
+    os.environ.pop('ANTHROPIC_API_KEY', None)
+    from run_integrated_stack import keys
+    keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+    from . import models
+    scratch = Path(tempfile.mkdtemp(prefix='near-negative-'))
+    shutil.copy(os.environ.get('AGERE_TIERED_BOTTLES', bottle_store.DEFAULT), scratch / 'bottles.sqlite3')
+    bottles = bottle_store.Bottles(scratch / 'bottles.sqlite3')
+    saved = [b for b in bottles.full() if b['status'] == 'promoted' and not b.get('read') and (b.get('provenance') or {}).get('question')]
+    picked = saved[::max(1, len(saved) // int(limit))][:int(limit)]
+    os.environ['AGERE_TIERED_NEAR'] = 'on'
+    lines, tally = [], Counter()
+    for b in picked:
+        question = b['provenance']['question']
+        try:
+            got = models._json(models._claude(models.SLM, CHANGE_SYSTEM, question)[0])
+            changed, difference = ' '.join(str(got.get('changed') or '').split()), str(got.get('difference'))[:80]
+        except Exception as exc:
+            if 'limit' in str(exc).lower(): raise
+            continue
+        if len(changed) < 12 or bottles.match(changed, statuses=('promoted',)): continue
+        try:
+            o = router.answer(changed, tiers=('bottles', 'recipes', 'system1', 'slm', 'near'), bottles=bottles, s1_ledger=s1_ledger)
+        except Exception as exc:
+            if 'limit' in str(exc).lower(): raise
+            o = {'status': 'error', 'final_tier': None, 'plan': {}}
+        plan = o.get('plan') or {}
+        if o['status'] == 'answered' and o.get('final_tier') == 'near':
+            kind = 'WRONG MATCH: the original recipe' if plan.get('near_match_of') == b['template'] else 'near answered with a different saved recipe'
+        elif o['status'] == 'answered':
+            kind = f"answered by {o['final_tier']}"
+        else:
+            kind = 'left for the frontier model'
+        tally[kind] += 1
+        line = f"{b['id']:4} {kind:44} | {question[:70]} -> {changed[:90]} [{difference}]"
+        print(line, flush=True); lines.append(line)
+    os.environ['AGERE_TIERED_NEAR'] = 'off'
+    summary = f"near-match rung on {sum(tally.values())} changed questions | {dict(tally)}"
+    (OUT / f"near-negative-{time.strftime('%Y%m%d-%H%M%S')}.txt").write_text('\n'.join(lines + [summary]) + '\n')
+    return summary
+
+
 def methods_eval(path='eval/tiered/methods.json', config=None, workers=1):
     """Routing check for the methods rung on the real warehouse: each question through the whole app ladder.
     Scored on which rung answered and which method ran (eval/tiered/methods.json), not on the figures."""
@@ -1038,6 +1092,10 @@ def main(argv):
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         print('\n' + drivers_eval(argv[1] if len(argv) > 1 else '2029', os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'),
                                   limit=int(argv[2]) if len(argv) > 2 else None))
+        return
+    if argv[0] == 'near-negative':
+        import os
+        print('\n' + near_negative(argv[1] if len(argv) > 1 else 60, os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3')))
         return
     if argv[0] == 'near':
         import os
