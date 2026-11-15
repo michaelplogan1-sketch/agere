@@ -51,6 +51,9 @@ class Near(unittest.TestCase):
         saved = {'sql': "SELECT COUNT(DISTINCT c.patient_id) FROM concept_patient c WHERE c.concept = :concept AND EXISTS (SELECT 1 FROM utilization_event u WHERE u.patient_id = c.patient_id)"}
         q = 'How many distinct patients with a utilization_event dated in 2027 also have a heart_failure condition in the condition table?'
         self.assertEqual(near.named_but_unused(q, saved, {'concept': 'heart_failure', 'year': '2027'}), ['condition'])
+        by_kind = {'sql': "SELECT COUNT(DISTINCT patient_id) FROM concept_patient WHERE kind = 'condition' AND concept = :concept"}
+        self.assertEqual(near.named_but_unused('Count unique patients with a heart_failure condition in the condition table.', by_kind, {'concept': 'heart_failure'}), ['condition'])
+        self.assertEqual(near.named_but_unused('Count patients in the condition table', {'sql': 'SELECT COUNT(*) FROM condition c'}, {}), [])
         self.assertEqual(near.named_but_unused('How many patients with a heart_failure condition had a utilization_event in 2027?', saved, {'concept': 'heart_failure'}), [])
         self.assertEqual(near.named_but_unused('How many fills are flagged new_user_180?', {'sql': 'SELECT COUNT(*) FROM fill WHERE new_user_180 = 1'}, {}), [])
         with mock.patch.object(near, '_columns', lambda: ['source_field', 'source_stream']):

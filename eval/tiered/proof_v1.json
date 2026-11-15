@@ -1,0 +1,250 @@
+{
+ "version": "proof_v1.1",
+ "authored": "2026-11-15",
+ "authored_by": "Claude (build owner)",
+ "held_out": "These questions are not used by the learning loop, the curriculum or as recipe examples. The stack is scored on a copy of its saved recipes with learning switched off.",
+ "reference": "Each reference is computed in clinical_core/agere/tiered/proof.py in Python, without the stack's SQL or recipes. Definitions: a hospital stay is counted once (rows that repeat, overlap or continue one stay are one stay); a readmission is an inpatient stay beginning 1 to 30 days after an earlier discharge; spend is payer paid amounts on claims that count in metrics; care gaps follow the simplified rules stated in the care-gap recipes.",
+ "scoring": "+1 right, 0 declined, -10 wrong. An unanswerable question that is answered counts as wrong. Three phrasings per question, three runs per phrasing; all runs reported.",
+ "questions": [
+  {
+   "id": "R1",
+   "domain": "readmissions",
+   "reference": "readmissions",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many 30-day readmissions were there in 2029, counting each hospital stay once?",
+    "Count the 2029 readmissions within 30 days of an earlier inpatient discharge, with duplicated stay rows counted once.",
+    "In 2029, how many times did a patient come back to hospital within 30 days of being discharged?"
+   ]
+  },
+  {
+   "id": "R2",
+   "domain": "readmissions",
+   "reference": "readmission_rate",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was the 30-day readmission rate in 2029 counting each stay once?",
+    "Of hospital stays discharged in 2029, what share were followed by an admission 1 to 30 days later, each stay counted once?",
+    "Give the 2029 thirty-day readmission rate with every inpatient stay counted a single time."
+   ]
+  },
+  {
+   "id": "R3",
+   "domain": "readmissions",
+   "reference": "readmissions_no_visit",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "Which readmissions in 2029 had no follow-up visit within 7 days? How many are there?",
+    "How many 2029 readmissions had no outpatient visit in the 7 days after the earlier discharge?",
+    "Count readmissions in 2029 where the patient was not seen in clinic within a week of going home."
+   ]
+  },
+  {
+   "id": "V1",
+   "domain": "value-based care",
+   "reference": "pmpm",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was the cost per member per month in 2029 by line of business?",
+    "Break down 2029 paid PMPM by line of business.",
+    "For each line of business, what did the payer pay per member per month in 2029?"
+   ]
+  },
+  {
+   "id": "V2",
+   "domain": "value-based care",
+   "reference": "members_by_lob",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many distinct members were enrolled in 2029 in each line of business?",
+    "Count unique members with any member month in 2029, by line of business.",
+    "By line of business, how many people had coverage at some point in 2029?"
+   ]
+  },
+  {
+   "id": "V3",
+   "domain": "value-based care",
+   "reference": "care_gaps",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What are the care gaps in 2029?",
+    "Summarise the open quality gaps for 2029 by measure: how many members are eligible and how many have a gap?",
+    "For 2029, how many eligible members and how many open gaps are there for each care-gap measure?"
+   ]
+  },
+  {
+   "id": "V4",
+   "domain": "value-based care",
+   "reference": "a1c_gaps",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many members with diabetes had an HbA1c gap in 2029 (no test in the year or the latest above 9)?",
+    "Count 2029 diabetic members aged 18 to 75 whose latest HbA1c that year was over 9 or who had no HbA1c at all.",
+    "In 2029, how many enrolled diabetics aged 18-75 lacked an HbA1c result or had their last one above 9?"
+   ]
+  },
+  {
+   "id": "V5",
+   "domain": "value-based care",
+   "reference": "top_cost",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "List the top 5 highest-cost members in 2029",
+    "Which 5 members had the highest payer paid amounts in 2029, and how much?",
+    "Show the five most expensive members of 2029 by paid dollars."
+   ]
+  },
+  {
+   "id": "U1",
+   "domain": "utilisation",
+   "reference": "ed_visits",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many emergency department visits were there in 2029?",
+    "Count the ED visit utilization events dated in 2029.",
+    "What was the total number of emergency visits recorded for 2029?"
+   ]
+  },
+  {
+   "id": "U2",
+   "domain": "utilisation",
+   "reference": "statin_patients",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many distinct patients had a statin fill in 2029?",
+    "Count unique patients who filled a statin at least once during 2029.",
+    "In 2029, how many people picked up a statin prescription?"
+   ]
+  },
+  {
+   "id": "U3",
+   "domain": "utilisation",
+   "reference": "heart_failure_patients",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many distinct patients have heart failure on record?",
+    "Count unique patients with a heart_failure condition in the condition table.",
+    "How many people in the data have ever been recorded with heart failure?"
+   ],
+   "accept_by_phrasing": {
+    "0": [
+     "heart_failure_any_source"
+    ],
+    "1": [
+     "heart_failure_patients"
+    ],
+    "2": [
+     "heart_failure_any_source"
+    ]
+   }
+  },
+  {
+   "id": "U4",
+   "domain": "readmissions",
+   "reference": "ed_returns",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many emergency arrivals in 2029 came within 30 days of a hospital discharge, from patients not in hospital at the time?",
+    "Count 2029 ED visits by patients who had been discharged from an inpatient stay in the previous 30 days and were not inpatients that day.",
+    "In 2029, how many times did a recently discharged patient (within 30 days) turn up in the emergency department?"
+   ],
+   "accept_by_phrasing": {
+    "0": [
+     "ed_returns",
+     "ed_returns_visit_rows"
+    ],
+    "1": [
+     "ed_returns",
+     "ed_returns_visit_rows"
+    ],
+    "2": [
+     "ed_returns",
+     "ed_returns_visit_rows",
+     "ed_returns_no_inpatient_rule",
+     "ed_returns_no_inpatient_rule_visit_rows"
+    ]
+   }
+  },
+  {
+   "id": "X1",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was the average CMS-HCC V28 risk score of our Medicare members in 2029?",
+    "Give me the 2029 mean RAF score under the V28 model for Medicare Advantage members."
+   ]
+  },
+  {
+   "id": "X2",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our HCAHPS patient experience score in 2029?",
+    "How did patients rate us on the HCAHPS survey in 2029?"
+   ]
+  },
+  {
+   "id": "X3",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "How many shared savings dollars did CMS pay us for performance year 2029?",
+    "What was our MSSP shared savings payment for 2029?"
+   ]
+  },
+  {
+   "id": "X4",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "How many registered nurses were on staff in 2029?",
+    "What was our nurse staffing ratio in 2029?"
+   ]
+  }
+ ],
+ "audit": [
+  {
+   "at": "2026-11-15",
+   "question": "U3",
+   "finding": "\"on record\" and \"ever been recorded\" include every source of a diagnosis (concept_patient, 387 patients); only the phrasing that names the condition table means that table (329). Both arms answered 387 to the two broad phrasings.",
+   "change": "phrasings 0 and 2 accept the any-source count; phrasing 1 keeps the condition-table count"
+  },
+  {
+   "at": "2026-11-15",
+   "question": "U4",
+   "finding": "Two emergency visit rows for one patient on one day are counted once by the key and twice by a reading of visit rows as recorded (142 against 144); the third phrasing states no rule about patients already in hospital.",
+   "change": "phrasings 0 and 1 accept 142 or 144; phrasing 2 also accepts the counts without the in-hospital exclusion (153, 156). A count that pairs duplicated stay rows as discharges (163) stays wrong."
+  },
+  {
+   "at": "2026-11-15",
+   "question": "R1",
+   "finding": "Both arms answered \"how many readmissions in 2029\" with the index stays discharged in 2029 that were followed by a readmission (72) rather than the readmissions that began in 2029 (70).",
+   "change": "none: the question asks about readmissions in 2029; recorded as a shared miss"
+  }
+ ],
+ "audit_rule": "The key was audited after the first run (artifacts/agere-tiered-core/proof/, the first file of 2026-11-15) because both arms disagreed with it on the same items. A change is made only where the wording of that phrasing supports another reading; the reason is recorded here; the pre-audit run is kept."
+}
