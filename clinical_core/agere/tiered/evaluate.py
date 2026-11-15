@@ -1003,13 +1003,25 @@ def near_negative(limit=60, s1_ledger=None):
             o = {'status': 'error', 'final_tier': None, 'plan': {}}
         plan = o.get('plan') or {}
         if o['status'] == 'answered' and o.get('final_tier') == 'near':
-            kind = 'WRONG MATCH: the original recipe' if plan.get('near_match_of') == b['template'] else 'near answered with a different saved recipe'
+            if plan.get('near_match_of') == b['template']:
+                kind = 'WRONG MATCH: the original recipe'
+            else:
+                # A different saved recipe may be the right one. The frontier model writes its own query for the changed question;
+                # the near answer counts as right only when the rows agree.
+                try:
+                    ref = router.answer(changed, tiers=('llm',), bottles=bottles, s1_ledger=s1_ledger)
+                    same = ref['status'] == 'answered' and correct(ref['rows'], o['rows']) and correct(o['rows'], ref['rows'])
+                    kind = 'near, another saved recipe: agrees with a fresh query' if same else 'WRONG: near, another saved recipe, differs from a fresh query' if ref['status'] == 'answered' else 'near, another saved recipe: no fresh query to compare'
+                except Exception as exc:
+                    if 'limit' in str(exc).lower(): raise
+                    kind = 'near, another saved recipe: no fresh query to compare'
+                kind += f" <{str(plan.get('near_match_of'))[:90]}>"
         elif o['status'] == 'answered':
             kind = f"answered by {o['final_tier']}"
         else:
             kind = 'left for the frontier model'
-        tally[kind] += 1
-        line = f"{b['id']:4} {kind:44} | {question[:70]} -> {changed[:90]} [{difference}]"
+        tally[kind.split(' <')[0]] += 1
+        line = f"{b['id']:4} {kind} | {question[:70]} -> {changed[:160]} [{difference}]"
         print(line, flush=True); lines.append(line)
     os.environ['AGERE_TIERED_NEAR'] = 'off'
     summary = f"near-match rung on {sum(tally.values())} changed questions | {dict(tally)}"
