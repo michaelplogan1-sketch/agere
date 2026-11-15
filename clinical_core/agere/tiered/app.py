@@ -4,6 +4,7 @@ try_answer() runs a fresh question through the tiers. A validated answer is retu
 Anything the core does not answer (no tier fits, the frontier tier says one query cannot answer it, validation
 fails) returns None and the caller continues on its existing path, so nothing the app could do before is lost.
 """
+import json
 import contextvars
 import os
 
@@ -162,6 +163,24 @@ def try_answer(stack, question):
                 if results[-1] is None: break  # one unanswered part: the message is not answered in pieces
             if all(results): return _combine(question, found, results, how)
     return _single(stack, question)
+
+
+def verification(bottle_id):
+    """The saved recipe's own record, in a sentence a reviewer can check: who confirmed it and how often it has been re-checked."""
+    if not bottle_id: return None
+    try:
+        from . import upkeep
+        bottles = bottle_store.Bottles()
+        row = bottles.db.execute('SELECT created, provenance_json FROM bottle WHERE id = ?', (bottle_id,)).fetchone()
+        if not row: return None
+        st, prov = upkeep.standing(bottles, bottle_id), json.loads(row[1] or '{}')
+        last = bottles.db.execute("SELECT MAX(at) FROM bottle_event WHERE bottle_id = ? AND kind LIKE 'check_%'", (bottle_id,)).fetchone()[0]
+        uses = st.get('use', 0) + st.get('near_use', 0)
+        how = ('confirmed by a second model writing its own query' if prov.get('confirmed_by_second_model') else 'promoted after the regression set showed no loss')
+        return (f"Saved recipe {bottle_id}, saved {str(row[0])[:10]}, {how}. Independent re-checks: {st['check_agree']} agreed, {st['check_differ']} disagreed"
+                + (f', last on {str(last)[:10]}' if last else ', none yet') + f". Answered {uses} earlier question{'s' if uses != 1 else ''}.")
+    except Exception:
+        return None
 
 
 def _readmission_headline(answers):
@@ -343,6 +362,8 @@ def _climb(stack, question, cohort, takeover_ok, near):
     models_used = ', '.join(dict.fromkeys(str(s['model']) for s in outcome['steps'] if s.get('model'))) or 'none'
     answer['facts'] = {'answered_by': f"{TIER_NAMES[tier][0].upper() + TIER_NAMES[tier][1:]}. {outcome['seconds']} seconds, "
                                       f"${usd:.4f} in model calls (models used: {models_used})."}
+    verified = verification(recipe.get('bottle_id')) if tier in ('bottles', 'near') else None
+    if verified: answer['facts']['verification'] = verified
     answer['facts']['summary_written_by'] = ('The small model worded the summary from facts computed by code; code checked that every number in it is in the result.'
                                              if wrote['by'] == 'small_model' else 'Code wrote the summary; no model.' +
                                              (' A small-model summary was ' + wrote['small_model'] + '.' if wrote.get('small_model') else ''))

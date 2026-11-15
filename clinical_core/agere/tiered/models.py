@@ -123,12 +123,30 @@ symptom, dyspnea, follow_up, edema, imaging_finding, social_need, smoking_status
 Patient identifiers look like WHP-66F4B476DECF or P-1001.'''
 
 
-def llm_recipe(question, error=None, model=None):
+EXAMPLES = os.environ.get('AGERE_TIERED_LLM_EXAMPLES', 'off') == 'on'   # show the writer the nearest verified saved queries
+
+
+def nearest_examples(question, k=3, exclude=()):
+    """The k promoted saved recipes most like the question, as (question template, SQL). Code only."""
+    from . import bottles as bottle_store, near
+    try:
+        found = near.shortlist(question, bottle_store.Bottles(), k=k + len(exclude) + 2)
+    except Exception:
+        return []
+    out = [(b['template'], b['sql']) for b in found if b['id'] not in exclude and not b.get('read')]
+    return out[:k]
+
+
+def llm_recipe(question, error=None, model=None, examples=None):
     """Tier 4. -> (recipe dict or None, step). error: one SQL execution error to correct, if any.
     model: a different model for an independent second query (curriculum.confirm); the frontier model by default."""
     conditions = ', '.join(r[0] for r in store.run("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition' ORDER BY 1")[1])
     system = LLM_SYSTEM % (store.schema_text(), definitions(), conditions)
-    user = 'Question: ' + question + ('\n\nYour previous SQL failed to execute: ' + error + '\nReturn a corrected JSON object.' if error else '')
+    if examples is None and EXAMPLES and model in (None, LLM): examples = nearest_examples(question)
+    shown = ''.join(f'\nSaved question: {t}\nIts verified SQL: {q}\n' for t, q in (examples or []))
+    user = ('Verified saved queries for similar questions follow. They answer other questions: reuse their tables, joins and '
+            'definitions only where this question asks the same thing, and write your own SQL for what differs.\n' + shown + '\n' if shown else '') + \
+           'Question: ' + question + ('\n\nYour previous SQL failed to execute: ' + error + '\nReturn a corrected JSON object.' if error else '')
     text, step = _claude(model or LLM, system, user)
     try:
         out = _json(text)

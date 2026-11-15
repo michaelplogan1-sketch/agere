@@ -49,7 +49,12 @@ def auto():
     try:
         from . import curriculum
         checked = curriculum.confirm(main=True)
-        return {'second_model': checked, 'gate': promote()}
+        gate = promote()
+        # Each recipe the gate just promoted is re-checked by a different model before it builds a track record of its own.
+        new = {c['bottle'] for c in gate.get('candidates', []) if c['status'] == 'promoted'}
+        from . import upkeep
+        kept = upkeep.sweep(only=new, workers=4) if new else {'recipes re-checked': 0}
+        return {'second_model': checked, 'gate': gate, 'upkeep': kept}
     finally:
         LOCK.unlink(missing_ok=True)
 
@@ -125,3 +130,7 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'promote': print(json.dumps(promote(), indent=1))
     elif sys.argv[1] == 'training': print(json.dumps(training()))
     elif sys.argv[1] == 'auto': print(json.dumps(auto(), indent=1, default=str))
+    elif sys.argv[1] == 'promote-and-check':
+        out = promote(); new = {c['bottle'] for c in out.get('candidates', []) if c['status'] == 'promoted'}
+        from . import upkeep
+        print(json.dumps({'gate': {k: v for k, v in out.items() if k != 'candidates'}, 'promoted': len(new), 'upkeep': upkeep.sweep(only=new) if new else None}, indent=1, default=str))

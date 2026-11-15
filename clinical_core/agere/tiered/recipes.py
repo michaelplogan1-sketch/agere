@@ -67,6 +67,24 @@ _READMIT_DOCS = (_READMIT_PAIRS + ", c AS (SELECT p.patient_id, p.readmit_admit,
                "SELECT c.patient_id, c.readmit_admit, COALESCE(c.index_admit, '') AS index_admit, c.index_discharge, COALESCE(c.readmit_discharge, '') AS readmit_discharge, c.visit7, "
                "d.record_id, d.event_date, d.document_type FROM c LEFT JOIN document d ON d.patient_id = c.patient_id AND d.event_date >= COALESCE(c.index_admit, c.index_discharge) "
                "AND d.event_date <= date(COALESCE(c.readmit_discharge, c.readmit_admit), '+30 day') ORDER BY c.patient_id, c.readmit_admit, d.event_date, d.record_id")
+# Members enrolled in the year, their attributed practice (latest month) and age at year end; then one row per member and
+# measure they are eligible for, with gap = 1 when the measure is not met and a plain statement of what is missing.
+_CARE_GAPS = ("en AS (SELECT m.patient_id, (SELECT x.attribution_practice_id FROM member_month x WHERE x.patient_id = m.patient_id AND substr(x.month, 1, 4) = :year "
+              "ORDER BY x.month DESC LIMIT 1) AS practice, MAX(m.line_of_business = 'medicare' OR m.line_of_business = 'dual') AS medicare FROM member_month m WHERE substr(m.month, 1, 4) = :year GROUP BY m.patient_id), "
+              "pe AS (SELECT en.*, p.sex_reported AS sex, CAST((julianday(:year || '-12-31') - julianday(p.birth_date)) / 365.25 AS INTEGER) AS age FROM en JOIN patient p ON p.patient_id = en.patient_id), "
+              "dm AS (SELECT pe.patient_id, pe.practice, (SELECT x.value_canonical FROM measurement x WHERE x.patient_id = pe.patient_id AND x.concept = 'hba1c' AND substr(x.event_date, 1, 4) = :year "
+              "ORDER BY x.event_date DESC LIMIT 1) AS a1c FROM pe WHERE pe.age BETWEEN 18 AND 75 AND EXISTS (SELECT 1 FROM condition c WHERE c.patient_id = pe.patient_id "
+              "AND c.concept IN ('diabetes', 'type_2_diabetes', 'type_1_diabetes') AND COALESCE(c.event_date, '') <= :year || '-12-31')), "
+              "g AS (SELECT 'diabetes_a1c' AS measure, patient_id, practice, CASE WHEN a1c IS NULL OR a1c > 9 THEN 1 ELSE 0 END AS gap, "
+              "CASE WHEN a1c IS NULL THEN 'no HbA1c result in the year' WHEN a1c > 9 THEN 'latest HbA1c ' || a1c || ', above 9' ELSE '' END AS detail FROM dm "
+              "UNION ALL SELECT 'statin_cardiovascular', pe.patient_id, pe.practice, CASE WHEN EXISTS (SELECT 1 FROM fill f WHERE f.patient_id = pe.patient_id AND f.drug_class = 'statin' "
+              "AND substr(f.fill_date, 1, 4) = :year) THEN 0 ELSE 1 END, 'no statin fill in the year' FROM pe WHERE pe.age BETWEEN 21 AND 75 AND EXISTS (SELECT 1 FROM condition c "
+              "WHERE c.patient_id = pe.patient_id AND c.concept IN ('coronary_artery_disease', 'myocardial_infarction') AND COALESCE(c.event_date, '') <= :year || '-12-31') "
+              "UNION ALL SELECT 'breast_cancer_screening', pe.patient_id, pe.practice, CASE WHEN EXISTS (SELECT 1 FROM cancer_screening s WHERE s.patient_id = pe.patient_id "
+              "AND s.test = 'bilateral_screening_mammography' AND s.event_date >= (CAST(:year AS INTEGER) - 2) || '-10-01' AND s.event_date <= :year || '-12-31') THEN 0 ELSE 1 END, "
+              "'no screening mammogram since 1 October two years earlier' FROM pe WHERE pe.sex = 'F' AND pe.age BETWEEN 52 AND 74 "
+              "UNION ALL SELECT 'annual_wellness_visit', pe.patient_id, pe.practice, CASE WHEN EXISTS (SELECT 1 FROM wellness_visit w WHERE w.patient_id = pe.patient_id AND w.awv = 1 "
+              "AND substr(w.event_date, 1, 4) = :year) THEN 0 ELSE 1 END, 'no annual wellness visit in the year' FROM pe WHERE pe.medicare = 1)")
 RECIPES = {
     'utilization_count': {
         'title': 'Number of utilization events of one kind in one calendar year',
@@ -360,6 +378,65 @@ RECIPES = {
         'empty': 'No patient is in a facility after a hospital discharge on that date',
         'patterns': [r'which patients are in a (?:nursing |rehabilitation |post[- ]acute )?facility after discharge on ' + DATE.replace('readmit_date', 'census_date'),
                      r'who is on the facility line (?:list|census) on ' + DATE.replace('readmit_date', 'census_date')]},
+    # --- Value-based care. Cost per member per month, the attributed panel, high-cost members and measure-style care gaps.
+    # The measures follow the shape of common quality measures but are simplified to what this warehouse holds and are not
+    # certified measure results; each title states the rule. Spend is payer paid amounts on claims that count in metrics.
+    'pmpm_by_line_of_business': {
+        'title': "Cost per member per month in one year by line of business: member months, members, payer paid dollars on claims that count in metrics, and paid per member per month",
+        'params': {'year': {'type': 'year'}},
+        'sql': "WITH mm AS (SELECT line_of_business, COUNT(*) AS member_months, COUNT(DISTINCT patient_id) AS members FROM member_month WHERE substr(month, 1, 4) = :year GROUP BY 1), "
+               "paid AS (SELECT c.line_of_business, SUM(c.paid_cents) AS paid_cents FROM payer_claim c WHERE c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = :year GROUP BY 1) "
+               "SELECT mm.line_of_business, mm.member_months, mm.members, ROUND(COALESCE(paid.paid_cents, 0) / 100.0, 2) AS paid_dollars, "
+               "ROUND(COALESCE(paid.paid_cents, 0) / 100.0 / mm.member_months, 2) AS paid_pmpm FROM mm LEFT JOIN paid ON paid.line_of_business = mm.line_of_business ORDER BY mm.member_months DESC",
+        'grain': ['line_of_business'],
+        'patterns': [r'what (?:was|is) the (?:cost|spend|paid amount) per member per month (?:in|for) ' + YEAR + r'(?: by line of business)?', r'what (?:was|is) the pmpm (?:in|for) ' + YEAR + r'(?: by line of business)?']},
+    'attributed_panel_by_practice': {
+        'title': "Each attributed practice's panel in one year: members, member months, payer paid per member per month, inpatient admissions and emergency visits per 1,000 member-years (claims and events in the months the member was attributed to that practice)",
+        'params': {'year': {'type': 'year'}},
+        'sql': "WITH mm AS (SELECT patient_id, month, attribution_practice_id AS practice FROM member_month WHERE substr(month, 1, 4) = :year AND attribution_practice_id IS NOT NULL), "
+               "paid AS (SELECT mm.practice, SUM(c.paid_cents) AS cents FROM payer_claim c JOIN mm ON mm.patient_id = c.patient_id AND mm.month = substr(c.service_from, 1, 7) "
+               "WHERE c.counts_in_metrics = 1 GROUP BY 1), "
+               "ev AS (SELECT mm.practice, SUM(u.kind = 'inpatient') AS admissions, SUM(u.kind = 'ed_visit') AS ed_visits FROM utilization_event u JOIN mm ON mm.patient_id = u.patient_id "
+               "AND mm.month = substr(u.event_date, 1, 7) GROUP BY 1), "
+               "p AS (SELECT practice, COUNT(DISTINCT patient_id) AS members, COUNT(*) AS member_months FROM mm GROUP BY 1) "
+               "SELECT p.practice AS attribution_practice_id, p.members, p.member_months, ROUND(COALESCE(paid.cents, 0) / 100.0 / p.member_months, 2) AS paid_pmpm, "
+               "ROUND(1000.0 * 12 * COALESCE(ev.admissions, 0) / p.member_months, 1) AS admissions_per_1000, ROUND(1000.0 * 12 * COALESCE(ev.ed_visits, 0) / p.member_months, 1) AS ed_visits_per_1000 "
+               "FROM p LEFT JOIN paid ON paid.practice = p.practice LEFT JOIN ev ON ev.practice = p.practice ORDER BY p.member_months DESC, p.practice",
+        'grain': ['attribution_practice_id'],
+        'patterns': [r'(?:show|what is) (?:each|every) (?:attributed )?practice(?:\'s)? panel (?:in|for) ' + YEAR, r'how do (?:the )?attributed practices compare (?:in|for) ' + YEAR + r'(?: on cost and utili[sz]ation)?']},
+    'high_cost_members': {
+        'title': "The highest-cost members in one year: payer paid dollars on claims that count in metrics, with their attributed practice, chronic conditions on record, inpatient admissions and emergency visits that year",
+        'params': {'year': {'type': 'year'}, 'n': {'type': 'int', 'min': 1, 'max': 500}},
+        'sql': "WITH paid AS (SELECT patient_id, SUM(paid_cents) AS cents FROM payer_claim WHERE counts_in_metrics = 1 AND substr(service_from, 1, 4) = :year GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT :n) "
+               "SELECT paid.patient_id, ROUND(paid.cents / 100.0, 2) AS paid_dollars, "
+               "COALESCE((SELECT m.attribution_practice_id FROM member_month m WHERE m.patient_id = paid.patient_id AND substr(m.month, 1, 4) = :year ORDER BY m.month DESC LIMIT 1), 'not attributed') AS attribution_practice_id, "
+               "(SELECT COUNT(DISTINCT concept) FROM condition c WHERE c.patient_id = paid.patient_id AND c.chronic IS NOT 0 AND c.concept IN (SELECT concept FROM condition WHERE chronic = 1) "
+               "AND COALESCE(c.event_date, '') <= :year || '-12-31') AS chronic_conditions, "
+               "(SELECT COUNT(*) FROM utilization_event u WHERE u.patient_id = paid.patient_id AND u.kind = 'inpatient' AND substr(u.event_date, 1, 4) = :year) AS admissions, "
+               "(SELECT COUNT(*) FROM utilization_event u WHERE u.patient_id = paid.patient_id AND u.kind = 'ed_visit' AND substr(u.event_date, 1, 4) = :year) AS ed_visits "
+               "FROM paid ORDER BY paid.cents DESC, paid.patient_id",
+        'grain': ['patient_id'],
+        'patterns': [r'who (?:were|are) the (?:top )?(?P<n>\d{1,3}) (?:highest[- ]cost|most expensive) members (?:in|for) ' + YEAR, r'list the (?:top )?(?P<n>\d{1,3}) (?:highest[- ]cost|most expensive) members (?:in|for) ' + YEAR]},
+    'care_gaps_summary': {
+        'title': "Measure-style care gaps in one year among members enrolled that year (simplified, not certified measure results): diabetes with no HbA1c in the year or the latest above 9 (ages 18 to 75); coronary disease or heart attack with no statin fill in the year (ages 21 to 75); women 52 to 74 with no screening mammogram from 1 October two years earlier to year end; Medicare members with no annual wellness visit in the year",
+        'params': {'year': {'type': 'year'}},
+        'sql': "WITH " + _CARE_GAPS + " SELECT measure, COUNT(*) AS eligible, SUM(gap = 0) AS met, SUM(gap) AS gaps, ROUND(1.0 * SUM(gap = 0) / COUNT(*), 4) AS rate_met FROM g GROUP BY measure ORDER BY measure",
+        'grain': ['measure'],
+        'patterns': [r'what are (?:the |our )?care gaps (?:in|for) ' + YEAR, r'how are we doing on quality measures (?:in|for) ' + YEAR, r'summari[sz]e (?:the )?care gaps (?:in|for) ' + YEAR]},
+    'care_gaps_by_practice': {
+        'title': "Measure-style care gaps in one year by attributed practice (same simplified rules as the care-gap summary): eligible members, gaps and rate met for each measure and practice",
+        'params': {'year': {'type': 'year'}},
+        'sql': "WITH " + _CARE_GAPS + " SELECT practice AS attribution_practice_id, measure, COUNT(*) AS eligible, SUM(gap) AS gaps, ROUND(1.0 * SUM(gap = 0) / COUNT(*), 4) AS rate_met FROM g "
+               "GROUP BY practice, measure ORDER BY measure, gaps DESC, practice",
+        'grain': ['attribution_practice_id', 'measure'],
+        'patterns': [r'(?:show )?care gaps by (?:attributed )?practice (?:in|for) ' + YEAR, r'which practices have the most care gaps (?:in|for) ' + YEAR]},
+    'care_gap_list': {
+        'title': "The members with an open care gap in one year for one measure (diabetes_a1c, statin_cardiovascular, breast_cancer_screening or annual_wellness_visit), one row each with their attributed practice and what is missing: the worklist behind the care-gap summary",
+        'params': {'year': {'type': 'year'}, 'measure': {'type': 'enum', 'values': ['diabetes_a1c', 'statin_cardiovascular', 'breast_cancer_screening', 'annual_wellness_visit']}},
+        'sql': "WITH " + _CARE_GAPS + " SELECT patient_id, practice AS attribution_practice_id, detail AS what_is_missing FROM g WHERE gap = 1 AND measure = :measure ORDER BY practice, patient_id",
+        'grain': ['patient_id'],
+        'empty': 'No member has an open gap for that measure in that year',
+        'patterns': [r'(?:list|show|who has) (?:the )?(?:open )?(?P<measure>diabetes_a1c|statin_cardiovascular|breast_cancer_screening|annual_wellness_visit) gaps? (?:in|for) ' + YEAR]},
     'readmission_labs': {
         'title': "For one patient, lab and vital results by period around the admission on a given date: the stay before it, between the stays, and the readmission (count, lowest, highest, last date)",
         'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
@@ -556,7 +633,7 @@ def normalize(recipe_id, raw, db=None):
             if not text.isdigit() or not spec['min'] <= int(text) <= spec['max']: return None
             out[name] = int(text)
         elif kind in ('enum', 'identifier'):
-            key = _key(ENUM_WORDS[name], text) or (str(value) if str(value) in spec['values'] else None)
+            key = _key(ENUM_WORDS.get(name, {}), text) or (str(value) if str(value) in spec['values'] else None)
             if key not in spec['values']: return None
             out[name] = key
         elif kind == 'vocabulary':
