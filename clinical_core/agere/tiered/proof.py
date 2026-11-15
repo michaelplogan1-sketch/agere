@@ -26,7 +26,7 @@ from pathlib import Path
 
 from . import bottles as bottle_store, router, store
 
-QUESTIONS = Path('eval/tiered/proof_v1.json')
+QUESTIONS = Path(os.environ.get('AGERE_PROOF_SET', 'eval/tiered/proof_v2.json'))
 OUT = Path('artifacts/agere-tiered-core/proof')
 PENALTY = 10
 
@@ -174,6 +174,33 @@ def ref_ed_returns_no_inpatient_rule(db, year):
 
 def ref_ed_returns_no_inpatient_rule_visit_rows(db, year):
     return _ed_returns(db, year, inside=False, distinct=False)
+
+
+def ref_inpatient_patients(db, year):
+    return [[len({p for p, k, d in db.execute('SELECT patient_id, kind, event_date FROM utilization_event') if k == 'inpatient' and str(d).startswith(year)})]]
+
+
+def ref_avg_paid_by_claim_type(db, year):
+    tot, n = Counter(), Counter()
+    for t, c, f, d in db.execute('SELECT claim_type, paid_cents, counts_in_metrics, service_from FROM payer_claim'):
+        if f == 1 and d and d.startswith(year) and c is not None: tot[t] += c; n[t] += 1
+    return [[t, round(tot[t] / n[t] / 100, 2)] for t in n]
+
+
+def ref_no_shows(db, year):
+    return [[sum(1 for st, d in db.execute('SELECT final_status, scheduled_date FROM appointment') if st == 'no_show' and str(d).startswith(year))]]
+
+
+def ref_food_positive_patients(db, year):
+    return [[len({p for p, need, pos in db.execute('SELECT patient_id, need, positive FROM social_need') if need == 'food' and pos == 1})]]
+
+
+def ref_deaths(db, year):
+    return [[sum(1 for (d,) in db.execute('SELECT death_date FROM death') if str(d).startswith(year))]]
+
+
+def ref_glp1_patients(db, year):
+    return [[len({p for p, c, d in db.execute('SELECT patient_id, drug_class, fill_date FROM fill') if c == 'glp1_agonist' and d and d.startswith(year)})]]
 
 
 REFERENCES = {name[4:]: fn for name, fn in globals().items() if name.startswith('ref_') and callable(fn)}

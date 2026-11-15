@@ -1,0 +1,208 @@
+{
+ "version": "proof_v2",
+ "authored": "2026-11-15",
+ "authored_by": "Claude (build owner)",
+ "frozen": "Written and committed before any run. Not to be edited after it has been run; a change makes a new version.",
+ "held_out": "Not used by the learning loop, the curriculum or as recipe examples. The stack is scored on a copy of its saved recipes with learning switched off.",
+ "reference": "Computed in clinical_core/agere/tiered/proof.py in Python, without the stack's SQL or recipes. Same definitions as proof_v1.",
+ "scoring": "+1 right, 0 declined, -10 wrong. An unanswerable question that is answered counts as wrong. Three phrasings per question (two for unanswerable ones), three runs each.",
+ "questions": [
+  {
+   "id": "A1",
+   "domain": "readmissions",
+   "reference": "readmissions",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many readmissions began in 2028 within 30 days of an earlier inpatient discharge, counting each hospital stay once?",
+    "Count the inpatient stays starting in 2028 that were 1 to 30 days after a prior discharge, with each stay counted once.",
+    "In 2028, how many hospital admissions were readmissions within 30 days, counting duplicated stay rows as one stay?"
+   ]
+  },
+  {
+   "id": "A2",
+   "domain": "readmissions",
+   "reference": "readmission_rate",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "What was the 30-day readmission rate in 2027 counting each stay once?",
+    "Of stays discharged in 2027, counted once each, what fraction had an inpatient admission 1 to 30 days later?",
+    "Give the 2027 thirty-day readmission rate with each hospital stay counted a single time."
+   ]
+  },
+  {
+   "id": "A3",
+   "domain": "value-based care",
+   "reference": "pmpm",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was the cost per member per month in 2028 by line of business?",
+    "For 2028, what was paid PMPM in each line of business?",
+    "Break down 2028 payer paid dollars per member month by line of business."
+   ]
+  },
+  {
+   "id": "A4",
+   "domain": "value-based care",
+   "reference": "members_by_lob",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many distinct members had any member month in 2028, by line of business?",
+    "By line of business, how many unique members were enrolled at some point in 2028?",
+    "Count the members covered in 2028 for each line of business."
+   ]
+  },
+  {
+   "id": "A5",
+   "domain": "value-based care",
+   "reference": "care_gaps",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What are the care gaps in 2028?",
+    "For 2028, how many members were eligible and how many had an open gap for each care-gap measure?",
+    "Summarise 2028 quality gaps by measure, with eligible members and open gaps."
+   ]
+  },
+  {
+   "id": "A6",
+   "domain": "value-based care",
+   "reference": "top_cost",
+   "args": [
+    "2028",
+    3
+   ],
+   "phrasings": [
+    "List the top 3 highest-cost members in 2028",
+    "Which 3 members had the most payer paid dollars in 2028, and how much each?",
+    "Show the three most expensive members of 2028 by paid amount."
+   ]
+  },
+  {
+   "id": "A7",
+   "domain": "value-based care",
+   "reference": "avg_paid_by_claim_type",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was the average payer paid amount per claim in 2029 by claim type, counting only claims that count in metrics?",
+    "For claims that count in metrics with a 2029 service date, what is the mean paid dollars per claim for each claim type?",
+    "By claim type, how much did the payer pay per claim on average in 2029 (claims that count in metrics only)?"
+   ]
+  },
+  {
+   "id": "A8",
+   "domain": "utilisation",
+   "reference": "ed_visits",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many emergency department visits were there in 2028?",
+    "Count the ED visit utilization events dated in 2028.",
+    "What was the total number of emergency visits recorded in 2028?"
+   ]
+  },
+  {
+   "id": "A9",
+   "domain": "utilisation",
+   "reference": "inpatient_patients",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many distinct patients had an inpatient utilization event in 2029?",
+    "Count unique patients with at least one inpatient admission event dated in 2029.",
+    "In 2029, how many different people had an inpatient stay recorded as a utilization event?"
+   ]
+  },
+  {
+   "id": "A10",
+   "domain": "utilisation",
+   "reference": "no_shows",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many appointments scheduled in 2029 ended as no-shows?",
+    "Count 2029 appointments whose final status is no_show.",
+    "What number of appointments with a 2029 scheduled date were no-shows?"
+   ]
+  },
+  {
+   "id": "A11",
+   "domain": "utilisation",
+   "reference": "glp1_patients",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many distinct patients had a GLP-1 agonist fill in 2029?",
+    "Count unique patients with a glp1_agonist fill dated in 2029.",
+    "In 2029, how many people filled a GLP-1 receptor agonist?"
+   ]
+  },
+  {
+   "id": "A12",
+   "domain": "population",
+   "reference": "food_positive_patients",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many distinct patients have ever screened positive for food insecurity?",
+    "Count unique patients with a positive social need screen for food.",
+    "How many people have a positive food need screen on record?"
+   ]
+  },
+  {
+   "id": "A13",
+   "domain": "population",
+   "reference": "deaths",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many deaths were recorded in 2029?",
+    "Count the death records with a death date in 2029.",
+    "What number of patients died in 2029 according to the death table?"
+   ]
+  },
+  {
+   "id": "Z1",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was the 2029 CMS Star rating of our Medicare Advantage plan?",
+    "How many Stars did our MA plan get for 2029?"
+   ]
+  },
+  {
+   "id": "Z2",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was the average hold time on our nurse advice line in 2029?",
+    "How long did callers wait for the nurse line in 2029, on average?"
+   ]
+  },
+  {
+   "id": "Z3",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What were our total supply chain costs in 2029?",
+    "How much did we spend on medical supplies and equipment in 2029?"
+   ]
+  }
+ ]
+}
