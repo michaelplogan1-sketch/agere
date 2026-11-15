@@ -57,7 +57,7 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
             bottle, params = hit
             got = attempt('bottles', bottle['sql'], params, grain=bottle['grain'], read=bottle.get('read'))
             if got and got[3]:
-                bottles.used(bottle['id'])
+                bottles.used(bottle['id'], question, params)
                 return done('answered', 'bottles', {'bottle_id': bottle['id'], 'sql': bottle['sql'], 'params': params,
                                                     **({'read': bottle['read']} if bottle.get('read') else {})}, *got[:3])
             if got and bottle.get('read') and evidence.get('documents'):  # the documents were read; undecided ones make it partial, never a second reading
@@ -145,7 +145,7 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
             if bottle is not None:
                 got = attempt('near', bottle['sql'], params, grain=bottle['grain'], read=bottle.get('read'))
                 if got and got[3]:
-                    bottles.used(bottle['id'])
+                    bottles.used(bottle['id'], question, params, via='near')
                     return done('answered', 'near', {'bottle_id': bottle['id'], 'sql': bottle['sql'], 'params': params, 'near_match_of': bottle['template'],
                                                      **({'read': bottle['read']} if bottle.get('read') else {})}, *got[:3])
                 escalations.append({'from': 'near', 'reason': 'the saved shape ran but its result did not pass the checks'})

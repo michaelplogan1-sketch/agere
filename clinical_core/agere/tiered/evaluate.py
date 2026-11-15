@@ -1021,6 +1021,8 @@ def near_negative(limit=60, s1_ledger=None):
         else:
             kind = 'left for the frontier model'
         tally[kind.split(' <')[0]] += 1
+        if kind.startswith('WRONG') and (o.get('recipe') or {}).get('bottle_id'):   # into the live store's track record
+            bottle_store.Bottles().event(o['recipe']['bottle_id'], 'misapplied', changed, (o.get('recipe') or {}).get('params'), {'test': 'near-negative', 'original': question})
         line = f"{b['id']:4} {kind} | {question[:70]} -> {changed[:160]} [{difference}]"
         print(line, flush=True); lines.append(line)
     os.environ['AGERE_TIERED_NEAR'] = 'off'
