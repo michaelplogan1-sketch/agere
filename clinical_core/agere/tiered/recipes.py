@@ -325,6 +325,41 @@ RECIPES = {
                "AND COALESCE(a.booked_date, a.scheduled_date) <= date(:discharge_date, '+2 day')), 'none on record') ORDER BY 1",
         'grain': ['item'],
         'patterns': [r"what is on the (?:bridge )?call sheet for patient (?P<patient_id>[a-z0-9-]+) discharged on (?P<discharge_date>20\d{2}-\d{2}-\d{2})"]},
+    # --- ED Second Look and Facility Line. The trigger lists and the screens are recipes; the rules are code in
+    # clinical_core/agere/tiered/second_look.py. Both show only what was on record by the date asked about.
+    'ed_return_arrivals': {
+        'title': "Emergency department arrivals on a given date by patients discharged from hospital in the previous 30 days: days since discharge, where the stay discharged them to, and what is on record since (contacts, pharmacy fills, the next appointment)",
+        'params': {'arrival_date': {'type': 'date'}},
+        'sql': "WITH " + _STAYS + "ed AS (SELECT DISTINCT patient_id FROM utilization_event WHERE kind = 'ed_visit' AND event_date = :arrival_date), "
+               "last AS (SELECT s.patient_id, MAX(s.discharge_date) AS discharge_date FROM st s JOIN ed ON ed.patient_id = s.patient_id "
+               "WHERE s.discharge_date < :arrival_date AND s.discharge_date >= date(:arrival_date, '-30 day') GROUP BY s.patient_id) "
+               "SELECT last.patient_id, last.discharge_date, CAST(julianday(:arrival_date) - julianday(last.discharge_date) AS INTEGER) AS days_since_discharge, "
+               "COALESCE((SELECT a.discharge_disposition FROM adt_visit a WHERE a.patient_id = last.patient_id AND a.discharge_date = last.discharge_date AND a.discharge_disposition IS NOT NULL LIMIT 1), 'not recorded') AS discharged_to, "
+               "(SELECT COUNT(*) FROM visit v WHERE v.patient_id = last.patient_id AND v.event_date > last.discharge_date AND v.event_date < :arrival_date AND v.type NOT IN ('inpatient', 'emergency', 'observation', 'orders_only')) AS contacts_since_discharge, "
+               "(SELECT COUNT(*) FROM fill f WHERE f.patient_id = last.patient_id AND f.fill_date >= last.discharge_date AND f.fill_date <= :arrival_date) AS fills_since_discharge, "
+               "COALESCE((SELECT MIN(a.scheduled_date) FROM appointment a WHERE a.patient_id = last.patient_id AND a.scheduled_date >= :arrival_date AND COALESCE(a.booked_date, a.scheduled_date) <= :arrival_date), 'none on record') AS next_appointment "
+               "FROM last WHERE NOT EXISTS (SELECT 1 FROM death d WHERE d.patient_id = last.patient_id AND d.death_date < :arrival_date) "
+               "AND NOT EXISTS (SELECT 1 FROM st h WHERE h.patient_id = last.patient_id AND h.admit_date < :arrival_date AND (h.discharge_date IS NULL OR h.discharge_date >= :arrival_date)) "
+               "ORDER BY days_since_discharge, last.patient_id",
+        'grain': ['patient_id'],
+        'empty': 'No patient discharged in the previous 30 days arrived in the emergency department on that date',
+        'patterns': [r'which recently discharged patients (?:arrived|are) in the emergency department on ' + DATE.replace('readmit_date', 'arrival_date'),
+                     r'who (?:came|is) back (?:to|in) the emergency department on ' + DATE.replace('readmit_date', 'arrival_date')]},
+    'facility_census': {
+        'title': "Patients in a skilled nursing or rehabilitation facility after a hospital discharge, on a given date: discharged to a facility in the previous 30 days, alive, and not readmitted since",
+        'params': {'census_date': {'type': 'date'}},
+        'sql': "WITH " + _STAYS + "f AS (SELECT s.patient_id, s.admit_date, s.discharge_date, a.discharge_disposition FROM st s JOIN adt_visit a ON a.patient_id = s.patient_id AND a.discharge_date = s.discharge_date "
+               "WHERE a.discharge_disposition IN ('snf', 'irf') AND s.discharge_date <= :census_date AND s.discharge_date >= date(:census_date, '-30 day') "
+               "AND NOT EXISTS (SELECT 1 FROM st b WHERE b.patient_id = s.patient_id AND b.admit_date > s.admit_date AND b.admit_date <= :census_date) "
+               "AND NOT EXISTS (SELECT 1 FROM death d WHERE d.patient_id = s.patient_id AND d.death_date <= :census_date)) "
+               "SELECT DISTINCT f.patient_id, f.discharge_date, CASE f.discharge_disposition WHEN 'snf' THEN 'skilled nursing facility' ELSE 'rehabilitation facility' END AS facility, "
+               "CAST(julianday(:census_date) - julianday(f.discharge_date) AS INTEGER) AS days_in_facility, "
+               "(SELECT COUNT(*) FROM st x WHERE x.patient_id = f.patient_id AND x.admit_date < f.admit_date AND x.admit_date >= date(f.admit_date, '-365 day')) AS admissions_in_prior_12_months "
+               "FROM f ORDER BY days_in_facility, f.patient_id",
+        'grain': ['patient_id'],
+        'empty': 'No patient is in a facility after a hospital discharge on that date',
+        'patterns': [r'which patients are in a (?:nursing |rehabilitation |post[- ]acute )?facility after discharge on ' + DATE.replace('readmit_date', 'census_date'),
+                     r'who is on the facility line (?:list|census) on ' + DATE.replace('readmit_date', 'census_date')]},
     'readmission_labs': {
         'title': "For one patient, lab and vital results by period around the admission on a given date: the stay before it, between the stays, and the readmission (count, lowest, highest, last date)",
         'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
