@@ -33,14 +33,84 @@ OUT = Path('artifacts/agere-tiered-core/upkeep')
 USE_CHECKS = 2          # besides its own question, re-check a recipe on up to this many questions it actually answered
 
 
+def standing(bottles, bottle_id):
+    """-> {'check_agree', 'check_differ', ...}: the record the rule reads. A re-check counts once per reader and question
+    (the latest reading by that model of that question), so running the same model again is not a second opinion."""
+    out = dict(bottles.record(bottle_id))
+    latest = {}
+    for kind, question, detail in bottles.db.execute("SELECT kind, question, detail_json FROM bottle_event WHERE bottle_id = ? AND kind IN ('check_agree', 'check_differ') "
+                                                    "AND (detail_json IS NULL OR detail_json NOT LIKE '%superseded%') ORDER BY id", (bottle_id,)):
+        latest[(str(question or '').lower(), (json.loads(detail or '{}')).get('model'))] = kind
+    out['check_agree'] = sum(k == 'check_agree' for k in latest.values())
+    out['check_differ'] = sum(k == 'check_differ' for k in latest.values())
+    from . import models
+    seen = [k for (q, m), k in latest.items() if m == models.LLM]
+    out['frontier'] = 'differ' if 'check_differ' in seen else 'agree' if seen else None
+    return out
+
+
 def decide(record, status):
-    """The rule. record: {kind: count}; status: the recipe's status now. -> (new status or None to leave it, reason, tie_break_needed)."""
-    agree, differ = record.get('check_agree', 0), record.get('check_differ', 0)
-    if status == 'promoted' and differ >= 2 and differ > agree:
-        return 'suspended', f'independent re-checks disagreed {differ} times and agreed {agree}', False
-    if status == 'suspended' and agree > differ:
-        return 'promoted', f'later re-checks agreed {agree} times and disagreed {differ}', False
-    return None, '', status == 'promoted' and differ == 1 and agree == 0
+    """The rule. record: standing(); status: the recipe's status now. -> (new status or None to leave it, reason, tie_break_needed).
+    More disagreeing readers than agreeing ones, and at least two, suspend. On a tie, the frontier model's reading decides;
+    a tie it has not read yet, or a lone disagreement, asks for its reading. A suspended recipe is restored the same way."""
+    agree, differ, frontier = record.get('check_agree', 0), record.get('check_differ', 0), record.get('frontier')
+    if status not in ('promoted', 'suspended'): return None, '', False
+    if (differ >= 2 and differ > agree) or (differ and differ == agree and frontier == 'differ'):
+        want, why = 'suspended', f'independent re-checks: {differ} readers disagreed, {agree} agreed' + ('; the frontier model disagreed on the tie' if differ == agree else '')
+    elif agree > differ or (agree and differ == agree and frontier == 'agree'):
+        want, why = 'promoted', f'independent re-checks: {agree} readers agreed, {differ} disagreed'
+    else:
+        want, why = status, ''
+    tie_break = frontier is None and differ >= 1 and differ >= agree
+    if want == status: return None, '', tie_break and status in ('promoted', 'suspended')
+    if status == 'promoted' and want == 'promoted': return None, '', False
+    return want, why, False
+
+
+def same_numbers(a, b):
+    """Code only. The same figures laid out differently: one row per year against one column per year, a label written
+    "0" or "zero", a value rounded to two places. Every number in one table, rounded to two places, appears in the other as
+    often; zeros and empty cells are left out, since one layout writes 0 where the other leaves the row out. Text cells are ignored, so this is only a fallback after the strict row comparison fails, and only when there are
+    numbers to compare."""
+    def numbers(rows):
+        out = Counter()
+        for r in rows or []:
+            for v in r:
+                if isinstance(v, bool) or v is None: continue
+                if isinstance(v, (int, float)) and v != 0: out[round(float(v), 2)] += 1   # a zero and a missing row say the same
+        return out
+    na, nb = numbers(a), numbers(b)
+    if na == nb:   # no non-zero figures on either side: both say there is nothing, whether as zero counts or as no rows
+        return bool(na) or (not a and not b) or (not a and _has_figures(b)) or (not b and _has_figures(a)) or (_has_figures(a) and _has_figures(b))
+    if len(a or []) == len(b or []) and na and nb and (not na - nb or not nb - na): return True   # one table adds a column, rows line up
+    for x, y in ((na, nb), (nb, na)):                                        # one table adds a total of the others
+        extra = y - x
+        if not x - y and sum(extra.values()) == 1 and round(sum(k * v for k, v in x.items()), 2) == next(iter(extra)): return True
+    return False
+
+
+def _has_figures(rows):
+    return any(v is None or (isinstance(v, (int, float)) and not isinstance(v, bool)) for r in rows or [] for v in r)
+
+
+def _same(a, b, loose):
+    from . import evaluate
+    return (evaluate.correct(a, b) and evaluate.correct(b, a)) or (loose and same_numbers(a, b))
+
+
+def _subsets(first_sql, first_params, second_sql, second_params, seed, loose):
+    from . import curriculum
+    detail = []
+    for cohort in curriculum.patient_subsets(seed):
+        db = store.connect(cohort)
+        try:
+            a, b = store.run(first_sql, first_params, db)[1], store.run(second_sql, second_params, db)[1]
+            detail.append({'patients': len(cohort), 'same': _same(a, b, loose), 'rows': [len(a), len(b)]})
+        except store.RecipeError as exc:
+            detail.append({'patients': len(cohort), 'same': False, 'error': str(exc)[:120]})
+        finally:
+            db.close()
+    return all(d['same'] for d in detail), detail
 
 
 def _params_for_second(recipe):
@@ -58,16 +128,43 @@ def check(bottle, question, params, model):
             return 'skipped', {'why': 'the second model wrote no query', 'model': model, 'usd': step.get('usd', 0.0)}
         other = _params_for_second(second)
         rows = store.run(second['sql'], other, db)[1]
-        detail = {'model': model, 'usd': step.get('usd', 0.0), 'second_sql': second['sql'][:600]}
-        if not (evaluate.correct(saved, rows) and evaluate.correct(rows, saved)):
+        detail = {'model': model, 'usd': step.get('usd', 0.0), 'second_sql': second['sql'][:600], 'second_params': other}
+        strict = evaluate.correct(saved, rows) and evaluate.correct(rows, saved)
+        if not strict and not same_numbers(saved, rows):
             return 'differ', {**detail, 'where': 'full data', 'saved_rows': len(saved), 'second_rows': len(rows), 'saved_first': str(saved[:2])[:200], 'second_first': str(rows[:2])[:200]}
-        ok, parts = curriculum.agree_on_subsets(bottle['sql'], params, second['sql'], other, question)
+        ok, parts = _subsets(bottle['sql'], params, second['sql'], other, question, loose=not strict)
+        if not strict: detail['layout_only'] = True     # the same figures in a different layout
         return ('agree', detail) if ok else ('differ', {**detail, 'where': 'a patient subset', 'subsets': [p for p in parts if not p['same']][:2]})
     except Exception as exc:
         if 'limit' in str(exc).lower(): raise
         return 'skipped', {'why': f'{type(exc).__name__}: {str(exc)[:160]}', 'model': model}
     finally:
         db.close()
+
+
+def recheck_doubtful(workers=4):
+    """Recipes with any recorded disagreement are checked again with the current comparison. Their earlier checks are kept
+    in the record but marked superseded, so the rule reads only the new ones; a suspended recipe that now agrees is restored."""
+    bottles = bottle_store.Bottles()
+    ids = set()
+    for eid, bid, detail in bottles.db.execute("SELECT id, bottle_id, detail_json FROM bottle_event WHERE kind = 'check_differ' AND (detail_json IS NULL OR detail_json NOT LIKE '%superseded%')").fetchall():
+        if not still_differs(json.loads(detail or '{}')):
+            bottles.db.execute("UPDATE bottle_event SET detail_json = json_set(COALESCE(detail_json, '{}'), '$.superseded', 'yes') WHERE id = ?", (eid,))
+            ids.add(bid)
+    bottles.db.commit()
+    return sweep(only=ids, workers=workers)
+
+
+def still_differs(detail):
+    """A recorded disagreement the current comparison would still call one: different figures on the full data. Only
+    disagreements the comparison may now read differently (a subset, or figures it cannot recover) are set aside and checked again."""
+    import ast
+    if detail.get('where') != 'full data': return False
+    try:
+        a, b = ast.literal_eval(detail.get('saved_first') or ''), ast.literal_eval(detail.get('second_first') or '')
+    except (ValueError, SyntaxError):
+        return False
+    return not same_numbers(a, b)
 
 
 def backfill(ledger_path='artifacts/agere-tiered-core/ledger.sqlite3'):
@@ -83,7 +180,7 @@ def backfill(ledger_path='artifacts/agere-tiered-core/ledger.sqlite3'):
     return dict(n)
 
 
-def sweep(limit=None, workers=4, models_=None):
+def sweep(limit=None, workers=4, models_=None, only=None):
     """Re-check promoted recipes, those never checked and most used first: each on its own question and up to USE_CHECKS
     questions it answered, by the small model; a lone disagreement gets a tie-break by the frontier model. Then the rule."""
     from . import curriculum, models
@@ -92,6 +189,7 @@ def sweep(limit=None, workers=4, models_=None):
     bottles = bottle_store.Bottles()
     records = bottles.records()
     todo = [b for b in bottles.full() if b['status'] in ('promoted', 'suspended') and not b.get('read') and (b.get('provenance') or {}).get('question')]
+    if only is not None: todo = [b for b in todo if b['id'] in only]
     checked = lambda b: records.get(b['id'], {}).get('check_agree', 0) + records.get(b['id'], {}).get('check_differ', 0)
     used = lambda b: records.get(b['id'], {}).get('use', 0) + records.get(b['id'], {}).get('near_use', 0)
     todo.sort(key=lambda b: (checked(b) > 0, -used(b), b['id']))
@@ -125,14 +223,20 @@ def sweep(limit=None, workers=4, models_=None):
         for q, p, verdict, detail in done:
             if verdict != 'skipped': bottles.event(b['id'], 'check_' + verdict, q, p, detail)
             out['checks ' + verdict] += 1
-        record = bottles.record(b['id'])
+        record = standing(bottles, b['id'])
         new, why, tie_break = decide(record, b['status'])
         if tie_break:
-            q, p, _, _ = next(x for x in done if x[2] == 'differ')
+            src = next(((x[0], x[1]) for x in done if x[2] == 'differ'), None)
+            if src is None:   # the disagreement is in the record from an earlier pass
+                row = bottles.db.execute("SELECT question, params_json FROM bottle_event WHERE bottle_id = ? AND kind = 'check_differ' "
+                                         "AND (detail_json IS NULL OR detail_json NOT LIKE '%superseded%') ORDER BY id DESC LIMIT 1", (b['id'],)).fetchone()
+                src = (row[0], json.loads(row[1] or '{}')) if row else None
+        if tie_break and src:
+            q, p = src
             verdict, detail = check(b, q, p, tie)
             if verdict != 'skipped': bottles.event(b['id'], 'check_' + verdict, q, p, {**detail, 'tie_break': True})
             out['tie-breaks ' + verdict] += 1
-            record = bottles.record(b['id'])
+            record = standing(bottles, b['id'])
             new, why, _ = decide(record, b['status'])
         if new:
             bottles.set_status(b['id'], new, why)
@@ -173,6 +277,7 @@ def report(ledger_path='artifacts/agere-tiered-core/ledger.sqlite3'):
 def main(argv):
     if argv[:1] == ['backfill']: print(json.dumps(backfill())); return
     if argv[:1] == ['sweep']: print(json.dumps(sweep(int(argv[1]) if len(argv) > 1 else None, int(argv[2]) if len(argv) > 2 else 4), indent=1)); return
+    if argv[:1] == ['recheck']: print(json.dumps(recheck_doubtful(int(argv[1]) if len(argv) > 1 else 4), indent=1)); return
     if argv[:1] == ['report']: print(report()); return
     print(__doc__)
 
