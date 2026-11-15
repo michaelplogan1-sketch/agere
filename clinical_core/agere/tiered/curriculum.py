@@ -45,7 +45,16 @@ TOPICS = ('emergency visits, admissions and observation stays', 'readmissions an
           'time between events: days from discharge to the next visit, days between fills, length of stay, lead time of appointments',
           'cost and utilisation per patient or per member month by payer, coverage type or condition',
           'high-need patients: counts of patients with three or more ED visits, two or more stays, or five or more chronic conditions in a year',
-          'enrollment churn: members gained and lost by month, continuous enrollment through a year, coverage gaps')
+          'enrollment churn: members gained and lost by month, continuous enrollment through a year, coverage gaps',
+          # added 2026-11-14 (evening): what drives a return beyond follow-up, and the tables the three agent prototypes read
+          'where hospital stays discharge patients to (home, home health, skilled nursing, rehabilitation) from the admission-discharge feed, and what happens next',
+          'emergency arrivals within 30 days of a hospital discharge: how many, admitted or sent home, by condition and by days since discharge',
+          'social risk from the outside vendor: isolation, transport, housing, financial stress, food access and health literacy across patients, payers and conditions',
+          'neighbourhood vulnerability (SVI) of patients against utilisation, readmission and missed appointments',
+          'chronic disease burden: patients by number of chronic conditions, serious conditions, and admissions per patient in a year',
+          'what is on record in the first days after a hospital discharge: fills, visits, telephone contacts and appointments booked',
+          'patients living alone or needing an interpreter against visits, admissions and missed appointments',
+          'deaths after a hospital stay: within 30, 90 and 180 days, by condition, age band and discharge destination')
 GENERATE = '''Write %d different questions that a %s at a health system or health plan would type into an analytics tool.
 Topic for this batch: %s.
 Each question must be answerable from the tables below with one count, one table, or by reading a bounded set of
