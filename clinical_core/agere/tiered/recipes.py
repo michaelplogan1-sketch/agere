@@ -387,7 +387,7 @@ RECIPES = {
         'sql': "WITH mm AS (SELECT line_of_business, COUNT(*) AS member_months, COUNT(DISTINCT patient_id) AS members FROM member_month WHERE substr(month, 1, 4) = :year GROUP BY 1), "
                "paid AS (SELECT c.line_of_business, SUM(c.paid_cents) AS paid_cents FROM payer_claim c WHERE c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = :year GROUP BY 1) "
                "SELECT mm.line_of_business, mm.member_months, mm.members, ROUND(COALESCE(paid.paid_cents, 0) / 100.0, 2) AS paid_dollars, "
-               "ROUND(COALESCE(paid.paid_cents, 0) / 100.0 / mm.member_months, 2) AS paid_pmpm FROM mm LEFT JOIN paid ON paid.line_of_business = mm.line_of_business ORDER BY mm.member_months DESC",
+               "ROUND(COALESCE(paid.paid_cents, 0) / 100.0 / mm.member_months, 2) AS paid_pmpm_dollars, :year AS year FROM mm LEFT JOIN paid ON paid.line_of_business = mm.line_of_business ORDER BY mm.member_months DESC",
         'grain': ['line_of_business'],
         'patterns': [r'what (?:was|is) the (?:cost|spend|paid amount) per member per month (?:in|for) ' + YEAR + r'(?: by line of business)?', r'what (?:was|is) the pmpm (?:in|for) ' + YEAR + r'(?: by line of business)?']},
     'attributed_panel_by_practice': {
@@ -399,7 +399,7 @@ RECIPES = {
                "ev AS (SELECT mm.practice, SUM(u.kind = 'inpatient') AS admissions, SUM(u.kind = 'ed_visit') AS ed_visits FROM utilization_event u JOIN mm ON mm.patient_id = u.patient_id "
                "AND mm.month = substr(u.event_date, 1, 7) GROUP BY 1), "
                "p AS (SELECT practice, COUNT(DISTINCT patient_id) AS members, COUNT(*) AS member_months FROM mm GROUP BY 1) "
-               "SELECT p.practice AS attribution_practice_id, p.members, p.member_months, ROUND(COALESCE(paid.cents, 0) / 100.0 / p.member_months, 2) AS paid_pmpm, "
+               "SELECT p.practice AS attribution_practice_id, p.members, p.member_months, ROUND(COALESCE(paid.cents, 0) / 100.0 / p.member_months, 2) AS paid_pmpm_dollars, "
                "ROUND(1000.0 * 12 * COALESCE(ev.admissions, 0) / p.member_months, 1) AS admissions_per_1000, ROUND(1000.0 * 12 * COALESCE(ev.ed_visits, 0) / p.member_months, 1) AS ed_visits_per_1000 "
                "FROM p LEFT JOIN paid ON paid.practice = p.practice LEFT JOIN ev ON ev.practice = p.practice ORDER BY p.member_months DESC, p.practice",
         'grain': ['attribution_practice_id'],
@@ -420,7 +420,7 @@ RECIPES = {
     'care_gaps_summary': {
         'title': "Measure-style care gaps in one year among members enrolled that year (simplified, not certified measure results): diabetes with no HbA1c in the year or the latest above 9 (ages 18 to 75); coronary disease or heart attack with no statin fill in the year (ages 21 to 75); women 52 to 74 with no screening mammogram from 1 October two years earlier to year end; Medicare members with no annual wellness visit in the year",
         'params': {'year': {'type': 'year'}},
-        'sql': "WITH " + _CARE_GAPS + " SELECT measure, COUNT(*) AS eligible, SUM(gap = 0) AS met, SUM(gap) AS gaps, ROUND(1.0 * SUM(gap = 0) / COUNT(*), 4) AS rate_met FROM g GROUP BY measure ORDER BY measure",
+        'sql': "WITH " + _CARE_GAPS + " SELECT :year AS year, measure, COUNT(*) AS eligible, SUM(gap = 0) AS met, SUM(gap) AS gaps, ROUND(1.0 * SUM(gap = 0) / COUNT(*), 4) AS rate_met FROM g GROUP BY measure ORDER BY measure",
         'grain': ['measure'],
         'patterns': [r'what are (?:the |our )?care gaps (?:in|for) ' + YEAR, r'how are we doing on quality measures (?:in|for) ' + YEAR, r'summari[sz]e (?:the )?care gaps (?:in|for) ' + YEAR]},
     'care_gaps_by_practice': {
