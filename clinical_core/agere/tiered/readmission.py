@@ -464,8 +464,9 @@ ED_LOW_YIELD = re.compile(r'workup unremarkable[^.]*\.\s*Admitted', re.I)
 FACILITY = re.compile(r'\b(?:snf|skilled nursing|nursing (?:home|facility)|irf|inpatient rehab\w*|rehab\w* facility|long[- ]term care)\b', re.I)
 HOME_HEALTH = re.compile(r'\bhome[ _]health\b', re.I)
 DRIVERS = ('advanced illness', 'social need', 'emergency department threshold', 'sent back from a facility', 'self-care at home')
+# Definitions reviewed and confirmed by Mike (clinician, product owner) on 2026-11-14: "They're right".
 DRIVER_DEFINITIONS = {
-    'advanced illness': 'heart failure, kidney disease, COPD, cancer or dementia on record; or five or more chronic conditions; or three or more admissions in the prior 12 months; or age 85 and over',
+    'advanced illness': 'heart failure, kidney disease, COPD, cancer or dementia on record; or five or more chronic conditions (a disease and its subtype counted once); or three or more admissions in the prior 12 months; or age 85 and over',
     'social need': 'a positive social-need screen; or no insurance; or low food access or an isolation, transport, housing or financial-stress score of 8 or more out of 10 from the outside social-data vendor',
     'emergency department threshold': 'the emergency note for this admission says the workup was unremarkable and the patient was admitted',
     'sent back from a facility': 'the stay before ended in discharge to a skilled nursing or rehabilitation facility (admission-discharge feed or the discharge summary)',
@@ -477,12 +478,16 @@ def person_markers(db, pid, as_of, admit, why):
     one = lambda q, *a: db.execute(q, a).fetchone()
     person = one('SELECT age_latest, coverage_type FROM patient WHERE patient_id = ?', pid) or (None, None)
     age = int(person[0]) if str(person[0] or '').isdigit() else None
-    chronic = {r[0] for r in db.execute("SELECT DISTINCT concept FROM condition WHERE patient_id = ? AND chronic = 1 AND concept IS NOT NULL AND COALESCE(event_date, '') <= ?", (pid, as_of))}
+    # A chronic condition is one the warehouse flags as chronic anywhere. Some rows carry the condition with the flag left blank
+    # (kidney disease and COPD for one readmitted patient), so the condition decides, not the flag on that row.
+    chronic = {r[0] for r in db.execute("SELECT DISTINCT concept FROM condition WHERE patient_id = ? AND concept IS NOT NULL AND (chronic = 1 OR chronic IS NULL) AND COALESCE(event_date, '') <= ? "
+                                        "AND concept IN (SELECT DISTINCT concept FROM condition WHERE chronic = 1)", (pid, as_of))}
     from .recipes import _STAYS                                   # whole hospital stays, the same count the recipes give
     prior = one("WITH " + _STAYS.rstrip(', ') + " SELECT COUNT(*) FROM st WHERE patient_id = ? AND admit_date < ? AND admit_date >= date(?, '-365 day')", pid, admit, admit)[0]
     serious = sorted(chronic & set(SERIOUS))
     if serious: why['advanced illness'].append(', '.join(x.replace('_', ' ') for x in serious))
-    if len(chronic) >= 5: why['advanced illness'].append(f'{len(chronic)} chronic conditions')
+    distinct = len(chronic - ({'type_2_diabetes', 'type_1_diabetes'} if 'diabetes' in chronic else set()) - ({'heart_failure_reduced_ef'} if 'heart_failure' in chronic else set()))
+    if distinct >= 5: why['advanced illness'].append(f'{distinct} chronic conditions')   # a disease and its subtype are one condition
     if prior >= 3: why['advanced illness'].append(f'{prior} admissions in the prior 12 months')
     if age is not None and age >= 85: why['advanced illness'].append(f'age {age}')
     needs = [r[0] for r in db.execute('SELECT DISTINCT need FROM social_need WHERE patient_id = ? AND positive = 1 AND event_date <= ?', (pid, as_of))]
@@ -529,10 +534,14 @@ def _driver_cases(sql, params, db):
         person_markers(db, pid, ra, ia or ra, why)
         went = one('SELECT discharge_disposition FROM adt_visit WHERE patient_id = ? AND discharge_date = ? AND discharge_disposition IS NOT NULL LIMIT 1', pid, idis)
         went = str(went[0]) if went else ''
+        later = one("SELECT MIN(admit_date) FROM stay WHERE patient_id = ? AND type = 'inpatient' AND admit_date > ?", pid, rdis or ra)[0]
         for rid, day, kind in docs.get((pid, c['when']), []):
             text = ' '.join((texts.get(rid) or {}).get('text', '').split())
             stay = which_stay(text, day, ia, idis, ra, rdis)
-            if stay == 'readmission' and ED_LOW_YIELD.search(text) and not why['emergency department threshold']:
+            # An emergency note describes an arrival, so it belongs to the latest admission before it was written: once the
+            # patient has been admitted again, a later note is about that stay, not this one.
+            during = bool(ADMITTED_ON.search(text)) or not later or str(day)[:10] < later
+            if stay == 'readmission' and during and ED_LOW_YIELD.search(text) and not why['emergency department threshold']:
                 why['emergency department threshold'].append(ED_LOW_YIELD.search(text).group(0))
             if stay == 'stay before the readmission' and 'discharge' in kind.lower() and not went:
                 m = DISPOSITION.search(text)

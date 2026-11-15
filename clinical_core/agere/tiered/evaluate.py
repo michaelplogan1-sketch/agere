@@ -4,9 +4,11 @@ write one ledger row per question, and print the stage report (accuracy, cost pe
     python -m clinical_core.agere.tiered.evaluate <stage-name> <tier,tier,...> [--bottle-new] [--bottles PATH]
 """
 import json
+import re
 import sys
 import time
 from collections import Counter
+from datetime import timedelta
 from pathlib import Path
 
 from . import bottles as bottle_store, ledger as ledger_store, router, store
@@ -777,6 +779,134 @@ def committee(year='2029', s1_ledger=None, workers=4, limit=None):
     return text
 
 
+DRIVER_READER_SYSTEM = '''You are a clinical assistant reviewing one hospital readmission. You are given the patient's structured records
+and then every document, each starting with its record id in square brackets. Answer from the record only, about the admission on
+the date the question names (the readmission) and the hospital stay discharged before it.
+One hospital stay: inpatient stay rows that overlap, repeat, or begin on the day an earlier row ends are one stay; a row with no
+discharge date followed within 30 days by a row admitted and discharged on one day is one stay ending on that day.
+Mark each of five drivers true or false by exactly these definitions:
+- advanced_illness: heart failure, chronic kidney disease, COPD, cancer or dementia among the conditions listed, first recorded on or
+  before the readmission date; or five or more listed conditions by that date, counting diabetes with type 2 diabetes as one and heart
+  failure with heart failure reduced ef as one; or three or more hospital stays beginning in the 365
+  days before the admission date of the stay before the readmission; or age 85 or over
+- social_need: a positive social-need screen dated on or before the readmission; or coverage uninsured; or, in the latest social-data
+  vendor row, low food access = 1 or an isolation, transport, housing or financial-stress score of 8 or more
+- emergency_department_threshold: a document about the readmission says the workup was unremarkable and the patient was admitted
+- sent_back_from_a_facility: the stay before the readmission ended in discharge to a skilled nursing or rehabilitation facility
+  (the admission-discharge feed's disposition for that discharge date, or else the Disposition line of that stay's discharge summary)
+- self_care_at_home: that stay ended in discharge with home health (same two sources, and not to a facility); or dementia among the
+  chronic conditions by the readmission date; or age 75 or over with household size 1 in the vendor row; or low health literacy in
+  the vendor row
+Return exactly one JSON object and nothing else:
+{"advanced_illness": true or false, "social_need": true or false, "emergency_department_threshold": true or false,
+ "sent_back_from_a_facility": true or false, "self_care_at_home": true or false, "why": "<one sentence>"}'''
+DRIVER_KEYS = ('advanced_illness', 'social_need', 'emergency_department_threshold', 'sent_back_from_a_facility', 'self_care_at_home')
+
+
+def drivers_eval(year='2029', s1_ledger=None, workers=4, limit=None):
+    """The five drivers of a return, three ways: a reference worked out here in Python straight from the tables and documents, the
+    stack's driver list, and a frontier model handed the rows and whole chart of each readmission with the same definitions."""
+    from concurrent.futures import ThreadPoolExecutor
+    from datetime import date
+    from . import models
+    run_id = f"drivers-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
+    db, bottles, day = store.connect(), bottle_store.Bottles(), lambda x: date.fromisoformat(str(x)[:10])
+    eps = _episodes(db.execute("SELECT patient_id, admit_date, discharge_date FROM stay WHERE type = 'inpatient'").fetchall())
+    cases = {}
+    for pid, admit, out in eps:                                   # the reference: its own queries, its own wording checks
+        if not str(admit).startswith(year): continue
+        prior = [(d, a) for p, a, d in eps if p == pid and d and a < admit and 1 <= (day(admit) - day(d)).days <= 30]
+        if not prior: continue
+        dis, ia = max(prior)
+        age, cover = db.execute('SELECT age_latest, coverage_type FROM patient WHERE patient_id = ?', (pid,)).fetchone() or (None, None)
+        age = int(age) if str(age or '').isdigit() else -1
+        known_chronic = {r[0] for r in db.execute('SELECT concept FROM condition WHERE chronic = 1 AND concept IS NOT NULL')}
+        chronic = {r[0] for r in db.execute("SELECT concept FROM condition WHERE patient_id = ? AND concept IS NOT NULL AND chronic IS NOT 0 AND COALESCE(event_date, '') <= ?", (pid, admit))} & known_chronic
+        stays_before = sum(1 for p, a, d in eps if p == pid and a < ia and (day(ia) - day(a)).days <= 365)
+        v = db.execute('SELECT social_isolation_score, transportation_risk_score, housing_instability_score, financial_stress_score, food_access_low, est_household_size, health_literacy_estimate '
+                       'FROM sdoh_vendor WHERE patient_id = ? ORDER BY delivery_date DESC LIMIT 1', (pid,)).fetchone()
+        screen = db.execute('SELECT 1 FROM social_need WHERE patient_id = ? AND positive = 1 AND event_date <= ?', (pid, admit)).fetchone()
+        feed = db.execute('SELECT discharge_disposition FROM adt_visit WHERE patient_id = ? AND discharge_date = ? AND discharge_disposition IS NOT NULL', (pid, dis)).fetchone()
+        went = str(feed[0]).lower() if feed else ''
+        docs = db.execute("SELECT record_id, event_date, document_type FROM document WHERE patient_id = ? AND event_date >= ? AND event_date <= date(?, '+30 day')", (pid, ia, out or admit)).fetchall()
+        texts = store.texts([r[0] for r in docs], db)
+        ed = False
+        for rid, when, kind in docs:
+            text = ' '.join((texts.get(rid) or {}).get('text', '').split())
+            named = re.search(r'Admission date: (\d{4}-\d\d-\d\d)', text)
+            about_readmission = (admit <= named.group(1) <= (out or admit)) if named else (admit <= str(when)[:10] <= str(day(out or admit) + timedelta(days=7)))
+            about_prior = (ia <= named.group(1) <= dis) if named else (ia <= str(when)[:10] <= str(day(dis) + timedelta(days=3)))
+            after = min((a for p, a, d in eps if p == pid and a > admit), default=None)   # the patient's next admission, from the episodes worked out here
+            if about_readmission and (named or not after or str(when)[:10] < after) and re.search(r'workup unremarkable[^.]*\.\s*admitted', text, re.I): ed = True
+            if not went and about_prior and not about_readmission and 'discharge' in str(kind).lower():
+                m = re.search(r'Disposition\s*:?\s+([^.]{2,80})', text, re.I)
+                if m: went = m.group(1).split(' Follow')[0].strip().lower()
+        facility = bool(re.search(r'snf|skilled nursing|nursing (?:home|facility)|irf|rehab', went))
+        cases[(pid, admit)] = {'patient': pid, 'readmit_admit': admit, 'index_admit': ia, 'index_discharge': dis, 'readmit_discharge': out, 'went': went,
+            'advanced_illness': bool(chronic & {'heart_failure', 'heart_failure_reduced_ef', 'chronic_kidney_disease', 'copd', 'cancer', 'dementia'}) or len({'diabetes' if 'diabetes' in x else 'heart_failure' if x.startswith('heart_failure') else x for x in chronic}) >= 5 or stays_before >= 3 or age >= 85,
+            'social_need': bool(screen) or str(cover or '').lower() == 'uninsured' or bool(v and (v[4] in (1, '1') or any(x is not None and x >= 8 for x in v[:4]))),
+            'emergency_department_threshold': ed, 'sent_back_from_a_facility': facility,
+            'self_care_at_home': (not facility and 'home' in went and 'health' in went) or 'dementia' in chronic or bool(v and ((v[5] in (1, '1') and age >= 75) or str(v[6] or '').lower() == 'low'))}
+    keys = sorted(cases)[:limit]
+    outcome = router.answer(f'List the readmissions in {year} by driver', bottles=bottles, s1_ledger=s1_ledger)
+    ledger_store.Ledger().write(run_id, f'List the readmissions in {year} by driver', outcome, eval_id='drivers')
+    mine = {(r[0], r[2]): dict(zip(DRIVER_KEYS, (x != 'no' for x in r[4:9]))) for r in outcome.get('rows') or []}
+    stack = {'status': outcome['status'], 'tier': outcome['final_tier'], 'usd': sum(s.get('usd', 0.0) for s in outcome['steps']), 'seconds': outcome['seconds'],
+             'frontier_calls': sum(s.get('model') == models.LLM for s in outcome['steps'])}
+
+    def read(key):
+        c = cases[key]
+        own = store.connect()
+        try:
+            ids = [r[0] for r in own.execute('SELECT record_id FROM document WHERE patient_id = ? ORDER BY event_date, record_id', (c['patient'],))]
+            texts = store.texts(ids, own)
+            table = lambda sql, args: '\n'.join(' | '.join(str(v) for v in r) for r in own.execute(sql, args)) or '(none)'
+            pid = c['patient']
+            question = f"Which of the five drivers does the record mark for the readmission of patient {pid} on {c['readmit_admit']}?"
+            base = _review_prompt(own, question, pid, c['readmit_admit'], c['index_admit'], c['readmit_discharge'], ids, texts).split('\n\nDOCUMENTS\n\n')[0]
+            base = base.split('\n\nCHRONIC CONDITIONS')[0] + '\n\nSOCIAL-NEED SCREENS' + base.split('\n\nSOCIAL-NEED SCREENS')[1]   # one condition list only, given below
+            prompt = (base +
+                      '\n\nPATIENT (age | coverage)\n' + table('SELECT age_latest, coverage_type FROM patient WHERE patient_id = ?', (pid,)) +
+                      '\n\nCONDITIONS ON RECORD WITH FIRST DATE (concept | first date)\n' + table("SELECT concept, MIN(COALESCE(event_date, '')) FROM condition WHERE patient_id = ? AND concept IS NOT NULL AND chronic IS NOT 0 GROUP BY 1", (pid,)) +
+                      '\n\nADMISSION-DISCHARGE FEED (admit | discharge | disposition)\n' + table('SELECT admit_date, discharge_date, discharge_disposition FROM adt_visit WHERE patient_id = ? ORDER BY 1', (pid,)) +
+                      '\n\nSOCIAL-DATA VENDOR, latest row (isolation | transport | housing | financial stress | low food access | household size | health literacy)\n' +
+                      table('SELECT social_isolation_score, transportation_risk_score, housing_instability_score, financial_stress_score, food_access_low, est_household_size, health_literacy_estimate FROM sdoh_vendor WHERE patient_id = ? ORDER BY delivery_date DESC LIMIT 1', (pid,)) +
+                      '\n\nDOCUMENTS\n\n' + '\n\n'.join(f"[{i}] {texts[i]['event_date']}\n{texts[i]['text'].strip()}" for i in ids if i in texts))
+        finally:
+            own.close()
+        step = {'usd': 0.0, 'tokens': 0, 'seconds': 0.0}
+        try:
+            text, step = models._claude(models.LLM, DRIVER_READER_SYSTEM, prompt)
+            got = models._json(text)
+        except ValueError:
+            return {'unusable': True, **{k: step[k] for k in ('usd', 'tokens', 'seconds')}}
+        except Exception as exc:
+            if 'limit' in str(exc).lower(): raise
+            return {'error': f'{type(exc).__name__}: {str(exc)[:160]}', 'usd': 0.0, 'tokens': 0, 'seconds': 0.0}
+        return {**{k: got.get(k) is True for k in DRIVER_KEYS}, 'why': str(got.get('why'))[:300], **{k: step[k] for k in ('usd', 'tokens', 'seconds')}}
+
+    started = time.monotonic()
+    with ThreadPoolExecutor(workers) as pool:
+        theirs = dict(zip(keys, pool.map(read, keys)))
+    wall, n = round(time.monotonic() - started, 1), len(keys)
+    right = lambda arm, k: sum(1 for key in keys if key in arm and arm[key].get(k) == cases[key][k])
+    yes = lambda arm, k: sum(1 for key in keys if key in arm and arm[key].get(k) is True)
+    lines = [f'READMISSION DRIVERS COMPARISON  run {run_id}', f'{n} readmissions in {year}; five drivers each ({n * 5} items); reference worked out here in Python', '',
+             f"  stack                       ${stack['usd']:.4f}   {stack['seconds']:.1f}s   frontier calls {stack['frontier_calls']}   ({stack['status']} by {stack['tier']})",
+             f"  frontier model, every chart ${sum(t['usd'] for t in theirs.values()):.2f}   {sum(t['seconds'] for t in theirs.values()):.0f}s of model time ({wall}s on the clock, {workers} at a time)   "
+             f"{sum(t['tokens'] for t in theirs.values())} tokens   {sum(1 for t in theirs.values() if 'why' not in t)} calls gave no usable answer", '',
+             f"  items right of {n * 5}:   stack {sum(right(mine, k) for k in DRIVER_KEYS)}   frontier model {sum(right(theirs, k) for k in DRIVER_KEYS)}", '']
+    lines += [f"  {k:32} reference {sum(cases[key][k] for key in keys):3d}   stack {yes(mine, k):3d} (right {right(mine, k)}/{n})   frontier model {yes(theirs, k):3d} (right {right(theirs, k)}/{n})" for k in DRIVER_KEYS]
+    lines += ['', 'where an arm differs from the reference']
+    lines += [f"  {key[0]} {key[1]} {k}: reference {cases[key][k]} | stack {mine.get(key, {}).get(k)} | frontier model {theirs[key].get(k)} | {str(theirs[key].get('why'))[:150]}"
+              for key in keys for k in DRIVER_KEYS if mine.get(key, {}).get(k) != cases[key][k] or theirs[key].get(k) != cases[key][k]] or ['  none']
+    text = '\n'.join(lines)
+    (OUT / f'{run_id}.report.txt').write_text(text + '\n')
+    (OUT / f'{run_id}.results.json').write_text(json.dumps([{'case': cases[k], 'stack': mine.get(k), 'frontier': theirs[k]} for k in keys], indent=1))
+    db.close()
+    return text
+
+
 REWORD_SYSTEM = '''Reword one analytics question so it asks exactly the same thing in clearly different words and word order.
 Keep every value exactly as written (years, months, numbers, names of conditions, drug classes, payers, document types).
 Do not add or remove any filter, grouping or measure. Return exactly one JSON object: {"reworded": "<the question>"}.'''
@@ -900,6 +1030,14 @@ def main(argv):
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         print('\n' + committee(argv[1] if len(argv) > 1 else '2029', os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'),
                                limit=int(argv[2]) if len(argv) > 2 else None))
+        return
+    if argv[0] == 'drivers':
+        import os
+        os.environ.pop('ANTHROPIC_API_KEY', None)
+        from run_integrated_stack import keys
+        keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+        print('\n' + drivers_eval(argv[1] if len(argv) > 1 else '2029', os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'),
+                                  limit=int(argv[2]) if len(argv) > 2 else None))
         return
     if argv[0] == 'near':
         import os
