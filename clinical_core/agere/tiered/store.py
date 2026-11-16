@@ -17,9 +17,13 @@ from pathlib import Path
 DEFAULT_DB = 'artifacts/agere-full-stack-rerun-2026-10-30/focused/runtime/stack/semantic.sqlite3'
 # Tables a recipe may read. `document` is a catalog view over notes, readable scans and exchange documents; document
 # text itself is never selectable by a recipe: it is fetched by texts() for the reading tier only.
-TABLES = ('document', 'note_fact', 'note_therapy_change', 'therapy_barrier', 'utilization_event', 'stay', 'appointment', 'visit', 'fill', 'claim', 'patient', 'concept_patient', 'member_month',
-          'measurement_latest', 'immunization', 'death', 'organization', 'clinician', 'enrollment_span', 'condition',
-          'encounter', 'prescription', 'allergy_entry', 'smoking_status', 'social_need', 'wellness_visit', 'cancer_screening')
+TABLES = ('document', 'note_fact', 'note_therapy_change', 'therapy_barrier', 'utilization_event', 'stay', 'stay_episode', 'appointment', 'visit', 'fill',
+          'payer_claim', 'claim', 'patient', 'concept_patient', 'member_month', 'measurement', 'measurement_latest', 'immunization', 'death',
+          'organization', 'clinician', 'enrollment_span', 'condition', 'encounter', 'prescription', 'allergy_entry', 'smoking_status', 'social_need',
+          'wellness_visit', 'cancer_screening')
+# Governed views: definitions the semantic layer computes once, so a query reads them instead of re-deriving them. Each is
+# created on every connection over the (possibly mapped or cohort-restricted) tables it reads.
+GOVERNED = ('stay_episode',)
 SECONDS = 20.0
 
 
@@ -65,7 +69,7 @@ def tables(db=None):
 
 # Tables whose rows belong to one patient. Restricting these restricts every recipe: the document catalog is built
 # from the three document tables, so it is restricted with them.
-PATIENT_TABLES = tuple(t for t in TABLES if t not in ('document', 'organization', 'clinician')) + ('clinical_note', 'scanned_document', 'hie_document')
+PATIENT_TABLES = tuple(t for t in TABLES if t not in ('document', 'organization', 'clinician') + GOVERNED) + ('clinical_note', 'scanned_document', 'hie_document')
 MAX_COHORT = 5000
 
 
@@ -93,6 +97,9 @@ def connect(cohort=None):
             for table in PATIENT_TABLES:
                 db.execute(f'CREATE TEMP VIEW {table} AS SELECT * FROM main.{table} WHERE patient_id IN (SELECT patient_id FROM cohort)')
         db.execute(DOCUMENT_VIEW)
+    if not foreign():
+        have = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view') UNION SELECT name FROM sqlite_temp_master WHERE type = 'view'")}
+        if 'stay' in have and 'stay_episode' not in have: db.execute('CREATE TEMP VIEW stay_episode AS ' + _stay_episode())
     db.execute('PRAGMA query_only=ON')
     return db
 
@@ -103,6 +110,18 @@ UNION ALL SELECT record_id, patient_id, 'scanned_document', document_type, event
 UNION ALL SELECT record_id, patient_id, 'hie_document', document_type, event_date, author_organization_id, text_chars FROM hie_document"""
 
 
+def _stay_episode():
+    from .recipes import _STAYS   # the merge the reviewed readmission recipes use, so every route counts a stay the same way
+    return ("WITH " + _STAYS + "e AS (SELECT patient_id, admit_date, MAX(discharge_date) AS discharge_date, MIN(organization_id) AS organization_id "
+            "FROM st GROUP BY patient_id, admit_date) "
+            "SELECT e.patient_id, e.admit_date, e.discharge_date, e.organization_id, "
+            "CASE WHEN e.discharge_date IS NOT NULL THEN CAST(julianday(e.discharge_date) - julianday(e.admit_date) AS INTEGER) END AS los_days, "
+            "EXISTS (SELECT 1 FROM e p WHERE p.patient_id = e.patient_id AND p.discharge_date IS NOT NULL AND p.admit_date < e.admit_date "
+            "AND julianday(e.admit_date) - julianday(p.discharge_date) BETWEEN 1 AND 30) AS is_readmission, "
+            "CASE WHEN e.discharge_date IS NOT NULL THEN EXISTS (SELECT 1 FROM e n WHERE n.patient_id = e.patient_id AND n.admit_date > e.admit_date "
+            "AND julianday(n.admit_date) - julianday(e.discharge_date) BETWEEN 1 AND 30) END AS readmitted_within_30_days FROM e")
+
+
 def portable(sql, cohort=None):
     """The same SELECT runnable on the semantic layer by anyone: the document catalog is inlined as a CTE, because
     the view exists only on this module's connections. With a cohort, the patient ids and the restricted tables are
@@ -111,7 +130,7 @@ def portable(sql, cohort=None):
     m = mapping()
     if m:   # on a mapped warehouse the semantic-layer tables a query reads are inlined from the mapping, in mapping order
         reads = lambda s, name: re.search(rf'(?i)(?<![.\w]){name}\b(?!_)', s)
-        need = {t for t in m['views'] if reads(text, t)}
+        need = {t for t in m['views'] if reads(text, t)} | ({'stay'} if reads(text, 'stay_episode') and 'stay' in m['views'] else set())
         while True:   # a mapped view may read another mapped view
             more = {t for t, v in m['views'].items() if t not in need and any(reads(m['views'][n], t) for n in need)}
             if not more: break
@@ -124,20 +143,23 @@ def portable(sql, cohort=None):
             if table not in need: continue
             inside = cohort is not None and table in PATIENT_TABLES
             ctes.append(f'"{table}" AS (' + (f'SELECT * FROM ({view}) WHERE patient_id IN (SELECT patient_id FROM cohort)' if inside else view) + ')')
+        if reads(text, 'stay_episode'): ctes.append('stay_episode AS (' + _stay_episode() + ')')
         if not ctes: return text
         if re.match(r'(?is)^\s*with\s+recursive\b', text): raise RecipeError('A recursive recipe cannot be saved on a mapped warehouse')
         if re.match(r'(?is)^\s*with\b', text): return re.sub(r'(?is)^\s*with\b', 'WITH ' + ', '.join(ctes) + ',', text, count=1)
         return 'WITH ' + ', '.join(ctes) + ' ' + text
     uses_documents = bool(re.search(r'(?i)\bdocument\b(?!_)', text))
+    episodes = bool(re.search(r'(?i)\bstay_episode\b', text))
     ctes = []
     if cohort is not None:
         ids = sorted({str(p) for p in cohort})
         values = 'VALUES ' + ', '.join("('" + p.replace("'", "''") + "')" for p in ids) if ids else 'SELECT NULL WHERE 0'
         ctes.append(f'cohort(patient_id) AS ({values})')
         for table in PATIENT_TABLES:
-            if re.search(rf'(?i)\b{table}\b(?!_)', text) or (uses_documents and table in ('clinical_note', 'scanned_document', 'hie_document')):
+            if re.search(rf'(?i)\b{table}\b(?!_)', text) or (uses_documents and table in ('clinical_note', 'scanned_document', 'hie_document')) or (episodes and table == 'stay'):
                 ctes.append(f'{table} AS (SELECT * FROM main.{table} WHERE patient_id IN (SELECT patient_id FROM cohort))')
     if uses_documents: ctes.append('document AS (' + DOCUMENT_VIEW.split(' AS\n', 1)[1] + ')')
+    if episodes: ctes.append('stay_episode AS (' + _stay_episode() + ')')
     if not ctes: return text
     if re.match(r'(?is)^\s*with\s+recursive\b', text): raise RecipeError('A recursive recipe cannot be saved with a cohort or the document catalog')
     if re.match(r'(?is)^\s*with\b', text):

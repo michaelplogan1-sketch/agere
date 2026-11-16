@@ -447,12 +447,13 @@ def run(runs=3, workers=4):
         if not hasattr(local, 'b'): local.b = bottle_store.Bottles(scratch / 'bottles.sqlite3')
         return local.b
 
-    from . import catalogue
+    from . import catalogue, governed
 
     def one(job):
         item, arm, r = job
-        catalogue.ENABLED.set(arm == 'stack')   # the governed definitions are the stack's; the other arms run without them
-        ladder = arm in ('stack', 'stack_plain')
+        catalogue.ENABLED.set(arm in ('stack', 'stack_unchecked'))   # the governed definitions are the stack's; the other arms run without them
+        governed.ENABLED.set(arm in ('stack', 'stack_plain'))   # so are the definition checks; stack_unchecked measures them by their absence
+        ladder = arm in ('stack', 'stack_plain', 'stack_unchecked')
         try:
             o = router.answer(item['question'], tiers=router.ALL_TIERS if ladder else ('llm',), bottles=bottles() if ladder else None,
                               s1_ledger=str(scratch / 's1.sqlite3'))
@@ -476,7 +477,8 @@ def report(results, items, runs, wall, data):
              f"{len({i['id'] for i in items})} questions ({sum(1 for q in data['questions'] if q.get('unanswerable'))} cannot be answered from this warehouse), "
              f"{len(items)} phrasings, {runs} runs each; +1 right, 0 declined, -{PENALTY} wrong", '']
     summary = {}
-    names = {'stack': 'Agere stack (with the governed definitions)', 'stack_plain': 'Agere stack without the governed definitions',
+    names = {'stack': 'Agere stack (with the governed definitions and their code checks)', 'stack_unchecked': 'Agere stack with the governed definitions but without their code checks',
+             'stack_plain': 'Agere stack without the governed definitions',
              'frontier': "frontier model writing its own SQL from the schema (run through the stack's checks, no governed definitions)"}
     for arm, name in names.items():
         rs = [r for r in results if r['arm'] == arm]

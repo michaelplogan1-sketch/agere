@@ -4,7 +4,7 @@ with its reason. The frontier model is the last rung; its answer is returned eve
 labelled partial with the failed checks."""
 import time
 
-from . import bottles as bottle_store, models, read as reader, recipes, store
+from . import bottles as bottle_store, governed, models, read as reader, recipes, store
 
 ALL_TIERS = ('bottles', 'recipes', 'system1', 'slm', 'near', 'llm')
 TOKEN_CEILING = 60000
@@ -37,6 +37,8 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
                 if unknown: raise store.RecipeError(unknown)
                 whole = recipes.needs_whole_stays(question, sql)
                 if whole: raise store.RecipeError(whole)
+                broken = governed.check(question, sql)   # a reading the governed definitions rule out never answers
+                if broken: raise store.RecipeError(' '.join(broken))
             if read:
                 columns, rows, validation, read_steps, evidence['documents'] = reader.execute(
                     question, sql, params, read, db, readers=readers, s1_ledger=s1_ledger)
@@ -87,6 +89,11 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
             if whole:
                 steps.append({'tier': tier, 'outcome': 'recipe_does_not_count_whole_stays', 'recipe': recipe_id, 'tokens': 0, 'usd': 0.0})
                 escalations.append({'from': tier, 'reason': whole})
+                return None
+            broken = governed.check(question, recipe['sql'])
+            if broken:
+                steps.append({'tier': tier, 'outcome': 'recipe_contradicts_a_governed_definition', 'recipe': recipe_id, 'reason': ' '.join(broken)[:200], 'tokens': 0, 'usd': 0.0})
+                escalations.append({'from': tier, 'reason': ' '.join(broken)[:160]})
                 return None
             missing = near.named_but_unused(question, recipe, params)
             if missing:
