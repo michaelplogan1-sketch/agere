@@ -5,6 +5,7 @@ recipe, fill its parameters, or (Tier 4) write a new recipe that this module the
 """
 import os
 import re
+from collections import Counter
 
 from . import store
 
@@ -877,29 +878,37 @@ _DATA_YEARS = set()
 
 
 def years_without_data(question, db=None):
-    """Code only. Years the question names that the warehouse holds no records for (stays, visits, claims, member months,
-    appointments, fills). -> (missing years, the years held), or ([], ...)."""
+    """Code only. Years the question names that the warehouse recorded no care or coverage in (stays, visits, claims, member
+    months, appointments, fills, results; not diagnosis onset dates). -> (missing years, the years held), or ([], ...)."""
     asked = sorted(set(re.findall(r'\b(20\d{2})\b', str(question))))
     if not asked: return [], []
+    counts = Counter()
     if not _DATA_YEARS and store.foreign():
         # A warehouse that is not this semantic layer: every date-like column of every table counts.
         conn = db or store.connect()
         for table in store.tables(conn):
             for col in [c[1] for c in conn.execute(f'PRAGMA table_info("{table}")') if re.search(r'date|month|_dt$|time', c[1].lower())]:
                 try:
-                    _DATA_YEARS.update(str(r[0]) for r in conn.execute(f'SELECT DISTINCT substr("{col}", 1, 4) FROM "{table}" WHERE "{col}" IS NOT NULL'))
+                    for y, n in conn.execute(f'SELECT substr("{col}", 1, 4), COUNT(*) FROM "{table}" WHERE "{col}" IS NOT NULL GROUP BY 1'): counts[str(y)] += n
                 except Exception:
                     pass
     if not _DATA_YEARS:
         conn = db or store.connect()
         for table, column in (('stay', 'admit_date'), ('utilization_event', 'event_date'), ('payer_claim', 'service_from'), ('member_month', 'month'),
-                              ('appointment', 'scheduled_date'), ('fill', 'fill_date'), ('visit', 'event_date'), ('condition', 'event_date'),
+                              ('appointment', 'scheduled_date'), ('fill', 'fill_date'), ('visit', 'event_date'),
+                              # condition dates are excluded: a diagnosis carries its onset (back to 1927 here), which is history, not
+                              # a year the warehouse recorded care in (proof_v11 U01: "admitted in 2019" answered 0 by every arm)
                               ('measurement', 'event_date'), ('death', 'death_date'), ('immunization', 'event_date'), ('social_need', 'event_date'),
                               ('enrollment_span', 'coverage_start'), ('claim', 'service_date')):
             try:
-                _DATA_YEARS.update(r[0] for r in conn.execute(f'SELECT DISTINCT substr({column}, 1, 4) FROM {table} WHERE {column} IS NOT NULL'))
+                for y, n in conn.execute(f'SELECT substr({column}, 1, 4), COUNT(*) FROM {table} WHERE {column} IS NOT NULL GROUP BY 1'): counts[str(y)] += n
             except Exception:
                 pass
+    if counts:
+        # A year counts as held when it has at least a tenth of a typical year's records: a few stray history rows (16 visits
+        # in 2021 against thousands a year from 2026) do not make "readmitted in 2021" answerable as zero.
+        typical = sorted(counts.values())[len(counts) // 2]
+        _DATA_YEARS.update(y for y, n in counts.items() if n >= typical / 10)
     held = sorted(y for y in _DATA_YEARS if y and y.isdigit())
     return [y for y in asked if y not in _DATA_YEARS], held
 

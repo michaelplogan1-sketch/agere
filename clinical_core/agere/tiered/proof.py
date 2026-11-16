@@ -796,6 +796,47 @@ def ref_fh_hyper_days(db, year):
     return [[events]]
 
 
+# ---- proof_v11: the patients reading of questions that also read as counts of events -----------------------------------
+# Each is the distinct-patient count beside an existing event reference (named in the set's "readings").
+
+def ref_rd_ed_admitted_patients(db, year):
+    return [[len({v['patient_id'] for v in _ed(db, year) if v['outcome'] == 'admitted'})]]
+
+
+def ref_rd_ed_seen_patients(db, year):
+    return [[len({v['patient_id'] for v in _ed(db, year)})]]
+
+
+def ref_rd_readmitted_patients(db, year):
+    return [[len({p for p, _, _ in _readmissions(db, year)[0]})]]
+
+
+def ref_rd_admitted_patients(db, year):
+    _, eps = _readmissions(db, year)
+    return [[len({p for p, a, _ in eps if a.startswith(year)})]]
+
+
+def ref_rd_discharged_patients(db, year):
+    return [[len({p for p, _, _ in _episodes_out(db, year)})]]
+
+
+def ref_rd_hf_readmitted_patients(db, year):
+    return [[len({v['patient_id'] for v, r, _ in _cohort(db, year, 'hf') if r})]]
+
+
+def ref_rd_sepsis_patients(db, year):
+    return [[len({v['patient_id'] for v, _, _ in _cohort(db, year, 'sepsis')})]]
+
+
+def ref_rd_readmitted_share_patients(db, year):
+    """Of the patients with a stay ending in the year, the share with a readmission within 30 days of one of those stays."""
+    _, eps = _readmissions(db, year)
+    idx = [(p, a, d) for p, a, d in eps if d and d.startswith(year)]
+    pts = {p for p, _, _ in idx}
+    back = {p for p, a, d in idx if any(q == p and b > a and 1 <= (_day(b) - _day(d)).days <= 30 for q, b, _ in eps)}
+    return [[len(pts), len(back), round(len(back) / len(pts), 4)]]
+
+
 REFERENCES = {name[4:]: fn for name, fn in globals().items() if name.startswith('ref_') and callable(fn)}
 
 
@@ -816,9 +857,23 @@ def _contains(reference, rows):
 
 
 def outcome_kind(item, o):
+    """right +1, declined 0, wrong -PENALTY; and, for questions with two plain readings (a set's 'readings'):
+    asked_right +1 when every reading the stack returned matches its reference, guessed 0 when one figure matches one of the
+    readings (right for some askers, not the others), wrong otherwise. Asking on a question with one reading is 'asked', 0."""
+    if o.get('status') == 'needs_choice':
+        if item.get('reading_refs'):
+            got = {r['id']: r.get('rows') for r in o.get('readings') or []}
+            ok = set(got) == set(item['reading_refs']) and all(_right(item['reading_refs'][k], got[k]) for k in got)
+            return 'asked_right' if ok else 'wrong'
+        return 'wrong' if item.get('unanswerable') else 'asked'
     answered = o.get('status') == 'answered' and o.get('rows') and not (len(o['rows']) == 1 and isinstance(o['rows'][0][0], str) and o['rows'][0][0].startswith('No '))
     if item.get('unanswerable'): return 'declined' if not answered else 'wrong'
     if not answered: return 'declined'
+    if item.get('reading_refs'):
+        refs = list(item['reading_refs'].values())
+        if all(r == refs[0] for r in refs):   # the readings agree here: one answer is right for every asker
+            return 'right' if _right(refs[0], o['rows']) else 'wrong'
+        return 'guessed' if any(_right(ref, o['rows']) for ref in refs) else 'wrong'
     return 'right' if any(_right(ref, o['rows']) for ref in item.get('references') or [item['reference']]) else 'wrong'
 
 
@@ -841,12 +896,15 @@ def run(runs=3, workers=4):
     for q in data['questions']:
         for k, phrasing in enumerate(q['phrasings']):
             # A phrasing may accept more than one reading (recorded in the question file's audit notes); each is computed here.
-            names = (q.get('accept_by_phrasing') or {}).get(str(k)) or [q.get('reference')]
+            names = (q.get('accept_by_phrasing') or {}).get(str(k)) or ([q['reference']] if q.get('reference') else [])
             refs = [] if q.get('unanswerable') else [[list(r) for r in REFERENCES[n](db, *q.get('args', []))] for n in names]
             if q.get('numbers_only'):   # labels may rightly be the warehouse's own codes; only the numbers are compared
                 refs = [[[v for v in row if isinstance(v, (int, float))] for row in ref] for ref in refs]
+            # A question with two plain readings names a reference for each ({"patients": "ref name", "events": "ref name"}).
+            reading_refs = {rid: [list(r) for r in REFERENCES[n](db, *q.get('args', []))] for rid, n in (q.get('readings') or {}).items()}
+            if reading_refs and not refs: refs = list(reading_refs.values())
             items.append({'id': q['id'], 'phrasing': k, 'question': phrasing, 'domain': q['domain'], 'reference': refs[0] if refs else None, 'references': refs,
-                          'unanswerable': q.get('unanswerable', False)})
+                          'unanswerable': q.get('unanswerable', False), 'reading_refs': reading_refs})
     db.close()
     import threading
     local = threading.local()
@@ -855,13 +913,14 @@ def run(runs=3, workers=4):
         if not hasattr(local, 'b'): local.b = bottle_store.Bottles(scratch / 'bottles.sqlite3')
         return local.b
 
-    from . import catalogue, governed
+    from . import catalogue, governed, readings
 
     def one(job):
         item, arm, r = job
-        catalogue.ENABLED.set(arm in ('stack', 'stack_unchecked'))   # the governed definitions are the stack's; the other arms run without them
-        governed.ENABLED.set(arm in ('stack', 'stack_plain'))   # so are the definition checks; stack_unchecked measures them by their absence
-        ladder = arm in ('stack', 'stack_plain', 'stack_unchecked')
+        catalogue.ENABLED.set(arm in ('stack', 'stack_unchecked', 'stack_guess'))   # the governed definitions are the stack's; the other arms run without them
+        governed.ENABLED.set(arm in ('stack', 'stack_plain', 'stack_guess'))   # so are the definition checks; stack_unchecked measures them by their absence
+        readings.ENABLED.set(arm in ('stack', 'stack_plain', 'stack_unchecked'))   # stack_guess is the stack answering one reading, as before readings.py
+        ladder = arm in ('stack', 'stack_plain', 'stack_unchecked', 'stack_guess')
         try:
             o = router.answer(item['question'], tiers=router.ALL_TIERS if ladder else ('llm',), bottles=bottles() if ladder else None,
                               s1_ledger=str(scratch / 's1.sqlite3'))
@@ -874,7 +933,8 @@ def run(runs=3, workers=4):
                 'frontier_calls': sum(1 for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
                 'frontier_tokens': sum(s.get('tokens', 0) for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
                 'checks_rejected': sum(1 for s in o['steps'] if 'Governed definition' in str(s.get('reason', ''))),
-                'rows': (o.get('rows') or [])[:3], 'question': item['question']}
+                'rows': (o.get('rows') or [])[:3] if o.get('status') != 'needs_choice' else {x['id']: (x.get('rows') or [])[:3] for x in o.get('readings') or []},
+                'question': item['question']}
 
     arms = tuple(os.environ.get('AGERE_PROOF_ARMS', 'stack,stack_plain,frontier').split(','))
     jobs = [(it, arm, r) for r in range(int(runs)) for it in items for arm in arms]
@@ -887,31 +947,35 @@ def run(runs=3, workers=4):
 def report(results, items, runs, wall, data):
     lines = [f"PROOF SCORECARD {data.get('version')}  {time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime())}",
              f"{len({i['id'] for i in items})} questions ({sum(1 for q in data['questions'] if q.get('unanswerable'))} cannot be answered from this warehouse), "
-             f"{len(items)} phrasings, {runs} runs each; +1 right, 0 declined, -{PENALTY} wrong", '']
+             f"{len(items)} phrasings, {runs} runs each; +1 right, 0 declined, -{PENALTY} wrong"
+             + ("; a two-reading question scores +1 when both readings are given right, 0 for one figure matching one reading" if any(i.get('reading_refs') for i in items) else ''), '']
     summary = {}
     names = {'stack': 'Agere stack (with the governed definitions and their code checks)', 'stack_unchecked': 'Agere stack with the governed definitions but without their code checks',
-             'stack_plain': 'Agere stack without the governed definitions',
+             'stack_plain': 'Agere stack without the governed definitions', 'stack_guess': 'Agere stack answering one reading of every question (no two-reading check)',
              'frontier': "frontier model writing its own SQL from the schema (run through the stack's checks, no governed definitions)"}
     for arm, name in names.items():
         rs = [r for r in results if r['arm'] == arm]
         if not rs: continue
         c = Counter(r['kind'] for r in rs)
-        score = c['right'] - PENALTY * c['wrong']
+        score = c['right'] + c['asked_right'] - PENALTY * c['wrong']
         groups = defaultdict(list)
         for r in rs: groups[(r['id'], r['phrasing'])].append(r['kind'])
         consistent = sum(1 for v in groups.values() if len(set(v)) == 1)
-        all_right = sum(1 for (qid, _), v in groups.items() if all(k in ('right',) or (k == 'declined' and next(x for x in rs if x['id'] == qid)['unanswerable']) for k in v))
+        all_right = sum(1 for (qid, _), v in groups.items() if all(k in ('right', 'asked_right') or (k == 'declined' and next(x for x in rs if x['id'] == qid)['unanswerable']) for k in v))
         tiers = Counter(str(r['tier']) for r in rs if r['kind'] == 'right')
-        summary[arm] = {'right': c['right'], 'declined': c['declined'], 'wrong': c['wrong'], 'score': score, 'answers': len(rs), 'usd': round(sum(r['usd'] for r in rs), 4),
+        summary[arm] = {'right': c['right'], 'declined': c['declined'], 'wrong': c['wrong'], 'asked_right': c['asked_right'], 'guessed': c['guessed'], 'asked': c['asked'], 'score': score, 'answers': len(rs), 'usd': round(sum(r['usd'] for r in rs), 4),
                         'seconds_each': round(sum(r['seconds'] for r in rs) / max(1, len(rs)), 2), 'same_outcome_every_run': consistent, 'phrasings': len(groups),
                         'right_every_run': all_right, 'right_by_rung': dict(tiers)}
         s = summary[arm]
         lines += [f"{name}", f"  right {s['right']}  declined {s['declined']}  wrong {s['wrong']}  of {s['answers']}   score {s['score']} (best possible {s['answers']})",
+                  *([f"  two-reading questions: both readings given and right {s['asked_right']}, one reading given (0) {s['guessed']}; asked on a one-reading question (0) {s['asked']}"]
+                    if s['asked_right'] or s['guessed'] or s['asked'] else []),
                   f"  every run right (or correctly declined): {s['right_every_run']} of {s['phrasings']} phrasings; same outcome on every run: {s['same_outcome_every_run']} of {s['phrasings']}",
                   f"  cost ${s['usd']:.2f} for {s['answers']} answers (${s['usd'] / max(1, s['answers']):.4f} each), {s['seconds_each']} s each   right answers by rung: {s['right_by_rung']}"]
         by = defaultdict(Counter)
         for r in rs: by[r['domain']][r['kind']] += 1
-        lines += ['  by area: ' + '; '.join(f"{d} {v['right']} right, {v['declined']} declined, {v['wrong']} wrong" for d, v in sorted(by.items())), '']
+        lines += ['  by area: ' + '; '.join(f"{d} {v['right'] + v['asked_right']} right, {v['declined'] + v['guessed'] + v['asked']} declined or 0, {v['wrong']} wrong"
+                                            for d, v in sorted(by.items())), '']
     lines.append('wrong answers, for reading:')
     lines += [f"  {r['arm']:8} {r['id']}/{r['phrasing']} run {r['run']} {r['tier']} | {r['question'][:90]} | got {str(r['rows'])[:120]}" for r in results if r['kind'] == 'wrong'] or ['  none']
     lines += ['', f'{wall} s on the clock']

@@ -324,6 +324,9 @@ def _climb(stack, question, cohort, takeover_ok, near):
         from . import learn
         learn.spawn_auto()  # a new recipe was saved: check and promote it in the background, with no manual step
     ledger_store.Ledger().write('app', question, outcome, config={'tiers': list(TIERS), **({'cohort_patients': len(cohort)} if cohort is not None else {})})
+    if outcome['status'] == 'needs_choice':   # two plain readings with different answers (readings.py): the user picks
+        outcome = _two_readings(stack, question, outcome)
+        if 'answer' in outcome: return outcome
     if outcome['status'] != 'answered':
         if not takeover_ok: return None
         asking = cohort is None and _interactive(stack)
@@ -367,6 +370,13 @@ def _climb(stack, question, cohort, takeover_ok, near):
     from . import catalogue
     rule = catalogue.stated(question) if catalogue.enabled() else None
     if rule: answer['facts']['definitions_used'] = rule
+    checked = outcome.get('readings_checked') or {}
+    if checked.get('agree'):
+        answer['facts']['two_readings'] = f"This question can be read as {' or '.join(r.lower() for r in checked['readings'])}; both were computed and give the same answer."
+    elif checked.get('answered_as'):
+        answer['facts']['two_readings'] = f"This question can be read more than one way; only the reading \"{checked['answered_as'].lower()}\" could be answered, and that is what is shown."
+    elif outcome.get('two_readings'):
+        answer['facts']['two_readings'] = outcome['two_readings']
     answer['facts']['summary_written_by'] = ('The small model worded the summary from facts computed by code; code checked that every number in it is in the result.'
                                              if wrote['by'] == 'small_model' else 'Code wrote the summary; no model.' +
                                              (' A small-model summary was ' + wrote['small_model'] + '.' if wrote.get('small_model') else ''))
@@ -495,6 +505,34 @@ def _clarify(stack, question, kind, ask, reason, options, context=None, steps=()
                                 'frontier_called': kind == 'reading', 'clarification': {'kind': kind, 'asked': ask}},
             'planning_economics': {'new_api_estimate_usd': usd, 'known_api_estimate_usd': usd, 'total_cost_known': True, 'scope': 'Tiered core model calls only.'},
             'tiered_core': {'final_tier': 'clarify', 'seconds': seconds, 'escalations': [], 'bottled': None, 'asked': ask}}
+
+
+def _figure(columns, rows):
+    """A one-row answer as its numbers ('175' or '261, 0.12'); None for a longer answer."""
+    if not rows or len(rows) != 1: return None
+    nums = [v for v in rows[0] if isinstance(v, (int, float)) and not isinstance(v, bool)]
+    return ', '.join(f'{v:,}' if isinstance(v, int) else f'{v:,.4g}' for v in nums) or None
+
+
+def _two_readings(stack, question, outcome):
+    """Both readings were answered and differ. In the local app the user is asked, with each reading's figure on its option;
+    elsewhere both readings are returned side by side as one table, labelled, so no reading is chosen for the user."""
+    rs = outcome['readings']
+    usd = sum(s.get('usd', 0.0) for s in outcome['steps'])
+    if _interactive(stack):
+        options = [{'id': r['id'], 'label': r['label'] + (f": {_figure(r['columns'], r['rows'])}" if _figure(r['columns'], r['rows']) else ''),
+                    'meaning': r['meaning']} for r in rs]
+        return _clarify(stack, question, 'reading', outcome['ask'],
+                        'Both readings were computed and the answers differ; Agere does not choose between them for you.', options,
+                        context={'questions': {r['id']: r['question'] for r in rs}}, steps=outcome['steps'], seconds=outcome['seconds'])
+    first = rs[0]
+    if all(len(r['rows'] or []) == 1 and r['columns'] == first['columns'] for r in rs):
+        columns, rows = ['reading', *first['columns']], [[r['label'], *r['rows'][0]] for r in rs]
+    else:   # longer answers cannot share one table: the first reading is shown and the other is named
+        columns, rows = first['columns'], first['rows']
+    validation = {'ok': True, 'checks': [c for r in rs for c in (r['validation'] or {}).get('checks', [])]}
+    return {**outcome, 'status': 'answered', 'final_tier': first['final_tier'], 'recipe': first['recipe'], 'columns': columns, 'rows': rows, 'validation': validation,
+            'two_readings': f"{outcome['ask'].split('?')[0]}? Both are shown: " + '; '.join(f"{r['label'].lower()}: {_figure(r['columns'], r['rows']) or 'see rows'}" for r in rs) + '.'}
 
 
 def _closest(stack, question):
