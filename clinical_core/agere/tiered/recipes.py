@@ -629,6 +629,15 @@ def years_without_data(question, db=None):
     appointments, fills). -> (missing years, the years held), or ([], ...)."""
     asked = sorted(set(re.findall(r'\b(20\d{2})\b', str(question))))
     if not asked: return [], []
+    if not _DATA_YEARS and store.foreign():
+        # A warehouse that is not this semantic layer: every date-like column of every table counts.
+        conn = db or store.connect()
+        for table in store.tables(conn):
+            for col in [c[1] for c in conn.execute(f'PRAGMA table_info("{table}")') if re.search(r'date|month|_dt$|time', c[1].lower())]:
+                try:
+                    _DATA_YEARS.update(str(r[0]) for r in conn.execute(f'SELECT DISTINCT substr("{col}", 1, 4) FROM "{table}" WHERE "{col}" IS NOT NULL'))
+                except Exception:
+                    pass
     if not _DATA_YEARS:
         conn = db or store.connect()
         for table, column in (('stay', 'admit_date'), ('utilization_event', 'event_date'), ('payer_claim', 'service_from'), ('member_month', 'month'),
@@ -681,7 +690,10 @@ def narrowed_vocabulary(question, params, db=None):
     question says "diabetes" and diabetes is itself a value). -> a message, or None."""
     words = ' ' + ' '.join(re.findall(r'[a-z0-9]+', question.lower())) + ' '
     for query in ("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition'", 'SELECT DISTINCT drug_class FROM fill WHERE drug_class IS NOT NULL'):
-        values = {str(r[0]).lower() for r in store.run(query, None, db)[1]}
+        try:
+            values = {str(r[0]).lower() for r in store.run(query, None, db)[1]}
+        except store.RecipeError:   # a mapped or foreign warehouse without this table: nothing to compare against
+            continue
         for value in params.values():
             used = str(value).lower()
             if used not in values or f" {used.replace('_', ' ')} " in words: continue

@@ -124,6 +124,34 @@ Patient identifiers look like WHP-66F4B476DECF or P-1001.
 measurement_latest holds only each patient's most recent value of a concept; to count or average results within a period use measurement.'''
 
 
+FOREIGN_SYSTEM = '''You write one SQL query that answers a data question over a read-only SQLite healthcare warehouse.
+You never see data rows and you never state a number yourself: code will execute your query.
+
+Return exactly one JSON object and nothing else:
+{"sql": "<one SELECT, using :name placeholders for every value taken from the question>",
+ "params": {"<name>": {"type": "year|month|int|text", "value": "<value from the question>"}},
+ "grain": ["<columns that uniquely identify a result row; [] for a single-row result>"],
+ "question_template": "<the question with each parameter value replaced by {name}>"}
+
+If one SELECT cannot fully answer every part of the question (it needs several separate result tables, a statistical
+method, a judgment across documents, or data that is not in these tables), do not approximate. Return instead:
+{"cannot_answer": "<what is needed that these tables or one query cannot give>"}
+
+Rules:
+- Exactly one SELECT (WITH is allowed). No semicolons. Only the listed tables and columns.
+- Filter a calendar year with substr(date_col, 1, 4) = :year and a month with substr(date_col, 1, 7) = :month, adapting to how
+  each column stores its dates.
+- Every period or number the question states must be a parameter, never a literal in the SQL.
+- Compare a text parameter without regard to case: lower(col) = lower(:name).
+- Give each result column a clear name. Order the rows deterministically.
+
+Tables and columns:
+%s
+
+Text columns with few distinct values, and their values:
+%s'''
+
+
 EXAMPLES = os.environ.get('AGERE_TIERED_LLM_EXAMPLES', 'off') == 'on'   # show the writer the nearest verified saved queries
 
 
@@ -141,10 +169,18 @@ def nearest_examples(question, k=3, exclude=()):
 def llm_recipe(question, error=None, model=None, examples=None):
     """Tier 4. -> (recipe dict or None, step). error: one SQL execution error to correct, if any.
     model: a different model for an independent second query (curriculum.confirm); the frontier model by default."""
-    conditions = ', '.join(r[0] for r in store.run("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition' ORDER BY 1")[1])
-    system = LLM_SYSTEM % (store.schema_text(), definitions(), conditions)
     from . import catalogue
-    governed = catalogue.block(question) if catalogue.enabled() else ''
+    if store.foreign():
+        # A warehouse that is not this semantic layer and has no mapping: the same rules, its own tables and vocabulary, and
+        # none of this layer's recipes, vocabulary or governed definitions, which name tables it does not have.
+        system, governed = FOREIGN_SYSTEM % (store.schema_text(), store.vocabulary_text()), ''
+    else:
+        try:
+            conditions = ', '.join(r[0] for r in store.run("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition' ORDER BY 1")[1])
+        except store.RecipeError:
+            conditions = '(not listed: this mapped warehouse has no concept_patient table)'
+        system = LLM_SYSTEM % (store.schema_text(), definitions(), conditions)
+        governed = catalogue.block(question) if catalogue.enabled() else ''
     if governed: system += '\n\n' + governed
     if examples is None and EXAMPLES and model in (None, LLM): examples = nearest_examples(question)
     shown = ''.join(f'\nSaved question: {t}\nIts verified SQL: {q}\n' for t, q in (examples or []))
