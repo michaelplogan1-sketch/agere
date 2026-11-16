@@ -1,5 +1,7 @@
 """Questions with two plain readings: answer both, and ask only when they give different answers.
 
+Rules: patients or events ("how many patients were admitted"); initial or final denials ("what was our denial rate").
+
 Some questions are worded the way people talk but can be counted two ways, and both are reasonable. "How many patients
 were admitted from the ED in 2029?" is asked by an operations lead who means admissions, and by a quality lead who means
 distinct patients; on the synthetic warehouse the two are 261 and 175. A system that picks one silently is wrong for
@@ -38,9 +40,33 @@ _SETTLED = re.compile(r'\b(?:distinct|unique|different|individual|each (?:patien
                       r'more than once|at least once|every (?:admission|visit|stay|discharge)|times)\b', re.I)
 
 
+# "Denial rate" names three HFMA measures; two of them (initial and final) are on every claims feed and differ fourfold here.
+_DENIAL = re.compile(r'\bdenial (?:rate|percentage|share)s?\b|\b(?:share|percent(?:age)?|proportion|fraction|rate) of (?:our |the )?claims (?:were |was |that were |get |got )?denied\b|'
+                     r'\bhow many (?:of (?:our|the) )?claims (?:were|was|got) denied\b', re.I)
+_DENIAL_SETTLED = re.compile(r'\b(?:initial(?:ly)?|first|final(?:ly)?|upheld|overturn\w*|remain\w*|still|ever|eventually|permanent\w*|remittance|write[- ]?offs?|appeal\w*|'
+                             r'first_status|final_status)\b', re.I)
+
+
+# Only the hospital's own revenue cycle: a question about claims in general keeps the warehouse's 'ever denied' measure.
+_HOSPITAL_FRAME = re.compile(r'\b(?:our|we|us|hospital|health system|revenue cycle|billing|billed|submitted)\b', re.I)
+
+
+def _denials(q):
+    if not _DENIAL.search(q) or _DENIAL_SETTLED.search(q) or not _HOSPITAL_FRAME.search(q): return None
+    base = q.rstrip(' ?.')
+    return {'rule': 'initial_or_final_denials',
+            'ask': 'Do you mean the initial denial rate (denied at first adjudication) or the final denial rate (still denied at the end)? They give different answers here.',
+            'readings': [{'id': 'initial', 'label': 'Initial denials', 'question': base + '? Use initial denials: claims denied at first adjudication.',
+                          'meaning': 'Claims denied the first time the payer adjudicated them, whether or not later paid'},
+                         {'id': 'final', 'label': 'Final denials', 'question': base + '? Use final denials: claims still denied at their final status.',
+                          'meaning': 'Claims still denied after resubmission and appeal'}]}
+
+
 def detect(question):
     if not enabled(): return None
     q = ' '.join(str(question).split())
+    denials = _denials(q)
+    if denials: return denials
     if _SETTLED.search(q): return None
     # The first wording that is the counted thing: a participle that only describes the patients is passed over.
     m = next((m for m in _PATIENTS_EVENTS.finditer(q) if m.group(1) or not _LATER_VERB.search(q[m.end():])), None)

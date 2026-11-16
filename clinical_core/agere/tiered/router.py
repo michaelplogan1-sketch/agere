@@ -95,6 +95,16 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
         escalations.append({'from': 'scope', 'reason': f"no records for {', '.join(missing_years)}; the data covers {held[0]} to {held[-1]}" if held else 'no records for that year'})
         return done('unanswered', None)
 
+    # A measure the readiness probes show this warehouse cannot compute is declined with what is missing: an answer built
+    # from nearby columns (DNFB days from claim dates, proof_v12 U05) would look real and be wrong.
+    from . import readiness
+    blocked = readiness.named_not_ready(question)
+    if blocked:
+        why = '; '.join(f'{name} needs {missing}' for _, name, missing in blocked)
+        steps.append({'tier': 'scope', 'outcome': 'measure_not_computable', 'measures': [m for m, _, _ in blocked], 'tokens': 0, 'usd': 0.0})
+        escalations.append({'from': 'scope', 'reason': 'this warehouse cannot compute it: ' + why})
+        return done('unanswered', None, missing='This warehouse cannot compute it: ' + why + '. See measure_readiness.')
+
     # Tier 0: bottles
     if 'bottles' in tiers and bottles is not None:
         hit = bottles.match(question, statuses=bottle_statuses)  # by default a provisional bottle is never used to answer

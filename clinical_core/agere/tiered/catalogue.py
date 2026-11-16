@@ -111,6 +111,22 @@ DEFINITIONS = (
     ('immunizations', r'vaccin|immuniz|\bflu\b|influenza|\bshots?\b',
      "Vaccinations are in immunization, one row per dose, dated by event_date. A flu shot is vaccine 'influenza' or "
      "'influenza high-dose': count both unless the question names one."),
+    # Added 2026-11-16: revenue cycle (HFMA Claim Integrity Task Force) and perioperative (AACD) definitions.
+    ('revenue cycle', r'deni|overturn|appeal|days to (?:pay|payment|submit|bill)|payment lag|clean claim|revenue cycle|\bcarc\b|write[- ]off',
+     "For the hospital's own revenue cycle (our denials, initial or final denials, overturns, days to payment or to submit), the "
+     "claims are claim rows with claim_source = 'medical_claims' (payer_medical_claims rows are payer reports, not the hospital's "
+     "claims), dated by first_adjudication_date. A question about claims ever denied in general counts every claim row with "
+     "ever_denied = 1 by service_date. Initial denial = first_status "
+     "'denied'; final denial = final_status 'denied'; an overturned denial is first_status 'denied' with final_status 'paid'. "
+     "Rates are per adjudicated claim, and by dollars on billed_cents. 'Denial rate' alone is ambiguous (initial or final): "
+     "say which. Days to payment = first_submitted_date to first_payer_cash_date; days to submit = discharge_date (or "
+     "service_date) to first_submitted_date. Net days in A/R, DNFB, cost to collect and case mix index need the general ledger, "
+     "unbilled accounts or the MS-DRG weight table: see measure_readiness."),
+    ('operating room', r'\bor\b|operating room|surg|perioperative|procedur|turnover|first case|block utili',
+     "An operating room case is a procedure_event row with location_type 'OR'; its minutes run from start (patient in room) to "
+     "end (out of room), and it is dated by start. After hours = starting before 07:00, at or after 17:00, or on a weekend. "
+     "First-case on-time start, turnover and block utilization need scheduled times, room identifiers and the block schedule: "
+     "see measure_readiness."),
 )
 
 # The warehouse's own word for common phrasings: (pattern in the question, the value to use, where it lives)

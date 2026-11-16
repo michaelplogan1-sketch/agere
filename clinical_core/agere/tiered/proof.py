@@ -837,6 +837,72 @@ def ref_rd_readmitted_share_patients(db, year):
     return [[len(pts), len(back), round(len(back) / len(pts), 4)]]
 
 
+# ---- proof_v12: the hospital's own revenue cycle (HFMA Claim Integrity Task Force), computed row by row in Python --------------
+
+def _rc(db, year):
+    """The health system's submitted claims first adjudicated in the year."""
+    cols = ['payer', 'first_status', 'final_status', 'billed_cents', 'first_submitted_date', 'first_payer_cash_date', 'discharge_date', 'service_date']
+    out = []
+    for r in db.execute("SELECT " + ', '.join(cols) + ", claim_source, first_adjudication_date FROM claim"):
+        c = dict(zip(cols + ['source', 'adjudicated'], r))
+        if c['source'] == 'medical_claims' and c['adjudicated'] and str(c['adjudicated']).startswith(year): out.append(c)
+    return out
+
+
+def _days(a, b):
+    return (_day(b) - _day(a)).days
+
+
+def ref_rc_initial_rate(db, year):
+    c = _rc(db, year)
+    return [[round(sum(1 for x in c if x['first_status'] == 'denied') / len(c), 4)]]
+
+
+def ref_rc_final_rate(db, year):
+    c = _rc(db, year)
+    return [[round(sum(1 for x in c if x['final_status'] == 'denied') / len(c), 4)]]
+
+
+def ref_rc_initial_count(db, year):
+    return [[sum(1 for x in _rc(db, year) if x['first_status'] == 'denied')]]
+
+
+def ref_rc_final_count(db, year):
+    return [[sum(1 for x in _rc(db, year) if x['final_status'] == 'denied')]]
+
+
+def _by_payer(db, year, status):
+    by = defaultdict(list)
+    for x in _rc(db, year): by[x['payer']].append(x)
+    return [[p, round(sum(1 for x in xs if x[status] == 'denied') / len(xs), 4)] for p, xs in sorted(by.items())]
+
+
+def ref_rc_initial_by_payer(db, year):
+    return _by_payer(db, year, 'first_status')
+
+
+def ref_rc_final_by_payer(db, year):
+    return _by_payer(db, year, 'final_status')
+
+
+def ref_rc_overturn_rate(db, year):
+    d = [x for x in _rc(db, year) if x['first_status'] == 'denied']
+    return [[round(sum(1 for x in d if x['final_status'] == 'paid') / len(d), 4)]]
+
+
+def ref_rc_initial_rate_dollars(db, year):
+    c = _rc(db, year)
+    return [[round(sum(x['billed_cents'] for x in c if x['first_status'] == 'denied') / sum(x['billed_cents'] for x in c), 4)]]
+
+
+def ref_rc_median_days_to_payment(db, year):
+    return [[_median([_days(x['first_submitted_date'], x['first_payer_cash_date']) for x in _rc(db, year) if x['first_submitted_date'] and x['first_payer_cash_date']])]]
+
+
+def ref_rc_median_days_to_submit(db, year):
+    return [[_median([_days(x['discharge_date'] or x['service_date'], x['first_submitted_date']) for x in _rc(db, year) if x['first_submitted_date']])]]
+
+
 REFERENCES = {name[4:]: fn for name, fn in globals().items() if name.startswith('ref_') and callable(fn)}
 
 
