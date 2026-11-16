@@ -1,0 +1,566 @@
+{
+ "version": "proof_v5",
+ "authored": "2026-11-16",
+ "authored_by": "Claude (build owner)",
+ "frozen": "Written and committed before any run, after the governed definitions were committed. Run once; not edited after it has been run. Its first result stands as reported.",
+ "held_out": "Not used by the learning loop, the curriculum or as recipe examples. The stack is scored on a copy of its saved recipes with learning switched off.",
+ "reference": "Computed in clinical_core/agere/tiered/proof.py in Python, without the stack's SQL or recipes. Where a plain phrasing has more than one reading, the reference follows the governed definition in catalogue.py, which a buyer would agree in advance.",
+ "phrasing": "The first phrasing of each question is plain, as a user would ask it; the second states the rule.",
+ "scoring": "+1 right, 0 declined, -10 wrong. An unanswerable question that is answered counts as wrong. Two phrasings per question, three runs each, three arms, all runs reported.",
+ "questions": [
+  {
+   "id": "D01",
+   "domain": "readmissions",
+   "reference": "readmissions",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many readmissions were there in 2029?",
+    "Count the 30-day readmissions that began in 2029, each hospital stay counted once."
+   ]
+  },
+  {
+   "id": "D02",
+   "domain": "readmissions",
+   "reference": "readmission_rate",
+   "args": [
+    "2030"
+   ],
+   "phrasings": [
+    "What was our 30-day readmission rate in 2030?",
+    "Of stays discharged in 2030, each counted once, what share had an inpatient admission 1 to 30 days later?"
+   ]
+  },
+  {
+   "id": "D03",
+   "domain": "readmissions",
+   "reference": "stays_discharged",
+   "args": [
+    "2030"
+   ],
+   "phrasings": [
+    "How many hospital discharges were there in 2030?",
+    "Count inpatient stays discharged in 2030, each stay counted once."
+   ]
+  },
+  {
+   "id": "D04",
+   "domain": "readmissions",
+   "reference": "avg_length_of_stay",
+   "args": [
+    "2030"
+   ],
+   "phrasings": [
+    "What was the average length of stay in 2030?",
+    "For inpatient stays discharged in 2030, each counted once, what was the mean days from admission to discharge?"
+   ]
+  },
+  {
+   "id": "D05",
+   "domain": "readmissions",
+   "reference": "stays_admitted",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many hospital admissions started in 2029?",
+    "Count inpatient stays whose admission date is in 2029, with repeated or overlapping stay rows counted as one stay."
+   ]
+  },
+  {
+   "id": "D06",
+   "domain": "value-based care",
+   "reference": "pmpm",
+   "args": [
+    "2030"
+   ],
+   "phrasings": [
+    "What was PMPM by line of business in 2030?",
+    "For 2030, what did the payer pay per member month in each line of business on claims that count in metrics?"
+   ]
+  },
+  {
+   "id": "D07",
+   "domain": "value-based care",
+   "reference": "members_by_lob",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many members did we cover in 2029 in each line of business?",
+    "Count distinct patients with a member month in 2029, by line of business."
+   ]
+  },
+  {
+   "id": "D08",
+   "domain": "value-based care",
+   "reference": "top_cost",
+   "args": [
+    "2030",
+    5
+   ],
+   "phrasings": [
+    "Who were our 5 most expensive members in 2030?",
+    "List the five members with the highest payer paid dollars in 2030 on claims that count in metrics, with the amount for each."
+   ]
+  },
+  {
+   "id": "D09",
+   "domain": "value-based care",
+   "reference": "care_gaps",
+   "args": [
+    "2030"
+   ],
+   "phrasings": [
+    "How are we doing on care gaps in 2030?",
+    "For 2030, how many members were eligible and how many had an open gap for each care-gap measure?"
+   ]
+  },
+  {
+   "id": "D10",
+   "domain": "value-based care",
+   "reference": "statin_gaps",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "How many cardiac patients missed statin therapy in 2027?",
+    "Count members enrolled in 2027, aged 21 to 75, with coronary artery disease or a heart attack on record, who had no statin fill in 2027."
+   ]
+  },
+  {
+   "id": "D11",
+   "domain": "value-based care",
+   "reference": "a1c_gaps",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many diabetics had an A1c gap in 2029?",
+    "Count members enrolled in 2029, aged 18 to 75, with diabetes, who had no HbA1c in 2029 or whose latest 2029 HbA1c was above 9."
+   ]
+  },
+  {
+   "id": "D12",
+   "domain": "value-based care",
+   "reference": "wellness_gaps",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many Medicare members skipped their wellness visit in 2029?",
+    "Count Medicare or dual members enrolled in 2029 with no annual wellness visit in 2029."
+   ]
+  },
+  {
+   "id": "D13",
+   "domain": "value-based care",
+   "reference": "total_paid",
+   "args": [
+    "2030"
+   ],
+   "phrasings": [
+    "What did we spend in total in 2030?",
+    "Sum payer paid dollars on claims with a 2030 service date that count in metrics."
+   ]
+  },
+  {
+   "id": "D14",
+   "domain": "value-based care",
+   "reference": "paid_by_claim_type",
+   "args": [
+    "2030"
+   ],
+   "phrasings": [
+    "How much was paid on institutional versus professional claims in 2030?",
+    "Split 2030 payer paid dollars by claim type, counting only claims that count in metrics."
+   ]
+  },
+  {
+   "id": "D15",
+   "domain": "value-based care",
+   "reference": "claims_count",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many claims did we have in 2028?",
+    "Count payer claims with a 2028 service date that count in metrics."
+   ]
+  },
+  {
+   "id": "D16",
+   "domain": "value-based care",
+   "reference": "member_months",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "How many member months did we have in 2027?",
+    "Count the member_month rows for months in 2027."
+   ]
+  },
+  {
+   "id": "D17",
+   "domain": "value-based care",
+   "reference": "attributed_practices",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many practices had attributed patients in 2028?",
+    "Count the distinct attribution practices in 2028 member months."
+   ]
+  },
+  {
+   "id": "D18",
+   "domain": "value-based care",
+   "reference": "denied_claims",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "How many claims were denied in 2027?",
+    "Count claims in the claim table with a 2027 service date that were ever denied."
+   ]
+  },
+  {
+   "id": "D19",
+   "domain": "utilisation",
+   "reference": "frequent_ed_patients",
+   "args": [
+    "2030"
+   ],
+   "phrasings": [
+    "How many frequent ED users did we have in 2030 (two or more visits)?",
+    "Count patients with at least two emergency department visit events in 2030."
+   ]
+  },
+  {
+   "id": "D20",
+   "domain": "utilisation",
+   "reference": "ed_by_month",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "Show ER visits by month for 2027.",
+    "Give the count of 2027 ED visit utilization events for each month."
+   ]
+  },
+  {
+   "id": "D21",
+   "domain": "utilisation",
+   "reference": "no_show_rate",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "What was our no-show rate in 2027?",
+    "Of appointments scheduled in 2027, what fraction had a final status of no_show?"
+   ]
+  },
+  {
+   "id": "D22",
+   "domain": "utilisation",
+   "reference": "cancelled_appointments",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many appointments were cancelled in 2028?",
+    "Count appointments scheduled in 2028 with a final status of cancelled."
+   ]
+  },
+  {
+   "id": "D23",
+   "domain": "utilisation",
+   "reference": "appointments_by_status",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "Break down 2028 appointments by outcome.",
+    "Count appointments scheduled in 2028 by final status."
+   ]
+  },
+  {
+   "id": "D24",
+   "domain": "utilisation",
+   "reference": "patients_with_any_fill",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many patients filled any prescription in 2028?",
+    "Count distinct patients with at least one pharmacy fill dated in 2028."
+   ]
+  },
+  {
+   "id": "D25",
+   "domain": "utilisation",
+   "reference": "glp1_patients",
+   "args": [
+    "2030"
+   ],
+   "phrasings": [
+    "How many people were on a GLP-1 in 2030?",
+    "Count distinct patients with a glp1_agonist fill dated in 2030."
+   ]
+  },
+  {
+   "id": "D26",
+   "domain": "utilisation",
+   "reference": "sglt2_patients",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many patients took an SGLT2 inhibitor in 2029?",
+    "Count distinct patients with an sglt2_inhibitor fill dated in 2029."
+   ]
+  },
+  {
+   "id": "D27",
+   "domain": "utilisation",
+   "reference": "top_drug_classes",
+   "args": [
+    "2030",
+    3
+   ],
+   "phrasings": [
+    "What were our top 3 drug classes by fills in 2030?",
+    "Which three drug classes had the most fills dated 2030, with their counts?"
+   ]
+  },
+  {
+   "id": "D28",
+   "domain": "quality",
+   "reference": "a1c_tested_patients",
+   "args": [
+    "2030"
+   ],
+   "phrasings": [
+    "How many patients got an A1c checked in 2030?",
+    "Count distinct patients with an HbA1c result dated in 2030."
+   ]
+  },
+  {
+   "id": "D29",
+   "domain": "quality",
+   "reference": "avg_a1c",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "What was the average A1c in 2027?",
+    "What is the mean of all HbA1c results dated in 2027?"
+   ]
+  },
+  {
+   "id": "D30",
+   "domain": "quality",
+   "reference": "ldl_tested_patients",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many patients had their LDL checked in 2029?",
+    "Count distinct patients with an LDL result dated in 2029."
+   ]
+  },
+  {
+   "id": "D31",
+   "domain": "quality",
+   "reference": "avg_ldl",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was the average LDL in 2028?",
+    "What is the mean of all LDL results dated in 2028?"
+   ]
+  },
+  {
+   "id": "D32",
+   "domain": "quality",
+   "reference": "egfr_tested_patients",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many patients had kidney function (eGFR) measured in 2029?",
+    "Count distinct patients with an eGFR result dated in 2029."
+   ]
+  },
+  {
+   "id": "D33",
+   "domain": "quality",
+   "reference": "awv_patients",
+   "args": [
+    "2030"
+   ],
+   "phrasings": [
+    "How many annual wellness visits were completed in 2030, counting patients?",
+    "Count distinct patients with an annual wellness visit dated in 2030."
+   ]
+  },
+  {
+   "id": "D34",
+   "domain": "quality",
+   "reference": "mammograms",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "How many mammograms did we do in 2027?",
+    "Count bilateral screening mammography records dated in 2027."
+   ]
+  },
+  {
+   "id": "D35",
+   "domain": "quality",
+   "reference": "immunizations",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many vaccines were given in 2028?",
+    "Count immunization records dated in 2028."
+   ]
+  },
+  {
+   "id": "D36",
+   "domain": "quality",
+   "reference": "flu_vaccinated_patients",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many patients got a flu shot in 2029?",
+    "Count distinct patients with an influenza or high-dose influenza immunization dated in 2029."
+   ]
+  },
+  {
+   "id": "D37",
+   "domain": "population",
+   "reference": "ckd_any_source",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many patients have chronic kidney disease on record?",
+    "Count distinct patients with chronic kidney disease recorded as a condition from any source, claims diagnoses included."
+   ]
+  },
+  {
+   "id": "D38",
+   "domain": "population",
+   "reference": "housing_positive_patients",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many patients have housing instability?",
+    "Count distinct patients with a positive social need screen for housing."
+   ]
+  },
+  {
+   "id": "D39",
+   "domain": "population",
+   "reference": "patients_65_plus",
+   "args": [
+    "2030"
+   ],
+   "phrasings": [
+    "How many patients were 65 or older at the end of 2030?",
+    "Using birth dates, count patients aged 65 or older on 31 December 2030."
+   ]
+  },
+  {
+   "id": "D40",
+   "domain": "population",
+   "reference": "deaths",
+   "args": [
+    "2030"
+   ],
+   "phrasings": [
+    "How many patients died in 2030?",
+    "Count death records with a death date in 2030."
+   ]
+  },
+  {
+   "id": "W01",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "How many emergency visits did we have in 2037?",
+    "What was the readmission rate in 2037?"
+   ]
+  },
+  {
+   "id": "W02",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our Medicare Advantage Star rating for 2027?",
+    "How many Stars did CMS give our MA plan in 2027?"
+   ]
+  },
+  {
+   "id": "W03",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "How many patient portal logins did we have in 2029?",
+    "How many patients used the patient portal in 2029?"
+   ]
+  },
+  {
+   "id": "W04",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our hospital operating margin in 2029?",
+    "What was our 2029 operating income as a share of revenue?"
+   ]
+  },
+  {
+   "id": "W05",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our average bed occupancy rate in 2029?",
+    "How full were our hospital beds on average in 2029?"
+   ]
+  },
+  {
+   "id": "W06",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "How much did we pay out in malpractice claims in 2029?",
+    "What were our 2029 medical liability settlements?"
+   ]
+  },
+  {
+   "id": "W07",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was physician burnout like in 2029 according to our staff survey?",
+    "What share of our physicians reported burnout in 2029?"
+   ]
+  },
+  {
+   "id": "W08",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was the average registration wait time at our clinics in 2029?",
+    "How long did patients wait at check-in in 2029 on average?"
+   ]
+  }
+ ]
+}

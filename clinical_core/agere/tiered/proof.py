@@ -348,6 +348,46 @@ def ref_immunizations(db, year):
     return [[sum(1 for (d,) in db.execute('SELECT event_date FROM immunization') if str(d).startswith(year))]]
 
 
+# ---- references added for proof_v5 (written before proof_v5's first run) --------------------------------------------
+
+def _results(db, concept, year):
+    return [(p, v) for p, v, d in db.execute('SELECT patient_id, value_canonical, event_date FROM measurement WHERE concept = ?', (concept,)) if str(d).startswith(year)]
+
+
+def ref_ldl_tested_patients(db, year):
+    return [[len({p for p, _ in _results(db, 'ldl', year)})]]
+
+
+def ref_avg_ldl(db, year):
+    v = [x for _, x in _results(db, 'ldl', year) if x is not None]
+    return [[round(sum(v) / len(v), 2)]]
+
+
+def ref_egfr_tested_patients(db, year):
+    return [[len({p for p, _ in _results(db, 'egfr', year)})]]
+
+
+def ref_stays_admitted(db, year):
+    _, eps = _readmissions(db, year)
+    return [[sum(1 for _, a, _ in eps if a.startswith(year))]]
+
+
+def ref_ckd_any_source(db, year):
+    return [[len({p for (p,) in db.execute("SELECT patient_id FROM concept_patient WHERE kind = 'condition' AND concept = 'chronic_kidney_disease'")})]]
+
+
+def ref_sglt2_patients(db, year):
+    return [[len({p for p, c, d in db.execute('SELECT patient_id, drug_class, fill_date FROM fill') if c == 'sglt2_inhibitor' and d and d.startswith(year)})]]
+
+
+def ref_flu_vaccinated_patients(db, year):
+    return [[len({p for p, v, d in db.execute('SELECT patient_id, vaccine, event_date FROM immunization') if v in ('influenza', 'influenza high-dose') and str(d).startswith(year)})]]
+
+
+def ref_housing_positive_patients(db, year):
+    return [[len({p for p, need, pos in db.execute('SELECT patient_id, need, positive FROM social_need') if need == 'housing' and pos == 1})]]
+
+
 REFERENCES = {name[4:]: fn for name, fn in globals().items() if name.startswith('ref_') and callable(fn)}
 
 
