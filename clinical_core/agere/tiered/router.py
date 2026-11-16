@@ -122,8 +122,15 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
             steps.append({'tier': 'bottles', 'outcome': 'no_match', 'tokens': 0, 'usd': 0.0})
             escalations.append({'from': 'bottles', 'reason': 'no bottle matches this question shape'})
 
+    from . import corrections
+    reported = corrections.blocked(question)   # recipes a person reported wrong for this wording, until a reviewer settles it
+
     def run_recipe(tier, recipe_id, params):
         recipe = recipes.RECIPES[recipe_id]
+        if recipe_id in reported:
+            steps.append({'tier': tier, 'outcome': 'reported_wrong_for_this_question', 'recipe': recipe_id, 'tokens': 0, 'usd': 0.0})
+            escalations.append({'from': tier, 'reason': f'{recipe_id} was reported wrong for this question; the report is open'})
+            return None
         if tier != 'recipes':   # a model chose this recipe: it must read every table or column the question names
             from . import near
             whole = recipes.needs_whole_stays(question, recipe['sql'])

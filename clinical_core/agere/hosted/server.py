@@ -20,7 +20,7 @@ from pathlib import Path
 import re
 import socket
 import zipfile
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlsplit
 
 from . import pages
 
@@ -277,6 +277,10 @@ def make_handler(ctx):
                 if path == '/api/ask/status':
                     from . import ask
                     return self.send(200, ask.status())
+                if path == '/api/ask/reports':   # wrong-answer reports and time to fix, for reviewers
+                    if not self.require(p, 'admin'): return self.error(403, 'Reviewing reports needs the admin role')
+                    from . import ask
+                    return self.send(200, ask.reports(dict(parse_qsl(urlsplit(self.path).query)).get('status')))
                 if path == '/api/uploads':
                     root = ctx.uploads_root(self.org_slug(p))
                     items = [{'name': x.name, 'kind': 'folder' if x.is_dir() else 'file',
@@ -378,6 +382,15 @@ def make_handler(ctx):
                     from . import ask
                     code, payload = ask.answer(ctx, self.org_slug(p), self.user_id(p), body, ip=self.client_ip())
                     return self.send(code, payload)
+                if path == '/api/ask/report':
+                    from . import ask
+                    code, payload = ask.report_wrong(ctx, self.org_slug(p), self.user_id(p), body, ip=self.client_ip())
+                    return self.send(code, payload)
+                if path == '/api/ask/reports/resolve':
+                    if not self.require(p, 'admin'): return self.error(403, 'Resolving reports needs the admin role')
+                    from . import ask
+                    code, payload = ask.resolve(ctx, self.org_slug(p), self.user_id(p), body, ip=self.client_ip())
+                    return self.send(code, payload)
                 if path.startswith('/api/workspaces'):
                     if path.endswith('/ask') and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'api':
                         return self.error(409, 'Workspace questions use the older path, which is not run on the paid API. Use Ask.')
@@ -457,8 +470,9 @@ def make_handler(ctx):
                 return ctx.credentials.get(org, name)
 
             def on_usage(workspace, row):
-                ctx.auth.record_usage(org, workspace, row.get('context_id') or row.get('question', '')[:80], row.get('cost_usd'), row.get('seconds'))
-                ctx.auth.audit(org, uid, 'workspace.ask', {'workspace': workspace, 'question': row.get('question'), 'decision': row.get('decision'),
+                from .auth import question_ref   # the logs keep a fingerprint of the question, never its words (they can name a patient)
+                ctx.auth.record_usage(org, workspace, row.get('context_id') or question_ref(row.get('question'))['question_fingerprint'], row.get('cost_usd'), row.get('seconds'))
+                ctx.auth.audit(org, uid, 'workspace.ask', {'workspace': workspace, **question_ref(row.get('question')), 'decision': row.get('decision'),
                                                         'context_id': row.get('context_id')},
                                ip=self.client_ip())
 

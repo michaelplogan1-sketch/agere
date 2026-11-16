@@ -126,6 +126,16 @@ CREATE INDEX IF NOT EXISTS rate_events_key ON rate_events(key, at);
 """
 
 
+
+def question_ref(text: Optional[str]) -> dict:
+    """What the audit and usage logs keep of a question: a keyed fingerprint and its length, never the words. A question
+    can name a patient, and an audit log is read and retained more widely than the data. The same question gives the
+    same fingerprint (keyed by AGERE_SECRET_KEY when set), so repeats can be counted without storing them."""
+    import os
+    words = ' '.join(str(text or '').split())
+    key = (os.environ.get('AGERE_SECRET_KEY') or 'agere-audit').encode()
+    return {'question_fingerprint': hmac.new(key, words.lower().encode(), hashlib.sha256).hexdigest()[:16], 'question_chars': len(words)}
+
 class AuthError(ValueError):
     """Raised for invalid input (weak password, unknown role, duplicate email, unknown org/user)."""
 
