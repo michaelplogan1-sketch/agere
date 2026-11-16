@@ -38,6 +38,27 @@ class UnknownValues(unittest.TestCase):
             recipes._COLUMN_TABLES.clear()
 
 
+
+class Scope(unittest.TestCase):
+    def test_each_stay_once_needs_whole_stay_counting(self):
+        q = 'How many inpatient hospital stays were discharged in 2029, counting each stay once?'
+        self.assertTrue(recipes.needs_whole_stays(q, recipes.RECIPES['utilization_count']['sql']))
+        self.assertIsNone(recipes.needs_whole_stays(q, recipes.RECIPES['stays_discharged_each_once']['sql']))
+        self.assertIsNone(recipes.needs_whole_stays('How many inpatient events were there in 2029?', recipes.RECIPES['utilization_count']['sql']))
+        self.assertEqual(recipes.match(q)[0], 'stays_discharged_each_once')
+
+    def test_a_year_with_no_records_is_named(self):
+        db = sqlite3.connect(':memory:')
+        db.executescript("CREATE TABLE stay (admit_date); INSERT INTO stay VALUES ('2028-03-01'), ('2029-05-01');")
+        recipes._DATA_YEARS.clear()
+        try:
+            self.assertEqual(recipes.years_without_data('How many readmissions were there in 2035?', db), (['2035'], ['2028', '2029']))
+            self.assertEqual(recipes.years_without_data('How many readmissions in 2029?', db)[0], [])
+            self.assertEqual(recipes.years_without_data('How many patients are there?', db), ([], []))
+        finally:
+            recipes._DATA_YEARS.clear()
+
+
 class CareGaps(unittest.TestCase):
     def test_the_four_rules_on_a_tiny_warehouse(self):
         db = sqlite3.connect(':memory:')
