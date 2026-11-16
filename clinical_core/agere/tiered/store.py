@@ -20,10 +20,10 @@ DEFAULT_DB = 'artifacts/agere-full-stack-rerun-2026-10-30/focused/runtime/stack/
 TABLES = ('document', 'note_fact', 'note_therapy_change', 'therapy_barrier', 'utilization_event', 'stay', 'stay_episode', 'appointment', 'visit', 'fill',
           'hospital_visit', 'payer_claim', 'claim', 'patient', 'concept_patient', 'member_month', 'measurement', 'measurement_latest', 'immunization', 'death',
           'organization', 'clinician', 'enrollment_span', 'condition', 'encounter', 'prescription', 'allergy_entry', 'smoking_status', 'social_need',
-          'wellness_visit', 'cancer_screening', 'risk_score', 'patient_hcc', 'aco_contract')
+          'wellness_visit', 'cancer_screening', 'risk_score', 'patient_hcc', 'aco_contract', 'measure_readiness', 'measure_requirement')
 # Governed views: definitions the semantic layer computes once, so a query reads them instead of re-deriving them. Each is
 # created on every connection over the (possibly mapped or cohort-restricted) tables it reads.
-GOVERNED = ('stay_episode', 'hospital_visit', 'risk_score', 'patient_hcc', 'aco_contract')   # the last three: aco.py
+GOVERNED = ('stay_episode', 'hospital_visit', 'risk_score', 'patient_hcc', 'aco_contract', 'measure_readiness', 'measure_requirement', 'measure_alias')   # the last three: aco.py
 SECONDS = 20.0
 
 
@@ -101,8 +101,9 @@ def connect(cohort=None):
         have = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view') UNION SELECT name FROM sqlite_temp_master WHERE type = 'view'")}
         if 'stay' in have and 'stay_episode' not in have: db.execute('CREATE TEMP VIEW stay_episode AS ' + _stay_episode())
         if 'visit_group' in have and 'hospital_visit' not in have: db.execute('CREATE TEMP VIEW hospital_visit AS ' + HOSPITAL_VISIT)
-        from . import aco
+        from . import aco, readiness
         aco.install(db, cohort)
+        readiness.install(db)
     db.execute('PRAGMA query_only=ON')
     return db
 
