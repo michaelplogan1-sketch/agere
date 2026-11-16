@@ -707,7 +707,7 @@ def needs_whole_stays(question, sql):
     """Code only. The question asks for each hospital stay counted once, and the query counts stay rows or events instead of
     whole stays (the _STAYS episode logic). -> a message, or None."""
     if not EACH_STAY_ONCE.search(question): return None
-    if 'st AS (' in str(sql) or 'raw AS (' in str(sql): return None
+    if 'st AS (' in str(sql) or 'raw AS (' in str(sql) or re.search(r'(?i)\bstay_episode\b', str(sql)): return None   # stay_episode is the merge
     return 'The question asks for each hospital stay counted once; this query does not merge repeated, overlapping or continuing stay rows into one stay'
 
 

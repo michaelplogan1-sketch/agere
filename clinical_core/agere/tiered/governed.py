@@ -130,8 +130,10 @@ def flu_vaccines(q, s):
 def aco_population(q, s):
     """The ACO (MSSP) population is payer WH-PAYER-MSSP's members, not every Medicare member."""
     if not _has(q, r'\baco\b|\bmssp\b|accountable care|shared savings'): return None
-    reads_population = any(_reads(s, t) for t in ('member_month', 'payer_claim', 'risk_score', 'patient_hcc', 'enrollment_span'))
-    if reads_population and not _has(s, r'wh-payer-mssp'):
+    # Any patient data read for an ACO question is the ACO's members' (proof_v8: ED visits counted for everyone); only a
+    # question about the contract terms alone reads no population.
+    tables = set(re.findall(r'(?i)\b(?:from|join)\s+(?:main\.)?"?([a-z_][a-z0-9_]*)', s)) - {'aco_contract'}
+    if tables and not _has(s, r'wh-payer-mssp'):
         return ("Governed definition: the ACO (MSSP) population is the members with a member_month row for payer_id 'WH-PAYER-MSSP' "
                 "in the year, and its spend is that payer's claims with counts_in_metrics = 1. Filter to payer_id 'WH-PAYER-MSSP'.")
     return None
