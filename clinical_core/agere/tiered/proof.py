@@ -203,6 +203,117 @@ def ref_glp1_patients(db, year):
     return [[len({p for p, c, d in db.execute('SELECT patient_id, drug_class, fill_date FROM fill') if c == 'glp1_agonist' and d and d.startswith(year)})]]
 
 
+# ---- references added for proof_v3 (written before proof_v3's first run) --------------------------------------------
+
+def _episodes_out(db, year):
+    _, eps = _readmissions(db, year)
+    return [(p, a, d) for p, a, d in eps if d and d.startswith(year)]
+
+
+def ref_stays_discharged(db, year):
+    return [[len(_episodes_out(db, year))]]
+
+
+def ref_avg_length_of_stay(db, year):
+    eps = _episodes_out(db, year)
+    return [[round(sum((_day(d) - _day(a)).days for _, a, d in eps) / len(eps), 2)]]
+
+
+def _ed(db, year):
+    return [(p, d) for p, d in db.execute("SELECT patient_id, event_date FROM utilization_event WHERE kind = 'ed_visit'") if str(d).startswith(year)]
+
+
+def ref_frequent_ed_patients(db, year):
+    n = Counter(p for p, _ in _ed(db, year))
+    return [[sum(1 for v in n.values() if v >= 2)]]
+
+
+def ref_ed_by_month(db, year):
+    n = Counter(str(d)[:7] for _, d in _ed(db, year))
+    return [[m, n[m]] for m in sorted(n)]
+
+
+def ref_patients_by_sex(db, year):
+    n = Counter(s for (s,) in db.execute('SELECT sex_reported FROM patient'))
+    return [[s, c] for s, c in n.items()]
+
+
+def ref_patients_65_plus(db, year):
+    end = date(int(year), 12, 31)
+    return [[sum(1 for (b,) in db.execute('SELECT birth_date FROM patient') if b and (end - _day(b)).days / 365.25 >= 65)]]
+
+
+def ref_transport_positive_patients(db, year):
+    return [[len({p for p, need, pos in db.execute('SELECT patient_id, need, positive FROM social_need') if need == 'transport' and pos == 1})]]
+
+
+def ref_top_drug_classes(db, year, n=5):
+    c = Counter(k for k, d in db.execute('SELECT drug_class, fill_date FROM fill') if k and d and d.startswith(year))
+    return [[k, v] for k, v in sorted(c.items(), key=lambda kv: (-kv[1], kv[0]))[:n]]
+
+
+def ref_total_paid(db, year):
+    return [[round(sum(c for c, f, d in db.execute('SELECT paid_cents, counts_in_metrics, service_from FROM payer_claim') if f == 1 and d and d.startswith(year) and c) / 100, 2)]]
+
+
+def ref_paid_by_claim_type(db, year):
+    t = Counter()
+    for k, c, f, d in db.execute('SELECT claim_type, paid_cents, counts_in_metrics, service_from FROM payer_claim'):
+        if f == 1 and d and d.startswith(year) and c: t[k] += c
+    return [[k, round(v / 100, 2)] for k, v in t.items()]
+
+
+def ref_denied_claims(db, year):
+    return [[sum(1 for d, x in db.execute('SELECT service_date, ever_denied FROM claim') if str(d).startswith(year) and x == 1)]]
+
+
+def ref_appointments_by_status(db, year):
+    n = Counter(st for st, d in db.execute('SELECT final_status, scheduled_date FROM appointment') if str(d).startswith(year))
+    return [[k, v] for k, v in n.items()]
+
+
+def ref_no_show_rate(db, year):
+    rows = [st for st, d in db.execute('SELECT final_status, scheduled_date FROM appointment') if str(d).startswith(year)]
+    return [[round(sum(1 for st in rows if st == 'no_show') / len(rows), 4)]]
+
+
+def ref_a1c_tested_patients(db, year):
+    return [[len({p for p, d in db.execute("SELECT patient_id, event_date FROM measurement WHERE concept = 'hba1c'") if str(d).startswith(year)})]]
+
+
+def ref_avg_a1c(db, year):
+    v = [x for x, d in db.execute("SELECT value_canonical, event_date FROM measurement WHERE concept = 'hba1c'") if str(d).startswith(year) and x is not None]
+    return [[round(sum(v) / len(v), 2)]]
+
+
+def ref_awv_patients(db, year):
+    return [[len({p for p, d in db.execute('SELECT patient_id, event_date FROM wellness_visit WHERE awv = 1') if str(d).startswith(year)})]]
+
+
+def ref_mammograms(db, year):
+    return [[sum(1 for (d,) in db.execute("SELECT event_date FROM cancer_screening WHERE test = 'bilateral_screening_mammography'") if str(d).startswith(year))]]
+
+
+def ref_diabetes_condition_patients(db, year):
+    return [[len({p for p, c in db.execute('SELECT patient_id, concept FROM condition') if c in ('diabetes', 'type_2_diabetes', 'type_1_diabetes')})]]
+
+
+def ref_attributed_practices(db, year):
+    return [[len({x for x, m in db.execute('SELECT attribution_practice_id, month FROM member_month') if x and str(m).startswith(year)})]]
+
+
+def ref_member_months(db, year):
+    return [[sum(1 for (m,) in db.execute('SELECT month FROM member_month') if str(m).startswith(year))]]
+
+
+def ref_statin_gaps(db, year):
+    return [[r[2]] for r in ref_care_gaps(db, year) if r[0] == 'statin_cardiovascular']
+
+
+def ref_wellness_gaps(db, year):
+    return [[r[2]] for r in ref_care_gaps(db, year) if r[0] == 'annual_wellness_visit']
+
+
 REFERENCES = {name[4:]: fn for name, fn in globals().items() if name.startswith('ref_') and callable(fn)}
 
 
