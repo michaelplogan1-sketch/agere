@@ -61,7 +61,7 @@ def _claude(model, system, user, timeout=180):
     return text, {'model': model, 'tokens': ledger.tokens(usage), 'usd': ledger.claude_usd(model, usage), 'seconds': round(time.monotonic() - started, 2)}
 
 
-DEFINITIONS = os.environ.get('AGERE_TIERED_DEFINITIONS', 'all')   # 'all': every recipe's SQL; 'nearest': only the closest few
+DEFINITIONS = os.environ.get('AGERE_TIERED_DEFINITIONS', 'nearest')   # 'nearest' (default from 2026-11-16, proof_v6): the closest few recipes' SQL; 'all': every recipe's
 NEAREST = int(os.environ.get('AGERE_TIERED_DEFINITIONS_K', '6'))
 _STOP = set('a an and are as at be by for from had has have how in is it its many much of on or per that the their there this to was were what when which who with each count number one all any did does do'.split())
 

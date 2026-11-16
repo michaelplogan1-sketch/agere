@@ -58,6 +58,16 @@ rungs, for example `canonical bottles,recipes,system1,slm,near,llm`). `proof run
 right answer, 0 for declining, -10 for a wrong one, with a frontier model writing its own SQL scored beside it on the
 same questions.
 
+## Run it on another warehouse
+
+A customer's warehouse is presented to the core through a mapping: one SQL view per semantic-layer table, over the
+customer's own tables (`config/agere/mappings/` holds an example for the synthetic layout B). With
+`AGERE_TIERED_DB=<warehouse> AGERE_TIERED_MAPPING=<mapping>` every recipe, saved recipe and governed definition runs
+unchanged. `python -m clinical_core.agere.tiered.portability` builds layout B, has a frontier model draft a mapping,
+audits a mapping against Agere's documented vocabulary, and runs one audit-driven revision. A drafted mapping needs a
+person's review before use: the audit cannot see duplicated rows. `AGERE_TIERED_FOREIGN=on` instead shows a
+warehouse's own tables to the frontier SQL writer, with no recipes.
+
 ## How the build is run
 
 `AGENTS.md` states the rules for anyone building here. `AGERE_BUILD_CONTROL.json` holds the current gate, checkpoint and
