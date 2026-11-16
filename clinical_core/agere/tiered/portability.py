@@ -350,12 +350,12 @@ if __name__ == '__main__':
             print(table); [print('  -', i[:300]) for i in issues]
     elif cmd == ['revise']:
         os.environ.pop('ANTHROPIC_API_KEY', None)
-        from run_integrated_stack import keys
+        from clinical_core.agere.providers import load_keys as keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         print('\n'.join(revise()[1]))
     elif cmd == ['draft']:
         os.environ.pop('ANTHROPIC_API_KEY', None)
-        from run_integrated_stack import keys
+        from clinical_core.agere.providers import load_keys as keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         print('\n'.join(draft()[1]))
     else:

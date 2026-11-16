@@ -7,6 +7,7 @@ Tier 4  frontier model (Sonnet): write a new parameterised recipe from schema an
 import json
 import os
 import re
+import sqlite3
 import time
 
 from . import ledger, recipes, store
@@ -50,14 +51,32 @@ def _api(model, system, user):
     return ''.join(b.text for b in message.content if b.type == 'text'), usage
 
 
+class ProviderLimit(RuntimeError):
+    """A provider's usage limit was reached: all model work stops (the owner's standing rule), never retried or worked around."""
+
+
+class ProviderUnavailable(RuntimeError):
+    """A provider failed for any other reason (outage, timeout, refusal, bad response): the rung is skipped and recorded, and the
+    question climbs to the next rung."""
+
+
+def is_limit(exc):
+    return isinstance(exc, ProviderLimit) or 'limit' in str(exc).lower()
+
+
 def _claude(model, system, user, timeout=180):
     started = time.monotonic()
-    if os.environ.get('AGERE_CLAUDE_TRANSPORT', '').strip().lower() == 'api':
-        text, usage = _api(model, system, user)
-    else:
-        from .. import subscription_transport as transport
-        out = transport.run_cli(model, system, user, timeout=timeout)
-        text, usage = out.get('result') or '', out.get('usage') or {}
+    try:
+        if os.environ.get('AGERE_CLAUDE_TRANSPORT', '').strip().lower() == 'api':
+            text, usage = _api(model, system, user)
+        else:
+            from .. import subscription_transport as transport
+            out = transport.run_cli(model, system, user, timeout=timeout)
+            text, usage = out.get('result') or '', out.get('usage') or {}
+    except (ProviderLimit, ProviderUnavailable):
+        raise
+    except Exception as exc:   # one of two kinds, so callers decide by type, not by reading the message
+        raise (ProviderLimit if is_limit(exc) else ProviderUnavailable)(f'{type(exc).__name__}: {str(exc)[:300]}') from exc
     return text, {'model': model, 'tokens': ledger.tokens(usage), 'usd': ledger.claude_usd(model, usage), 'seconds': round(time.monotonic() - started, 2)}
 
 
@@ -147,19 +166,9 @@ Tables and columns:
 Existing definitions (reference SQL):
 %s
 
-Vocabulary: utilization_event.kind is one of ed_visit, inpatient, observation. stay.type 'inpatient' or 'observation'.
-appointment.final_status is one of arrived, attended, booked, cancelled, fulfilled, no_show, rescheduled, unassigned_requires_review;
-appointment.outcome is one of kept, cancelled, no_show, scheduled, unassigned. concept_patient.kind is condition, encounter or measurement;
-condition concepts are exactly: %s. fill.drug_class is lower snake case such as statin,
-ace_inhibitor, metformin. Compare concept and drug_class with = or IN, never LIKE, and use the value that is the question's own
-word: "diabetes" is the concept diabetes, not type_2_diabetes or prediabetes. Money columns are integer cents. Boolean columns are 0/1.
-document.source is one of clinical_note, scanned_document, hie_document. For scanned_document, document_type is one of
-Radiology Report, Consult Note, Outside Records, Miscellaneous, Imaging - Outside, Correspondence, Specialist Letter,
-Procedure Report, Surgery/Procedure, Home Health Orders, Pathology, Discharge Summary; for hie_document it is ED summary or
-Discharge summary; for clinical_note it is a lower snake case note type such as office_followup, discharge_summary, ed_note.
-note_fact holds facts already extracted from notes by rules: fact_type is one of medication_days_used, medication_nonadherence,
-symptom, dyspnea, follow_up, edema, imaging_finding, social_need, smoking_status, goals_of_care, ejection_fraction, walk_distance.
-Patient identifiers look like WHP-66F4B476DECF or P-1001.
+Vocabulary (read from this warehouse): condition concepts are exactly: %s.
+Compare concept and drug_class with = or IN, never LIKE, and use the value that is the question's own word: "diabetes" is the
+concept diabetes, not type_2_diabetes or prediabetes. Money columns are integer cents. Boolean columns are 0/1.
 measurement_latest holds only each patient's most recent value of a concept; to count or average results within a period use measurement.
 stay_episode is one row per inpatient hospital stay with repeated and overlapping stay rows merged; count stays, admissions,
 discharges, length of stay and readmissions from it, never from stay rows.
@@ -210,6 +219,47 @@ def nearest_examples(question, k=3, exclude=()):
     return out[:k]
 
 
+# The coded columns whose values the SQL writer needs: read from the warehouse in use, so the prompt never carries one
+# warehouse's vocabulary to another (design review: these were the synthetic warehouse's values, typed in).
+VOCABULARY_COLUMNS = (('utilization_event', 'kind'), ('stay', 'type'), ('appointment', 'final_status'), ('appointment', 'outcome'),
+                      ('concept_patient', 'kind'), ('fill', 'drug_class'), ('document', 'source'), ('document', 'document_type'),
+                      ('note_fact', 'fact_type'))
+
+
+def _shape(identifier):
+    """An identifier's format, never its value: WHP-66F4B476DECF -> WHP-XXXXXXXXXXXX (letters after the prefix X, digits 9)."""
+    head, sep, tail = str(identifier).partition('-')
+    if not sep: return re.sub(r'[0-9]', '9', re.sub(r'[A-Za-z]', 'X', head))
+    return head + '-' + re.sub(r'[0-9]', '9', re.sub(r'[A-Za-z]', 'X', tail))
+
+
+def warehouse_vocabulary(limit=40):
+    """-> lines naming each coded column's values (at most `limit` distinct, else left out) and the patient identifier formats."""
+    cache = store.scoped('prompt_vocabulary')
+    if 'text' not in cache:
+        db = store.connect()
+        lines = []
+        try:
+            for table, col in VOCABULARY_COLUMNS:
+                try:
+                    values = [r[0] for r in db.execute(f'SELECT DISTINCT "{col}" FROM "{table}" WHERE "{col}" IS NOT NULL LIMIT {limit + 1}')]
+                except sqlite3.Error:
+                    continue
+                if 0 < len(values) <= limit: lines.append(f'{table}.{col} is one of: ' + ', '.join(sorted(str(v) for v in values)) + '.')
+                elif values:   # too many to list: the most common, so the model sees their form
+                    common = [r[0] for r in db.execute(f'SELECT "{col}" FROM "{table}" WHERE "{col}" IS NOT NULL GROUP BY 1 ORDER BY COUNT(*) DESC LIMIT 12')]
+                    lines.append(f'{table}.{col} has more than {limit} values; the most common: ' + ', '.join(str(v) for v in common) + '.')
+            try:
+                shapes = sorted({_shape(r[0]) for r in db.execute('SELECT patient_id FROM patient LIMIT 2000')})[:4]
+                if shapes: lines.append('Patient identifiers look like ' + ' or '.join(shapes) + ' (X a letter, 9 a digit).')
+            except sqlite3.Error:
+                pass
+        finally:
+            db.close()
+        cache['text'] = ('\n' + '\n'.join(lines)) if lines else ''
+    return cache['text']
+
+
 def llm_recipe(question, error=None, model=None, examples=None):
     """Tier 4. -> (recipe dict or None, step). error: one SQL execution error to correct, if any.
     model: a different model for an independent second query (curriculum.confirm); the frontier model by default."""
@@ -223,7 +273,7 @@ def llm_recipe(question, error=None, model=None, examples=None):
             conditions = ', '.join(r[0] for r in store.run("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition' ORDER BY 1")[1])
         except store.RecipeError:
             conditions = '(not listed: this mapped warehouse has no concept_patient table)'
-        system = LLM_SYSTEM % (store.schema_text(), definitions(question), conditions)
+        system = LLM_SYSTEM % (store.schema_text(), definitions(question), conditions) + warehouse_vocabulary()
         governed = catalogue.block(question) if catalogue.enabled() else ''
     if governed: system += '\n\n' + governed
     if examples is None and EXAMPLES and model in (None, LLM): examples = nearest_examples(question)

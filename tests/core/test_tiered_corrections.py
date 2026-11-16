@@ -7,6 +7,7 @@ from pathlib import Path
 
 from clinical_core.agere.hosted.auth import AuthError, AuthStore, question_ref
 from clinical_core.agere.tiered import bottles as bottle_store, corrections, router
+from tests.core.needs_data import needs_warehouse
 
 
 class Corrections(unittest.TestCase):
@@ -30,6 +31,8 @@ class Corrections(unittest.TestCase):
         with self.assertRaises(ValueError):
             corrections.report('How many widgets in 2029?', {'tier': 'llm'}, '  ')
 
+    @needs_warehouse
+
     def test_reported_saved_recipe_stops_answering_until_resolved(self):
         bid = self.saved()
         rid = corrections.report('How many widgets in 2029?', {'tier': 'bottles', 'recipe': {'bottle_id': bid, 'sql': 'SELECT 1'}}, 'counts the wrong year', 'u1', bottles=self.bottles)
@@ -44,11 +47,15 @@ class Corrections(unittest.TestCase):
         with self.assertRaises(ValueError):
             corrections.resolve(rid, 'fixed', 'reviewer')
 
+    @needs_warehouse
+
     def test_a_saved_recipe_found_wrong_is_retired(self):
         bid = self.saved()
         rid = corrections.report('How many widgets in 2029?', {'tier': 'bottles', 'recipe': {'bottle_id': bid}}, 'wrong table', bottles=self.bottles)
         corrections.resolve(rid, 'fixed', 'reviewer', bottles=self.bottles)
         self.assertEqual(next(b['status'] for b in self.bottles.all() if b['id'] == bid), 'retired')
+
+    @needs_warehouse
 
     def test_reported_built_in_recipe_skips_that_wording_only(self):
         q = 'What was the in-hospital mortality rate in 2029?'
@@ -65,6 +72,9 @@ class Corrections(unittest.TestCase):
         self.assertNotIn('WHP', str(ref))
         self.assertEqual(ref, question_ref('how many visits  did patient WHP-90A1F7047375 have?'))
         self.assertEqual(set(ref), {'question_fingerprint', 'question_chars'})
+
+
+    @needs_warehouse
 
 
     def test_hosted_reports_stay_in_their_organization(self):

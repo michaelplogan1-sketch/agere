@@ -75,7 +75,7 @@ scanned document types: %s'''
 
 def _keys():
     os.environ.pop('ANTHROPIC_API_KEY', None)
-    from run_integrated_stack import keys
+    from clinical_core.agere.providers import load_keys as keys
     keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
 
 

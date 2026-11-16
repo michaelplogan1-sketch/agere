@@ -9,6 +9,7 @@ from unittest import mock
 
 from clinical_core.agere.clinical import local_compiler, source_profile
 from clinical_core.agere.tiered import app, ledger as ledger_store, methods, models
+from tests.core.needs_data import needs_warehouse
 
 
 def graph(*ops):
@@ -131,6 +132,8 @@ class Methods(unittest.TestCase):
         self.assertEqual(got['answer']['verification'], 'unverified'); self.assertEqual(got['new_paid_api_calls'], 1)
         self.assertEqual(got['planner_receipt']['recipe']['restated'], 'Detect anomalies in monthly ED visits')
         self.assertIn('restated the question as', got['answer']['limitations'][0])
+
+    @needs_warehouse
 
     def test_a_recognised_question_with_a_missing_input_tells_the_user_what_to_add(self):
         from clinical_core.agere.tiered import recipes

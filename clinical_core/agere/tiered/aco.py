@@ -92,7 +92,6 @@ def contracts():
     return rows
 
 
-_ready = {}
 
 
 import threading
@@ -107,6 +106,7 @@ def install(db, cohort=None):
     if store.mapping() or store.foreign(): return   # the risk engine reads this semantic layer's own tables
     path = cache_path()
     key = str(path)
+    _ready = store.scoped('aco_ready')
     if key not in _ready:
         try:
             with _BUILD:   # one build per process: two threads writing the same .building file deleted each other's (design review)

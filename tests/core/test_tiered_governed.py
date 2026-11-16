@@ -2,6 +2,7 @@
 import unittest
 
 from clinical_core.agere.tiered import governed, recipes, store
+from tests.core.needs_data import needs_warehouse
 
 
 class Checks(unittest.TestCase):
@@ -23,6 +24,8 @@ class Checks(unittest.TestCase):
     def test_latest_values_are_not_every_result(self):
         self.wrong('How many patients had an HbA1c result in 2027?', "SELECT COUNT(DISTINCT patient_id) FROM measurement_latest WHERE concept = 'hba1c'")
         self.fine('What is the latest HbA1c for each patient?', "SELECT patient_id, value_canonical FROM measurement_latest WHERE concept = 'hba1c'")
+
+    @needs_warehouse
 
     def test_spend_uses_reportable_payer_claims(self):
         self.wrong('What did we spend in total in 2030?', 'SELECT SUM(paid_cents) / 100.0 FROM payer_claim WHERE substr(service_from, 1, 4) = :year')
@@ -48,6 +51,8 @@ class Checks(unittest.TestCase):
     def test_reviewed_recipes_pass_their_own_titles(self):
         flagged = [rid for rid, r in recipes.RECIPES.items() if governed.check(r['title'], r['sql'])]
         self.assertEqual(flagged, ['stays_by_organization'])   # counts stay rows; a model choosing it for a stays question is stopped
+
+    @needs_warehouse
 
     def test_the_stay_episode_view_matches_the_rate_recipe(self):
         sql = ("SELECT COUNT(*), SUM(readmitted_within_30_days), ROUND(1.0 * SUM(readmitted_within_30_days) / COUNT(*), 4) "

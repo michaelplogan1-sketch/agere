@@ -84,10 +84,23 @@ class Bottles:
             self.db.commit()
             return old[0], None
 
+    def _relabel(self, version):
+        """Once per warehouse: recipes saved under the old data-digest key of this very data are relabelled with its schema key,
+        so they keep answering after the next data refresh."""
+        done = store.scoped('bottles_relabelled')
+        if self.path in done: return
+        legacy = store.data_version()
+        if legacy and legacy != version:
+            n = self.db.execute('UPDATE bottle SET schema_version=? WHERE schema_version=?', (version, legacy)).rowcount
+            self.db.commit()
+            if n: print(f'{n} saved recipes relabelled from {legacy} to {version}', flush=True)
+        done[self.path] = True
+
     def match(self, question, *, statuses=('promoted', 'provisional')):
         """-> (bottle dict, params) or None. Exact match only, current schema version only."""
         # Matched without regard to case, but slot values keep the question's own case (identifiers are case-sensitive).
         text, version = ' '.join(str(question).strip().rstrip('?.').split()), store.schema_version()
+        self._relabel(version)
         marks = ','.join('?' * len(statuses))
         for bid, rx, params_json, sql, grain_json, read_json in self.db.execute(
                 f'SELECT id, pattern, params_json, sql, grain_json, read_json FROM bottle WHERE schema_version=? AND status IN ({marks}) ORDER BY id',

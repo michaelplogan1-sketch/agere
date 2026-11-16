@@ -4,12 +4,14 @@ import unittest
 from pathlib import Path
 
 from clinical_core.agere.tiered import governed, proof, recipes, store
+from tests.core.needs_data import needs_warehouse
 
 
 def original():
     return sqlite3.connect(Path(store.DEFAULT_DB).resolve().as_uri() + '?mode=ro', uri=True)
 
 
+@needs_warehouse
 class Hospital(unittest.TestCase):
     def test_ed_thresholds_match_the_reference(self):
         for y in ('2028', '2029'):

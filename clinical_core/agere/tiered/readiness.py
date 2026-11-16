@@ -163,7 +163,6 @@ MEASURES = (
      ('survey_results',), ('hcahps', 'patient experience', 'patient satisfaction')),
 )
 
-_cache = {}
 
 
 def _key():
@@ -182,10 +181,12 @@ _local = threading.local()   # set only on the thread that is probing: its own c
 def probe():
     """-> (measure rows, requirement rows), computed once per warehouse version in this process."""
     k = _key()
-    if k in _cache: return _cache[k]
+    cache = store.scoped('readiness')   # bounded with the warehouse cache: live one-patient layers do not pile up
+    if k in cache: return cache[k]
     with _PROBE:   # one probe per warehouse version: concurrent first questions wait for it instead of probing in parallel
-        if k in _cache: return _cache[k]
-        return _probe(k)
+        if k in cache: return cache[k]
+        cache[k] = _probe(k)
+        return cache[k]
 
 
 def _probe(k):
@@ -213,8 +214,7 @@ def _probe(k):
                          '; '.join(ELEMENTS[n][0] for n in missing) or None))
         for n in needs:
             requirements.append((mid, n, ELEMENTS[n][0], found[n], ELEMENTS[n][2], int(found[n] >= ELEMENTS[n][2])))
-    _cache[k] = (measures, requirements)
-    return _cache[k]
+    return measures, requirements
 
 
 def install(db):

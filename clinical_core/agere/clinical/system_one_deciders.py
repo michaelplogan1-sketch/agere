@@ -274,7 +274,7 @@ def bakeoff(task_keys=TASKS, *, as_of='2030-05-27', ledger=None, allow_live=True
 if __name__ == '__main__':  # python -m clinical_core.agere.clinical.system_one_deciders [task ...]
     import sys
     sys.path.insert(0, str(ROOT))
-    from run_integrated_stack import keys
+    from clinical_core.agere.providers import load_keys as keys
     keys()
     tasks = tuple(sys.argv[1:]) or TASKS
     print(json.dumps({t: {k: v for k, v in e.items() if k in ('primary', 'order', 'results', 'calibration', 'cost_usd')}

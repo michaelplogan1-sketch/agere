@@ -87,22 +87,20 @@ def typed(bottle, raw, question):
     return out
 
 
-_COLUMNS = []
-
-
 def _columns():
-    """Code only. Warehouse column names of two or more words (source_stream, text_chars), read once from the schema."""
-    if not _COLUMNS:
-        from . import store
+    """Code only. Warehouse column names of two or more words (source_stream, text_chars), read once per warehouse from the schema."""
+    from . import store
+    cache = store.scoped('near_columns')
+    if 'c' not in cache:
         db = store.connect()
         try:
             tables = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view') UNION SELECT name FROM sqlite_temp_master WHERE type = 'view'")]
-            _COLUMNS.extend(sorted({r[1] for t in tables for r in db.execute(f'PRAGMA table_info("{t}")') if '_' in r[1] and len(r[1]) > 5}))
+            cache['c'] = sorted({r[1] for t in tables for r in db.execute(f'PRAGMA table_info("{t}")') if '_' in r[1] and len(r[1]) > 5})
         except Exception:
-            _COLUMNS.append('')
+            return []
         finally:
             db.close()
-    return [c for c in _COLUMNS if c]
+    return cache['c']
 
 
 def named_but_unused(question, bottle, params):

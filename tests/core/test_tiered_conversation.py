@@ -8,6 +8,7 @@ from unittest import mock
 
 from clinical_core.agere.clinical import clarification, local_compiler, source_profile
 from clinical_core.agere.tiered import app, methods, models, recipes, router, takeover
+from tests.core.needs_data import needs_warehouse
 
 STEP = {'model': 'm', 'tokens': 10, 'usd': 0.01, 'seconds': 0.1}
 UNANSWERED = {'status': 'unanswered', 'final_tier': None, 'steps': [], 'escalations': [], 'seconds': 0.1, 'recipe': None, 'validation': None, 'missing': 'no tier'}
@@ -27,6 +28,7 @@ class Stack:
                 'new_paid_api_calls': 0}
 
 
+@needs_warehouse
 class Conversation(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory()
@@ -143,7 +145,7 @@ class Conversation(unittest.TestCase):
         ask = '{"ask": "Which year?", "options": ["2028", "2029"]}'
         with mock.patch.dict(os.environ, {'AGERE_TIERED_DB': str(Path(self.dir.name) / 's.sqlite3')}), mock.patch.object(store, 'TABLES', ('patient',)), \
                 mock.patch.object(models, 'definitions', lambda question=None: ''):
-            store._as_of.clear()
+            store.clear_caches()
             def run(replies, **kw):
                 it = iter(replies)
                 with mock.patch.object(models, '_claude', lambda m, s, u: (next(it), dict(STEP))): return takeover.answer('How many patients?', **kw)
@@ -152,7 +154,7 @@ class Conversation(unittest.TestCase):
             self.assertEqual(got['rows'], [[1]]); self.assertEqual(got['next'], ['How many patients were added in 2029?'])
             one = run(['{"ask": "Which?", "options": ["only one"]}', '{"sql": "SELECT COUNT(*) AS n FROM patient"}', '{"answer": "There is 1 patient.", "table": 1}'], may_ask=True)
             self.assertEqual(one['rows'], [[1]])
-            store._as_of.clear()
+            store.clear_caches()
 
 
 if __name__ == '__main__':

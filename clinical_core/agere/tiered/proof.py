@@ -986,7 +986,7 @@ def outcome_kind(item, o):
 def run(runs=3, workers=4):
     from .. import model_policy
     os.environ.pop('ANTHROPIC_API_KEY', None)
-    from run_integrated_stack import keys
+    from clinical_core.agere.providers import load_keys as keys
     keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
     os.environ.update({k: v for k, v in model_policy.ECONOMICAL_RUNTIME.items() if isinstance(v, str)})
     os.environ['AGERE_TIERED_AUTO_LEARN'] = 'off'

@@ -101,7 +101,7 @@ def main(argv=None):
     t_sim = time.time() - t0
     from ..gateway import BudgetLedger
     if a.live:
-        from run_integrated_stack import keys  # repository helper: loads provider keys into the environment
+        from clinical_core.agere.providers import load_keys as keys  # repository helper: loads provider keys into the environment
         keys()
     ledger = BudgetLedger(OUT / 'ledger.sqlite3', cap_usd=a.cap_usd)
     prop = LLMProposer(ledger, OUT / 'llm', model=a.model, n=a.per_call, transport=None if a.live else _OfflineTransport())
