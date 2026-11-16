@@ -45,7 +45,8 @@ def answer(conn, patient_id, question, tiers=None):
         counts = snapshot(conn, patient_id, work / 'export')
         db = work / 'patient.sqlite3'
         fhir_import.build(work / 'export', db)
-        old = os.environ.get('AGERE_TIERED_DB'); os.environ['AGERE_TIERED_DB'] = str(db)
+        from . import store
+        token = store.DB_OVERRIDE.set(str(db))   # this request only: other requests keep their own warehouse
         # The layer holds this one patient; the question is made to say so, so "this patient" or "their" has a referent.
         asked = re.sub(r'(?i)\b(?:this|the) patient(?:\'s)?\b', lambda m: f'patient {patient_id}' + ("'s" if m.group(0).lower().endswith("'s") else ''), question)
         # A question that does not refer to the patient is left as worded: the layer holds only them, and an exact wording keeps
@@ -53,8 +54,7 @@ def answer(conn, patient_id, question, tiers=None):
         try:
             outcome = router.answer(asked, **({'tiers': tiers} if tiers else {}))
         finally:
-            if old is None: os.environ.pop('AGERE_TIERED_DB', None)
-            else: os.environ['AGERE_TIERED_DB'] = old
+            store.DB_OVERRIDE.reset(token)
         return {**outcome, 'read': counts, 'patient_id': patient_id, 'asked': asked}
     finally:
         shutil.rmtree(work, ignore_errors=True)

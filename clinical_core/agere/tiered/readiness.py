@@ -229,3 +229,20 @@ def alias(text):
     for mid, name, *_, aliases in MEASURES:
         if t in {mid.lower(), name.lower(), *aliases}: return mid
     return None
+
+
+def named_not_ready(question):
+    """Code only: the measures this question names (by an alias, as whole words) that this warehouse cannot compute.
+    -> [(measure id, name, missing data)]. An answer to one of them would be built on data that is not there (proof_v12:
+    'days of revenue in DNFB' computed from claim dates), so the router declines and says what is missing."""
+    t = ' ' + ' '.join(re.sub(r'[^a-z0-9/ -]', ' ', str(question).lower()).split()) + ' '
+    measures, _ = probe()
+    status = {m[0]: m for m in measures}
+    out = []
+    for mid, name, *_, aliases in MEASURES:
+        m = status.get(mid)
+        if not m or m[5] != 'not_ready': continue
+        if any(f' {a} ' in t for a in {mid.lower(), name.lower(), *aliases} if len(a) > 3 or a in ('cmi', 'dnfb')):
+            out.append((mid, name, m[8]))
+    return out
+

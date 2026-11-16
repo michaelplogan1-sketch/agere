@@ -8,6 +8,7 @@ A customer's warehouse rarely has this layer's tables. Two ways to run on one (A
     saved recipes do not apply; the frontier SQL writer works from that schema and its own vocabulary.
 """
 import json
+import contextvars
 import os
 import re
 import sqlite3
@@ -27,8 +28,12 @@ GOVERNED = ('stay_episode', 'hospital_visit', 'risk_score', 'patient_hcc', 'aco_
 SECONDS = 20.0
 
 
+# A database for this request only (fhir_live: one patient's layer), so concurrent requests never see each other's data.
+DB_OVERRIDE = contextvars.ContextVar('agere_tiered_db', default=None)
+
+
 def path():
-    return Path(os.environ.get('AGERE_TIERED_DB', DEFAULT_DB))
+    return Path(DB_OVERRIDE.get() or os.environ.get('AGERE_TIERED_DB', DEFAULT_DB))
 
 
 _mappings = {}

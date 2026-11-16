@@ -91,7 +91,7 @@ def _claim_only_phrases():
 
 def spend_table(q, s):
     """Spend, paid amounts and claim counts come from payer_claim; the claim table is for denials and adjudication."""
-    if not _reads(s, 'claim') or _reads(s, 'payer_claim') or _about_records(q): return None
+    if not _reads(s, 'claim') or _reads(s, 'payer_claim') or _about_records(q) or _revenue_cycle(q): return None   # revenue cycle: hospital_billing
     if any(phrase in q.lower() for phrase in _claim_only_phrases()): return None   # the question asks for the claim table's own fields
     if _has(q, r'deni|adjudicat|billed|allowed|status|resubmi|reversal|reprocess'): return None
     if _has(q, r'paid|spend|spent|cost|pmpm|per member|dollar|\bclaims?\b'):
@@ -153,14 +153,18 @@ def hospital_visit_rules(q, s):
     return None
 
 
+def _revenue_cycle(q):
+    """The hospital's own revenue cycle framing (HFMA terms, or 'our' denials); 'claims ever denied' in general is not."""
+    if _has(q, r'\bever\b'): return False
+    hfma = _has(q, r'initial|first[- ]pass|final deni|overturn|appeal|days to (?:pay|payment|submit|bill)|payment lag|clean claim|revenue cycle|write[- ]off|first adjudicat|'
+                   r'(?:claim )?submi(?:t|ssion)\w*\b.{0,30}\b(?:payment|paid|cash)|(?:discharge|service)\b.{0,30}\b(?:claim )?submi(?:t|ssion)|days to (?:get )?paid|time to (?:payment|bill|submit)')
+    ours = _has(q, r'deni') and _has(q, r'\b(?:our|we|us|hospital|health system|billing|billed|submitted)\b')
+    return bool(hfma or ours)
+
+
 def hospital_billing(q, s):
     """Revenue cycle questions read the health system's own claims: claim_source 'medical_claims'."""
-    if not _reads(s, 'claim') or _about_records(q): return None
-    # The hospital's revenue cycle framing (HFMA terms, or 'our' denials); 'claims ever denied' in general keeps the claim table's own measure.
-    if _has(q, r'\bever\b'): return None
-    hfma = _has(q, r'initial|first[- ]pass|final deni|overturn|appeal|days to (?:pay|payment|submit|bill)|payment lag|clean claim|revenue cycle|write[- ]off|first adjudicat')
-    ours = _has(q, r'deni') and _has(q, r'\b(?:our|we|us|hospital|health system|billing|billed|submitted)\b')
-    if not (hfma or ours): return None
+    if not _reads(s, 'claim') or _about_records(q) or not _revenue_cycle(q): return None
     if not _has(s, r"medical_claims'") or _has(s, r"claim_source\s*(?:=|in\s*\()\s*'payer_medical_claims'"):
         return ("Governed definition: the health system's billing is claim rows with claim_source = 'medical_claims', by "
                 "first_adjudication_date; payer_medical_claims rows are payer reports, not the hospital's claims.")
