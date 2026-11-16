@@ -10,9 +10,40 @@ ALL_TIERS = ('bottles', 'recipes', 'system1', 'slm', 'near', 'llm')
 TOKEN_CEILING = 60000
 
 
-def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_ceiling=TOKEN_CEILING, s1_ledger=None,
-           bottle_statuses=('promoted',), readers=reader.READERS, cohort=None):
-    """-> {'status','final_tier','columns','rows','recipe','validation','steps','seconds','escalations'}."""
+def answer(question, **kw):
+    """-> {'status','final_tier','columns','rows','recipe','validation','steps','seconds','escalations'}.
+
+    A question with two plain readings (readings.py) is answered both ways. When the readings agree the answer is given
+    once; when they differ the status is 'needs_choice' with each reading's answer under 'readings', and nothing is guessed."""
+    from . import readings
+    two = readings.detect(question)
+    if not two: return _ladder(question, **kw)
+    started = time.monotonic()
+    outs = [(r, _ladder(r['question'], **kw)) for r in two['readings']]
+    steps = [{**s, 'reading': r['id']} for r, o in outs for s in o['steps']]
+    escalations = [e for _, o in outs for e in o['escalations']]
+    seconds = round(time.monotonic() - started, 2)
+    answered = [(r, o) for r, o in outs if o['status'] == 'answered']
+    if len(answered) == len(outs) and all(readings.same(answered[0][1]['rows'], o['rows'], question) for _, o in answered[1:]):
+        r, o = answered[0]
+        return {**o, 'steps': steps, 'escalations': escalations, 'seconds': seconds,
+                'readings_checked': {'rule': two['rule'], 'agree': True, 'readings': [x['label'] for x in two['readings']]}}
+    if len(answered) == 1:   # one reading could not be answered: the other is given, and says which reading it is
+        r, o = answered[0]
+        return {**o, 'steps': steps, 'escalations': escalations, 'seconds': seconds,
+                'readings_checked': {'rule': two['rule'], 'agree': None, 'answered_as': r['label'], 'question': r['question']}}
+    if not answered:
+        o = outs[0][1]
+        return {**o, 'steps': steps, 'escalations': escalations, 'seconds': seconds}
+    return {'status': 'needs_choice', 'final_tier': 'readings', 'recipe': None, 'columns': None, 'rows': None, 'validation': None,
+            'steps': steps, 'escalations': escalations, 'seconds': seconds, 'ask': two['ask'], 'rule': two['rule'],
+            'readings': [{**r, 'status': o['status'], 'final_tier': o['final_tier'], 'columns': o['columns'], 'rows': o['rows'],
+                          'recipe': o['recipe'], 'validation': o['validation']} for r, o in outs]}
+
+
+def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_ceiling=TOKEN_CEILING, s1_ledger=None,
+            bottle_statuses=('promoted',), readers=reader.READERS, cohort=None):
+    """One question up the ladder."""
     started = time.monotonic()
     steps, escalations = [], []
     db = store.connect(cohort)        # recipes execute here: inside the cohort when one is given
