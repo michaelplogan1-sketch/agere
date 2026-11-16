@@ -74,6 +74,22 @@ DEFINITIONS = (
      "Social-need screens are in social_need: need is one of food, transport, housing, utilities, cost_of_care, safety; a "
      "positive screen is positive = 1."),
     ('deaths', r'death|died|mortality', "Deaths are in death, one row per patient, dated by death_date."),
+    # Added 2026-11-16 for the ACO job.
+    ('ACO population', r'\baco\b|mssp|shared savings|accountable care|assigned beneficiar|attributed beneficiar',
+     "The ACO (MSSP) population in a year is the members with a member_month row for payer_id 'WH-PAYER-MSSP' that year "
+     "(Medicare FFS and dual FFS), not every Medicare member. Its spend is payer_claim.paid_cents on claims of payer_id "
+     "'WH-PAYER-MSSP' with counts_in_metrics = 1, by year of service_from; its PMPM divides that by the population's "
+     "WH-PAYER-MSSP member months in the year."),
+    ('shared savings', r'shared savings|benchmark|savings rate|minimum savings|settlement|sharing rate',
+     "Contract terms are in aco_contract (payer_id, year, benchmark_pmpm_dollars, minimum_savings_rate, sharing_rate, "
+     "quality_standard_met, authored_synthetic). Savings = (benchmark PMPM - actual PMPM) x member months; savings rate = "
+     "savings / (benchmark PMPM x member months); shared savings = savings x sharing_rate when the savings rate reaches the "
+     "minimum savings rate and the quality standard is met, else 0. No aco_contract row for the year means the terms are "
+     "unknown: say so rather than assume them. authored_synthetic = 1 means the terms are demonstration assumptions."),
+    ('risk scores', r'risk score|\braf\b|\bhccs?\b|risk adjust|\bv28\b|\bv24\b|acuity',
+     "CMS-HCC risk scores are in risk_score, one row per patient and diagnosis year (year): payment_raf (the payment-year "
+     "score), v28_raw, v24_raw, demographic_raf, hcc_count, segment. The payment HCCs behind each are in patient_hcc (hcc, "
+     "label, codes). An average risk score is AVG(payment_raf) unless the question names the raw V28 or V24 score."),
     # Added 2026-11-16: proof_v6 found both Agere arms counting flu shots as vaccine 'influenza' only, because the vocabulary
     # below named that one value; high-dose doses were left out.
     ('immunizations', r'vaccin|immuniz|\bflu\b|influenza|\bshots?\b',

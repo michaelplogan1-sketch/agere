@@ -1,0 +1,22 @@
+{
+ "schema": "agere-aco-contract/1",
+ "id": "demo-mssp-aco",
+ "version": 1,
+ "authored_synthetic": true,
+ "label": "Synthetic MSSP-style shared-savings demonstration",
+ "program": "mssp_basic",
+ "track": "BASIC level E style terms, one-sided for this demonstration",
+ "payer_id": "WH-PAYER-MSSP",
+ "population_rule": "Members with a member_month row for payer WH-PAYER-MSSP in the performance year (Medicare FFS and dual FFS). Expenditure is payer_claim.paid_cents on that payer's claims with counts_in_metrics = 1, by year of service_from, divided by the same members' MSSP member months.",
+ "years": {
+  "2027": {"benchmark_pmpm_dollars": 1000.00, "minimum_savings_rate": 0.02, "sharing_rate": 0.50, "quality_standard_met": true},
+  "2028": {"benchmark_pmpm_dollars": 1050.00, "minimum_savings_rate": 0.02, "sharing_rate": 0.50, "quality_standard_met": true},
+  "2029": {"benchmark_pmpm_dollars": 1050.00, "minimum_savings_rate": 0.02, "sharing_rate": 0.50, "quality_standard_met": true}
+ },
+ "assumptions": [
+  "Every benchmark, rate and the quality result in this file is an authored demonstration assumption, not a CMS benchmark, an executed agreement or a measured quality score.",
+  "A real MSSP agreement requires at least 5,000 assigned beneficiaries; this synthetic population has about 210. The figures show the arithmetic, not a plausible settlement.",
+  "The benchmark is a flat dollar PMPM per year. CMS benchmarks are risk-adjusted, trended and regionally blended, and expenditures are truncated and completed for claims run-out; none of that is applied here.",
+  "Shared savings = (benchmark PMPM - actual PMPM) x member months x sharing rate, paid only when savings reach the minimum savings rate and the quality standard is met. No losses are shared (one-sided)."
+ ]
+}

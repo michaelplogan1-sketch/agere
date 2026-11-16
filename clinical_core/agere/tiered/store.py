@@ -20,10 +20,10 @@ DEFAULT_DB = 'artifacts/agere-full-stack-rerun-2026-10-30/focused/runtime/stack/
 TABLES = ('document', 'note_fact', 'note_therapy_change', 'therapy_barrier', 'utilization_event', 'stay', 'stay_episode', 'appointment', 'visit', 'fill',
           'payer_claim', 'claim', 'patient', 'concept_patient', 'member_month', 'measurement', 'measurement_latest', 'immunization', 'death',
           'organization', 'clinician', 'enrollment_span', 'condition', 'encounter', 'prescription', 'allergy_entry', 'smoking_status', 'social_need',
-          'wellness_visit', 'cancer_screening')
+          'wellness_visit', 'cancer_screening', 'risk_score', 'patient_hcc', 'aco_contract')
 # Governed views: definitions the semantic layer computes once, so a query reads them instead of re-deriving them. Each is
 # created on every connection over the (possibly mapped or cohort-restricted) tables it reads.
-GOVERNED = ('stay_episode',)
+GOVERNED = ('stay_episode', 'risk_score', 'patient_hcc', 'aco_contract')   # the last three: aco.py
 SECONDS = 20.0
 
 
@@ -56,7 +56,7 @@ def foreign():
 def tables(db=None):
     """Tables a recipe may read on this warehouse: this layer's, the mapped ones, or a foreign warehouse's own."""
     m = mapping()
-    if m: return tuple(t for t in TABLES if t in m['views'])
+    if m: return tuple(t for t in TABLES if t in m['views'] or t in ('stay_episode', 'aco_contract'))
     if foreign():
         own = db is None
         db = db or connect()
@@ -100,6 +100,8 @@ def connect(cohort=None):
     if not foreign():
         have = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view') UNION SELECT name FROM sqlite_temp_master WHERE type = 'view'")}
         if 'stay' in have and 'stay_episode' not in have: db.execute('CREATE TEMP VIEW stay_episode AS ' + _stay_episode())
+        from . import aco
+        aco.install(db, cohort)
     db.execute('PRAGMA query_only=ON')
     return db
 

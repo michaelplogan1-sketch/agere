@@ -388,6 +388,120 @@ def ref_housing_positive_patients(db, year):
     return [[len({p for p, need, pos in db.execute('SELECT patient_id, need, positive FROM social_need') if need == 'housing' and pos == 1})]]
 
 
+# ---- references added for proof_v8, the ACO job (written before proof_v8's first run) ---------------------------------
+# The ACO population is payer WH-PAYER-MSSP's members; terms are read from the contract file itself and risk scores from
+# the CMS-HCC engine run directly, so none of these goes through the recipes' SQL or the cached risk table.
+
+_MSSP = 'WH-PAYER-MSSP'
+
+
+def _aco_mm(db, year):
+    return [(p, m) for p, m, payer in db.execute('SELECT patient_id, month, payer_id FROM member_month') if payer == _MSSP and str(m).startswith(year)]
+
+
+def _aco_members(db, year):
+    return {p for p, _ in _aco_mm(db, year)}
+
+
+def _aco_paid_cents(db, year, claim_type=None):
+    return sum(c or 0 for c, f, d, payer, k in db.execute('SELECT paid_cents, counts_in_metrics, service_from, payer_id, claim_type FROM payer_claim')
+               if payer == _MSSP and f == 1 and d and d.startswith(year) and (claim_type is None or k == claim_type))
+
+
+def ref_aco_members(db, year):
+    return [[len(_aco_members(db, year))]]
+
+
+def ref_aco_member_months(db, year):
+    return [[len(_aco_mm(db, year))]]
+
+
+def ref_aco_pmpm(db, year):
+    return [[round(_aco_paid_cents(db, year) / 100 / len(_aco_mm(db, year)), 2)]]
+
+
+def ref_aco_institutional_paid(db, year):
+    return [[round(_aco_paid_cents(db, year, 'institutional') / 100, 2)]]
+
+
+def _terms(year):
+    c = json.loads(Path('config/agere/contracts/demo-mssp-aco.json').read_text())
+    return c['years'].get(year)
+
+
+def _savings(db, year):
+    t = _terms(year)
+    mm = len(_aco_mm(db, year)); paid = _aco_paid_cents(db, year) / 100
+    savings = t['benchmark_pmpm_dollars'] * mm - paid
+    rate = savings / (t['benchmark_pmpm_dollars'] * mm)
+    shared = savings * t['sharing_rate'] if rate >= t['minimum_savings_rate'] and t['quality_standard_met'] else 0.0
+    return savings, rate, shared
+
+
+def ref_aco_shared_savings(db, year):
+    return [[round(_savings(db, year)[2], 2)]]
+
+
+def ref_aco_total_savings(db, year):
+    return [[round(_savings(db, year)[0], 2)]]
+
+
+def ref_aco_savings_rate(db, year):
+    return [[round(_savings(db, year)[1], 4)]]
+
+
+def _aco_scores(db, year):
+    from ..clinical import risk_adjustment as ra
+    members = _aco_members(db, year)
+    dual = {p for p, m, lob in db.execute('SELECT patient_id, month, line_of_business FROM member_month') if lob == 'dual' and str(m).startswith(year)}
+    out = {}
+    for segment, ids in (('community_non_dual', sorted(members - dual)), ('community_full_dual', sorted(members & dual))):
+        if ids:
+            for pt in ra.execute(store.path(), ids, {'year': int(year), 'coverage': 'all', 'segment': segment, 'payment_year': 2026, 'top': 500})['patients']:
+                out[pt['patient_id']] = pt
+    return out
+
+
+def ref_aco_average_risk(db, year):
+    s = _aco_scores(db, year)
+    return [[round(sum(p['payment_raf'] for p in s.values()) / len(s), 3)]]
+
+
+def ref_aco_members_with_hcc(db, year):
+    return [[sum(1 for p in _aco_scores(db, year).values() if p['hccs'].get('V28'))]]
+
+
+def ref_aco_heart_failure_hcc(db, year):
+    return [[sum(1 for p in _aco_scores(db, year).values() if any(h['hcc'] == 226 for h in p['hccs'].get('V28', [])))]]
+
+
+def ref_aco_ed_visits(db, year):
+    members = _aco_members(db, year)
+    return [[sum(1 for p, k, d in db.execute('SELECT patient_id, kind, event_date FROM utilization_event') if k == 'ed_visit' and p in members and str(d).startswith(year))]]
+
+
+def ref_aco_stays(db, year):
+    members = _aco_members(db, year)
+    _, eps = _readmissions(db, year)
+    return [[sum(1 for p, a, _ in eps if p in members and a.startswith(year))]]
+
+
+def ref_aco_readmissions(db, year):
+    members = _aco_members(db, year)
+    return [[sum(1 for p, _, _ in _readmissions(db, year)[0] if p in members)]]
+
+
+def ref_aco_top_spender_paid(db, year):
+    members, paid = _aco_members(db, year), Counter()
+    for p, c, f, d, payer in db.execute('SELECT patient_id, paid_cents, counts_in_metrics, service_from, payer_id FROM payer_claim'):
+        if payer == _MSSP and f == 1 and d and d.startswith(year) and p in members: paid[p] += c or 0
+    return [[round(max(paid.values()) / 100, 2)]]
+
+
+def ref_aco_practices(db, year):
+    return [[len({x for (p, m, payer, x) in db.execute('SELECT patient_id, month, payer_id, attribution_practice_id FROM member_month') if payer == _MSSP and str(m).startswith(year) and x})]]
+
+
 REFERENCES = {name[4:]: fn for name, fn in globals().items() if name.startswith('ref_') and callable(fn)}
 
 

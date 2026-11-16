@@ -53,6 +53,9 @@ _READMIT_CTE = ("WITH " + _STAYS + "re AS (SELECT admit_date, discharge_date, or
 DATE = r'(?P<readmit_date>20\d{2}-\d{2}-\d{2})'
 # Each inpatient stay once (one row per patient and admission date, with its latest discharge date), discharged in the year, and
 # whether an inpatient admission followed 1 to 30 days after that discharge.
+# The ACO (MSSP) population's member months in a year, and its payer's spend on claims that count in metrics.
+_ACO_MM = "WITH mm AS (SELECT patient_id, month, attribution_practice_id FROM member_month WHERE payer_id = 'WH-PAYER-MSSP' AND substr(month, 1, 4) = :year)"
+_ACO_PAID = "paid AS (SELECT SUM(paid_cents) AS cents FROM payer_claim WHERE payer_id = 'WH-PAYER-MSSP' AND counts_in_metrics = 1 AND substr(service_from, 1, 4) = :year) "
 _STAY_ONCE = ("WITH " + _STAYS + "s AS (SELECT patient_id, admit_date, MAX(discharge_date) AS discharge_date FROM st WHERE type = 'inpatient' AND discharge_date IS NOT NULL GROUP BY patient_id, admit_date), "
               "d AS (SELECT s.patient_id, s.admit_date, s.discharge_date, EXISTS (SELECT 1 FROM st b WHERE b.patient_id = s.patient_id AND b.type = 'inpatient' AND b.admit_date > s.admit_date "
               "AND julianday(b.admit_date) - julianday(s.discharge_date) BETWEEN 1 AND 30) AS readmitted FROM s WHERE substr(s.discharge_date, 1, 4) = :year) ")
@@ -392,6 +395,80 @@ RECIPES = {
                "ROUND(COALESCE(paid.paid_cents, 0) / 100.0 / mm.member_months, 2) AS paid_pmpm_dollars, :year AS year FROM mm LEFT JOIN paid ON paid.line_of_business = mm.line_of_business ORDER BY mm.member_months DESC",
         'grain': ['line_of_business'],
         'patterns': [r'what (?:was|is) the (?:cost|spend|paid amount) per member per month (?:in|for) ' + YEAR + r'(?: by line of business)?', r'what (?:was|is) the pmpm (?:in|for) ' + YEAR + r'(?: by line of business)?']},
+    # ---- the ACO job (2026-11-16): the MSSP population (payer WH-PAYER-MSSP), its spend against the contract benchmark,
+    # shared savings, CMS-HCC V28 risk scores and the members driving spend. Contract terms come from aco_contract
+    # (config/agere/contracts; the demo terms are authored), risk scores from risk_score / patient_hcc (aco.py).
+    'aco_population': {
+        'title': 'The ACO (MSSP) population in one year: members with a member month for payer WH-PAYER-MSSP, their member months, and the practices they are attributed to',
+        'params': {'year': {'type': 'year'}},
+        'sql': _ACO_MM + "SELECT COUNT(DISTINCT patient_id) AS members, COUNT(*) AS member_months, COUNT(DISTINCT attribution_practice_id) AS attributed_practices, :year AS year FROM mm",
+        'grain': ['year'],
+        'patterns': [r'how many (?:members|beneficiaries|patients) (?:were |are )?(?:in|assigned to|attributed to) (?:our |the )?(?:aco|mssp)(?: population)? (?:in|for|during) ' + YEAR,
+                     r'how many (?:aco|mssp) (?:members|beneficiaries) (?:were there |did we have )?(?:in|for|during) ' + YEAR]},
+    'aco_pmpm': {
+        'title': 'ACO (MSSP) spending per member per month in one year against the contract benchmark: member months, paid dollars on the ACO payer\'s claims that count in metrics, actual PMPM, benchmark PMPM and the difference',
+        'params': {'year': {'type': 'year'}},
+        'sql': _ACO_MM + ", " + _ACO_PAID + "SELECT (SELECT COUNT(*) FROM mm) AS member_months, ROUND((SELECT cents FROM paid) / 100.0, 2) AS paid_dollars, "
+               "ROUND((SELECT cents FROM paid) / 100.0 / (SELECT COUNT(*) FROM mm), 2) AS actual_pmpm_dollars, k.benchmark_pmpm_dollars, "
+               "ROUND(k.benchmark_pmpm_dollars - (SELECT cents FROM paid) / 100.0 / (SELECT COUNT(*) FROM mm), 2) AS below_benchmark_pmpm_dollars, :year AS year "
+               "FROM (SELECT 1) LEFT JOIN aco_contract k ON k.payer_id = 'WH-PAYER-MSSP' AND k.year = :year",
+        'grain': ['year'], 'nullable': ('benchmark_pmpm_dollars', 'below_benchmark_pmpm_dollars'),
+        'patterns': [r'what (?:was|is) (?:the |our )?(?:aco|mssp) (?:pmpm|cost per member per month|spend(?:ing)? per member per month) (?:in|for) ' + YEAR + r'(?: (?:against|versus|vs\.?|compared (?:to|with)) (?:the )?benchmark)?',
+                     r'what (?:was|is) (?:the |our )?(?:pmpm|cost per member per month) for (?:our |the )?(?:aco|mssp) (?:population )?(?:in|for) ' + YEAR]},
+    'aco_shared_savings': {
+        'title': 'ACO (MSSP) shared savings for one performance year from the contract terms on file: member months, actual and benchmark PMPM, total savings, savings rate, whether the minimum savings rate and quality standard are met, the sharing rate, the shared savings earned, and whether the terms are authored for a demonstration',
+        'params': {'year': {'type': 'year'}},
+        'sql': _ACO_MM + ", " + _ACO_PAID + ", s AS (SELECT k.*, (SELECT COUNT(*) FROM mm) AS member_months, (SELECT cents FROM paid) / 100.0 AS paid_dollars "
+               "FROM aco_contract k WHERE k.payer_id = 'WH-PAYER-MSSP' AND k.year = :year), "
+               "v AS (SELECT *, paid_dollars / member_months AS actual_pmpm, (benchmark_pmpm_dollars * member_months - paid_dollars) AS savings FROM s) "
+               "SELECT member_months, ROUND(actual_pmpm, 2) AS actual_pmpm_dollars, benchmark_pmpm_dollars, ROUND(savings, 2) AS total_savings_dollars, "
+               "ROUND(savings / (benchmark_pmpm_dollars * member_months), 4) AS savings_rate, minimum_savings_rate, "
+               "CASE WHEN savings / (benchmark_pmpm_dollars * member_months) >= minimum_savings_rate THEN 1 ELSE 0 END AS meets_minimum_savings_rate, "
+               "quality_standard_met, sharing_rate, "
+               "ROUND(CASE WHEN savings / (benchmark_pmpm_dollars * member_months) >= minimum_savings_rate AND quality_standard_met = 1 THEN savings * sharing_rate ELSE 0 END, 2) AS shared_savings_dollars, "
+               "authored_synthetic AS terms_are_demonstration_assumptions, :year AS year FROM v",
+        'grain': ['year'],
+        'empty': 'No contract terms are on file for that year: give the benchmark PMPM, minimum savings rate and sharing rate',
+        'patterns': [r'what (?:were|are|was|is) (?:our |the )?(?:projected |expected )?(?:aco |mssp )?shared savings (?:in|for) ' + YEAR,
+                     r'(?:how much|what) (?:did|will|would) (?:we|the aco) (?:earn|get|receive|make) in shared savings (?:in|for) ' + YEAR]},
+    'aco_risk_score': {
+        'title': 'CMS-HCC V28 risk scores of the ACO (MSSP) population for one diagnosis year: members scored, average payment risk score, average raw V28 score, average demographic-only score, and members with at least one payment HCC',
+        'params': {'year': {'type': 'year'}},
+        'sql': _ACO_MM + "SELECT COUNT(*) AS members_scored, ROUND(AVG(r.payment_raf), 3) AS average_payment_risk_score, ROUND(AVG(r.v28_raw), 3) AS average_v28_raw_score, "
+               "ROUND(AVG(r.demographic_raf), 3) AS average_demographic_score, SUM(r.hcc_count > 0) AS members_with_an_hcc, :year AS year "
+               "FROM risk_score r WHERE r.year = :year AND r.patient_id IN (SELECT patient_id FROM mm)",
+        'grain': ['year'],
+        'patterns': [r'what (?:was|is) the average (?:cms[- ]hcc |v28 |hcc )*(?:risk score|raf|risk adjustment factor) (?:of|for) (?:our |the )?(?:aco|mssp) (?:members|population|beneficiaries) (?:in|for) ' + YEAR]},
+    'aco_top_hccs': {
+        'title': 'The most common CMS-HCC V28 payment HCCs among ACO (MSSP) members in one diagnosis year: HCC, label and members',
+        'params': {'year': {'type': 'year'}, 'n': {'type': 'int', 'min': 1, 'max': 115}},
+        'sql': _ACO_MM + "SELECT h.hcc, h.label, COUNT(DISTINCT h.patient_id) AS members FROM patient_hcc h WHERE h.year = :year AND h.patient_id IN (SELECT patient_id FROM mm) "
+               "GROUP BY h.hcc, h.label ORDER BY members DESC, h.hcc LIMIT :n",
+        'grain': ['hcc'],
+        'patterns': [r'what (?:were|are) the (?:top |most common )?(?P<n>\d{1,3}) (?:most common )?(?:hccs|hcc categories|risk conditions) (?:among|in|for) (?:our |the )?(?:aco|mssp) (?:members|population) (?:in|for) ' + YEAR]},
+    'aco_spend_drivers': {
+        'title': 'The ACO (MSSP) members driving spend in one year: paid dollars on the ACO payer\'s claims that count in metrics, their attributed practice, payment risk score, payment HCCs, hospital stays (each counted once), readmissions and emergency visits that year, highest paid first',
+        'params': {'year': {'type': 'year'}, 'n': {'type': 'int', 'min': 1, 'max': 500, 'default': 25}},
+        'sql': _ACO_MM + ", paid AS (SELECT patient_id, SUM(paid_cents) AS cents FROM payer_claim WHERE payer_id = 'WH-PAYER-MSSP' AND counts_in_metrics = 1 "
+               "AND substr(service_from, 1, 4) = :year AND patient_id IN (SELECT patient_id FROM mm) GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT :n) "
+               "SELECT p.patient_id, ROUND(p.cents / 100.0, 2) AS paid_dollars, "
+               "(SELECT x.attribution_practice_id FROM mm x WHERE x.patient_id = p.patient_id ORDER BY x.month DESC LIMIT 1) AS attributed_practice, "
+               "(SELECT r.payment_raf FROM risk_score r WHERE r.patient_id = p.patient_id AND r.year = :year) AS payment_risk_score, "
+               "(SELECT r.hcc_count FROM risk_score r WHERE r.patient_id = p.patient_id AND r.year = :year) AS payment_hccs, "
+               "(SELECT COUNT(*) FROM stay_episode e WHERE e.patient_id = p.patient_id AND substr(e.admit_date, 1, 4) = :year) AS hospital_stays, "
+               "(SELECT COUNT(*) FROM stay_episode e WHERE e.patient_id = p.patient_id AND e.is_readmission = 1 AND substr(e.admit_date, 1, 4) = :year) AS readmissions, "
+               "(SELECT COUNT(*) FROM utilization_event u WHERE u.patient_id = p.patient_id AND u.kind = 'ed_visit' AND substr(u.event_date, 1, 4) = :year) AS ed_visits "
+               "FROM paid p ORDER BY p.cents DESC, p.patient_id",
+        'grain': ['patient_id'], 'nullable': ('payment_risk_score', 'payment_hccs'),
+        'patterns': [r'which (?:aco|mssp) members (?:drove|drive|account(?:ed)? for) the most (?:spend(?:ing)?|cost) (?:in|for) ' + YEAR,
+                     r'(?:who|which) (?:were|are) the (?:top )?(?P<n>\d{1,3}) (?:highest[- ]cost|most expensive) (?:aco|mssp) members (?:in|for) ' + YEAR]},
+    'aco_spend_by_claim_type': {
+        'title': 'ACO (MSSP) spending by claim type in one year: claims that count in metrics, paid dollars and paid per member per month, for institutional and professional claims',
+        'params': {'year': {'type': 'year'}},
+        'sql': _ACO_MM + "SELECT c.claim_type, COUNT(*) AS claims, ROUND(SUM(c.paid_cents) / 100.0, 2) AS paid_dollars, ROUND(SUM(c.paid_cents) / 100.0 / (SELECT COUNT(*) FROM mm), 2) AS paid_pmpm_dollars "
+               "FROM payer_claim c WHERE c.payer_id = 'WH-PAYER-MSSP' AND c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = :year GROUP BY c.claim_type ORDER BY paid_dollars DESC",
+        'grain': ['claim_type'],
+        'patterns': [r'how (?:did|does) (?:aco|mssp) spend(?:ing)? (?:in|for) ' + YEAR + r' (?:split|break down) by claim type', r'what (?:was|is) (?:aco|mssp) spend(?:ing)? by claim type (?:in|for) ' + YEAR]},
     'attributed_panel_by_practice': {
         'title': "Each attributed practice's panel in one year: members, member months, payer paid per member per month, inpatient admissions and emergency visits per 1,000 member-years (claims and events in the months the member was attributed to that practice)",
         'params': {'year': {'type': 'year'}},
@@ -720,6 +797,7 @@ def normalize(recipe_id, raw, db=None):
     out = {}
     for name, spec in RECIPES[recipe_id]['params'].items():
         value = raw.get(name)
+        if value is None and 'default' in spec: value = spec['default']   # a stated default (a list's length), never a period or a value
         if value is None: return None
         text = ' '.join(str(value).lower().replace('_', ' ').split())
         kind = spec['type']
