@@ -314,6 +314,40 @@ def ref_wellness_gaps(db, year):
     return [[r[2]] for r in ref_care_gaps(db, year) if r[0] == 'annual_wellness_visit']
 
 
+# ---- references added for proof_v4 (written before proof_v4's first run) --------------------------------------------
+
+def _events(db, year, kind):
+    return [(p, d) for p, k, d in db.execute('SELECT patient_id, kind, event_date FROM utilization_event') if k == kind and str(d).startswith(year)]
+
+
+def ref_inpatient_events(db, year):
+    return [[len(_events(db, year, 'inpatient'))]]
+
+
+def ref_observation_events(db, year):
+    return [[len(_events(db, year, 'observation'))]]
+
+
+def ref_ed_patients(db, year):
+    return [[len({p for p, _ in _events(db, year, 'ed_visit')})]]
+
+
+def ref_patients_with_any_fill(db, year):
+    return [[len({p for p, d in db.execute('SELECT patient_id, fill_date FROM fill') if d and d.startswith(year)})]]
+
+
+def ref_claims_count(db, year):
+    return [[sum(1 for f, d in db.execute('SELECT counts_in_metrics, service_from FROM payer_claim') if f == 1 and d and d.startswith(year))]]
+
+
+def ref_cancelled_appointments(db, year):
+    return [[sum(1 for st, d in db.execute('SELECT final_status, scheduled_date FROM appointment') if st == 'cancelled' and str(d).startswith(year))]]
+
+
+def ref_immunizations(db, year):
+    return [[sum(1 for (d,) in db.execute('SELECT event_date FROM immunization') if str(d).startswith(year))]]
+
+
 REFERENCES = {name[4:]: fn for name, fn in globals().items() if name.startswith('ref_') and callable(fn)}
 
 
