@@ -997,17 +997,30 @@ def run(runs=3, workers=4):
     # (AGERE_TIERED_DB, with or without a mapping) holding the same facts; AGERE_PROOF_REFERENCE_DB names the original.
     reference_db = os.environ.get('AGERE_PROOF_REFERENCE_DB')
     import sqlite3
+    table = REFERENCES
+    if data.get('reference_module'):
+        # A set written independently (proof_v13 on) brings its own answer key: functions in its own module, computed on the raw
+        # warehouse file with no Agere view or definition in between.
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('proof_references', Path(data['reference_module']))
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+        table = {n[4:]: f for n, f in vars(module).items() if n.startswith('ref_') and callable(f)}
+        reference_db = reference_db or str(store.path())
     db = sqlite3.connect(Path(reference_db).resolve().as_uri() + '?mode=ro', uri=True) if reference_db else store.connect()
     items = []
+    # AGERE_PROOF_PHRASINGS=0 scores only the first (plain) phrasing of every question, in every arm alike: the way users ask,
+    # at half the cost of a full run (used for the independent set with the costly assistant arm).
+    only = {int(x) for x in os.environ.get('AGERE_PROOF_PHRASINGS', '').split(',') if x.strip()}
     for q in data['questions']:
         for k, phrasing in enumerate(q['phrasings']):
+            if only and k not in only: continue
             # A phrasing may accept more than one reading (recorded in the question file's audit notes); each is computed here.
             names = (q.get('accept_by_phrasing') or {}).get(str(k)) or ([q['reference']] if q.get('reference') else [])
-            refs = [] if q.get('unanswerable') else [[list(r) for r in REFERENCES[n](db, *q.get('args', []))] for n in names]
+            refs = [] if q.get('unanswerable') else [[list(r) for r in table[n](db, *q.get('args', []))] for n in names]
             if q.get('numbers_only'):   # labels may rightly be the warehouse's own codes; only the numbers are compared
                 refs = [[[v for v in row if isinstance(v, (int, float))] for row in ref] for ref in refs]
             # A question with two plain readings names a reference for each ({"patients": "ref name", "events": "ref name"}).
-            reading_refs = {rid: [list(r) for r in REFERENCES[n](db, *q.get('args', []))] for rid, n in (q.get('readings') or {}).items()}
+            reading_refs = {rid: [list(r) for r in table[n](db, *q.get('args', []))] for rid, n in (q.get('readings') or {}).items()}
             if reading_refs and not refs: refs = list(reading_refs.values())
             items.append({'id': q['id'], 'phrasing': k, 'question': phrasing, 'domain': q['domain'], 'reference': refs[0] if refs else None, 'references': refs,
                           'unanswerable': q.get('unanswerable', False), 'reading_refs': reading_refs})
