@@ -20,7 +20,7 @@ DEFAULT_DB = 'artifacts/agere-full-stack-rerun-2026-10-30/focused/runtime/stack/
 TABLES = ('document', 'note_fact', 'note_therapy_change', 'therapy_barrier', 'utilization_event', 'stay', 'stay_episode', 'appointment', 'visit', 'fill',
           'hospital_visit', 'payer_claim', 'claim', 'patient', 'concept_patient', 'member_month', 'measurement', 'measurement_latest', 'immunization', 'death',
           'organization', 'clinician', 'enrollment_span', 'condition', 'encounter', 'prescription', 'allergy_entry', 'smoking_status', 'social_need',
-          'wellness_visit', 'cancer_screening', 'risk_score', 'patient_hcc', 'aco_contract', 'measure_readiness', 'measure_requirement')
+          'wellness_visit', 'cancer_screening', 'medication_administration', 'encounter_location', 'encounter_diagnosis', 'procedure_event', 'risk_score', 'patient_hcc', 'aco_contract', 'measure_readiness', 'measure_requirement')
 # Governed views: definitions the semantic layer computes once, so a query reads them instead of re-deriving them. Each is
 # created on every connection over the (possibly mapped or cohort-restricted) tables it reads.
 GOVERNED = ('stay_episode', 'hospital_visit', 'risk_score', 'patient_hcc', 'aco_contract', 'measure_readiness', 'measure_requirement', 'measure_alias')   # the last three: aco.py
@@ -284,7 +284,8 @@ def schema_text(db=None):
     own = db is None
     db = db or connect()
     try:
-        return '\n'.join(f"{t}({', '.join(c[1] for c in db.execute(f'PRAGMA table_info(\"{t}\")'))})" for t in tables(db))
+        shown = [(t, [c[1] for c in db.execute(f'PRAGMA table_info("{t}")')]) for t in tables(db)]
+        return '\n'.join(f"{t}({', '.join(cols)})" for t, cols in shown if cols)   # a table this warehouse does not have is not shown
     finally:
         if own: db.close()
 

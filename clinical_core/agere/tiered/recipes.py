@@ -71,6 +71,10 @@ def _COHORT_OUTCOMES(flag, label, words):
                      rf'what (?:were|was) (?:the )?(?:outcomes?|mortality|readmission rate) (?:for|of) (?:{words}) (?:hospitali[sz]ations|admissions|patients) (?:in|for) ' + YEAR]}
 
 
+# Adult inpatient encounters ending in a year, from the ED arrival (or admission) to discharge: the hospital harm eCQMs' episodes.
+_HARM_ENC = ("WITH enc AS (SELECT v.visit_group_id AS eid, v.patient_id, p.sex_reported AS sex, COALESCE(v.ed_arrival, v.inpatient_admit) AS t0, v.discharge_time AS t1 FROM visit_group v JOIN patient p USING (patient_id) WHERE v.has_inpatient = 1 AND v.discharge_time IS NOT NULL AND substr(v.discharge_time, 1, 4) = :year AND (julianday(v.inpatient_admit) - julianday(p.birth_date)) / 365.25 >= 18)")
+
+
 # The ACO (MSSP) population's member months in a year, and its payer's spend on claims that count in metrics.
 _ACO_MM = "WITH mm AS (SELECT patient_id, month, attribution_practice_id FROM member_month WHERE payer_id = 'WH-PAYER-MSSP' AND substr(month, 1, 4) = :year)"
 _ACO_PAID = "paid AS (SELECT SUM(paid_cents) AS cents FROM payer_claim WHERE payer_id = 'WH-PAYER-MSSP' AND counts_in_metrics = 1 AND substr(service_from, 1, 4) = :year) "
@@ -548,6 +552,85 @@ RECIPES = {
                "FROM hospital_visit WHERE has_inpatient = 1 AND substr(end_date, 1, 4) = :year",
         'grain': ['year'],
         'patterns': [r'what (?:was|is) (?:the |our )?in[- ]hospital mortality(?: rate)? (?:in|for) ' + YEAR, r'how many (?:inpatients|patients) died in (?:the )?hospital (?:in|during) ' + YEAR]},
+    # ---- hospital harm eCQMs (2026-11-16), to the CMS 2026 specifications (ecqi.healthit.gov/ecqm/hosp-inpt/2026/...), over an EMR's
+    # medication administration record, timed results, location history and diagnoses with present-on-admission (fhir_import.py).
+    # Inpatient encounters of patients 18 or older, ending in the year; the encounter includes ED time before admission.
+    'harm_severe_hypoglycemia': {
+        'title': 'Hospital Harm - Severe Hypoglycemia (CMS816v5) for inpatient encounters ending in one year: encounters with a hypoglycemic medication (insulin or a sulfonylurea) administered, encounters with a glucose under 40 mg/dL within 24 hours after one (not counted when a repeat glucose over 80 mg/dL follows within 5 minutes), and the rate',
+        'params': {'year': {'type': 'year'}},
+        'sql': _HARM_ENC + ", den AS (SELECT DISTINCT e.* FROM enc e JOIN medication_administration m ON m.encounter_id = e.eid AND m.drug_class IN ('insulin', 'sulfonylurea', 'meglitinide')), "
+               "harm AS (SELECT DISTINCT d.eid FROM den d JOIN measurement g ON g.patient_id = d.patient_id AND g.concept = 'glucose' AND g.value_canonical < 40 "
+               "AND g.event_time BETWEEN d.t0 AND d.t1 WHERE EXISTS (SELECT 1 FROM medication_administration m WHERE m.encounter_id = d.eid "
+               "AND m.drug_class IN ('insulin', 'sulfonylurea', 'meglitinide') AND m.administered_at <= g.event_time AND julianday(g.event_time) - julianday(m.administered_at) <= 1) "
+               "AND NOT EXISTS (SELECT 1 FROM measurement r WHERE r.patient_id = g.patient_id AND r.concept = 'glucose' AND r.value_canonical > 80 AND r.event_time > g.event_time "
+               "AND (julianday(r.event_time) - julianday(g.event_time)) * 1440 <= 5)) "
+               "SELECT (SELECT COUNT(*) FROM den) AS encounters_with_hypoglycemic_medication, (SELECT COUNT(*) FROM harm) AS encounters_with_severe_hypoglycemia, "
+               "ROUND(1.0 * (SELECT COUNT(*) FROM harm) / NULLIF((SELECT COUNT(*) FROM den), 0), 4) AS rate, :year AS year",
+        'grain': ['year'], 'nullable': ('rate',),
+        'patterns': [r'what (?:was|is) (?:our |the )?(?:severe )?hypoglycemia (?:harm )?(?:rate|measure)(?: \\(cms816\\))? (?:in|for) ' + YEAR,
+                     r'how many (?:inpatient )?encounters had severe hypoglycemia (?:in|during) ' + YEAR]},
+    'harm_opioid_adverse_events': {
+        'title': 'Hospital Harm - Opioid-Related Adverse Events (CMS819v4) for inpatient encounters ending in one year: encounters with an opioid administered outside the operating room, encounters with a non-enteral opioid antagonist (naloxone, nalmefene) given outside the operating room within 12 hours after an opioid, and the rate',
+        'params': {'year': {'type': 'year'}},
+        'sql': _HARM_ENC + ", den AS (SELECT DISTINCT e.* FROM enc e JOIN medication_administration m ON m.encounter_id = e.eid AND m.drug_class = 'opioid' AND COALESCE(m.location_type, '') <> 'OR'), "
+               "harm AS (SELECT DISTINCT d.eid FROM den d JOIN medication_administration a ON a.encounter_id = d.eid AND a.drug_class = 'opioid_antagonist' AND a.enteral = 0 "
+               "AND COALESCE(a.location_type, '') <> 'OR' WHERE EXISTS (SELECT 1 FROM medication_administration o WHERE o.encounter_id = d.eid AND o.drug_class = 'opioid' "
+               "AND COALESCE(o.location_type, '') <> 'OR' AND o.administered_at <= a.administered_at AND (julianday(a.administered_at) - julianday(o.administered_at)) * 24 <= 12)) "
+               "SELECT (SELECT COUNT(*) FROM den) AS encounters_with_opioid_outside_or, (SELECT COUNT(*) FROM harm) AS encounters_with_antagonist_rescue, "
+               "ROUND(1.0 * (SELECT COUNT(*) FROM harm) / NULLIF((SELECT COUNT(*) FROM den), 0), 4) AS rate, :year AS year",
+        'grain': ['year'], 'nullable': ('rate',),
+        'patterns': [r'what (?:was|is) (?:our |the )?opioid[- ]related adverse events? (?:rate|measure)(?: \\(cms819\\))? (?:in|for) ' + YEAR,
+                     r'how many (?:inpatient )?encounters had (?:an )?opioid[- ]related adverse events? (?:in|during) ' + YEAR, r'how many naloxone rescues (?:were there |did we have )?(?:in|during) ' + YEAR]},
+    'harm_acute_kidney_injury': {
+        'title': 'Hospital Harm - Acute Kidney Injury (CMS832v3, core logic) for inpatient encounters ending in one year: encounters of 48 hours or more with two or more creatinine results in the first 48 hours and one after, not rising 0.3 mg/dL or more from the index value in the first 48 hours; and those with a creatinine after 48 hours at least twice the lowest earlier value of the encounter and above the sex-specific normal (female 1.02, male 1.18 mg/dL), stage 2 or greater. The specification\'s eGFR, present-on-admission condition, dialysis and device exclusions and its risk adjustment are not applied',
+        'params': {'year': {'type': 'year'}},
+        'sql': _HARM_ENC + ", cr AS (SELECT e.eid, e.sex, g.event_time AS t, g.value_canonical AS v, (julianday(g.event_time) - julianday(e.t0)) * 24 AS h FROM enc e "
+               "JOIN measurement g ON g.patient_id = e.patient_id AND g.concept = 'creatinine' AND g.event_time BETWEEN e.t0 AND e.t1 WHERE (julianday(e.t1) - julianday(e.t0)) * 24 >= 48), "
+               "ix AS (SELECT eid, COALESCE(MIN(CASE WHEN h <= 24 THEN v END), (SELECT c2.v FROM cr c2 WHERE c2.eid = cr.eid AND c2.h <= 48 ORDER BY c2.t LIMIT 1)) AS idx, "
+               "SUM(h <= 48) AS early, SUM(h > 48) AS late, MAX(CASE WHEN h <= 48 THEN v END) AS early_max FROM cr GROUP BY eid), "
+               "den AS (SELECT eid FROM ix WHERE early >= 2 AND late >= 1 AND early_max - idx < 0.3), "
+               "harm AS (SELECT DISTINCT c.eid FROM cr c JOIN den USING (eid) WHERE c.h > 48 AND c.v > CASE c.sex WHEN 'F' THEN 1.02 ELSE 1.18 END "
+               "AND c.v >= 2 * (SELECT MIN(c2.v) FROM cr c2 WHERE c2.eid = c.eid AND c2.t < c.t)) "
+               "SELECT (SELECT COUNT(*) FROM den) AS eligible_encounters, (SELECT COUNT(*) FROM harm) AS encounters_with_stage_2_aki, "
+               "ROUND(1.0 * (SELECT COUNT(*) FROM harm) / NULLIF((SELECT COUNT(*) FROM den), 0), 4) AS rate, :year AS year",
+        'grain': ['year'], 'nullable': ('rate',),
+        'patterns': [r'what (?:was|is) (?:our |the )?(?:hospital[- ]acquired )?(?:acute kidney injury|aki) (?:rate|measure)(?: \\(cms832\\))? (?:in|for) ' + YEAR,
+                     r'how many (?:inpatient )?encounters had (?:hospital[- ]acquired )?(?:acute kidney injury|aki) (?:in|during) ' + YEAR]},
+    'harm_pressure_injury': {
+        'title': 'Hospital Harm - Pressure Injury, by diagnosis (CMS826 intent) for inpatient encounters ending in one year: adult inpatient encounters, those with a stage 2, 3 or 4 pressure injury diagnosis not present on admission, and the rate',
+        'params': {'year': {'type': 'year'}},
+        'sql': _HARM_ENC + ", harm AS (SELECT DISTINCT e.eid FROM enc e JOIN encounter_diagnosis d ON d.encounter_id = e.eid AND d.icd10 LIKE 'L89%' "
+               "AND substr(d.icd10, -1) IN ('2', '3', '4') AND d.poa = 'N') "
+               "SELECT (SELECT COUNT(*) FROM enc) AS inpatient_encounters, (SELECT COUNT(*) FROM harm) AS encounters_with_new_pressure_injury, "
+               "ROUND(1.0 * (SELECT COUNT(*) FROM harm) / NULLIF((SELECT COUNT(*) FROM enc), 0), 4) AS rate, :year AS year",
+        'grain': ['year'], 'nullable': ('rate',),
+        'patterns': [r'what (?:was|is) (?:our |the )?(?:hospital[- ]acquired )?pressure injur(?:y|ies) (?:rate|measure) (?:in|for) ' + YEAR,
+                     r'how many (?:patients|encounters) (?:had|developed) (?:a )?(?:hospital[- ]acquired )?pressure injur(?:y|ies) (?:in|during) ' + YEAR]},
+    'harm_falls_with_injury': {
+        'title': 'Hospital Harm - Falls with Injury, by diagnosis (CMS1017 intent) for inpatient encounters ending in one year: adult inpatient encounters, those with a fall (W00-W19) and an injury diagnosis both not present on admission, and the rate',
+        'params': {'year': {'type': 'year'}},
+        'sql': _HARM_ENC + ", harm AS (SELECT DISTINCT e.eid FROM enc e JOIN encounter_diagnosis f ON f.encounter_id = e.eid AND f.icd10 GLOB 'W[01][0-9]*' AND f.poa = 'N' "
+               "JOIN encounter_diagnosis i ON i.encounter_id = e.eid AND (i.icd10 LIKE 'S%' OR i.icd10 LIKE 'T0%' OR i.icd10 LIKE 'T1%') AND i.poa = 'N') "
+               "SELECT (SELECT COUNT(*) FROM enc) AS inpatient_encounters, (SELECT COUNT(*) FROM harm) AS encounters_with_fall_with_injury, "
+               "ROUND(1.0 * (SELECT COUNT(*) FROM harm) / NULLIF((SELECT COUNT(*) FROM enc), 0), 4) AS rate, :year AS year",
+        'grain': ['year'], 'nullable': ('rate',),
+        'patterns': [r'what (?:was|is) (?:our |the )?(?:inpatient )?falls? with injury (?:rate|measure) (?:in|for) ' + YEAR,
+                     r'how many (?:inpatient )?falls with injury (?:were there |did we have )?(?:in|during) ' + YEAR]},
+    'harm_severe_hyperglycemia': {
+        'title': 'Hospital Harm - Severe Hyperglycemia, by day (CMS871v5 core logic) for inpatient encounters ending in one year with diabetes, a hypoglycemic medication or a glucose of 200 mg/dL or more: eligible hospital days (24-hour periods from the start, days 2 to 10, complete days only), days with a glucose over 300 mg/dL, and the rate. The no-result-after-two-high-days rule and the exclusions are not applied',
+        'params': {'year': {'type': 'year'}},
+        'sql': _HARM_ENC + ", den AS (SELECT e.* FROM enc e WHERE EXISTS (SELECT 1 FROM condition c WHERE c.patient_id = e.patient_id AND (c.icd10 LIKE 'E10%' OR c.icd10 LIKE 'E11%' OR c.icd10 LIKE 'E13%')) "
+               "OR EXISTS (SELECT 1 FROM medication_administration m WHERE m.encounter_id = e.eid AND m.drug_class IN ('insulin', 'sulfonylurea', 'meglitinide')) "
+               "OR EXISTS (SELECT 1 FROM measurement g WHERE g.patient_id = e.patient_id AND g.concept = 'glucose' AND g.value_canonical >= 200 AND g.event_time BETWEEN e.t0 AND e.t1)), "
+               "d(k) AS (VALUES (2), (3), (4), (5), (6), (7), (8), (9), (10)), "
+               "days AS (SELECT den.eid, den.patient_id, d.k, strftime('%Y-%m-%dT%H:%M', den.t0, '+' || ((d.k - 1) * 24) || ' hours') AS s, strftime('%Y-%m-%dT%H:%M', den.t0, '+' || (d.k * 24) || ' hours') AS f "
+               "FROM den JOIN d ON (julianday(den.t1) - julianday(den.t0)) >= d.k), "
+               "ev AS (SELECT DISTINCT days.eid, days.k FROM days JOIN measurement g ON g.patient_id = days.patient_id AND g.concept = 'glucose' AND g.value_canonical > 300 "
+               "AND g.event_time >= days.s AND g.event_time < days.f) "
+               "SELECT (SELECT COUNT(*) FROM den) AS eligible_encounters, (SELECT COUNT(*) FROM days) AS eligible_days, (SELECT COUNT(*) FROM ev) AS hyperglycemic_days, "
+               "ROUND(1.0 * (SELECT COUNT(*) FROM ev) / NULLIF((SELECT COUNT(*) FROM days), 0), 4) AS rate, :year AS year",
+        'grain': ['year'], 'nullable': ('rate',),
+        'patterns': [r'what (?:was|is) (?:our |the )?(?:severe )?hyperglycemia (?:harm )?(?:rate|measure)(?: \\(cms871\\))? (?:in|for) ' + YEAR]},
     'attributed_panel_by_practice': {
         'title': "Each attributed practice's panel in one year: members, member months, payer paid per member per month, inpatient admissions and emergency visits per 1,000 member-years (claims and events in the months the member was attributed to that practice)",
         'params': {'year': {'type': 'year'}},

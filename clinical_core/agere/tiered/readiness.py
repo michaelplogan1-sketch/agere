@@ -23,6 +23,7 @@ from . import store
 
 IN_STAY = "JOIN stay_episode e ON e.patient_id = {t}.patient_id AND substr({t}.{d}, 1, 10) BETWEEN e.admit_date AND COALESCE(e.discharge_date, e.admit_date)"
 ADMIN = "FROM medication m WHERE m.source_stream = 'medication_administrations'"
+MAR = "FROM medication_administration m WHERE 1 = 1"   # the FHIR source's medication administration record
 
 # element key -> (plain description, SQL returning one count, rows needed)
 ELEMENTS = {
@@ -30,28 +31,28 @@ ELEMENTS = {
         "SELECT COUNT(*) FROM measurement m " + IN_STAY.format(t='m', d='event_date') + " WHERE m.concept = 'glucose' AND m.event_time IS NOT NULL", 30),
     'diabetes_diagnosis': ('diabetes diagnoses', "SELECT COUNT(*) FROM condition WHERE concept IN ('diabetes', 'type_2_diabetes', 'type_1_diabetes')", 10),
     'admission_times': ('inpatient admission times', "SELECT COUNT(*) FROM hospital_visit WHERE has_inpatient = 1 AND inpatient_admit IS NOT NULL", 30),
-    'admin_times': ('medication administration times (not only dates)', "SELECT COUNT(*) " + ADMIN + " AND length(m.event_date) > 10", 30),
-    'admin_hypoglycemic': ('administrations of insulin or other hypoglycemic medicines', "SELECT COUNT(*) " + ADMIN + " AND m.drug_class IN ('insulin', 'sulfonylurea', 'meglitinide')", 10),
-    'admin_opioid': ('opioid administrations', "SELECT COUNT(*) " + ADMIN + " AND m.drug_class = 'opioid'", 10),
-    'admin_antagonist': ('opioid antagonist (naloxone, nalmefene) administrations', "SELECT COUNT(*) " + ADMIN + " AND (m.drug_class = 'opioid_antagonist' OR lower(m.drug_name) LIKE '%naloxone%')", 1),
+    'admin_times': ('medication administration times (not only dates)', ("SELECT COUNT(*) " + MAR + " AND m.administered_at IS NOT NULL", "SELECT COUNT(*) " + ADMIN + " AND length(m.event_date) > 10"), 30),
+    'admin_hypoglycemic': ('administrations of insulin or other hypoglycemic medicines', tuple("SELECT COUNT(*) " + s + " AND m.drug_class IN ('insulin', 'sulfonylurea', 'meglitinide')" for s in (MAR, ADMIN)), 10),
+    'admin_opioid': ('opioid administrations', tuple("SELECT COUNT(*) " + s + " AND m.drug_class = 'opioid'" for s in (MAR, ADMIN)), 10),
+    'admin_antagonist': ('opioid antagonist (naloxone, nalmefene) administrations', tuple("SELECT COUNT(*) " + s + " AND (m.drug_class = 'opioid_antagonist' OR lower(m.drug_name) LIKE '%naloxone%')" for s in (MAR, ADMIN)), 1),
     'admin_location': ('the location of each administration (to exclude the operating room)',
-        "SELECT COUNT(*) FROM pragma_table_info('medication') WHERE name IN ('location', 'unit', 'department', 'administration_location')", 1),
+        ("SELECT COUNT(*) FROM medication_administration WHERE location_type IS NOT NULL", "SELECT COUNT(*) FROM pragma_table_info('medication') WHERE name IN ('location', 'unit', 'department', 'administration_location')"), 1),
     'serial_creatinine': ('stays of 48 hours or more with at least three timed creatinine results',
         "SELECT COUNT(*) FROM (SELECT e.patient_id, e.admit_date FROM stay_episode e JOIN measurement m ON m.patient_id = e.patient_id AND m.concept = 'creatinine' "
         "AND m.event_time IS NOT NULL AND m.event_date BETWEEN e.admit_date AND e.discharge_date WHERE julianday(e.discharge_date) - julianday(e.admit_date) >= 2 "
         "GROUP BY 1, 2 HAVING COUNT(*) >= 3)", 30),
-    'present_on_admission': ('present-on-admission indicators on diagnoses',
+    'present_on_admission': ('present-on-admission indicators on diagnoses', ("SELECT COUNT(*) FROM encounter_diagnosis WHERE poa IS NOT NULL",
         "SELECT (SELECT COUNT(*) FROM pragma_table_info('payer_claim_diagnosis') WHERE name LIKE '%poa%') + (SELECT COUNT(*) FROM pragma_table_info('encounter_diagnosis') WHERE name LIKE '%poa%') "
-        "+ (SELECT COUNT(*) FROM pragma_table_info('condition') WHERE name LIKE '%poa%' OR name LIKE '%present_on_admission%')", 1),
+        "+ (SELECT COUNT(*) FROM pragma_table_info('condition') WHERE name LIKE '%poa%' OR name LIKE '%present_on_admission%')"), 1),
     'pressure_injury_documented': ('pressure injury diagnoses or assessments during stays',
-        "SELECT COUNT(*) FROM diagnosis_any d " + IN_STAY.format(t='d', d='event_date') + " WHERE d.icd10 LIKE 'L89%'", 10),
-    'falls_documented': ('documented falls during stays', "SELECT COUNT(*) FROM diagnosis_any d " + IN_STAY.format(t='d', d='event_date') + " WHERE d.icd10 GLOB 'W[01][0-9]*'", 5),
-    'operative_times': ('operative procedure start and end times', "SELECT COUNT(*) FROM pragma_table_info('procedure_line') WHERE name LIKE '%time%' OR name LIKE '%start%'", 1),
+        ("SELECT COUNT(*) FROM encounter_diagnosis WHERE icd10 LIKE 'L89%'", "SELECT COUNT(*) FROM diagnosis_any d " + IN_STAY.format(t='d', d='event_date') + " WHERE d.icd10 LIKE 'L89%'"), 10),
+    'falls_documented': ('documented falls during stays', ("SELECT COUNT(*) FROM encounter_diagnosis WHERE icd10 GLOB 'W[01][0-9]*'", "SELECT COUNT(*) FROM diagnosis_any d " + IN_STAY.format(t='d', d='event_date') + " WHERE d.icd10 GLOB 'W[01][0-9]*'"), 5),
+    'operative_times': ('operative procedure start and end times', ("SELECT COUNT(*) FROM procedure_event WHERE start IS NOT NULL AND end IS NOT NULL", "SELECT COUNT(*) FROM pragma_table_info('procedure_line') WHERE name LIKE '%time%' OR name LIKE '%start%'"), 1),
     'device_days': ('central line and urinary catheter days', "SELECT COUNT(*) FROM sqlite_master WHERE name LIKE '%device%' OR name LIKE '%catheter%' OR name LIKE '%line_day%'", 1),
     'cultures': ('blood and urine culture results', "SELECT COUNT(*) FROM measurement WHERE lower(name) LIKE '%culture%' OR concept LIKE '%culture%'", 10),
     'lactate_timed': ('timed lactate results', "SELECT COUNT(*) FROM measurement WHERE lower(name) LIKE '%lactate%' AND event_time IS NOT NULL", 10),
     'antibiotic_admin_times': ('timed antibiotic administrations',
-        "SELECT COUNT(*) " + ADMIN + " AND length(m.event_date) > 10 AND m.drug_class IN ('cephalosporin', 'macrolide', 'tetracycline_antibiotic', 'penicillin', 'fluoroquinolone', 'carbapenem')", 10),
+        tuple("SELECT COUNT(*) " + s + c + " AND m.drug_class IN ('cephalosporin', 'macrolide', 'tetracycline_antibiotic', 'penicillin', 'fluoroquinolone', 'carbapenem')" for s, c in ((MAR, ' AND m.administered_at IS NOT NULL'), (ADMIN, ' AND length(m.event_date) > 10'))), 10),
     'sepsis_hospitalizations': ('sepsis hospitalizations by principal diagnosis', "SELECT COUNT(*) FROM hospital_visit WHERE has_inpatient = 1 AND is_sepsis = 1", 5),
     'ed_departure_times': ('usable ED arrival and departure times', "SELECT COUNT(*) FROM hospital_visit WHERE ed_minutes IS NOT NULL", 30),
     'decision_to_admit_times': ('decision-to-admit times', "SELECT COUNT(*) FROM hospital_visit WHERE boarding_minutes IS NOT NULL", 30),
@@ -128,11 +129,14 @@ def probe():
     finally:
         _busy.pop()
     found = {}
-    for key, (_, sql, _) in ELEMENTS.items():
-        try:
-            found[key] = int(db.execute(sql).fetchone()[0] or 0)
-        except sqlite3.Error:
-            found[key] = 0
+    for key, (_, sqls, _) in ELEMENTS.items():
+        found[key] = 0
+        for sql in ((sqls,) if isinstance(sqls, str) else sqls):   # the first source that holds the element wins
+            try:
+                found[key] = int(db.execute(sql).fetchone()[0] or 0)
+            except sqlite3.Error:
+                continue
+            if found[key]: break
     db.close()
     measures, requirements = [], []
     for mid, name, spec, klass, program, needs, _ in MEASURES:
