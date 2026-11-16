@@ -32,6 +32,9 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
             if tier == 'llm':
                 narrowed = recipes.narrowed_vocabulary(question, params, lookup)
                 if narrowed: raise store.RecipeError(narrowed)
+            if tier != 'recipes':   # a filter on a value the data does not hold would return an empty answer that looks real
+                unknown = recipes.unknown_filter_values(sql, params, lookup)
+                if unknown: raise store.RecipeError(unknown)
             if read:
                 columns, rows, validation, read_steps, evidence['documents'] = reader.execute(
                     question, sql, params, read, db, readers=readers, s1_ledger=s1_ledger)
@@ -69,6 +72,13 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
 
     def run_recipe(tier, recipe_id, params):
         recipe = recipes.RECIPES[recipe_id]
+        if tier != 'recipes':   # a model chose this recipe: it must read every table or column the question names
+            from . import near
+            missing = near.named_but_unused(question, recipe, params)
+            if missing:
+                steps.append({'tier': tier, 'outcome': 'recipe_does_not_read_what_the_question_names', 'recipe': recipe_id, 'names': missing, 'tokens': 0, 'usd': 0.0})
+                escalations.append({'from': tier, 'reason': 'the chosen recipe does not read ' + ', '.join(missing)})
+                return None
         if recipe.get('read'):
             got = attempt(tier, recipe['sql'], params, read=recipe['read'])
             if got is None: return None

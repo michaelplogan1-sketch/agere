@@ -1031,6 +1031,67 @@ def near_negative(limit=60, s1_ledger=None):
     return summary
 
 
+def examples_eval(limit=60, workers=4):
+    """Does showing the frontier SQL writer the nearest verified saved queries help on questions it has not seen? Held out:
+    promoted recipes that independent re-checks agreed with and none disagreed with. Each recipe's own question is asked with
+    that recipe hidden (and any saved recipe with the same SQL); the reference is the recipe's own rows. Off: schema and
+    definitions only. On: the same plus the three nearest other saved queries. Saves nothing."""
+    import os
+    from concurrent.futures import ThreadPoolExecutor
+    os.environ.pop('ANTHROPIC_API_KEY', None)
+    from run_integrated_stack import keys
+    keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+    from . import models, upkeep
+    bottles = bottle_store.Bottles()
+    full = bottles.full()
+    good = [b for b in full if b['status'] == 'promoted' and not b.get('read') and (b.get('provenance') or {}).get('question')]
+    good = [b for b in good if (lambda st: st['check_agree'] >= 1 and st['check_differ'] == 0)(upkeep.standing(bottles, b['id']))]
+    picked = good[::max(1, len(good) // int(limit))][:int(limit)]
+    same_sql = lambda b: {x['id'] for x in full if ' '.join(x['sql'].split()) == ' '.join(b['sql'].split())}
+
+    def one(b):
+        db = store.connect()
+        try:
+            q = b['provenance']['question']
+            hit = bottles_local().match(q, statuses=('promoted',))
+            if not hit or hit[0]['id'] != b['id']: return None
+            ref = store.run(b['sql'], hit[1], db)[1]
+            row = {'id': b['id'], 'question': q}
+            for mode in ('off', 'on'):
+                ex = models.nearest_examples(q, exclude=same_sql(b)) if mode == 'on' else []
+                recipe, step = models.llm_recipe(q, examples=ex)
+                ok = False
+                if recipe and not recipe.get('read'):
+                    try:
+                        rows = store.run(recipe['sql'], upkeep._params_for_second(recipe), db)[1]
+                        ok = upkeep._same(ref, rows, loose=True)
+                    except store.RecipeError:
+                        ok = False
+                row[mode] = {'right': ok, 'usd': step.get('usd', 0.0), 'seconds': step.get('seconds', 0.0), 'tokens': step.get('tokens', 0), 'examples': len(ex)}
+            return row
+        except Exception as exc:
+            if 'limit' in str(exc).lower(): raise
+            return None
+        finally:
+            db.close()
+
+    import threading
+    local = threading.local()
+    def bottles_local():
+        if not hasattr(local, 'b'): local.b = bottle_store.Bottles()
+        return local.b
+    with ThreadPoolExecutor(int(workers)) as pool:
+        rows = [r for r in pool.map(one, picked) if r]
+    n = len(rows)
+    agg = lambda m, k: sum(r[m][k] for r in rows)
+    lines = [f"{r['id']:4} off {'right' if r['off']['right'] else 'WRONG':5}  on {'right' if r['on']['right'] else 'WRONG':5} | {r['question'][:110]}" for r in rows]
+    summary = (f"frontier SQL writer on {n} held-out questions | without examples right {sum(r['off']['right'] for r in rows)}/{n}, ${agg('off', 'usd'):.3f}, "
+               f"{agg('off', 'seconds') / max(1, n):.1f}s each | with the 3 nearest saved queries right {sum(r['on']['right'] for r in rows)}/{n}, ${agg('on', 'usd'):.3f}, "
+               f"{agg('on', 'seconds') / max(1, n):.1f}s each | fixed by examples {sum(r['on']['right'] and not r['off']['right'] for r in rows)}, broken by examples {sum(r['off']['right'] and not r['on']['right'] for r in rows)}")
+    (OUT / f"examples-eval-{time.strftime('%Y%m%d-%H%M%S')}.txt").write_text('\n'.join(lines + [summary]) + '\n')
+    return summary
+
+
 def methods_eval(path='eval/tiered/methods.json', config=None, workers=1):
     """Routing check for the methods rung on the real warehouse: each question through the whole app ladder.
     Scored on which rung answered and which method ran (eval/tiered/methods.json), not on the figures."""
@@ -1110,6 +1171,9 @@ def main(argv):
     if argv[0] == 'near-negative':
         import os
         print('\n' + near_negative(argv[1] if len(argv) > 1 else 60, os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3')))
+        return
+    if argv[0] == 'examples':
+        print('\n' + examples_eval(int(argv[1]) if len(argv) > 1 else 60))
         return
     if argv[0] == 'near':
         import os

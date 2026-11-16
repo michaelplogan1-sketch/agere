@@ -113,7 +113,11 @@ def named_but_unused(question, bottle, params):
     values = {str(v).lower() for v in (params or {}).values()}
     named = set(re.findall(r'\b[a-z][a-z0-9]*_[a-z0-9_]+\b', text)) | set(re.findall(r'\b([a-z][a-z0-9_]*) table\b', text))
     named |= {c for c in _columns() if ' ' + c.replace('_', ' ') + ' ' in ' ' + re.sub(r'[^a-z0-9 ]', ' ', text) + ' '}   # "source stream" names source_stream
-    return sorted(n for n in named - values - {'the', 'a', 'this', 'that', 'each', 'one', 'same', 'latest'} if not re.search(r'\b' + re.escape(n) + r'\b', sql))
+    tables = set(re.findall(r'\b([a-z][a-z0-9_]*) table\b', text)) - values
+    read = set(re.findall(r'\b(?:from|join)\s+([a-z_][a-z0-9_]*)', sql))
+    missing = {n for n in named - values - {'the', 'a', 'this', 'that', 'each', 'one', 'same', 'latest'} if not re.search(r'\b' + re.escape(n) + r'\b', sql)}
+    missing |= {t for t in tables if t not in {'the', 'a', 'this', 'that', 'same'} and t not in read}   # a table must be read, not just mentioned as a value
+    return sorted(missing)
 
 
 def propose(question, bottles, s1_ledger=None):
