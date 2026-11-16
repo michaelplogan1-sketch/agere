@@ -1,0 +1,218 @@
+{
+ "version": "proof_v10",
+ "authored": "2026-11-16",
+ "authored_by": "Claude (build owner)",
+ "frozen": "Written and committed before any run, after the FHIR export, importer and harm recipes were committed. Run once; not edited after it has been run. Its first result stands as reported.",
+ "purpose": "Hospital harm on an EMR's FHIR export: Agere and a frontier model writing its own SQL both answer from the semantic layer imported from the Bulk FHIR files (medication_administration, encounter_location, encounter_diagnosis, measurement and the governed views).",
+ "synthetic": "The export is synthetic; resources tagged synthetic-augmented were generated to exercise the measure logic.",
+ "held_out": "Not used by the learning loop, the curriculum or as recipe examples. The stack is scored on a copy of its saved recipes with learning switched off; none apply to this source.",
+ "reference": "Computed in clinical_core/agere/tiered/proof.py from the FHIR NDJSON files directly (drug classes by RxNorm code, location from each encounter's location history), not from the imported tables or the recipes' SQL.",
+ "phrasing": "The first phrasing is plain; the second states the rule.",
+ "scoring": "+1 right, 0 declined, -10 wrong; an unanswerable question that is answered counts as wrong. Two phrasings, two runs, two arms, all runs reported.",
+ "questions": [
+  {
+   "id": "F01",
+   "domain": "hypoglycemia",
+   "reference": "fh_hypo_events",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many inpatient encounters had severe hypoglycemia in 2028?",
+    "Count adult inpatient encounters ending in 2028 with a glucose under 40 mg/dL within 24 hours after insulin or another hypoglycemic medicine, not followed by a glucose over 80 within 5 minutes."
+   ]
+  },
+  {
+   "id": "F02",
+   "domain": "hypoglycemia",
+   "reference": "fh_hypo_denominator",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many inpatient encounters in 2029 got insulin?",
+    "Count adult inpatient encounters ending in 2029 with at least one insulin or other hypoglycemic medicine administered."
+   ]
+  },
+  {
+   "id": "F03",
+   "domain": "opioid harm",
+   "reference": "fh_orae_events",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many naloxone rescues did we have in 2028?",
+    "Count adult inpatient encounters ending in 2028 with a non-oral opioid antagonist given outside the operating room within 12 hours after an opioid given outside the operating room."
+   ]
+  },
+  {
+   "id": "F04",
+   "domain": "opioid harm",
+   "reference": "fh_orae_rate",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was our opioid-related adverse event rate in 2029?",
+    "Encounters with an opioid antagonist rescue (outside the OR, non-enteral, within 12 hours of an opioid) divided by adult inpatient encounters ending in 2029 with an opioid given outside the OR."
+   ]
+  },
+  {
+   "id": "F05",
+   "domain": "kidney injury",
+   "reference": "fh_aki_events",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many patients developed acute kidney injury in the hospital in 2029?",
+    "Count eligible adult inpatient encounters ending in 2029 with a creatinine after 48 hours at least twice the lowest earlier value and above the sex-specific normal (CMS832 core logic)."
+   ]
+  },
+  {
+   "id": "F06",
+   "domain": "kidney injury",
+   "reference": "fh_aki_rate",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was the hospital-acquired AKI rate in 2028?",
+    "Stage 2 or greater acute kidney injury after 48 hours divided by eligible adult inpatient encounters of 48 hours or more ending in 2028 (CMS832 core logic)."
+   ]
+  },
+  {
+   "id": "F07",
+   "domain": "pressure injury",
+   "reference": "fh_pressure_injury_events",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many hospital-acquired pressure injuries did we have in 2029?",
+    "Count adult inpatient encounters ending in 2029 with a stage 2, 3 or 4 pressure injury diagnosis not present on admission."
+   ]
+  },
+  {
+   "id": "F08",
+   "domain": "pressure injury",
+   "reference": "fh_pressure_injury_events",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many patients developed a pressure injury during their stay in 2028?",
+    "Count adult inpatient encounters ending in 2028 with a stage 2 or higher pressure injury coded as not present on admission."
+   ]
+  },
+  {
+   "id": "F09",
+   "domain": "falls",
+   "reference": "fh_falls_injury_events",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many inpatient falls with injury did we have in 2029?",
+    "Count adult inpatient encounters ending in 2029 with a fall diagnosis and an injury diagnosis, both not present on admission."
+   ]
+  },
+  {
+   "id": "F10",
+   "domain": "falls",
+   "reference": "fh_falls_injury_events",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many falls with injury happened in 2028?",
+    "Count 2028 adult inpatient encounters with a fall (W00 to W19) and an injury code, both not present on admission."
+   ]
+  },
+  {
+   "id": "F11",
+   "domain": "hyperglycemia",
+   "reference": "fh_hyper_days",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many hyperglycemic days did inpatients have in 2029?",
+    "Count eligible hospital days (days 2 to 10 in 24-hour periods from the start) with a glucose over 300 mg/dL, for adult inpatient encounters ending in 2029 with diabetes, a hypoglycemic medicine or a glucose of 200 or more."
+   ]
+  },
+  {
+   "id": "F12",
+   "domain": "encounters",
+   "reference": "fh_adult_inpatient_encounters",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many adult inpatient encounters ended in 2029?",
+    "Count inpatient encounters of patients 18 or older discharged in 2029."
+   ]
+  },
+  {
+   "id": "F13",
+   "domain": "opioid harm",
+   "reference": "fh_orae_events",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many opioid-related adverse events were there in 2029?",
+    "Count adult inpatient encounters ending in 2029 with naloxone or nalmefene given (not by mouth, not in the OR) within 12 hours after an opioid outside the OR."
+   ]
+  },
+  {
+   "id": "F14",
+   "domain": "kidney injury",
+   "reference": "fh_aki_events",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many inpatient encounters had stage 2 AKI in 2028?",
+    "Count eligible adult inpatient encounters ending in 2028 meeting the CMS832 stage 2 creatinine rule after 48 hours."
+   ]
+  },
+  {
+   "id": "X01",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our CLABSI rate in 2029?",
+    "Central line-associated bloodstream infections per 1,000 central line days in 2029."
+   ]
+  },
+  {
+   "id": "X02",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our SEP-1 bundle compliance in 2029?",
+    "Share of severe sepsis cases in 2029 meeting every SEP-1 bundle element on time."
+   ]
+  },
+  {
+   "id": "X03",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our HCAHPS overall rating in 2029?",
+    "Share of 2029 HCAHPS respondents rating the hospital 9 or 10."
+   ]
+  },
+  {
+   "id": "X04",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was the median time to an ED treatment room in 2029?",
+    "Median minutes from ED arrival to placement in a treatment space in 2029."
+   ]
+  }
+ ]
+}

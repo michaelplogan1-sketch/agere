@@ -21,7 +21,7 @@ import tempfile
 import time
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 from . import bottles as bottle_store, router, store
@@ -640,6 +640,160 @@ def ref_hv_hf_mortality_rate(db, year):
 def ref_hv_hf_los(db, year):
     xs = [d for _, _, d in _cohort(db, year, 'hf') if d is not None]
     return [[round(sum(xs) / len(xs), 2)]]
+
+
+# ---- references added for proof_v10, hospital harm on an EMR's FHIR export (written before proof_v10's first run) -------
+# Computed from the Bulk FHIR files themselves (artifacts/agere-tiered-core/fhir/export), not from the imported tables or the
+# recipes' SQL: drug classes by RxNorm code, the patient's location at each moment from the encounter's location history.
+
+FHIR_EXPORT = Path('artifacts/agere-tiered-core/fhir/export')
+_FHIR = {}
+_INSULIN, _OPIOID, _ANTAGONIST = {'86009'}, {'7052', '7804', '4337'}, {'7242'}
+_POA = 'http://hl7.org/fhir/us/qicore/StructureDefinition/qicore-encounter-diagnosisPresentOnAdmission'
+
+
+def _fhir():
+    if _FHIR: return _FHIR
+    read = lambda k: [json.loads(l) for l in open(FHIR_EXPORT / f'{k}.ndjson') if l.strip()]
+    loc_type = {r['id']: r['physicalType']['text'] for r in read('Location')}
+    birth = {r['id']: r.get('birthDate') for r in read('Patient')}
+    sex = {r['id']: r.get('gender') for r in read('Patient')}
+    cond = {r['id']: r['code']['coding'][0]['code'] for r in read('Condition')}
+    encs = {}
+    for r in read('Encounter'):
+        if r['class']['code'] != 'IMP': continue
+        locs = [(loc_type[l['location']['reference'].split('/')[1]], l['period'].get('start', '')[:16], l['period'].get('end', '')[:16]) for l in r.get('location', [])]
+        unit = [l for l in locs if l[0] in ('MED', 'ICU')]
+        if not unit or not unit[0][2]: continue
+        ed = [l for l in locs if l[0] == 'ED']
+        pid = r['subject']['reference'].split('/')[1]
+        dx = [(cond.get(d['condition']['reference'].split('/')[1]), next((e['valueCodeableConcept']['coding'][0]['code'] for e in d.get('extension', []) if e['url'] == _POA), None))
+              for d in r.get('diagnosis', [])]
+        encs[r['id']] = {'pid': pid, 'sex': sex.get(pid), 't0': (ed[0][1] if ed else unit[0][1]), 't1': unit[0][2], 'admit': unit[0][1], 'locs': locs, 'dx': dx,
+                         'adult': bool(birth.get(pid)) and (_ts(unit[0][1]) - _ts(birth[pid] + 'T00:00')).days / 365.25 >= 18}
+    admins = defaultdict(list)
+    for r in read('MedicationAdministration'):
+        enc = (r.get('context') or {}).get('reference', '').split('/')[-1]
+        if enc not in encs: continue
+        code = r['medicationCodeableConcept']['coding'][0]['code']
+        when = r['effectiveDateTime'][:16]
+        inside = [(s, typ) for typ, s, f in encs[enc]['locs'] if s and when >= s and (not f or when <= f)]
+        admins[enc].append({'code': code, 't': when, 'route': r['dosage']['route']['text'], 'loc': max(inside)[1] if inside else None})
+    obs = defaultdict(list)
+    for r in read('Observation'):
+        code = r['code']['coding'][0]['code']
+        if code not in ('2345-7', '41653-7', '2160-0') or len(r.get('effectiveDateTime', '')) < 16: continue
+        obs[r['subject']['reference'].split('/')[1]].append(('glucose' if code != '2160-0' else 'creatinine', r['effectiveDateTime'][:16], r['valueQuantity']['value']))
+    diabetic = {r['subject']['reference'].split('/')[1] for r in read('Condition') if str(r['code']['coding'][0]['code']).startswith(('E10', 'E11', 'E13'))}
+    _FHIR.update(encs=encs, admins=admins, obs=obs, diabetic=diabetic)
+    return _FHIR
+
+
+def _harm_encs(year):
+    f = _fhir()
+    return {k: e for k, e in f['encs'].items() if e['adult'] and e['t1'].startswith(year)}
+
+
+def _hours(a, b):
+    return (_ts(b) - _ts(a)).total_seconds() / 3600
+
+
+def _hypo(year):
+    f, den, harm = _fhir(), 0, 0
+    for k, e in _harm_encs(year).items():
+        ins = [a['t'] for a in f['admins'][k] if a['code'] in _INSULIN]
+        if not ins: continue
+        den += 1
+        g = [(t, v) for c, t, v in f['obs'][e['pid']] if c == 'glucose']
+        for t, v in g:
+            if v < 40 and e['t0'] <= t <= e['t1'] and any(x <= t and _hours(x, t) <= 24 for x in ins) \
+                    and not any(t2 > t and _hours(t, t2) * 60 <= 5 and v2 > 80 for t2, v2 in g):
+                harm += 1; break
+    return den, harm
+
+
+def ref_fh_hypo_events(db, year):
+    return [[_hypo(year)[1]]]
+
+
+def ref_fh_hypo_denominator(db, year):
+    return [[_hypo(year)[0]]]
+
+
+def _orae(year):
+    f, den, harm = _fhir(), 0, 0
+    for k, e in _harm_encs(year).items():
+        op = [a['t'] for a in f['admins'][k] if a['code'] in _OPIOID and a['loc'] != 'OR']
+        if not op: continue
+        den += 1
+        if any(a['code'] in _ANTAGONIST and a['loc'] != 'OR' and a['route'] not in ('oral', 'enteral') and any(o <= a['t'] and _hours(o, a['t']) <= 12 for o in op)
+               for a in f['admins'][k]):
+            harm += 1
+    return den, harm
+
+
+def ref_fh_orae_events(db, year):
+    return [[_orae(year)[1]]]
+
+
+def ref_fh_orae_rate(db, year):
+    d, h = _orae(year)
+    return [[round(h / d, 4)]]
+
+
+def _aki(year):
+    f, den, harm = _fhir(), 0, 0
+    for k, e in _harm_encs(year).items():
+        if _hours(e['t0'], e['t1']) < 48: continue
+        cr = sorted((t, v, _hours(e['t0'], t)) for c, t, v in f['obs'][e['pid']] if c == 'creatinine' and e['t0'] <= t <= e['t1'])
+        early, late = [x for x in cr if x[2] <= 48], [x for x in cr if x[2] > 48]
+        if len(early) < 2 or not late: continue
+        first24 = [v for _, v, h in cr if h <= 24]
+        idx = min(first24) if first24 else early[0][1]
+        if max(v for _, v, _ in early) - idx >= 0.3: continue
+        den += 1
+        normal = 1.02 if e['sex'] == 'female' else 1.18
+        if any(v > normal and v >= 2 * min(v2 for t2, v2, _ in cr if t2 < t) for t, v, h in late):
+            harm += 1
+    return den, harm
+
+
+def ref_fh_aki_events(db, year):
+    return [[_aki(year)[1]]]
+
+
+def ref_fh_aki_rate(db, year):
+    d, h = _aki(year)
+    return [[round(h / d, 4)]]
+
+
+def ref_fh_pressure_injury_events(db, year):
+    return [[sum(1 for e in _harm_encs(year).values() if any(c and c.startswith('L89') and c[-1] in '234' and p == 'N' for c, p in e['dx']))]]
+
+
+def ref_fh_falls_injury_events(db, year):
+    def fall(c): return bool(c) and c[0] == 'W' and c[1:3].isdigit() and 0 <= int(c[1:3]) <= 19
+    def injury(c): return bool(c) and (c.startswith('S') or c.startswith('T0') or c.startswith('T1'))
+    return [[sum(1 for e in _harm_encs(year).values() if any(fall(c) and p == 'N' for c, p in e['dx']) and any(injury(c) and p == 'N' for c, p in e['dx']))]]
+
+
+def ref_fh_adult_inpatient_encounters(db, year):
+    return [[len(_harm_encs(year))]]
+
+
+def ref_fh_hyper_days(db, year):
+    f, days, events = _fhir(), 0, 0
+    for k, e in _harm_encs(year).items():
+        g = [(t, v) for c, t, v in f['obs'][e['pid']] if c == 'glucose']
+        eligible = e['pid'] in f['diabetic'] or any(a['code'] in _INSULIN for a in f['admins'][k]) or any(v >= 200 and e['t0'] <= t <= e['t1'] for t, v in g)
+        if not eligible: continue
+        span = _hours(e['t0'], e['t1']) / 24
+        for d in range(2, 11):
+            if span < d: break
+            s = (_ts(e['t0']) + timedelta(hours=(d - 1) * 24)).strftime('%Y-%m-%dT%H:%M'); f2 = (_ts(e['t0']) + timedelta(hours=d * 24)).strftime('%Y-%m-%dT%H:%M')
+            days += 1
+            events += any(v > 300 and s <= t < f2 for t, v in g)
+    return [[events]]
 
 
 REFERENCES = {name[4:]: fn for name, fn in globals().items() if name.startswith('ref_') and callable(fn)}
