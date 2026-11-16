@@ -462,6 +462,10 @@ def run(runs=3, workers=4):
             o = {'status': 'error', 'final_tier': None, 'rows': None, 'steps': [], 'seconds': 0.0}
         return {'id': item['id'], 'phrasing': item['phrasing'], 'domain': item['domain'], 'arm': arm, 'run': r, 'unanswerable': item['unanswerable'],
                 'kind': outcome_kind(item, o), 'tier': o.get('final_tier'), 'usd': sum(s.get('usd', 0.0) for s in o['steps']), 'seconds': o.get('seconds', 0.0),
+                # frontier calls and the tokens sent: cost that does not depend on the transport's caching
+                'frontier_calls': sum(1 for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
+                'frontier_tokens': sum(s.get('tokens', 0) for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
+                'checks_rejected': sum(1 for s in o['steps'] if 'Governed definition' in str(s.get('reason', ''))),
                 'rows': (o.get('rows') or [])[:3], 'question': item['question']}
 
     arms = tuple(os.environ.get('AGERE_PROOF_ARMS', 'stack,stack_plain,frontier').split(','))

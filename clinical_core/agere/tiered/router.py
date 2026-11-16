@@ -37,7 +37,7 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
                 if unknown: raise store.RecipeError(unknown)
                 whole = recipes.needs_whole_stays(question, sql)
                 if whole: raise store.RecipeError(whole)
-                broken = governed.check(question, sql)   # a reading the governed definitions rule out never answers
+                broken = governed.check(question, sql, params)   # a reading the governed definitions rule out never answers
                 if broken: raise store.RecipeError(' '.join(broken))
             if read:
                 columns, rows, validation, read_steps, evidence['documents'] = reader.execute(
@@ -90,7 +90,7 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
                 steps.append({'tier': tier, 'outcome': 'recipe_does_not_count_whole_stays', 'recipe': recipe_id, 'tokens': 0, 'usd': 0.0})
                 escalations.append({'from': tier, 'reason': whole})
                 return None
-            broken = governed.check(question, recipe['sql'])
+            broken = governed.check(question, recipe['sql'], params)
             if broken:
                 steps.append({'tier': tier, 'outcome': 'recipe_contradicts_a_governed_definition', 'recipe': recipe_id, 'reason': ' '.join(broken)[:200], 'tokens': 0, 'usd': 0.0})
                 escalations.append({'from': tier, 'reason': ' '.join(broken)[:160]})

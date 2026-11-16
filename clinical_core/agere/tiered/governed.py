@@ -130,8 +130,13 @@ def flu_vaccines(q, s):
 CHECKS = (whole_stays, latest_for_period, spend_flag, spend_table, condition_source, appointment_status, flu_vaccines)
 
 
-def check(question, sql):
-    """-> the messages of every governed definition the SQL contradicts for this question ([] when none)."""
+def check(question, sql, params=None):
+    """-> the messages of every governed definition the SQL contradicts for this question ([] when none). Parameter values
+    are read as if written into the SQL (a recipe's :kind = 'inpatient' is a literal 'inpatient')."""
     if not enabled(): return []
-    q, s = ' ' + str(question) + ' ', ' '.join(str(sql).split())
+    text = str(sql)
+    for name, value in (params or {}).items():
+        if isinstance(value, dict): value = value.get('value')
+        if isinstance(value, str): text = re.sub(rf':{re.escape(name)}\b', "'" + value.replace("'", "''") + "'", text)
+    q, s = ' ' + str(question) + ' ', ' '.join(text.split())
     return [m for m in (c(q, s) for c in CHECKS) if m]
