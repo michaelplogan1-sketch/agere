@@ -447,12 +447,13 @@ def run(runs=3, workers=4):
         if not hasattr(local, 'b'): local.b = bottle_store.Bottles(scratch / 'bottles.sqlite3')
         return local.b
 
-    from . import catalogue
+    from . import catalogue, governed
 
     def one(job):
         item, arm, r = job
-        catalogue.ENABLED.set(arm == 'stack')   # the governed definitions are the stack's; the other arms run without them
-        ladder = arm in ('stack', 'stack_plain')
+        catalogue.ENABLED.set(arm in ('stack', 'stack_unchecked'))   # the governed definitions are the stack's; the other arms run without them
+        governed.ENABLED.set(arm in ('stack', 'stack_plain'))   # so are the definition checks; stack_unchecked measures them by their absence
+        ladder = arm in ('stack', 'stack_plain', 'stack_unchecked')
         try:
             o = router.answer(item['question'], tiers=router.ALL_TIERS if ladder else ('llm',), bottles=bottles() if ladder else None,
                               s1_ledger=str(scratch / 's1.sqlite3'))
@@ -461,6 +462,10 @@ def run(runs=3, workers=4):
             o = {'status': 'error', 'final_tier': None, 'rows': None, 'steps': [], 'seconds': 0.0}
         return {'id': item['id'], 'phrasing': item['phrasing'], 'domain': item['domain'], 'arm': arm, 'run': r, 'unanswerable': item['unanswerable'],
                 'kind': outcome_kind(item, o), 'tier': o.get('final_tier'), 'usd': sum(s.get('usd', 0.0) for s in o['steps']), 'seconds': o.get('seconds', 0.0),
+                # frontier calls and the tokens sent: cost that does not depend on the transport's caching
+                'frontier_calls': sum(1 for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
+                'frontier_tokens': sum(s.get('tokens', 0) for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
+                'checks_rejected': sum(1 for s in o['steps'] if 'Governed definition' in str(s.get('reason', ''))),
                 'rows': (o.get('rows') or [])[:3], 'question': item['question']}
 
     arms = tuple(os.environ.get('AGERE_PROOF_ARMS', 'stack,stack_plain,frontier').split(','))
@@ -476,7 +481,8 @@ def report(results, items, runs, wall, data):
              f"{len({i['id'] for i in items})} questions ({sum(1 for q in data['questions'] if q.get('unanswerable'))} cannot be answered from this warehouse), "
              f"{len(items)} phrasings, {runs} runs each; +1 right, 0 declined, -{PENALTY} wrong", '']
     summary = {}
-    names = {'stack': 'Agere stack (with the governed definitions)', 'stack_plain': 'Agere stack without the governed definitions',
+    names = {'stack': 'Agere stack (with the governed definitions and their code checks)', 'stack_unchecked': 'Agere stack with the governed definitions but without their code checks',
+             'stack_plain': 'Agere stack without the governed definitions',
              'frontier': "frontier model writing its own SQL from the schema (run through the stack's checks, no governed definitions)"}
     for arm, name in names.items():
         rs = [r for r in results if r['arm'] == arm]

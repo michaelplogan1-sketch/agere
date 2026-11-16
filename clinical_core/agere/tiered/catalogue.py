@@ -25,14 +25,17 @@ DEFINITIONS = (
     ('hospital stay', r'\bstays?\b|length of stay|\blos\b|admission|discharg',
      "A hospital stay is counted once: stay rows of one patient that repeat, overlap or begin on the day an earlier row ends "
      "are one stay, from the first admission to the last discharge; a row with no discharge date followed within 30 days by a "
-     "row admitted and discharged on one day is one stay ending that day. Use this merge whenever the question counts stays, "
-     "discharges, length of stay or readmissions. utilization_event rows of kind 'inpatient' are admission events, counted as "
-     "recorded, and are the answer only when the question asks about utilization events."),
+     "row admitted and discharged on one day is one stay ending that day. The stay_episode view holds exactly these stays, one "
+     "row each (patient_id, admit_date, discharge_date, los_days, is_readmission, readmitted_within_30_days): read it whenever "
+     "the question counts stays, admissions, discharges, length of stay or readmissions. utilization_event rows of kind "
+     "'inpatient' are admission events, counted as recorded, and are the answer only when the question asks about utilization events."),
     ('readmission', r'readmi',
      "A readmission is an inpatient stay (counted once) that begins 1 to 30 days after the discharge of an earlier inpatient "
      "stay. 'Readmissions in a year' are readmission stays that begin in that year. The 30-day readmission rate for a year is: "
      "stays discharged in that year, each counted once, that are followed by a readmission, divided by all stays discharged in "
-     "that year. The stay table's readmitted_30d flag counts duplicated rows and overstates the rate; do not use it."),
+     "that year. In stay_episode: readmissions in a year are rows with is_readmission = 1 admitted that year; the rate is "
+     "SUM(readmitted_within_30_days) / COUNT(*) over rows discharged that year. The stay table's readmitted_30d flag counts "
+     "duplicated rows and overstates the rate; do not use it."),
     ('lab and vital results', r'hba1c|a1c|hemoglobin|lab|result|ldl|creatinine|egfr|blood pressure|potassium|sodium|weight|bnp',
      "Lab and vital results are in measurement, one row per result, concept in lower snake case (hba1c, ldl, creatinine, "
      "egfr, systolic_bp, nt_probnp, weight). To count patients with a result, count or average results within a period, use "

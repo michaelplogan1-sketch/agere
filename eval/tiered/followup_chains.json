@@ -9,21 +9,35 @@
    "turns": [
     {
      "say": "How many inpatient admissions occurred in 2029?",
-     "reference_sql": "SELECT COUNT(*) FROM utilization_event WHERE kind='inpatient' AND substr(event_date,1,4)='2029'",
+     "reference_sql": "SELECT COUNT(*) FROM stay_episode WHERE substr(admit_date,1,4)='2029'",
      "reference_rows": [
+      [
+       444
+      ]
+     ],
+     "reference_sql_before": "SELECT COUNT(*) FROM utilization_event WHERE kind='inpatient' AND substr(event_date,1,4)='2029'",
+     "reference_rows_before": [
       [
        533
       ]
-     ]
+     ],
+     "changes": "2026-11-16: admissions follow the governed definition, enforced by code from this date: a hospital stay is counted once (repeated, overlapping and continuing stay records are one stay; stay_episode). The principle Mike approved for the readmission rate the same day. The earlier reference counted recorded admission events and is kept beside the new one."
     },
     {
      "say": "how about 2027",
-     "reference_sql": "SELECT COUNT(*) FROM utilization_event WHERE kind='inpatient' AND substr(event_date,1,4)='2027'",
+     "reference_sql": "SELECT COUNT(*) FROM stay_episode WHERE substr(admit_date,1,4)='2027'",
      "reference_rows": [
+      [
+       436
+      ]
+     ],
+     "reference_sql_before": "SELECT COUNT(*) FROM utilization_event WHERE kind='inpatient' AND substr(event_date,1,4)='2027'",
+     "reference_rows_before": [
       [
        502
       ]
-     ]
+     ],
+     "changes": "2026-11-16: admissions follow the governed definition, enforced by code from this date: a hospital stay is counted once (repeated, overlapping and continuing stay records are one stay; stay_episode). The principle Mike approved for the readmission rate the same day. The earlier reference counted recorded admission events and is kept beside the new one."
     },
     {
      "say": "and observation stays?",
@@ -611,8 +625,75 @@
    "turns": [
     {
      "say": "Show claims by payer for services in 2029",
-     "reference_sql": "SELECT payer, COUNT(*), SUM(billed_cents), SUM(allowed_cents), SUM(net_payer_paid_cents) FROM claim WHERE substr(service_date,1,4)='2029' GROUP BY 1",
+     "reference_sql": "SELECT payer_id, COUNT(*) FROM payer_claim WHERE counts_in_metrics = 1 AND substr(service_from,1,4)='2029' GROUP BY 1",
      "reference_rows": [
+      [
+       "WH-PAYER-0",
+       4674
+      ],
+      [
+       "WH-PAYER-1",
+       5384
+      ],
+      [
+       "WH-PAYER-2",
+       3283
+      ],
+      [
+       "WH-PAYER-C1",
+       4054
+      ],
+      [
+       "WH-PAYER-C2",
+       3802
+      ],
+      [
+       "WH-PAYER-C3",
+       3900
+      ],
+      [
+       "WH-PAYER-DSNP1",
+       1638
+      ],
+      [
+       "WH-PAYER-MA1",
+       2276
+      ],
+      [
+       "WH-PAYER-MA2",
+       2614
+      ],
+      [
+       "WH-PAYER-MA3",
+       2238
+      ],
+      [
+       "WH-PAYER-MCD1",
+       3208
+      ],
+      [
+       "WH-PAYER-MCD2",
+       2940
+      ],
+      [
+       "WH-PAYER-MSSP",
+       6167
+      ],
+      [
+       "WH-PAYER-SUP1",
+       586
+      ],
+      [
+       "WH-PAYER-SUP2",
+       802
+      ],
+      [
+       "WH-PAYER-X1",
+       1393
+      ]
+     ],
+     "reference_sql_before": "SELECT payer, COUNT(*), SUM(billed_cents), SUM(allowed_cents), SUM(net_payer_paid_cents) FROM claim WHERE substr(service_date,1,4)='2029' GROUP BY 1",
+     "reference_rows_before": [
       [
        "WH-HOSPITAL-0",
        8,
@@ -753,7 +834,8 @@
        45984605,
        33416471
       ]
-     ]
+     ],
+     "changes": "2026-11-16: claims by payer follow the governed claim count (payer_claim rows with counts_in_metrics = 1, by payer_id and service_from). The earlier reference read the claim table, whose payer field holds the billing hospital; it is kept beside the new one."
     },
     {
      "say": "just the denial rate",

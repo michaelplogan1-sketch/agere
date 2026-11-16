@@ -60,19 +60,19 @@ class Core(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             b=BS.Bottles(Path(d)/'b.sqlite3')
             recipe={'sql':"SELECT COUNT(*) AS n FROM utilization_event WHERE kind='inpatient' AND substr(event_date,1,4)=:year",
-                    'params':{'year':{'type':'year','value':'2029'}},'grain':[],'question_template':'How many admissions happened in {year}?'}
-            bid,why=b.add('How many admissions happened in 2029?',recipe,{'ok':True},{'tier':'llm'});self.assertIsNone(why)
-            self.assertIsNone(b.match('How many admissions happened in 2028?',statuses=('promoted',)))
-            out=router.answer('How many admissions happened in 2028?',tiers=('bottles',),bottles=b)
+                    'params':{'year':{'type':'year','value':'2029'}},'grain':[],'question_template':'How many inpatient utilization events happened in {year}?'}
+            bid,why=b.add('How many inpatient utilization events happened in 2029?',recipe,{'ok':True},{'tier':'llm'});self.assertIsNone(why)
+            self.assertIsNone(b.match('How many inpatient utilization events happened in 2028?',statuses=('promoted',)))
+            out=router.answer('How many inpatient utilization events happened in 2028?',tiers=('bottles',),bottles=b)
             self.assertEqual(out['status'],'unanswered')
             b.set_status(bid,'promoted','test')
-            out=router.answer('How many admissions happened in 2029?',tiers=('bottles',),bottles=b)
+            out=router.answer('How many inpatient utilization events happened in 2029?',tiers=('bottles',),bottles=b)
             self.assertEqual((out['final_tier'],out['rows']),('bottles',[[1]]))
-            self.assertIsNone(b.match('How many admissions happened in twenty29?'))
-            self.assertIsNone(b.match('How many admissions happened in 2029 at night?'))
-            bad={**recipe,'question_template':'How many admissions happened?'}
-            self.assertEqual(b.add('How many admissions happened in 2029?',bad,{},{})[0],None)
-            with mock.patch.object(store,'schema_version',return_value='t/2:other'):self.assertIsNone(b.match('How many admissions happened in 2029?'))
+            self.assertIsNone(b.match('How many inpatient utilization events happened in twenty29?'))
+            self.assertIsNone(b.match('How many inpatient utilization events happened in 2029 at night?'))
+            bad={**recipe,'question_template':'How many inpatient utilization events happened?'}
+            self.assertEqual(b.add('How many inpatient utilization events happened in 2029?',bad,{},{})[0],None)
+            with mock.patch.object(store,'schema_version',return_value='t/2:other'):self.assertIsNone(b.match('How many inpatient utilization events happened in 2029?'))
 
     def test_app_bridge_answers_in_the_app_shape_and_otherwise_steps_aside(self):
         from clinical_core.agere.tiered import app as A

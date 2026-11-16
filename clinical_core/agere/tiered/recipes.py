@@ -447,6 +447,18 @@ RECIPES = {
         'grain': ['year'],
         'patterns': [r'how many (?:inpatient )?(?:hospital )?stays were discharged (?:in|during) ' + YEAR + r'(?:,? counting each (?:hospital )?stay once)?',
                      r'what was the average length of stay (?:in days )?for (?:inpatient )?(?:hospital )?stays discharged (?:in|during) ' + YEAR + r'(?:,? counting each (?:hospital )?stay once)?']},
+    # Added 2026-11-16 after proof_v7: a plain count of readmissions or admissions had no recipe of its own, so a summary recipe
+    # or the inpatient-event count answered it. Both read stay_episode, the governed merge of stay rows.
+    'readmissions_in_year': {
+        'title': '30-day readmissions that began in one year: inpatient hospital stays (each stay counted once) admitted that year 1 to 30 days after an earlier inpatient discharge',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS readmissions FROM stay_episode WHERE is_readmission = 1 AND substr(admit_date, 1, 4) = :year",
+        'patterns': [r'how many (?:30[- ]day )?readmissions (?:were there|happened|began|occurred|did we have) (?:in|during) ' + YEAR + r'(?:,? counting each (?:hospital )?stay once)?']},
+    'stays_admitted_in_year': {
+        'title': 'Inpatient hospital stays admitted in one year, each stay counted once (rows that repeat, overlap or continue one stay are one stay)',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS stays_admitted FROM stay_episode WHERE substr(admit_date, 1, 4) = :year",
+        'patterns': [r'how many (?:inpatient |hospital )+(?:admissions|stays) (?:were there|happened|began|started|did we have) (?:in|during) ' + YEAR + r'(?:,? (?:each|counting each) (?:hospital )?stay (?:counted )?once)?']},
     'readmission_labs': {
         'title': "For one patient, lab and vital results by period around the admission on a given date: the stay before it, between the stays, and the readmission (count, lowest, highest, last date)",
         'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
@@ -783,13 +795,15 @@ def runnable(recipe_id):
 def match(question, db=None):
     """Deterministic pattern match: (recipe_id, params) or None. No model."""
     text = ' '.join(question.lower().strip().rstrip('?.').split())
+    from . import governed
     for recipe_id, recipe in RECIPES.items():
         if not runnable(recipe_id): continue
         for pattern in recipe['patterns']:
             m = re.fullmatch(pattern, text) or re.fullmatch(pattern, text + '?')
             if m:
                 params = normalize(recipe_id, m.groupdict(), db)
-                if params is not None: return recipe_id, params
+                # a wording match whose SQL contradicts a governed definition for this question gives way to the next recipe
+                if params is not None and not governed.check(question, recipe['sql'], params): return recipe_id, params
     return None
 
 
