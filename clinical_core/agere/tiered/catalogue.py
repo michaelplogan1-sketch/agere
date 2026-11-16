@@ -74,6 +74,21 @@ DEFINITIONS = (
      "Social-need screens are in social_need: need is one of food, transport, housing, utilities, cost_of_care, safety; a "
      "positive screen is positive = 1."),
     ('deaths', r'death|died|mortality', "Deaths are in death, one row per patient, dated by death_date."),
+    # Added 2026-11-16 for the hospital operations core.
+    ('ED timing', r'length of stay in the (?:ed|er|emergency)|(?:ed|er|emergency department) length of stay|boarding|board(?:ed)?\b|throughput|door[- ]to|\bwait|left without|\blwbs\b|timeliness|\becat\b|arrival|hours in the (?:ed|er|emergency)|time in the (?:ed|er|emergency)',
+     "ED times are in hospital_visit, one row per hospital visit: ed_minutes (arrival to departure) and boarding_minutes "
+     "(decision to admit to departure), only from minute-level times and only when 0 to 72 hours; other intervals are "
+     "implausible (implausible_times = 1) and excluded. For a patient admitted from the ED, departure is the inpatient admission "
+     "time. ed_outcome is discharged, observation or admitted. Report ED times as medians unless a mean is asked for. Count ED "
+     "visits by COALESCE(ed_arrival, start_date). The ED timeliness eCQM (ECAT) thresholds the data can evaluate are "
+     "ecat_boarding_over_4h and ecat_discharged_over_8h; time to a treatment space and leaving before evaluation are not "
+     "recorded, so questions about them cannot be answered from this warehouse."),
+    ('hospital outcomes', r'sepsis|septic|heart failure|\bhf\b|mortality|died in (?:the )?hospital|in[- ]hospital death|discharge(?:d|s)? before noon|discharge time',
+     "Sepsis and heart failure hospitalizations are hospital_visit rows with has_inpatient = 1 and is_sepsis = 1 (principal "
+     "diagnosis A40, A41 or R65.2) or is_heart_failure = 1 (I50), counted by discharge year (end_date). Death in hospital is "
+     "died_in_hospital = 1. Their length of stay and 30-day readmission come from the stay_episode row the visit falls in "
+     "(admit_date <= visit start_date <= discharge_date), not from the visit's own dates. Discharge time is hospital_visit."
+     "discharge_time; before noon means its hour is under 12."),
     # Added 2026-11-16 for the ACO job.
     ('ACO population', r'\baco\b|mssp|shared savings|accountable care|assigned beneficiar|attributed beneficiar',
      "The ACO (MSSP) population in a year is the members with a member_month row for payer_id 'WH-PAYER-MSSP' that year "

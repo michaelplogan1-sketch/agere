@@ -53,6 +53,24 @@ _READMIT_CTE = ("WITH " + _STAYS + "re AS (SELECT admit_date, discharge_date, or
 DATE = r'(?P<readmit_date>20\d{2}-\d{2}-\d{2})'
 # Each inpatient stay once (one row per patient and admission date, with its latest discharge date), discharged in the year, and
 # whether an inpatient admission followed 1 to 30 days after that discharge.
+def _COHORT_OUTCOMES(flag, label, words):
+    """Hospitalizations of one principal-diagnosis cohort discharged in a year: visits, patients, deaths in hospital, mortality,
+    mean length of stay, and 30-day readmissions by the merged-stay rule (the stay_episode the visit falls in)."""
+    return {
+        'title': f'Hospitalizations for {label} discharged in one year: inpatient visits, patients, deaths in hospital and the mortality rate, mean length of stay in days of the merged stay, and how many were followed by a readmission within 30 days (each stay counted once) and the rate',
+        'params': {'year': {'type': 'year'}},
+        'sql': f"WITH v AS (SELECT * FROM hospital_visit WHERE has_inpatient = 1 AND {flag} = 1 AND substr(end_date, 1, 4) = :year), "
+               "r AS (SELECT v.visit_group_id, MAX(e.readmitted_within_30_days) AS readmitted, MAX(julianday(e.discharge_date) - julianday(e.admit_date)) AS stay_days FROM v LEFT JOIN stay_episode e ON e.patient_id = v.patient_id "
+               "AND e.admit_date <= v.start_date AND COALESCE(e.discharge_date, '9999') >= v.start_date GROUP BY v.visit_group_id) "
+               "SELECT COUNT(*) AS hospitalizations, COUNT(DISTINCT v.patient_id) AS patients, SUM(v.died_in_hospital) AS died_in_hospital, "
+               "ROUND(1.0 * SUM(v.died_in_hospital) / COUNT(*), 4) AS mortality_rate, ROUND(AVG(r.stay_days), 2) AS mean_length_of_stay_days, "
+               "SUM(COALESCE(r.readmitted, 0)) AS readmitted_within_30_days, ROUND(1.0 * SUM(COALESCE(r.readmitted, 0)) / COUNT(*), 4) AS readmission_rate, :year AS year "
+               "FROM v JOIN r USING (visit_group_id)",
+        'grain': ['year'],
+        'patterns': [rf'how many (?:patients were |people were )?(?:hospitali[sz]ed|admitted) (?:for|with) (?:{words}) (?:in|during) ' + YEAR,
+                     rf'what (?:were|was) (?:the )?(?:outcomes?|mortality|readmission rate) (?:for|of) (?:{words}) (?:hospitali[sz]ations|admissions|patients) (?:in|for) ' + YEAR]}
+
+
 # The ACO (MSSP) population's member months in a year, and its payer's spend on claims that count in metrics.
 _ACO_MM = "WITH mm AS (SELECT patient_id, month, attribution_practice_id FROM member_month WHERE payer_id = 'WH-PAYER-MSSP' AND substr(month, 1, 4) = :year)"
 _ACO_PAID = "paid AS (SELECT SUM(paid_cents) AS cents FROM payer_claim WHERE payer_id = 'WH-PAYER-MSSP' AND counts_in_metrics = 1 AND substr(service_from, 1, 4) = :year) "
@@ -469,6 +487,67 @@ RECIPES = {
                "FROM payer_claim c WHERE c.payer_id = 'WH-PAYER-MSSP' AND c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = :year GROUP BY c.claim_type ORDER BY paid_dollars DESC",
         'grain': ['claim_type'],
         'patterns': [r'how (?:did|does) (?:aco|mssp) spend(?:ing)? (?:in|for) ' + YEAR + r' (?:split|break down) by claim type', r'what (?:was|is) (?:aco|mssp) spend(?:ing)? by claim type (?:in|for) ' + YEAR]},
+    # ---- hospital operations core (2026-11-16): ED throughput and boarding, the ED timeliness eCQM thresholds the data can
+    # evaluate, discharge timing, and sepsis and heart failure hospitalizations, all over the governed hospital_visit view.
+    'ed_length_of_stay': {
+        'title': 'Emergency department length of stay in one year (arrival to departure, by arrival year, or visit date when no arrival time), for patients discharged, admitted and placed in observation: ED visits, visits with usable minute-level times, the median and mean minutes, and visits whose times are implausible (excluded)',
+        'params': {'year': {'type': 'year'}},
+        'sql': "WITH v AS (SELECT * FROM hospital_visit WHERE has_ed = 1 AND substr(COALESCE(ed_arrival, start_date), 1, 4) = :year), "
+               "r AS (SELECT ed_outcome, ed_minutes, ROW_NUMBER() OVER (PARTITION BY ed_outcome ORDER BY ed_minutes) AS rn, COUNT(*) OVER (PARTITION BY ed_outcome) AS n FROM v WHERE ed_minutes IS NOT NULL), "
+               "med AS (SELECT ed_outcome, ROUND(AVG(ed_minutes), 1) AS median_minutes FROM r WHERE rn IN ((n + 1) / 2, (n + 2) / 2) GROUP BY 1) "
+               "SELECT v.ed_outcome, COUNT(*) AS ed_visits, SUM(v.ed_minutes IS NOT NULL) AS visits_with_times, med.median_minutes, ROUND(AVG(v.ed_minutes), 1) AS mean_minutes, "
+               "SUM(v.implausible_times) AS visits_with_implausible_times FROM v LEFT JOIN med USING (ed_outcome) GROUP BY v.ed_outcome ORDER BY ed_visits DESC",
+        'grain': ['ed_outcome'], 'nullable': ('median_minutes', 'mean_minutes'),
+        'patterns': [r'what (?:was|is) the (?:median |average )?(?:ed|emergency department|er) length of stay (?:in|for) ' + YEAR, r'how long did (?:patients|people) (?:stay|spend) in the (?:ed|emergency department|er) (?:in|during) ' + YEAR]},
+    'ed_boarding': {
+        'title': 'ED boarding in one year: patients admitted from the ED (by arrival year), those with a decision-to-admit time, the median and mean minutes from the decision to admit to leaving the ED, and how many boarded over 4 hours',
+        'params': {'year': {'type': 'year'}},
+        'sql': "WITH v AS (SELECT * FROM hospital_visit WHERE has_ed = 1 AND has_inpatient = 1 AND substr(COALESCE(ed_arrival, start_date), 1, 4) = :year), "
+               "r AS (SELECT boarding_minutes, ROW_NUMBER() OVER (ORDER BY boarding_minutes) AS rn, COUNT(*) OVER () AS n FROM v WHERE boarding_minutes IS NOT NULL) "
+               "SELECT COUNT(*) AS admitted_from_ed, SUM(boarding_minutes IS NOT NULL) AS with_decision_time, "
+               "(SELECT ROUND(AVG(boarding_minutes), 1) FROM r WHERE rn IN ((n + 1) / 2, (n + 2) / 2)) AS median_boarding_minutes, "
+               "ROUND(AVG(boarding_minutes), 1) AS mean_boarding_minutes, SUM(ecat_boarding_over_4h) AS boarded_over_4_hours, :year AS year FROM v",
+        'grain': ['year'], 'nullable': ('median_boarding_minutes', 'mean_boarding_minutes'),
+        'patterns': [r'what (?:was|is) (?:the )?(?:median |average )?(?:ed |emergency department )?boarding time (?:in|for) ' + YEAR, r'how (?:long|many hours) did (?:admitted )?patients board in the (?:ed|emergency department) (?:in|during) ' + YEAR]},
+    'ed_timeliness_thresholds': {
+        'title': 'The ED timeliness eCQM (Emergency Care Access and Timeliness) thresholds the data can evaluate, for ED visits arriving in one year: admitted patients evaluable for boarding and those boarding over 4 hours; discharged patients evaluable for length of stay and those staying over 8 hours. Time to a treatment space and leaving before evaluation are not recorded and are not computed',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS ed_visits, SUM(ecat_boarding_over_4h IS NOT NULL) AS admitted_evaluable_for_boarding, SUM(ecat_boarding_over_4h) AS boarded_over_4_hours, "
+               "SUM(ecat_discharged_over_8h IS NOT NULL) AS discharged_evaluable_for_length_of_stay, SUM(ecat_discharged_over_8h) AS discharged_stayed_over_8_hours, :year AS year "
+               "FROM hospital_visit WHERE has_ed = 1 AND substr(COALESCE(ed_arrival, start_date), 1, 4) = :year",
+        'grain': ['year'],
+        'patterns': [r'how did we do on the (?:ed|emergency) (?:timeliness|access and timeliness) (?:measure|ecqm)s? (?:in|for) ' + YEAR, r'how many ed visits failed the (?:ecat|ed timeliness) thresholds? (?:in|for) ' + YEAR]},
+    'ed_arrivals_by_hour': {
+        'title': 'ED arrivals by hour of the day in one year, from minute-level arrival times',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT CAST(substr(ed_arrival, 12, 2) AS INTEGER) AS arrival_hour, COUNT(*) AS arrivals FROM hospital_visit WHERE has_ed = 1 AND time_precision = 'minute' "
+               "AND substr(COALESCE(ed_arrival, start_date), 1, 4) = :year GROUP BY 1 ORDER BY 1",
+        'grain': ['arrival_hour'],
+        'patterns': [r'(?:what|which) (?:hours?|times? of (?:the )?day) (?:do|did) (?:patients|people) (?:arrive|come) (?:in|to) the (?:ed|emergency department|er) (?:in|during) ' + YEAR, r'(?:ed|emergency department) arrivals by hour (?:in|for) ' + YEAR]},
+    'discharges_before_noon': {
+        'title': 'Inpatient discharges before noon in one year: discharges with a recorded discharge time (by discharge year), how many left before 12:00, and the share',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS discharges_with_time, SUM(CAST(substr(discharge_time, 12, 2) AS INTEGER) < 12) AS before_noon, "
+               "ROUND(1.0 * SUM(CAST(substr(discharge_time, 12, 2) AS INTEGER) < 12) / COUNT(*), 4) AS share_before_noon, :year AS year "
+               "FROM hospital_visit WHERE has_inpatient = 1 AND discharge_time IS NOT NULL AND substr(discharge_time, 1, 4) = :year",
+        'grain': ['year'],
+        'patterns': [r'what (?:share|percent(?:age)?|fraction) of (?:inpatient )?discharges (?:happened|were|occurred) before noon (?:in|during) ' + YEAR, r'how many (?:inpatient )?discharges (?:were|happened) before noon (?:in|during) ' + YEAR]},
+    'ed_admission_rate': {
+        'title': 'ED visits arriving in one year and what happened next: discharged, placed in observation, admitted, and the share admitted',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS ed_visits, SUM(ed_outcome = 'discharged') AS discharged, SUM(ed_outcome = 'observation') AS observation, SUM(ed_outcome = 'admitted') AS admitted, "
+               "ROUND(1.0 * SUM(ed_outcome = 'admitted') / COUNT(*), 4) AS admission_rate, :year AS year FROM hospital_visit WHERE has_ed = 1 AND substr(COALESCE(ed_arrival, start_date), 1, 4) = :year",
+        'grain': ['year'],
+        'patterns': [r'what (?:was|is) the (?:ed|emergency department) admission rate (?:in|for) ' + YEAR, r'what share of (?:ed|emergency department) visits (?:were|ended in an) admi(?:tted|ssion) (?:in|during) ' + YEAR]},
+    'sepsis_hospitalizations': _COHORT_OUTCOMES('is_sepsis', 'sepsis (principal diagnosis A40, A41 or R65.2)', r'sepsis'),
+    'heart_failure_hospitalizations': _COHORT_OUTCOMES('is_heart_failure', 'heart failure (principal diagnosis I50)', r'heart failure|hf'),
+    'in_hospital_mortality': {
+        'title': 'In-hospital mortality in one year: inpatient hospital visits discharged that year, patients who died in hospital, and the rate',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS inpatient_visits, SUM(died_in_hospital) AS died_in_hospital, ROUND(1.0 * SUM(died_in_hospital) / COUNT(*), 4) AS mortality_rate, :year AS year "
+               "FROM hospital_visit WHERE has_inpatient = 1 AND substr(end_date, 1, 4) = :year",
+        'grain': ['year'],
+        'patterns': [r'what (?:was|is) (?:the |our )?in[- ]hospital mortality(?: rate)? (?:in|for) ' + YEAR, r'how many (?:inpatients|patients) died in (?:the )?hospital (?:in|during) ' + YEAR]},
     'attributed_panel_by_practice': {
         'title': "Each attributed practice's panel in one year: members, member months, payer paid per member per month, inpatient admissions and emergency visits per 1,000 member-years (claims and events in the months the member was attributed to that practice)",
         'params': {'year': {'type': 'year'}},

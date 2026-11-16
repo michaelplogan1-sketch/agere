@@ -1,0 +1,298 @@
+{
+ "version": "proof_v9",
+ "authored": "2026-11-16",
+ "authored_by": "Claude (build owner)",
+ "frozen": "Written and committed before any run, after the hospital operations recipes, hospital_visit view, definitions and checks were committed. Run once; not edited after it has been run. Its first result stands as reported.",
+ "purpose": "The hospital operations core: ED throughput and boarding, the ED timeliness thresholds the data supports, discharge timing, in-hospital mortality, sepsis and heart failure hospitalizations. Arms: Agere; a frontier model writing its own SQL over the same schema (hospital_visit and stay_episode included), without governed definitions or checks.",
+ "held_out": "Not used by the learning loop, the curriculum or as recipe examples. The stack is scored on a copy of its saved recipes with learning switched off.",
+ "reference": "Computed in clinical_core/agere/tiered/proof.py in Python from the raw visit_group rows, applying the governed timing rules independently of hospital_visit's SQL; stays from the independent Python stay merge.",
+ "phrasing": "The first phrasing is plain; the second states the rule.",
+ "scoring": "+1 right, 0 declined, -10 wrong; an unanswerable question that is answered counts as wrong. Two phrasings, two runs, two arms, all runs reported.",
+ "questions": [
+  {
+   "id": "E01",
+   "domain": "ED throughput",
+   "reference": "hv_ed_visits",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many ED visits did we have in 2028?",
+    "Count emergency department visits arriving in 2028, by arrival date or visit date when no arrival time."
+   ]
+  },
+  {
+   "id": "E02",
+   "domain": "ED throughput",
+   "reference": "hv_ed_median_discharged",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was the median ED length of stay for patients sent home in 2029?",
+    "Median minutes from ED arrival to departure for ED visits discharged without admission or observation in 2029, using minute-level times between 0 and 72 hours."
+   ]
+  },
+  {
+   "id": "E03",
+   "domain": "ED throughput",
+   "reference": "hv_ed_median_admitted",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was the median ED length of stay for admitted patients in 2028?",
+    "Median minutes from ED arrival to leaving the ED for patients admitted from the ED in 2028, departure being the inpatient admission time."
+   ]
+  },
+  {
+   "id": "E04",
+   "domain": "ED boarding",
+   "reference": "hv_boarding_mean",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was the average boarding time for admitted ED patients in 2029?",
+    "Mean minutes from decision to admit to leaving the ED for patients admitted from the ED in 2029, where both times are recorded."
+   ]
+  },
+  {
+   "id": "E05",
+   "domain": "ED boarding",
+   "reference": "hv_boarded_over_4h",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many admitted ED patients boarded more than 4 hours in 2028?",
+    "Count patients admitted from the ED in 2028 whose decision-to-admit to departure time exceeded 240 minutes."
+   ]
+  },
+  {
+   "id": "E06",
+   "domain": "ED timeliness",
+   "reference": "hv_discharged_over_8h",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many discharged ED patients were in the ED more than 8 hours in 2029?",
+    "Count ED visits in 2029 discharged without admission or observation whose arrival-to-departure time exceeded 480 minutes."
+   ]
+  },
+  {
+   "id": "E07",
+   "domain": "ED throughput",
+   "reference": "hv_ed_admission_rate",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What share of ED visits were admitted in 2028?",
+    "Admitted ED visits divided by all ED visits arriving in 2028."
+   ]
+  },
+  {
+   "id": "E08",
+   "domain": "ED throughput",
+   "reference": "hv_ed_admitted",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many patients were admitted from the ED in 2029?",
+    "Count ED visits arriving in 2029 that led to an inpatient admission."
+   ]
+  },
+  {
+   "id": "F01",
+   "domain": "inpatient flow",
+   "reference": "hv_before_noon_share",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What share of inpatient discharges happened before noon in 2029?",
+    "Of inpatient discharges in 2029 with a recorded discharge time, the fraction before 12:00."
+   ]
+  },
+  {
+   "id": "F02",
+   "domain": "inpatient flow",
+   "reference": "hv_before_noon_share",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What percent of discharges were before noon in 2028?",
+    "Fraction of 2028 inpatient discharges with a recorded discharge time that left before noon."
+   ]
+  },
+  {
+   "id": "M01",
+   "domain": "outcomes",
+   "reference": "hv_mortality_rate",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was our in-hospital mortality rate in 2029?",
+    "Inpatient visits discharged in 2029 that ended in death in hospital, divided by all inpatient visits discharged in 2029."
+   ]
+  },
+  {
+   "id": "M02",
+   "domain": "outcomes",
+   "reference": "hv_deaths_in_hospital",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many patients died in the hospital in 2028?",
+    "Count inpatient visits discharged in 2028 with a discharge disposition of expired."
+   ]
+  },
+  {
+   "id": "S01",
+   "domain": "sepsis",
+   "reference": "hv_sepsis_hospitalizations",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many sepsis hospitalizations did we have in 2028?",
+    "Count inpatient visits discharged in 2028 with a principal diagnosis of sepsis (A40, A41 or R65.2)."
+   ]
+  },
+  {
+   "id": "S02",
+   "domain": "sepsis",
+   "reference": "hv_sepsis_readmission_rate",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was the 30-day readmission rate for sepsis patients in 2029?",
+    "Of sepsis hospitalizations (principal diagnosis) discharged in 2029, the fraction whose stay, each stay counted once, was followed by an inpatient admission 1 to 30 days later."
+   ]
+  },
+  {
+   "id": "S03",
+   "domain": "sepsis",
+   "reference": "hv_sepsis_readmission_rate",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What share of 2028 sepsis admissions came back within 30 days?",
+    "Of sepsis hospitalizations by principal diagnosis discharged in 2028, the fraction readmitted within 30 days, stays counted once."
+   ]
+  },
+  {
+   "id": "H01",
+   "domain": "heart failure",
+   "reference": "hv_hf_hospitalizations",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many heart failure admissions did we have in 2029?",
+    "Count inpatient visits discharged in 2029 with a principal diagnosis of heart failure (I50)."
+   ]
+  },
+  {
+   "id": "H02",
+   "domain": "heart failure",
+   "reference": "hv_hf_readmissions",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many heart failure patients were readmitted within 30 days in 2028?",
+    "Count heart failure hospitalizations (principal diagnosis) discharged in 2028 whose stay was followed by an inpatient admission 1 to 30 days later, stays counted once."
+   ]
+  },
+  {
+   "id": "H03",
+   "domain": "heart failure",
+   "reference": "hv_hf_mortality_rate",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was in-hospital mortality for heart failure patients in 2029?",
+    "Of heart failure hospitalizations by principal diagnosis discharged in 2029, the fraction that ended in death in hospital."
+   ]
+  },
+  {
+   "id": "H04",
+   "domain": "heart failure",
+   "reference": "hv_hf_los",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was the average length of stay for heart failure admissions in 2028?",
+    "Mean days from admission to discharge of the merged stay behind each heart failure hospitalization (principal diagnosis) discharged in 2028."
+   ]
+  },
+  {
+   "id": "H05",
+   "domain": "heart failure",
+   "reference": "hv_hf_hospitalizations",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many times were patients hospitalized for heart failure in 2028?",
+    "Count 2028 inpatient discharges with heart failure as the principal diagnosis."
+   ]
+  },
+  {
+   "id": "X01",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our median door-to-provider time in the ED in 2029?",
+    "Median minutes from ED arrival to first provider contact in 2029."
+   ]
+  },
+  {
+   "id": "X02",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our left-without-being-seen rate in 2029?",
+    "Share of ED visits in 2029 that left before being evaluated by a clinician."
+   ]
+  },
+  {
+   "id": "X03",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "How many ED patients waited more than an hour for a treatment room in 2029?",
+    "Count 2029 ED visits with more than 60 minutes from arrival to placement in a treatment space."
+   ]
+  },
+  {
+   "id": "X04",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our average OR turnover time in 2029?",
+    "Mean minutes from one patient leaving the operating room to the next entering it in 2029."
+   ]
+  },
+  {
+   "id": "X05",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What were our nursing hours per patient day in 2029?",
+    "Productive direct-care nursing hours divided by patient days for 2029."
+   ]
+  }
+ ]
+}
