@@ -155,20 +155,35 @@
    "id": "G07",
    "cohort": "B",
    "say": "how many metformin fills did they have in 2028?",
-   "reference_sql": "SELECT COUNT(*), COUNT(DISTINCT patient_id) FROM fill WHERE drug_class='metformin' AND substr(fill_date,1,4)='2028' AND patient_id IN (SELECT DISTINCT patient_id FROM fill WHERE drug_class='statin' AND substr(fill_date,1,4)='2029')",
+   "reference_sql": "SELECT COUNT(*) FROM fill WHERE drug_class='metformin' AND substr(fill_date,1,4)='2028' AND patient_id IN (SELECT DISTINCT patient_id FROM fill WHERE drug_class='statin' AND substr(fill_date,1,4)='2029')",
    "reference_rows": [
+    [
+     691
+    ]
+   ],
+   "reference_sql_before": "SELECT COUNT(*), COUNT(DISTINCT patient_id) FROM fill WHERE drug_class='metformin' AND substr(fill_date,1,4)='2028' AND patient_id IN (SELECT DISTINCT patient_id FROM fill WHERE drug_class='statin' AND substr(fill_date,1,4)='2029')",
+   "reference_rows_before": [
     [
      691,
      107
     ]
-   ]
+   ],
+   "changes": "2026-11-16: the question asks only how many fills; the patient count (107) was dropped from the reference after a run answered 691 fills without it and was marked wrong. Fill count unchanged."
   },
   {
    "id": "G08",
    "cohort": "C",
    "say": "what was the 30-day readmission rate for these patients in 2029?",
-   "reference_sql": "SELECT COUNT(*), SUM(readmitted_30d), ROUND(1.0*SUM(readmitted_30d)/COUNT(*),4) FROM stay WHERE type='inpatient' AND discharge_known=1 AND substr(discharge_date,1,4)='2029' AND patient_id IN (SELECT DISTINCT patient_id FROM stay WHERE type='inpatient' AND substr(admit_date,1,4)='2029')",
+   "reference_sql": "(each stay once) recipes.RECIPES['readmission_rate']['sql'] with the year as :year",
    "reference_rows": [
+    [
+     442,
+     72,
+     0.1629
+    ]
+   ],
+   "reference_sql_before": "SELECT COUNT(*), SUM(readmitted_30d), ROUND(1.0*SUM(readmitted_30d)/COUNT(*),4) FROM stay WHERE type='inpatient' AND discharge_known=1 AND substr(discharge_date,1,4)='2029' AND patient_id IN (SELECT DISTINCT patient_id FROM stay WHERE type='inpatient' AND substr(admit_date,1,4)='2029')",
+   "reference_rows_before": [
     [
      504,
      106,
@@ -282,6 +297,17 @@
    "cohort": "B",
    "say": "which of them should we call first?",
    "decline": true
+  }
+ ],
+ "changes": [
+  {
+   "at": "2026-11-16",
+   "by": "Mike (product owner) approved; Claude (build owner) applied",
+   "change": "The 30-day readmission rate reference now counts each hospital stay once (repeated, overlapping and continuing stay rows are one stay) and a readmission as an inpatient stay beginning 1 to 30 days after discharge. The earlier reference summed the stay table's readmitted_30d flag, which counts a stay recorded twice as a readmission after zero days.",
+   "reference_sql": "recipes.RECIPES['readmission_rate']['sql'] with the year as :year",
+   "items": [
+    "G08 (the rate within the cohort of patients with an inpatient stay admitted in 2029)"
+   ]
   }
  ]
 }
