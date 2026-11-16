@@ -356,7 +356,7 @@ def _climb(stack, question, cohort, takeover_ok, near):
                               f'Deterministic checks passed: {checks}. These check structure, period and totals, not clinical meaning.',
                               *(['This recipe was written by the frontier model for this question and is not yet confirmed against a reference answer.']
                                 if tier == 'llm' else [])]}
-    sql = store.portable(recipe.get('sql', ''), cohort)  # saved with the answer, so it must run on the semantic layer as it is
+    sql = store.portable(recipe.get('sql', ''), cohort, recipe.get('params'))  # saved with the answer, so it must run on the semantic layer as it is
     # Shown by the existing answer view with no view change: facts as key findings, grounding as evidence used,
     # table_binding as the computation.
     models_used = ', '.join(dict.fromkeys(str(s['model']) for s in outcome['steps'] if s.get('model'))) or 'none'

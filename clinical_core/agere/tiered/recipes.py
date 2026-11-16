@@ -53,6 +53,27 @@ _READMIT_CTE = ("WITH " + _STAYS + "re AS (SELECT admit_date, discharge_date, or
 DATE = r'(?P<readmit_date>20\d{2}-\d{2}-\d{2})'
 # Each inpatient stay once (one row per patient and admission date, with its latest discharge date), discharged in the year, and
 # whether an inpatient admission followed 1 to 30 days after that discharge.
+def _COHORT_OUTCOMES(flag, label, words):
+    """Hospitalizations of one principal-diagnosis cohort discharged in a year: visits, patients, deaths in hospital, mortality,
+    mean length of stay, and 30-day readmissions by the merged-stay rule (the stay_episode the visit falls in)."""
+    return {
+        'title': f'Hospitalizations for {label} discharged in one year: inpatient visits, patients, deaths in hospital and the mortality rate, mean length of stay in days of the merged stay, and how many were followed by a readmission within 30 days (each stay counted once) and the rate',
+        'params': {'year': {'type': 'year'}},
+        'sql': f"WITH v AS (SELECT * FROM hospital_visit WHERE has_inpatient = 1 AND {flag} = 1 AND substr(end_date, 1, 4) = :year), "
+               "r AS (SELECT v.visit_group_id, MAX(e.readmitted_within_30_days) AS readmitted, MAX(julianday(e.discharge_date) - julianday(e.admit_date)) AS stay_days FROM v LEFT JOIN stay_episode e ON e.patient_id = v.patient_id "
+               "AND e.admit_date <= v.start_date AND COALESCE(e.discharge_date, '9999') >= v.start_date GROUP BY v.visit_group_id) "
+               "SELECT COUNT(*) AS hospitalizations, COUNT(DISTINCT v.patient_id) AS patients, SUM(v.died_in_hospital) AS died_in_hospital, "
+               "ROUND(1.0 * SUM(v.died_in_hospital) / COUNT(*), 4) AS mortality_rate, ROUND(AVG(r.stay_days), 2) AS mean_length_of_stay_days, "
+               "SUM(COALESCE(r.readmitted, 0)) AS readmitted_within_30_days, ROUND(1.0 * SUM(COALESCE(r.readmitted, 0)) / COUNT(*), 4) AS readmission_rate, :year AS year "
+               "FROM v JOIN r USING (visit_group_id)",
+        'grain': ['year'],
+        'patterns': [rf'how many (?:patients were |people were )?(?:hospitali[sz]ed|admitted) (?:for|with) (?:{words}) (?:in|during) ' + YEAR,
+                     rf'what (?:were|was) (?:the )?(?:outcomes?|mortality|readmission rate) (?:for|of) (?:{words}) (?:hospitali[sz]ations|admissions|patients) (?:in|for) ' + YEAR]}
+
+
+# The ACO (MSSP) population's member months in a year, and its payer's spend on claims that count in metrics.
+_ACO_MM = "WITH mm AS (SELECT patient_id, month, attribution_practice_id FROM member_month WHERE payer_id = 'WH-PAYER-MSSP' AND substr(month, 1, 4) = :year)"
+_ACO_PAID = "paid AS (SELECT SUM(paid_cents) AS cents FROM payer_claim WHERE payer_id = 'WH-PAYER-MSSP' AND counts_in_metrics = 1 AND substr(service_from, 1, 4) = :year) "
 _STAY_ONCE = ("WITH " + _STAYS + "s AS (SELECT patient_id, admit_date, MAX(discharge_date) AS discharge_date FROM st WHERE type = 'inpatient' AND discharge_date IS NOT NULL GROUP BY patient_id, admit_date), "
               "d AS (SELECT s.patient_id, s.admit_date, s.discharge_date, EXISTS (SELECT 1 FROM st b WHERE b.patient_id = s.patient_id AND b.type = 'inpatient' AND b.admit_date > s.admit_date "
               "AND julianday(b.admit_date) - julianday(s.discharge_date) BETWEEN 1 AND 30) AS readmitted FROM s WHERE substr(s.discharge_date, 1, 4) = :year) ")
@@ -392,6 +413,141 @@ RECIPES = {
                "ROUND(COALESCE(paid.paid_cents, 0) / 100.0 / mm.member_months, 2) AS paid_pmpm_dollars, :year AS year FROM mm LEFT JOIN paid ON paid.line_of_business = mm.line_of_business ORDER BY mm.member_months DESC",
         'grain': ['line_of_business'],
         'patterns': [r'what (?:was|is) the (?:cost|spend|paid amount) per member per month (?:in|for) ' + YEAR + r'(?: by line of business)?', r'what (?:was|is) the pmpm (?:in|for) ' + YEAR + r'(?: by line of business)?']},
+    # ---- the ACO job (2026-11-16): the MSSP population (payer WH-PAYER-MSSP), its spend against the contract benchmark,
+    # shared savings, CMS-HCC V28 risk scores and the members driving spend. Contract terms come from aco_contract
+    # (config/agere/contracts; the demo terms are authored), risk scores from risk_score / patient_hcc (aco.py).
+    'aco_population': {
+        'title': 'The ACO (MSSP) population in one year: members with a member month for payer WH-PAYER-MSSP, their member months, and the practices they are attributed to',
+        'params': {'year': {'type': 'year'}},
+        'sql': _ACO_MM + "SELECT COUNT(DISTINCT patient_id) AS members, COUNT(*) AS member_months, COUNT(DISTINCT attribution_practice_id) AS attributed_practices, :year AS year FROM mm",
+        'grain': ['year'],
+        'patterns': [r'how many (?:members|beneficiaries|patients) (?:were |are )?(?:in|assigned to|attributed to) (?:our |the )?(?:aco|mssp)(?: population)? (?:in|for|during) ' + YEAR,
+                     r'how many (?:aco|mssp) (?:members|beneficiaries) (?:were there |did we have )?(?:in|for|during) ' + YEAR]},
+    'aco_pmpm': {
+        'title': 'ACO (MSSP) spending per member per month in one year against the contract benchmark: member months, paid dollars on the ACO payer\'s claims that count in metrics, actual PMPM, benchmark PMPM and the difference',
+        'params': {'year': {'type': 'year'}},
+        'sql': _ACO_MM + ", " + _ACO_PAID + "SELECT (SELECT COUNT(*) FROM mm) AS member_months, ROUND((SELECT cents FROM paid) / 100.0, 2) AS paid_dollars, "
+               "ROUND((SELECT cents FROM paid) / 100.0 / (SELECT COUNT(*) FROM mm), 2) AS actual_pmpm_dollars, k.benchmark_pmpm_dollars, "
+               "ROUND(k.benchmark_pmpm_dollars - (SELECT cents FROM paid) / 100.0 / (SELECT COUNT(*) FROM mm), 2) AS below_benchmark_pmpm_dollars, :year AS year "
+               "FROM (SELECT 1) LEFT JOIN aco_contract k ON k.payer_id = 'WH-PAYER-MSSP' AND k.year = :year",
+        'grain': ['year'], 'nullable': ('benchmark_pmpm_dollars', 'below_benchmark_pmpm_dollars'),
+        'patterns': [r'what (?:was|is) (?:the |our )?(?:aco|mssp) (?:pmpm|cost per member per month|spend(?:ing)? per member per month) (?:in|for) ' + YEAR + r'(?: (?:against|versus|vs\.?|compared (?:to|with)) (?:the )?benchmark)?',
+                     r'what (?:was|is) (?:the |our )?(?:pmpm|cost per member per month) for (?:our |the )?(?:aco|mssp) (?:population )?(?:in|for) ' + YEAR]},
+    'aco_shared_savings': {
+        'title': 'ACO (MSSP) shared savings for one performance year from the contract terms on file: member months, actual and benchmark PMPM, total savings, savings rate, whether the minimum savings rate and quality standard are met, the sharing rate, the shared savings earned, and whether the terms are authored for a demonstration',
+        'params': {'year': {'type': 'year'}},
+        'sql': _ACO_MM + ", " + _ACO_PAID + ", s AS (SELECT k.*, (SELECT COUNT(*) FROM mm) AS member_months, (SELECT cents FROM paid) / 100.0 AS paid_dollars "
+               "FROM aco_contract k WHERE k.payer_id = 'WH-PAYER-MSSP' AND k.year = :year), "
+               "v AS (SELECT *, paid_dollars / member_months AS actual_pmpm, (benchmark_pmpm_dollars * member_months - paid_dollars) AS savings FROM s) "
+               "SELECT member_months, ROUND(actual_pmpm, 2) AS actual_pmpm_dollars, benchmark_pmpm_dollars, ROUND(savings, 2) AS total_savings_dollars, "
+               "ROUND(savings / (benchmark_pmpm_dollars * member_months), 4) AS savings_rate, minimum_savings_rate, "
+               "CASE WHEN savings / (benchmark_pmpm_dollars * member_months) >= minimum_savings_rate THEN 1 ELSE 0 END AS meets_minimum_savings_rate, "
+               "quality_standard_met, sharing_rate, "
+               "ROUND(CASE WHEN savings / (benchmark_pmpm_dollars * member_months) >= minimum_savings_rate AND quality_standard_met = 1 THEN savings * sharing_rate ELSE 0 END, 2) AS shared_savings_dollars, "
+               "authored_synthetic AS terms_are_demonstration_assumptions, :year AS year FROM v",
+        'grain': ['year'],
+        'empty': 'No contract terms are on file for that year: give the benchmark PMPM, minimum savings rate and sharing rate',
+        'patterns': [r'what (?:were|are|was|is) (?:our |the )?(?:projected |expected )?(?:aco |mssp )?shared savings (?:in|for) ' + YEAR,
+                     r'(?:how much|what) (?:did|will|would) (?:we|the aco) (?:earn|get|receive|make) in shared savings (?:in|for) ' + YEAR]},
+    'aco_risk_score': {
+        'title': 'CMS-HCC V28 risk scores of the ACO (MSSP) population for one diagnosis year: members scored, average payment risk score, average raw V28 score, average demographic-only score, and members with at least one payment HCC',
+        'params': {'year': {'type': 'year'}},
+        'sql': _ACO_MM + "SELECT COUNT(*) AS members_scored, ROUND(AVG(r.payment_raf), 3) AS average_payment_risk_score, ROUND(AVG(r.v28_raw), 3) AS average_v28_raw_score, "
+               "ROUND(AVG(r.demographic_raf), 3) AS average_demographic_score, SUM(r.hcc_count > 0) AS members_with_an_hcc, :year AS year "
+               "FROM risk_score r WHERE r.year = :year AND r.patient_id IN (SELECT patient_id FROM mm)",
+        'grain': ['year'],
+        'patterns': [r'what (?:was|is) the average (?:cms[- ]hcc |v28 |hcc )*(?:risk score|raf|risk adjustment factor) (?:of|for) (?:our |the )?(?:aco|mssp) (?:members|population|beneficiaries) (?:in|for) ' + YEAR]},
+    'aco_top_hccs': {
+        'title': 'The most common CMS-HCC V28 payment HCCs among ACO (MSSP) members in one diagnosis year: HCC, label and members',
+        'params': {'year': {'type': 'year'}, 'n': {'type': 'int', 'min': 1, 'max': 115}},
+        'sql': _ACO_MM + "SELECT h.hcc, h.label, COUNT(DISTINCT h.patient_id) AS members FROM patient_hcc h WHERE h.year = :year AND h.patient_id IN (SELECT patient_id FROM mm) "
+               "GROUP BY h.hcc, h.label ORDER BY members DESC, h.hcc LIMIT :n",
+        'grain': ['hcc'],
+        'patterns': [r'what (?:were|are) the (?:top |most common )?(?P<n>\d{1,3}) (?:most common )?(?:hccs|hcc categories|risk conditions) (?:among|in|for) (?:our |the )?(?:aco|mssp) (?:members|population) (?:in|for) ' + YEAR]},
+    'aco_spend_drivers': {
+        'title': 'The ACO (MSSP) members driving spend in one year: paid dollars on the ACO payer\'s claims that count in metrics, their attributed practice, payment risk score, payment HCCs, hospital stays (each counted once), readmissions and emergency visits that year, highest paid first',
+        'params': {'year': {'type': 'year'}, 'n': {'type': 'int', 'min': 1, 'max': 500, 'default': 25}},
+        'sql': _ACO_MM + ", paid AS (SELECT patient_id, SUM(paid_cents) AS cents FROM payer_claim WHERE payer_id = 'WH-PAYER-MSSP' AND counts_in_metrics = 1 "
+               "AND substr(service_from, 1, 4) = :year AND patient_id IN (SELECT patient_id FROM mm) GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT :n) "
+               "SELECT p.patient_id, ROUND(p.cents / 100.0, 2) AS paid_dollars, "
+               "(SELECT x.attribution_practice_id FROM mm x WHERE x.patient_id = p.patient_id ORDER BY x.month DESC LIMIT 1) AS attributed_practice, "
+               "(SELECT r.payment_raf FROM risk_score r WHERE r.patient_id = p.patient_id AND r.year = :year) AS payment_risk_score, "
+               "(SELECT r.hcc_count FROM risk_score r WHERE r.patient_id = p.patient_id AND r.year = :year) AS payment_hccs, "
+               "(SELECT COUNT(*) FROM stay_episode e WHERE e.patient_id = p.patient_id AND substr(e.admit_date, 1, 4) = :year) AS hospital_stays, "
+               "(SELECT COUNT(*) FROM stay_episode e WHERE e.patient_id = p.patient_id AND e.is_readmission = 1 AND substr(e.admit_date, 1, 4) = :year) AS readmissions, "
+               "(SELECT COUNT(*) FROM utilization_event u WHERE u.patient_id = p.patient_id AND u.kind = 'ed_visit' AND substr(u.event_date, 1, 4) = :year) AS ed_visits "
+               "FROM paid p ORDER BY p.cents DESC, p.patient_id",
+        'grain': ['patient_id'], 'nullable': ('payment_risk_score', 'payment_hccs'),
+        'patterns': [r'which (?:aco|mssp) members (?:drove|drive|account(?:ed)? for) the most (?:spend(?:ing)?|cost) (?:in|for) ' + YEAR,
+                     r'(?:who|which) (?:were|are) the (?:top )?(?P<n>\d{1,3}) (?:highest[- ]cost|most expensive) (?:aco|mssp) members (?:in|for) ' + YEAR]},
+    'aco_spend_by_claim_type': {
+        'title': 'ACO (MSSP) spending by claim type in one year: claims that count in metrics, paid dollars and paid per member per month, for institutional and professional claims',
+        'params': {'year': {'type': 'year'}},
+        'sql': _ACO_MM + "SELECT c.claim_type, COUNT(*) AS claims, ROUND(SUM(c.paid_cents) / 100.0, 2) AS paid_dollars, ROUND(SUM(c.paid_cents) / 100.0 / (SELECT COUNT(*) FROM mm), 2) AS paid_pmpm_dollars "
+               "FROM payer_claim c WHERE c.payer_id = 'WH-PAYER-MSSP' AND c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = :year GROUP BY c.claim_type ORDER BY paid_dollars DESC",
+        'grain': ['claim_type'],
+        'patterns': [r'how (?:did|does) (?:aco|mssp) spend(?:ing)? (?:in|for) ' + YEAR + r' (?:split|break down) by claim type', r'what (?:was|is) (?:aco|mssp) spend(?:ing)? by claim type (?:in|for) ' + YEAR]},
+    # ---- hospital operations core (2026-11-16): ED throughput and boarding, the ED timeliness eCQM thresholds the data can
+    # evaluate, discharge timing, and sepsis and heart failure hospitalizations, all over the governed hospital_visit view.
+    'ed_length_of_stay': {
+        'title': 'Emergency department length of stay in one year (arrival to departure, by arrival year, or visit date when no arrival time), for patients discharged, admitted and placed in observation: ED visits, visits with usable minute-level times, the median and mean minutes, and visits whose times are implausible (excluded)',
+        'params': {'year': {'type': 'year'}},
+        'sql': "WITH v AS (SELECT * FROM hospital_visit WHERE has_ed = 1 AND substr(COALESCE(ed_arrival, start_date), 1, 4) = :year), "
+               "r AS (SELECT ed_outcome, ed_minutes, ROW_NUMBER() OVER (PARTITION BY ed_outcome ORDER BY ed_minutes) AS rn, COUNT(*) OVER (PARTITION BY ed_outcome) AS n FROM v WHERE ed_minutes IS NOT NULL), "
+               "med AS (SELECT ed_outcome, ROUND(AVG(ed_minutes), 1) AS median_minutes FROM r WHERE rn IN ((n + 1) / 2, (n + 2) / 2) GROUP BY 1) "
+               "SELECT v.ed_outcome, COUNT(*) AS ed_visits, SUM(v.ed_minutes IS NOT NULL) AS visits_with_times, med.median_minutes, ROUND(AVG(v.ed_minutes), 1) AS mean_minutes, "
+               "SUM(v.implausible_times) AS visits_with_implausible_times FROM v LEFT JOIN med USING (ed_outcome) GROUP BY v.ed_outcome ORDER BY ed_visits DESC",
+        'grain': ['ed_outcome'], 'nullable': ('median_minutes', 'mean_minutes'),
+        'patterns': [r'what (?:was|is) the (?:median |average )?(?:ed|emergency department|er) length of stay (?:in|for) ' + YEAR, r'how long did (?:patients|people) (?:stay|spend) in the (?:ed|emergency department|er) (?:in|during) ' + YEAR]},
+    'ed_boarding': {
+        'title': 'ED boarding in one year: patients admitted from the ED (by arrival year), those with a decision-to-admit time, the median and mean minutes from the decision to admit to leaving the ED, and how many boarded over 4 hours',
+        'params': {'year': {'type': 'year'}},
+        'sql': "WITH v AS (SELECT * FROM hospital_visit WHERE has_ed = 1 AND has_inpatient = 1 AND substr(COALESCE(ed_arrival, start_date), 1, 4) = :year), "
+               "r AS (SELECT boarding_minutes, ROW_NUMBER() OVER (ORDER BY boarding_minutes) AS rn, COUNT(*) OVER () AS n FROM v WHERE boarding_minutes IS NOT NULL) "
+               "SELECT COUNT(*) AS admitted_from_ed, SUM(boarding_minutes IS NOT NULL) AS with_decision_time, "
+               "(SELECT ROUND(AVG(boarding_minutes), 1) FROM r WHERE rn IN ((n + 1) / 2, (n + 2) / 2)) AS median_boarding_minutes, "
+               "ROUND(AVG(boarding_minutes), 1) AS mean_boarding_minutes, SUM(ecat_boarding_over_4h) AS boarded_over_4_hours, :year AS year FROM v",
+        'grain': ['year'], 'nullable': ('median_boarding_minutes', 'mean_boarding_minutes'),
+        'patterns': [r'what (?:was|is) (?:the )?(?:median |average )?(?:ed |emergency department )?boarding time (?:in|for) ' + YEAR, r'how (?:long|many hours) did (?:admitted )?patients board in the (?:ed|emergency department) (?:in|during) ' + YEAR]},
+    'ed_timeliness_thresholds': {
+        'title': 'The ED timeliness eCQM (Emergency Care Access and Timeliness) thresholds the data can evaluate, for ED visits arriving in one year: admitted patients evaluable for boarding and those boarding over 4 hours; discharged patients evaluable for length of stay and those staying over 8 hours. Time to a treatment space and leaving before evaluation are not recorded and are not computed',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS ed_visits, SUM(ecat_boarding_over_4h IS NOT NULL) AS admitted_evaluable_for_boarding, SUM(ecat_boarding_over_4h) AS boarded_over_4_hours, "
+               "SUM(ecat_discharged_over_8h IS NOT NULL) AS discharged_evaluable_for_length_of_stay, SUM(ecat_discharged_over_8h) AS discharged_stayed_over_8_hours, :year AS year "
+               "FROM hospital_visit WHERE has_ed = 1 AND substr(COALESCE(ed_arrival, start_date), 1, 4) = :year",
+        'grain': ['year'],
+        'patterns': [r'how did we do on the (?:ed|emergency) (?:timeliness|access and timeliness) (?:measure|ecqm)s? (?:in|for) ' + YEAR, r'how many ed visits failed the (?:ecat|ed timeliness) thresholds? (?:in|for) ' + YEAR]},
+    'ed_arrivals_by_hour': {
+        'title': 'ED arrivals by hour of the day in one year, from minute-level arrival times',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT CAST(substr(ed_arrival, 12, 2) AS INTEGER) AS arrival_hour, COUNT(*) AS arrivals FROM hospital_visit WHERE has_ed = 1 AND time_precision = 'minute' "
+               "AND substr(COALESCE(ed_arrival, start_date), 1, 4) = :year GROUP BY 1 ORDER BY 1",
+        'grain': ['arrival_hour'],
+        'patterns': [r'(?:what|which) (?:hours?|times? of (?:the )?day) (?:do|did) (?:patients|people) (?:arrive|come) (?:in|to) the (?:ed|emergency department|er) (?:in|during) ' + YEAR, r'(?:ed|emergency department) arrivals by hour (?:in|for) ' + YEAR]},
+    'discharges_before_noon': {
+        'title': 'Inpatient discharges before noon in one year: discharges with a recorded discharge time (by discharge year), how many left before 12:00, and the share',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS discharges_with_time, SUM(CAST(substr(discharge_time, 12, 2) AS INTEGER) < 12) AS before_noon, "
+               "ROUND(1.0 * SUM(CAST(substr(discharge_time, 12, 2) AS INTEGER) < 12) / COUNT(*), 4) AS share_before_noon, :year AS year "
+               "FROM hospital_visit WHERE has_inpatient = 1 AND discharge_time IS NOT NULL AND substr(discharge_time, 1, 4) = :year",
+        'grain': ['year'],
+        'patterns': [r'what (?:share|percent(?:age)?|fraction) of (?:inpatient )?discharges (?:happened|were|occurred) before noon (?:in|during) ' + YEAR, r'how many (?:inpatient )?discharges (?:were|happened) before noon (?:in|during) ' + YEAR]},
+    'ed_admission_rate': {
+        'title': 'ED visits arriving in one year and what happened next: discharged, placed in observation, admitted, and the share admitted',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS ed_visits, SUM(ed_outcome = 'discharged') AS discharged, SUM(ed_outcome = 'observation') AS observation, SUM(ed_outcome = 'admitted') AS admitted, "
+               "ROUND(1.0 * SUM(ed_outcome = 'admitted') / COUNT(*), 4) AS admission_rate, :year AS year FROM hospital_visit WHERE has_ed = 1 AND substr(COALESCE(ed_arrival, start_date), 1, 4) = :year",
+        'grain': ['year'],
+        'patterns': [r'what (?:was|is) the (?:ed|emergency department) admission rate (?:in|for) ' + YEAR, r'what share of (?:ed|emergency department) visits (?:were|ended in an) admi(?:tted|ssion) (?:in|during) ' + YEAR]},
+    'sepsis_hospitalizations': _COHORT_OUTCOMES('is_sepsis', 'sepsis (principal diagnosis A40, A41 or R65.2)', r'sepsis'),
+    'heart_failure_hospitalizations': _COHORT_OUTCOMES('is_heart_failure', 'heart failure (principal diagnosis I50)', r'heart failure|hf'),
+    'in_hospital_mortality': {
+        'title': 'In-hospital mortality in one year: inpatient hospital visits discharged that year, patients who died in hospital, and the rate',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS inpatient_visits, SUM(died_in_hospital) AS died_in_hospital, ROUND(1.0 * SUM(died_in_hospital) / COUNT(*), 4) AS mortality_rate, :year AS year "
+               "FROM hospital_visit WHERE has_inpatient = 1 AND substr(end_date, 1, 4) = :year",
+        'grain': ['year'],
+        'patterns': [r'what (?:was|is) (?:the |our )?in[- ]hospital mortality(?: rate)? (?:in|for) ' + YEAR, r'how many (?:inpatients|patients) died in (?:the )?hospital (?:in|during) ' + YEAR]},
     'attributed_panel_by_practice': {
         'title': "Each attributed practice's panel in one year: members, member months, payer paid per member per month, inpatient admissions and emergency visits per 1,000 member-years (claims and events in the months the member was attributed to that practice)",
         'params': {'year': {'type': 'year'}},
@@ -630,7 +786,7 @@ def needs_whole_stays(question, sql):
     """Code only. The question asks for each hospital stay counted once, and the query counts stay rows or events instead of
     whole stays (the _STAYS episode logic). -> a message, or None."""
     if not EACH_STAY_ONCE.search(question): return None
-    if 'st AS (' in str(sql) or 'raw AS (' in str(sql): return None
+    if 'st AS (' in str(sql) or 'raw AS (' in str(sql) or re.search(r'(?i)\bstay_episode\b', str(sql)): return None   # stay_episode is the merge
     return 'The question asks for each hospital stay counted once; this query does not merge repeated, overlapping or continuing stay rows into one stay'
 
 
@@ -720,6 +876,7 @@ def normalize(recipe_id, raw, db=None):
     out = {}
     for name, spec in RECIPES[recipe_id]['params'].items():
         value = raw.get(name)
+        if value is None and 'default' in spec: value = spec['default']   # a stated default (a list's length), never a period or a value
         if value is None: return None
         text = ' '.join(str(value).lower().replace('_', ' ').split())
         kind = spec['type']

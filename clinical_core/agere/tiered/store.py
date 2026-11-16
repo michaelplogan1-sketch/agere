@@ -18,12 +18,12 @@ DEFAULT_DB = 'artifacts/agere-full-stack-rerun-2026-10-30/focused/runtime/stack/
 # Tables a recipe may read. `document` is a catalog view over notes, readable scans and exchange documents; document
 # text itself is never selectable by a recipe: it is fetched by texts() for the reading tier only.
 TABLES = ('document', 'note_fact', 'note_therapy_change', 'therapy_barrier', 'utilization_event', 'stay', 'stay_episode', 'appointment', 'visit', 'fill',
-          'payer_claim', 'claim', 'patient', 'concept_patient', 'member_month', 'measurement', 'measurement_latest', 'immunization', 'death',
+          'hospital_visit', 'payer_claim', 'claim', 'patient', 'concept_patient', 'member_month', 'measurement', 'measurement_latest', 'immunization', 'death',
           'organization', 'clinician', 'enrollment_span', 'condition', 'encounter', 'prescription', 'allergy_entry', 'smoking_status', 'social_need',
-          'wellness_visit', 'cancer_screening')
+          'wellness_visit', 'cancer_screening', 'risk_score', 'patient_hcc', 'aco_contract')
 # Governed views: definitions the semantic layer computes once, so a query reads them instead of re-deriving them. Each is
 # created on every connection over the (possibly mapped or cohort-restricted) tables it reads.
-GOVERNED = ('stay_episode',)
+GOVERNED = ('stay_episode', 'hospital_visit', 'risk_score', 'patient_hcc', 'aco_contract')   # the last three: aco.py
 SECONDS = 20.0
 
 
@@ -56,7 +56,7 @@ def foreign():
 def tables(db=None):
     """Tables a recipe may read on this warehouse: this layer's, the mapped ones, or a foreign warehouse's own."""
     m = mapping()
-    if m: return tuple(t for t in TABLES if t in m['views'])
+    if m: return tuple(t for t in TABLES if t in m['views'] or t in ('stay_episode', 'aco_contract'))
     if foreign():
         own = db is None
         db = db or connect()
@@ -69,7 +69,7 @@ def tables(db=None):
 
 # Tables whose rows belong to one patient. Restricting these restricts every recipe: the document catalog is built
 # from the three document tables, so it is restricted with them.
-PATIENT_TABLES = tuple(t for t in TABLES if t not in ('document', 'organization', 'clinician') + GOVERNED) + ('clinical_note', 'scanned_document', 'hie_document')
+PATIENT_TABLES = tuple(t for t in TABLES if t not in ('document', 'organization', 'clinician') + GOVERNED) + ('clinical_note', 'scanned_document', 'hie_document', 'visit_group')
 MAX_COHORT = 5000
 
 
@@ -100,6 +100,9 @@ def connect(cohort=None):
     if not foreign():
         have = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view') UNION SELECT name FROM sqlite_temp_master WHERE type = 'view'")}
         if 'stay' in have and 'stay_episode' not in have: db.execute('CREATE TEMP VIEW stay_episode AS ' + _stay_episode())
+        if 'visit_group' in have and 'hospital_visit' not in have: db.execute('CREATE TEMP VIEW hospital_visit AS ' + HOSPITAL_VISIT)
+        from . import aco
+        aco.install(db, cohort)
     db.execute('PRAGMA query_only=ON')
     return db
 
@@ -122,7 +125,70 @@ def _stay_episode():
             "AND julianday(n.admit_date) - julianday(e.discharge_date) BETWEEN 1 AND 30) END AS readmitted_within_30_days FROM e")
 
 
-def portable(sql, cohort=None):
+# One row per hospital visit (an ED visit, an inpatient stay, or both when the patient was admitted through the ED), from
+# visit_group, with the governed timing rules:
+#   * ED departure of a patient admitted from the ED is the inpatient admission time when the recorded departure is missing
+#     or later than it (the recorded value is often the hospital discharge);
+#   * ED minutes are arrival to departure and boarding minutes decision-to-admit to departure, only for minute-precision
+#     times, and only when 0 to 4,320 (72 hours); other intervals are implausible: NULL, and flagged;
+#   * the ED timeliness eCQM (ECAT) thresholds that the data can evaluate: boarding over 4 hours for admitted patients, ED
+#     stay over 8 hours for discharged patients. Time to a treatment space and leaving before evaluation are not recorded;
+#   * sepsis and heart failure hospitalizations by principal diagnosis (A40, A41, R65.2; I50); death in hospital is the
+#     disposition 'expired'.
+HOSPITAL_VISIT = """SELECT v.visit_group_id, v.patient_id, v.organization_id, v.visit_class, v.has_ed, v.has_inpatient, v.has_observation,
+  v.start_date, v.end_date, v.ed_arrival, d.departure AS ed_departure, v.admit_decision, v.inpatient_admit, v.discharge_time,
+  v.time_precision, v.disposition, v.principal_icd10, v.unit, v.los_days,
+  CASE WHEN v.has_inpatient = 1 THEN 'admitted' WHEN v.has_observation = 1 THEN 'observation' WHEN v.has_ed = 1 THEN 'discharged' END AS ed_outcome,
+  CASE WHEN m.ed BETWEEN 0 AND 4320 THEN ROUND(m.ed, 1) END AS ed_minutes,
+  CASE WHEN m.board BETWEEN 0 AND 4320 THEN ROUND(m.board, 1) END AS boarding_minutes,
+  CASE WHEN m.ed IS NOT NULL AND NOT m.ed BETWEEN 0 AND 4320 THEN 1 WHEN m.board IS NOT NULL AND NOT m.board BETWEEN 0 AND 4320 THEN 1 ELSE 0 END AS implausible_times,
+  CASE WHEN v.has_inpatient = 1 AND m.board BETWEEN 0 AND 4320 THEN (m.board > 240) END AS ecat_boarding_over_4h,
+  CASE WHEN v.has_ed = 1 AND v.has_inpatient = 0 AND v.has_observation = 0 AND m.ed BETWEEN 0 AND 4320 THEN (m.ed > 480) END AS ecat_discharged_over_8h,
+  (v.principal_icd10 LIKE 'A40%' OR v.principal_icd10 LIKE 'A41%' OR v.principal_icd10 LIKE 'R652%' OR v.principal_icd10 LIKE 'R65.2%') AS is_sepsis,
+  (v.principal_icd10 LIKE 'I50%') AS is_heart_failure,
+  (v.disposition = 'expired') AS died_in_hospital
+FROM visit_group v
+JOIN (SELECT visit_group_id, CASE WHEN has_inpatient = 1 AND inpatient_admit IS NOT NULL AND (ed_departure IS NULL OR ed_departure > inpatient_admit)
+             THEN inpatient_admit ELSE ed_departure END AS departure FROM visit_group) d USING (visit_group_id)
+JOIN (SELECT g.visit_group_id,
+             CASE WHEN g.has_ed = 1 AND g.time_precision = 'minute' THEN ROUND((julianday(x.departure) - julianday(g.ed_arrival)) * 1440, 3) END AS ed,
+             CASE WHEN g.time_precision = 'minute' THEN ROUND((julianday(x.departure) - julianday(g.admit_decision)) * 1440, 3) END AS board
+      FROM visit_group g JOIN (SELECT visit_group_id, CASE WHEN has_inpatient = 1 AND inpatient_admit IS NOT NULL AND (ed_departure IS NULL OR ed_departure > inpatient_admit)
+             THEN inpatient_admit ELSE ed_departure END AS departure FROM visit_group) x USING (visit_group_id)) m USING (visit_group_id)"""
+
+
+def _literal(v):
+    if v is None: return 'NULL'
+    if isinstance(v, (int, float)) and not isinstance(v, bool): return repr(v)
+    return "'" + str(v).replace("'", "''") + "'"
+
+
+def portable(sql, cohort=None, params=None):
+    """portable_sql (below) plus the governed tables Agere computes (aco_contract, risk_score, patient_hcc), inlined as
+    VALUES so the saved SQL runs on the warehouse file alone. Risk rows are limited to the year the answer was asked for."""
+    text = _portable(sql, cohort)
+    reads = [t for t in ('aco_contract', 'risk_score', 'patient_hcc') if re.search(rf'(?i)(?<![.\w]){t}\b', text)]
+    if not reads: return text
+    year = (params or {}).get('year')
+    year = year.get('value') if isinstance(year, dict) else year
+    db = connect(cohort)
+    try:
+        ctes = []
+        for table in reads:
+            cols = [c[1] for c in db.execute(f'PRAGMA table_info("{table}")')]
+            where = ' WHERE year = ?' if year and table != 'aco_contract' else ''
+            rows = db.execute(f'SELECT * FROM "{table}"{where}', (str(year),) if where else ()).fetchall()
+            body = ('VALUES ' + ', '.join('(' + ', '.join(_literal(v) for v in r) + ')' for r in rows)) if rows else \
+                   'SELECT ' + ', '.join('NULL' for _ in cols) + ' WHERE 0'
+            ctes.append(f'{table}({", ".join(cols)}) AS ({body})')
+    finally:
+        db.close()
+    if re.match(r'(?is)^\s*with\s+recursive\b', text): raise RecipeError('A recursive recipe cannot be saved with governed tables')
+    if re.match(r'(?is)^\s*with\b', text): return re.sub(r'(?is)^\s*with\b', 'WITH ' + ', '.join(ctes) + ',', text, count=1)
+    return 'WITH ' + ', '.join(ctes) + ' ' + text
+
+
+def _portable(sql, cohort=None):
     """The same SELECT runnable on the semantic layer by anyone: the document catalog is inlined as a CTE, because
     the view exists only on this module's connections. With a cohort, the patient ids and the restricted tables are
     inlined the same way, so the saved SQL returns the cohort's result and not the whole population's."""
@@ -150,6 +216,7 @@ def portable(sql, cohort=None):
         return 'WITH ' + ', '.join(ctes) + ' ' + text
     uses_documents = bool(re.search(r'(?i)\bdocument\b(?!_)', text))
     episodes = bool(re.search(r'(?i)\bstay_episode\b', text))
+    visits = bool(re.search(r'(?i)\bhospital_visit\b', text))
     ctes = []
     if cohort is not None:
         ids = sorted({str(p) for p in cohort})
@@ -160,6 +227,9 @@ def portable(sql, cohort=None):
                 ctes.append(f'{table} AS (SELECT * FROM main.{table} WHERE patient_id IN (SELECT patient_id FROM cohort))')
     if uses_documents: ctes.append('document AS (' + DOCUMENT_VIEW.split(' AS\n', 1)[1] + ')')
     if episodes: ctes.append('stay_episode AS (' + _stay_episode() + ')')
+    if visits:
+        if cohort is not None: ctes.append('visit_group AS (SELECT * FROM main.visit_group WHERE patient_id IN (SELECT patient_id FROM cohort))')
+        ctes.append('hospital_visit AS (' + HOSPITAL_VISIT + ')')
     if not ctes: return text
     if re.match(r'(?is)^\s*with\s+recursive\b', text): raise RecipeError('A recursive recipe cannot be saved with a cohort or the document catalog')
     if re.match(r'(?is)^\s*with\b', text):

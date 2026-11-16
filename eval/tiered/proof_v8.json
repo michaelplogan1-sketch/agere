@@ -1,0 +1,290 @@
+{
+ "version": "proof_v8",
+ "authored": "2026-11-16",
+ "authored_by": "Claude (build owner)",
+ "frozen": "Written and committed before any run, after the ACO recipes, governed tables and checks were committed. Run once; not edited after it has been run. Its first result stands as reported.",
+ "purpose": "The ACO job: population, spend against benchmark, shared savings, CMS-HCC risk and utilization of the MSSP population. Arms: Agere; a frontier model writing its own SQL over the same schema, governed tables included, without the governed definitions or checks.",
+ "held_out": "Not used by the learning loop, the curriculum or as recipe examples. The stack is scored on a copy of its saved recipes with learning switched off.",
+ "reference": "Computed in clinical_core/agere/tiered/proof.py in Python: population and spend from the warehouse tables, terms from config/agere/contracts/demo-mssp-aco.json itself, risk scores from the CMS-HCC engine run directly. None uses the recipes' SQL or the cached risk table.",
+ "synthetic_terms": "The contract terms are authored demonstration assumptions (benchmark, minimum savings rate, sharing rate, quality met); the arithmetic is what is tested.",
+ "phrasing": "The first phrasing is plain; the second states the rule.",
+ "scoring": "+1 right, 0 declined, -10 wrong; an unanswerable question that is answered counts as wrong. Two phrasings, two runs, two arms, all runs reported.",
+ "questions": [
+  {
+   "id": "A01",
+   "domain": "population",
+   "reference": "aco_members",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many members did our ACO have in 2029?",
+    "Count distinct members with a member month for the MSSP payer in 2029."
+   ]
+  },
+  {
+   "id": "A02",
+   "domain": "population",
+   "reference": "aco_member_months",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many ACO member months were there in 2028?",
+    "Count member-month records for the MSSP payer in 2028."
+   ]
+  },
+  {
+   "id": "A03",
+   "domain": "population",
+   "reference": "aco_practices",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many practices had ACO members attributed to them in 2028?",
+    "Count distinct attributed practices across MSSP member months in 2028."
+   ]
+  },
+  {
+   "id": "A04",
+   "domain": "spend",
+   "reference": "aco_pmpm",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was our ACO's cost per member per month in 2029?",
+    "MSSP payer paid dollars on reportable claims with service in 2029, divided by MSSP member months in 2029."
+   ]
+  },
+  {
+   "id": "A05",
+   "domain": "spend",
+   "reference": "aco_pmpm",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "What was ACO PMPM in 2027?",
+    "Divide the MSSP payer's 2027 paid dollars on reportable claims by its 2027 member months."
+   ]
+  },
+  {
+   "id": "A06",
+   "domain": "spend",
+   "reference": "aco_institutional_paid",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How much did the ACO spend on institutional claims in 2028?",
+    "Sum paid dollars on the MSSP payer's reportable institutional claims with service in 2028."
+   ]
+  },
+  {
+   "id": "A07",
+   "domain": "spend",
+   "reference": "aco_top_spender_paid",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How much was spent on our single most expensive ACO member in 2029?",
+    "The largest total of 2029 paid dollars on reportable MSSP claims for one member of the 2029 MSSP population."
+   ]
+  },
+  {
+   "id": "A08",
+   "domain": "savings",
+   "reference": "aco_shared_savings",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How much did we earn in shared savings for 2029?",
+    "Shared savings for 2029 from the contract terms on file: savings times the sharing rate when the savings rate reaches the minimum savings rate and quality is met."
+   ]
+  },
+  {
+   "id": "A09",
+   "domain": "savings",
+   "reference": "aco_shared_savings",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "Did the ACO earn shared savings in 2028, and how much?",
+    "Shared savings dollars for performance year 2028 under the contract terms on file."
+   ]
+  },
+  {
+   "id": "A10",
+   "domain": "savings",
+   "reference": "aco_shared_savings",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "What were our MSSP shared savings in 2027?",
+    "Shared savings dollars for performance year 2027 under the contract terms on file."
+   ]
+  },
+  {
+   "id": "A11",
+   "domain": "savings",
+   "reference": "aco_total_savings",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How far under benchmark was ACO spending in 2029, in total dollars?",
+    "Benchmark PMPM times 2029 MSSP member months, minus 2029 MSSP paid dollars on reportable claims."
+   ]
+  },
+  {
+   "id": "A12",
+   "domain": "savings",
+   "reference": "aco_savings_rate",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was the ACO's savings rate in 2029?",
+    "Total 2029 savings divided by benchmark PMPM times 2029 MSSP member months."
+   ]
+  },
+  {
+   "id": "A13",
+   "domain": "risk",
+   "reference": "aco_average_risk",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was the average risk score of our ACO members in 2029?",
+    "Average payment-year CMS-HCC risk score of MSSP members, from 2029 diagnoses."
+   ]
+  },
+  {
+   "id": "A14",
+   "domain": "risk",
+   "reference": "aco_average_risk",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was the ACO's average RAF in 2028?",
+    "Average payment-year CMS-HCC risk score of the 2028 MSSP population, from 2028 diagnoses."
+   ]
+  },
+  {
+   "id": "A15",
+   "domain": "risk",
+   "reference": "aco_members_with_hcc",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many ACO members had at least one HCC in 2029?",
+    "Count 2029 MSSP members with at least one V28 payment HCC from 2029 diagnoses."
+   ]
+  },
+  {
+   "id": "A16",
+   "domain": "risk",
+   "reference": "aco_heart_failure_hcc",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many ACO members had the heart failure HCC in 2028?",
+    "Count 2028 MSSP members with V28 payment HCC 226 (heart failure) from 2028 diagnoses."
+   ]
+  },
+  {
+   "id": "A17",
+   "domain": "utilization",
+   "reference": "aco_ed_visits",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many ED visits did our ACO members have in 2029?",
+    "Count emergency department visits dated in 2029 by members of the 2029 MSSP population."
+   ]
+  },
+  {
+   "id": "A18",
+   "domain": "utilization",
+   "reference": "aco_stays",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many hospital stays did our ACO members have in 2028?",
+    "Count inpatient stays, each stay counted once, admitted in 2028 for members of the 2028 MSSP population."
+   ]
+  },
+  {
+   "id": "A19",
+   "domain": "utilization",
+   "reference": "aco_readmissions",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many readmissions did ACO members have in 2029?",
+    "Count 30-day readmissions, each stay counted once, that began in 2029 for members of the 2029 MSSP population."
+   ]
+  },
+  {
+   "id": "A20",
+   "domain": "population",
+   "reference": "aco_members",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many beneficiaries were assigned to our ACO in 2028?",
+    "Count distinct members with an MSSP member month in 2028."
+   ]
+  },
+  {
+   "id": "X01",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What are our MSSP shared savings for 2030?",
+    "Compute shared savings for performance year 2030 from the contract terms on file."
+   ]
+  },
+  {
+   "id": "X02",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our ACO's APP Plus quality score in 2029?",
+    "Give the 2029 MSSP quality performance score across the APP Plus measure set."
+   ]
+  },
+  {
+   "id": "X03",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "How much did CMS pay our ACO in advance investment payments in 2029?",
+    "Sum 2029 MSSP advance investment payments received."
+   ]
+  },
+  {
+   "id": "X04",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What is our ACO's average risk score under the V30 model for 2029?",
+    "Average CMS-HCC V30 risk score of MSSP members for 2029."
+   ]
+  }
+ ]
+}

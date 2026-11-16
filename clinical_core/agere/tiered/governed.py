@@ -127,7 +127,33 @@ def flu_vaccines(q, s):
     return None
 
 
-CHECKS = (whole_stays, latest_for_period, spend_flag, spend_table, condition_source, appointment_status, flu_vaccines)
+def aco_population(q, s):
+    """The ACO (MSSP) population is payer WH-PAYER-MSSP's members, not every Medicare member."""
+    if not _has(q, r'\baco\b|\bmssp\b|accountable care|shared savings'): return None
+    # Any patient data read for an ACO question is the ACO's members' (proof_v8: ED visits counted for everyone); only a
+    # question about the contract terms alone reads no population.
+    tables = set(re.findall(r'(?i)\b(?:from|join)\s+(?:main\.)?"?([a-z_][a-z0-9_]*)', s)) - {'aco_contract'}
+    if tables and not _has(s, r'wh-payer-mssp'):
+        return ("Governed definition: the ACO (MSSP) population is the members with a member_month row for payer_id 'WH-PAYER-MSSP' "
+                "in the year, and its spend is that payer's claims with counts_in_metrics = 1. Filter to payer_id 'WH-PAYER-MSSP'.")
+    return None
+
+
+def hospital_visit_rules(q, s):
+    """ED times and the sepsis and heart failure cohorts come from hospital_visit, which applies the governed timing rules."""
+    if _reads(s, 'hospital_visit') or _about_records(q): return None
+    ed_time = _has(q, r'length of stay in the (?:ed|er|emergency)|(?:ed|er|emergency department) length of stay|boarding|\bboard(?:ed)?\b|throughput|door[- ]to|time in the (?:ed|er|emergency)|hours in the (?:ed|er|emergency)')
+    if ed_time and (_reads(s, 'visit_group') or _reads(s, 'utilization_event') or _reads(s, 'encounter') or _reads(s, 'adt_visit')):
+        return ('Governed definition: ED times come from hospital_visit (ed_minutes, boarding_minutes: minute-level times only, 0 to 72 hours, '
+                'departure of an admitted patient = inpatient admission time). Read hospital_visit, not raw timestamps.')
+    cohort = _has(q, r'sepsis|septic|heart failure|\bhf\b') and _has(q, r'hospitali[sz]|admi(?:t|ssion)|stay|mortality|died|death|readmi|length of stay')
+    if cohort and any(_reads(s, x) for x in ('condition', 'diagnosis_any', 'concept_patient', 'encounter_diagnosis')):
+        return ('Governed definition: sepsis and heart failure hospitalizations are hospital_visit rows with has_inpatient = 1 and is_sepsis = 1 or '
+                'is_heart_failure = 1 (principal diagnosis), with length of stay and readmission from the stay_episode the visit falls in.')
+    return None
+
+
+CHECKS = (aco_population, hospital_visit_rules, whole_stays, latest_for_period, spend_flag, spend_table, condition_source, appointment_status, flu_vaccines)
 
 
 def check(question, sql, params=None):

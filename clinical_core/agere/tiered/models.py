@@ -162,7 +162,10 @@ symptom, dyspnea, follow_up, edema, imaging_finding, social_need, smoking_status
 Patient identifiers look like WHP-66F4B476DECF or P-1001.
 measurement_latest holds only each patient's most recent value of a concept; to count or average results within a period use measurement.
 stay_episode is one row per inpatient hospital stay with repeated and overlapping stay rows merged; count stays, admissions,
-discharges, length of stay and readmissions from it, never from stay rows.'''
+discharges, length of stay and readmissions from it, never from stay rows.
+hospital_visit is one row per hospital visit with governed ED times (ed_minutes, boarding_minutes; implausible ones excluded),
+ed_outcome, the ED timeliness thresholds the data supports, sepsis and heart failure flags by principal diagnosis and death in
+hospital; read ED times and these cohorts from it.'''
 
 
 FOREIGN_SYSTEM = '''You write one SQL query that answers a data question over a read-only SQLite healthcare warehouse.

@@ -388,6 +388,260 @@ def ref_housing_positive_patients(db, year):
     return [[len({p for p, need, pos in db.execute('SELECT patient_id, need, positive FROM social_need') if need == 'housing' and pos == 1})]]
 
 
+# ---- references added for proof_v8, the ACO job (written before proof_v8's first run) ---------------------------------
+# The ACO population is payer WH-PAYER-MSSP's members; terms are read from the contract file itself and risk scores from
+# the CMS-HCC engine run directly, so none of these goes through the recipes' SQL or the cached risk table.
+
+_MSSP = 'WH-PAYER-MSSP'
+
+
+def _aco_mm(db, year):
+    return [(p, m) for p, m, payer in db.execute('SELECT patient_id, month, payer_id FROM member_month') if payer == _MSSP and str(m).startswith(year)]
+
+
+def _aco_members(db, year):
+    return {p for p, _ in _aco_mm(db, year)}
+
+
+def _aco_paid_cents(db, year, claim_type=None):
+    return sum(c or 0 for c, f, d, payer, k in db.execute('SELECT paid_cents, counts_in_metrics, service_from, payer_id, claim_type FROM payer_claim')
+               if payer == _MSSP and f == 1 and d and d.startswith(year) and (claim_type is None or k == claim_type))
+
+
+def ref_aco_members(db, year):
+    return [[len(_aco_members(db, year))]]
+
+
+def ref_aco_member_months(db, year):
+    return [[len(_aco_mm(db, year))]]
+
+
+def ref_aco_pmpm(db, year):
+    return [[round(_aco_paid_cents(db, year) / 100 / len(_aco_mm(db, year)), 2)]]
+
+
+def ref_aco_institutional_paid(db, year):
+    return [[round(_aco_paid_cents(db, year, 'institutional') / 100, 2)]]
+
+
+def _terms(year):
+    c = json.loads(Path('config/agere/contracts/demo-mssp-aco.json').read_text())
+    return c['years'].get(year)
+
+
+def _savings(db, year):
+    t = _terms(year)
+    mm = len(_aco_mm(db, year)); paid = _aco_paid_cents(db, year) / 100
+    savings = t['benchmark_pmpm_dollars'] * mm - paid
+    rate = savings / (t['benchmark_pmpm_dollars'] * mm)
+    shared = savings * t['sharing_rate'] if rate >= t['minimum_savings_rate'] and t['quality_standard_met'] else 0.0
+    return savings, rate, shared
+
+
+def ref_aco_shared_savings(db, year):
+    return [[round(_savings(db, year)[2], 2)]]
+
+
+def ref_aco_total_savings(db, year):
+    return [[round(_savings(db, year)[0], 2)]]
+
+
+def ref_aco_savings_rate(db, year):
+    return [[round(_savings(db, year)[1], 4)]]
+
+
+def _aco_scores(db, year):
+    from ..clinical import risk_adjustment as ra
+    members = _aco_members(db, year)
+    dual = {p for p, m, lob in db.execute('SELECT patient_id, month, line_of_business FROM member_month') if lob == 'dual' and str(m).startswith(year)}
+    out = {}
+    for segment, ids in (('community_non_dual', sorted(members - dual)), ('community_full_dual', sorted(members & dual))):
+        if ids:
+            for pt in ra.execute(store.path(), ids, {'year': int(year), 'coverage': 'all', 'segment': segment, 'payment_year': 2026, 'top': 500})['patients']:
+                out[pt['patient_id']] = pt
+    return out
+
+
+def ref_aco_average_risk(db, year):
+    s = _aco_scores(db, year)
+    return [[round(sum(p['payment_raf'] for p in s.values()) / len(s), 3)]]
+
+
+def ref_aco_members_with_hcc(db, year):
+    return [[sum(1 for p in _aco_scores(db, year).values() if p['hccs'].get('V28'))]]
+
+
+def ref_aco_heart_failure_hcc(db, year):
+    return [[sum(1 for p in _aco_scores(db, year).values() if any(h['hcc'] == 226 for h in p['hccs'].get('V28', [])))]]
+
+
+def ref_aco_ed_visits(db, year):
+    members = _aco_members(db, year)
+    return [[sum(1 for p, k, d in db.execute('SELECT patient_id, kind, event_date FROM utilization_event') if k == 'ed_visit' and p in members and str(d).startswith(year))]]
+
+
+def ref_aco_stays(db, year):
+    members = _aco_members(db, year)
+    _, eps = _readmissions(db, year)
+    return [[sum(1 for p, a, _ in eps if p in members and a.startswith(year))]]
+
+
+def ref_aco_readmissions(db, year):
+    members = _aco_members(db, year)
+    return [[sum(1 for p, _, _ in _readmissions(db, year)[0] if p in members)]]
+
+
+def ref_aco_top_spender_paid(db, year):
+    members, paid = _aco_members(db, year), Counter()
+    for p, c, f, d, payer in db.execute('SELECT patient_id, paid_cents, counts_in_metrics, service_from, payer_id FROM payer_claim'):
+        if payer == _MSSP and f == 1 and d and d.startswith(year) and p in members: paid[p] += c or 0
+    return [[round(max(paid.values()) / 100, 2)]]
+
+
+def ref_aco_practices(db, year):
+    return [[len({x for (p, m, payer, x) in db.execute('SELECT patient_id, month, payer_id, attribution_practice_id FROM member_month') if payer == _MSSP and str(m).startswith(year) and x})]]
+
+
+# ---- references added for proof_v9, the hospital operations core (written before proof_v9's first run) ---------------
+# The governed timing rules are applied here in Python to the raw visit_group rows, without hospital_visit's SQL.
+
+from datetime import datetime as _dt
+
+
+def _ts(x):
+    return _dt.fromisoformat(str(x)[:16]) if x else None
+
+
+def _visits(db):
+    cols = ['visit_group_id', 'patient_id', 'has_ed', 'has_inpatient', 'has_observation', 'start_date', 'end_date', 'ed_arrival', 'ed_departure',
+            'admit_decision', 'inpatient_admit', 'discharge_time', 'time_precision', 'disposition', 'principal_icd10']
+    out = []
+    for r in db.execute('SELECT ' + ', '.join(cols) + ' FROM visit_group'):
+        v = dict(zip(cols, r))
+        dep = v['inpatient_admit'] if v['has_inpatient'] == 1 and v['inpatient_admit'] and (not v['ed_departure'] or v['ed_departure'] > v['inpatient_admit']) else v['ed_departure']
+        minute = v['time_precision'] == 'minute'
+        ed = (_ts(dep) - _ts(v['ed_arrival'])).total_seconds() / 60 if minute and v['has_ed'] == 1 and dep and v['ed_arrival'] else None
+        board = (_ts(dep) - _ts(v['admit_decision'])).total_seconds() / 60 if minute and dep and v['admit_decision'] else None
+        v['ed_minutes'] = ed if ed is not None and 0 <= ed <= 4320 else None
+        v['boarding_minutes'] = board if board is not None and 0 <= board <= 4320 else None
+        v['outcome'] = 'admitted' if v['has_inpatient'] == 1 else 'observation' if v['has_observation'] == 1 else 'discharged' if v['has_ed'] == 1 else None
+        v['year'] = str(v['ed_arrival'] or v['start_date'])[:4]
+        dx = v['principal_icd10'] or ''
+        v['sepsis'] = dx.startswith(('A40', 'A41', 'R652', 'R65.2'))
+        v['hf'] = dx.startswith('I50')
+        out.append(v)
+    return out
+
+
+def _median(xs):
+    xs = sorted(xs)
+    if not xs: return None
+    n = len(xs)
+    return round((xs[(n - 1) // 2] + xs[n // 2]) / 2, 1)
+
+
+def _ed(db, year):
+    return [v for v in _visits(db) if v['has_ed'] == 1 and v['year'] == year]
+
+
+def ref_hv_ed_visits(db, year):
+    return [[len(_ed(db, year))]]
+
+
+def ref_hv_ed_median_discharged(db, year):
+    return [[_median([v['ed_minutes'] for v in _ed(db, year) if v['outcome'] == 'discharged' and v['ed_minutes'] is not None])]]
+
+
+def ref_hv_ed_median_admitted(db, year):
+    return [[_median([v['ed_minutes'] for v in _ed(db, year) if v['outcome'] == 'admitted' and v['ed_minutes'] is not None])]]
+
+
+def ref_hv_boarding_mean(db, year):
+    xs = [v['boarding_minutes'] for v in _ed(db, year) if v['outcome'] == 'admitted' and v['boarding_minutes'] is not None]
+    return [[round(sum(xs) / len(xs), 1)]]
+
+
+def ref_hv_boarded_over_4h(db, year):
+    return [[sum(1 for v in _ed(db, year) if v['outcome'] == 'admitted' and v['boarding_minutes'] is not None and v['boarding_minutes'] > 240)]]
+
+
+def ref_hv_discharged_over_8h(db, year):
+    return [[sum(1 for v in _ed(db, year) if v['outcome'] == 'discharged' and v['ed_minutes'] is not None and v['ed_minutes'] > 480)]]
+
+
+def ref_hv_ed_admission_rate(db, year):
+    e = _ed(db, year)
+    return [[round(sum(1 for v in e if v['outcome'] == 'admitted') / len(e), 4)]]
+
+
+def ref_hv_ed_admitted(db, year):
+    return [[sum(1 for v in _ed(db, year) if v['outcome'] == 'admitted')]]
+
+
+def ref_hv_before_noon_share(db, year):
+    d = [v for v in _visits(db) if v['has_inpatient'] == 1 and v['discharge_time'] and str(v['discharge_time']).startswith(year)]
+    return [[round(sum(1 for v in d if int(str(v['discharge_time'])[11:13]) < 12) / len(d), 4)]]
+
+
+def _inpatient(db, year, flag=None):
+    return [v for v in _visits(db) if v['has_inpatient'] == 1 and str(v['end_date']).startswith(year) and (flag is None or v[flag])]
+
+
+def ref_hv_mortality_rate(db, year):
+    v = _inpatient(db, year)
+    return [[round(sum(1 for x in v if x['disposition'] == 'expired') / len(v), 4)]]
+
+
+def ref_hv_deaths_in_hospital(db, year):
+    return [[sum(1 for x in _inpatient(db, year) if x['disposition'] == 'expired')]]
+
+
+def _episode_of(eps, patient, start):
+    for p, a, d in eps:
+        if p == patient and a <= start and (d or '9999') >= start: return a, d
+    return None
+
+
+def _cohort(db, year, flag):
+    _, eps = _readmissions(db, year)
+    by = defaultdict(list)
+    for p, a, d in eps: by[p].append((a, d))
+    rows = []
+    for v in _inpatient(db, year, flag):
+        ep = _episode_of(eps, v['patient_id'], v['start_date'])
+        readmit = bool(ep and ep[1] and any(a > ep[0] and 1 <= (_day(a) - _day(ep[1])).days <= 30 for a, _ in by[v['patient_id']]))
+        days = (_day(ep[1]) - _day(ep[0])).days if ep and ep[1] else None
+        rows.append((v, readmit, days))
+    return rows
+
+
+def ref_hv_sepsis_hospitalizations(db, year):
+    return [[len(_cohort(db, year, 'sepsis'))]]
+
+
+def ref_hv_sepsis_readmission_rate(db, year):
+    c = _cohort(db, year, 'sepsis')
+    return [[round(sum(1 for _, r, _ in c if r) / len(c), 4)]]
+
+
+def ref_hv_hf_hospitalizations(db, year):
+    return [[len(_cohort(db, year, 'hf'))]]
+
+
+def ref_hv_hf_readmissions(db, year):
+    return [[sum(1 for _, r, _ in _cohort(db, year, 'hf') if r)]]
+
+
+def ref_hv_hf_mortality_rate(db, year):
+    c = _cohort(db, year, 'hf')
+    return [[round(sum(1 for v, _, _ in c if v['disposition'] == 'expired') / len(c), 4)]]
+
+
+def ref_hv_hf_los(db, year):
+    xs = [d for _, _, d in _cohort(db, year, 'hf') if d is not None]
+    return [[round(sum(xs) / len(xs), 2)]]
+
+
 REFERENCES = {name[4:]: fn for name, fn in globals().items() if name.startswith('ref_') and callable(fn)}
 
 
