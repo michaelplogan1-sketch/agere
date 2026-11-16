@@ -80,7 +80,8 @@ DEFINITIONS = (
      "(decision to admit to departure), only from minute-level times and only when 0 to 72 hours; other intervals are "
      "implausible (implausible_times = 1) and excluded. For a patient admitted from the ED, departure is the inpatient admission "
      "time. ed_outcome is discharged, observation or admitted. Report ED times as medians unless a mean is asked for. Count ED "
-     "visits by COALESCE(ed_arrival, start_date). The ED timeliness eCQM (ECAT) thresholds the data can evaluate are "
+     "visits by COALESCE(ed_arrival, start_date) when a question about ED times needs the visits behind them; a plain count of ED "
+     "visits stays utilization_event kind 'ed_visit' (hospital_visit merges a few events into one visit). The ED timeliness eCQM (ECAT) thresholds the data can evaluate are "
      "ecat_boarding_over_4h and ecat_discharged_over_8h; time to a treatment space and leaving before evaluation are not "
      "recorded, so questions about them cannot be answered from this warehouse."),
     ('hospital outcomes', r'sepsis|septic|heart failure|\bhf\b|mortality|died in (?:the )?hospital|in[- ]hospital death|discharge(?:d|s)? before noon|discharge time',
