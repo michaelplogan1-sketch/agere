@@ -3,6 +3,7 @@
 A recipe is plain SQL with named parameters. Models never compute a number: they may only choose a
 recipe, fill its parameters, or (Tier 4) write a new recipe that this module then executes and validates.
 """
+import os
 import re
 
 from . import store
@@ -748,10 +749,42 @@ def normalize(recipe_id, raw, db=None):
     return out
 
 
+_runnable = {}
+
+
+def reads(sql):
+    """Table names a query reads (FROM and JOIN targets), without its own CTE names."""
+    low = str(sql).lower()
+    own = set(re.findall(r'(?:\bwith(?:\s+recursive)?|,)\s*([a-z_][a-z0-9_]*)\s*(?:\([^)]*\))?\s+as\s*\(', low))
+    return set(re.findall(r'\b(?:from|join)\s+([a-z_][a-z0-9_]*)', low)) - own
+
+
+def runnable(recipe_id):
+    """A built-in recipe applies only where every table it reads, and every table its vocabularies are read from, exists:
+    on a mapped warehouse a recipe over an unmapped table is not a candidate. On the semantic layer itself (or a partial
+    copy of it) every recipe is a candidate; on a foreign warehouse none is. Code only; cached per warehouse."""
+    if store.foreign(): return False
+    if not store.mapping(): return recipe_id in RECIPES
+    key = (str(store.path()), os.environ.get('AGERE_TIERED_MAPPING'))
+    if key not in _runnable:
+        db = store.connect()
+        try:
+            have = {r[0].lower() for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view') UNION SELECT name FROM sqlite_temp_master WHERE type IN ('table', 'view')")}
+        finally:
+            db.close()
+        ok = {}
+        for rid, r in RECIPES.items():
+            needs = reads(r['sql']) | {t for spec in r['params'].values() if spec.get('query') for t in reads(spec['query'])}
+            ok[rid] = needs <= have
+        _runnable[key] = ok
+    return _runnable[key].get(recipe_id, False)
+
+
 def match(question, db=None):
     """Deterministic pattern match: (recipe_id, params) or None. No model."""
     text = ' '.join(question.lower().strip().rstrip('?.').split())
     for recipe_id, recipe in RECIPES.items():
+        if not runnable(recipe_id): continue
         for pattern in recipe['patterns']:
             m = re.fullmatch(pattern, text) or re.fullmatch(pattern, text + '?')
             if m:

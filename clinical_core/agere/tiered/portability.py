@@ -190,6 +190,98 @@ Rules:
 - Dates as ISO text (YYYY-MM-DD; months YYYY-MM). Money as the semantic layer states it.'''
 
 
+def documented(orig, table):
+    """What Agere documents about one of its semantic-layer tables: columns, the values of short-list text columns, the
+    columns it always fills, and the date shapes it uses. Product documentation about the layer, not customer data."""
+    cols = [(c[1], c[2]) for c in orig.execute(f'PRAGMA table_info("{table}")')]
+    vocab, required, shapes = {}, set(), {}
+    total = orig.execute(f'SELECT COUNT(*) FROM "{table}"').fetchone()[0]
+    for col, kind in cols:
+        nulls = orig.execute(f'SELECT COUNT(*) FROM "{table}" WHERE "{col}" IS NULL').fetchone()[0]
+        if total and not nulls: required.add(col)
+        if 'INT' in (kind or '').upper() or 'REAL' in (kind or '').upper() or col.endswith('_id'): continue
+        sample = [r[0] for r in orig.execute(f'SELECT "{col}" FROM "{table}" WHERE "{col}" IS NOT NULL LIMIT 200')]
+        if sample and all(isinstance(v, str) and len(v) == 10 and v[4] == '-' and v[7] == '-' for v in sample): shapes[col] = 'YYYY-MM-DD'; continue
+        if sample and all(isinstance(v, str) and len(v) == 7 and v[4] == '-' for v in sample): shapes[col] = 'YYYY-MM'; continue
+        if 'date' in col: continue
+        vals = [r[0] for r in orig.execute(f'SELECT DISTINCT "{col}" FROM "{table}" WHERE "{col}" IS NOT NULL LIMIT 81')]
+        if 0 < len(vals) <= 80 and all(isinstance(v, str) for v in vals): vocab[col] = sorted(vals)
+    return {'columns': [c for c, _ in cols], 'vocabulary': vocab, 'required': required, 'shapes': shapes}
+
+
+def audit(mapping, layout=LAYOUT_B, source=None):
+    """Checks a mapping can be given before anyone trusts it, using only the customer warehouse and what Agere documents about
+    its own layer (no original data): values outside the layer's vocabulary, empty values in columns the layer always fills,
+    and dates in another shape. -> {table: [finding, ...]} for the tables with findings."""
+    orig = sqlite3.connect(Path(source or store.DEFAULT_DB).resolve().as_uri() + '?mode=ro', uri=True)
+    conn = sqlite3.connect(Path(layout).resolve().as_uri() + '?mode=ro', uri=True)
+    for table, sql in mapping['views'].items():   # as on a mapped connection: a view may read another mapped view
+        try:
+            conn.execute(f'CREATE TEMP VIEW "{table}" AS {sql}')
+        except sqlite3.Error:
+            pass
+    out = {}
+    for table, sql in mapping['views'].items():
+        doc, found = documented(orig, table), []
+        sql = f'SELECT * FROM temp."{table}"'
+        try:
+            have = [d[0] for d in conn.execute(f'SELECT * FROM ({sql}) LIMIT 0').description]
+            n = conn.execute(f'SELECT COUNT(*) FROM ({sql})').fetchone()[0]
+        except sqlite3.Error as exc:
+            out[table] = [f'does not run: {exc}']; continue
+        for col in have:
+            if col in doc['vocabulary']:
+                bad = conn.execute(f'SELECT "{col}", COUNT(*) FROM ({sql}) WHERE "{col}" IS NOT NULL GROUP BY 1 ORDER BY 2 DESC').fetchall()
+                bad = [(v, k) for v, k in bad if v not in doc['vocabulary'][col]]
+                if bad: found.append(f'{col} holds values the semantic layer does not use: ' + ', '.join(f'{v!r} ({k} rows)' for v, k in bad[:8])
+                                     + f'; its values are: {", ".join(doc["vocabulary"][col])}')
+            if col in doc['required'] and n:
+                empty = conn.execute(f'SELECT COUNT(*) FROM ({sql}) WHERE "{col}" IS NULL').fetchone()[0]
+                if empty: found.append(f'{col} is empty in {empty} of {n} rows; the semantic layer always fills it')
+            if col in doc['shapes']:
+                shape = doc['shapes'][col]
+                pattern = '____-__-__' if shape == 'YYYY-MM-DD' else '____-__'
+                off = conn.execute(f'SELECT COUNT(*), MIN("{col}") FROM ({sql}) WHERE "{col}" IS NOT NULL AND (CAST("{col}" AS TEXT) NOT LIKE \'{pattern}\' OR length(CAST("{col}" AS TEXT)) <> {len(shape)})').fetchone()
+                if off[0]: found.append(f'{col} is not {shape} in {off[0]} rows (for example {off[1]!r})')
+        if found: out[table] = found
+    return out
+
+
+def revise(mapping_path=OUT / 'layout_b.drafted.json', out=OUT / 'layout_b.revised.json', layout=LAYOUT_B, source=None):
+    """One revision round: the drafter sees the audit's findings for each table it mapped and returns a corrected view. A
+    revision is kept only when it runs and the audit finds less in it. Nothing is edited by hand. -> (mapping, lines)."""
+    from . import models
+    mapping = json.loads(Path(mapping_path).read_text())
+    found = audit(mapping, layout, source)
+    conn = sqlite3.connect(Path(layout).resolve().as_uri() + '?mode=ro', uri=True)
+    orig = sqlite3.connect(Path(source or store.DEFAULT_DB).resolve().as_uri() + '?mode=ro', uri=True)
+    views, lines, usd = dict(mapping['views']), [], 0.0
+    for table, issues in found.items():
+        doc = documented(orig, table)
+        user = (f'Semantic-layer table: {table}({", ".join(doc["columns"])})\nYour view over the customer warehouse:\n{views[table]}\n\n'
+                'An audit of the rows your view returns found:\n' + '\n'.join(f'- {i}' for i in issues) +
+                "\n\nReturn the corrected view as the same JSON object. Translate the customer's codes into the listed values exactly.")
+        text, step = models._claude(models.LLM, DRAFT_SYSTEM, user)
+        usd += step.get('usd', 0.0)
+        try:
+            sql = models._json(text)['sql']
+            conn.execute(f'SELECT * FROM ({sql}) LIMIT 1').fetchall()
+            after = audit({'views': {**views, table: sql}}, layout, source).get(table, [])
+        except Exception as exc:
+            lines.append(f'{table:20} revision not kept: {str(exc)[:120]}'); continue
+        if len(after) < len(issues):
+            views[table] = sql
+            lines.append(f'{table:20} revised: {len(issues)} findings -> {len(after)}')
+        else:
+            lines.append(f'{table:20} revision not kept: {len(issues)} findings -> {len(after)}')
+    revised = {**mapping, 'views': views, 'written_by': mapping.get('written_by', '') + '; one audit-driven revision, unedited',
+               'usd': round(mapping.get('usd', 0.0) + usd, 4)}
+    Path(out).write_text(json.dumps(revised, indent=1) + '\n')
+    remaining = audit(revised, layout, source)
+    lines.append(f'revision cost ${usd:.4f}; findings before {sum(map(len, found.values()))}, after {sum(map(len, remaining.values()))}; written to {out}')
+    return revised, lines
+
+
 def draft(layout=LAYOUT_B, out=OUT / 'layout_b.drafted.json', source=None):
     """A frontier model drafts the mapping, one semantic-layer table per call, from the semantic layer's documented tables,
     columns, values and governed definitions, and the customer warehouse's schema and short-list values. Each view must
@@ -253,6 +345,14 @@ if __name__ == '__main__':
         print(json.dumps(build(), indent=1))
     elif cmd == ['check']:
         print(check(sys.argv[2]))
+    elif cmd == ['audit']:
+        for table, issues in audit(json.loads(Path(sys.argv[2]).read_text())).items():
+            print(table); [print('  -', i[:300]) for i in issues]
+    elif cmd == ['revise']:
+        os.environ.pop('ANTHROPIC_API_KEY', None)
+        from run_integrated_stack import keys
+        keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
+        print('\n'.join(revise()[1]))
     elif cmd == ['draft']:
         os.environ.pop('ANTHROPIC_API_KEY', None)
         from run_integrated_stack import keys

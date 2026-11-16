@@ -245,6 +245,7 @@ def slm_choose_and_fill(question, db=None):
     """Tier 3 without Tier 2: the small model picks a recipe and fills it. -> (recipe_id, params) or (None, None), step."""
     catalog = {}
     for rid, r in recipes.RECIPES.items():
+        if not recipes.runnable(rid): continue
         catalog[rid] = {'computes': r['title'], 'parameters': {
             n: ({'allowed': p['values']} if 'values' in p else {'vocabulary': 'lower-case name'} if p['type'] == 'vocabulary'
                 else {'format': {'year': 'YYYY', 'month': 'YYYY-MM', 'int': 'integer', 'text': 'words from the question', 'patient': 'identifier as written'}[p['type']]})
@@ -267,7 +268,7 @@ def slm_choose_and_fill(question, db=None):
 def s1_classify(question, ledger_path=None):
     """Tier 2. -> (recipe_id or None, confidence, step). System One picks one recipe shape or 'none'."""
     from ..clinical import system_one
-    options = {rid: r['title'] for rid, r in recipes.RECIPES.items()}
+    options = {rid: r['title'] for rid, r in recipes.RECIPES.items() if recipes.runnable(rid)}
     options['none'] = 'The question asks for something none of the listed computations produce'
     started = time.monotonic()
     steps_cost, label, p, provider, error = 0.0, None, 0.0, None, None
