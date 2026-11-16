@@ -364,6 +364,9 @@ def _climb(stack, question, cohort, takeover_ok, near):
                                       f"${usd:.4f} in model calls (models used: {models_used})."}
     verified = verification(recipe.get('bottle_id')) if tier in ('bottles', 'near') else None
     if verified: answer['facts']['verification'] = verified
+    from . import catalogue
+    rule = catalogue.stated(question) if catalogue.enabled() else None
+    if rule: answer['facts']['definitions_used'] = rule
     answer['facts']['summary_written_by'] = ('The small model worded the summary from facts computed by code; code checked that every number in it is in the result.'
                                              if wrote['by'] == 'small_model' else 'Code wrote the summary; no model.' +
                                              (' A small-model summary was ' + wrote['small_model'] + '.' if wrote.get('small_model') else ''))

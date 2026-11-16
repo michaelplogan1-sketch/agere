@@ -18,8 +18,16 @@
      ]
     },
     {
-     "reference_sql": "SELECT COUNT(*), SUM(readmitted_30d), ROUND(1.0*SUM(readmitted_30d)/COUNT(*),4) FROM stay WHERE type='inpatient' AND discharge_known=1 AND substr(discharge_date,1,4)='2029'",
+     "reference_sql": "(each stay once) recipes.RECIPES['readmission_rate']['sql'] with the year as :year",
      "reference_rows": [
+      [
+       443,
+       72,
+       0.1625
+      ]
+     ],
+     "reference_sql_before": "SELECT COUNT(*), SUM(readmitted_30d), ROUND(1.0*SUM(readmitted_30d)/COUNT(*),4) FROM stay WHERE type='inpatient' AND discharge_known=1 AND substr(discharge_date,1,4)='2029'",
+     "reference_rows_before": [
       [
        505,
        106,
@@ -1272,6 +1280,17 @@
      1398,
      200
     ]
+   ]
+  }
+ ],
+ "changes": [
+  {
+   "at": "2026-11-16",
+   "by": "Mike (product owner) approved; Claude (build owner) applied",
+   "change": "The 30-day readmission rate reference now counts each hospital stay once (repeated, overlapping and continuing stay rows are one stay) and a readmission as an inpatient stay beginning 1 to 30 days after discharge. The earlier reference summed the stay table's readmitted_30d flag, which counts a stay recorded twice as a readmission after zero days.",
+   "reference_sql": "recipes.RECIPES['readmission_rate']['sql'] with the year as :year",
+   "items": [
+    "M01"
    ]
   }
  ]

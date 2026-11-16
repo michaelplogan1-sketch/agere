@@ -106,11 +106,12 @@ RECIPES = {
                "AND substr(admit_date, 1, 4) = :year GROUP BY 1 ORDER BY 1",
         'grain': ['organization_id'],
         'patterns': [r'(?:show|list) inpatient stays admitted in ' + YEAR + r' by organization']},
+    # Replaced 2026-11-16 on Mike's decision: the earlier version summed the stay table's readmitted_30d flag, which counts a
+    # stay recorded twice as a readmission after zero days (2029: 106 of 505, 21.0%, against 72 of 443, 16.3%).
     'readmission_rate': {
-        'title': '30-day readmission count and rate for inpatient stays discharged in one year',
+        'title': '30-day readmission rate for inpatient stays discharged in one year: stays discharged (each hospital stay counted once), how many were followed by an inpatient admission 1 to 30 days after discharge, and the rate',
         'params': {'year': {'type': 'year'}},
-        'sql': "SELECT COUNT(*) AS stays, SUM(readmitted_30d) AS readmitted_30d, ROUND(1.0 * SUM(readmitted_30d) / COUNT(*), 4) AS rate "
-               "FROM stay WHERE type = 'inpatient' AND discharge_known = 1 AND substr(discharge_date, 1, 4) = :year",
+        'sql': _STAY_ONCE + "SELECT COUNT(*) AS stays, SUM(readmitted) AS readmitted_within_30_days, ROUND(1.0 * SUM(readmitted) / COUNT(*), 4) AS rate FROM d",
         'patterns': [r'what was the 30[- ]day readmission rate (?:in|for) ' + YEAR]},
     'appointments_by_status': {
         'title': 'Appointments scheduled in one year by final status',

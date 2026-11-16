@@ -59,6 +59,25 @@ class Scope(unittest.TestCase):
             recipes._DATA_YEARS.clear()
 
 
+
+class Catalogue(unittest.TestCase):
+    def test_the_definitions_that_apply_are_stated_and_the_vocabulary_is_found(self):
+        from clinical_core.agere.tiered import catalogue
+        self.assertIn('hospital stay', [n for n, _ in catalogue.relevant('What was the average length of stay in 2029?')])
+        self.assertIn('lab and vital results', [n for n, _ in catalogue.relevant('How many patients had an HbA1c result in 2027?')])
+        self.assertIn(('glp1_agonist', 'fill.drug_class'), catalogue.vocabulary('How many people filled a GLP-1 receptor agonist?'))
+        self.assertIn(('food', 'social_need.need'), catalogue.vocabulary('patients with food insecurity'))
+        self.assertIn('measurement_latest holds only', catalogue.block('How many patients had an HbA1c result in 2027?'))
+        self.assertNotIn('Pharmacy fills', catalogue.block('How many patients had an HbA1c result in 2027?'))
+        self.assertEqual(catalogue.block('Hello there'), '')
+        self.assertIsNone(catalogue.stated('Hello'))
+        token = catalogue.ENABLED.set(False)
+        try:
+            self.assertFalse(catalogue.enabled())
+        finally:
+            catalogue.ENABLED.reset(token)
+
+
 class CareGaps(unittest.TestCase):
     def test_the_four_rules_on_a_tiny_warehouse(self):
         db = sqlite3.connect(':memory:')
