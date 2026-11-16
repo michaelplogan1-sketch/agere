@@ -61,10 +61,49 @@ def _claude(model, system, user, timeout=180):
     return text, {'model': model, 'tokens': ledger.tokens(usage), 'usd': ledger.claude_usd(model, usage), 'seconds': round(time.monotonic() - started, 2)}
 
 
-def definitions():
-    lines = []
-    for rid, r in recipes.RECIPES.items():
-        lines.append(f"- {rid}: {r['title']}\n  {r['sql']}")
+DEFINITIONS = os.environ.get('AGERE_TIERED_DEFINITIONS', 'nearest')   # 'nearest' (default from 2026-11-16, proof_v6): the closest few recipes' SQL; 'all': every recipe's
+NEAREST = int(os.environ.get('AGERE_TIERED_DEFINITIONS_K', '6'))
+_STOP = set('a an and are as at be by for from had has have how in is it its many much of on or per that the their there this to was were what when which who with each count number one all any did does do'.split())
+
+
+def _words(text):
+    """Content words, singular, years and numbers left out (every recipe takes a year)."""
+    out = set()
+    for w in re.findall(r'[a-z][a-z0-9]*', str(text).lower().replace('_', ' ')):
+        if w in _STOP or len(w) < 2: continue
+        out.add(w[:-1] if len(w) > 3 and w.endswith('s') and not w.endswith('ss') else w)
+    return out
+
+
+def nearest_definitions(question, k=None):
+    """The built-in recipes closest to the question, by words shared with each recipe's name, title, parameters and the
+    tables it reads, each word weighted by how few recipes use it. Code only, no model. -> [recipe id, ...]"""
+    import math
+    k = NEAREST if k is None else k
+    docs = {rid: _words(rid + ' ' + r['title'] + ' ' + ' '.join(r['params']) + ' ' + ' '.join(sorted(recipes.reads(r['sql']))))
+            for rid, r in recipes.RECIPES.items() if recipes.runnable(rid)}
+    df = {}
+    for words in docs.values():
+        for w in words: df[w] = df.get(w, 0) + 1
+    asked = _words(question)
+    # Rare shared words count most, and a recipe with a long description does not win on length alone.
+    score = {rid: sum(math.log((1 + len(docs)) / df[w]) for w in asked & words) / math.sqrt(len(words) or 1) for rid, words in docs.items()}
+    return [rid for rid, s in sorted(score.items(), key=lambda kv: (-kv[1], kv[0])) if s > 0][:k]
+
+
+def definitions(question=None):
+    """The reference SQL the frontier writer is shown. 'all' sends every applicable recipe's SQL (about 98,000 characters
+    with 51 recipes); 'nearest' sends every applicable recipe's name and title on one line each and the SQL of only the
+    few closest to the question, as case-based text-to-SQL work retrieves the nearest solved cases."""
+    usable = [rid for rid in recipes.RECIPES if recipes.runnable(rid)] if store.mapping() else list(recipes.RECIPES)
+    if DEFINITIONS != 'nearest' or question is None:
+        return '\n'.join(f"- {rid}: {recipes.RECIPES[rid]['title']}\n  {recipes.RECIPES[rid]['sql']}" for rid in usable)
+    close = nearest_definitions(question)
+    lines = [f"- {rid}: {recipes.RECIPES[rid]['title']}\n  {recipes.RECIPES[rid]['sql']}" for rid in close]
+    rest = [rid for rid in usable if rid not in close]
+    if rest:
+        lines.append('Other existing definitions (name and what each computes; reuse their tables and rules where they apply):')
+        lines += [f"- {rid}: {recipes.RECIPES[rid]['title'][:140]}" for rid in rest]
     return '\n'.join(lines)
 
 
@@ -124,6 +163,34 @@ Patient identifiers look like WHP-66F4B476DECF or P-1001.
 measurement_latest holds only each patient's most recent value of a concept; to count or average results within a period use measurement.'''
 
 
+FOREIGN_SYSTEM = '''You write one SQL query that answers a data question over a read-only SQLite healthcare warehouse.
+You never see data rows and you never state a number yourself: code will execute your query.
+
+Return exactly one JSON object and nothing else:
+{"sql": "<one SELECT, using :name placeholders for every value taken from the question>",
+ "params": {"<name>": {"type": "year|month|int|text", "value": "<value from the question>"}},
+ "grain": ["<columns that uniquely identify a result row; [] for a single-row result>"],
+ "question_template": "<the question with each parameter value replaced by {name}>"}
+
+If one SELECT cannot fully answer every part of the question (it needs several separate result tables, a statistical
+method, a judgment across documents, or data that is not in these tables), do not approximate. Return instead:
+{"cannot_answer": "<what is needed that these tables or one query cannot give>"}
+
+Rules:
+- Exactly one SELECT (WITH is allowed). No semicolons. Only the listed tables and columns.
+- Filter a calendar year with substr(date_col, 1, 4) = :year and a month with substr(date_col, 1, 7) = :month, adapting to how
+  each column stores its dates.
+- Every period or number the question states must be a parameter, never a literal in the SQL.
+- Compare a text parameter without regard to case: lower(col) = lower(:name).
+- Give each result column a clear name. Order the rows deterministically.
+
+Tables and columns:
+%s
+
+Text columns with few distinct values, and their values:
+%s'''
+
+
 EXAMPLES = os.environ.get('AGERE_TIERED_LLM_EXAMPLES', 'off') == 'on'   # show the writer the nearest verified saved queries
 
 
@@ -141,10 +208,18 @@ def nearest_examples(question, k=3, exclude=()):
 def llm_recipe(question, error=None, model=None, examples=None):
     """Tier 4. -> (recipe dict or None, step). error: one SQL execution error to correct, if any.
     model: a different model for an independent second query (curriculum.confirm); the frontier model by default."""
-    conditions = ', '.join(r[0] for r in store.run("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition' ORDER BY 1")[1])
-    system = LLM_SYSTEM % (store.schema_text(), definitions(), conditions)
     from . import catalogue
-    governed = catalogue.block(question) if catalogue.enabled() else ''
+    if store.foreign():
+        # A warehouse that is not this semantic layer and has no mapping: the same rules, its own tables and vocabulary, and
+        # none of this layer's recipes, vocabulary or governed definitions, which name tables it does not have.
+        system, governed = FOREIGN_SYSTEM % (store.schema_text(), store.vocabulary_text()), ''
+    else:
+        try:
+            conditions = ', '.join(r[0] for r in store.run("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition' ORDER BY 1")[1])
+        except store.RecipeError:
+            conditions = '(not listed: this mapped warehouse has no concept_patient table)'
+        system = LLM_SYSTEM % (store.schema_text(), definitions(question), conditions)
+        governed = catalogue.block(question) if catalogue.enabled() else ''
     if governed: system += '\n\n' + governed
     if examples is None and EXAMPLES and model in (None, LLM): examples = nearest_examples(question)
     shown = ''.join(f'\nSaved question: {t}\nIts verified SQL: {q}\n' for t, q in (examples or []))
@@ -209,6 +284,7 @@ def slm_choose_and_fill(question, db=None):
     """Tier 3 without Tier 2: the small model picks a recipe and fills it. -> (recipe_id, params) or (None, None), step."""
     catalog = {}
     for rid, r in recipes.RECIPES.items():
+        if not recipes.runnable(rid): continue
         catalog[rid] = {'computes': r['title'], 'parameters': {
             n: ({'allowed': p['values']} if 'values' in p else {'vocabulary': 'lower-case name'} if p['type'] == 'vocabulary'
                 else {'format': {'year': 'YYYY', 'month': 'YYYY-MM', 'int': 'integer', 'text': 'words from the question', 'patient': 'identifier as written'}[p['type']]})
@@ -231,7 +307,7 @@ def slm_choose_and_fill(question, db=None):
 def s1_classify(question, ledger_path=None):
     """Tier 2. -> (recipe_id or None, confidence, step). System One picks one recipe shape or 'none'."""
     from ..clinical import system_one
-    options = {rid: r['title'] for rid, r in recipes.RECIPES.items()}
+    options = {rid: r['title'] for rid, r in recipes.RECIPES.items() if recipes.runnable(rid)}
     options['none'] = 'The question asks for something none of the listed computations produce'
     started = time.monotonic()
     steps_cost, label, p, provider, error = 0.0, None, 0.0, None, None

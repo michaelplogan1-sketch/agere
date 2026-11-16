@@ -96,7 +96,7 @@ def _columns():
         from . import store
         db = store.connect()
         try:
-            tables = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')")]
+            tables = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view') UNION SELECT name FROM sqlite_temp_master WHERE type = 'view'")]
             _COLUMNS.extend(sorted({r[1] for t in tables for r in db.execute(f'PRAGMA table_info("{t}")') if '_' in r[1] and len(r[1]) > 5}))
         except Exception:
             _COLUMNS.append('')

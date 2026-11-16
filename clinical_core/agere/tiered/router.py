@@ -135,7 +135,10 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
             escalations.append({'from': 'system1', 'reason': step['outcome'] + f" (confidence {step.get('confidence')})"})
     if 'slm' in tiers and 'recipes' in tiers and spent() < token_ceiling:
         if chosen is not None:
-            params, step = models.slm_slots(question, chosen, lookup)
+            try:
+                params, step = models.slm_slots(question, chosen, lookup)
+            except store.RecipeError as exc:   # the recipe's vocabulary cannot be read on this warehouse: the rung does not apply
+                params, step = None, {'tier': 'slm', 'outcome': 'not_applicable', 'reason': str(exc)[:160], 'tokens': 0, 'usd': 0.0}
             steps.append(step)
             if params is not None:
                 fits, step = models.s1_fit(question, chosen, params, s1_ledger)

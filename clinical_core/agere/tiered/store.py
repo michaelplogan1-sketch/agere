@@ -1,4 +1,13 @@
-"""Read-only access to the semantic layer, and the one place SQL is executed."""
+"""Read-only access to the semantic layer, and the one place SQL is executed.
+
+A customer's warehouse rarely has this layer's tables. Two ways to run on one (AGERE_TIERED_DB names its SQLite file):
+  * mapped (AGERE_TIERED_MAPPING names a mapping file): each semantic-layer table is a view over the customer's own tables,
+    created on every connection, so every recipe, saved recipe and governed definition runs unchanged. The mapping declares
+    the semantic-layer version it presents; saved recipes verified on that version apply.
+  * foreign (AGERE_TIERED_FOREIGN=on, no mapping): the customer's tables are shown as they are. Recipes and
+    saved recipes do not apply; the frontier SQL writer works from that schema and its own vocabulary.
+"""
+import json
 import os
 import re
 import sqlite3
@@ -18,6 +27,42 @@ def path():
     return Path(os.environ.get('AGERE_TIERED_DB', DEFAULT_DB))
 
 
+_mappings = {}
+
+
+def mapping():
+    """The mapping file in force, or None. {'semantic_layer': version, 'as_of': date, 'views': {table: SELECT over main.<table>}}"""
+    name = os.environ.get('AGERE_TIERED_MAPPING')
+    if not name: return None
+    if name not in _mappings:
+        m = json.loads(Path(name).read_text())
+        if not isinstance(m.get('views'), dict) or not m.get('semantic_layer'): raise ValueError(f'Mapping {name} needs views and semantic_layer')
+        _mappings[name] = m
+    return _mappings[name]
+
+
+
+
+def foreign():
+    """True when the warehouse is declared not to be this semantic layer (AGERE_TIERED_FOREIGN=on) and no mapping presents it
+    as one. Declared, not guessed: a small or partial copy of this layer is still this layer."""
+    return not mapping() and os.environ.get('AGERE_TIERED_FOREIGN', 'off') == 'on'
+
+
+def tables(db=None):
+    """Tables a recipe may read on this warehouse: this layer's, the mapped ones, or a foreign warehouse's own."""
+    m = mapping()
+    if m: return tuple(t for t in TABLES if t in m['views'])
+    if foreign():
+        own = db is None
+        db = db or connect()
+        try:
+            return tuple(r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite%' ORDER BY name"))
+        finally:
+            if own: db.close()
+    return TABLES
+
+
 # Tables whose rows belong to one patient. Restricting these restricts every recipe: the document catalog is built
 # from the three document tables, so it is restricted with them.
 PATIENT_TABLES = tuple(t for t in TABLES if t not in ('document', 'organization', 'clinician')) + ('clinical_note', 'scanned_document', 'hie_document')
@@ -30,11 +75,24 @@ def connect(cohort=None):
     to its SQL and no model involved."""
     db = sqlite3.connect(path().resolve().as_uri() + '?mode=ro', uri=True)
     if cohort is not None:
+        if foreign(): raise RecipeError('A patient group cannot be selected on a warehouse with no mapping')
         db.execute('CREATE TEMP TABLE cohort(patient_id TEXT PRIMARY KEY)')
         db.executemany('INSERT OR IGNORE INTO cohort VALUES(?)', [(str(p),) for p in cohort])
-        for table in PATIENT_TABLES:
-            db.execute(f'CREATE TEMP VIEW {table} AS SELECT * FROM main.{table} WHERE patient_id IN (SELECT patient_id FROM cohort)')
-    db.execute(DOCUMENT_VIEW)
+    m = mapping()
+    if m:
+        # Each semantic-layer table is the mapping's SELECT over the customer's tables (always written main.<table>), restricted
+        # to the cohort the same way as below.
+        for table, sql in m['views'].items():
+            body = f'SELECT * FROM ({sql})' + (' WHERE patient_id IN (SELECT patient_id FROM cohort)' if cohort is not None and table in PATIENT_TABLES else '')
+            db.execute(f'CREATE TEMP VIEW "{table}" AS {body}')
+        if 'meta' not in m['views']:
+            db.execute("CREATE TEMP VIEW meta(key, value) AS VALUES ('version', ?), ('as_of', ?)".replace('?', "'%s'") % (m['semantic_layer'].replace("'", ''), str(m.get('as_of', '')).replace("'", '')))
+        if {'clinical_note', 'scanned_document', 'hie_document'} <= set(m['views']): db.execute(DOCUMENT_VIEW)
+    elif not foreign():
+        if cohort is not None:
+            for table in PATIENT_TABLES:
+                db.execute(f'CREATE TEMP VIEW {table} AS SELECT * FROM main.{table} WHERE patient_id IN (SELECT patient_id FROM cohort)')
+        db.execute(DOCUMENT_VIEW)
     db.execute('PRAGMA query_only=ON')
     return db
 
@@ -50,6 +108,26 @@ def portable(sql, cohort=None):
     the view exists only on this module's connections. With a cohort, the patient ids and the restricted tables are
     inlined the same way, so the saved SQL returns the cohort's result and not the whole population's."""
     text = sql.strip().rstrip(';')
+    m = mapping()
+    if m:   # on a mapped warehouse the semantic-layer tables a query reads are inlined from the mapping, in mapping order
+        reads = lambda s, name: re.search(rf'(?i)(?<![.\w]){name}\b(?!_)', s)
+        need = {t for t in m['views'] if reads(text, t)}
+        while True:   # a mapped view may read another mapped view
+            more = {t for t, v in m['views'].items() if t not in need and any(reads(m['views'][n], t) for n in need)}
+            if not more: break
+            need |= more
+        ctes = []
+        if cohort is not None:
+            ids = sorted({str(p) for p in cohort})
+            ctes.append('cohort(patient_id) AS (' + ('VALUES ' + ', '.join("('" + p.replace("'", "''") + "')" for p in ids) if ids else 'SELECT NULL WHERE 0') + ')')
+        for table, view in m['views'].items():
+            if table not in need: continue
+            inside = cohort is not None and table in PATIENT_TABLES
+            ctes.append(f'"{table}" AS (' + (f'SELECT * FROM ({view}) WHERE patient_id IN (SELECT patient_id FROM cohort)' if inside else view) + ')')
+        if not ctes: return text
+        if re.match(r'(?is)^\s*with\s+recursive\b', text): raise RecipeError('A recursive recipe cannot be saved on a mapped warehouse')
+        if re.match(r'(?is)^\s*with\b', text): return re.sub(r'(?is)^\s*with\b', 'WITH ' + ', '.join(ctes) + ',', text, count=1)
+        return 'WITH ' + ', '.join(ctes) + ' ' + text
     uses_documents = bool(re.search(r'(?i)\bdocument\b(?!_)', text))
     ctes = []
     if cohort is not None:
@@ -82,6 +160,9 @@ def texts(record_ids, db):
 
 
 def schema_version(db=None):
+    m = mapping()
+    if m: return m['semantic_layer']   # the semantic-layer version the mapping presents; saved recipes verified on it apply
+    if foreign(): return 'foreign:' + path().name
     own = db is None
     db = db or connect()
     try:
@@ -96,9 +177,12 @@ _as_of = {}
 
 def as_of(db):
     """The semantic layer's own snapshot date: the clock for anything dated, never today's date."""
-    key = str(path())
+    key = str(path()) + '|' + str(os.environ.get('AGERE_TIERED_MAPPING'))
     if key not in _as_of:
-        _as_of[key] = db.execute("SELECT value FROM meta WHERE key = 'as_of'").fetchone()[0][:10]
+        if foreign():
+            _as_of[key] = os.environ.get('AGERE_TIERED_AS_OF') or time.strftime('%Y-%m-%d')
+        else:
+            _as_of[key] = db.execute("SELECT value FROM meta WHERE key = 'as_of'").fetchone()[0][:10]
     return _as_of[key]
 
 
@@ -107,9 +191,32 @@ def schema_text(db=None):
     own = db is None
     db = db or connect()
     try:
-        return '\n'.join(f"{t}({', '.join(c[1] for c in db.execute(f'PRAGMA table_info({t})'))})" for t in TABLES)
+        return '\n'.join(f"{t}({', '.join(c[1] for c in db.execute(f'PRAGMA table_info(\"{t}\")'))})" for t in tables(db))
     finally:
         if own: db.close()
+
+
+_vocab = {}
+
+
+def vocabulary_text(db=None, limit=40):
+    """For a foreign warehouse: each text column with at most `limit` distinct values, and those values. Column metadata,
+    not rows: what a person writing SQL for an unfamiliar warehouse would look up first."""
+    key = str(path())
+    if key not in _vocab:
+        own = db is None
+        db = db or connect()
+        lines = []
+        try:
+            for table in tables(db):
+                for col, kind in [(c[1], (c[2] or '').upper()) for c in db.execute(f'PRAGMA table_info("{table}")')]:
+                    if 'INT' in kind or 'REAL' in kind or re.search(r'(?i)date|_id$|amount|value_as_number|days', col): continue
+                    values = [r[0] for r in db.execute(f'SELECT DISTINCT "{col}" FROM "{table}" WHERE "{col}" IS NOT NULL LIMIT {limit + 1}')]
+                    if 0 < len(values) <= limit: lines.append(f'{table}.{col}: ' + ', '.join(sorted(str(v) for v in values)))
+        finally:
+            if own: db.close()
+        _vocab[key] = '\n'.join(lines)
+    return _vocab[key]
 
 
 class RecipeError(ValueError):

@@ -25,7 +25,7 @@ class Takeover(unittest.TestCase):
         self.env = mock.patch.dict(os.environ, {'AGERE_TIERED_DB': str(Path(self.dir.name) / 's.sqlite3')})
         self.env.start()
         self.schema = mock.patch.object(store, 'TABLES', ('patient',)); self.schema.start()
-        self.defs = mock.patch.object(models, 'definitions', lambda: ''); self.defs.start()
+        self.defs = mock.patch.object(models, 'definitions', lambda question=None: ''); self.defs.start()
         store._as_of.clear()
 
     def tearDown(self):

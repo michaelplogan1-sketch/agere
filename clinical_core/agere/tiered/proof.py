@@ -424,13 +424,19 @@ def run(runs=3, workers=4):
     scratch = Path(tempfile.mkdtemp(prefix='proof-'))
     shutil.copy(os.environ.get('AGERE_TIERED_BOTTLES', bottle_store.DEFAULT), scratch / 'bottles.sqlite3')
     data = json.loads(QUESTIONS.read_text())
-    db = store.connect()
+    # References are computed on the semantic layer itself. On a portability run the arms answer over another warehouse
+    # (AGERE_TIERED_DB, with or without a mapping) holding the same facts; AGERE_PROOF_REFERENCE_DB names the original.
+    reference_db = os.environ.get('AGERE_PROOF_REFERENCE_DB')
+    import sqlite3
+    db = sqlite3.connect(Path(reference_db).resolve().as_uri() + '?mode=ro', uri=True) if reference_db else store.connect()
     items = []
     for q in data['questions']:
         for k, phrasing in enumerate(q['phrasings']):
             # A phrasing may accept more than one reading (recorded in the question file's audit notes); each is computed here.
             names = (q.get('accept_by_phrasing') or {}).get(str(k)) or [q.get('reference')]
             refs = [] if q.get('unanswerable') else [[list(r) for r in REFERENCES[n](db, *q.get('args', []))] for n in names]
+            if q.get('numbers_only'):   # labels may rightly be the warehouse's own codes; only the numbers are compared
+                refs = [[[v for v in row if isinstance(v, (int, float))] for row in ref] for ref in refs]
             items.append({'id': q['id'], 'phrasing': k, 'question': phrasing, 'domain': q['domain'], 'reference': refs[0] if refs else None, 'references': refs,
                           'unanswerable': q.get('unanswerable', False)})
     db.close()
