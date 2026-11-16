@@ -71,6 +71,11 @@ DEFINITIONS = (
      "Social-need screens are in social_need: need is one of food, transport, housing, utilities, cost_of_care, safety; a "
      "positive screen is positive = 1."),
     ('deaths', r'death|died|mortality', "Deaths are in death, one row per patient, dated by death_date."),
+    # Added 2026-11-16: proof_v6 found both Agere arms counting flu shots as vaccine 'influenza' only, because the vocabulary
+    # below named that one value; high-dose doses were left out.
+    ('immunizations', r'vaccin|immuniz|\bflu\b|influenza|\bshots?\b',
+     "Vaccinations are in immunization, one row per dose, dated by event_date. A flu shot is vaccine 'influenza' or "
+     "'influenza high-dose': count both unless the question names one."),
 )
 
 # The warehouse's own word for common phrasings: (pattern in the question, the value to use, where it lives)
@@ -88,7 +93,7 @@ VOCABULARY = (
     (r'\bno[- ]?shows?\b', 'no_show', 'appointment.final_status'),
     (r'\bmammogra', 'bilateral_screening_mammography', 'cancer_screening.test'),
     (r'\bemergency (?:department|room)|\bed visits?\b|\ber visits?\b', 'ed_visit', 'utilization_event.kind'),
-    (r'\bflu (?:shot|vaccine)', 'influenza', 'immunization.vaccine'),
+    (r'\bflu (?:shot|vaccine)|\binfluenza vaccin', "influenza and influenza high-dose (both are flu shots)", 'immunization.vaccine'),
 )
 
 
