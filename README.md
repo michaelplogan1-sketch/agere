@@ -10,7 +10,7 @@ it correctly, and a frontier model is only used when nothing cheaper can:
 4. **Small models** (`models.py`, `near.py`): a typed-judgment classifier and a small model pick and fill a recipe.
 5. **Frontier model** (`models.py`, `takeover.py`): writes new SQL, which is checked before it runs and saved once verified.
 
-Each answer either states the definitions it used and the record behind it, or declines. Saved recipes keep a track record
+Each answer either states the definitions it used and the record behind it, or declines. A question with two plain readings ("how many patients were admitted": different patients, or admissions) is answered both ways (`readings.py`); when the answers differ the user is shown both and picks, instead of Agere guessing. Saved recipes keep a track record
 and stop answering when the evidence turns against them (`upkeep.py`). All patient data here is synthetic.
 
 ## Where the product is
