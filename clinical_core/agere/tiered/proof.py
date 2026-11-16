@@ -896,7 +896,7 @@ def run(runs=3, workers=4):
     for q in data['questions']:
         for k, phrasing in enumerate(q['phrasings']):
             # A phrasing may accept more than one reading (recorded in the question file's audit notes); each is computed here.
-            names = (q.get('accept_by_phrasing') or {}).get(str(k)) or [q.get('reference')]
+            names = (q.get('accept_by_phrasing') or {}).get(str(k)) or ([q['reference']] if q.get('reference') else [])
             refs = [] if q.get('unanswerable') else [[list(r) for r in REFERENCES[n](db, *q.get('args', []))] for n in names]
             if q.get('numbers_only'):   # labels may rightly be the warehouse's own codes; only the numbers are compared
                 refs = [[[v for v in row if isinstance(v, (int, float))] for row in ref] for ref in refs]
