@@ -11,7 +11,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-from . import store
+from . import ledger, store
 
 DEFAULT = 'artifacts/agere-tiered-core/bottles.sqlite3'
 SLOT = {'year': r'20\d{2}', 'month': r'20\d{2}-(?:0[1-9]|1[0-2])', 'int': r'\d{1,6}', 'text': r'[a-z0-9][a-z0-9 _\-]{0,60}'}
@@ -109,7 +109,8 @@ class Bottles:
         """One line of a recipe's track record. kind: use, near_use, check_agree, check_differ, misapplied."""
         if kind not in self.EVENTS: raise ValueError(f'unknown track-record event {kind}')
         self.db.execute('INSERT INTO bottle_event(at, bottle_id, kind, question, params_json, detail_json) VALUES(?,?,?,?,?,?)',
-                        (at or time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), bottle_id, kind, question,
+                        (at or time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), bottle_id, kind,
+                         ledger.fingerprint(question) if (question is not None and ledger.hosted()) else question,
                          json.dumps(params, default=str) if params is not None else None, json.dumps(detail, default=str) if detail is not None else None))
         self.db.commit()
 

@@ -105,9 +105,16 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
         escalations.append({'from': 'scope', 'reason': 'this warehouse cannot compute it: ' + why})
         return done('unanswered', None, missing='This warehouse cannot compute it: ' + why + '. See measure_readiness.')
 
+    from . import corrections
+    reported = corrections.blocked(question)   # recipes a person reported wrong for this wording, until a reviewer settles it
+
     # Tier 0: bottles
     if 'bottles' in tiers and bottles is not None:
         hit = bottles.match(question, statuses=bottle_statuses)  # by default a provisional bottle is never used to answer
+        if hit and hit[0]['id'] in reported:   # reported wrong by this organization (hosted reports do not retire a shared recipe)
+            steps.append({'tier': 'bottles', 'outcome': 'reported_wrong_for_this_question', 'bottle_id': hit[0]['id'], 'tokens': 0, 'usd': 0.0})
+            escalations.append({'from': 'bottles', 'reason': 'the saved recipe was reported wrong for this question; the report is open'})
+            hit = None
         if hit:
             bottle, params = hit
             got = attempt('bottles', bottle['sql'], params, grain=bottle['grain'], read=bottle.get('read'))
@@ -121,9 +128,6 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
         else:
             steps.append({'tier': 'bottles', 'outcome': 'no_match', 'tokens': 0, 'usd': 0.0})
             escalations.append({'from': 'bottles', 'reason': 'no bottle matches this question shape'})
-
-    from . import corrections
-    reported = corrections.blocked(question)   # recipes a person reported wrong for this wording, until a reviewer settles it
 
     def run_recipe(tier, recipe_id, params):
         recipe = recipes.RECIPES[recipe_id]

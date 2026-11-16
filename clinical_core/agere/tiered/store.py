@@ -336,6 +336,8 @@ def run(sql, params=None, db=None):
         raise RecipeError('A recipe is exactly one SELECT statement')
     if re.search(r'(?i)\b(scanned_document_text|payload)\b', text):
         raise RecipeError('A recipe may not select document text; use a reading plan')
+    # The words alone are not enough: SELECT * FROM record returns record.payload (buyer review). The database itself refuses
+    # any read of document text in a recipe, however the query is written; documents are read only through texts().
     if re.search(r'(?i)\b(concept|drug_class)\s*\)?\s+(not\s+)?(like|glob)\b', text):
         raise RecipeError('Compare concept and drug_class with = or IN against exact vocabulary values; LIKE would also match other values (diabetes matches prediabetes)')
     if re.search(r'(?i)\b(attach|pragma|insert|update|delete|drop|alter|create|replace|vacuum)\b', text):
@@ -344,11 +346,25 @@ def run(sql, params=None, db=None):
     db = db or connect()
     deadline = time.monotonic() + SECONDS
     db.set_progress_handler(lambda: 1 if time.monotonic() > deadline else 0, 20000)
+    db.set_authorizer(_no_document_text)
     try:
         cur = db.execute(text, params or {})
         return [d[0] for d in cur.description], [list(r) for r in cur.fetchall()]
-    except sqlite3.Error as exc:
+    except sqlite3.DatabaseError as exc:
+        if 'prohibited' in str(exc).lower() or 'not authorized' in str(exc).lower():
+            raise RecipeError('A recipe may not read document text (record.payload, scanned_document_text); use a reading plan') from exc
         raise RecipeError(f'{type(exc).__name__}: {exc}') from exc
     finally:
+        db.set_authorizer(None)
         db.set_progress_handler(None, 0)
         if own: db.close()
+
+
+DOCUMENT_TEXT = {('record', 'payload'), ('scanned_document_text', 'text')}
+
+
+def _no_document_text(action, table, column, _db, _source):
+    """sqlite3 authorizer for recipe SQL: deny reading document text, allow everything else run() already permits."""
+    if action == sqlite3.SQLITE_READ and (str(table).lower(), str(column).lower()) in DOCUMENT_TEXT:
+        return sqlite3.SQLITE_DENY
+    return sqlite3.SQLITE_OK

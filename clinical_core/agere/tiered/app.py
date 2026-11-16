@@ -299,7 +299,7 @@ def _climb(stack, question, cohort, takeover_ok, near):
     try:
         # A question in the vocabulary of the analysis methods goes through the cheap tiers first, then the methods rung
         # (small model restates, code and System One check), and only then to a recipe written by the frontier model.
-        outcome = router.answer(question, tiers=tuple(t for t in TIERS if t != 'llm') if assist else TIERS, bottles=bottles, bottle_new=True,
+        outcome = router.answer(question, tiers=tuple(t for t in TIERS if t != 'llm') if assist else TIERS, bottles=bottles, bottle_new=not ledger_store.hosted(),
                                 s1_ledger=s1_ledger, cohort=cohort)
         if assist and outcome['status'] != 'answered':
             try:
@@ -314,7 +314,7 @@ def _climb(stack, question, cohort, takeover_ok, near):
                 if how.get('method') == 'restatement_not_confirmed' and how.get('restated'): near.update(restated=how['restated'], picked=how.get('picked'))
                 ledger_store.Ledger().write('app_method', question, {'status': 'declined', 'final_tier': None, 'steps': [how], 'seconds': how['seconds'],
                                                                      'validation': {'ok': False, 'reason': how['method']}, 'recipe': None}, config={'tiers': list(ORDER)})
-            later = router.answer(question, tiers=('llm',), bottles=bottles, bottle_new=True, s1_ledger=s1_ledger, cohort=cohort)
+            later = router.answer(question, tiers=('llm',), bottles=bottles, bottle_new=not ledger_store.hosted(), s1_ledger=s1_ledger, cohort=cohort)
             outcome = {**later, 'steps': outcome['steps'] + ([how] if how else []) + later['steps'], 'escalations': outcome['escalations'] + later['escalations'],
                        'seconds': round(outcome['seconds'] + (how['seconds'] if how else 0.0) + later['seconds'], 2)}
     except Exception as exc:  # the bridge never blocks a question: any failure falls through to the existing path

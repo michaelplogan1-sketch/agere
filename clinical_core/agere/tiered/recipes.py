@@ -956,7 +956,9 @@ _DATA_YEARS = set()
 def years_without_data(question, db=None):
     """Code only. Years the question names that the warehouse recorded no care or coverage in (stays, visits, claims, member
     months, appointments, fills, results; not diagnosis onset dates). -> (missing years, the years held), or ([], ...)."""
-    asked = sorted(set(re.findall(r'\b(20\d{2})\b', str(question))))
+    # A year, not any number: not an identifier (P-2031) or a count ("more than 2000 visits").
+    asked = sorted(set(y for y, after in re.findall(r'(?<![\w-])(20\d{2})(?![\w-])(\s+[a-z]+)?', str(question))
+                       if not (after and re.match(r'\s+(?:visits?|patients?|claims?|members?|admissions?|stays?|encounters?|cases?|people|dollars?|times?|days?|hours?|minutes?)$', after, re.I))))
     if not asked: return [], []
     counts = Counter()
     if not _DATA_YEARS and store.foreign():

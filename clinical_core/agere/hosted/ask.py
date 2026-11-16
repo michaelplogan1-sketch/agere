@@ -92,6 +92,8 @@ def answer(ctx, org, uid, body, ip=None):
         return 503, {'error': 'The server is busy. Try again in a moment.'}
     started = time.monotonic()
     app.EARLIER.set(tuple(previous or ()))  # set per request: nothing carries over from another conversation
+    from ..tiered import corrections
+    corrections.ORG.set(str(org))   # reports this organization made block methods for it alone
     try:
         result, standalone, note = None, question, None
         if group and GROUP_WORDS.search(question):
@@ -197,24 +199,28 @@ def report_wrong(ctx, org, uid, body, ip=None):
         last = _answers.get((org, str(uid), str(body.get('answer_id') or '')[:32]))
     if not last: return 404, {'error': 'That answer is no longer held on the server; ask the question again and report the new answer.'}
     try:
-        rid = corrections.report(last['question'], last, body.get('note'), reporter=f'{org}:{uid}')
+        rid = corrections.report(last['question'], last, body.get('note'), reporter=f'{org}:{uid}', org=str(org))
     except ValueError as exc:
         return 400, {'error': str(exc)}
     ctx.auth.audit(org, uid, 'ask.reported_wrong', {'report': rid, 'tier': last['tier'], **question_ref(last['question'])}, ip=ip)
-    stopped = ('The saved recipe that gave it will not answer again until it is reviewed.' if (last['recipe'] or {}).get('bottle_id') is not None
+    stopped = ('The saved recipe that gave it will not answer this question for your organization until it is reviewed.' if (last['recipe'] or {}).get('bottle_id') is not None
                else 'The built-in recipe that gave it will not answer this question again until it is reviewed.' if (last['recipe'] or {}).get('recipe_id')
                else 'A reviewer will check the query that produced it.')
     return 200, {'report_id': rid, 'message': 'Thank you: the answer is reported. ' + stopped}
 
 
-def reports(status=None):
+def reports(org, status=None):
+    """This organization's reports only."""
     from ..tiered import corrections
-    return {'reports': corrections.reports(status=status), 'summary': corrections.summary()}
+    return {'reports': corrections.reports(status=status, org=str(org)), 'summary': corrections.summary(org=str(org))}
 
 
 def resolve(ctx, org, uid, body, ip=None):
     from ..tiered import corrections
-    corrections.resolve(int(body['id']), str(body.get('resolution')), f'{org}:{uid}', body.get('note') or '')
+    try:
+        corrections.resolve(int(body['id']), str(body.get('resolution')), f'{org}:{uid}', body.get('note') or '', org=str(org))
+    except KeyError:
+        return 404, {'error': 'No such report in this organization.'}
     ctx.auth.audit(org, uid, 'ask.report_resolved', {'report': int(body['id']), 'resolution': body.get('resolution')}, ip=ip)
-    return 200, {'ok': True, 'summary': corrections.summary()}
+    return 200, {'ok': True, 'summary': corrections.summary(org=str(org))}
 

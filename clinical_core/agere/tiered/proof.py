@@ -961,6 +961,7 @@ def outcome_kind(item, o):
     """right +1, declined 0, wrong -PENALTY; and, for questions with two plain readings (a set's 'readings'):
     asked_right +1 when every reading the stack returned matches its reference, guessed 0 when one figure matches one of the
     readings (right for some askers, not the others), wrong otherwise. Asking on a question with one reading is 'asked', 0."""
+    if o.get('status') == 'error': return 'error'   # a crash is reported as one, scored 0, never hidden among declines
     if o.get('status') == 'needs_choice':
         if item.get('reading_refs'):
             # Matched by figures, not by labels: each reading the set names must be given by a different returned reading
@@ -1073,11 +1074,13 @@ def report(results, items, runs, wall, data):
         consistent = sum(1 for v in groups.values() if len(set(v)) == 1)
         all_right = sum(1 for (qid, _), v in groups.items() if all(k in ('right', 'asked_right') or (k == 'declined' and next(x for x in rs if x['id'] == qid)['unanswerable']) for k in v))
         tiers = Counter(str(r['tier']) for r in rs if r['kind'] == 'right')
-        summary[arm] = {'right': c['right'], 'declined': c['declined'], 'wrong': c['wrong'], 'asked_right': c['asked_right'], 'guessed': c['guessed'], 'asked': c['asked'], 'score': score, 'answers': len(rs), 'usd': round(sum(r['usd'] for r in rs), 4),
+        summary[arm] = {'right': c['right'], 'declined': c['declined'], 'wrong': c['wrong'], 'asked_right': c['asked_right'], 'guessed': c['guessed'], 'asked': c['asked'],
+                        'errors': c['error'], 'score': score, 'answers': len(rs), 'usd': round(sum(r['usd'] for r in rs), 4),
                         'seconds_each': round(sum(r['seconds'] for r in rs) / max(1, len(rs)), 2), 'same_outcome_every_run': consistent, 'phrasings': len(groups),
                         'right_every_run': all_right, 'right_by_rung': dict(tiers)}
         s = summary[arm]
         lines += [f"{name}", f"  right {s['right']}  declined {s['declined']}  wrong {s['wrong']}  of {s['answers']}   score {s['score']} (best possible {s['answers']})",
+                  *([f"  errors (crashes, scored 0): {s['errors']}"] if s['errors'] else []),
                   *([f"  two-reading questions: both readings given and right {s['asked_right']}, one reading given (0) {s['guessed']}; asked on a one-reading question (0) {s['asked']}"]
                     if s['asked_right'] or s['guessed'] or s['asked'] else []),
                   f"  every run right (or correctly declined): {s['right_every_run']} of {s['phrasings']} phrasings; same outcome on every run: {s['same_outcome_every_run']} of {s['phrasings']}",

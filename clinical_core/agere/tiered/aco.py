@@ -95,6 +95,10 @@ def contracts():
 _ready = {}
 
 
+import threading
+_BUILD = threading.RLock()
+
+
 def install(db, cohort=None):
     """Create the governed ACO views on one connection (before it is made read-only). Called by store.connect."""
     db.execute('CREATE TEMP TABLE aco_contract(contract_id TEXT, payer_id TEXT, year TEXT, benchmark_pmpm_dollars REAL, '
@@ -105,7 +109,8 @@ def install(db, cohort=None):
     key = str(path)
     if key not in _ready:
         try:
-            if not path.exists(): build(path)
+            with _BUILD:   # one build per process: two threads writing the same .building file deleted each other's (design review)
+                if key not in _ready and not path.exists(): build(path)
             _ready[key] = True
         except (sqlite3.Error, KeyError, ValueError):   # a warehouse without member months or diagnoses: no risk tables
             _ready[key] = False

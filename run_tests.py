@@ -9,6 +9,7 @@ Claude calls off, so a test cannot spend on the paid API. A file passes when its
 """
 import argparse
 import os
+import re
 import subprocess
 import sys
 import time
@@ -25,7 +26,8 @@ def files(legacy):
 
 
 def run_one(path, limit):
-    env = {k: v for k, v in os.environ.items() if k != 'ANTHROPIC_API_KEY'}
+    # No provider key reaches a test: every paid model and classifier service (Anthropic, OpenAI, Perplexity, TypeSafe ...).
+    env = {k: v for k, v in os.environ.items() if not re.search(r'API_KEY$|_TOKEN$|_SECRET$', k) or k == 'AGERE_SECRET_KEY'}
     env.update({'PYTHONPATH': str(ROOT) + os.pathsep + env.get('PYTHONPATH', ''), 'AGERE_CLAUDE_TRANSPORT': '', 'AGERE_CLAUDE': 'off',
                 'PYTHONDONTWRITEBYTECODE': '1'})
     start = time.time()

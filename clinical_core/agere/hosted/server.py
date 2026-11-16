@@ -280,7 +280,7 @@ def make_handler(ctx):
                 if path == '/api/ask/reports':   # wrong-answer reports and time to fix, for reviewers
                     if not self.require(p, 'admin'): return self.error(403, 'Reviewing reports needs the admin role')
                     from . import ask
-                    return self.send(200, ask.reports(dict(parse_qsl(urlsplit(self.path).query)).get('status')))
+                    return self.send(200, ask.reports(self.org_slug(p), dict(parse_qsl(urlsplit(self.path).query)).get('status')))
                 if path == '/api/uploads':
                     root = ctx.uploads_root(self.org_slug(p))
                     items = [{'name': x.name, 'kind': 'folder' if x.is_dir() else 'file',
@@ -529,11 +529,11 @@ def make_handler(ctx):
                 if role not in RANK or (role == 'owner' and p['role'] != 'owner'):
                     raise PermissionError('cannot grant that role')
                 user, password = ctx.auth.find_or_create_user(email, body.get('name')) if hasattr(ctx.auth, 'find_or_create_user') else (None, None)
-                ctx.auth.add_member(org, user or email, role, actor=uid, ip=self.client_ip())
+                ctx.auth.add_member(org, user or email, role, actor=uid, ip=self.client_ip(), actor_role=p['role'])
                 return self.send(200, {'ok': True, 'email': email, 'role': role, 'temporary_password': password})
             if path == '/api/admin/members/remove':
                 email = str(body['email']).strip().lower()
-                ctx.auth.remove_member(org, email, actor=uid, ip=self.client_ip())
+                ctx.auth.remove_member(org, email, actor=uid, ip=self.client_ip(), actor_role=p['role'])
                 return self.send(200, {'ok': True})
             if path == '/api/admin/keys':
                 role = str(body.get('role') or 'analyst')
