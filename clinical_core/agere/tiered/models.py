@@ -120,7 +120,8 @@ Procedure Report, Surgery/Procedure, Home Health Orders, Pathology, Discharge Su
 Discharge summary; for clinical_note it is a lower snake case note type such as office_followup, discharge_summary, ed_note.
 note_fact holds facts already extracted from notes by rules: fact_type is one of medication_days_used, medication_nonadherence,
 symptom, dyspnea, follow_up, edema, imaging_finding, social_need, smoking_status, goals_of_care, ejection_fraction, walk_distance.
-Patient identifiers look like WHP-66F4B476DECF or P-1001.'''
+Patient identifiers look like WHP-66F4B476DECF or P-1001.
+measurement_latest holds only each patient's most recent value of a concept; to count or average results within a period use measurement.'''
 
 
 EXAMPLES = os.environ.get('AGERE_TIERED_LLM_EXAMPLES', 'off') == 'on'   # show the writer the nearest verified saved queries
