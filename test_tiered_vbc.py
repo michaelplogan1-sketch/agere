@@ -67,7 +67,9 @@ class Catalogue(unittest.TestCase):
         self.assertIn('lab and vital results', [n for n, _ in catalogue.relevant('How many patients had an HbA1c result in 2027?')])
         self.assertIn(('glp1_agonist', 'fill.drug_class'), catalogue.vocabulary('How many people filled a GLP-1 receptor agonist?'))
         self.assertIn(('food', 'social_need.need'), catalogue.vocabulary('patients with food insecurity'))
-        self.assertIn('measurement_latest holds only', catalogue.block('anything'))
+        self.assertIn('measurement_latest holds only', catalogue.block('How many patients had an HbA1c result in 2027?'))
+        self.assertNotIn('Pharmacy fills', catalogue.block('How many patients had an HbA1c result in 2027?'))
+        self.assertEqual(catalogue.block('Hello there'), '')
         self.assertIsNone(catalogue.stated('Hello'))
         token = catalogue.ENABLED.set(False)
         try:

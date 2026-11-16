@@ -104,9 +104,13 @@ def vocabulary(question):
 
 
 def block(question):
-    """The text the SQL writer is given: every governed definition, then the vocabulary this question needs."""
+    """The text the SQL writer is given: the governed definitions this question calls for, then its vocabulary. Empty when none apply."""
+    # Only the definitions the question's words call for: proof_v5 found the whole catalogue in every prompt added about half
+    # to the frontier rung's cost for a gain of three right answers in 288.
+    found = relevant(question)
+    if not found and not vocabulary(question): return ''
     lines = ['Governed definitions (follow these; they decide between plausible readings):']
-    lines += [f'- {name}: {text}' for name, _, text in DEFINITIONS]
+    lines += [f'- {name}: {text}' for name, text in found]
     words = vocabulary(question)
     if words:
         lines.append("This question's words in the warehouse's own vocabulary: " + '; '.join(f'{value} ({where})' for value, where in words))
