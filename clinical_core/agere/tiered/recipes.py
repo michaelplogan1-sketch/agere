@@ -437,6 +437,14 @@ RECIPES = {
         'grain': ['patient_id'],
         'empty': 'No member has an open gap for that measure in that year',
         'patterns': [r'(?:list|show|who has) (?:the )?(?:open )?(?P<measure>diabetes_a1c|statin_cardiovascular|breast_cancer_screening|annual_wellness_visit) gaps? (?:in|for) ' + YEAR]},
+    'stays_discharged_each_once': {
+        'title': "Inpatient hospital stays discharged in one year, each stay counted once (rows that repeat, overlap or continue one stay are one stay): how many, and the average length of stay in days (discharge date minus admission date)",
+        'params': {'year': {'type': 'year'}},
+        'sql': "WITH " + _STAYS + "d AS (SELECT admit_date, discharge_date FROM st WHERE discharge_date IS NOT NULL AND substr(discharge_date, 1, 4) = :year) "
+               "SELECT :year AS year, COUNT(*) AS stays_discharged, ROUND(AVG(julianday(discharge_date) - julianday(admit_date)), 2) AS average_length_of_stay_days FROM d",
+        'grain': ['year'],
+        'patterns': [r'how many (?:inpatient )?(?:hospital )?stays were discharged (?:in|during) ' + YEAR + r'(?:,? counting each (?:hospital )?stay once)?',
+                     r'what was the average length of stay (?:in days )?for (?:inpatient )?(?:hospital )?stays discharged (?:in|during) ' + YEAR + r'(?:,? counting each (?:hospital )?stay once)?']},
     'readmission_labs': {
         'title': "For one patient, lab and vital results by period around the admission on a given date: the stay before it, between the stays, and the readmission (count, lowest, highest, last date)",
         'params': {'patient_id': {'type': 'patient'}, 'readmit_date': {'type': 'date'}},
@@ -599,6 +607,39 @@ SECOND_QUESTION = re.compile(r'(?:[,;?]|\band\b|\balso\b|\bplus\b)\s*(?:and\s+|a
 
 
 _COLUMN_TABLES = {}
+
+
+EACH_STAY_ONCE = re.compile(r'\b(?:each|every) (?:hospital |inpatient )?stay (?:counted )?(?:once|a single time)|\b(?:duplicat|overlapp)\w* (?:stay|row)', re.I)
+
+
+def needs_whole_stays(question, sql):
+    """Code only. The question asks for each hospital stay counted once, and the query counts stay rows or events instead of
+    whole stays (the _STAYS episode logic). -> a message, or None."""
+    if not EACH_STAY_ONCE.search(question): return None
+    if 'st AS (' in str(sql) or 'raw AS (' in str(sql): return None
+    return 'The question asks for each hospital stay counted once; this query does not merge repeated, overlapping or continuing stay rows into one stay'
+
+
+_DATA_YEARS = set()
+
+
+def years_without_data(question, db=None):
+    """Code only. Years the question names that the warehouse holds no records for (stays, visits, claims, member months,
+    appointments, fills). -> (missing years, the years held), or ([], ...)."""
+    asked = sorted(set(re.findall(r'\b(20\d{2})\b', str(question))))
+    if not asked: return [], []
+    if not _DATA_YEARS:
+        conn = db or store.connect()
+        for table, column in (('stay', 'admit_date'), ('utilization_event', 'event_date'), ('payer_claim', 'service_from'), ('member_month', 'month'),
+                              ('appointment', 'scheduled_date'), ('fill', 'fill_date'), ('visit', 'event_date'), ('condition', 'event_date'),
+                              ('measurement', 'event_date'), ('death', 'death_date'), ('immunization', 'event_date'), ('social_need', 'event_date'),
+                              ('enrollment_span', 'coverage_start'), ('claim', 'service_date')):
+            try:
+                _DATA_YEARS.update(r[0] for r in conn.execute(f'SELECT DISTINCT substr({column}, 1, 4) FROM {table} WHERE {column} IS NOT NULL'))
+            except Exception:
+                pass
+    held = sorted(y for y in _DATA_YEARS if y and y.isdigit())
+    return [y for y in asked if y not in _DATA_YEARS], held
 
 
 def unknown_filter_values(sql, params, db=None):

@@ -35,6 +35,8 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
             if tier != 'recipes':   # a filter on a value the data does not hold would return an empty answer that looks real
                 unknown = recipes.unknown_filter_values(sql, params, lookup)
                 if unknown: raise store.RecipeError(unknown)
+                whole = recipes.needs_whole_stays(question, sql)
+                if whole: raise store.RecipeError(whole)
             if read:
                 columns, rows, validation, read_steps, evidence['documents'] = reader.execute(
                     question, sql, params, read, db, readers=readers, s1_ledger=s1_ledger)
@@ -52,6 +54,13 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
             escalations.append({'from': tier, 'reason': 'validation failed: ' + ', '.join(c['name'] for c in validation['checks'] if not c['ok'])})
             return columns, rows, validation, False
         return columns, rows, validation, True
+
+    # A question about a year the warehouse holds nothing for is declined before any rung: an empty count would look like an answer.
+    missing_years, held = recipes.years_without_data(question, lookup)
+    if missing_years:
+        steps.append({'tier': 'scope', 'outcome': 'no_data_for_year', 'years': missing_years, 'tokens': 0, 'usd': 0.0})
+        escalations.append({'from': 'scope', 'reason': f"no records for {', '.join(missing_years)}; the data covers {held[0]} to {held[-1]}" if held else 'no records for that year'})
+        return done('unanswered', None)
 
     # Tier 0: bottles
     if 'bottles' in tiers and bottles is not None:
@@ -74,6 +83,11 @@ def answer(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_c
         recipe = recipes.RECIPES[recipe_id]
         if tier != 'recipes':   # a model chose this recipe: it must read every table or column the question names
             from . import near
+            whole = recipes.needs_whole_stays(question, recipe['sql'])
+            if whole:
+                steps.append({'tier': tier, 'outcome': 'recipe_does_not_count_whole_stays', 'recipe': recipe_id, 'tokens': 0, 'usd': 0.0})
+                escalations.append({'from': tier, 'reason': whole})
+                return None
             missing = near.named_but_unused(question, recipe, params)
             if missing:
                 steps.append({'tier': tier, 'outcome': 'recipe_does_not_read_what_the_question_names', 'recipe': recipe_id, 'names': missing, 'tokens': 0, 'usd': 0.0})
