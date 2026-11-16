@@ -124,7 +124,38 @@ def _stay_episode():
             "AND julianday(n.admit_date) - julianday(e.discharge_date) BETWEEN 1 AND 30) END AS readmitted_within_30_days FROM e")
 
 
-def portable(sql, cohort=None):
+def _literal(v):
+    if v is None: return 'NULL'
+    if isinstance(v, (int, float)) and not isinstance(v, bool): return repr(v)
+    return "'" + str(v).replace("'", "''") + "'"
+
+
+def portable(sql, cohort=None, params=None):
+    """portable_sql (below) plus the governed tables Agere computes (aco_contract, risk_score, patient_hcc), inlined as
+    VALUES so the saved SQL runs on the warehouse file alone. Risk rows are limited to the year the answer was asked for."""
+    text = _portable(sql, cohort)
+    reads = [t for t in ('aco_contract', 'risk_score', 'patient_hcc') if re.search(rf'(?i)(?<![.\w]){t}\b', text)]
+    if not reads: return text
+    year = (params or {}).get('year')
+    year = year.get('value') if isinstance(year, dict) else year
+    db = connect(cohort)
+    try:
+        ctes = []
+        for table in reads:
+            cols = [c[1] for c in db.execute(f'PRAGMA table_info("{table}")')]
+            where = ' WHERE year = ?' if year and table != 'aco_contract' else ''
+            rows = db.execute(f'SELECT * FROM "{table}"{where}', (str(year),) if where else ()).fetchall()
+            body = ('VALUES ' + ', '.join('(' + ', '.join(_literal(v) for v in r) + ')' for r in rows)) if rows else \
+                   'SELECT ' + ', '.join('NULL' for _ in cols) + ' WHERE 0'
+            ctes.append(f'{table}({", ".join(cols)}) AS ({body})')
+    finally:
+        db.close()
+    if re.match(r'(?is)^\s*with\s+recursive\b', text): raise RecipeError('A recursive recipe cannot be saved with governed tables')
+    if re.match(r'(?is)^\s*with\b', text): return re.sub(r'(?is)^\s*with\b', 'WITH ' + ', '.join(ctes) + ',', text, count=1)
+    return 'WITH ' + ', '.join(ctes) + ' ' + text
+
+
+def _portable(sql, cohort=None):
     """The same SELECT runnable on the semantic layer by anyone: the document catalog is inlined as a CTE, because
     the view exists only on this module's connections. With a cohort, the patient ids and the restricted tables are
     inlined the same way, so the saved SQL returns the cohort's result and not the whole population's."""
