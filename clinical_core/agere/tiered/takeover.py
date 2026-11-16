@@ -84,7 +84,7 @@ def answer(question, cohort=None, why=None, may_ask=False, seconds=None):
     limit = MAX_SECONDS if seconds is None else max(0.0, min(MAX_SECONDS, float(seconds)))  # the question's remaining time budget
     db = store.connect(cohort)
     try:
-        system = SYSTEM % (MAX_DOCUMENTS, store.as_of(db), MAX_STEPS, store.schema_text(db), models.definitions())
+        system = SYSTEM % (MAX_DOCUMENTS, store.as_of(db), MAX_STEPS, store.schema_text(db), models.definitions(question))
         system += NEXT + (ASK if may_ask else '')
         log = ['Question: ' + question]
         if why: log.append('Why the automatic methods stopped: ' + str(why)[:1200])

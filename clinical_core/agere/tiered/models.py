@@ -61,10 +61,49 @@ def _claude(model, system, user, timeout=180):
     return text, {'model': model, 'tokens': ledger.tokens(usage), 'usd': ledger.claude_usd(model, usage), 'seconds': round(time.monotonic() - started, 2)}
 
 
-def definitions():
-    lines = []
-    for rid, r in recipes.RECIPES.items():
-        lines.append(f"- {rid}: {r['title']}\n  {r['sql']}")
+DEFINITIONS = os.environ.get('AGERE_TIERED_DEFINITIONS', 'all')   # 'all': every recipe's SQL; 'nearest': only the closest few
+NEAREST = int(os.environ.get('AGERE_TIERED_DEFINITIONS_K', '6'))
+_STOP = set('a an and are as at be by for from had has have how in is it its many much of on or per that the their there this to was were what when which who with each count number one all any did does do'.split())
+
+
+def _words(text):
+    """Content words, singular, years and numbers left out (every recipe takes a year)."""
+    out = set()
+    for w in re.findall(r'[a-z][a-z0-9]*', str(text).lower().replace('_', ' ')):
+        if w in _STOP or len(w) < 2: continue
+        out.add(w[:-1] if len(w) > 3 and w.endswith('s') and not w.endswith('ss') else w)
+    return out
+
+
+def nearest_definitions(question, k=None):
+    """The built-in recipes closest to the question, by words shared with each recipe's name, title, parameters and the
+    tables it reads, each word weighted by how few recipes use it. Code only, no model. -> [recipe id, ...]"""
+    import math
+    k = NEAREST if k is None else k
+    docs = {rid: _words(rid + ' ' + r['title'] + ' ' + ' '.join(r['params']) + ' ' + ' '.join(sorted(recipes.reads(r['sql']))))
+            for rid, r in recipes.RECIPES.items() if recipes.runnable(rid)}
+    df = {}
+    for words in docs.values():
+        for w in words: df[w] = df.get(w, 0) + 1
+    asked = _words(question)
+    # Rare shared words count most, and a recipe with a long description does not win on length alone.
+    score = {rid: sum(math.log((1 + len(docs)) / df[w]) for w in asked & words) / math.sqrt(len(words) or 1) for rid, words in docs.items()}
+    return [rid for rid, s in sorted(score.items(), key=lambda kv: (-kv[1], kv[0])) if s > 0][:k]
+
+
+def definitions(question=None):
+    """The reference SQL the frontier writer is shown. 'all' sends every applicable recipe's SQL (about 98,000 characters
+    with 51 recipes); 'nearest' sends every applicable recipe's name and title on one line each and the SQL of only the
+    few closest to the question, as case-based text-to-SQL work retrieves the nearest solved cases."""
+    usable = [rid for rid in recipes.RECIPES if recipes.runnable(rid)] if store.mapping() else list(recipes.RECIPES)
+    if DEFINITIONS != 'nearest' or question is None:
+        return '\n'.join(f"- {rid}: {recipes.RECIPES[rid]['title']}\n  {recipes.RECIPES[rid]['sql']}" for rid in usable)
+    close = nearest_definitions(question)
+    lines = [f"- {rid}: {recipes.RECIPES[rid]['title']}\n  {recipes.RECIPES[rid]['sql']}" for rid in close]
+    rest = [rid for rid in usable if rid not in close]
+    if rest:
+        lines.append('Other existing definitions (name and what each computes; reuse their tables and rules where they apply):')
+        lines += [f"- {rid}: {recipes.RECIPES[rid]['title'][:140]}" for rid in rest]
     return '\n'.join(lines)
 
 
@@ -179,7 +218,7 @@ def llm_recipe(question, error=None, model=None, examples=None):
             conditions = ', '.join(r[0] for r in store.run("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition' ORDER BY 1")[1])
         except store.RecipeError:
             conditions = '(not listed: this mapped warehouse has no concept_patient table)'
-        system = LLM_SYSTEM % (store.schema_text(), definitions(), conditions)
+        system = LLM_SYSTEM % (store.schema_text(), definitions(question), conditions)
         governed = catalogue.block(question) if catalogue.enabled() else ''
     if governed: system += '\n\n' + governed
     if examples is None and EXAMPLES and model in (None, LLM): examples = nearest_examples(question)

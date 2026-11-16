@@ -142,7 +142,7 @@ class Conversation(unittest.TestCase):
         db.commit(); db.close()
         ask = '{"ask": "Which year?", "options": ["2028", "2029"]}'
         with mock.patch.dict(os.environ, {'AGERE_TIERED_DB': str(Path(self.dir.name) / 's.sqlite3')}), mock.patch.object(store, 'TABLES', ('patient',)), \
-                mock.patch.object(models, 'definitions', lambda: ''):
+                mock.patch.object(models, 'definitions', lambda question=None: ''):
             store._as_of.clear()
             def run(replies, **kw):
                 it = iter(replies)
