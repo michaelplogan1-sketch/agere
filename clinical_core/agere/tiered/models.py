@@ -143,6 +143,8 @@ def llm_recipe(question, error=None, model=None, examples=None):
     model: a different model for an independent second query (curriculum.confirm); the frontier model by default."""
     conditions = ', '.join(r[0] for r in store.run("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition' ORDER BY 1")[1])
     system = LLM_SYSTEM % (store.schema_text(), definitions(), conditions)
+    from . import catalogue
+    if catalogue.enabled(): system += '\n\n' + catalogue.block(question)
     if examples is None and EXAMPLES and model in (None, LLM): examples = nearest_examples(question)
     shown = ''.join(f'\nSaved question: {t}\nIts verified SQL: {q}\n' for t, q in (examples or []))
     user = ('Verified saved queries for similar questions follow. They answer other questions: reuse their tables, joins and '

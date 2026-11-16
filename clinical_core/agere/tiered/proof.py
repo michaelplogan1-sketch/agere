@@ -401,10 +401,14 @@ def run(runs=3, workers=4):
         if not hasattr(local, 'b'): local.b = bottle_store.Bottles(scratch / 'bottles.sqlite3')
         return local.b
 
+    from . import catalogue
+
     def one(job):
         item, arm, r = job
+        catalogue.ENABLED.set(arm == 'stack')   # the governed definitions are the stack's; the other arms run without them
+        ladder = arm in ('stack', 'stack_plain')
         try:
-            o = router.answer(item['question'], tiers=router.ALL_TIERS if arm == 'stack' else ('llm',), bottles=bottles() if arm == 'stack' else None,
+            o = router.answer(item['question'], tiers=router.ALL_TIERS if ladder else ('llm',), bottles=bottles() if ladder else None,
                               s1_ledger=str(scratch / 's1.sqlite3'))
         except Exception as exc:
             if 'limit' in str(exc).lower(): raise
@@ -413,7 +417,8 @@ def run(runs=3, workers=4):
                 'kind': outcome_kind(item, o), 'tier': o.get('final_tier'), 'usd': sum(s.get('usd', 0.0) for s in o['steps']), 'seconds': o.get('seconds', 0.0),
                 'rows': (o.get('rows') or [])[:3], 'question': item['question']}
 
-    jobs = [(it, arm, r) for r in range(int(runs)) for it in items for arm in ('stack', 'frontier')]
+    arms = tuple(os.environ.get('AGERE_PROOF_ARMS', 'stack,stack_plain,frontier').split(','))
+    jobs = [(it, arm, r) for r in range(int(runs)) for it in items for arm in arms]
     started = time.monotonic()
     with ThreadPoolExecutor(int(workers)) as pool:
         results = list(pool.map(one, jobs))
@@ -425,8 +430,11 @@ def report(results, items, runs, wall, data):
              f"{len({i['id'] for i in items})} questions ({sum(1 for q in data['questions'] if q.get('unanswerable'))} cannot be answered from this warehouse), "
              f"{len(items)} phrasings, {runs} runs each; +1 right, 0 declined, -{PENALTY} wrong", '']
     summary = {}
-    for arm, name in (('stack', 'Agere stack'), ('frontier', "frontier model writing its own SQL (run through the stack's checks)")):
+    names = {'stack': 'Agere stack (with the governed definitions)', 'stack_plain': 'Agere stack without the governed definitions',
+             'frontier': "frontier model writing its own SQL from the schema (run through the stack's checks, no governed definitions)"}
+    for arm, name in names.items():
         rs = [r for r in results if r['arm'] == arm]
+        if not rs: continue
         c = Counter(r['kind'] for r in rs)
         score = c['right'] - PENALTY * c['wrong']
         groups = defaultdict(list)
