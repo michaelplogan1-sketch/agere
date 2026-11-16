@@ -28,6 +28,14 @@ class Detect(unittest.TestCase):
         self.assertIn('each patient once', d['readings'][0]['question'])
         self.assertIn('admissions, not patients', d['readings'][1]['question'])
 
+    def test_denial_rate_is_initial_or_final(self):
+        for q in ('What was our denial rate in 2029?', 'Our denial rates by payer for 2029', 'How many of our claims were denied in 2029?'):
+            d = readings.detect(q)
+            self.assertEqual(d and d['rule'], 'initial_or_final_denials', q)
+        for q in ('What was our initial denial rate in 2029?', 'What was the final denial rate in 2029?', 'How many denied claims were overturned in 2029?',
+                  'What was the claim denial rate by payer in 2029?'):
+            self.assertIsNone(readings.detect(q), q)
+
     def test_switch(self):
         token = readings.ENABLED.set(False)
         try:

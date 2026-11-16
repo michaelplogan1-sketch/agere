@@ -1,4 +1,4 @@
-"""Measure readiness: which hospital safety, quality and regulatory measures this warehouse can compute, and what is missing.
+"""Measure readiness: which hospital safety, quality, regulatory, revenue cycle, perioperative and workforce measures this warehouse can compute, and what is missing.
 
 The first question a hospital's quality or safety team asks of a new analytics product is not a number: it is "can you compute
 this measure from our data?". Each measure here names its steward and specification, its computability class, and the data
@@ -64,6 +64,34 @@ ELEMENTS = {
     'first_day_vitals_labs': ('vital signs and labs in the first 24 hours of a stay',
         "SELECT COUNT(*) FROM measurement m JOIN stay_episode e ON e.patient_id = m.patient_id AND m.event_date = e.admit_date", 30),
     'survey_results': ('patient experience survey results', "SELECT COUNT(*) FROM sqlite_master WHERE name LIKE '%hcahps%' OR name LIKE '%survey%' OR name LIKE '%experience%'", 1),
+    # revenue cycle (2026-11-16): the health system's own submitted claims, claim_source 'medical_claims'
+    'hospital_claims_adjudicated': ("the health system's submitted claims with an adjudication date",
+        "SELECT COUNT(*) FROM claim WHERE claim_source = 'medical_claims' AND first_adjudication_date IS NOT NULL", 100),
+    'claim_first_final_status': ('first and final adjudication status on each claim',
+        "SELECT COUNT(*) FROM claim WHERE claim_source = 'medical_claims' AND first_status IS NOT NULL AND final_status IS NOT NULL", 100),
+    'claim_submit_cash_dates': ('claim submission and first payer cash dates',
+        "SELECT COUNT(*) FROM claim WHERE claim_source = 'medical_claims' AND first_submitted_date IS NOT NULL AND first_payer_cash_date IS NOT NULL", 100),
+    'claim_denial_reasons': ("denial reason codes (835 CARC/RARC) on the health system's own claims",
+        "SELECT COUNT(*) FROM pragma_table_info('claim') WHERE name IN ('carc', 'denial_reason', 'rarc')", 1),
+    'inpatient_claim_drg': ('MS-DRG on inpatient claims', "SELECT COUNT(*) FROM claim WHERE claim_source = 'medical_claims' AND drg IS NOT NULL", 30),
+    'drg_weights': ('the CMS MS-DRG relative weight table', "SELECT COUNT(*) FROM sqlite_master WHERE name LIKE '%drg_weight%' OR name LIKE '%ms_drg%'", 1),
+    'ar_balances': ('accounts receivable balances and net patient service revenue (general ledger)',
+        "SELECT COUNT(*) FROM sqlite_master WHERE name LIKE '%receivable%' OR name LIKE '%ar_balance%' OR name LIKE '%general_ledger%'", 1),
+    'unbilled_accounts': ('discharged-not-final-billed accounts with gross charges',
+        "SELECT COUNT(*) FROM sqlite_master WHERE name LIKE '%unbilled%' OR name LIKE '%dnfb%' OR name LIKE '%patient_account%'", 1),
+    'revenue_cycle_expense': ('revenue cycle operating expense (general ledger)', "SELECT COUNT(*) FROM sqlite_master WHERE name LIKE '%general_ledger%' OR name LIKE '%expense%'", 1),
+    # perioperative (AACD Procedural Times Glossary)
+    'or_case_times': ('operating room cases with patient in-room and out-of-room times',
+        "SELECT COUNT(*) FROM procedure_event WHERE location_type = 'OR' AND start IS NOT NULL AND end IS NOT NULL", 10),
+    'or_scheduled_times': ('scheduled case start times', "SELECT COUNT(*) FROM pragma_table_info('procedure_event') WHERE name LIKE '%schedul%' OR name LIKE '%booked%'", 1),
+    'or_room_ids': ('the operating room each case used', "SELECT COUNT(*) FROM pragma_table_info('procedure_event') WHERE name LIKE '%room%'", 1),
+    'block_schedule': ('the OR block schedule and release log', "SELECT COUNT(*) FROM sqlite_master WHERE name LIKE '%block%'", 1),
+    # workforce
+    'staff_hours': ('productive hours worked by job code and unit (timekeeping)',
+        "SELECT COUNT(*) FROM sqlite_master WHERE name LIKE '%timekeep%' OR name LIKE '%payroll%' OR name LIKE '%staff%' OR name LIKE '%shift%'", 1),
+    'midnight_census': ('midnight census by unit', "SELECT COUNT(*) FROM sqlite_master WHERE name LIKE '%census%'", 1),
+    'hr_employment': ('employee hires, terminations and open positions (HR)',
+        "SELECT COUNT(*) FROM sqlite_master WHERE name LIKE '%employee%' OR name LIKE '%hr\\_%' ESCAPE '\\' OR name LIKE '%position%'", 1),
 }
 
 # measure id, name, steward and specification, class, program, required elements, aliases
@@ -101,6 +129,36 @@ MEASURES = (
      ('discharge_disposition',), ('in-hospital mortality', 'inpatient mortality', 'hospital mortality')),
     ('SEPSIS-OUT', 'Sepsis hospitalization outcomes (internal)', 'Agere governed definition: principal diagnosis A40, A41, R65.2', 'hospital_computed', 'Internal quality dashboard; HRRP sepsis readmission from FY2030',
      ('sepsis_hospitalizations', 'merged_stays'), ('sepsis outcomes', 'sepsis mortality', 'sepsis readmissions')),
+    ('RC-IDR', 'Initial denial rate (by claims and by billed dollars)', 'HFMA Claim Integrity Task Force', 'hospital_computed', 'Revenue cycle KPI',
+     ('hospital_claims_adjudicated', 'claim_first_final_status'), ('initial denial rate', 'first-pass denial rate', 'denial rate')),
+    ('RC-FDR', 'Final denial rate', 'HFMA Claim Integrity Task Force', 'hospital_computed', 'Revenue cycle KPI',
+     ('hospital_claims_adjudicated', 'claim_first_final_status'), ('final denial rate', 'final denials')),
+    ('RC-OVT', 'Denial overturn rate', 'HFMA Claim Integrity Task Force', 'hospital_computed', 'Revenue cycle KPI',
+     ('claim_first_final_status',), ('denial overturn rate', 'overturn rate', 'appeal success rate')),
+    ('RC-RSN', 'Denials by reason', 'X12 835 CARC/RARC codes', 'hospital_computed', 'Revenue cycle KPI',
+     ('claim_first_final_status', 'claim_denial_reasons'), ('denials by reason', 'denial reasons', 'top denial reasons', 'carc')),
+    ('RC-DTP', 'Days from claim submission to payment', 'Agere governed definition: first submission to first payer cash', 'hospital_computed', 'Revenue cycle KPI',
+     ('claim_submit_cash_dates',), ('days to payment', 'days to pay', 'payment lag')),
+    ('RC-CMI', 'Case mix index', 'HFMA MAP Keys (Medicare MS-DRG weights, all payers)', 'hospital_computed', 'Finance KPI',
+     ('inpatient_claim_drg', 'drg_weights'), ('case mix index', 'cmi', 'case mix')),
+    ('RC-AR', 'Net days in accounts receivable', 'HFMA MAP Key AR-1', 'hospital_computed', 'Revenue cycle KPI',
+     ('ar_balances',), ('net days in a/r', 'days in ar', 'days in a/r', 'a/r days', 'ar days')),
+    ('RC-DNFB', 'Days in discharged not final billed', 'HFMA MAP Key PB-1', 'hospital_computed', 'Revenue cycle KPI',
+     ('unbilled_accounts',), ('dnfb', 'discharged not final billed', 'days in dnfb')),
+    ('RC-CTC', 'Cost to collect', 'HFMA MAP Key FM-6', 'hospital_computed', 'Revenue cycle KPI',
+     ('revenue_cycle_expense', 'ar_balances'), ('cost to collect',)),
+    ('OR-VOL', 'Operating room cases and minutes', 'AACD Procedural Times Glossary (patient in room to out of room)', 'hospital_computed', 'Perioperative KPI',
+     ('or_case_times',), ('or volume', 'or cases', 'or minutes', 'surgical volume', 'case volume')),
+    ('OR-FCOTS', 'First-case on-time start', 'AACD Procedural Times Glossary', 'hospital_computed', 'Perioperative KPI',
+     ('or_case_times', 'or_scheduled_times', 'or_room_ids'), ('first case on time start', 'first-case on-time start', 'fcots', 'on-time starts')),
+    ('OR-TURN', 'Room turnover time', 'AACD Procedural Times Glossary item 2.22', 'hospital_computed', 'Perioperative KPI',
+     ('or_case_times', 'or_room_ids'), ('turnover time', 'room turnover', 'or turnover')),
+    ('OR-BLOCK', 'Block utilization', 'Local definition (raw and adjusted)', 'hospital_computed', 'Perioperative KPI',
+     ('or_case_times', 'or_room_ids', 'block_schedule'), ('block utilization', 'block utilisation', 'block release')),
+    ('NUR-NHPPD', 'Nursing hours per patient day', 'NDNQI; CDC NHSN Nurse Staffing protocol', 'hospital_computed', 'Leapfrog, NDNQI',
+     ('staff_hours', 'midnight_census'), ('nursing hours per patient day', 'nhppd', 'hppd', 'nurse staffing')),
+    ('NUR-TURN', 'RN turnover and vacancy', 'NSI Nursing Solutions methodology', 'hospital_computed', 'Workforce KPI',
+     ('hr_employment',), ('rn turnover', 'nurse turnover', 'vacancy rate', 'rn vacancy')),
     ('HCAHPS', 'HCAHPS patient experience survey', 'CMS HCAHPS (32 items from 2025 discharges)', 'survey_vendor', 'IQR, VBP, Star Rating',
      ('survey_results',), ('hcahps', 'patient experience', 'patient satisfaction')),
 )

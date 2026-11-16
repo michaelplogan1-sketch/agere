@@ -73,6 +73,7 @@ def _COHORT_OUTCOMES(flag, label, words):
 
 
 # Adult inpatient encounters ending in a year, from the ED arrival (or admission) to discharge: the hospital harm eCQMs' episodes.
+_RC_CLAIMS = ("FROM claim WHERE claim_source = 'medical_claims' AND first_adjudication_date IS NOT NULL AND substr(first_adjudication_date, 1, 4) = :year")
 _HARM_ENC = ("WITH enc AS (SELECT v.visit_group_id AS eid, v.patient_id, p.sex_reported AS sex, COALESCE(v.ed_arrival, v.inpatient_admit) AS t0, v.discharge_time AS t1 FROM visit_group v JOIN patient p USING (patient_id) WHERE v.has_inpatient = 1 AND v.discharge_time IS NOT NULL AND substr(v.discharge_time, 1, 4) = :year AND (julianday(v.inpatient_admit) - julianday(p.birth_date)) / 365.25 >= 18)")
 
 
@@ -846,6 +847,81 @@ RECIPES = {
         'grain': ['patient_id', 'readmission_date'],
         'patterns': [r'which readmissions (?:in|for) ' + YEAR + r' had no (?:outpatient )?follow[- ]up visit within 7 days',
                      r'list (?:the )?readmissions (?:in|for) ' + YEAR + r' (?:with no|without) (?:outpatient )?follow[- ]up(?: visit)? within 7 days']},
+    # ---- revenue cycle (2026-11-16), HFMA Claim Integrity Task Force denial metrics over the health system's own submitted claims
+    # (claim_source 'medical_claims'), by the year of first adjudication. Payer-reported claims (payer_medical_claims) are not the
+    # hospital's billing.
+    'rc_initial_denial_rate': {
+        'title': "Initial denial rate for claims first adjudicated in one year (HFMA): the health system's adjudicated claims, those denied at first adjudication, the rate by claims, billed dollars on both, and the rate by dollars",
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS claims_adjudicated, SUM(first_status = 'denied') AS initially_denied, ROUND(1.0 * SUM(first_status = 'denied') / COUNT(*), 4) AS initial_denial_rate, "
+               "ROUND(SUM(billed_cents) / 100.0, 2) AS billed_dollars, ROUND(SUM(CASE WHEN first_status = 'denied' THEN billed_cents ELSE 0 END) / 100.0, 2) AS denied_billed_dollars, "
+               "ROUND(1.0 * SUM(CASE WHEN first_status = 'denied' THEN billed_cents ELSE 0 END) / SUM(billed_cents), 4) AS initial_denial_rate_by_dollars, :year AS year "
+               + _RC_CLAIMS,
+        'grain': ['year'],
+        'patterns': [r'what (?:was|is) (?:our |the )?(?:initial|first[- ]pass) denial rate (?:in|for) ' + YEAR, r'what share of (?:our )?claims (?:were|was) denied (?:at first|on first|initially)(?: adjudication)? (?:in|during) ' + YEAR]},
+    'rc_final_denial_rate': {
+        'title': "Final denial rate for claims first adjudicated in one year (HFMA): adjudicated claims, those still denied at their final status, and the rate by claims and by billed dollars",
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS claims_adjudicated, SUM(final_status = 'denied') AS finally_denied, ROUND(1.0 * SUM(final_status = 'denied') / COUNT(*), 4) AS final_denial_rate, "
+               "ROUND(SUM(CASE WHEN final_status = 'denied' THEN billed_cents ELSE 0 END) / 100.0, 2) AS final_denied_billed_dollars, "
+               "ROUND(1.0 * SUM(CASE WHEN final_status = 'denied' THEN billed_cents ELSE 0 END) / SUM(billed_cents), 4) AS final_denial_rate_by_dollars, :year AS year " + _RC_CLAIMS,
+        'grain': ['year'],
+        'patterns': [r'what (?:was|is) (?:our |the )?final denial rate (?:in|for) ' + YEAR, r'how many claims (?:were|stayed) (?:finally|permanently) denied (?:in|during) ' + YEAR]},
+    'rc_denial_overturn_rate': {
+        'title': "Denial overturn rate for claims first adjudicated in one year (HFMA): claims denied at first adjudication, those later paid, and the share overturned",
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT SUM(first_status = 'denied') AS initially_denied, SUM(first_status = 'denied' AND final_status = 'paid') AS overturned, "
+               "ROUND(1.0 * SUM(first_status = 'denied' AND final_status = 'paid') / NULLIF(SUM(first_status = 'denied'), 0), 4) AS overturn_rate, :year AS year " + _RC_CLAIMS,
+        'grain': ['year'], 'nullable': ('overturn_rate',),
+        'patterns': [r'what (?:was|is) (?:our |the )?(?:denial )?overturn rate (?:in|for) ' + YEAR, r'what share of (?:initially )?denied claims (?:were|got) (?:overturned|paid on appeal|eventually paid) (?:in|for) ' + YEAR]},
+    'rc_denials_by_payer': {
+        'title': "Denials by payer for claims first adjudicated in one year: each payer's adjudicated claims, initial denials and rate, final denials and rate, highest initial rate first",
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT payer, COUNT(*) AS claims_adjudicated, SUM(first_status = 'denied') AS initially_denied, ROUND(1.0 * SUM(first_status = 'denied') / COUNT(*), 4) AS initial_denial_rate, "
+               "SUM(final_status = 'denied') AS finally_denied, ROUND(1.0 * SUM(final_status = 'denied') / COUNT(*), 4) AS final_denial_rate " + _RC_CLAIMS + " GROUP BY payer ORDER BY 4 DESC, 1",
+        'grain': ['payer'],
+        'patterns': [r'(?:what (?:were|are) (?:the |our )?)?denial rates? by payer (?:in|for) ' + YEAR, r'which payers? den(?:y|ied) the most claims (?:in|during) ' + YEAR]},
+    'rc_days_to_payment': {
+        'title': "Days from claim submission to first payer payment, for claims first adjudicated in one year: claims paid, mean and median days",
+        'params': {'year': {'type': 'year'}},
+        'sql': "WITH d AS (SELECT julianday(first_payer_cash_date) - julianday(first_submitted_date) AS days " + _RC_CLAIMS + " AND first_submitted_date IS NOT NULL AND first_payer_cash_date IS NOT NULL) "
+               "SELECT COUNT(*) AS claims_paid, ROUND(AVG(days), 1) AS mean_days, (SELECT ROUND(AVG(days), 1) FROM (SELECT days FROM d ORDER BY days LIMIT 2 - (SELECT COUNT(*) FROM d) % 2 "
+               "OFFSET ((SELECT COUNT(*) FROM d) - 1) / 2)) AS median_days, :year AS year FROM d",
+        'grain': ['year'],
+        'patterns': [r'how (?:many days|long) (?:does it take|did it take|do we wait) (?:to get paid|from (?:claim )?submission to payment) (?:in|for) ' + YEAR, r'(?:average|median) days to payment (?:in|for) ' + YEAR]},
+    'rc_days_to_submit': {
+        'title': "Days from discharge (or service date) to first claim submission, for claims first adjudicated in one year: claims submitted, mean and median days",
+        'params': {'year': {'type': 'year'}},
+        'sql': "WITH d AS (SELECT julianday(first_submitted_date) - julianday(COALESCE(discharge_date, service_date)) AS days " + _RC_CLAIMS + " AND first_submitted_date IS NOT NULL) "
+               "SELECT COUNT(*) AS claims_submitted, ROUND(AVG(days), 1) AS mean_days, (SELECT ROUND(AVG(days), 1) FROM (SELECT days FROM d ORDER BY days LIMIT 2 - (SELECT COUNT(*) FROM d) % 2 "
+               "OFFSET ((SELECT COUNT(*) FROM d) - 1) / 2)) AS median_days, :year AS year FROM d",
+        'grain': ['year'],
+        'patterns': [r'how (?:many days|long) (?:does it take|did it take) (?:us )?to (?:submit|bill|drop) (?:a )?claims? (?:in|for) ' + YEAR, r'(?:average|median) days to (?:submit|bill) (?:in|for) ' + YEAR]},
+    # ---- perioperative (2026-11-16), over an EMR's procedure record (fhir_import.py): a case is a procedure_event in the OR, its minutes
+    # patient in room to out of room (AACD). After hours is outside 07:00 to 17:00, Monday to Friday (a local definition, stated).
+    'or_volume': {
+        'title': 'Operating room cases starting in one year: cases, total OR minutes (patient in room to out of room), mean minutes per case',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS or_cases, CAST(SUM((julianday(end) - julianday(start)) * 1440) AS INTEGER) AS or_minutes, "
+               "ROUND(AVG((julianday(end) - julianday(start)) * 1440), 1) AS mean_case_minutes, :year AS year FROM procedure_event "
+               "WHERE location_type = 'OR' AND start IS NOT NULL AND end IS NOT NULL AND substr(start, 1, 4) = :year",
+        'grain': ['year'],
+        'patterns': [r'how many (?:or|operating room|surgical) cases (?:did we (?:do|have|perform) |were there )?(?:in|during) ' + YEAR, r'(?:what (?:was|is) (?:our )?)?(?:or|operating room) volume (?:in|for) ' + YEAR]},
+    'or_cases_by_procedure': {
+        'title': 'Operating room cases starting in one year by procedure: cases and mean minutes per case, most cases first',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT name AS procedure, COUNT(*) AS or_cases, ROUND(AVG((julianday(end) - julianday(start)) * 1440), 1) AS mean_case_minutes FROM procedure_event "
+               "WHERE location_type = 'OR' AND start IS NOT NULL AND end IS NOT NULL AND substr(start, 1, 4) = :year GROUP BY name ORDER BY 2 DESC, 1",
+        'grain': ['procedure'],
+        'patterns': [r'(?:or|operating room|surgical) cases by procedure (?:in|for) ' + YEAR, r'which procedures (?:did we do|were done) most (?:often )?in the (?:or|operating room) (?:in|during) ' + YEAR]},
+    'or_after_hours': {
+        'title': 'Operating room cases starting after hours in one year (before 07:00, at or after 17:00, or on a weekend): cases, after-hours cases, and the share',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT COUNT(*) AS or_cases, SUM(CAST(strftime('%H', start) AS INTEGER) < 7 OR CAST(strftime('%H', start) AS INTEGER) >= 17 OR strftime('%w', start) IN ('0', '6')) AS after_hours_cases, "
+               "ROUND(1.0 * SUM(CAST(strftime('%H', start) AS INTEGER) < 7 OR CAST(strftime('%H', start) AS INTEGER) >= 17 OR strftime('%w', start) IN ('0', '6')) / COUNT(*), 4) AS after_hours_share, "
+               ":year AS year FROM procedure_event WHERE location_type = 'OR' AND start IS NOT NULL AND end IS NOT NULL AND substr(start, 1, 4) = :year",
+        'grain': ['year'],
+        'patterns': [r'how many (?:or|operating room|surgical) cases (?:started|were done) after hours (?:in|during) ' + YEAR, r'what share of (?:or|operating room|surgical) cases (?:started|were) after hours (?:in|during) ' + YEAR]},
 }
 ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS}
 _vocab = {}

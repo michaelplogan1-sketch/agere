@@ -153,7 +153,21 @@ def hospital_visit_rules(q, s):
     return None
 
 
-CHECKS = (aco_population, hospital_visit_rules, whole_stays, latest_for_period, spend_flag, spend_table, condition_source, appointment_status, flu_vaccines)
+def hospital_billing(q, s):
+    """Revenue cycle questions read the health system's own claims: claim_source 'medical_claims'."""
+    if not _reads(s, 'claim') or _about_records(q): return None
+    # The hospital's revenue cycle framing (HFMA terms, or 'our' denials); 'claims ever denied' in general keeps the claim table's own measure.
+    if _has(q, r'\bever\b'): return None
+    hfma = _has(q, r'initial|first[- ]pass|final deni|overturn|appeal|days to (?:pay|payment|submit|bill)|payment lag|clean claim|revenue cycle|write[- ]off|first adjudicat')
+    ours = _has(q, r'deni') and _has(q, r'\b(?:our|we|us|hospital|health system|billing|billed|submitted)\b')
+    if not (hfma or ours): return None
+    if not _has(s, r"medical_claims'") or _has(s, r"claim_source\s*(?:=|in\s*\()\s*'payer_medical_claims'"):
+        return ("Governed definition: the health system's billing is claim rows with claim_source = 'medical_claims', by "
+                "first_adjudication_date; payer_medical_claims rows are payer reports, not the hospital's claims.")
+    return None
+
+
+CHECKS = (aco_population, hospital_billing, hospital_visit_rules, whole_stays, latest_for_period, spend_flag, spend_table, condition_source, appointment_status, flu_vaccines)
 
 
 def check(question, sql, params=None):
