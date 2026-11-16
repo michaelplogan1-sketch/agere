@@ -68,6 +68,16 @@ audits a mapping against Agere's documented vocabulary, and runs one audit-drive
 person's review before use: the audit cannot see duplicated rows. `AGERE_TIERED_FOREIGN=on` instead shows a
 warehouse's own tables to the frontier SQL writer, with no recipes.
 
+## Run it on an EMR
+
+Agere connects to an EMR's FHIR API (US Core) the way backend analytics apps do: SMART Backend Services authorization
+(a JWT signed RS384 with Agere's private key, exchanged for a short-lived token), FHIR search for one patient's current
+record, and a Bulk Data `$export` for the population. `fhir_client.sync` exports, downloads and imports into a semantic
+layer (`fhir_import.py`), where every definition, check and recipe applies; `fhir_live.answer` answers a question about one
+patient from their live record. `fhir_server.py` is a local stand-in EMR that answers the same requests from a synthetic
+export (`fhir_synth.py`), so the whole connection is tested on this machine. A real EMR changes the connection settings:
+its FHIR base URL, the client id it assigns and the private key whose public half it registers.
+
 ## How the build is run
 
 `AGENTS.md` states the rules for anyone building here. `AGERE_BUILD_CONTROL.json` holds the current gate, checkpoint and
