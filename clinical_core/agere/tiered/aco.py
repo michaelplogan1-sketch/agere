@@ -92,7 +92,10 @@ def contracts():
     return rows
 
 
-_ready = {}
+
+
+import threading
+_BUILD = threading.RLock()
 
 
 def install(db, cohort=None):
@@ -103,9 +106,11 @@ def install(db, cohort=None):
     if store.mapping() or store.foreign(): return   # the risk engine reads this semantic layer's own tables
     path = cache_path()
     key = str(path)
+    _ready = store.scoped('aco_ready')
     if key not in _ready:
         try:
-            if not path.exists(): build(path)
+            with _BUILD:   # one build per process: two threads writing the same .building file deleted each other's (design review)
+                if key not in _ready and not path.exists(): build(path)
             _ready[key] = True
         except (sqlite3.Error, KeyError, ValueError):   # a warehouse without member months or diagnoses: no risk tables
             _ready[key] = False

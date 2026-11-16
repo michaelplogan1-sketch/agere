@@ -26,10 +26,10 @@ class Takeover(unittest.TestCase):
         self.env.start()
         self.schema = mock.patch.object(store, 'TABLES', ('patient',)); self.schema.start()
         self.defs = mock.patch.object(models, 'definitions', lambda question=None: ''); self.defs.start()
-        store._as_of.clear()
+        store.clear_caches()
 
     def tearDown(self):
-        self.defs.stop(); self.schema.stop(); self.env.stop(); self.dir.cleanup(); store._as_of.clear()
+        self.defs.stop(); self.schema.stop(); self.env.stop(); self.dir.cleanup(); store.clear_caches()
 
     def _run(self, replies):
         replies = iter(replies)

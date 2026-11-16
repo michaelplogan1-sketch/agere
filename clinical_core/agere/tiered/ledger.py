@@ -25,6 +25,20 @@ def tokens(usage):
     return sum(usage.get(k, 0) or 0 for k in ('input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens'))
 
 
+
+def hosted():
+    """The customer web server sets AGERE_HOSTED=1: shared stores then keep no question text or result rows."""
+    return os.environ.get('AGERE_HOSTED') == '1'
+
+
+def fingerprint(text):
+    """A keyed fingerprint of a question (keyed by AGERE_SECRET_KEY when set): repeats can be counted, the words are not kept.
+    A question can name a patient, and logs are read and retained more widely than the data."""
+    import hashlib, hmac
+    words = ' '.join(str(text or '').split()).lower()
+    return 'q:' + hmac.new((os.environ.get('AGERE_SECRET_KEY') or 'agere-audit').encode(), words.encode(), hashlib.sha256).hexdigest()[:16]
+
+
 class Ledger:
     def __init__(self, path=None):
         self.path = Path(path or os.environ.get('AGERE_TIERED_LEDGER', DEFAULT))
@@ -42,11 +56,11 @@ class Ledger:
         steps = outcome['steps']
         self.db.execute('INSERT INTO question(at,run,question,final_tier,status,validation,tiers_json,tokens,usd,seconds,recipe_json,'
                         'result_rows,eval_id,correct,config_json,rows_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                        (time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), run, question, outcome.get('final_tier'), outcome['status'],
+                        (time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), run, fingerprint(question) if hosted() else question, outcome.get('final_tier'), outcome['status'],
                          json.dumps(outcome.get('validation')), json.dumps(steps), sum(s.get('tokens', 0) for s in steps),
                          sum(s.get('usd', 0.0) for s in steps), outcome['seconds'], json.dumps(outcome.get('recipe'), default=str),
                          len(outcome.get('rows') or []), eval_id, None if correct is None else int(correct), json.dumps(config or {}),
-                         json.dumps({'columns': outcome.get('columns'), 'rows': (outcome.get('rows') or [])[:MAX_ROWS_KEPT]}, default=str)))
+                         None if hosted() else json.dumps({'columns': outcome.get('columns'), 'rows': (outcome.get('rows') or [])[:MAX_ROWS_KEPT]}, default=str)))
         self.db.commit()
 
     def rows(self, run):

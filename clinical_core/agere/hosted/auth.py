@@ -126,6 +126,13 @@ CREATE INDEX IF NOT EXISTS rate_events_key ON rate_events(key, at);
 """
 
 
+
+def question_ref(text: Optional[str]) -> dict:
+    """What the audit and usage logs keep of a question: a keyed fingerprint and its length, never the words (they can
+    name a patient). The same question gives the same fingerprint, so repeats can be counted without storing them."""
+    from ..tiered.ledger import fingerprint
+    return {'question_fingerprint': fingerprint(text), 'question_chars': len(' '.join(str(text or '').split()))}
+
 class AuthError(ValueError):
     """Raised for invalid input (weak password, unknown role, duplicate email, unknown org/user)."""
 
@@ -400,21 +407,36 @@ class AuthStore:
             self._audit_in(c, None, self._user_id(actor, required=False), "user.enabled", {"user_id": uid}, ip)
 
     # ---------------------------------------------------------------- memberships
-    def add_member(self, org: Any, user: Any, role: str, actor: Any = None, ip: Optional[str] = None) -> None:
+    def _guard_change(self, c: sqlite3.Connection, oid: int, uid: int, actor_role: Optional[str], new_role: Optional[str]) -> None:
+        """An admin may not change or remove a member at or above their own rank, and an organization keeps at least one
+        owner (buyer review: an admin could demote the owner). actor_role None = a platform operation (no check)."""
+        rank = ROLE_RANK
+        row = c.execute("SELECT role FROM memberships WHERE org_id=? AND user_id=?", (oid, uid)).fetchone()
+        current = row[0] if row else None
+        if actor_role is not None and current is not None and actor_role != 'owner' and rank[current] >= rank[actor_role]:
+            raise AuthError("you cannot change or remove a member at or above your own role")
+        if actor_role is not None and current == 'owner' and new_role != 'owner':
+            owners = c.execute("SELECT COUNT(*) FROM memberships WHERE org_id=? AND role='owner'", (oid,)).fetchone()[0]
+            if owners <= 1:
+                raise AuthError("an organization must keep at least one owner")
+
+    def add_member(self, org: Any, user: Any, role: str, actor: Any = None, ip: Optional[str] = None, actor_role: Optional[str] = None) -> None:
         if role not in ROLES:
             raise AuthError(f"role must be one of {ROLES}")
         oid, uid = self._org_id(org), self._user_id(user)
         now = self._now()
         with self._tx() as c:
+            self._guard_change(c, oid, uid, actor_role, role)
             c.execute("INSERT INTO memberships(org_id, user_id, role, created_at) VALUES (?,?,?,?)"
                       " ON CONFLICT(org_id, user_id) DO UPDATE SET role=excluded.role", (oid, uid, role, now))
             self._audit_in(c, oid, self._user_id(actor, required=False), "member.added",
                            {"user_id": uid, "role": role}, ip)
 
-    def remove_member(self, org: Any, user: Any, actor: Any = None, ip: Optional[str] = None) -> bool:
+    def remove_member(self, org: Any, user: Any, actor: Any = None, ip: Optional[str] = None, actor_role: Optional[str] = None) -> bool:
         oid, uid = self._org_id(org), self._user_id(user)
         now = self._now()
         with self._tx() as c:
+            self._guard_change(c, oid, uid, actor_role, None)
             n = c.execute("DELETE FROM memberships WHERE org_id=? AND user_id=?", (oid, uid)).rowcount
             c.execute("UPDATE sessions SET revoked_at=? WHERE org_id=? AND user_id=? AND revoked_at IS NULL",
                       (now, oid, uid))

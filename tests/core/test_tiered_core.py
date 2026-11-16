@@ -27,13 +27,13 @@ class Core(unittest.TestCase):
             INSERT INTO scanned_document_text VALUES('d1','IMPRESSION: Possible early right lower lobe infiltrate.'),('d2','IMPRESSION: No acute findings.'),
                 ('d3','IMPRESSION: Possible early rigbt l0wer lobe infltrate.'),('d5','IMPRESSION: Possible infiltrate.');''')
         db.commit();db.close()
-        cls.env=mock.patch.dict(os.environ,{'AGERE_TIERED_DB':str(path)});cls.env.start();R._vocab.clear()
+        cls.env=mock.patch.dict(os.environ,{'AGERE_TIERED_DB':str(path)});cls.env.start();__import__('clinical_core.agere.tiered.store', fromlist=['x']).clear_caches()
         from clinical_core.agere.tiered import models as M  # any unpatched model call fails the suite's promise of no model calls
         cls.no_model=mock.patch.object(M,'_claude',side_effect=RuntimeError('a test reached a model'));cls.no_model.start()
 
     @classmethod
     def tearDownClass(cls):
-        cls.no_model.stop();cls.env.stop();cls.dir.cleanup();R._vocab.clear()
+        cls.no_model.stop();cls.env.stop();cls.dir.cleanup();__import__('clinical_core.agere.tiered.store', fromlist=['x']).clear_caches()
 
     def test_tier1_answers_a_matching_question_with_no_model_and_validates_it(self):
         out=router.answer('How many ED visits were there in 2029?',tiers=('recipes',))

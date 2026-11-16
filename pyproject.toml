@@ -1,0 +1,44 @@
+# Agere: what a fresh checkout needs. The core (tiered/) and the hosted server run on the base dependencies; the extras add
+# the local small models, the analysis engines, document reading and customer-warehouse connectors. Versions are the ones
+# the build has been tested with (2026-11-16, Python 3.12). Large data (the semantic layer, saved recipes, local models) is
+# not in git: see README.md, "First run".
+[project]
+name = "agere"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "cryptography==50.0.2",      # hosted credentials (Fernet), SMART Backend Services JWT signing (fhir_client)
+    "numpy==2.5.3",              # reached lazily on the hosted path (deploy/requirements-hosted.txt says which modules)
+    "scipy==1.18.1",
+    "sqlglot==30.24.0",
+]
+
+[project.optional-dependencies]
+hosted = [
+    "anthropic>=0.75",           # the hosted server's paid API transport only (AGERE_HOSTED=1, AGERE_CLAUDE_TRANSPORT=api)
+]
+local-models = [                 # the small-model rungs on Apple silicon and the near-match encoder
+    "mlx==0.32.3",
+    "mlx-lm==0.32.0",
+    "sentence-transformers==6.1.0",
+    "tokenizers==0.23.2",
+    "transformers==5.19.0",
+    "torch==2.14.1",
+]
+analysis = [                     # analysis engines (clinical_core/agere/clinical)
+    "scikit-learn==1.9.1",
+    "joblib==1.6.0",
+    "threadpoolctl==3.7.0",
+    "duckdb==1.5.6",
+    "PyYAML==6.0.3",
+]
+reporting = ["reportlab==4.4.9", "pypdf>=6,<7"]
+connectors = [                   # customer warehouses (clinical_core/agere/onboarding); each is optional
+    "psycopg[binary]>=3.2",
+    "databricks-sql-connector>=4",
+    "snowflake-connector-python>=3.12",
+    "google-cloud-bigquery>=3.25",
+]
+
+[tool.setuptools.packages.find]
+include = ["clinical_core*"]

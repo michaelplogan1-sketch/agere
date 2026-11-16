@@ -913,7 +913,42 @@ def _right(reference, rows):
     if rows is None: return False
     if len(reference) == 1 and len(reference[0]) == 1 and isinstance(reference[0][0], int) and len(rows) == reference[0][0] > 1:
         return True   # "how many" answered by listing them, one row each
+    if STRICT: return _close(reference, rows)
     return evaluate.correct(reference, rows) or upkeep.same_numbers(reference, rows) or _contains(reference, rows)
+
+
+# Strict grading (AGERE_PROOF_STRICT=on, 2026-11-16, after the buyer review found two-decimal rounding let a 5.2% denial rate
+# pass for 4.88%): counts exact; a rate within 0.0006 (0.06 percentage points), given as a share or a percentage; other
+# decimals within 0.06; text labels matched case-insensitively. Each reference row must be found in its own answer row, and
+# the row counts must agree. Used for the assistant comparison and for regrading every arm's stored answers alike.
+STRICT = os.environ.get('AGERE_PROOF_STRICT', 'off') == 'on'
+
+
+def _value_ok(ref, got):
+    if isinstance(ref, bool) or isinstance(got, bool): return ref == got
+    if isinstance(ref, (int, float)) and isinstance(got, (int, float)):
+        if isinstance(ref, int) and float(ref).is_integer() and (not isinstance(got, float) or float(got).is_integer()): return int(ref) == int(got)
+        if 0 < abs(ref) < 1: return abs(got - ref) <= 0.0006 or abs(got / 100 - ref) <= 0.0006
+        return abs(got - ref) <= 0.06
+    return str(ref).strip().lower() == str(got).strip().lower()
+
+
+def _close(reference, rows):
+    if rows is None or len(rows) != len(reference): return False
+    pool = [list(r) for r in rows]
+    for ref in reference:
+        hit = None
+        for i, row in enumerate(pool):
+            left = list(row)
+            ok = True
+            for v in ref:
+                j = next((k for k, g in enumerate(left) if _value_ok(v, g)), None)
+                if j is None: ok = False; break
+                left.pop(j)
+            if ok: hit = i; break
+        if hit is None: return False
+        pool.pop(hit)
+    return True
 
 
 def _contains(reference, rows):
@@ -926,11 +961,16 @@ def outcome_kind(item, o):
     """right +1, declined 0, wrong -PENALTY; and, for questions with two plain readings (a set's 'readings'):
     asked_right +1 when every reading the stack returned matches its reference, guessed 0 when one figure matches one of the
     readings (right for some askers, not the others), wrong otherwise. Asking on a question with one reading is 'asked', 0."""
+    if o.get('status') == 'error': return 'error'   # a crash is reported as one, scored 0, never hidden among declines
     if o.get('status') == 'needs_choice':
         if item.get('reading_refs'):
-            got = {r['id']: r.get('rows') for r in o.get('readings') or []}
-            ok = set(got) == set(item['reading_refs']) and all(_right(item['reading_refs'][k], got[k]) for k in got)
-            return 'asked_right' if ok else 'wrong'
+            # Matched by figures, not by labels: each reading the set names must be given by a different returned reading
+            # (the assistant arm labels its readings in its own words).
+            got = [r.get('rows') for r in o.get('readings') or []]
+            def cover(refs, pool):
+                if not refs: return True
+                return any(_right(refs[0], rows) and cover(refs[1:], pool[:i] + pool[i + 1:]) for i, rows in enumerate(pool))
+            return 'asked_right' if cover(list(item['reading_refs'].values()), got) else 'wrong'
         return 'wrong' if item.get('unanswerable') else 'asked'
     answered = o.get('status') == 'answered' and o.get('rows') and not (len(o['rows']) == 1 and isinstance(o['rows'][0][0], str) and o['rows'][0][0].startswith('No '))
     if item.get('unanswerable'): return 'declined' if not answered else 'wrong'
@@ -946,7 +986,7 @@ def outcome_kind(item, o):
 def run(runs=3, workers=4):
     from .. import model_policy
     os.environ.pop('ANTHROPIC_API_KEY', None)
-    from run_integrated_stack import keys
+    from clinical_core.agere.providers import load_keys as keys
     keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
     os.environ.update({k: v for k, v in model_policy.ECONOMICAL_RUNTIME.items() if isinstance(v, str)})
     os.environ['AGERE_TIERED_AUTO_LEARN'] = 'off'
@@ -988,7 +1028,11 @@ def run(runs=3, workers=4):
         readings.ENABLED.set(arm in ('stack', 'stack_plain', 'stack_unchecked'))   # stack_guess is the stack answering one reading, as before readings.py
         ladder = arm in ('stack', 'stack_plain', 'stack_unchecked', 'stack_guess')
         try:
-            o = router.answer(item['question'], tiers=router.ALL_TIERS if ladder else ('llm',), bottles=bottles() if ladder else None,
+            if arm == 'assistant':   # the comparison at its strongest: top-tier model, SQL tool, the definitions document (assistant.py)
+                from . import assistant
+                o = assistant.answer(item['question'])
+            else:
+                o = router.answer(item['question'], tiers=router.ALL_TIERS if ladder else ('llm',), bottles=bottles() if ladder else None,
                               s1_ledger=str(scratch / 's1.sqlite3'))
         except Exception as exc:
             if 'limit' in str(exc).lower(): raise
@@ -1018,7 +1062,8 @@ def report(results, items, runs, wall, data):
     summary = {}
     names = {'stack': 'Agere stack (with the governed definitions and their code checks)', 'stack_unchecked': 'Agere stack with the governed definitions but without their code checks',
              'stack_plain': 'Agere stack without the governed definitions', 'stack_guess': 'Agere stack answering one reading of every question (no two-reading check)',
-             'frontier': "frontier model writing its own SQL from the schema (run through the stack's checks, no governed definitions)"}
+             'frontier': "frontier model writing its own SQL from the schema (run through the stack's checks, no governed definitions)",
+             'assistant': 'general-purpose assistant at its best: top-tier model, read-only SQL tool (up to 8 steps), the whole definitions document, no Agere checks'}
     for arm, name in names.items():
         rs = [r for r in results if r['arm'] == arm]
         if not rs: continue
@@ -1029,11 +1074,13 @@ def report(results, items, runs, wall, data):
         consistent = sum(1 for v in groups.values() if len(set(v)) == 1)
         all_right = sum(1 for (qid, _), v in groups.items() if all(k in ('right', 'asked_right') or (k == 'declined' and next(x for x in rs if x['id'] == qid)['unanswerable']) for k in v))
         tiers = Counter(str(r['tier']) for r in rs if r['kind'] == 'right')
-        summary[arm] = {'right': c['right'], 'declined': c['declined'], 'wrong': c['wrong'], 'asked_right': c['asked_right'], 'guessed': c['guessed'], 'asked': c['asked'], 'score': score, 'answers': len(rs), 'usd': round(sum(r['usd'] for r in rs), 4),
+        summary[arm] = {'right': c['right'], 'declined': c['declined'], 'wrong': c['wrong'], 'asked_right': c['asked_right'], 'guessed': c['guessed'], 'asked': c['asked'],
+                        'errors': c['error'], 'score': score, 'answers': len(rs), 'usd': round(sum(r['usd'] for r in rs), 4),
                         'seconds_each': round(sum(r['seconds'] for r in rs) / max(1, len(rs)), 2), 'same_outcome_every_run': consistent, 'phrasings': len(groups),
                         'right_every_run': all_right, 'right_by_rung': dict(tiers)}
         s = summary[arm]
         lines += [f"{name}", f"  right {s['right']}  declined {s['declined']}  wrong {s['wrong']}  of {s['answers']}   score {s['score']} (best possible {s['answers']})",
+                  *([f"  errors (crashes, scored 0): {s['errors']}"] if s['errors'] else []),
                   *([f"  two-reading questions: both readings given and right {s['asked_right']}, one reading given (0) {s['guessed']}; asked on a one-reading question (0) {s['asked']}"]
                     if s['asked_right'] or s['guessed'] or s['asked'] else []),
                   f"  every run right (or correctly declined): {s['right_every_run']} of {s['phrasings']} phrasings; same outcome on every run: {s['same_outcome_every_run']} of {s['phrasings']}",

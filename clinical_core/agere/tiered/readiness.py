@@ -163,7 +163,6 @@ MEASURES = (
      ('survey_results',), ('hcahps', 'patient experience', 'patient satisfaction')),
 )
 
-_cache = {}
 
 
 def _key():
@@ -174,18 +173,28 @@ def _key():
         return (str(store.path()), None, None)
 
 
-_busy = []
+import threading
+_PROBE = threading.RLock()
+_local = threading.local()   # set only on the thread that is probing: its own connection must not install these tables again
 
 
 def probe():
     """-> (measure rows, requirement rows), computed once per warehouse version in this process."""
     k = _key()
-    if k in _cache: return _cache[k]
-    _busy.append(1)   # the probes' own connection must not install these tables again
+    cache = store.scoped('readiness')   # bounded with the warehouse cache: live one-patient layers do not pile up
+    if k in cache: return cache[k]
+    with _PROBE:   # one probe per warehouse version: concurrent first questions wait for it instead of probing in parallel
+        if k in cache: return cache[k]
+        cache[k] = _probe(k)
+        return cache[k]
+
+
+def _probe(k):
+    _local.busy = True
     try:
         db = store.connect()
     finally:
-        _busy.pop()
+        _local.busy = False
     found = {}
     for key, (_, sqls, _) in ELEMENTS.items():
         found[key] = 0
@@ -205,13 +214,12 @@ def probe():
                          '; '.join(ELEMENTS[n][0] for n in missing) or None))
         for n in needs:
             requirements.append((mid, n, ELEMENTS[n][0], found[n], ELEMENTS[n][2], int(found[n] >= ELEMENTS[n][2])))
-    _cache[k] = (measures, requirements)
-    return _cache[k]
+    return measures, requirements
 
 
 def install(db):
     """Create the readiness tables on one connection (called by store.connect, before it is made read-only)."""
-    if _busy: return
+    if getattr(_local, 'busy', False): return
     measures, requirements = probe()
     db.execute('CREATE TEMP TABLE measure_readiness(measure_id TEXT, measure_name TEXT, specification TEXT, computability_class TEXT, programs TEXT, '
                'status TEXT, elements_present INTEGER, elements_required INTEGER, missing_data TEXT)')
@@ -242,7 +250,12 @@ def named_not_ready(question):
     for mid, name, *_, aliases in MEASURES:
         m = status.get(mid)
         if not m or m[5] != 'not_ready': continue
-        if any(f' {a} ' in t for a in {mid.lower(), name.lower(), *aliases} if len(a) > 3 or a in ('cmi', 'dnfb')):
+        raw = ' ' + ' '.join(str(question).split()) + ' '
+        def named(a):
+            if a.startswith('or '):   # "OR cases": the operating room only when written OR, not "visits or cases of sepsis"
+                return re.search(r'(?<![A-Za-z])OR ' + re.escape(a[3:]) + r'\b', raw) is not None
+            return f' {a} ' in t
+        if any(named(a) for a in {mid.lower(), name.lower(), *aliases} if len(a) > 3 or a in ('cmi', 'dnfb')):
             out.append((mid, name, m[8]))
     return out
 

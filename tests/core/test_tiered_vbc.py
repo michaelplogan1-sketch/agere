@@ -3,7 +3,7 @@ import sqlite3
 import unittest
 import unittest.mock
 
-from clinical_core.agere.tiered import recipes
+from clinical_core.agere.tiered import recipes, store
 
 
 class Wording(unittest.TestCase):
@@ -23,7 +23,7 @@ class UnknownValues(unittest.TestCase):
     def test_a_filter_on_a_value_the_column_never_holds_is_named(self):
         db = sqlite3.connect(':memory:')
         db.executescript("CREATE TABLE fill (patient_id, drug_class, fill_date); INSERT INTO fill VALUES ('A', 'glp1_agonist', '2029-01-02'), ('B', 'statin', '2029-02-02');")
-        recipes._COLUMN_TABLES.clear()
+        store.clear_caches()
         try:
             if True:
                 msg = recipes.unknown_filter_values("SELECT COUNT(DISTINCT patient_id) FROM fill WHERE lower(drug_class) = lower(:c) AND substr(fill_date, 1, 4) = :y", {'c': 'GLP-1 agonist', 'y': '2029'}, db)
@@ -35,7 +35,7 @@ class UnknownValues(unittest.TestCase):
                 self.assertIsNone(recipes.unknown_filter_values("SELECT 1 FROM fill WHERE drug_class NOT IN ('insulin')", {}, db))
                 self.assertIn('insulin', recipes.unknown_filter_values("SELECT 1 FROM fill WHERE drug_class IN ('statin', 'insulin')", {}, db))
         finally:
-            recipes._COLUMN_TABLES.clear()
+            store.clear_caches()
 
 
 
@@ -50,13 +50,13 @@ class Scope(unittest.TestCase):
     def test_a_year_with_no_records_is_named(self):
         db = sqlite3.connect(':memory:')
         db.executescript("CREATE TABLE stay (admit_date); INSERT INTO stay VALUES ('2028-03-01'), ('2029-05-01');")
-        recipes._DATA_YEARS.clear()
+        store.clear_caches()
         try:
             self.assertEqual(recipes.years_without_data('How many readmissions were there in 2035?', db), (['2035'], ['2028', '2029']))
             self.assertEqual(recipes.years_without_data('How many readmissions in 2029?', db)[0], [])
             self.assertEqual(recipes.years_without_data('How many patients are there?', db), ([], []))
         finally:
-            recipes._DATA_YEARS.clear()
+            store.clear_caches()
 
 
 

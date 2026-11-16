@@ -78,8 +78,8 @@ _HARM_ENC = ("WITH enc AS (SELECT v.visit_group_id AS eid, v.patient_id, p.sex_r
 
 
 # The ACO (MSSP) population's member months in a year, and its payer's spend on claims that count in metrics.
-_ACO_MM = "WITH mm AS (SELECT patient_id, month, attribution_practice_id FROM member_month WHERE payer_id = 'WH-PAYER-MSSP' AND substr(month, 1, 4) = :year)"
-_ACO_PAID = "paid AS (SELECT SUM(paid_cents) AS cents FROM payer_claim WHERE payer_id = 'WH-PAYER-MSSP' AND counts_in_metrics = 1 AND substr(service_from, 1, 4) = :year) "
+_ACO_MM = "WITH mm AS (SELECT patient_id, month, attribution_practice_id FROM member_month WHERE payer_id IN (SELECT payer_id FROM aco_contract) AND substr(month, 1, 4) = :year)"
+_ACO_PAID = "paid AS (SELECT SUM(paid_cents) AS cents FROM payer_claim WHERE payer_id IN (SELECT payer_id FROM aco_contract) AND counts_in_metrics = 1 AND substr(service_from, 1, 4) = :year) "
 _STAY_ONCE = ("WITH " + _STAYS + "s AS (SELECT patient_id, admit_date, MAX(discharge_date) AS discharge_date FROM st WHERE type = 'inpatient' AND discharge_date IS NOT NULL GROUP BY patient_id, admit_date), "
               "d AS (SELECT s.patient_id, s.admit_date, s.discharge_date, EXISTS (SELECT 1 FROM st b WHERE b.patient_id = s.patient_id AND b.type = 'inpatient' AND b.admit_date > s.admit_date "
               "AND julianday(b.admit_date) - julianday(s.discharge_date) BETWEEN 1 AND 30) AS readmitted FROM s WHERE substr(s.discharge_date, 1, 4) = :year) ")
@@ -419,11 +419,11 @@ RECIPES = {
                "ROUND(COALESCE(paid.paid_cents, 0) / 100.0 / mm.member_months, 2) AS paid_pmpm_dollars, :year AS year FROM mm LEFT JOIN paid ON paid.line_of_business = mm.line_of_business ORDER BY mm.member_months DESC",
         'grain': ['line_of_business'],
         'patterns': [r'what (?:was|is) the (?:cost|spend|paid amount) per member per month (?:in|for) ' + YEAR + r'(?: by line of business)?', r'what (?:was|is) the pmpm (?:in|for) ' + YEAR + r'(?: by line of business)?']},
-    # ---- the ACO job (2026-11-16): the MSSP population (payer WH-PAYER-MSSP), its spend against the contract benchmark,
+    # ---- the ACO job (2026-11-16): the MSSP population (the payer named in aco_contract), its spend against the contract benchmark,
     # shared savings, CMS-HCC V28 risk scores and the members driving spend. Contract terms come from aco_contract
     # (config/agere/contracts; the demo terms are authored), risk scores from risk_score / patient_hcc (aco.py).
     'aco_population': {
-        'title': 'The ACO (MSSP) population in one year: members with a member month for payer WH-PAYER-MSSP, their member months, and the practices they are attributed to',
+        'title': 'The ACO (MSSP) population in one year: members with a member month for the payer named in aco_contract, their member months, and the practices they are attributed to',
         'params': {'year': {'type': 'year'}},
         'sql': _ACO_MM + "SELECT COUNT(DISTINCT patient_id) AS members, COUNT(*) AS member_months, COUNT(DISTINCT attribution_practice_id) AS attributed_practices, :year AS year FROM mm",
         'grain': ['year'],
@@ -435,7 +435,7 @@ RECIPES = {
         'sql': _ACO_MM + ", " + _ACO_PAID + "SELECT (SELECT COUNT(*) FROM mm) AS member_months, ROUND((SELECT cents FROM paid) / 100.0, 2) AS paid_dollars, "
                "ROUND((SELECT cents FROM paid) / 100.0 / (SELECT COUNT(*) FROM mm), 2) AS actual_pmpm_dollars, k.benchmark_pmpm_dollars, "
                "ROUND(k.benchmark_pmpm_dollars - (SELECT cents FROM paid) / 100.0 / (SELECT COUNT(*) FROM mm), 2) AS below_benchmark_pmpm_dollars, :year AS year "
-               "FROM (SELECT 1) LEFT JOIN aco_contract k ON k.payer_id = 'WH-PAYER-MSSP' AND k.year = :year",
+               "FROM (SELECT 1) LEFT JOIN aco_contract k ON k.payer_id IN (SELECT payer_id FROM aco_contract) AND k.year = :year",
         'grain': ['year'], 'nullable': ('benchmark_pmpm_dollars', 'below_benchmark_pmpm_dollars'),
         'patterns': [r'what (?:was|is) (?:the |our )?(?:aco|mssp) (?:pmpm|cost per member per month|spend(?:ing)? per member per month) (?:in|for) ' + YEAR + r'(?: (?:against|versus|vs\.?|compared (?:to|with)) (?:the )?benchmark)?',
                      r'what (?:was|is) (?:the |our )?(?:pmpm|cost per member per month) for (?:our |the )?(?:aco|mssp) (?:population )?(?:in|for) ' + YEAR]},
@@ -443,7 +443,7 @@ RECIPES = {
         'title': 'ACO (MSSP) shared savings for one performance year from the contract terms on file: member months, actual and benchmark PMPM, total savings, savings rate, whether the minimum savings rate and quality standard are met, the sharing rate, the shared savings earned, and whether the terms are authored for a demonstration',
         'params': {'year': {'type': 'year'}},
         'sql': _ACO_MM + ", " + _ACO_PAID + ", s AS (SELECT k.*, (SELECT COUNT(*) FROM mm) AS member_months, (SELECT cents FROM paid) / 100.0 AS paid_dollars "
-               "FROM aco_contract k WHERE k.payer_id = 'WH-PAYER-MSSP' AND k.year = :year), "
+               "FROM aco_contract k WHERE k.payer_id IN (SELECT payer_id FROM aco_contract) AND k.year = :year), "
                "v AS (SELECT *, paid_dollars / member_months AS actual_pmpm, (benchmark_pmpm_dollars * member_months - paid_dollars) AS savings FROM s) "
                "SELECT member_months, ROUND(actual_pmpm, 2) AS actual_pmpm_dollars, benchmark_pmpm_dollars, ROUND(savings, 2) AS total_savings_dollars, "
                "ROUND(savings / (benchmark_pmpm_dollars * member_months), 4) AS savings_rate, minimum_savings_rate, "
@@ -473,7 +473,7 @@ RECIPES = {
     'aco_spend_drivers': {
         'title': 'The ACO (MSSP) members driving spend in one year: paid dollars on the ACO payer\'s claims that count in metrics, their attributed practice, payment risk score, payment HCCs, hospital stays (each counted once), readmissions and emergency visits that year, highest paid first',
         'params': {'year': {'type': 'year'}, 'n': {'type': 'int', 'min': 1, 'max': 500, 'default': 25}},
-        'sql': _ACO_MM + ", paid AS (SELECT patient_id, SUM(paid_cents) AS cents FROM payer_claim WHERE payer_id = 'WH-PAYER-MSSP' AND counts_in_metrics = 1 "
+        'sql': _ACO_MM + ", paid AS (SELECT patient_id, SUM(paid_cents) AS cents FROM payer_claim WHERE payer_id IN (SELECT payer_id FROM aco_contract) AND counts_in_metrics = 1 "
                "AND substr(service_from, 1, 4) = :year AND patient_id IN (SELECT patient_id FROM mm) GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT :n) "
                "SELECT p.patient_id, ROUND(p.cents / 100.0, 2) AS paid_dollars, "
                "(SELECT x.attribution_practice_id FROM mm x WHERE x.patient_id = p.patient_id ORDER BY x.month DESC LIMIT 1) AS attributed_practice, "
@@ -490,7 +490,7 @@ RECIPES = {
         'title': 'ACO (MSSP) spending by claim type in one year: claims that count in metrics, paid dollars and paid per member per month, for institutional and professional claims',
         'params': {'year': {'type': 'year'}},
         'sql': _ACO_MM + "SELECT c.claim_type, COUNT(*) AS claims, ROUND(SUM(c.paid_cents) / 100.0, 2) AS paid_dollars, ROUND(SUM(c.paid_cents) / 100.0 / (SELECT COUNT(*) FROM mm), 2) AS paid_pmpm_dollars "
-               "FROM payer_claim c WHERE c.payer_id = 'WH-PAYER-MSSP' AND c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = :year GROUP BY c.claim_type ORDER BY paid_dollars DESC",
+               "FROM payer_claim c WHERE c.payer_id IN (SELECT payer_id FROM aco_contract) AND c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = :year GROUP BY c.claim_type ORDER BY paid_dollars DESC",
         'grain': ['claim_type'],
         'patterns': [r'how (?:did|does) (?:aco|mssp) spend(?:ing)? (?:in|for) ' + YEAR + r' (?:split|break down) by claim type', r'what (?:was|is) (?:aco|mssp) spend(?:ing)? by claim type (?:in|for) ' + YEAR]},
     # ---- hospital operations core (2026-11-16): ED throughput and boarding, the ED timeliness eCQM thresholds the data can
@@ -924,19 +924,14 @@ RECIPES = {
         'patterns': [r'how many (?:or|operating room|surgical) cases (?:started|were done) after hours (?:in|during) ' + YEAR, r'what share of (?:or|operating room|surgical) cases (?:started|were) after hours (?:in|during) ' + YEAR]},
 }
 ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS}
-_vocab = {}
-
-
 def vocabulary(spec, db=None):
-    if spec['query'] not in _vocab:
-        _vocab[spec['query']] = sorted(r[0] for r in store.run(spec['query'], db=db)[1])
-    return _vocab[spec['query']]
+    cache = store.scoped('recipe_vocabulary')   # per warehouse: a live one-patient layer has its own values
+    if spec['query'] not in cache:
+        cache[spec['query']] = sorted(r[0] for r in store.run(spec['query'], db=db)[1])
+    return cache[spec['query']]
 
 
 SECOND_QUESTION = re.compile(r'(?:[,;?]|\band\b|\balso\b|\bplus\b)\s*(?:and\s+|also\s+|then\s+)?(?:how many|how much|what|which|who|show|list|count|give|tell)\b', re.I)
-
-
-_COLUMN_TABLES = {}
 
 
 EACH_STAY_ONCE = re.compile(r'\b(?:each|every) (?:hospital |inpatient )?stay (?:counted )?(?:once|a single time)|\b(?:duplicat|overlapp)\w* (?:stay|row)', re.I)
@@ -950,16 +945,18 @@ def needs_whole_stays(question, sql):
     return 'The question asks for each hospital stay counted once; this query does not merge repeated, overlapping or continuing stay rows into one stay'
 
 
-_DATA_YEARS = set()
 
 
 def years_without_data(question, db=None):
     """Code only. Years the question names that the warehouse recorded no care or coverage in (stays, visits, claims, member
     months, appointments, fills, results; not diagnosis onset dates). -> (missing years, the years held), or ([], ...)."""
-    asked = sorted(set(re.findall(r'\b(20\d{2})\b', str(question))))
+    # A year, not any number: not an identifier (P-2031) or a count ("more than 2000 visits").
+    asked = sorted(set(y for y, after in re.findall(r'(?<![\w-])(20\d{2})(?![\w-])(\s+[a-z]+)?', str(question))
+                       if not (after and re.match(r'\s+(?:visits?|patients?|claims?|members?|admissions?|stays?|encounters?|cases?|people|dollars?|times?|days?|hours?|minutes?)$', after, re.I))))
     if not asked: return [], []
+    held_years = store.scoped('data_years')   # per warehouse; filled once from its own records
     counts = Counter()
-    if not _DATA_YEARS and store.foreign():
+    if 'years' not in held_years and store.foreign():
         # A warehouse that is not this semantic layer: every date-like column of every table counts.
         conn = db or store.connect()
         for table in store.tables(conn):
@@ -968,7 +965,7 @@ def years_without_data(question, db=None):
                     for y, n in conn.execute(f'SELECT substr("{col}", 1, 4), COUNT(*) FROM "{table}" WHERE "{col}" IS NOT NULL GROUP BY 1'): counts[str(y)] += n
                 except Exception:
                     pass
-    if not _DATA_YEARS:
+    if 'years' not in held_years and not counts:
         conn = db or store.connect()
         for table, column in (('stay', 'admit_date'), ('utilization_event', 'event_date'), ('payer_claim', 'service_from'), ('member_month', 'month'),
                               ('appointment', 'scheduled_date'), ('fill', 'fill_date'), ('visit', 'event_date'),
@@ -984,9 +981,11 @@ def years_without_data(question, db=None):
         # A year counts as held when it has at least a tenth of a typical year's records: a few stray history rows (16 visits
         # in 2021 against thousands a year from 2026) do not make "readmitted in 2021" answerable as zero.
         typical = sorted(counts.values())[len(counts) // 2]
-        _DATA_YEARS.update(y for y, n in counts.items() if n >= typical / 10)
-    held = sorted(y for y in _DATA_YEARS if y and y.isdigit())
-    return [y for y in asked if y not in _DATA_YEARS], held
+        held_years['years'] = {y for y, n in counts.items() if n >= typical / 10}
+    years = held_years.setdefault('years', set())
+    held = sorted(y for y in years if y and y.isdigit())
+    if not held: return [], []   # nothing could be read: no year is declined on that account
+    return [y for y in asked if y not in years], held
 
 
 def unknown_filter_values(sql, params, db=None):
@@ -998,13 +997,14 @@ def unknown_filter_values(sql, params, db=None):
     q = lambda sql_, args=(): conn.execute(sql_, args).fetchall()
     text = ' '.join(str(sql).split())
     read = list(dict.fromkeys(t.lower() for t in re.findall(r'\b(?:from|join)\s+"?([a-z_][a-z0-9_]*)"?', text, re.I)))
+    column_tables = store.scoped('column_tables')
     def columns(t):
-        if t not in _COLUMN_TABLES:
+        if t not in column_tables:
             try:
-                _COLUMN_TABLES[t] = {c[1].lower() for c in q(f'PRAGMA table_info("{t}")')}
+                column_tables[t] = {c[1].lower() for c in q(f'PRAGMA table_info("{t}")')}
             except Exception:
-                _COLUMN_TABLES[t] = set()
-        return _COLUMN_TABLES[t]
+                column_tables[t] = set()
+        return column_tables[t]
     pairs = []
     for m in re.finditer(r"(?:lower\(\s*)?(?:[a-z_][a-z0-9_]*\.)?([a-z_][a-z0-9_]*)\s*\)?\s*=\s*(?:lower\(\s*)?(?::([a-z_][a-z0-9_]*)|'([^']*)')", text, re.I):
         pairs.append((m.group(1), params.get(m.group(2)) if m.group(2) else m.group(3)))
@@ -1086,9 +1086,6 @@ def normalize(recipe_id, raw, db=None):
     return out
 
 
-_runnable = {}
-
-
 def reads(sql):
     """Table names a query reads (FROM and JOIN targets), without its own CTE names."""
     low = str(sql).lower()
@@ -1102,8 +1099,8 @@ def runnable(recipe_id):
     copy of it) every recipe is a candidate; on a foreign warehouse none is. Code only; cached per warehouse."""
     if store.foreign(): return False
     if not store.mapping(): return recipe_id in RECIPES
-    key = (str(store.path()), os.environ.get('AGERE_TIERED_MAPPING'))
-    if key not in _runnable:
+    cache = store.scoped('runnable')
+    if 'ok' not in cache:
         db = store.connect()
         try:
             have = {r[0].lower() for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view') UNION SELECT name FROM sqlite_temp_master WHERE type IN ('table', 'view')")}
@@ -1113,8 +1110,8 @@ def runnable(recipe_id):
         for rid, r in RECIPES.items():
             needs = reads(r['sql']) | {t for spec in r['params'].values() if spec.get('query') for t in reads(spec['query'])}
             ok[rid] = needs <= have
-        _runnable[key] = ok
-    return _runnable[key].get(recipe_id, False)
+        cache['ok'] = ok
+    return cache['ok'].get(recipe_id, False)
 
 
 def match(question, db=None):

@@ -92,10 +92,10 @@ DEFINITIONS = (
      "discharge_time; before noon means its hour is under 12."),
     # Added 2026-11-16 for the ACO job.
     ('ACO population', r'\baco\b|mssp|shared savings|accountable care|assigned beneficiar|attributed beneficiar',
-     "The ACO (MSSP) population in a year is the members with a member_month row for payer_id 'WH-PAYER-MSSP' that year "
-     "(Medicare FFS and dual FFS), not every Medicare member. Its spend is payer_claim.paid_cents on claims of payer_id "
-     "'WH-PAYER-MSSP' with counts_in_metrics = 1, by year of service_from; its PMPM divides that by the population's "
-     "WH-PAYER-MSSP member months in the year."),
+     "The ACO (MSSP) population in a year is the members with a member_month row that year for the ACO's payer, the payer_id "
+     "in aco_contract (payer_id IN (SELECT payer_id FROM aco_contract)), not every Medicare member. Its spend is "
+     "payer_claim.paid_cents on that payer's claims with counts_in_metrics = 1, by year of service_from; its PMPM divides "
+     "that by the population's member months for that payer in the year."),
     ('shared savings', r'shared savings|benchmark|savings rate|minimum savings|settlement|sharing rate',
      "Contract terms are in aco_contract (payer_id, year, benchmark_pmpm_dollars, minimum_savings_rate, sharing_rate, "
      "quality_standard_met, authored_synthetic). Savings = (benchmark PMPM - actual PMPM) x member months; savings rate = "

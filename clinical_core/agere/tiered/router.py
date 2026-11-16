@@ -41,6 +41,14 @@ def answer(question, **kw):
                           'recipe': o['recipe'], 'validation': o['validation']} for r, o in outs]}
 
 
+def _llm_params(recipe):
+    """A frontier recipe's parameters as typed values, or None when they are not well formed (a missing value, a non-number int)."""
+    try:
+        return {k: (int(v['value']) if v.get('type') == 'int' else str(v['value'])) for k, v in (recipe.get('params') or {}).items()}
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return None
+
+
 def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_ceiling=TOKEN_CEILING, s1_ledger=None,
             bottle_statuses=('promoted',), readers=reader.READERS, cohort=None):
     """One question up the ladder."""
@@ -105,9 +113,16 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
         escalations.append({'from': 'scope', 'reason': 'this warehouse cannot compute it: ' + why})
         return done('unanswered', None, missing='This warehouse cannot compute it: ' + why + '. See measure_readiness.')
 
+    from . import corrections
+    reported = corrections.blocked(question)   # recipes a person reported wrong for this wording, until a reviewer settles it
+
     # Tier 0: bottles
     if 'bottles' in tiers and bottles is not None:
         hit = bottles.match(question, statuses=bottle_statuses)  # by default a provisional bottle is never used to answer
+        if hit and hit[0]['id'] in reported:   # reported wrong by this organization (hosted reports do not retire a shared recipe)
+            steps.append({'tier': 'bottles', 'outcome': 'reported_wrong_for_this_question', 'bottle_id': hit[0]['id'], 'tokens': 0, 'usd': 0.0})
+            escalations.append({'from': 'bottles', 'reason': 'the saved recipe was reported wrong for this question; the report is open'})
+            hit = None
         if hit:
             bottle, params = hit
             got = attempt('bottles', bottle['sql'], params, grain=bottle['grain'], read=bottle.get('read'))
@@ -124,6 +139,10 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
 
     def run_recipe(tier, recipe_id, params):
         recipe = recipes.RECIPES[recipe_id]
+        if recipe_id in reported:
+            steps.append({'tier': tier, 'outcome': 'reported_wrong_for_this_question', 'recipe': recipe_id, 'tokens': 0, 'usd': 0.0})
+            escalations.append({'from': tier, 'reason': f'{recipe_id} was reported wrong for this question; the report is open'})
+            return None
         if tier != 'recipes':   # a model chose this recipe: it must read every table or column the question names
             from . import near
             whole = recipes.needs_whole_stays(question, recipe['sql'])
@@ -174,37 +193,49 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
             steps.append({'tier': 'recipes', 'outcome': 'no_match', 'tokens': 0, 'usd': 0.0})
             escalations.append({'from': 'recipes', 'reason': 'no recipe pattern matches the wording'})
 
+    def model_rung(tier, fn, *args, fallback):
+        """Call one model rung. A provider limit stops everything; any other failure is recorded and the question climbs on."""
+        try:
+            return fn(*args)
+        except store.RecipeError:
+            raise
+        except Exception as exc:
+            if models.is_limit(exc): raise
+            steps.append({'tier': tier, 'outcome': 'error', 'reason': f'{type(exc).__name__}: {str(exc)[:160]}', 'tokens': 0, 'usd': 0.0})
+            escalations.append({'from': tier, 'reason': f'the {tier} rung failed ({type(exc).__name__}); skipped'})
+            return fallback
+
     # Tier 2 (System One picks the shape) then Tier 3 (small model fills its parameters)
     chosen = None
     if 'system1' in tiers and 'recipes' in tiers:
-        chosen, confidence, step = models.s1_classify(question, s1_ledger)
-        steps.append(step)
-        if chosen is None:
+        chosen, confidence, step = model_rung('system1', models.s1_classify, question, s1_ledger, fallback=(None, None, None))
+        if step is not None: steps.append(step)
+        if chosen is None and step is not None:
             escalations.append({'from': 'system1', 'reason': step['outcome'] + f" (confidence {step.get('confidence')})"})
     if 'slm' in tiers and 'recipes' in tiers and spent() < token_ceiling:
         if chosen is not None:
             try:
-                params, step = models.slm_slots(question, chosen, lookup)
+                params, step = model_rung('slm', models.slm_slots, question, chosen, lookup, fallback=(None, None))
             except store.RecipeError as exc:   # the recipe's vocabulary cannot be read on this warehouse: the rung does not apply
                 params, step = None, {'tier': 'slm', 'outcome': 'not_applicable', 'reason': str(exc)[:160], 'tokens': 0, 'usd': 0.0}
-            steps.append(step)
+            if step is not None: steps.append(step)
             if params is not None:
-                fits, step = models.s1_fit(question, chosen, params, s1_ledger)
-                steps.append(step)
+                fits, step = model_rung('system1', models.s1_fit, question, chosen, params, s1_ledger, fallback=(False, None))
+                if step is not None: steps.append(step)
                 if fits:
                     out = run_recipe('slm', chosen, params)
                     if out: return out
-                else:
+                elif step is not None:
                     escalations.append({'from': 'system1', 'reason': f"chosen recipe is not an exact fit (confidence {step.get('confidence')})"})
-            else:
+            elif step is not None:
                 escalations.append({'from': 'slm', 'reason': step['outcome'] + ': ' + str(step.get('reason'))[:120]})
         elif 'system1' not in tiers:
-            rid, params, step = models.slm_choose_and_fill(question, lookup)
-            steps.append(step)
+            rid, params, step = model_rung('slm', models.slm_choose_and_fill, question, lookup, fallback=(None, None, None))
+            if step is not None: steps.append(step)
             if rid is not None:
                 out = run_recipe('slm', rid, params)
                 if out: return out
-            else:
+            elif step is not None:
                 escalations.append({'from': 'slm', 'reason': step['outcome'] + ': ' + str(step.get('reason'))[:120]})
 
     # Near match (near.py): a promoted saved shape answers a rewording of its question, with no frontier call
@@ -214,7 +245,7 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
             try:
                 bottle, params, near_steps = near.propose(question, bottles, s1_ledger)
             except Exception as exc:
-                if 'limit' in str(exc).lower(): raise
+                if models.is_limit(exc): raise
                 bottle, params, near_steps = None, None, [{'tier': 'near', 'outcome': 'error', 'reason': f'{type(exc).__name__}: {str(exc)[:120]}', 'tokens': 0, 'usd': 0.0}]
             steps.extend(near_steps)
             if bottle is not None:
@@ -239,14 +270,16 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
         return done('unanswered', None, missing=step.get('reason'))
     if recipe is None:
         return done('partial', 'llm', missing='The frontier model returned no usable recipe: ' + str(step.get('reason')))
-    params = {k: (int(v['value']) if v.get('type') == 'int' else str(v.get('value'))) for k, v in recipe['params'].items()}
+    params = _llm_params(recipe)
+    if params is None:
+        return done('partial', 'llm', missing='The frontier model returned parameters that are not well formed')
     got = attempt('llm', recipe['sql'], params, grain=recipe.get('grain') or None, read=recipe.get('read'))
     if got is None and spent() < token_ceiling:  # one correction for a SQL execution error; validation failures are not retried
         recipe2, step2 = models.llm_recipe(question, error=steps[-1].get('reason'))
         steps.append({**step2, 'retry': 'execution_error'})
         if recipe2 is not None:
             recipe = recipe2
-            params = {k: (int(v['value']) if v.get('type') == 'int' else str(v.get('value'))) for k, v in recipe['params'].items()}
+            params = _llm_params(recipe) or {}
             got = attempt('llm', recipe['sql'], params, grain=recipe.get('grain') or None, read=recipe.get('read'))
     if got is None:
         return done('partial', 'llm', recipe, missing='The frontier model recipe did not execute')

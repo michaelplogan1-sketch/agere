@@ -21,16 +21,41 @@ and stop answering when the evidence turns against them (`upkeep.py`). All patie
 | `clinical_core/agere/hosted/` | The web server for customers: sign-in, tenancy, encrypted credentials, the question page. |
 | `clinical_core/agere/service.py`, `clinical/conversation.py` | The local app shell, which sends each question to the core first. |
 | `clinical_core/agere/clinical/` and the rest of `clinical_core/` | Analysis engines, the typed-judgment classifier transport and the model gateway that the core calls. Older code lives here too; the core still reaches most of it, so it stays until each dependency is cut. |
-| `eval/tiered/` | Question sets with reference answers. `proof_v*.json` are frozen held-out sets: never edited after their run. |
+| `eval/tiered/` | Question sets with reference answers. `proof_v*.json` are frozen held-out sets, committed before their first run (proof_v1 aside: audited and run before its freeze commit) and never edited after. A set's items cited in product code have been fixed against, so that set no longer counts as held out. |
 | `tests/core/` | Tests of the core. `tests/legacy/` tests the older modules the core still uses. |
 | `archive/` | Earlier experiments, one-off scripts and reports, moved out of the way on 2026-11-16. See `archive/README.md`. |
 
 Large data (warehouse, saved recipes, ledgers, local models) is in `artifacts/` and `models/`, outside git.
 
+## First run
+
+1. Python 3.12. Install the core, then the extras you need (`local-models` for the small-model rungs on Apple silicon,
+   `analysis`, `reporting`, `connectors` for customer warehouses, `hosted` for the customer web server):
+
+   ```bash
+   python -m venv .venv && .venv/bin/pip install -e '.[local-models,analysis]'
+   ```
+
+2. Data is not in git. The synthetic semantic layer (about 8.8 GB) is read from `AGERE_TIERED_DB`, by default
+   `artifacts/agere-full-stack-rerun-2026-10-30/focused/runtime/stack/semantic.sqlite3`; saved recipes from
+   `artifacts/agere-tiered-core/bottles.sqlite3`. Without the layer the app cannot answer, and the tests that read it skip
+   with that reason (every other test runs).
+3. Provider keys are never in the repository. `clinical_core/agere/providers.py` reads them from `AGERE_KEYS_FILE`
+   (default `~/Desktop/typesafe_key.txt`) and, optionally, `AGERE_ENV_FILE`. The paid Anthropic API key is kept only on the
+   hosted server with `AGERE_CLAUDE_TRANSPORT=api`; everywhere else Claude is reached through the subscription transport.
+
+Settings that change behaviour (all `AGERE_TIERED_*` unless noted): `DB`, `MAPPING` and `FOREIGN` (which warehouse and how it
+is presented), `BOTTLES`, `LEDGER`, `CORRECTIONS` (where saved recipes, the answer ledger and wrong-answer reports live),
+`GOVERNED`, `CATALOGUE`, `READINGS` (the definition checks, definitions and two-reading check: on by default, and only a
+measurement turns them off), `LLM` and `SLM` (models), `AUTO_LEARN` (saving new recipes in the background), and
+`AGERE_HOSTED`, `AGERE_CLAUDE_TRANSPORT`, `AGERE_TRUST_PROXY`, `AGERE_HOST` for the hosted server.
+
 ## Run it
 
 ```bash
-python serve_current_warehouse.py --port 8908 --allow-live-stack --config <active config> --ledger <budget ledger>
+python serve_current_warehouse.py --port 8908 --allow-live-stack \
+  --config artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/active-config.json \
+  --ledger artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/provider-budget.sqlite3
 ```
 
 The local app at http://127.0.0.1:8908. `serve_hosted.py` runs the customer web server (see `deploy/`).

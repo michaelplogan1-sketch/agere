@@ -5,7 +5,7 @@
     AGERE_PORT          port (default 8080)
     AGERE_SECRET_KEY    Fernet key for stored warehouse credentials (required)
     AGERE_COOKIE_SECURE 1 (default) sets Secure cookies and HSTS; 0 only for local http testing
-    AGERE_TRUST_PROXY   1 when behind a proxy that sets X-Forwarded-For (default 1 with AGERE_COOKIE_SECURE)
+    AGERE_TRUST_PROXY   1 when behind a proxy that sets X-Forwarded-For (default 0; deploy/docker-compose.yml sets 1 behind Caddy)
     AGERE_CLAUDE_TRANSPORT subscription (default; the signed-in Claude subscription) or api (paid key in ANTHROPIC_API_KEY; hosted only)
     AGERE_TIERED_DB     demonstration semantic layer for Ask (synthetic); with AGERE_TIERED_BOTTLES and AGERE_TIERED_LEDGER
     TYPESAFE_API_KEY, PERPLEXITY_API_KEY   System One providers used by Ask
@@ -67,8 +67,9 @@ def main():
     if not key:
         raise SystemExit('AGERE_SECRET_KEY is required (python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")')
     secure = os.environ.get('AGERE_COOKIE_SECURE', '1') != '0'
-    trust = os.environ.get('AGERE_TRUST_PROXY', '1' if secure else '0') == '1'
-    host, port = os.environ.get('AGERE_HOST', '0.0.0.0'), int(os.environ.get('AGERE_PORT', '8080'))
+    # Off unless set: a forged X-Forwarded-For would otherwise defeat the login limits when no proxy is in front (setup review).
+    trust = os.environ.get('AGERE_TRUST_PROXY', '0') == '1'
+    host, port = os.environ.get('AGERE_HOST', '127.0.0.1'), int(os.environ.get('AGERE_PORT', '8080'))
     transport = configure_models()
     server = make_server(host, port, data, secret_key=key, cookie_secure=secure, trust_proxy=trust)
     from clinical_core.agere.hosted import ask

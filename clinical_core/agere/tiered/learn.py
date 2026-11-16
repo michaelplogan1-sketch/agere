@@ -24,7 +24,7 @@ OUT = Path('artifacts/agere-tiered-core')
 def _s1_ledger():
     import os
     os.environ.pop('ANTHROPIC_API_KEY', None)
-    from run_integrated_stack import keys
+    from clinical_core.agere.providers import load_keys as keys
     keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
     return os.environ.get('AGERE_TIERED_S1_LEDGER', str(OUT / 'system-one-ledger.sqlite3'))
 

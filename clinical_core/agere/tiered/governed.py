@@ -71,22 +71,20 @@ def spend_flag(q, s):
             'superseded and voided claims are 0). Add that filter.')
 
 
-_CLAIM_ONLY = []
-
-
 def _claim_only_phrases():
     """Columns only the claim table has (net_payer_paid_cents, benefit_year, first_payer_cash_date ...), written as words."""
-    if not _CLAIM_ONLY:
-        from . import store
+    from . import store
+    cache = store.scoped('claim_only_phrases')   # per warehouse; a failed read is not remembered
+    if 'p' not in cache:
         try:
             db = store.connect()
             cols = lambda t: {r[1] for r in db.execute(f'PRAGMA table_info("{t}")')}
             only = cols('claim') - cols('payer_claim') - {'claim_id', 'patient_id', 'payer', 'service_date'}
             db.close()
         except Exception:
-            only = set()
-        _CLAIM_ONLY.extend(sorted(c.replace('_cents', '').replace('_', ' ') for c in only) or [''])
-    return [c for c in _CLAIM_ONLY if c]
+            return []
+        cache['p'] = sorted(c.replace('_cents', '').replace('_', ' ') for c in only)
+    return cache['p']
 
 
 def spend_table(q, s):
@@ -127,16 +125,25 @@ def flu_vaccines(q, s):
     return None
 
 
+def _aco_payers():
+    """The ACO payer ids the contract files name (aco_contract): the customer's own, never a built-in identifier."""
+    from . import aco
+    return {str(row[1]).lower() for row in aco.contracts()}
+
+
 def aco_population(q, s):
-    """The ACO (MSSP) population is payer WH-PAYER-MSSP's members, not every Medicare member."""
+    """The ACO (MSSP) population is the members of the payer named in the ACO contract, not every Medicare member."""
     if not _has(q, r'\baco\b|\bmssp\b|accountable care|shared savings'): return None
     # Any patient data read for an ACO question is the ACO's members' (proof_v8: ED visits counted for everyone); only a
     # question about the contract terms alone reads no population.
     tables = set(re.findall(r'(?i)\b(?:from|join)\s+(?:main\.)?"?([a-z_][a-z0-9_]*)', s)) - {'aco_contract'}
-    if tables and not _has(s, r'wh-payer-mssp'):
-        return ("Governed definition: the ACO (MSSP) population is the members with a member_month row for payer_id 'WH-PAYER-MSSP' "
-                "in the year, and its spend is that payer's claims with counts_in_metrics = 1. Filter to payer_id 'WH-PAYER-MSSP'.")
-    return None
+    if not tables: return None
+    low = s.lower()
+    if re.search(r'payer_id\s+in\s*\(\s*select\s+(?:\w+\.)?payer_id\s+from\s+aco_contract', low) or any(f"'{p}'" in low for p in _aco_payers()):
+        return None
+    return ("Governed definition: the ACO (MSSP) population is the members with a member_month row in the year for the payer named "
+            "in aco_contract, and its spend is that payer's claims with counts_in_metrics = 1. Filter with "
+            "payer_id IN (SELECT payer_id FROM aco_contract).")
 
 
 def hospital_visit_rules(q, s):

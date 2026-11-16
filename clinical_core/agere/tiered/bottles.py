@@ -11,7 +11,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-from . import store
+from . import ledger, store
 
 DEFAULT = 'artifacts/agere-tiered-core/bottles.sqlite3'
 SLOT = {'year': r'20\d{2}', 'month': r'20\d{2}-(?:0[1-9]|1[0-2])', 'int': r'\d{1,6}', 'text': r'[a-z0-9][a-z0-9 _\-]{0,60}'}
@@ -84,10 +84,23 @@ class Bottles:
             self.db.commit()
             return old[0], None
 
+    def _relabel(self, version):
+        """Once per warehouse: recipes saved under the old data-digest key of this very data are relabelled with its schema key,
+        so they keep answering after the next data refresh."""
+        done = store.scoped('bottles_relabelled')
+        if self.path in done: return
+        legacy = store.data_version()
+        if legacy and legacy != version:
+            n = self.db.execute('UPDATE bottle SET schema_version=? WHERE schema_version=?', (version, legacy)).rowcount
+            self.db.commit()
+            if n: print(f'{n} saved recipes relabelled from {legacy} to {version}', flush=True)
+        done[self.path] = True
+
     def match(self, question, *, statuses=('promoted', 'provisional')):
         """-> (bottle dict, params) or None. Exact match only, current schema version only."""
         # Matched without regard to case, but slot values keep the question's own case (identifiers are case-sensitive).
         text, version = ' '.join(str(question).strip().rstrip('?.').split()), store.schema_version()
+        self._relabel(version)
         marks = ','.join('?' * len(statuses))
         for bid, rx, params_json, sql, grain_json, read_json in self.db.execute(
                 f'SELECT id, pattern, params_json, sql, grain_json, read_json FROM bottle WHERE schema_version=? AND status IN ({marks}) ORDER BY id',
@@ -109,7 +122,8 @@ class Bottles:
         """One line of a recipe's track record. kind: use, near_use, check_agree, check_differ, misapplied."""
         if kind not in self.EVENTS: raise ValueError(f'unknown track-record event {kind}')
         self.db.execute('INSERT INTO bottle_event(at, bottle_id, kind, question, params_json, detail_json) VALUES(?,?,?,?,?,?)',
-                        (at or time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), bottle_id, kind, question,
+                        (at or time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), bottle_id, kind,
+                         ledger.fingerprint(question) if (question is not None and ledger.hosted()) else question,
                          json.dumps(params, default=str) if params is not None else None, json.dumps(detail, default=str) if detail is not None else None))
         self.db.commit()
 

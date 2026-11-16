@@ -4,12 +4,14 @@ import unittest
 from pathlib import Path
 
 from clinical_core.agere.tiered import aco, governed, proof, recipes, store
+from tests.core.needs_data import needs_warehouse
 
 
 def original():
     return sqlite3.connect(Path(store.DEFAULT_DB).resolve().as_uri() + '?mode=ro', uri=True)
 
 
+@needs_warehouse
 class Aco(unittest.TestCase):
     def test_every_aco_member_is_scored(self):
         db = store.connect()

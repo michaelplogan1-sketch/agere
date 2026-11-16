@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest import mock
 
 from clinical_core.agere.tiered import methods, models, near
+from tests.core.needs_data import needs_warehouse
 
 STEP = {'model': 'm', 'tokens': 10, 'usd': 0.002, 'seconds': 0.1}
 
@@ -47,6 +48,8 @@ class Near(unittest.TestCase):
         self.assertIsNone(near.typed(SAVED[0], {'drug_class': 'statin'}, q))                         # a slot left empty
         self.assertEqual(near.typed(SAVED[1], {'n': '5'}, 'What are the five... top 5 conditions?'), {'n': 5})
 
+    @needs_warehouse
+
     def test_a_table_or_column_the_question_names_must_be_read_by_the_saved_query(self):
         saved = {'sql': "SELECT COUNT(DISTINCT c.patient_id) FROM concept_patient c WHERE c.concept = :concept AND EXISTS (SELECT 1 FROM utilization_event u WHERE u.patient_id = c.patient_id)"}
         q = 'How many distinct patients with a utilization_event dated in 2027 also have a heart_failure condition in the condition table?'
@@ -66,6 +69,8 @@ class Near(unittest.TestCase):
         with mock.patch.object(methods, '_system_one', lambda prompt, options, ledger: next(picks)), \
                 mock.patch.object(models, '_claude', lambda m, s, u: (reply, dict(STEP))):
             return near.propose('In 2029, how many statin fills were there and for how many patients?', self.store)
+
+    @needs_warehouse
 
     def test_a_rewording_is_answered_only_when_pick_values_and_fit_all_hold(self):
         bottle, params, steps = self._propose([('1', 0.95, 0.0001), ('exact', 0.93, 0.0001)])

@@ -17,12 +17,12 @@ class Env:
             self.old[k] = os.environ.get(k)
             if v is None: os.environ.pop(k, None)
             else: os.environ[k] = v
-        recipes._DATA_YEARS.clear(); store._vocab.clear(); store._as_of.clear()
+        store.clear_caches()
     def __exit__(self, *exc):
         for k, v in self.old.items():
             if v is None: os.environ.pop(k, None)
             else: os.environ[k] = v
-        recipes._DATA_YEARS.clear(); store._vocab.clear(); store._as_of.clear()
+        store.clear_caches()
 
 
 @unittest.skipUnless(LAYOUT.exists(), 'layout B not built (python -m clinical_core.agere.tiered.portability build)')

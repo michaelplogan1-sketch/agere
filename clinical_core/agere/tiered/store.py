@@ -8,10 +8,12 @@ A customer's warehouse rarely has this layer's tables. Two ways to run on one (A
     saved recipes do not apply; the frontier SQL writer works from that schema and its own vocabulary.
 """
 import json
+import collections
 import contextvars
 import os
 import re
 import sqlite3
+import threading
 import time
 from pathlib import Path
 
@@ -36,18 +38,56 @@ def path():
     return Path(DB_OVERRIDE.get() or os.environ.get('AGERE_TIERED_DB', DEFAULT_DB))
 
 
-_mappings = {}
+# Every cache of what a warehouse holds (its years, vocabularies, columns, readiness, as-of date ...) lives here, keyed by the
+# warehouse in use: its file (path, modification time, size), the mapping file and the source mode. A refreshed warehouse, a
+# mapped one or a live one-patient database (fhir_live) gets its own entries; the 16 most recent warehouses are kept.
+_SCOPED = collections.OrderedDict()
+MAX_WAREHOUSES = 16
+_scope_lock = threading.Lock()
+
+
+def _stamp(p):
+    try:
+        st = Path(p).stat()
+        return (st.st_mtime_ns, st.st_size)
+    except OSError:
+        return None
+
+
+def warehouse_key():
+    p, m = path(), os.environ.get('AGERE_TIERED_MAPPING')
+    return (str(p), _stamp(p), m, _stamp(m) if m else None, os.environ.get('AGERE_TIERED_FOREIGN', 'off'))
+
+
+def scoped(name):
+    """-> the dict named `name` for the warehouse in use (created empty on first use)."""
+    k = warehouse_key()
+    with _scope_lock:
+        bucket = _SCOPED.get(k)
+        if bucket is None:
+            bucket = _SCOPED[k] = {}
+            while len(_SCOPED) > MAX_WAREHOUSES: _SCOPED.popitem(last=False)
+        else:
+            _SCOPED.move_to_end(k)
+        return bucket.setdefault(name, {})
+
+
+def clear_caches():
+    """Forget everything cached about every warehouse (tests, or after a warehouse is replaced in place)."""
+    with _scope_lock:
+        _SCOPED.clear()
 
 
 def mapping():
     """The mapping file in force, or None. {'semantic_layer': version, 'as_of': date, 'views': {table: SELECT over main.<table>}}"""
     name = os.environ.get('AGERE_TIERED_MAPPING')
     if not name: return None
-    if name not in _mappings:
+    cache = scoped('mapping')   # keyed with the mapping file's own timestamp: an edited mapping is read again
+    if 'm' not in cache:
         m = json.loads(Path(name).read_text())
         if not isinstance(m.get('views'), dict) or not m.get('semantic_layer'): raise ValueError(f'Mapping {name} needs views and semantic_layer')
-        _mappings[name] = m
-    return _mappings[name]
+        cache['m'] = m
+    return cache['m']
 
 
 
@@ -260,9 +300,37 @@ def texts(record_ids, db):
 
 
 def schema_version(db=None):
+    """What a saved recipe is valid for: the semantic layer's version and the tables and columns it presents, not its data. A
+    data refresh with the same schema keeps every saved recipe answering; a schema change retires them for re-verification.
+    (Until 2026-11-16 this was the data digest, so each refresh hid every saved recipe: design review.)"""
     m = mapping()
     if m: return m['semantic_layer']   # the semantic-layer version the mapping presents; saved recipes verified on it apply
     if foreign(): return 'foreign:' + path().name
+    cache = scoped('schema_version')
+    if 'v' not in cache:
+        own = db is None
+        db = db or connect()
+        try:
+            version = (db.execute("SELECT value FROM meta WHERE key = 'version'").fetchone() or [None])[0]
+            shape = []
+            # The warehouse's stored tables only (main schema): Agere's own governed views are code, versioned by git, and
+            # adding one must not retire every saved recipe.
+            stored = [r[0] for r in db.execute("SELECT name FROM main.sqlite_master WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%'")]
+            for t in sorted(stored):
+                try:
+                    shape.append(t + '(' + ','.join(c[1] for c in db.execute(f'PRAGMA table_info("{t}")')) + ')')
+                except sqlite3.Error:
+                    continue
+            import hashlib
+            cache['v'] = f"schema:{version}:{hashlib.sha256(';'.join(shape).encode()).hexdigest()[:16]}"
+        finally:
+            if own: db.close()
+    return cache['v']
+
+
+def data_version(db=None):
+    """The semantic layer's version and source data digest: what saved recipes were keyed by before 2026-11-16."""
+    if mapping() or foreign(): return None
     own = db is None
     db = db or connect()
     try:
@@ -272,18 +340,15 @@ def schema_version(db=None):
         if own: db.close()
 
 
-_as_of = {}
-
-
 def as_of(db):
     """The semantic layer's own snapshot date: the clock for anything dated, never today's date."""
-    key = str(path()) + '|' + str(os.environ.get('AGERE_TIERED_MAPPING'))
-    if key not in _as_of:
+    cache = scoped('as_of')
+    if 'd' not in cache:
         if foreign():
-            _as_of[key] = os.environ.get('AGERE_TIERED_AS_OF') or time.strftime('%Y-%m-%d')
+            cache['d'] = os.environ.get('AGERE_TIERED_AS_OF') or time.strftime('%Y-%m-%d')
         else:
-            _as_of[key] = db.execute("SELECT value FROM meta WHERE key = 'as_of'").fetchone()[0][:10]
-    return _as_of[key]
+            cache['d'] = db.execute("SELECT value FROM meta WHERE key = 'as_of'").fetchone()[0][:10]
+    return cache['d']
 
 
 def schema_text(db=None):
@@ -302,14 +367,12 @@ def schema_text(db=None):
         if own: db.close()
 
 
-_vocab = {}
-
-
 def vocabulary_text(db=None, limit=40):
     """For a foreign warehouse: each text column with at most `limit` distinct values, and those values. Column metadata,
     not rows: what a person writing SQL for an unfamiliar warehouse would look up first."""
-    key = str(path())
-    if key not in _vocab:
+    cache = scoped('vocabulary_text')
+    key = limit
+    if key not in cache:
         own = db is None
         db = db or connect()
         lines = []
@@ -321,8 +384,8 @@ def vocabulary_text(db=None, limit=40):
                     if 0 < len(values) <= limit: lines.append(f'{table}.{col}: ' + ', '.join(sorted(str(v) for v in values)))
         finally:
             if own: db.close()
-        _vocab[key] = '\n'.join(lines)
-    return _vocab[key]
+        cache[key] = '\n'.join(lines)
+    return cache[key]
 
 
 class RecipeError(ValueError):
@@ -336,6 +399,8 @@ def run(sql, params=None, db=None):
         raise RecipeError('A recipe is exactly one SELECT statement')
     if re.search(r'(?i)\b(scanned_document_text|payload)\b', text):
         raise RecipeError('A recipe may not select document text; use a reading plan')
+    # The words alone are not enough: SELECT * FROM record returns record.payload (buyer review). The database itself refuses
+    # any read of document text in a recipe, however the query is written; documents are read only through texts().
     if re.search(r'(?i)\b(concept|drug_class)\s*\)?\s+(not\s+)?(like|glob)\b', text):
         raise RecipeError('Compare concept and drug_class with = or IN against exact vocabulary values; LIKE would also match other values (diabetes matches prediabetes)')
     if re.search(r'(?i)\b(attach|pragma|insert|update|delete|drop|alter|create|replace|vacuum)\b', text):
@@ -344,11 +409,25 @@ def run(sql, params=None, db=None):
     db = db or connect()
     deadline = time.monotonic() + SECONDS
     db.set_progress_handler(lambda: 1 if time.monotonic() > deadline else 0, 20000)
+    db.set_authorizer(_no_document_text)
     try:
         cur = db.execute(text, params or {})
         return [d[0] for d in cur.description], [list(r) for r in cur.fetchall()]
-    except sqlite3.Error as exc:
+    except sqlite3.DatabaseError as exc:
+        if 'prohibited' in str(exc).lower() or 'not authorized' in str(exc).lower():
+            raise RecipeError('A recipe may not read document text (record.payload, scanned_document_text); use a reading plan') from exc
         raise RecipeError(f'{type(exc).__name__}: {exc}') from exc
     finally:
+        db.set_authorizer(None)
         db.set_progress_handler(None, 0)
         if own: db.close()
+
+
+DOCUMENT_TEXT = {('record', 'payload'), ('scanned_document_text', 'text')}
+
+
+def _no_document_text(action, table, column, _db, _source):
+    """sqlite3 authorizer for recipe SQL: deny reading document text, allow everything else run() already permits."""
+    if action == sqlite3.SQLITE_READ and (str(table).lower(), str(column).lower()) in DOCUMENT_TEXT:
+        return sqlite3.SQLITE_DENY
+    return sqlite3.SQLITE_OK

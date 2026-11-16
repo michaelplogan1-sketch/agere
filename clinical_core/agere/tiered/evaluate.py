@@ -918,7 +918,7 @@ def near_eval(limit=60, s1_ledger=None):
     below the frontier, with the near-match rung off and then on. Reads the saved recipes; saves nothing."""
     import os, shutil, tempfile
     os.environ.pop('ANTHROPIC_API_KEY', None)
-    from run_integrated_stack import keys
+    from clinical_core.agere.providers import load_keys as keys
     keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
     from . import models
     scratch = Path(tempfile.mkdtemp(prefix='near-eval-'))
@@ -977,7 +977,7 @@ def near_negative(limit=60, s1_ledger=None):
     (a different recipe is listed for reading). Reads the saved recipes; saves nothing."""
     import os, shutil, tempfile
     os.environ.pop('ANTHROPIC_API_KEY', None)
-    from run_integrated_stack import keys
+    from clinical_core.agere.providers import load_keys as keys
     keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
     from . import models
     scratch = Path(tempfile.mkdtemp(prefix='near-negative-'))
@@ -1039,7 +1039,7 @@ def examples_eval(limit=60, workers=4):
     import os
     from concurrent.futures import ThreadPoolExecutor
     os.environ.pop('ANTHROPIC_API_KEY', None)
-    from run_integrated_stack import keys
+    from clinical_core.agere.providers import load_keys as keys
     keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
     from . import models, upkeep
     bottles = bottle_store.Bottles()
@@ -1098,7 +1098,7 @@ def methods_eval(path='eval/tiered/methods.json', config=None, workers=1):
     import json, os, time
     from pathlib import Path
     os.environ.pop('ANTHROPIC_API_KEY', None)
-    from run_integrated_stack import keys
+    from clinical_core.agere.providers import load_keys as keys
     keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
     from .. import model_policy
     os.environ.update({k: v for k, v in model_policy.ECONOMICAL_RUNTIME.items() if isinstance(v, str)})
@@ -1155,7 +1155,7 @@ def main(argv):
     if argv[0] == 'committee':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
-        from run_integrated_stack import keys
+        from clinical_core.agere.providers import load_keys as keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         print('\n' + committee(argv[1] if len(argv) > 1 else '2029', os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'),
                                limit=int(argv[2]) if len(argv) > 2 else None))
@@ -1163,7 +1163,7 @@ def main(argv):
     if argv[0] == 'drivers':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
-        from run_integrated_stack import keys
+        from clinical_core.agere.providers import load_keys as keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         print('\n' + drivers_eval(argv[1] if len(argv) > 1 else '2029', os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'),
                                   limit=int(argv[2]) if len(argv) > 2 else None))
@@ -1182,7 +1182,7 @@ def main(argv):
     if argv[0] == 'review':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
-        from run_integrated_stack import keys
+        from clinical_core.agere.providers import load_keys as keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         pick = [x for x in argv[1:] if not x.endswith('.json')]
         print('\n' + review(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'), set(pick[0].split(',')) if pick else None))
@@ -1190,7 +1190,7 @@ def main(argv):
     if argv[0] == 'readmit':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
-        from run_integrated_stack import keys
+        from clinical_core.agere.providers import load_keys as keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         paths = [x for x in argv[1:] if x.endswith('.json')]; pick = [x for x in argv[1:] if not x.endswith('.json')]
         print('\n' + readmit(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'), set(pick[0].split(',')) if pick else None, *paths[:1]))
@@ -1198,7 +1198,7 @@ def main(argv):
     if argv[0] == 'hf':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
-        from run_integrated_stack import keys
+        from clinical_core.agere.providers import load_keys as keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         paths = [x for x in argv[1:] if x.endswith('.json')]; pick = [x for x in argv[1:] if not x.endswith('.json')]
         print('\n' + hf(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'), set(pick[0].split(',')) if pick else None, *paths[:1]))
@@ -1206,35 +1206,35 @@ def main(argv):
     if argv[0] == 'compare':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
-        from run_integrated_stack import keys
+        from clinical_core.agere.providers import load_keys as keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         print('\n' + compare(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'), set(argv[1].split(',')) if len(argv) > 1 else None))
         return
     if argv[0] == 'cohort':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
-        from run_integrated_stack import keys
+        from clinical_core.agere.providers import load_keys as keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         print('\n' + cohort(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3')))
         return
     if argv[0] == 'multi':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
-        from run_integrated_stack import keys
+        from clinical_core.agere.providers import load_keys as keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         print('\n' + multi(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3')))
         return
     if argv[0] == 'chains':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
-        from run_integrated_stack import keys
+        from clinical_core.agere.providers import load_keys as keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         print('\n' + chains(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3'), *argv[1:2]))
         return
     if argv[0] == 'followups':
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
-        from run_integrated_stack import keys
+        from clinical_core.agere.providers import load_keys as keys
         keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
         print('\n' + followups(os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3')))
         return
@@ -1247,7 +1247,7 @@ def main(argv):
     if 'system1' in tiers or 'system1' in (readers or ('system1',)):
         import os
         os.environ.pop('ANTHROPIC_API_KEY', None)
-        from run_integrated_stack import keys
+        from clinical_core.agere.providers import load_keys as keys
         keys()  # System One provider keys only; Claude stays on the subscription transport
         os.environ.pop('ANTHROPIC_API_KEY', None)
         s1_ledger = os.environ.get('AGERE_TIERED_S1_LEDGER', 'artifacts/agere-tiered-core/system-one-ledger.sqlite3')

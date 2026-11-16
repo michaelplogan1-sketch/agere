@@ -35,13 +35,8 @@ def main():
     elif a.command=='serve':
         from .service import serve
         if a.allow_live_stack:
-            import os
-            for line in (ROOT.parent/'insight-engine/.env').read_text().splitlines():
-                line=line.strip().removeprefix('export ')
-                if '=' not in line:continue
-                key,value=line.split('=',1)
-                if key.strip() in ('TYPESAFE_API_KEY','ANTHROPIC_API_KEY','PERPLEXITY_API_KEY'):
-                    os.environ.setdefault(key.strip(),value.strip().strip('\"\''))
+            from .providers import load_keys
+            load_keys()   # the one loader: the paid Anthropic key only on the hosted server with the API transport
         serve(a.run,a.port,annotations=a.annotations,evidence_queries=a.evidence_queries,stack=a.stack,allow_live_stack=a.allow_live_stack)
     elif a.command=='query':
         from .service import query

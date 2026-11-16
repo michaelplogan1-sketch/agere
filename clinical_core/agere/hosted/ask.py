@@ -9,6 +9,7 @@ Bottles, recipes, System One, the small model, a frontier-written recipe, then f
 deep path is not part of the hosted service. Limits: AGERE_ASK_PER_HOUR per organization (default 120) and
 AGERE_ASK_CONCURRENT at once on the server (default 6). Usage and an audit line are recorded for every question.
 """
+from .auth import question_ref
 import html as _html
 import os
 import secrets
@@ -21,6 +22,7 @@ _slots = threading.BoundedSemaphore(int(os.environ.get('AGERE_ASK_CONCURRENT') o
 _lock = threading.Lock()
 _previous = {}  # (org, user, conversation) -> last complete questions (up to 4, oldest first); memory only, bounded
 _groups = {}    # (org, user, conversation) -> patient ids of the last list answer, for "those patients" follow-ups
+_answers = {}   # (org, user, answer id) -> what answered that question, for a report that it is wrong (server-side, never sent by the client)
 GROUP_WORDS = __import__('re').compile(r'\b(them|those|these|they|their)\b', __import__('re').I)
 MAX_CONVERSATIONS = 5000
 MAX_ROWS = 300
@@ -90,6 +92,8 @@ def answer(ctx, org, uid, body, ip=None):
         return 503, {'error': 'The server is busy. Try again in a moment.'}
     started = time.monotonic()
     app.EARLIER.set(tuple(previous or ()))  # set per request: nothing carries over from another conversation
+    from ..tiered import corrections
+    corrections.ORG.set(str(org))   # reports this organization made block methods for it alone
     try:
         result, standalone, note = None, question, None
         if group and GROUP_WORDS.search(question):
@@ -111,8 +115,8 @@ def answer(ctx, org, uid, body, ip=None):
         _slots.release()
     seconds = round(time.monotonic() - started, 2)
     if result is None:
-        ctx.auth.record_usage(org, 'ask', question[:80], 0.0, seconds)
-        ctx.auth.audit(org, uid, 'ask', {'question': question[:300], 'answered': False}, ip=ip)
+        ctx.auth.record_usage(org, 'ask', question_ref(question)['question_fingerprint'], 0.0, seconds)
+        ctx.auth.audit(org, uid, 'ask', {**question_ref(question), 'answered': False}, ip=ip)
         return 200, {'answered': False, 'question': question, 'conversation_id': conversation,
                      'message': 'No method produced an answer inside the time limit. Try a narrower question (one measure, one period).'}
     out = _shape(result, question, standalone, note)
@@ -122,9 +126,14 @@ def answer(ctx, org, uid, body, ip=None):
         _previous[key] = [*(previous or []), standalone][-4:]
         ids = [r[out['columns'].index('patient_id')] for r in ((result['answer'].get('table') and [list(x.values()) for x in result['answer']['table']]) or [])] if 'patient_id' in out['columns'] else []
         if ids: _groups[key] = sorted(set(map(str, ids)))
+        receipt = result.get('planner_receipt') or {}
+        out['answer_id'] = secrets.token_urlsafe(9)
+        _answers[(org, str(uid), out['answer_id'])] = {'question': standalone, 'tier': out['tier'], 'recipe': receipt.get('recipe') or {}, 'rows': out.get('rows') or [],
+                         'computation': out.get('computation')}
+        if len(_answers) > MAX_CONVERSATIONS: _answers.pop(next(iter(_answers)))
         if len(_groups) > MAX_CONVERSATIONS: _groups.pop(next(iter(_groups)))
-    ctx.auth.record_usage(org, 'ask', question[:80], out['usd'], seconds)
-    ctx.auth.audit(org, uid, 'ask', {'question': question[:300], 'answered': True, 'tier': out['tier'], 'usd': out['usd']}, ip=ip)
+    ctx.auth.record_usage(org, 'ask', question_ref(question)['question_fingerprint'], out['usd'], seconds)
+    ctx.auth.audit(org, uid, 'ask', {**question_ref(question), 'answered': True, 'tier': out['tier'], 'usd': out['usd']}, ip=ip)
     return 200, out
 
 
@@ -162,7 +171,12 @@ function render(d){const el=document.createElement('article');el.className='card
  '<span class="pill">'+esc(TIERS[d.tier]||d.tier)+'</span><span class="pill">'+esc(d.seconds)+' s</span><span class="pill">$'+Number(d.usd).toFixed(4)+'</span></p>'+
  '<details style="margin-top:10px"><summary>How this was answered</summary>'+facts.map(f=>'<p>'+esc(f)+'</p>').join('')+
  '<ul>'+(d.limitations||[]).map(l=>'<li>'+esc(l)+'</li>').join('')+'</ul>'+(d.computation?'<pre>'+esc(d.computation)+'</pre>':'')+
- ((d.grounding||[]).length?'<pre>'+esc(d.grounding.join('\n'))+'</pre>':'')+'</details>';return el}
+ ((d.grounding||[]).length?'<pre>'+esc(d.grounding.join('\n'))+'</pre>':'')+'</details>'+
+ '<details class="report" style="margin-top:10px"><summary>This answer is wrong</summary><label>What is wrong with it?</label><textarea rows="2" maxlength="2000"></textarea>'+
+ '<div class="row"><button type="button" class="ghost">Report it</button><span class="muted"></span></div></details>';
+ const rep=el.querySelector('.report'),aid=d.answer_id;rep.querySelector('button').onclick=async()=>{const note=rep.querySelector('textarea').value.trim(),msg=rep.querySelector('span');
+  if(!note){msg.textContent='Say what is wrong, so a reviewer can check it.';return}
+  try{const r=await api('/api/ask/report',{answer_id:aid,note});msg.textContent=r.message;rep.querySelector('button').disabled=true}catch(e){msg.textContent=e.message}};return el}
 async function ask(q){$('go').disabled=true;const t0=Date.now();const tick=setInterval(()=>{$('busy').innerHTML='<span class="spin"></span> working… '+Math.round((Date.now()-t0)/1000)+' s'},500);
  let d;try{d=await api('/api/ask',{question:q,conversation_id:CONV})}catch(e){d={answered:false,question:q,message:e.message}}
  clearInterval(tick);$('busy').textContent='';$('go').disabled=false;if(d.conversation_id)CONV=d.conversation_id;$('thread').prepend(render(d));$('q').value='';$('q').focus()}
@@ -175,3 +189,38 @@ loadMe().then(async()=>{try{const s=await api('/api/ask/status');$('status').tex
  (s.saved_recipes!=null?'. '+s.saved_recipes+' learned recipes answer instantly; new kinds of question take longer the first time.':'.')):'Ask is not set up on this server.';
  if(!s.available)$('go').disabled=true}catch(e){$('status').textContent=e.message}});''')
     return pages._page(f'Ask {pages.NAME}', body, script)
+
+
+def report_wrong(ctx, org, uid, body, ip=None):
+    """A signed-in user reports that one of their answers is wrong. The answer is looked up on the server by the id it was
+    given, so a report can only name what this user was actually shown. -> (status, payload)"""
+    from ..tiered import corrections
+    with _lock:
+        last = _answers.get((org, str(uid), str(body.get('answer_id') or '')[:32]))
+    if not last: return 404, {'error': 'That answer is no longer held on the server; ask the question again and report the new answer.'}
+    try:
+        rid = corrections.report(last['question'], last, body.get('note'), reporter=f'{org}:{uid}', org=str(org))
+    except ValueError as exc:
+        return 400, {'error': str(exc)}
+    ctx.auth.audit(org, uid, 'ask.reported_wrong', {'report': rid, 'tier': last['tier'], **question_ref(last['question'])}, ip=ip)
+    stopped = ('The saved recipe that gave it will not answer this question for your organization until it is reviewed.' if (last['recipe'] or {}).get('bottle_id') is not None
+               else 'The built-in recipe that gave it will not answer this question again until it is reviewed.' if (last['recipe'] or {}).get('recipe_id')
+               else 'A reviewer will check the query that produced it.')
+    return 200, {'report_id': rid, 'message': 'Thank you: the answer is reported. ' + stopped}
+
+
+def reports(org, status=None):
+    """This organization's reports only."""
+    from ..tiered import corrections
+    return {'reports': corrections.reports(status=status, org=str(org)), 'summary': corrections.summary(org=str(org))}
+
+
+def resolve(ctx, org, uid, body, ip=None):
+    from ..tiered import corrections
+    try:
+        corrections.resolve(int(body['id']), str(body.get('resolution')), f'{org}:{uid}', body.get('note') or '', org=str(org))
+    except KeyError:
+        return 404, {'error': 'No such report in this organization.'}
+    ctx.auth.audit(org, uid, 'ask.report_resolved', {'report': int(body['id']), 'resolution': body.get('resolution')}, ip=ip)
+    return 200, {'ok': True, 'summary': corrections.summary(org=str(org))}
+
