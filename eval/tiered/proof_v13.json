@@ -1,0 +1,1448 @@
+{
+  "version": "proof_v13",
+  "authored": "2026-11-16",
+  "authored_by": "independent evaluator (Claude subagent without access to the product's code, definitions or earlier sets)",
+  "frozen": "Written before any run of the product on it; to be committed before its first run and never edited after.",
+  "purpose": "Held-out test of whether plain-language answers about hospital operations, finance, population health, pharmacy, access and social needs are right. Questions span what hospital and health-system leaders ask (see reports/Hospital analytics question catalogue.md) and include questions the warehouse cannot answer, which should be declined.",
+  "reference": "Computed by eval/tiered/proof_v13_references.py from the raw warehouse tables, following published definitions; see each function's comment.",
+  "reference_module": "eval/tiered/proof_v13_references.py",
+  "phrasing": "The first phrasing is how a hospital analyst or executive would ask it; the second states the definition explicitly.",
+  "scoring": "+1 right, 0 declined, -10 wrong; an unanswerable question that is answered counts as wrong.",
+  "questions": [
+    {
+      "id": "Q001",
+      "domain": "inpatient volume and length of stay",
+      "reference": "own_ip_admissions",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How many inpatient admissions did our four hospitals have in 2028?",
+        "Count inpatient admissions (not observation) at our four hospitals with an admission date in calendar 2028, one per hospital encounter after collapsing in-progress and completed versions of the same encounter."
+      ]
+    },
+    {
+      "id": "Q002",
+      "domain": "inpatient volume and length of stay",
+      "reference": "own_ip_alos",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What was the average length of stay at our hospitals in 2028?",
+        "For inpatient discharges dated in 2028 at our four hospitals, compute average length of stay as total patient days divided by discharges, where patient days are discharge date minus admission date and a same-day stay counts as one day."
+      ]
+    },
+    {
+      "id": "Q003",
+      "domain": "inpatient volume and length of stay",
+      "reference": "own_ip_median_los",
+      "args": [
+        "2027"
+      ],
+      "phrasings": [
+        "What was the median inpatient length of stay at our hospitals in 2027?",
+        "For inpatient discharges dated in 2027 at our four hospitals, report the median length of stay in days (discharge date minus admission date; same-day stays count as one day)."
+      ]
+    },
+    {
+      "id": "Q004",
+      "domain": "inpatient volume and length of stay",
+      "reference": "own_ip_patient_days",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "How many inpatient days did our hospitals bill out in 2029?",
+        "Sum the lengths of stay (discharge date minus admission date, same-day stays = 1) of all inpatient discharges dated in 2029 at our four hospitals."
+      ]
+    },
+    {
+      "id": "Q005",
+      "domain": "inpatient volume and length of stay",
+      "reference": "own_ip_admissions_by_hospital",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "Break down 2029 inpatient admissions by hospital.",
+        "For each of our four hospitals, count inpatient admissions with an admission date in 2029 (one per encounter), labelled by hospital name."
+      ]
+    },
+    {
+      "id": "Q006",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What were our nursing hours per patient day in 2028?",
+        "Compute 2028 productive nursing hours (RN, LPN and aide hours worked in direct care) divided by inpatient patient days."
+      ]
+    },
+    {
+      "id": "Q007",
+      "domain": "inpatient volume and length of stay",
+      "reference": "own_ip_alos_by_hospital",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How does average length of stay compare across our hospitals for 2028?",
+        "For each of our four hospitals, compute average length of stay (patient days divided by discharges, same-day stays = 1 day) for inpatient discharges dated in 2028."
+      ]
+    },
+    {
+      "id": "Q008",
+      "domain": "inpatient volume and length of stay",
+      "reference": "own_ip_snf_share",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What share of our inpatients went to a skilled nursing facility after discharge in 2029?",
+        "Among all inpatient discharges dated in 2029 at our four hospitals (deaths included in the denominator), what share had a discharge disposition of skilled nursing facility?"
+      ]
+    },
+    {
+      "id": "Q009",
+      "domain": "inpatient volume and length of stay",
+      "reference": "own_ip_disposition_mix",
+      "args": [
+        "2027"
+      ],
+      "phrasings": [
+        "Where did our inpatients go when they left the hospital in 2027?",
+        "For inpatient discharges dated in 2027 at our four hospitals, give the share of discharges by discharge disposition (home, home with guardian, skilled nursing facility, expired, and so on)."
+      ]
+    },
+    {
+      "id": "Q010",
+      "domain": "inpatient volume and length of stay",
+      "reference": "own_obs_stays",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How many observation stays did we have in 2028?",
+        "Count observation stays at our four hospitals that started in 2028, one per hospital observation encounter."
+      ]
+    },
+    {
+      "id": "Q011",
+      "domain": "inpatient volume and length of stay",
+      "reference": "own_obs_share",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What was our observation rate in 2029?",
+        "At our four hospitals, divide observation stays starting in 2029 by the sum of observation stays and inpatient admissions starting in 2029."
+      ]
+    },
+    {
+      "id": "Q012",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What was our RN turnover rate in 2028?",
+        "Divide 2028 registered-nurse separations by average RN headcount for 2028."
+      ]
+    },
+    {
+      "id": "Q013",
+      "domain": "inpatient volume and length of stay",
+      "reference": "own_ip_admissions_trend",
+      "args": [
+        "2027",
+        "2028",
+        "2029"
+      ],
+      "phrasings": [
+        "Show inpatient admissions at our hospitals for 2027, 2028 and 2029.",
+        "For each calendar year 2027, 2028 and 2029, count inpatient admissions (admission date in the year) at our four hospitals; one row per year."
+      ]
+    },
+    {
+      "id": "Q014",
+      "domain": "payer mix and claims spend",
+      "reference": "own_ip_by_coverage",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What was the payer mix of our inpatient admissions in 2028?",
+        "For inpatient admissions in 2028 at our four hospitals, give the share of admissions by the patient's primary line of business on the admission date taken from enrollment records (commercial, Medicare, Medicaid, dual and so on), with patients who have no enrollment on file shown as their own group."
+      ]
+    },
+    {
+      "id": "Q015",
+      "domain": "inpatient volume and length of stay",
+      "reference": "own_ip_peak_month",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "Which month of 2028 was our busiest for inpatient admissions?",
+        "Find the calendar month of 2028 with the most inpatient admissions (by admission date) at our four hospitals and report the month (YYYY-MM) and its admission count; ties go to the earlier month."
+      ]
+    },
+    {
+      "id": "Q016",
+      "domain": "inpatient volume and length of stay",
+      "reference": "own_ip_top_dx",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What were the top five reasons for admission to our hospitals in 2028?",
+        "Rank principal diagnoses of 2028 inpatient admissions at our four hospitals by count, grouping by ICD-10 three-character category, and return the top five with counts (ties broken by code)."
+      ]
+    },
+    {
+      "id": "Q017",
+      "domain": "inpatient volume and length of stay",
+      "reference": "all_ip_admissions",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "Across every hospital our patients and members used, how many inpatient admissions were there in 2029?",
+        "Count 2029 inpatient stays across all sources (our hospital EHR, the network hospital ADT feed, payer inpatient facility claims and our own inpatient facility claims), merging records for the same patient whose dates overlap or touch into one stay; count stays with an admission date in 2029."
+      ]
+    },
+    {
+      "id": "Q018",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What was our first-case on-time start rate in the OR in 2029?",
+        "Share of first operating-room cases each day in 2029 where the patient entered the room at or before the scheduled start time."
+      ]
+    },
+    {
+      "id": "Q019",
+      "domain": "inpatient volume and length of stay",
+      "reference": "all_ip_alos",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What was average length of stay across all hospitals our population used in 2028?",
+        "Using all-source inpatient stays (EHR, network ADT, payer and facility inpatient claims merged per patient where dates overlap), compute average length of stay (same-day = 1 day) for stays discharged in 2028 with a known discharge date."
+      ]
+    },
+    {
+      "id": "Q020",
+      "domain": "population health and value-based care",
+      "reference": "ip_per_1000",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What were inpatient admissions per thousand members in 2028?",
+        "Divide 2028 all-source inpatient admissions of patients enrolled in the month of admission by 2028 member months divided by 12, and multiply by 1,000."
+      ]
+    },
+    {
+      "id": "Q021",
+      "domain": "payer mix and claims spend",
+      "reference": "all_ip_by_lob",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "How many 2029 inpatient admissions came from each line of business?",
+        "Count 2029 all-source inpatient stays (overlapping records merged) by the patient's primary line of business on the admission date from enrollment records, with a separate group for patients with no enrollment on file."
+      ]
+    },
+    {
+      "id": "Q022",
+      "domain": "readmissions",
+      "reference": "own_readmit_any",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What was our 30-day readmission rate for 2028 discharges?",
+        "Index = live inpatient discharges from our four hospitals dated in 2028. A readmission is any inpatient admission at any hospital visible in the warehouse (all sources merged) dated 1 to 30 days after the index discharge. Report readmitted index discharges / index discharges, all-cause and unadjusted, without planned-readmission exclusions."
+      ]
+    },
+    {
+      "id": "Q023",
+      "domain": "readmissions",
+      "reference": "all_readmit",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What was the 30-day all-cause readmission rate across our whole population in 2029?",
+        "Using all-source inpatient stays (overlapping records merged), take stays discharged alive in 2029 as index stays and count those followed by another inpatient admission 1 to 30 days after discharge; report the share, unadjusted and without planned-readmission exclusions."
+      ]
+    },
+    {
+      "id": "Q024",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What was our average OR turnover time in 2028?",
+        "Average minutes from prior patient out of room to next patient in room for operating-room cases in 2028."
+      ]
+    },
+    {
+      "id": "Q025",
+      "domain": "population health and value-based care",
+      "reference": "own_followup_7d",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What share of patients we discharged home in 2028 were seen in follow-up within seven days?",
+        "For live inpatient discharges home (disposition home or home with guardian) dated in 2028 at our four hospitals, compute the share with an ambulatory visit 1 to 7 days after discharge, counting EHR office, primary care, specialty follow-up, telehealth, telephone, medication-management, home-health and wellness encounters and payer claim lines for office E/M 99202-99215, transitional care 99495-99496 or annual wellness G0438/G0439."
+      ]
+    },
+    {
+      "id": "Q026",
+      "domain": "ED throughput and visits",
+      "reference": "own_ed_visits",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "How many ED visits did our hospitals see in 2029?",
+        "Count emergency department visits at our four hospitals with an arrival date in 2029, one per ED encounter."
+      ]
+    },
+    {
+      "id": "Q027",
+      "domain": "ED throughput and visits",
+      "reference": "own_ed_visits_by_hospital",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How were 2028 ED visits split across our hospitals?",
+        "For each of our four hospitals, count ED visits (one per ED encounter) with an arrival date in 2028."
+      ]
+    },
+    {
+      "id": "Q028",
+      "domain": "ED throughput and visits",
+      "reference": "own_ed_median_los",
+      "args": [
+        "2027"
+      ],
+      "phrasings": [
+        "What was median time in the ED in 2027?",
+        "For all ED visits at our four hospitals arriving in 2027, compute the median hours from ED arrival to ED departure (encounter start and end timestamps)."
+      ]
+    },
+    {
+      "id": "Q029",
+      "domain": "ED throughput and visits",
+      "reference": "own_ed_median_los_discharged",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "For patients we treated and released from the ED in 2029, what was the median length of stay?",
+        "For 2029 ED visits at our four hospitals whose disposition was neither inpatient admission nor observation, compute the median hours from ED arrival to ED departure."
+      ]
+    },
+    {
+      "id": "Q030",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What were our HCAHPS top-box scores for 2028?",
+        "Report the 2028 HCAHPS top-box percentage for each composite (communication with nurses, doctors, responsiveness, and so on)."
+      ]
+    },
+    {
+      "id": "Q031",
+      "domain": "ED throughput and visits",
+      "reference": "own_ed_median_los_admitted",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How long did admitted patients spend in our EDs in 2028, at the median?",
+        "For 2028 ED visits at our four hospitals with a disposition of inpatient admission, compute the median hours from ED arrival to ED departure."
+      ]
+    },
+    {
+      "id": "Q032",
+      "domain": "ED throughput and visits",
+      "reference": "own_ed_admit_rate",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What share of our ED patients were admitted in 2028?",
+        "Among ED visits at our four hospitals arriving in 2028, what share had a disposition of admitted to inpatient? Observation placements are not counted as admissions."
+      ],
+      "accept_by_phrasing": {
+        "0": [
+          "own_ed_admit_rate",
+          "own_ed_admit_or_obs_rate"
+        ]
+      }
+    },
+    {
+      "id": "Q033",
+      "domain": "ED throughput and visits",
+      "reference": "own_ed_over_4h",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What percentage of ED visits ran longer than four hours in 2029?",
+        "Among 2029 ED visits at our four hospitals with both arrival and departure timestamps, what share had more than 4 hours between arrival and departure?"
+      ]
+    },
+    {
+      "id": "Q034",
+      "domain": "ED throughput and visits",
+      "reference": "pop_ed_visits",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How many ED visits did our patients and members have in 2028 across all hospitals?",
+        "Count 2028 ED visits across all sources as distinct patient-dates: our hospital ED encounters, network hospital ADT visits registered as emergency, and payer claims with an ED revenue code (045x), ED E/M code 99281-99285 or place of service 23; the same patient on the same date counts once."
+      ]
+    },
+    {
+      "id": "Q035",
+      "domain": "population health and value-based care",
+      "reference": "pop_ed_per_1000",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What were ED visits per thousand members in 2029?",
+        "Divide 2029 all-source ED visits (distinct patient-dates) of patients enrolled in that month by 2029 member months divided by 12, and multiply by 1,000."
+      ]
+    },
+    {
+      "id": "Q036",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What was our operating margin in 2029?",
+        "Compute 2029 operating income divided by total operating revenue from the general ledger."
+      ]
+    },
+    {
+      "id": "Q037",
+      "domain": "ED throughput and visits",
+      "reference": "pop_ed_frequent",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How many frequent ED users did we have in 2028?",
+        "Count distinct patients with four or more all-source ED visits (distinct dates) in 2028."
+      ]
+    },
+    {
+      "id": "Q038",
+      "domain": "ED throughput and visits",
+      "reference": "network_ed_conversion",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "In the network hospital ADT feed, what share of ED visits turned into inpatient admissions in 2029?",
+        "Among network hospital ADT visits registered in patient class E (emergency) with an arrival date in 2029, what share have a final patient class of inpatient?"
+      ]
+    },
+    {
+      "id": "Q039",
+      "domain": "mortality",
+      "reference": "own_ip_mortality",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What was our inpatient mortality rate in 2029?",
+        "Divide inpatient discharges dated in 2029 at our four hospitals with a discharge disposition of expired by all inpatient discharges dated in 2029 at those hospitals (crude, unadjusted)."
+      ]
+    },
+    {
+      "id": "Q040",
+      "domain": "mortality",
+      "reference": "deaths",
+      "args": [
+        "2027"
+      ],
+      "phrasings": [
+        "How many of our patients died in 2027?",
+        "Count distinct patients whose death date falls in 2027, using the earliest death date reported by any source (payer, CMS, EHR, demographic update or enrollment termination)."
+      ]
+    },
+    {
+      "id": "Q041",
+      "domain": "mortality",
+      "reference": "member_mortality_rate",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What was the crude death rate among our members in 2028?",
+        "Divide the number of members enrolled at some point in 2028 who died in 2028 (earliest reported death date) by the number of distinct members enrolled in 2028."
+      ]
+    },
+    {
+      "id": "Q042",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What was our cost per case by DRG in 2028?",
+        "Using cost-accounting data, compute 2028 average direct plus indirect cost per inpatient case for each MS-DRG."
+      ]
+    },
+    {
+      "id": "Q043",
+      "domain": "mortality",
+      "reference": "all_mortality_30d",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What share of patients died within 30 days of leaving the hospital in 2029?",
+        "For all-source inpatient stays discharged alive in 2029, compute the share whose patient has a death date 1 to 30 days after the discharge date (earliest reported death date)."
+      ]
+    },
+    {
+      "id": "Q044",
+      "domain": "sepsis and heart failure",
+      "reference": "own_hf_admissions",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "How many heart failure admissions did our hospitals have in 2029?",
+        "Count 2029 inpatient admissions at our four hospitals whose principal (first-ranked) diagnosis is ICD-10 I50.*."
+      ]
+    },
+    {
+      "id": "Q045",
+      "domain": "sepsis and heart failure",
+      "reference": "own_hf_readmit",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What was our heart failure 30-day readmission rate for 2028?",
+        "Index = live inpatient discharges dated in 2028 from our four hospitals with principal diagnosis I50.*; a readmission is any inpatient admission at any hospital (all sources merged) 1 to 30 days after discharge; report the unadjusted all-cause share for all payers and ages."
+      ]
+    },
+    {
+      "id": "Q046",
+      "domain": "sepsis and heart failure",
+      "reference": "claims_hf_readmit_medicare",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What was the heart failure readmission rate for our Medicare members in 2028, the way CMS would measure it from claims?",
+        "From payer inpatient facility claims (bill type 011x, voids and duplicates removed, overlapping claims merged per stay), take stays discharged in 2028 with principal diagnosis I50.* for members in a Medicare line of business (fee-for-service or Medicare Advantage, dual excluded) aged 65 or older at admission; report the share followed by any claims-based inpatient admission 1 to 30 days after discharge, unadjusted and without planned-readmission exclusions."
+      ]
+    },
+    {
+      "id": "Q047",
+      "domain": "sepsis and heart failure",
+      "reference": "claims_sepsis_admissions",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "How many sepsis admissions show up in our payer claims for 2029?",
+        "Count claim-based inpatient stays (payer bill type 011x claims, voids and duplicates removed, overlapping claims merged) admitted in 2029 whose principal diagnosis is A40.*, A41.* or R65.2*."
+      ]
+    },
+    {
+      "id": "Q048",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What was supply expense per adjusted discharge in 2029?",
+        "Divide 2029 supply expense from the general ledger by 2029 adjusted discharges."
+      ]
+    },
+    {
+      "id": "Q049",
+      "domain": "sepsis and heart failure",
+      "reference": "all_sepsis_admissions",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How many sepsis admissions did our population have in 2028?",
+        "Count all-source inpatient stays (EHR, network ADT, payer and facility claims merged) admitted in 2028 whose principal diagnosis (taken from our EHR first, then our facility claim, then the payer claim) is A40.*, A41.* or R65.2*."
+      ]
+    },
+    {
+      "id": "Q050",
+      "domain": "sepsis and heart failure",
+      "reference": "hf_patients",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "How many patients with heart failure did we have in 2029?",
+        "Count distinct patients with an ICD-10 I50.* diagnosis dated in 2029 on a payer claim (voids and duplicates removed), an EHR encounter diagnosis or an EHR condition record."
+      ]
+    },
+    {
+      "id": "Q051",
+      "domain": "sepsis and heart failure",
+      "reference": "hf_sglt2_share",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What share of our heart failure patients were on an SGLT2 inhibitor in 2028?",
+        "Among patients with an I50.* diagnosis dated in 2028 (claims, EHR encounter diagnoses or EHR conditions), what share had at least one paid pharmacy claim in 2028 for empagliflozin, dapagliflozin, canagliflozin, ertugliflozin or sotagliflozin?"
+      ]
+    },
+    {
+      "id": "Q052",
+      "domain": "payer mix and claims spend",
+      "reference": "members",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How many members did we have in 2028?",
+        "Count distinct members with at least one day of enrollment in 2028 (enrollment spans, open-ended spans running to the data as-of date, spans ended at death)."
+      ],
+      "accept_by_phrasing": {
+        "0": [
+          "members",
+          "avg_monthly_members"
+        ]
+      }
+    },
+    {
+      "id": "Q053",
+      "domain": "payer mix and claims spend",
+      "reference": "member_months",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "How many member months did we have in 2029?",
+        "Count 2029 member months: each calendar month of 2029 in which a member was enrolled on at least one day counts once per member, however many coverage spans overlap."
+      ]
+    },
+    {
+      "id": "Q054",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "How many days cash on hand did we have at the end of 2028?",
+        "Divide unrestricted cash and investments at 31 December 2028 by average daily operating expenses excluding depreciation."
+      ]
+    },
+    {
+      "id": "Q055",
+      "domain": "payer mix and claims spend",
+      "reference": "member_months_by_lob",
+      "args": [
+        "2027"
+      ],
+      "phrasings": [
+        "Give me 2027 member months by line of business.",
+        "Count 2027 member months by the member's primary line of business in that month; when a primary product (commercial, Medicaid, Medicare, dual) and a secondary or supplemental one (COB secondary, Medigap) overlap, the month goes to the primary one."
+      ]
+    },
+    {
+      "id": "Q056",
+      "domain": "payer mix and claims spend",
+      "reference": "lob_mix_share",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What did our membership payer mix look like in 2029?",
+        "Report the share of 2029 member months by primary line of business (commercial, Medicaid, Medicare, dual, Medigap), each month assigned to the primary product in force."
+      ]
+    },
+    {
+      "id": "Q057",
+      "domain": "payer mix and claims spend",
+      "reference": "ma_share_of_medicare",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What share of our Medicare membership was in Medicare Advantage in 2028?",
+        "Divide 2028 member months in Medicare Advantage by member months in Medicare Advantage plus Medicare fee-for-service (dual products excluded), with each month assigned to the primary product in force."
+      ]
+    },
+    {
+      "id": "Q058",
+      "domain": "payer mix and claims spend",
+      "reference": "total_medical_paid",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What was total medical claims spend for 2029?",
+        "Sum net payer-paid dollars on payer medical claims with a 2029 service-from date, after dropping voided originals and duplicate submissions; net paid is the amount of the latest adjudication when it is a payment, otherwise zero. Pharmacy claims are excluded."
+      ]
+    },
+    {
+      "id": "Q059",
+      "domain": "payer mix and claims spend",
+      "reference": "medical_pmpm",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What was our medical PMPM in 2028?",
+        "Divide 2028 net medical claims paid (payer medical claims with 2028 service dates, voids and duplicate submissions removed, latest adjudication amount) by 2028 member months."
+      ]
+    },
+    {
+      "id": "Q060",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What was our CLABSI standardized infection ratio in 2029?",
+        "NHSN CLABSI SIR for 2029: observed central-line-associated bloodstream infections divided by the number predicted from central-line days."
+      ]
+    },
+    {
+      "id": "Q061",
+      "domain": "payer mix and claims spend",
+      "reference": "medical_pmpm_by_lob",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What was medical PMPM by line of business in 2029?",
+        "For each line of business, divide 2029 net medical claims paid on claims of that line of business by 2029 member months enrolled in that same line of business (a month counts for every line the member is enrolled in, so COB secondary and Medigap have their own denominators)."
+      ]
+    },
+    {
+      "id": "Q062",
+      "domain": "payer mix and claims spend",
+      "reference": "medical_pmpm_change",
+      "args": [
+        "2027",
+        "2029"
+      ],
+      "phrasings": [
+        "How much did medical PMPM change from 2027 to 2029?",
+        "Compute medical PMPM (net medical claims paid with service in the year divided by member months) for 2027 and 2029 and report (2029 - 2027) / 2027 as a share."
+      ]
+    },
+    {
+      "id": "Q063",
+      "domain": "payer mix and claims spend",
+      "reference": "paid_by_payer_top5",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "Which five payers paid the most in medical claims for 2028 services?",
+        "Rank payers by net paid on payer medical claims with 2028 service dates (voids and duplicate submissions removed) and list the top five with dollars."
+      ]
+    },
+    {
+      "id": "Q064",
+      "domain": "payer mix and claims spend",
+      "reference": "paid_share_by_setting",
+      "args": [
+        "2027"
+      ],
+      "phrasings": [
+        "How was 2027 medical spend split between inpatient, outpatient and professional services?",
+        "For 2027 net medical claims paid, give the share by setting: inpatient facility (bill type 011x), outpatient facility (013x), professional claims, and other institutional claims."
+      ]
+    },
+    {
+      "id": "Q065",
+      "domain": "payer mix and claims spend",
+      "reference": "spend_top5pct_share",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What share of 2029 spend came from our costliest 5% of members?",
+        "Rank members enrolled in 2029 by net medical paid on claims with 2029 service dates (members without claims count as zero), take the top 5% (rounded up), and report their share of total 2029 net medical paid."
+      ]
+    },
+    {
+      "id": "Q066",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What was average bed occupancy at our hospitals in 2028?",
+        "Divide 2028 inpatient patient days by staffed (or licensed) bed-days available at our four hospitals."
+      ]
+    },
+    {
+      "id": "Q067",
+      "domain": "payer mix and claims spend",
+      "reference": "claims_ip_paid_per_stay",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What did payers pay on average per inpatient stay in 2028?",
+        "For claim-based inpatient stays (payer bill type 011x claims, voids and duplicates removed, overlapping claims merged into one stay) admitted in 2028, report the average net paid per stay in dollars."
+      ]
+    },
+    {
+      "id": "Q068",
+      "domain": "payer mix and claims spend",
+      "reference": "claims_top_ip_dx",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What were the most common principal diagnoses on inpatient claims in 2029?",
+        "Rank claim-based inpatient stays admitted in 2029 by principal diagnosis ICD-10 three-character category and return the top five with stay counts (ties by code)."
+      ]
+    },
+    {
+      "id": "Q069",
+      "domain": "revenue cycle and denials",
+      "reference": "duplicate_submissions",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How many duplicate claims were submitted to payers for 2028 services?",
+        "Count payer medical claims with 2028 service dates denied with CARC CO-18 (duplicate claim) whose patient, service date, billing NPI and charge match another, non-duplicate claim."
+      ]
+    },
+    {
+      "id": "Q070",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_claims",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "How many claims did we bill for 2029 dates of service?",
+        "Count our own billed claims (provider billing claims, one per claim ID) with a date of service in 2029."
+      ]
+    },
+    {
+      "id": "Q071",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_initial_denial_rate",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What was our initial denial rate for 2028?",
+        "Divide our billed claims with 2028 dates of service that were denied on their first adjudication by all our billed claims with 2028 dates of service (count basis)."
+      ]
+    },
+    {
+      "id": "Q072",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What was our 90th-percentile ambulance offload time in 2029?",
+        "Compute the 90th percentile of minutes from ambulance arrival at the ED to transfer of care (NEMSIS eTimes.11 to eTimes.12) for 2029."
+      ]
+    },
+    {
+      "id": "Q073",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_initial_denial_rate_dollars",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What share of billed dollars was initially denied in 2029?",
+        "Divide billed charges on our claims with 2029 dates of service that were denied on first adjudication by billed charges on all our claims with 2029 dates of service."
+      ]
+    },
+    {
+      "id": "Q074",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_final_denial_rate",
+      "args": [
+        "2027"
+      ],
+      "phrasings": [
+        "What was our claim denial rate for 2027?",
+        "Divide our billed claims with 2027 dates of service whose final adjudication status is denied (after any resubmission or appeal) by all our billed claims with 2027 dates of service."
+      ],
+      "accept_by_phrasing": {
+        "0": [
+          "rc_final_denial_rate",
+          "rc_initial_denial_rate"
+        ]
+      }
+    },
+    {
+      "id": "Q075",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_overturn_rate",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How many of our 2028 denials did we turn around?",
+        "Among our billed claims with 2028 dates of service that were denied on first adjudication, what share ended with a final status of paid?"
+      ]
+    },
+    {
+      "id": "Q076",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_denial_rate_by_payer",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What was our initial denial rate by payer for 2029?",
+        "For our billed claims with 2029 dates of service, compute by payer the share denied on first adjudication; claims whose payer field holds a hospital ID instead of a payer are grouped as 'payer not recorded'."
+      ]
+    },
+    {
+      "id": "Q077",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_denied_dollars_final",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How many billed dollars did we ultimately lose to denials on 2028 services?",
+        "Sum billed charges on our claims with 2028 dates of service whose final adjudication status is denied."
+      ]
+    },
+    {
+      "id": "Q078",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "How much did we save through the 340B program in 2028?",
+        "Compute 2028 340B drug savings as GPO or WAC acquisition cost minus 340B acquisition cost for eligible dispensations."
+      ]
+    },
+    {
+      "id": "Q079",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_median_days_to_submit",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "How quickly did we get claims out the door in 2029?",
+        "For our billed claims with 2029 dates of service that have a submission record, report the median days from date of service to first claim submission."
+      ]
+    },
+    {
+      "id": "Q080",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_median_days_submit_to_paid",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How long did payers take to pay us in 2028?",
+        "For our billed claims with 2028 dates of service that were submitted and paid, report the median days from first submission to the first paid adjudication."
+      ]
+    },
+    {
+      "id": "Q081",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_total_billed",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What were our gross charges in 2028?",
+        "Sum billed charges on all our billed claims with a 2028 date of service."
+      ]
+    },
+    {
+      "id": "Q082",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_total_paid",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "How much did payers pay us for 2029 services?",
+        "Sum net payer payments (payments less reversals across each claim's adjudication history) on our billed claims with a 2029 date of service."
+      ]
+    },
+    {
+      "id": "Q083",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_paid_to_billed",
+      "args": [
+        "2027"
+      ],
+      "phrasings": [
+        "What percentage of our charges did payers actually pay for 2027 services?",
+        "Divide net payer payments on our billed claims with 2027 dates of service by billed charges on those claims."
+      ]
+    },
+    {
+      "id": "Q084",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "How many inpatient admissions did our hospitals have in 2031?",
+        "Count inpatient admissions at our four hospitals with an admission date in calendar 2031."
+      ]
+    },
+    {
+      "id": "Q085",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_paid_by_payer",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How much did each payer pay us for 2028 services?",
+        "Sum net payer payments on our billed claims with 2028 dates of service by payer, grouping claims whose payer field holds a hospital ID as 'payer not recorded'."
+      ]
+    },
+    {
+      "id": "Q086",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_cmi",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What was our case mix index in 2029?",
+        "Average the MS-DRG relative weights on our inpatient facility claims (bill type 0111) with a 2029 date of service, all payers."
+      ]
+    },
+    {
+      "id": "Q087",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_top_drg",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What were our top five DRGs in 2028?",
+        "Rank MS-DRGs on our inpatient facility claims (bill type 0111) with 2028 dates of service by claim count and return the top five (ties by DRG code)."
+      ]
+    },
+    {
+      "id": "Q088",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_reversal_share",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "How often did payers reverse a payment on our 2029 claims?",
+        "What share of our billed claims with 2029 dates of service had at least one payment reversal in their adjudication history?"
+      ]
+    },
+    {
+      "id": "Q089",
+      "domain": "revenue cycle and denials",
+      "reference": "rc_denial_rate_trend",
+      "args": [
+        "2027",
+        "2028",
+        "2029"
+      ],
+      "phrasings": [
+        "How has our initial denial rate trended from 2027 to 2029?",
+        "For each service year 2027, 2028 and 2029, report the share of our billed claims denied on first adjudication (count basis); one row per year."
+      ]
+    },
+    {
+      "id": "Q090",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What was median door-to-provider time in our EDs in 2028?",
+        "Median minutes from ED arrival to first contact with a physician or advanced practice provider for 2028 ED visits."
+      ]
+    },
+    {
+      "id": "Q091",
+      "domain": "revenue cycle and denials",
+      "reference": "payer_denial_rate",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "Across all payer claims for our members, what was the initial denial rate in 2029?",
+        "Among payer medical claims with 2029 service dates (voids and duplicate submissions removed), what share were denied on their first adjudication, ordering adjudications by adjudication date?"
+      ]
+    },
+    {
+      "id": "Q092",
+      "domain": "revenue cycle and denials",
+      "reference": "payer_denial_top_reasons",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What were the top denial reasons in 2028?",
+        "Among payer medical claims with 2028 service dates (voids and duplicate submissions removed) that were denied on first adjudication, count by the CARC reason code on that first adjudication and return the top five (ties by code)."
+      ]
+    },
+    {
+      "id": "Q093",
+      "domain": "population health and value-based care",
+      "reference": "awv_rate",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What share of our Medicare members got an annual wellness visit in 2028?",
+        "Among members enrolled in a Medicare product (Medicare fee-for-service, Medicare Advantage or a dual product) for at least 11 of the 12 months of 2028, what share had an annual wellness visit (HCPCS G0438 or G0439 on a payer claim line, or an EHR-recorded Medicare annual wellness visit) dated in 2028?"
+      ]
+    },
+    {
+      "id": "Q094",
+      "domain": "population health and value-based care",
+      "reference": "bcs_rate",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What was our breast cancer screening rate for 2029?",
+        "HEDIS breast cancer screening: women aged 52-74 on 31 December 2029 enrolled at least 11 months of 2029; numerator = a mammogram (CPT 77065-77067, HCPCS G0202/G0204/G0206 on a payer claim line, or an EHR screening mammography result) from 1 October 2027 through 31 December 2029. Mastectomy exclusions not applied."
+      ]
+    },
+    {
+      "id": "Q095",
+      "domain": "population health and value-based care",
+      "reference": "flu_vax_65",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What was the flu vaccination rate for our seniors in the 2028-29 season?",
+        "Among members aged 65 or older on 1 July 2028 enrolled at least one month between 1 July 2028 and 30 June 2029, what share have a completed influenza vaccination (EHR or claim) dated in that window?"
+      ]
+    },
+    {
+      "id": "Q096",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What were wRVUs per clinical FTE for our primary care physicians in 2029?",
+        "Divide 2029 work RVUs by clinical FTEs for each primary care physician."
+      ]
+    },
+    {
+      "id": "Q097",
+      "domain": "population health and value-based care",
+      "reference": "diabetes_patients",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How many patients with diabetes did we have in 2028?",
+        "Count distinct patients with an ICD-10 E10, E11 or E13 diagnosis dated in 2027 or 2028 on a payer claim (voids and duplicates removed), an EHR encounter diagnosis or an EHR condition record."
+      ]
+    },
+    {
+      "id": "Q098",
+      "domain": "population health and value-based care",
+      "reference": "a1c_testing_rate",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What share of our diabetic patients had an A1c test in 2029?",
+        "Among patients with diabetes (E10/E11/E13 diagnosis in 2028 or 2029 from claims or EHR), what share had at least one HbA1c test in 2029, counting lab results and claim-billed HbA1c tests (CPT 83036/83037)?"
+      ]
+    },
+    {
+      "id": "Q099",
+      "domain": "population health and value-based care",
+      "reference": "top_practices_by_attribution",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "Which five practices had the most attributed members in 2028?",
+        "Rank practices by 2028 attributed member months (the attribution practice on the enrollment span covering each member month; unattributed months skipped) and list the top five with member months (ties by practice ID)."
+      ]
+    },
+    {
+      "id": "Q100",
+      "domain": "population health and value-based care",
+      "reference": "members_by_age_band",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What was the age profile of our 2028 members?",
+        "Count distinct members enrolled in 2028 by age on 31 December 2028 in bands 0-17, 18-44, 45-64, 65-74 and 75+."
+      ]
+    },
+    {
+      "id": "Q101",
+      "domain": "social needs",
+      "reference": "high_svi_share",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What share of our 2028 members live in highly socially vulnerable counties?",
+        "Among members enrolled in 2028 whose county of residence has a CDC/ATSDR Social Vulnerability Index value, what share live in a county with an overall SVI percentile of 75 or higher (top quartile; the stored SVI is on a 0-100 scale)?"
+      ]
+    },
+    {
+      "id": "Q102",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "What was hand hygiene compliance on our inpatient units in 2028?",
+        "Share of observed hand hygiene opportunities in 2028 on inpatient units where staff performed hand hygiene."
+      ]
+    },
+    {
+      "id": "Q103",
+      "domain": "quality and safety",
+      "reference": "a1c_poor_control",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What share of our diabetics were poorly controlled in 2028?",
+        "Among patients with diabetes (E10/E11/E13 diagnosis in 2027 or 2028) who have at least one HbA1c lab value in 2028, what share had a most recent 2028 value above 9.0% (lowest value if several share that date)? Patients without a lab value are excluded."
+      ]
+    },
+    {
+      "id": "Q104",
+      "domain": "quality and safety",
+      "reference": "bp_control",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What share of our hypertensive patients had their blood pressure controlled in 2029?",
+        "Among patients with an I10 hypertension diagnosis in 2028 or 2029 (claims or EHR) who have a blood pressure reading in 2029, what share had systolic below 140 and diastolic below 90 on their most recent 2029 reading date, using the lowest systolic and lowest diastolic recorded that day? Patients without a reading are excluded."
+      ]
+    },
+    {
+      "id": "Q105",
+      "domain": "pharmacy and medications",
+      "reference": "rx_fills",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How many prescriptions were filled in 2028?",
+        "Count paid pharmacy claims with a 2028 fill date; rejected claims, reversals and recoupments are not fills."
+      ]
+    },
+    {
+      "id": "Q106",
+      "domain": "pharmacy and medications",
+      "reference": "rx_reject_rate",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What was our pharmacy claim rejection rate in 2029?",
+        "Divide rejected pharmacy claims with a 2029 fill date by paid plus rejected pharmacy claims with a 2029 fill date."
+      ]
+    },
+    {
+      "id": "Q107",
+      "domain": "pharmacy and medications",
+      "reference": "rx_top10",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What were the ten most-filled drugs in 2028?",
+        "Rank paid pharmacy fills in 2028 by ingredient (strengths, dose forms, salts and brand packaging collapsed into the plain ingredient name, combinations under their first ingredient) and return the top ten with fill counts."
+      ]
+    },
+    {
+      "id": "Q108",
+      "domain": "cannot be answered",
+      "unanswerable": true,
+      "phrasings": [
+        "How many ED visits did our hospitals have in 2020?",
+        "Count emergency department visits at our four hospitals with an arrival date in calendar 2020."
+      ]
+    },
+    {
+      "id": "Q109",
+      "domain": "pharmacy and medications",
+      "reference": "rx_generic_rate",
+      "args": [
+        "2027"
+      ],
+      "phrasings": [
+        "What was our generic dispensing rate in 2027?",
+        "Among paid pharmacy fills in 2027 with a recorded formulary tier (generic, brand or specialty), what share were generic?"
+      ]
+    },
+    {
+      "id": "Q110",
+      "domain": "pharmacy and medications",
+      "reference": "rx_mail_share",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What share of prescriptions went through mail order in 2029?",
+        "Divide paid pharmacy fills in 2029 dispensed by a mail-order pharmacy by all paid fills in 2029."
+      ]
+    },
+    {
+      "id": "Q111",
+      "domain": "pharmacy and medications",
+      "reference": "statin_pdc",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What share of our statin users were adherent in 2028?",
+        "PQA statin adherence: among patients with at least two paid statin fills in 2028, the share whose proportion of days covered from first 2028 fill to 31 December 2028 is at least 80% (overlapping supply shifted forward, supply capped at year end)."
+      ]
+    },
+    {
+      "id": "Q112",
+      "domain": "pharmacy and medications",
+      "reference": "rasa_pdc",
+      "args": [
+        "2027"
+      ],
+      "phrasings": [
+        "How adherent were patients on blood-pressure RAS medicines in 2027?",
+        "PQA RAS antagonist adherence: among patients with at least two paid fills in 2027 of an ACE inhibitor, ARB or sacubitril/valsartan, the share with proportion of days covered of at least 80% from first 2027 fill to 31 December 2027 (overlapping supply shifted forward)."
+      ]
+    },
+    {
+      "id": "Q113",
+      "domain": "pharmacy and medications",
+      "reference": "glp1_patients",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "How many patients filled a GLP-1 in 2029?",
+        "Count distinct patients with at least one paid 2029 pharmacy fill of semaglutide, liraglutide, dulaglutide, tirzepatide, exenatide or lixisenatide."
+      ]
+    },
+    {
+      "id": "Q114",
+      "domain": "appointments and access",
+      "reference": "no_show_rate",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What was our no-show rate in 2028?",
+        "For appointments scheduled in 2028, divide no-shows by kept plus no-show appointments (cancelled and never-resolved bookings excluded), using each appointment's latest status."
+      ],
+      "accept_by_phrasing": {
+        "0": [
+          "no_show_rate",
+          "no_show_rate_all"
+        ]
+      }
+    },
+    {
+      "id": "Q115",
+      "domain": "appointments and access",
+      "reference": "cancel_rate",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "What share of 2029 appointments were cancelled?",
+        "Divide appointments scheduled in 2029 whose latest status is cancelled by all appointments scheduled in 2029."
+      ]
+    },
+    {
+      "id": "Q116",
+      "domain": "appointments and access",
+      "reference": "no_show_by_weekday",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "Which days of the week had the worst no-show rates in 2029?",
+        "For appointments scheduled in 2029, compute the no-show rate (no-shows divided by kept plus no-shows) by weekday of the scheduled date."
+      ]
+    },
+    {
+      "id": "Q117",
+      "domain": "appointments and access",
+      "reference": "mean_lead_time",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "How far ahead were appointments booked in 2028, on average?",
+        "For appointments scheduled in 2028, average the days between the date the appointment was first booked and the scheduled date, excluding negative lead times."
+      ]
+    },
+    {
+      "id": "Q118",
+      "domain": "appointments and access",
+      "reference": "no_show_trend",
+      "args": [
+        "2027",
+        "2028",
+        "2029"
+      ],
+      "phrasings": [
+        "How has the no-show rate moved from 2027 through 2029?",
+        "For each year 2027, 2028 and 2029, report no-shows divided by kept plus no-show appointments scheduled in that year; one row per year."
+      ],
+      "accept_by_phrasing": {
+        "0": [
+          "no_show_trend",
+          "no_show_trend_all"
+        ]
+      }
+    },
+    {
+      "id": "Q119",
+      "domain": "social needs",
+      "reference": "sdoh_screened",
+      "args": [
+        "2029"
+      ],
+      "phrasings": [
+        "How many patients were screened for social needs in 2029?",
+        "Count distinct patients with at least one social-needs screening answer recorded in 2029, any instrument."
+      ]
+    },
+    {
+      "id": "Q120",
+      "domain": "social needs",
+      "reference": "sdoh_any_positive",
+      "args": [
+        "2028"
+      ],
+      "phrasings": [
+        "What share of patients we screened in 2028 had at least one social need?",
+        "Among distinct patients screened for social needs in 2028, what share screened positive for at least one need?"
+      ]
+    },
+    {
+      "id": "Q121",
+      "domain": "social needs",
+      "reference": "sdoh_positive_by_need",
+      "args": [
+        "2027"
+      ],
+      "phrasings": [
+        "What were the positive screening rates for each social need in 2027?",
+        "For each social need type screened in 2027, divide patients who screened positive for it at least once by patients screened for it."
+      ]
+    }
+  ]
+}
