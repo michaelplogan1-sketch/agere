@@ -8421,8 +8421,9 @@
     "https://claude.ai/artifact/FdGHFryPdENtqJeMEx3A4D (Trial results section)"
    ],
    "development_sets": "53/53, 31/31, 13/13, 13/13 in the trial worktree before changes; candidates are off, so unchanged by default (not rerun after the last commit).",
-   "remaining_gap": "Stopped at the Claude weekly limit 11:51 UTC: LLM-alone arms for equivalence (8/60) and stale (0/40), proof_v14 ablation (4/101), RS(10) abstention gate not run; research rows CMS settlement, comparison group, stop-loss, staggered DiD not trialed; equivalence not wired into learn.promote; recording second-query parameter values at check time.",
-   "next_action": "After the limit resets: rerun eval/tiered/trial_llm_alone.py equivalence and stale, and the proof_v14 stack_plain ablation (journals resume); then Mike decides on wiring the equivalence check into promotion, suspending recipes 203/211/221, a chain-ladder runout recipe, a PDC recipe from therapy_courses, credibility PMPM."
+   "remaining_gap": "Not run: RS(10) agreement-gated abstention (~$13), PHI route guard test, prompt-caching trial, CMS settlement, comparison group, stop-loss, staggered DiD; equivalence check not wired into learn.promote.",
+   "next_action": "After the limit resets: rerun eval/tiered/trial_llm_alone.py equivalence and stale, and the proof_v14 stack_plain ablation (journals resume); then Mike decides on wiring the equivalence check into promotion, suspending recipes 203/211/221, a chain-ladder runout recipe, a PDC recipe from therapy_courses, credibility PMPM.",
+   "resumed": "2026-11-17 after the limit reset: LLM alone, recipe check 60/60 ($2.87): 3 of 6 real defects, 7 of 30 passing recipes called wrong; LLM alone, stale 39 pairs ($1.18): 7/8 changed, 0/31 false (registry 8/8, 2 false); proof_v14 without governed definitions 55/14/31, -85, $0.117 (with: 69/4/28, +29); paired +1.13 a question [+0.16,+2.49]. Paired cluster-bootstrap re-check (eval/tiered/trial_stats.py): credibility and Agere-vs-assistant differences do not hold; VOI, PDC, runout, equivalence-recall hold. Definition dependency by trigger words: 40/40 readmission recipes, 0 false; by tables 32/40, 62 false."
   }
  ]
 }
