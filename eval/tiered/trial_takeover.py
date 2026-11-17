@@ -25,7 +25,8 @@ from clinical_core.agere.tiered import customer, proof, store, takeover  # noqa:
 SET = Path('eval/tiered/trial_takeover_v1.json')
 J = Path('artifacts/agere-tiered-core/trials/takeover-journal.jsonl')
 ARMS = {'today': {}, 'compact': {'AGERE_TIERED_TAKEOVER_COMPACT': 'on'},
-        'batch': {'AGERE_TIERED_TAKEOVER_COMPACT': 'on', 'AGERE_TIERED_TAKEOVER_BATCH': 'on'}}
+        'batch': {'AGERE_TIERED_TAKEOVER_COMPACT': 'on', 'AGERE_TIERED_TAKEOVER_BATCH': 'on'},
+        'with_definitions': {}}   # added 2026-11-17 after 46c43e71: today's loop, now given the customer and governed definitions
 
 
 def items():
@@ -75,9 +76,9 @@ def report():
     rs = [json.loads(l) for l in J.read_text().splitlines() if l.strip()]
     by = {}
     for r in rs: by.setdefault(r['id'], {})[r['arm']] = r
-    full = {q: v for q, v in by.items() if len(v) == len(ARMS)}
+    full = {q: v for q, v in by.items() if len(v) >= 3}
     V = {'right': 1, 'wrong': -10}
-    for arm in ARMS:
+    for arm in [a for a in ARMS if all(a in v for v in full.values())]:
         xs = [full[q][arm] for q in full]; c = Counter(x['kind'] for x in xs); n = len(xs)
         print(f"{arm:8} {n} questions: right {c['right']}, wrong {c['wrong']}, declined {n - c['right'] - c['wrong']}; RS(10) {sum(V.get(x['kind'], 0) for x in xs)}; "
               f"${sum(x['usd'] for x in xs) / n:.4f} an answer; {sum(x['turns'] for x in xs) / n:.2f} turns; "
