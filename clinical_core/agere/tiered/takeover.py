@@ -120,6 +120,12 @@ def answer(question, cohort=None, why=None, may_ask=False, seconds=None):
     try:
         system = SYSTEM % (MAX_DOCUMENTS, store.as_of(db), MAX_STEPS, store.schema_text(db), models.definitions(question))
         system += NEXT + (ASK if may_ask else '') + (BATCH_RULE if _batch() else '')
+        # The customer's certified definitions and the governed definitions this question calls for, as the frontier SQL rung
+        # is given them (missing here until 2026-11-17: the takeover counted every ED event where the customer certifies visits
+        # at its own hospitals).
+        from . import catalogue
+        rules = catalogue.block(question) if catalogue.enabled() else ''
+        if rules: system += '\n\n' + rules
         earlier = {}
         log = ['Question: ' + question]
         if why: log.append('Why the automatic methods stopped: ' + str(why)[:1200])
