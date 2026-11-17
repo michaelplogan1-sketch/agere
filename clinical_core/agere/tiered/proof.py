@@ -990,8 +990,8 @@ def outcome_kind(item, o):
 def candidate_switches():
     """Trial arms: arm name -> the context switch of a candidate that is off by default. Each arm is the full stack ('stack')
     with that one candidate on; every other arm runs with it off."""
-    from . import readings
-    return {'stack_voi': readings.VOI}
+    from . import models, readings
+    return {'stack_voi': readings.VOI, 'stack_prefix': models.STABLE_PREFIX}
 
 
 def run(runs=3, workers=4):
@@ -1078,6 +1078,8 @@ def run(runs=3, workers=4):
                 # frontier calls and the tokens sent: cost that does not depend on the transport's caching
                 'frontier_calls': sum(1 for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
                 'frontier_tokens': sum(s.get('tokens', 0) for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
+                'cache_read': sum(s.get('cache_read', 0) for s in o['steps'] if s.get('model')), 'cache_write': sum(s.get('cache_write', 0) for s in o['steps'] if s.get('model')),
+                'input_uncached': sum(s.get('input', 0) for s in o['steps'] if s.get('model')),
                 'checks_rejected': sum(1 for s in o['steps'] if 'Governed definition' in str(s.get('reason', ''))),
                 'rows': (o.get('rows') or [])[:3] if o.get('status') != 'needs_choice' else {x['id']: (x.get('rows') or [])[:3] for x in o.get('readings') or []},
                 's1': [[s.get('check') or 'classify', s.get('label'), s.get('confidence'), s.get('model')] for s in o['steps'] if s.get('tier') == 'system1' and 'confidence' in s] or None,
@@ -1136,6 +1138,7 @@ def report(results, items, runs, wall, data):
     names = {'stack': 'Agere stack (with the governed definitions and their code checks)', 'stack_unchecked': 'Agere stack with the governed definitions but without their code checks',
              'stack_plain': 'Agere stack without the governed definitions', 'stack_guess': 'Agere stack answering one reading of every question (no two-reading check)',
              'frontier': "frontier model writing its own SQL from the schema (run through the stack's checks, no governed definitions)",
+             'stack_prefix': 'Agere stack with the stable prompt prefix (candidate: question-specific text moved out of the system prompt)',
              'stack_voi': 'Agere stack with value-of-information clarification (candidate: asks only when the readings differ enough to matter)',
              'assistant': 'general-purpose assistant at its best: top-tier model, read-only SQL tool (up to 8 steps), the whole definitions document, no Agere checks'}
     for arm, name in names.items():

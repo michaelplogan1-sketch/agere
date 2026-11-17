@@ -79,6 +79,7 @@ class ProviderUnavailable(RuntimeError):
 
 # Set while one reading of an ambiguous question is answered, so that reading is answered, not split again.
 NO_READINGS = contextvars.ContextVar('agere_no_readings', default=False)
+STABLE_PREFIX = contextvars.ContextVar('agere_stable_prefix', default=None)   # candidate switch; None follows AGERE_TIERED_STABLE_PREFIX
 
 
 def is_limit(exc):
@@ -298,6 +299,7 @@ def llm_recipe(question, error=None, model=None, examples=None):
     """Tier 4. -> (recipe dict or None, step). error: one SQL execution error to correct, if any.
     model: a different model for an independent second query (curriculum.confirm); the frontier model by default."""
     from . import catalogue
+    stable = False
     if store.foreign():
         # A warehouse that is not this semantic layer and has no mapping: the same rules, its own tables and vocabulary, and
         # none of this layer's recipes, vocabulary or governed definitions, which name tables it does not have.
@@ -307,15 +309,24 @@ def llm_recipe(question, error=None, model=None, examples=None):
             conditions = ', '.join(r[0] for r in store.run("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition' ORDER BY 1")[1])
         except store.RecipeError:
             conditions = '(not listed: this mapped warehouse has no concept_patient table)'
-        system = (LLM_SYSTEM % (store.schema_text(), definitions(question), conditions)).replace('NO_READINGS_NOTE',
+        # Candidate (off by default, AGERE_TIERED_STABLE_PREFIX): the system prompt holds only what is the same for every question
+        # (rules, schema, vocabulary), so the provider's prompt cache can reuse it; the reference SQL chosen for this question and
+        # the governed definitions it brings move to the start of the message.
+        stable = STABLE_PREFIX.get() if STABLE_PREFIX.get() is not None else os.environ.get('AGERE_TIERED_STABLE_PREFIX', 'off') == 'on'
+        moved = definitions(question)
+        system = (LLM_SYSTEM % (store.schema_text(), '(given at the start of the message)' if stable else moved, conditions)).replace('NO_READINGS_NOTE',
                   'This question is already one reading of an earlier question: answer it; do not return readings.' if NO_READINGS.get() else '') + warehouse_vocabulary()
         governed = catalogue.block(question) if catalogue.enabled() else ''
+        if stable:
+            prefix_user = 'Existing definitions (reference SQL):\n' + moved + ('\n\n' + governed if governed else '') + '\n\n'
+            governed = ''
     if governed: system += '\n\n' + governed
     if examples is None and EXAMPLES and model in (None, LLM): examples = nearest_examples(question)
     shown = ''.join(f'\nSaved question: {t}\nIts verified SQL: {q}\n' for t, q in (examples or []))
     user = ('Verified saved queries for similar questions follow. They answer other questions: reuse their tables, joins and '
             'definitions only where this question asks the same thing, and write your own SQL for what differs.\n' + shown + '\n' if shown else '') + \
            'Question: ' + question + ('\n\nYour previous SQL failed to execute: ' + error + '\nReturn a corrected JSON object.' if error else '')
+    if not store.foreign() and stable: user = prefix_user + user
     text, step = _claude(model or LLM, system, user)
     try:
         out = _json(text)

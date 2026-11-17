@@ -1,0 +1,383 @@
+{
+ "version": "trial_cache_1",
+ "authored": "2026-11-17",
+ "authored_by": "independent evaluator (Claude subagent without access to the product's code or earlier sets), acting as the customer's analytics team",
+ "frozen": "Written before any run of the product on it; to be committed before its first run and never edited after.",
+ "purpose": "Prompt-caching trial (research candidate 5): the first 30 proof_v14 questions, plain wording, stable-prefix layout vs today. Committed before the run.",
+ "reference": "Computed by eval/tiered/proof_v14_references.py from the raw tables, consistent with the customer definitions.",
+ "reference_module": "eval/tiered/proof_v14_references.py",
+ "customer_definitions": "eval/tiered/proof_v14_customer_definitions.json",
+ "phrasing": "The first phrasing is how an executive or analyst would ask; the second is explicit.",
+ "scoring": "+1 right, 0 declined, -10 wrong; an unanswerable question that is answered counts as wrong.",
+ "questions": [
+  {
+   "id": "V001",
+   "domain": "inpatient volume and length of stay",
+   "reference": "ip_admissions",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "How many inpatient admissions did our hospitals have in 2027?",
+    "Count inpatient admissions at our four hospitals (one per stay, in-progress and completed versions merged) with an admit date in 2027."
+   ]
+  },
+  {
+   "id": "V002",
+   "domain": "inpatient volume and length of stay",
+   "reference": "ip_admissions",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was our inpatient admission volume in 2028?",
+    "Number of inpatient stays at WH-HOSPITAL-0 to WH-HOSPITAL-3 admitted in calendar year 2028, counting each encounter once."
+   ]
+  },
+  {
+   "id": "V003",
+   "domain": "inpatient volume and length of stay",
+   "reference": "ip_admissions",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many patients did we admit as inpatients in 2029, counting admissions not people?",
+    "Count of inpatient admissions (encounters of type inpatient, one per encounter_id) at our four hospitals with admit date in 2029."
+   ]
+  },
+  {
+   "id": "V004",
+   "domain": "inpatient volume and length of stay",
+   "reference": "ip_admissions_by_hospital",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "Break down 2028 inpatient admissions by hospital.",
+    "For each of our four hospitals, the number of inpatient admissions with an admit date in 2028."
+   ]
+  },
+  {
+   "id": "V005",
+   "domain": "inpatient volume and length of stay",
+   "reference": "ip_admissions_by_quarter",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "Show our 2028 inpatient admissions by quarter.",
+    "Inpatient admissions at our four hospitals in 2028 grouped by quarter of admit date (Q1 to Q4)."
+   ]
+  },
+  {
+   "id": "V006",
+   "domain": "inpatient volume and length of stay",
+   "reference": "ip_patients",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many distinct patients were admitted to our hospitals in 2029?",
+    "Count distinct patient_id with at least one inpatient admission at our four hospitals with admit date in 2029."
+   ]
+  },
+  {
+   "id": "V007",
+   "domain": "inpatient volume and length of stay",
+   "reference": "alos",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "What was our average length of stay in 2027, in days?",
+    "Mean inpatient length of stay in days (discharge date minus admit date, same-day stays = 1) for discharges from our four hospitals in 2027, one decimal."
+   ]
+  },
+  {
+   "id": "V008",
+   "domain": "inpatient volume and length of stay",
+   "reference": "alos",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was ALOS for 2029 in days?",
+    "Average length of stay in days over inpatient discharges at our four hospitals with discharge date in 2029, to one decimal."
+   ]
+  },
+  {
+   "id": "V009",
+   "domain": "inpatient volume and length of stay",
+   "reference": "alos_by_hospital",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "Compare average length of stay by hospital for 2028, in days.",
+    "For each of our four hospitals, mean inpatient length of stay in days for discharges in 2028, one decimal."
+   ]
+  },
+  {
+   "id": "V010",
+   "domain": "inpatient volume and length of stay",
+   "reference": "long_stay_share",
+   "args": [
+    "2028",
+    "6"
+   ],
+   "phrasings": [
+    "What share of 2028 discharges stayed six days or longer?",
+    "Share of inpatient discharges from our four hospitals in 2028 with length of stay of at least 6 days, as a share to 4 decimals."
+   ]
+  },
+  {
+   "id": "V011",
+   "domain": "inpatient volume and length of stay",
+   "reference": "top_admit_dx",
+   "args": [
+    "2029",
+    "5"
+   ],
+   "phrasings": [
+    "What were the top five reasons for admission in 2029?",
+    "Top 5 ICD-10 3-character categories of the principal diagnosis on inpatient admissions at our four hospitals admitted in 2029, with counts."
+   ]
+  },
+  {
+   "id": "V012",
+   "domain": "inpatient volume and length of stay",
+   "reference": "discharges",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many inpatient discharges did we have in 2028?",
+    "Count of inpatient stays at our four hospitals with a discharge date in 2028."
+   ]
+  },
+  {
+   "id": "V013",
+   "domain": "inpatient volume and length of stay",
+   "reference": "discharge_group_share",
+   "args": [
+    "2029",
+    "skilled_nursing_facility"
+   ],
+   "phrasings": [
+    "What share of our 2029 discharges went to a skilled nursing facility?",
+    "Among inpatient discharges at our four hospitals in 2029, the share with disposition skilled_nursing_facility, 4 decimals."
+   ]
+  },
+  {
+   "id": "V014",
+   "domain": "inpatient volume and length of stay",
+   "reference": "discharge_disposition_mix",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "Give me the 2028 discharge disposition breakdown.",
+    "Count of 2028 inpatient discharges at our four hospitals by disposition group (home, skilled_nursing_facility, expired, other)."
+   ]
+  },
+  {
+   "id": "V015",
+   "domain": "payer mix and spend",
+   "reference": "ip_payer_mix",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was the payer mix of our inpatient admissions in 2028?",
+    "Share of 2028 inpatient admissions at our four hospitals by the patient's line of business in member_month for the admit month (uninsured when none), 4 decimals."
+   ]
+  },
+  {
+   "id": "V016",
+   "domain": "payer mix and spend",
+   "reference": "ip_admissions_payer",
+   "args": [
+    "2027",
+    "medicare"
+   ],
+   "phrasings": [
+    "How many Medicare inpatient admissions did we have in 2027?",
+    "Count of 2027 inpatient admissions at our four hospitals where the patient's member_month line of business in the admit month is medicare."
+   ]
+  },
+  {
+   "id": "V017",
+   "domain": "payer mix and spend",
+   "reference": "ed_payer_mix",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What did the ED payer mix look like in 2029?",
+    "Share of 2029 ED visits at our four hospitals by the patient's member_month line of business in the arrival month (uninsured when none), 4 decimals."
+   ]
+  },
+  {
+   "id": "V018",
+   "domain": "readmissions",
+   "reference": "readmit_rate",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "What was our 30-day readmission rate in 2027?",
+    "All-cause 30-day readmission rate: index inpatient discharges at our four hospitals in 2027 (excluding deaths) readmitted to any of the four 1-30 days after discharge / index discharges, 4 decimals."
+   ]
+  },
+  {
+   "id": "V019",
+   "domain": "readmissions",
+   "reference": "readmit_rate",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was the all-cause readmission rate for 2028?",
+    "Share of 2028 index discharges (inpatient, our four hospitals, not expired) followed by an inpatient admission at our hospitals within 1 to 30 days, 4 decimals."
+   ]
+  },
+  {
+   "id": "V020",
+   "domain": "readmissions",
+   "reference": "readmit_rate",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How did our readmission rate come out in 2029?",
+    "30-day all-cause readmission rate for index discharges in 2029 at our four hospitals, by index discharge date, 4 decimals."
+   ]
+  },
+  {
+   "id": "V021",
+   "domain": "readmissions",
+   "reference": "readmit_rate_by_hospital",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "Show 30-day readmission rates by hospital for 2028.",
+    "For each of our four hospitals (index hospital), the 30-day all-cause readmission rate for 2028 index discharges, 4 decimals."
+   ]
+  },
+  {
+   "id": "V022",
+   "domain": "readmissions",
+   "reference": "readmit_rate_by_payer",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "Break down the 2029 readmission rate by payer.",
+    "30-day all-cause readmission rate for 2029 index discharges at our four hospitals, grouped by the patient's line of business in the index admit month (uninsured when none), 4 decimals."
+   ]
+  },
+  {
+   "id": "V023",
+   "domain": "emergency department",
+   "reference": "ed_visits",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "How many ED visits did our hospitals see in 2027?",
+    "Count of emergency department encounters (one per encounter_id, versions merged) at our four hospitals with arrival date in 2027."
+   ]
+  },
+  {
+   "id": "V024",
+   "domain": "emergency department",
+   "reference": "ed_visits",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was ED volume for 2028?",
+    "Number of ED visits at WH-HOSPITAL-0 to WH-HOSPITAL-3 with arrival in 2028."
+   ]
+  },
+  {
+   "id": "V025",
+   "domain": "emergency department",
+   "reference": "ed_visits",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many emergency visits did we have in 2029?",
+    "Count ED encounters at our four hospitals arriving in calendar 2029."
+   ]
+  },
+  {
+   "id": "V026",
+   "domain": "emergency department",
+   "reference": "ed_median_hours",
+   "args": [
+    "2028",
+    "all"
+   ],
+   "phrasings": [
+    "What was median ED length of stay in 2028, in hours?",
+    "Median time from ED arrival to departure in hours across all ED visits at our four hospitals arriving in 2028, one decimal."
+   ]
+  },
+  {
+   "id": "V027",
+   "domain": "emergency department",
+   "reference": "ed_median_hours",
+   "args": [
+    "2029",
+    "all"
+   ],
+   "phrasings": [
+    "How long was the typical ED visit in 2029, in hours?",
+    "Median ED arrival-to-departure time in hours for all ED visits at our four hospitals in 2029, one decimal."
+   ]
+  },
+  {
+   "id": "V028",
+   "domain": "emergency department",
+   "reference": "ed_median_hours",
+   "args": [
+    "2029",
+    "admitted"
+   ],
+   "phrasings": [
+    "For ED patients who were admitted in 2029, what was the median ED time in hours?",
+    "Median ED arrival-to-departure hours for 2029 ED visits at our four hospitals with disposition admitted or inpatient_admission, one decimal."
+   ]
+  },
+  {
+   "id": "V029",
+   "domain": "emergency department",
+   "reference": "ed_median_hours",
+   "args": [
+    "2028",
+    "discharged"
+   ],
+   "phrasings": [
+    "Median ED time in hours for treat-and-release patients in 2028?",
+    "Median ED arrival-to-departure hours for 2028 ED visits at our four hospitals not admitted and not placed in observation, one decimal."
+   ]
+  },
+  {
+   "id": "V030",
+   "domain": "emergency department",
+   "reference": "ed_share_over_hours",
+   "args": [
+    "2029",
+    "6"
+   ],
+   "phrasings": [
+    "What share of 2029 ED visits lasted six hours or more?",
+    "Share of ED visits at our four hospitals arriving in 2029 with arrival-to-departure time of at least 6 hours, 4 decimals."
+   ]
+  }
+ ]
+}
