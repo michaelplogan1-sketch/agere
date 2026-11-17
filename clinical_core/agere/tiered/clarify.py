@@ -159,7 +159,9 @@ def check(turn, state, context):
 
 
 def _prompt(state, context):
-    lines = [f'Question: {state["question"]}', '', 'Readings the system found:']
+    lines = [f'Question: {state["question"]}']
+    if state.get('why'): lines += ['', 'Why the system needs the person: ' + str(state['why'])]
+    lines += ['', 'Readings the system found:']
     lines += [f'- {r["label"]}: {r["question"]}' for r in state['readings']]
     lines += ['', context, '', 'Saved defaults for this person:']
     lines += [f'- {d["about"]}: {d["choice"]}' for d in state['defaults']] or ['(none)']
@@ -225,10 +227,11 @@ def _next(state):
     return {'action': 'ask', 'ask': state['pending']['asked'], 'options': options, 'state': state, 'steps': steps}
 
 
-def begin(question, readings):
-    """readings: [{'id','label','question'}] the stack found. -> a turn, or None (fall back to the one-card question)."""
+def begin(question, readings, why=None):
+    """readings: [{'id','label','question'}] the stack found; why: what the stack found that needs the person (shown to the
+    model). -> a turn, or None (fall back to the one-card question)."""
     if not enabled(): return None
-    state = {'schema': 'agere-clarify-conversation/1', 'question': question, 'person': PERSON.get(), 'defaults': defaults(),
+    state = {'schema': 'agere-clarify-conversation/1', 'question': question, 'person': PERSON.get(), 'defaults': defaults(), 'why': why,
              'readings': [{'id': r['id'], 'label': r['label'], 'question': r['question']} for r in readings], 'exchanges': [], 'steps': []}
     return _next(state)
 

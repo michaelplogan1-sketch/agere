@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-17T15:46:36.311170+00:00",
+  "updated_at": "2026-11-17T16:34:09.809843+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -934,7 +934,7 @@
     "current_gate_id": "G7",
     "last_delivered_gate": "G5",
     "product_commit": "ecfa2d62",
-    "updated_at": "2026-11-17T15:46:36.311170+00:00",
+    "updated_at": "2026-11-17T16:34:09.809843+00:00",
     "user_behavior_delta": "An unclear question becomes a short conversation: a language model asks only what the customer's definitions, own facilities and the person's saved defaults leave open, remembers the answers, stops after three exchanges (then shows each open reading computed side by side), hands one explicit question to the stack and saves the person's choices so they are not asked again.",
     "measured_failure_reduction": "Clarifying conversation: built and tested with mocked models, development sets unchanged (53/53, 31/31, 13/13, 13/13); not yet measured with real askers. notes_v1 first run (2 runs): Agere readers on the same notes 94.0% at $0.004 a question; top-tier model alone 88.5% at $0.059; Agere whole stack from the question 54.5% at $0.066 (document selection, not reading, is the failure).",
     "evidence": [
@@ -7949,6 +7949,18 @@
         "clinical_core/agere/tiered/models.py",
         "tests/core/test_tiered_clarify.py",
         "artifacts/agere-tiered-core/devsets-clock-regression.log"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T16:34:09.809843+00:00",
+      "decision": "Fall question fixed. Cause: the clarified question became 'ICD-10 W00-W19', codes this warehouse never uses (falls are only in notes: 634 notes, 524 patients), and the count of 0 was returned as the answer. Fix 1: a GLOB/LIKE code pattern that matches no row is refused like an unknown value, pointing the SQL writer to a reading plan. Fix 2: a reading plan over more documents than can be read (73,529 for 'ever') now starts the clarifying conversation, which asks the person to narrow by period, note type, facility or patient group. In the app: asked period then hospitals, then read 491 notes: 36 patients, 69 notes (2030 to date, own hospitals), $0.23, about 70 s; not verified against a key. Development sets unchanged.",
+      "reason": "Mike 2026-11-17: fix the fall question.",
+      "evidence": [
+        "clinical_core/agere/tiered/recipes.py",
+        "clinical_core/agere/tiered/app.py",
+        "tests/core/test_tiered_absent_codes.py",
+        "artifacts/agere-tiered-core/devsets-fall-regression.log"
       ],
       "scope_impact": "None."
     }

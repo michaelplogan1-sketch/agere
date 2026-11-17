@@ -210,6 +210,15 @@ class InTheApp(Base):
             got = app._single(self.stack, 'How many notes mention a fall?')
         self.assertEqual(got['clarification_checkpoint']['tiered']['kind'], 'conversation'); self.assertIn('- ED notes: ED notes', m.calls[0][1])
 
+    def test_too_many_documents_to_read_asks_the_person_to_narrow_it(self):
+        wide = {'status': 'unanswered', 'final_tier': None, 'steps': [], 'seconds': 0.1, 'recipe': None, 'validation': None, 'missing': 'x',
+                'escalations': [{'from': 'llm', 'reason': 'execution error: The plan selects 73529 documents; this tier reads at most 150 per question'}]}
+        m = self.model(slm=[ask('Which period and which notes?', 'ED notes in 2029', 'All notes in 2029')])
+        with mock.patch.object(router, 'answer', lambda *a, **k: dict(wide)):
+            got = app._single(self.stack, 'How many patients had a fall?')
+        self.assertEqual(got['clarification_checkpoint']['tiered']['kind'], 'conversation')
+        self.assertIn('73529 documents', m.calls[0][1])
+
     def test_without_a_model_the_one_card_question_is_still_asked(self):
         self.model(slm=['x'], llm=['y'])
         got = app._single(self.stack, QUESTION)

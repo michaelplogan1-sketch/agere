@@ -342,6 +342,15 @@ def _climb(stack, question, cohort, takeover_ok, near):
     if outcome['status'] != 'answered':
         if not takeover_ok: return None
         asking = cohort is None and _interactive(stack)
+        wide = next((e['reason'] for e in outcome.get('escalations') or [] if 'documents; this tier reads at most' in str(e.get('reason'))), None)
+        if asking and wide:   # the answer is in more documents than can be read: the person narrows it, nothing is guessed
+            from . import clarify
+            held = _converse(stack, question, clarify.begin(question, [{'id': 'reading1', 'label': 'As asked', 'question': question}],
+                                                            why='Answering needs reading the documents, and as asked it covers too many to read ('
+                                                                + wide.replace('execution error: ', '') + '). Ask the person to narrow it: the period, '
+                                                                'the kind of note or document, the facility or the patient group.'),
+                             outcome['steps'], outcome['seconds'])
+            if held is not None: return held
         done = _takeover(question, cohort, outcome, stack=stack if asking else None)
         if done is not None or not asking: return done
         # Nothing answered and a person is here: talk it through with them (clarify.py), never a dead end; the menu of

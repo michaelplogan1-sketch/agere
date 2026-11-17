@@ -1024,6 +1024,17 @@ def unknown_filter_values(sql, params, db=None):
     for m in re.finditer(r"(?<!not )\b(?:[a-z_][a-z0-9_]*\.)?([a-z_][a-z0-9_]*)\s+in\s*\(([^()]*)\)", text, re.I):
         for item in re.findall(r"'([^']*)'|:([a-z_][a-z0-9_]*)", m.group(2)):
             pairs.append((m.group(1), item[0] or params.get(item[1])))
+    # A code pattern (GLOB or LIKE) that matches nothing: "patients with a fall" counted ICD-10 W00-W19, which this warehouse never
+    # codes, and returned 0 as if nobody fell; falls are recorded only in the notes (the app's first conversations, 2026-11-17).
+    for m in re.finditer(r"(?<!not )\b(?:[a-z_][a-z0-9_]*\.)?([a-z_][a-z0-9_]*)\s+(glob|like)\s+(?::([a-z_][a-z0-9_]*)|'([^']*)')", text, re.I):
+        column, op, value = m.group(1), m.group(2).upper(), params.get(m.group(3)) if m.group(3) else m.group(4)
+        if not isinstance(value, str) or not value.strip('%*?_ ') or len(value) > 80: continue
+        tables = [t for t in read if column.lower() in columns(t)]
+        if not tables: continue
+        if any(q(f'SELECT 1 FROM "{t}" WHERE "{column}" {op} ? LIMIT 1', (value,)) for t in tables): continue
+        return (f"No row of {tables[0]}.{column} matches {op} '{value}': this warehouse does not record that in coded data, so a count "
+                'of 0 would be wrong. If the question is about something notes or documents describe, return a reading plan over the '
+                'document table instead.')
     for column, value in pairs:
         if not isinstance(value, str) or not value.strip() or len(value) > 80: continue
         if re.fullmatch(r'[\d\-.:/ ]+', value): continue                     # numbers, years, months, dates
