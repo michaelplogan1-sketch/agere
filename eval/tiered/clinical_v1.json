@@ -1,0 +1,543 @@
+{
+ "version": "clinical_v1",
+ "authored": "2026-11-17",
+ "authored_by": "independent evaluator (Claude subagent, no access to the product code, its clinical store or earlier sets)",
+ "frozen": "Written before any run of the product; never edited after its first run.",
+ "purpose": "Questions where clinical knowledge decides the answer, scored with and without a clinical knowledge layer and against a language model alone.",
+ "reference_module": "eval/tiered/clinical_v1_references.py",
+ "phrasing": "Phrasing 0 is how a clinician or quality lead would ask (names the clinical concept, not the thresholds or codes). Phrasing 1 is explicit (states the thresholds, codes and rules).",
+ "scoring": "+1 right, 0 declined, -10 wrong; an unanswerable question that is answered counts as wrong.",
+ "conventions": "Lab results come from measurement and count only when result_current = 1 (superseded originals and duplicate interface messages dropped, corrected replacements kept), result_status is empty/final/corrected (cancelled, not_calculated and billed-test-without-result rows dropped), excluded_reason is empty (hemolysed, not performed dropped), and event_date and a value are present; labs with a concept use value_canonical, labs without one (MCV, transferrin saturation, bicarbonate, urine albumin, height) are found by name and use value. An eGFR reported as '>60' is never below 60. Years are calendar years of the result, fill or diagnosis date. Age in whole years from patient.birth_date at the stated date; sex from sex_reported. Diagnoses are the union of condition (first full date among diagnosis_date, onset, event_date, recorded_date; undated rows count for 'by year end'), encounter_diagnosis and payer_claim_diagnosis (all rows). A fill covers fill_date through supply_end inclusive; overlap = at least one shared covered day in the year; combination products count in each class. Qualifying outpatient visit = completed encounter (source encounters) of type office, primary_care, telehealth, telephone, specialist_office, specialty_followup or pediatric_office in the year. Blood pressure uses readings not recorded by a hospital organization and, per day, the lowest systolic and lowest diastolic. Rates are shares rounded to 4 decimals.",
+ "questions": [
+  {
+   "id": "C001",
+   "domain": "kidney",
+   "reference": "ckd_egfr_sustained",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many patients had lab evidence of chronic kidney disease from their eGFR results in 2028?",
+    "Count patients with at least two eGFR results below 60 mL/min/1.73m2 dated in 2028 that are at least 90 days apart (KDIGO chronicity: >3 months). Use valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date); an eGFR reported as '>60' is not below 60."
+   ],
+   "audit": "KDIGO 2012/2024 CKD definition: GFR < 60 mL/min/1.73m2 persisting > 3 months. Implemented as two sub-60 results >= 90 days apart within the year; an intervening normal result does not break it (judgement: simple chronicity rule). Censored '>60' reports are treated as >= 60. Albuminuria-only CKD (UACR >= 30 with normal eGFR) is not counted because the question says from eGFR results."
+  },
+  {
+   "id": "C002",
+   "domain": "kidney",
+   "reference": "egfr_category_g3_g5",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "Break down patients by KDIGO GFR category (G3a through G5) based on their last eGFR in 2028.",
+    "For each patient take the last eGFR dated in 2028 (lowest value if several that day; valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date)). Count patients in G3a (45-59), G3b (30-44), G4 (15-29) and G5 (<15) mL/min/1.73m2; patients at 60 or above (including '>60') are not listed."
+   ],
+   "audit": "KDIGO 2012 GFR categories G3a 45-59, G3b 30-44, G4 15-29, G5 < 15. Single latest value (not chronicity-confirmed) - stated in both phrasings."
+  },
+  {
+   "id": "C003",
+   "domain": "kidney",
+   "reference": "albuminuria_category",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How do patients tested for albuminuria in 2028 split across the KDIGO albuminuria categories, using their last urine albumin-to-creatinine ratio of the year?",
+    "For each patient take the last urine albumin/creatinine ratio (mg/g) dated in 2028 (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date); highest value if several that day). Count A1 (< 30 mg/g), A2 (30-300 mg/g) and A3 (> 300 mg/g)."
+   ],
+   "audit": "KDIGO 2012 albuminuria categories A1 < 30, A2 30-300, A3 > 300 mg/g. Older term 'microalbuminuria' = A2. Uses the UACR concept rows (computed ratio), not urine albumin alone (mg/L), which a naive reader might mistake for the ratio."
+  },
+  {
+   "id": "C004",
+   "domain": "kidney",
+   "reference": "ckd_lab_uncoded",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many patients met lab criteria for chronic kidney disease in 2028 but have no CKD diagnosis coded anywhere?",
+    "Count patients with at least two eGFR < 60 mL/min/1.73m2 at least 90 days apart in 2028 (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date); '>60' is not below 60) who have no diagnosis on or before 31 Dec 2028 (problem list, encounter or payer claim) of N18.x, E08.22/E09.22/E10.22/E11.22/E13.22 (diabetes with diabetic CKD), I12.x/I13.x (hypertensive CKD), Z99.2 or Z49.x (dialysis) or Z94.0 (kidney transplant)."
+   ],
+   "audit": "KDIGO lab definition as in C001. Code family judgement: ICD-10-CM codes CKD through N18 but also through diabetic CKD combination codes (E11.22 instructs 'use additional code N18', yet coders often omit it), hypertensive CKD I12/I13, and dialysis/transplant status codes. E11.21 (diabetic nephropathy) and E11.29 are NOT counted as CKD codes (nephropathy/other kidney complication, not CKD) - a reviewer may disagree."
+  },
+  {
+   "id": "C005",
+   "domain": "kidney",
+   "reference": "kidney_health_evaluation",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was our 2028 kidney health evaluation rate for adults with diabetes, as in the CMS eCQM?",
+    "Denominator: patients aged 18-85 on 31 Dec 2028 with diabetes (E10, E11 or E13 coded on or before 31 Dec 2028) and a completed outpatient visit in 2028 (office, primary care, telehealth, telephone, specialist or specialty follow-up, pediatric office), excluding CKD stage 5/ESRD (N18.5, N18.6, Z99.2 on or before year end). Numerator: both an eGFR and a urine albumin-creatinine ratio (or a quantitative urine albumin plus urine creatinine on the same day) dated in 2028, valid results only. Give the share (hospice/palliative exclusions not applied)."
+   ],
+   "audit": "CMS951 Kidney Health Evaluation (eCQM): ages 18-85 with diabetes, numerator = eGFR AND uACR in the period; exclusions CKD stage 5/ESRD, hospice, palliative care (hospice/palliative not applied; data lacks reliable hospice enrolment for EHR visits). Diabetes value set judged as E10/E11/E13 (secondary diabetes E08/E09 excluded, as in the eCQM Diabetes value set). Qualifying visits per eCQM include telephone/virtual visits."
+  },
+  {
+   "id": "C006",
+   "domain": "kidney",
+   "reference": "ras_in_diabetic_albuminuria",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "Among patients with diabetes and albuminuria in 2028, what share were on guideline-recommended renin-angiotensin system blockade?",
+    "Denominator: patients with diabetes (E10, E11 or E13 coded on or before 31 Dec 2028) with any urine albumin/creatinine ratio >= 30 mg/g dated in 2028 (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date)). Numerator: a fill dated in 2028 of an ACE inhibitor, an ARB or sacubitril/valsartan (ARNI). Give the share."
+   ],
+   "audit": "ADA Standards of Care (section 11) and KDIGO 2022 diabetes-CKD guideline: ACEi or ARB recommended for diabetes with UACR >= 30 mg/g (strongest for >= 300) and hypertension. ARNI counted because it contains an ARB (judgement; ADA names ACEi/ARB). Direct renin inhibitors, MRAs and SGLT2i do not count. Single UACR >= 30 used (KDIGO prefers 2 of 3 specimens - simplification stated)."
+  },
+  {
+   "id": "C007",
+   "domain": "kidney",
+   "reference": "sglt2_in_t2d_ckd",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What share of our type 2 diabetes patients with CKD were on an SGLT2 inhibitor in 2028, per the KDIGO diabetes-in-CKD guideline?",
+    "Denominator: patients with type 2 diabetes (E11 coded on or before 31 Dec 2028) whose last eGFR in 2028 is at least 20 mL/min/1.73m2 and who have CKD by 2028 labs: last eGFR 20-59, or any UACR >= 30 mg/g in 2028 (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date); '>60' counts as >= 20 and not below 60). Numerator: an SGLT2 inhibitor fill dated in 2028. Give the share."
+   ],
+   "audit": "KDIGO 2022 Diabetes in CKD guideline (rec 1.3.1): SGLT2i for T2D, CKD and eGFR >= 20. GLP-1 RAs, metformin, DPP-4i do not count. CKD here by single lab values in the year (not chronicity-confirmed) - stated explicitly."
+  },
+  {
+   "id": "C008",
+   "domain": "medication safety",
+   "reference": "metformin_egfr_below_30",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many patients had an eGFR in the range where metformin is contraindicated while they were still supplied with metformin in 2029?",
+    "Count patients with an eGFR < 30 mL/min/1.73m2 dated in 2029 (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date)) on a day covered by a metformin fill (fill date through fill date + days supply - 1)."
+   ],
+   "audit": "FDA Drug Safety Communication April 2016: metformin contraindicated at eGFR < 30; starting not recommended at 30-45. The contraindication threshold (30) is used, not 45."
+  },
+  {
+   "id": "C009",
+   "domain": "diabetes",
+   "reference": "a1c_poor_control",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was our 2028 rate for the CMS diabetes HbA1c poor control measure?",
+    "Denominator: patients aged 18-75 on 31 Dec 2028 with diabetes (E10, E11 or E13 coded on or before 31 Dec 2028) and a completed outpatient visit in 2028 (office, primary care, telehealth, telephone, specialist, specialty follow-up or pediatric office). Numerator: the most recent valid HbA1c result in 2028 is > 9.0%, OR there is no HbA1c result in 2028 (a billed HbA1c test with no result value counts as no result). Give the share (inverse measure, lower is better; exclusions not applied)."
+   ],
+   "audit": "CMS122 Diabetes: Hemoglobin A1c Poor Control (> 9%). Key clinical-measure logic: most recent result in period; missing result counts in the numerator; > 9.0 strictly. Claims rows 'CPT 83036 (billed test, no result)' do not supply a value so they count as missing (judgement consistent with eCQM needing a result). Exclusions (hospice, palliative, frailty+advanced illness 66+) not applied."
+  },
+  {
+   "id": "C010",
+   "domain": "diabetes",
+   "reference": "undiagnosed_diabetes_a1c",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many patients had an HbA1c in the diabetes range in 2028 but no diabetes diagnosis on record?",
+    "Count patients with any HbA1c >= 6.5% dated in 2028 (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date)) who have no diagnosis code E08-E13 (any diabetes type) on or before 31 Dec 2028 in the problem list, encounter diagnoses or payer claims."
+   ],
+   "audit": "ADA Standards of Care section 2: diabetes diagnostic threshold HbA1c >= 6.5% (confirmation by a second test is required clinically; this counts possible undiagnosed diabetes on one result). All diabetes types E08-E13 exclude the patient. Prediabetes R73.0x does not."
+  },
+  {
+   "id": "C011",
+   "domain": "diabetes",
+   "readings": {
+    "ada_5_7": "prediabetes_a1c_ada",
+    "iec_nice_6_0": "prediabetes_a1c_iec"
+   },
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many patients without diagnosed diabetes had an HbA1c in the prediabetes range as their last result in 2028?",
+    "Among patients with no diabetes code (E08-E13) on or before 31 Dec 2028, count those whose last HbA1c dated in 2028 (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date); highest if several that day) is below 6.5% and at or above the prediabetes threshold: 5.7% (ADA) and, separately, 6.0% (International Expert Committee / NICE). Report both counts."
+   ],
+   "audit": "Real disagreement: ADA defines prediabetes as HbA1c 5.7-6.4%; the 2009 International Expert Committee, WHO 2011 and NICE PH38 use 6.0-6.4% (6.0-6.4 = high risk). Two readings."
+  },
+  {
+   "id": "C012",
+   "domain": "diabetes",
+   "reference": "statin_in_diabetes",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What share of our diabetes patients aged 40 to 75 were on statin therapy in 2028?",
+    "Denominator: patients aged 40-75 on 31 Dec 2028 with diabetes (E10, E11 or E13 coded on or before 31 Dec 2028) and a completed outpatient visit in 2028 (office, primary care, telehealth, telephone, specialist, specialty follow-up or pediatric office). Numerator: any statin fill (any statin, any intensity) dated in 2028. Give the share."
+   ],
+   "audit": "ADA Standards (section 10) and 2018 AHA/ACC cholesterol guideline: moderate-intensity statin for all adults 40-75 with diabetes; CMS347 population 3 uses ages 40-75 with diabetes. Ezetimibe/PCSK9 not counted (none filled). Exclusions not applied."
+  },
+  {
+   "id": "C013",
+   "domain": "cardiovascular",
+   "reference": "bp_control",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was our 2028 controlling high blood pressure rate, CMS measure logic without the exclusions?",
+    "Denominator: patients aged 18-85 on 31 Dec 2028 with essential hypertension (I10) coded on or before 30 Jun 2028 and a completed outpatient visit in 2028 (office, primary care, telehealth, telephone, specialist, specialty follow-up or pediatric office). Numerator: on the most recent day in 2028 with a blood pressure taken outside a hospital, the lowest systolic is < 140 and the lowest diastolic is < 90 mmHg; no reading in 2028 counts as not controlled. Give the share; do not apply the measure's exclusions."
+   ],
+   "audit": "CMS165 Controlling High Blood Pressure: hypertension diagnosis starting before or in the first six months; most recent BP day; lowest systolic and lowest diastolic that day; readings in acute inpatient or ED settings excluded (here: readings recorded by a hospital organization); missing = not controlled. Exclusions (ESRD, pregnancy, hospice, frailty 66+) deliberately not applied and stated in both phrasings. Hypertension coded only as I11-I13 not counted (eCQM essential hypertension value set is I10)."
+  },
+  {
+   "id": "C014",
+   "domain": "cardiovascular",
+   "readings": {
+    "acc_aha_130_80": "htn_range_acc_aha",
+    "esc_esh_140_90": "htn_range_esc"
+   },
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "Among adults with an outpatient blood pressure recorded in 2028, what share had a last reading in the hypertensive range?",
+    "Adults aged 18+ on 31 Dec 2028 with a blood pressure taken outside a hospital in 2028. Take the last such day (lowest systolic and lowest diastolic of that day). Report the share at or above 130 systolic or 80 diastolic (ACC/AHA 2017 stage 1 or higher) and, separately, the share at or above 140 systolic or 90 diastolic (ESC/ESH)."
+   ],
+   "audit": "Real disagreement: 2017 ACC/AHA defines hypertension as >= 130/80; ESC 2018/2024 and ESH 2023 (and NICE, WHO 2021) keep >= 140/90. Two readings. Single-visit reading used, which is not a diagnosis (stated as 'in the hypertensive range')."
+  },
+  {
+   "id": "C015",
+   "domain": "cardiovascular",
+   "reference": "statin_ascvd",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What share of our patients with clinical atherosclerotic cardiovascular disease were on statin therapy in 2028?",
+    "Denominator: patients aged 21+ on 31 Dec 2028 with an ASCVD diagnosis on or before 31 Dec 2028 - I20-I25 (angina, MI, chronic ischaemic heart disease), I63 or I69.3x (ischaemic stroke and its sequelae), G45 (TIA), I70 (atherosclerosis/PAD), Z95.1 (CABG), Z95.5 (coronary stent), Z98.61 (coronary angioplasty) - and a completed outpatient visit in 2028. Numerator: any statin fill dated in 2028. Give the share (exclusions not applied)."
+   ],
+   "audit": "CMS347 Statin Therapy for Prevention and Treatment of CVD, population 1 (clinical ASCVD, age >= 21). 2018 AHA/ACC: clinical ASCVD = ACS, MI history, stable/unstable angina, coronary or other arterial revascularization, stroke, TIA, PAD of atherosclerotic origin. I26 (PE), I48 (AF) and haemorrhagic stroke are not ASCVD. Exclusions (statin allergy, rhabdomyolysis, ESRD, hospice, pregnancy) not applied."
+  },
+  {
+   "id": "C016",
+   "domain": "cardiovascular",
+   "reference": "high_intensity_statin_ascvd",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "Among ASCVD patients aged 75 or younger who filled a statin in 2028, what share were on a high-intensity statin?",
+    "Same ASCVD diagnosis set and visit rule as C015, ages 21-75 on 31 Dec 2028, with a statin fill in 2028. Numerator: the last statin fill in 2028 is atorvastatin 40-80 mg or rosuvastatin 20-40 mg (a fill without a stated strength is not high intensity). Give the share."
+   ],
+   "audit": "2018 AHA/ACC cholesterol guideline table 3: high intensity = atorvastatin 40-80 mg, rosuvastatin 20-40 mg; simvastatin 80 mg is NOT high intensity (moderate, and FDA restricts it); pravastatin/lovastatin any dose are low/moderate. Recommendation: high intensity for clinical ASCVD age <= 75. Judgement: fills recorded only as 'atorvastatin' with no strength cannot be classified and count as not high intensity."
+  },
+  {
+   "id": "C017",
+   "domain": "cardiovascular",
+   "readings": {
+    "acc_aha_lt70": "ldl_goal_ascvd_acc_aha",
+    "esc_eas_lt55": "ldl_goal_ascvd_esc"
+   },
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "Among patients with clinical ASCVD who had an LDL cholesterol measured in 2027, what share had their last LDL at goal?",
+    "Patients with an ASCVD diagnosis (as in C015) on or before 31 Dec 2027 and a valid LDL-C result dated in 2027. Take the last LDL-C of 2027 (lowest if several that day). Report the share below 70 mg/dL (2018 AHA/ACC) and, separately, the share below 55 mg/dL (2019 ESC/EAS very-high-risk goal)."
+   ],
+   "audit": "Real disagreement: 2018 AHA/ACC uses LDL-C >= 70 mg/dL as the threshold to add non-statin therapy in very-high-risk ASCVD (de facto goal < 70); 2019 ESC/EAS sets < 55 mg/dL (1.4 mmol/L) for very-high-risk patients, and all ASCVD patients are very-high-risk under ESC. Two readings. No visit requirement here."
+  },
+  {
+   "id": "C018",
+   "domain": "cardiovascular",
+   "reference": "ldl190_no_statin",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many adults with severe primary hypercholesterolaemia on their 2028 lipid results were not on a statin that year?",
+    "Count patients aged 20-75 on 31 Dec 2028 with any LDL-C >= 190 mg/dL dated in 2028 (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date)) who have no statin fill dated in 2028."
+   ],
+   "audit": "2018 AHA/ACC cholesterol guideline: LDL-C >= 190 mg/dL in adults 20-75 = severe hypercholesterolaemia, high-intensity statin indicated without risk calculation. Secondary causes not excluded."
+  },
+  {
+   "id": "C019",
+   "domain": "metabolic",
+   "reference": "low_hdl_by_sex",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many patients had a low HDL cholesterol on their last 2028 lipid panel, using the sex-specific metabolic syndrome cut-offs?",
+    "For each patient take the last HDL-C dated in 2028 (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date); lowest if several that day). Count men (sex reported M) with HDL-C < 40 mg/dL and women (sex reported F) with HDL-C < 50 mg/dL."
+   ],
+   "audit": "NCEP ATP III / AHA-NHLBI 2005 harmonized metabolic syndrome criterion: HDL-C < 40 mg/dL men, < 50 mg/dL women. Phrasing names the sex-specific cut-offs to avoid the ATP III single < 40 risk-factor definition."
+  },
+  {
+   "id": "C020",
+   "domain": "cardiovascular",
+   "reference": "af_oac_gap_cha2ds2_vasc",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many of our atrial fibrillation patients met the guideline stroke-risk threshold for anticoagulation but had no oral anticoagulant filled in 2028?",
+    "Patients aged 18+ on 31 Dec 2028 with atrial fibrillation (I48.x) on or before 31 Dec 2028 and a completed outpatient visit in 2028. CHA2DS2-VASc from diagnoses on or before year end and age on 31 Dec 2028: heart failure (I50, I11.0, I13.0, I13.2) 1; hypertension (I10-I13, I15) 1; age 65-74 1, >= 75 2; diabetes (E08-E13) 1; prior stroke/TIA (I63, I64, G45, I69.3x, Z86.73) 2; vascular disease (I21, I22, I25.2, I70, I73.9, Z95.1, Z95.5) 1; female 1. Count those with score >= 2 (men) or >= 3 (women) and no anticoagulant fill (apixaban, rivaroxaban, warfarin) dated in 2028."
+   ],
+   "audit": "2023 ACC/AHA/ACCP/HRS AF guideline: OAC recommended at CHA2DS2-VASc >= 2 men / >= 3 women. The 2024 ESC CHA2DS2-VA (sex removed) >= 2 gives an identical population by construction (a woman at VASc 3 = VA 2), so this is NOT a two-reading question; verified by computing both (29 each). Antiplatelets do not count as anticoagulation. Atrial flutter codes absent from data. Vascular disease excludes stable CAD without MI (I25.10) per original CHA2DS2-VASc (judgement; ESC 2024 CHA2DS2-VA includes any significant CAD - a reviewer could differ)."
+  },
+  {
+   "id": "C021",
+   "domain": "heart failure",
+   "reference": "ntprobnp_age_rule_in",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many patients had an NT-proBNP in 2028 above the age-adjusted cut-off for ruling in acute heart failure?",
+    "Count patients with any NT-proBNP dated in 2028 (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date)) above the age-specific rule-in cut-off for their age at the test: > 450 pg/mL under 50 years, > 900 pg/mL at 50-75 years, > 1800 pg/mL over 75 years."
+   ],
+   "audit": "Januzzi et al. (ICON, 2006) age-stratified rule-in cut-points endorsed in ESC 2021 HF guideline / HFA 2019 consensus: 450 / 900 / 1800 pg/mL for < 50, 50-75, > 75 years. The single non-acute rule-out (125) and acute rule-out (300) are different concepts and would give a much larger number. Boundary judgement: age exactly 50-75 inclusive uses 900."
+  },
+  {
+   "id": "C022",
+   "domain": "heart failure",
+   "reference": "hfref_gdmt_pillars",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "For our HFrEF patients seen in 2028, how many were on 0, 1, 2, 3 or all 4 pillars of guideline-directed medical therapy?",
+    "Patients with systolic heart failure coded I50.2x on or before 31 Dec 2028 and a completed outpatient visit in 2028. Pillars, each counted if filled in 2028: (1) an evidence-based beta-blocker - carvedilol, metoprolol succinate or bisoprolol only (not metoprolol tartrate, atenolol, labetalol, propranolol); (2) ACE inhibitor, ARB or sacubitril/valsartan; (3) mineralocorticoid receptor antagonist; (4) SGLT2 inhibitor. Report the count of patients with 0, 1, 2, 3 and 4 pillars."
+   ],
+   "audit": "2022 AHA/ACC/HFSA and 2021/2023 ESC HF guidelines: four pillars for HFrEF - ARNI/ACEi/ARB, evidence-based beta-blocker (carvedilol, metoprolol succinate, bisoprolol), MRA, SGLT2i. HFrEF identified by ICD-10 I50.2x (systolic). Judgement: I50.4x (combined systolic and diastolic) not included; LVEF from notes not used. Loop diuretics, digoxin, ivabradine do not count as pillars."
+  },
+  {
+   "id": "C023",
+   "domain": "heart failure",
+   "reference": "hfref_non_evidence_bb",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many HFrEF patients filled a beta-blocker in 2028 but only ones without heart-failure mortality evidence?",
+    "Patients with I50.2x (systolic heart failure) coded on or before 31 Dec 2028 who had a beta-blocker fill in 2028 but no fill in 2028 of carvedilol, metoprolol succinate or bisoprolol (so only agents such as metoprolol tartrate, atenolol, labetalol or propranolol). No visit requirement."
+   ],
+   "audit": "Guideline-directed beta-blockers for HFrEF are limited to the three with RCT mortality benefit (CIBIS-II bisoprolol, MERIT-HF metoprolol succinate, COPERNICUS/US Carvedilol). Metoprolol tartrate, atenolol etc. are not GDMT (2022 AHA/ACC/HFSA, ESC 2021)."
+  },
+  {
+   "id": "C024",
+   "domain": "heart failure",
+   "reference": "hf_iron_deficiency",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "Among heart failure patients who had iron studies in 2027, what share were iron deficient by the heart failure guideline definition?",
+    "Patients with heart failure (I50.x, I11.0, I13.0 or I13.2 coded on or before 31 Dec 2027) with a valid ferritin dated in 2027. Numerator: on any 2027 test day ferritin < 100 ng/mL, or ferritin 100-299 ng/mL with a transferrin saturation < 20% on the same day. Give the share."
+   ],
+   "audit": "ESC 2021/2023 HF guideline (and ACC/AHA 2022) iron deficiency in HF: ferritin < 100 ng/mL, or 100-299 with TSAT < 20%. Not the general-population anaemia ferritin cut-offs (< 15 or < 30). Transferrin saturation rows have no concept and are found by name. Iron studies were dense only in 2027, hence the year."
+  },
+  {
+   "id": "C025",
+   "domain": "hematology",
+   "reference": "anaemia_who",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many adult patients had anaemia by the WHO definition at some point in 2028?",
+    "Count patients aged 18+ at the test with any haemoglobin dated in 2028 (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date)) below 13.0 g/dL for men or below 12.0 g/dL for women; women with a pregnancy code (O-codes, Z33.1, Z34, Z3A) dated in 2028 are excluded."
+   ],
+   "audit": "WHO (2011; 2024 guideline retains adult non-pregnant thresholds) anaemia: Hb < 13.0 g/dL men >= 15 y, < 12.0 non-pregnant women; pregnant < 11.0 (pregnant women excluded here rather than applying 11.0 - judgement). Adults 18+ chosen instead of WHO's 15+ (stated). Sex from sex_reported."
+  },
+  {
+   "id": "C026",
+   "domain": "hematology",
+   "reference": "anaemia_severity",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "Of the adults with WHO-defined anaemia in 2028, how many were mild, moderate or severe based on their lowest haemoglobin?",
+    "Same population as C025. Classify by the lowest qualifying haemoglobin in 2028: severe < 8.0 g/dL; moderate 8.0-10.9; mild 11.0-12.9 (men) or 11.0-11.9 (women). Report counts for mild, moderate and severe."
+   ],
+   "audit": "WHO 2011 haemoglobin concentrations for diagnosis of anaemia and assessment of severity (non-pregnant adults). Severity bands are not the CTCAE grades (grade 3 < 8.0, grade 2 8.0-10.0) - a reader using CTCAE would get different moderate/mild splits."
+  },
+  {
+   "id": "C027",
+   "domain": "hematology",
+   "reference": "microcytic_anaemia",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many adults had a microcytic anaemia in 2028?",
+    "Count patients aged 18+ with, on the same day in 2028, a haemoglobin below the WHO cut-off (< 13.0 g/dL men, < 12.0 g/dL non-pregnant women; pregnancy-coded women excluded) and an MCV < 80 fL (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date); MCV rows have no concept and are found by name)."
+   ],
+   "audit": "Microcytosis: MCV < 80 fL (standard adult definition, e.g. AAFP/ BSH). Anaemia per WHO. Same-day pairing of the CBC components is a data judgement stated in the explicit phrasing."
+  },
+  {
+   "id": "C028",
+   "domain": "electrolytes",
+   "readings": {
+    "gt_5_0": "hyperkalaemia_gt5",
+    "ge_5_5": "hyperkalaemia_ge55"
+   },
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many patients had hyperkalaemia on a valid potassium result in 2028?",
+    "Count patients with any potassium dated in 2028 (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date); hemolysed specimens excluded) above 5.0 mmol/L and, separately, at or above 5.5 mmol/L. Report both counts."
+   ],
+   "audit": "Real disagreement: many labs, KDIGO 2020 Controversies and ESC position papers define hyperkalaemia as K > 5.0 mmol/L; the European Resuscitation Council and UK Kidney Association (2020) define it as >= 5.5 mmol/L. Two readings. Hemolysed specimens excluded as pseudohyperkalaemia (clinical as well as data rule)."
+  },
+  {
+   "id": "C029",
+   "domain": "electrolytes",
+   "reference": "hyponatraemia_severity",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "Break down patients with hyponatraemia in 2028 by biochemical severity, using their lowest sodium.",
+    "For each patient take the lowest sodium dated in 2028 (valid lab results (current version, not cancelled or hemolysed or not-performed, with a value and a result date)). Count mild (130-134 mmol/L), moderate (125-129) and profound (< 125) hyponatraemia."
+   ],
+   "audit": "European Society of Endocrinology / ERA-EDTA / ESICM 2014 clinical practice guideline on hyponatraemia: mild 130-135, moderate 125-129, profound < 125 (by biochemistry). Normal >= 135. No glucose correction applied (judgement; pseudohyponatraemia from hyperglycaemia not adjusted)."
+  },
+  {
+   "id": "C030",
+   "domain": "medication safety",
+   "reference": "triple_whammy",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "How many patients were exposed to the 'triple whammy' combination at any point in 2027?",
+    "Count patients with at least one day in 2027 covered at the same time by (a) an ACE inhibitor, ARB or sacubitril/valsartan, (b) a diuretic (loop, thiazide or MRA/spironolactone) and (c) an NSAID, where a fill covers fill date through fill date + days supply - 1."
+   ],
+   "audit": "Triple whammy (ACEi/ARB + diuretic + NSAID) acute kidney injury risk - Lapi et al. BMJ 2013; Australian/ NHS medication safety alerts. Judgement: MRAs counted as diuretics; aspirin (antiplatelet) is not an NSAID here; OTC NSAID use unseen."
+  },
+  {
+   "id": "C031",
+   "domain": "medication safety",
+   "reference": "anticoagulant_nsaid",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "How many patients on an oral anticoagulant had overlapping NSAID supply in 2027?",
+    "Count patients with at least one day in 2027 covered by both an oral anticoagulant (apixaban, rivaroxaban or warfarin) and an NSAID (ibuprofen, naproxen, meloxicam), a fill covering fill date through fill date + days supply - 1."
+   ],
+   "audit": "Bleeding risk of NSAID with anticoagulants (ACC 2020 ECDP on bleeding, AGS Beers 2023 drug-drug interaction table, FDA labels). Aspirin and clopidogrel are antiplatelets, not NSAIDs for this question."
+  },
+  {
+   "id": "C032",
+   "domain": "medication safety",
+   "reference": "beers_avoid",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many patients aged 65 or older filled a drug the AGS Beers Criteria says to avoid, in the benzodiazepine, first-generation antihistamine, muscle relaxant or meperidine groups, in 2028?",
+    "Count patients aged 65+ on the fill date with a fill dated in 2028 of a benzodiazepine (diazepam, clonazepam, lorazepam), a first-generation antihistamine (diphenhydramine, chlorpheniramine, doxylamine-containing products), a skeletal muscle relaxant (cyclobenzaprine) or meperidine."
+   ],
+   "audit": "2023 AGS Beers Criteria table 2 'avoid' for these groups. Scope limited by the question to these four groups (sulfonylureas, PPIs > 8 weeks, NSAIDs etc. are Beers items too but are excluded by the wording). Second-generation antihistamines (loratadine, cetirizine, fexofenadine) do not count."
+  },
+  {
+   "id": "C033",
+   "domain": "behavioral health",
+   "reference": "phq9_severity",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How were patients screened with the PHQ-9 in 2029 distributed across the standard depression severity bands, using their last score?",
+    "For each patient take the last PHQ-9 total dated in 2029 (highest if several that day). Count minimal (0-4), mild (5-9), moderate (10-14), moderately severe (15-19) and severe (20-27)."
+   ],
+   "audit": "Kroenke, Spitzer & Williams 2001 PHQ-9 severity bands. PHQ-9 results exist only from 2029 in this warehouse, hence the year."
+  },
+  {
+   "id": "C034",
+   "domain": "behavioral health",
+   "reference": "phq9_positive_antidepressant",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "Among patients with a positive PHQ-9 depression screen in 2029, what share filled an antidepressant that year?",
+    "Denominator: patients with any PHQ-9 total >= 10 dated in 2029. Numerator: a fill in 2029 of an antidepressant - SSRI, SNRI, bupropion, trazodone or mirtazapine (benzodiazepines, antipsychotics, lithium, gabapentin do not count). Give the share."
+   ],
+   "audit": "PHQ-9 >= 10 = positive screen for major depression (sensitivity/specificity 88%, Kroenke 2001; USPSTF/ CMS2 follow-up). Antidepressant class judgement: trazodone counted (FDA-approved for MDD even though often used for sleep); it does not change the figure here. Psychotherapy not visible in data."
+  },
+  {
+   "id": "C035",
+   "domain": "metabolic",
+   "reference": "obesity_class",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How many adults fell in each obesity class by BMI in 2028?",
+    "Adults aged 18+ on 31 Dec 2028 with a weight recorded in 2028 and any recorded height; women with a pregnancy code in 2028 excluded. BMI = last 2028 weight (kg) / (tallest recorded height in m)^2. Count class I (30.0-34.9), class II (35.0-39.9) and class III (>= 40.0)."
+   ],
+   "audit": "WHO / NIH (1998) and CDC adult BMI classes. Judgement: heights are only in undated vitals rows, so the tallest recorded height is used; standard (not Asian-specific) cut-offs applied; pregnancy excluded because BMI does not classify obesity in pregnancy."
+  },
+  {
+   "id": "C036",
+   "domain": "infection",
+   "reference": "uri_antibiotic",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "In 2028, what share of acute upper respiratory infection episodes were treated with an antibiotic, following the HEDIS appropriate-treatment-for-URI logic?",
+    "Episodes: distinct patient-days in 2028 with an encounter or payer-claim diagnosis of J00 or J06.x, patient at least 3 months old. Exclude an episode if the patient had an antibiotic fill in the 30 days before it, or a competing bacterial diagnosis on the episode day through 3 days after (sinusitis J01/J32, pharyngitis/tonsillitis J02/J03/J35, laryngitis J04, pneumonia J13-J18, acute bronchitis J20, otitis media H66/H67, cystitis/UTI N30/N34/N39.0, skin and soft-tissue infection L01-L03/L08, A38, A46, A49, A69.2). Figure: share of remaining episodes with an antibiotic fill (penicillins, cephalosporins, macrolides, tetracyclines, fluoroquinolones, sulfamethoxazole-trimethoprim, nitrofurantoin) on the episode day through 3 days after."
+   ],
+   "audit": "NCQA HEDIS URI (Appropriate Treatment for Upper Respiratory Infection): URI episode, negative medication history 30 days, competing diagnosis exclusion, antibiotic within 3 days. HEDIS reports 1 - this rate. Simplifications: comorbid-condition (COPD, HIV, cancer etc.) 12-month exclusion not applied; competing-diagnosis list abbreviated; J20 acute bronchitis treated as competing because HEDIS handles it in a separate measure (judgement)."
+  },
+  {
+   "id": "C037",
+   "domain": "medication safety",
+   "unanswerable": true,
+   "phrasings": [
+    "How many patients on QT-prolonging drugs had a QTc over 500 ms in 2028?",
+    "Count patients with an ECG-measured corrected QT interval (QTc) > 500 ms dated in 2028 while a known QT-prolonging drug fill (e.g. fluoroquinolone, macrolide, ondansetron, quetiapine, methadone) was active."
+   ],
+   "audit": "Unanswerable: no QT/QTc value exists anywhere in the warehouse (no measurement row, no ECG report field; searched all record payloads for 'QTc', 'QT interval', 'QT prolong': 0 hits). ECG reports carry rhythm text only. Threshold source: AHA/ACCF 2010 scientific statement on QT prolongation (> 500 ms high risk)."
+  },
+  {
+   "id": "C038",
+   "domain": "kidney",
+   "unanswerable": true,
+   "phrasings": [
+    "How many patients had CKD confirmed by a cystatin C-based eGFR in 2028?",
+    "Count patients with an eGFR from the CKD-EPI 2021 creatinine-cystatin C equation (eGFRcr-cys) or a cystatin C result giving eGFR < 60 mL/min/1.73m2 in 2028."
+   ],
+   "audit": "Unanswerable: no cystatin C result exists (no measurement name or LOINC, 0 hits for 'cystatin' in all record payloads). KDIGO 2024 recommends cystatin C to confirm CKD when eGFRcr may be inaccurate."
+  },
+  {
+   "id": "C039",
+   "domain": "sepsis",
+   "unanswerable": true,
+   "phrasings": [
+    "How many patients met the Sepsis-3 definition of sepsis during 2028 hospital encounters?",
+    "Count patients with suspected infection and an acute rise in SOFA score of >= 2 points during a 2028 hospital encounter, SOFA computed from PaO2/FiO2, platelets, bilirubin, mean arterial pressure/vasopressor dose, Glasgow Coma Scale and creatinine/urine output."
+   ],
+   "audit": "Unanswerable: Sepsis-3 (Singer et al. JAMA 2016) needs SOFA components the warehouse lacks - no FiO2 (0 hits), no Glasgow Coma Scale (0 genuine hits), bilirubin on only 3 results, PaO2 on 3, no vasopressor infusion rates (medication administrations have no pressor doses). A coded-sepsis count (A41.9/R65.2x) is a different question."
+  },
+  {
+   "id": "C040",
+   "domain": "metabolic",
+   "unanswerable": true,
+   "phrasings": [
+    "How many adults met the harmonized criteria for metabolic syndrome in 2028?",
+    "Count adults meeting at least 3 of 5: waist circumference above the population-specific cut-off, triglycerides >= 150 mg/dL or treated, HDL-C < 40 (men) / < 50 (women) or treated, BP >= 130/85 or treated, fasting glucose >= 100 mg/dL or treated."
+   ],
+   "audit": "Unanswerable: waist circumference is not recorded (no measurement, no vitals field; one free-text mention for a single patient in a 2026 note). Alberti et al. 2009 harmonized definition (IDF/AHA/NHLBI) and NCEP ATP III both require waist circumference as one criterion, so a count of 3-of-5 cannot be evaluated for patients missing it."
+  },
+  {
+   "id": "C041",
+   "domain": "cardiovascular",
+   "unanswerable": true,
+   "phrasings": [
+    "How many patients had peripheral artery disease confirmed by an ankle-brachial index in 2028?",
+    "Count patients with a resting ankle-brachial index <= 0.90 recorded in 2028."
+   ],
+   "audit": "Unanswerable: no ankle-brachial index values exist (no measurement, no diagnostic test report of that kind; payload search for ankle-brachial/ABI found only unrelated ankle-sprain text). 2016 AHA/ACC PAD guideline: ABI <= 0.90 diagnostic."
+  }
+ ]
+}
