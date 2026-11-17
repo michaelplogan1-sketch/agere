@@ -1,0 +1,775 @@
+{
+ "version": "notes_v2",
+ "authored": "2026-11-17",
+ "authored_by": "independent evaluator (Claude subagent without access to the product's code or earlier sets)",
+ "frozen": "Written before any run; committed before its first run and never edited after.",
+ "questions": [
+  {
+   "id": "M001",
+   "domain": "heart failure / transitions of care",
+   "question": "For heart failure hospitalizations (principal diagnosis heart failure) at WH-HOSPITAL-2 that ended in 2028, how many discharge summaries recommend primary care follow-up no more than 5 days after the discharge date?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n JOIN encounter_diagnosis d ON d.encounter_id = n.encounter_id AND d.rank = 1 WHERE n.note_type = 'discharge_summary' AND n.organization_id = 'WH-HOSPITAL-2' AND d.icd10 LIKE 'I50%' AND n.event_date BETWEEN '2028-01-01' AND '2028-12-31'",
+   "statement": "The discharge summary recommends a primary care follow-up visit on a date no more than 5 days after the date the patient was discharged.",
+   "aggregate": "count_documents",
+   "sources": [
+    "encounter diagnoses",
+    "discharge summaries"
+   ],
+   "why_notes": "The recommended follow-up date exists only in the discharge summary text; no appointment field records the recommendation."
+  },
+  {
+   "id": "M002",
+   "domain": "heart failure",
+   "question": "Among heart failure admissions (principal diagnosis heart failure) at WH-HOSPITAL-3 in the first quarter of 2029, which patients had an inpatient progress note documenting that they were on supplemental oxygen (for example nasal cannula) rather than room air?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n JOIN encounter_diagnosis d ON d.encounter_id = n.encounter_id AND d.rank = 1 WHERE n.note_type = 'inpatient_progress_note' AND n.organization_id = 'WH-HOSPITAL-3' AND d.icd10 LIKE 'I50%' AND n.event_date BETWEEN '2029-01-01' AND '2029-03-31'",
+   "statement": "The progress note documents that the patient was receiving supplemental oxygen (such as nasal cannula) at the time of the note, not breathing room air.",
+   "aggregate": "list_patients",
+   "sources": [
+    "encounter diagnoses",
+    "inpatient progress notes"
+   ],
+   "why_notes": "Oxygen delivery at each daily check is written in the progress note; no device field exists."
+  },
+  {
+   "id": "M003",
+   "domain": "ED / heart failure",
+   "question": "For ED visits with a principal diagnosis of heart failure at WH-HOSPITAL-0 in 2028, how many patients had an ED note reporting an NT-proBNP above 6000 pg/mL?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n JOIN encounter_diagnosis d ON d.encounter_id = n.encounter_id AND d.rank = 1 WHERE n.note_type = 'ed_note' AND n.organization_id = 'WH-HOSPITAL-0' AND d.icd10 LIKE 'I50%' AND n.event_date BETWEEN '2028-01-01' AND '2028-12-31'",
+   "statement": "The ED note reports an NT-proBNP result greater than 6000 pg/mL.",
+   "aggregate": "count_patients",
+   "sources": [
+    "encounter diagnoses",
+    "ED notes"
+   ],
+   "why_notes": "The note quotes the result the ED physician acted on; the value threshold must be read from the note text."
+  },
+  {
+   "id": "M004",
+   "domain": "ED / asthma",
+   "question": "Of ED notes for asthma visits (principal diagnosis asthma) at WH-HOSPITAL-2 in 2027, how many document a decision to admit the patient rather than send them home?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n JOIN encounter_diagnosis d ON d.encounter_id = n.encounter_id AND d.rank = 1 WHERE n.note_type = 'ed_note' AND n.organization_id = 'WH-HOSPITAL-2' AND d.icd10 LIKE 'J45%' AND n.event_date BETWEEN '2027-01-01' AND '2027-12-31'",
+   "statement": "The ED note documents a decision to admit the patient to the hospital for continued treatment.",
+   "aggregate": "count_documents",
+   "sources": [
+    "encounter diagnoses",
+    "ED notes"
+   ],
+   "why_notes": "The disposition decision and its reason are recorded in the note's decision section."
+  },
+  {
+   "id": "M005",
+   "domain": "patient safety / falls",
+   "question": "For ankle and wrist injury visits (principal diagnosis S93 or S63) at WH-HOSPITAL-3 in 2029, how many patients had a nursing note stating they need assistance to walk safely?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n JOIN encounter_diagnosis d ON d.encounter_id = n.encounter_id AND d.rank = 1 WHERE n.note_type = 'nursing_note' AND n.organization_id = 'WH-HOSPITAL-3' AND (d.icd10 LIKE 'S93%' OR d.icd10 LIKE 'S63%') AND n.event_date BETWEEN '2029-01-01' AND '2029-12-31'",
+   "statement": "The nursing note states that the patient needs assistance to walk safely.",
+   "aggregate": "count_patients",
+   "sources": [
+    "encounter diagnoses",
+    "nursing notes"
+   ],
+   "why_notes": "Mobility assistance needs are recorded only in the nursing narrative."
+  },
+  {
+   "id": "M006",
+   "domain": "sepsis / pneumonia",
+   "question": "For pneumonia admissions (principal diagnosis J18) at any of our four hospitals in 2027, how many patients had an admission history and physical reporting a lactate of 2.0 mmol/L or higher?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n JOIN encounter_diagnosis d ON d.encounter_id = n.encounter_id AND d.rank = 1 WHERE n.note_type = 'admission_history_and_physical' AND n.organization_id LIKE 'WH-HOSPITAL-%' AND d.icd10 LIKE 'J18%' AND n.event_date BETWEEN '2027-01-01' AND '2027-12-31'",
+   "statement": "The admission history and physical reports a lactate value of 2.0 mmol/L or higher.",
+   "aggregate": "count_patients",
+   "sources": [
+    "encounter diagnoses",
+    "admission history and physicals"
+   ],
+   "why_notes": "The lactate the admitting team relied on is quoted in the H&P; the threshold must be read from the text."
+  },
+  {
+   "id": "M007",
+   "domain": "end of life care",
+   "question": "Which patients who died in our hospitals in 2028 had family present at the bedside at the time of death, according to the death note?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'death_note' AND n.organization_id LIKE 'WH-HOSPITAL-%' AND n.event_date BETWEEN '2028-01-01' AND '2028-12-31'",
+   "statement": "The death note states that family was at the bedside (not only notified by phone).",
+   "aggregate": "list_patients",
+   "sources": [
+    "inpatient deaths",
+    "death notes"
+   ],
+   "why_notes": "Family presence at death is only described in the pronouncement note."
+  },
+  {
+   "id": "M008",
+   "domain": "ED / chest pain",
+   "question": "For ED chest pain visits (principal diagnosis R07) at WH-HOSPITAL-2 in 2028, how many patients had an ED note documenting that they were kept for observation and cardiology assessment rather than sent home?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n JOIN encounter_diagnosis d ON d.encounter_id = n.encounter_id AND d.rank = 1 WHERE n.note_type = 'ed_note' AND n.organization_id = 'WH-HOSPITAL-2' AND d.icd10 LIKE 'R07%' AND n.event_date BETWEEN '2028-01-01' AND '2028-12-31'",
+   "statement": "The ED note documents a decision to keep the patient in hospital for continued observation and cardiology assessment, rather than discharge home.",
+   "aggregate": "count_patients",
+   "sources": [
+    "encounter diagnoses",
+    "ED notes"
+   ],
+   "why_notes": "Disposition reasoning for chest pain is in the decision text, not a structured field."
+  },
+  {
+   "id": "M009",
+   "domain": "pharmacy adherence / medication safety",
+   "question": "For patients with both loop diuretic and statin fills in pharmacy data, how many of their office follow-up notes at WH-PRACTICE-1 in September 2026 document a medication the patient has stopped taking because of how it made them feel?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'office_followup' AND n.organization_id = 'WH-PRACTICE-1' AND n.event_date BETWEEN '2026-09-01' AND '2026-09-30' AND n.patient_id IN (SELECT patient_id FROM fill WHERE drug_class = 'loop_diuretic') AND n.patient_id IN (SELECT patient_id FROM fill WHERE drug_class = 'statin')",
+   "statement": "The note documents that the patient is not taking a medication because of side effects or how it made them feel (a current or previously recorded explanation for current non-use).",
+   "aggregate": "count_documents",
+   "sources": [
+    "pharmacy fills",
+    "office follow-up notes"
+   ],
+   "why_notes": "Fills show supply; the patient's reason for not taking a medicine is only in the note."
+  },
+  {
+   "id": "M010",
+   "domain": "pharmacy adherence",
+   "question": "Among patients with a statin fill in pharmacy data, which patients had a longitudinal primary care note at WH-PRACTICE-3 in September 2026 that documents any reason they are not taking a prescribed medicine (cost, side effects, or uncertainty whether it is still needed)?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'longitudinal_primary_care' AND n.organization_id = 'WH-PRACTICE-3' AND n.event_date BETWEEN '2026-09-01' AND '2026-09-30' AND n.patient_id IN (SELECT patient_id FROM fill WHERE drug_class = 'statin')",
+   "statement": "The note documents a specific reason the patient is not taking a prescribed medicine, such as cost, side effects or uncertainty about whether it is still needed.",
+   "aggregate": "list_patients",
+   "sources": [
+    "pharmacy fills",
+    "primary care notes"
+   ],
+   "why_notes": "A documented barrier to taking medication is free text; fills cannot say why a medicine is not taken."
+  },
+  {
+   "id": "M011",
+   "domain": "behavioral health",
+   "question": "For patients with an SSRI fill in pharmacy data, how many patients had a PHQ-9 score of 10 or more recorded at their first primary care mood follow-up visit of 2030 at WH-PRACTICE-1, WH-PRACTICE-2 or WH-PRACTICE-6?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'primary_care_mood_followup' AND n.organization_id IN ('WH-PRACTICE-1','WH-PRACTICE-2','WH-PRACTICE-6') AND n.patient_id IN (SELECT patient_id FROM fill WHERE drug_class = 'ssri') AND n.event_date = (SELECT MIN(m.event_date) FROM clinical_note m WHERE m.patient_id = n.patient_id AND m.note_type = 'primary_care_mood_followup' AND m.organization_id IN ('WH-PRACTICE-1','WH-PRACTICE-2','WH-PRACTICE-6') AND m.event_date BETWEEN '2030-01-01' AND '2030-12-31')",
+   "statement": "The note records a PHQ-9 score of 10 or higher for the current visit (not only a previous score).",
+   "aggregate": "count_patients",
+   "sources": [
+    "pharmacy fills",
+    "primary care mood follow-up notes"
+   ],
+   "why_notes": "The visit's PHQ-9 score is written in the note; it is not captured as a structured result for these visits."
+  },
+  {
+   "id": "M012",
+   "domain": "pharmacy adherence",
+   "question": "Of the prescription follow-through calls made by WH-PRACTICE-5 in November and December 2029, how many record that the patient reported taking the medicine on fewer than half of the last 14 days?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'prescription_followthrough' AND n.organization_id = 'WH-PRACTICE-5' AND n.event_date BETWEEN '2029-11-01' AND '2029-12-31'",
+   "statement": "The note records that the patient reported using a medicine on fewer than 7 of the last 14 days.",
+   "aggregate": "count_documents",
+   "sources": [
+    "prescription follow-through telephone notes"
+   ],
+   "why_notes": "Self-reported days of use are documented only in the call note."
+  },
+  {
+   "id": "M013",
+   "domain": "preventive care / falls",
+   "question": "For patients seen for a Medicare Annual Wellness Visit at WH-PRACTICE-0 in 2029, how many patients reported one or more falls in the past year?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'medicare_annual_wellness' AND n.organization_id = 'WH-PRACTICE-0' AND n.event_date BETWEEN '2029-01-01' AND '2029-12-31'",
+   "statement": "The wellness visit note records that the patient reported at least one fall in the past year.",
+   "aggregate": "count_patients",
+   "sources": [
+    "Medicare annual wellness notes"
+   ],
+   "why_notes": "Fall history from the wellness questionnaire is recorded in the note, not as a coded condition."
+  },
+  {
+   "id": "M014",
+   "domain": "social needs",
+   "question": "How many patients seen for functional care planning at WH-PRACTICE-0 in 2029 had difficulty with transportation documented?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'functional_care_planning' AND n.organization_id = 'WH-PRACTICE-0' AND n.event_date BETWEEN '2029-01-01' AND '2029-12-31'",
+   "statement": "The note documents that the patient reports difficulty with transportation.",
+   "aggregate": "count_patients",
+   "sources": [
+    "functional care planning notes"
+   ],
+   "why_notes": "Transportation difficulty is a social need recorded only in the note narrative."
+  },
+  {
+   "id": "M015",
+   "domain": "medication safety / sick-day rules",
+   "question": "For patients with ACE inhibitor or ARB fills, how many patients had a telephone illness review note at WH-PRACTICE-6 in the first half of 2029 that planned chemistry testing to recheck kidney function and electrolytes?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'telephone_illness_review' AND n.organization_id = 'WH-PRACTICE-6' AND n.event_date BETWEEN '2029-01-01' AND '2029-06-30' AND n.patient_id IN (SELECT patient_id FROM fill WHERE drug_class IN ('ace_inhibitor','arb'))",
+   "statement": "The telephone note plans or orders chemistry testing to reassess kidney function and electrolytes.",
+   "aggregate": "count_patients",
+   "sources": [
+    "pharmacy fills",
+    "telephone notes"
+   ],
+   "why_notes": "Whether a lab recheck was planned on the call is in the note's plan text."
+  },
+  {
+   "id": "M016",
+   "domain": "advance care planning",
+   "question": "Of the advance care document reviews done at WH-PRACTICE-4 between 1 February and 2 March 2027, how many found the incoming document could not be relied on because a signature or readable content was missing?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'advance_care_document_review' AND n.organization_id = 'WH-PRACTICE-4' AND n.event_date BETWEEN '2027-02-01' AND '2027-03-02'",
+   "statement": "The review states that the received advance care document was missing a signature or readable content, so treatment choices could not be confirmed from it.",
+   "aggregate": "count_documents",
+   "sources": [
+    "advance care document review notes"
+   ],
+   "why_notes": "Document adequacy is a reviewer judgment recorded only in the note."
+  },
+  {
+   "id": "M017",
+   "domain": "anemia / pharmacy adherence",
+   "question": "For patients with iron supplement fills in pharmacy data and a hemoglobin result below 11 g/dL in 2027 or 2028, how many iron treatment response reviews at WH-PRACTICE-3 between 1 January and 15 March 2029 concluded that their reported use of iron has been inconsistent?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'iron_treatment_response_decision' AND n.organization_id = 'WH-PRACTICE-3' AND n.event_date BETWEEN '2029-01-01' AND '2029-03-15' AND n.patient_id IN (SELECT patient_id FROM fill WHERE drug_class = 'iron_supplement') AND n.patient_id IN (SELECT patient_id FROM measurement WHERE concept = 'hemoglobin' AND value < 11 AND event_date BETWEEN '2027-01-01' AND '2028-12-31')",
+   "statement": "The review concludes that the patient's reported use of the iron prescription has been inconsistent.",
+   "aggregate": "count_documents",
+   "sources": [
+    "pharmacy fills",
+    "lab results",
+    "iron treatment review notes"
+   ],
+   "why_notes": "Fills show dispensing; the clinician's conclusion about actual use is written in the decision text."
+  },
+  {
+   "id": "M018",
+   "domain": "urgent care / injuries",
+   "question": "For wrist injury visits (diagnosis S63) at WH-URGENT-0 from January through August 2029, how many urgent care notes document a fracture seen on imaging?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n JOIN encounter_diagnosis d ON d.encounter_id = n.encounter_id AND d.rank = 1 WHERE n.note_type = 'urgent_care_note' AND n.organization_id = 'WH-URGENT-0' AND d.icd10 LIKE 'S63%' AND n.event_date BETWEEN '2029-01-01' AND '2029-08-31'",
+   "statement": "The urgent care note documents a fracture identified on imaging (not 'no acute fracture').",
+   "aggregate": "count_documents",
+   "sources": [
+    "encounter diagnoses",
+    "urgent care notes"
+   ],
+   "why_notes": "The sprain diagnosis code does not say whether imaging showed a fracture; the imaging result is in the note."
+  },
+  {
+   "id": "M019",
+   "domain": "urgent care / ED transfers",
+   "question": "For vomiting visits (diagnosis R11) at WH-URGENT-1 in the first half of 2028, how many patients had an urgent care note documenting that oral rehydration failed and they were referred to the emergency department?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n JOIN encounter_diagnosis d ON d.encounter_id = n.encounter_id AND d.rank = 1 WHERE n.note_type = 'urgent_care_note' AND n.organization_id = 'WH-URGENT-1' AND d.icd10 LIKE 'R11%' AND n.event_date BETWEEN '2028-01-01' AND '2028-06-30'",
+   "statement": "The note documents that a trial of oral rehydration was not tolerated and the patient was referred to the emergency department.",
+   "aggregate": "count_patients",
+   "sources": [
+    "encounter diagnoses",
+    "urgent care notes"
+   ],
+   "why_notes": "Referral onward to the ED is a plan in the note, not a coded disposition."
+  },
+  {
+   "id": "M020",
+   "domain": "medication safety / allergies",
+   "question": "Of the medication reconciliation reviews at WH-PRACTICE-7 in December 2028, how many record that the patient's reaction (allergy) history could not be confirmed?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'medication_reconciliation_review' AND n.organization_id = 'WH-PRACTICE-7' AND n.event_date BETWEEN '2028-12-01' AND '2028-12-31'",
+   "statement": "The review records that the patient's reaction or allergy history could not be confirmed at this review.",
+   "aggregate": "count_documents",
+   "sources": [
+    "medication reconciliation notes"
+   ],
+   "why_notes": "Whether allergy history was confirmed is documented in the reconciliation narrative."
+  },
+  {
+   "id": "M021",
+   "domain": "specialty referral / anemia",
+   "question": "For patients with a ferritin result below 30 ng/mL in the lab data who had a GI consultation at WH-GI-1 between 1 and 18 June 2029, which patients reported taking their iron tablets on at least 12 of the last 14 days?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'gastroenterology_consultation' AND n.organization_id = 'WH-GI-1' AND n.event_date BETWEEN '2029-06-01' AND '2029-06-18' AND n.patient_id IN (SELECT patient_id FROM measurement WHERE concept = 'ferritin' AND value < 30)",
+   "statement": "The consultation records that the patient reported taking an iron tablet on 12 or more of the last 14 days.",
+   "aggregate": "list_patients",
+   "sources": [
+    "lab results",
+    "GI consultation notes"
+   ],
+   "why_notes": "Reported days of iron use are an interview finding in the consult note."
+  },
+  {
+   "id": "M022",
+   "domain": "hospital operations / discharge readiness",
+   "question": "For gastroenteritis discharges from WH-HOSPITAL-3 (hospital illness discharge summaries) from January through September 2029, how many patients had a discharge summary documenting that they do NOT report having help available at home?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'hospital_illness_discharge_summary' AND n.organization_id = 'WH-HOSPITAL-3' AND n.event_date BETWEEN '2029-01-01' AND '2029-09-30'",
+   "statement": "The discharge summary states that the patient does not report having help available at home.",
+   "aggregate": "count_patients",
+   "sources": [
+    "hospital discharge summaries"
+   ],
+   "why_notes": "Home support is a social history statement only in the discharge narrative."
+  },
+  {
+   "id": "M023",
+   "domain": "hospital operations / observation",
+   "question": "For gastroenteritis patients reassessed in the emergency departments of WH-HOSPITAL-1 and WH-HOSPITAL-2 in 2030 (emergency reassessment notes), how many patients had a note documenting a decision to stop IV fluids and prepare them for home?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'emergency_reassessment' AND n.organization_id IN ('WH-HOSPITAL-1','WH-HOSPITAL-2') AND n.event_date BETWEEN '2030-01-01' AND '2030-12-31'",
+   "statement": "The reassessment note documents a decision to stop IV fluids and prepare the patient for discharge home.",
+   "aggregate": "count_patients",
+   "sources": [
+    "emergency reassessment notes"
+   ],
+   "why_notes": "Whether the patient was ready for home is the clinician's decision text."
+  },
+  {
+   "id": "M024",
+   "domain": "home health",
+   "question": "Of the home health physical therapy progress notes written by WH-HOMECARE-1 in 2029, how many show a timed mobility test that was faster than at the initial assessment?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'home_health_pt_progress' AND n.organization_id = 'WH-HOMECARE-1' AND n.event_date BETWEEN '2029-01-01' AND '2029-12-31'",
+   "statement": "The progress note records a timed mobility result that is lower (faster) than the initial timed mobility result it is compared with.",
+   "aggregate": "count_documents",
+   "sources": [
+    "home health PT progress notes"
+   ],
+   "why_notes": "The functional measure and its baseline are written only in the therapy note."
+  },
+  {
+   "id": "M025",
+   "domain": "COPD",
+   "question": "For patients with a COPD diagnosis (J44) on a paid claim, how many patients had a primary care note (annual preventive, office follow-up or acute visit) between January and April 2028 documenting that their COPD was not well controlled and controller therapy was stepped up?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type IN ('annual_preventive','office_followup','acute_visit') AND n.event_date BETWEEN '2028-01-01' AND '2028-04-30' AND n.patient_id IN (SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'J44%')",
+   "statement": "The note assesses the patient's COPD as not well controlled and steps up controller therapy.",
+   "aggregate": "count_patients",
+   "sources": [
+    "claims diagnoses",
+    "annual preventive visit notes"
+   ],
+   "why_notes": "Disease control and the step-up decision are clinical judgments in the plan text; claims only show the COPD code."
+  },
+  {
+   "id": "M026",
+   "domain": "social needs",
+   "question": "For dual-eligible (Medicare and Medicaid) members, how many patients had an acute visit note from January through May 2029 documenting a positive food insecurity screen?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n JOIN patient p ON p.patient_id = n.patient_id WHERE n.note_type = 'acute_visit' AND p.line_of_business = 'dual' AND n.event_date BETWEEN '2029-01-01' AND '2029-05-31'",
+   "statement": "The note documents that the patient screened positive for food insecurity.",
+   "aggregate": "count_patients",
+   "sources": [
+    "member eligibility",
+    "acute visit notes"
+   ],
+   "why_notes": "Food insecurity screening results are written in the social history of the note."
+  },
+  {
+   "id": "M027",
+   "domain": "hypertension / VBC quality",
+   "question": "For patients with ACE inhibitor or ARB pharmacy claims (lisinopril or losartan), how many office follow-up notes in January and February 2028 document blood pressure above goal with a plan to increase the antihypertensive dose?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'office_followup' AND n.patient_id LIKE 'WHP%' AND n.event_date BETWEEN '2028-01-01' AND '2028-02-29' AND n.patient_id IN (SELECT patient_id FROM payer_pharmacy_claim WHERE lower(drug_name) LIKE '%lisinopril%' OR lower(drug_name) LIKE '%losartan%')",
+   "statement": "The note documents a blood pressure above goal and a plan to increase the antihypertensive dose.",
+   "aggregate": "count_documents",
+   "sources": [
+    "pharmacy claims",
+    "office follow-up notes"
+   ],
+   "why_notes": "Control status and the clinician's titration decision are in the assessment and plan text."
+  },
+  {
+   "id": "M028",
+   "domain": "cardiovascular risk / statin therapy",
+   "question": "For patients with statin pharmacy claims, how many office follow-up notes between 1 and 25 January 2028 record an LDL cholesterol of 100 mg/dL or higher in the hyperlipidemia assessment?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'office_followup' AND n.patient_id LIKE 'WHP%' AND n.event_date BETWEEN '2028-01-01' AND '2028-01-25' AND n.patient_id IN (SELECT patient_id FROM payer_pharmacy_claim WHERE lower(drug_name) LIKE '%vastatin%')",
+   "statement": "The note's lipid assessment records an LDL cholesterol value of 100 mg/dL or higher.",
+   "aggregate": "count_documents",
+   "sources": [
+    "pharmacy claims",
+    "office follow-up notes"
+   ],
+   "why_notes": "The LDL used in the visit decision is quoted in the note; it may not be a result the warehouse received."
+  },
+  {
+   "id": "M029",
+   "domain": "preventive care / immunization",
+   "question": "For Medicaid children seen for well child visits in the first quarter of 2028, how many children had a well child note documenting that immunizations were not up to date and a catch-up schedule was discussed?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n JOIN patient p ON p.patient_id = n.patient_id WHERE n.note_type = 'well_child' AND p.line_of_business = 'medicaid' AND n.event_date BETWEEN '2028-01-01' AND '2028-03-31'",
+   "statement": "The note documents that the child's immunizations needed a catch-up schedule (not up to date per registry).",
+   "aggregate": "count_patients",
+   "sources": [
+    "member eligibility",
+    "well child notes"
+   ],
+   "why_notes": "Immunization status is summarized in the well child note text."
+  },
+  {
+   "id": "M030",
+   "domain": "diabetes / VBC quality",
+   "question": "For patients with a type 2 diabetes diagnosis (E11) on claims, how many patients had an office follow-up note between January and March 2029 recording an HbA1c of 8.0% or higher?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'office_followup' AND n.patient_id LIKE 'WHP%' AND n.event_date BETWEEN '2029-01-01' AND '2029-03-31' AND n.patient_id IN (SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'E11%')",
+   "statement": "The note records an HbA1c value of 8.0% or higher.",
+   "aggregate": "count_patients",
+   "sources": [
+    "claims diagnoses",
+    "office follow-up notes"
+   ],
+   "why_notes": "These outside practice results reach the warehouse only as values quoted in the note."
+  },
+  {
+   "id": "M031",
+   "domain": "behavioral health",
+   "question": "For patients with a depression diagnosis (F32 or F33) on claims, which patients had an office follow-up note between January and February 2027 recording a PHQ-9 score of 10 or higher?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'office_followup' AND n.patient_id LIKE 'WHP%' AND n.event_date BETWEEN '2027-01-01' AND '2027-02-28' AND n.patient_id IN (SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'F32%' OR icd10 LIKE 'F33%')",
+   "statement": "The note records a PHQ-9 score of 10 or higher at this visit.",
+   "aggregate": "list_patients",
+   "sources": [
+    "claims diagnoses",
+    "office follow-up notes"
+   ],
+   "why_notes": "The PHQ-9 score from this outside practice is only quoted in the note text."
+  },
+  {
+   "id": "M032",
+   "domain": "preventive care / colorectal screening",
+   "question": "For patients aged 50 to 75 with an annual preventive visit in 2029 at WHN-PRACTICE-PA-4, WHN-PRACTICE-IN-0 or WHN-PRACTICE-OH-1, how many notes document that a FIT kit was given or a colonoscopy referral was placed?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n JOIN patient p ON p.patient_id = n.patient_id WHERE n.note_type = 'annual_preventive' AND n.organization_id IN ('WHN-PRACTICE-PA-4','WHN-PRACTICE-IN-0','WHN-PRACTICE-OH-1') AND n.event_date BETWEEN '2029-01-01' AND '2029-12-31' AND p.age_latest BETWEEN 50 AND 75",
+   "statement": "The note documents that a FIT kit was given or a colonoscopy referral was placed at this visit.",
+   "aggregate": "count_documents",
+   "sources": [
+    "member demographics",
+    "annual preventive visit notes"
+   ],
+   "why_notes": "Screening actions taken at the visit are in the health-maintenance plan text, not on a claim yet."
+  },
+  {
+   "id": "M033",
+   "domain": "transitions of care",
+   "question": "For patients discharged from one of our four hospitals, how many post-discharge follow-up notes written in January 2028, within 14 days after that discharge, document that the hospital discharge document had been received and reviewed (rather than not yet available)?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'post_acute_followup' AND n.event_date BETWEEN '2028-01-01' AND '2028-01-31' AND EXISTS (SELECT 1 FROM stay s WHERE s.patient_id = n.patient_id AND s.organization_id LIKE 'WH-HOSPITAL-%' AND substr(s.discharge_date,1,10) BETWEEN date(n.event_date,'-14 days') AND n.event_date)",
+   "statement": "The follow-up note documents that the hospital discharge document was received and reviewed by the practice.",
+   "aggregate": "count_documents",
+   "sources": [
+    "hospital stays",
+    "post-discharge follow-up notes"
+   ],
+   "why_notes": "Whether the discharge summary actually reached the practice is only stated in the follow-up note."
+  },
+  {
+   "id": "M034",
+   "domain": "dental / preventive care",
+   "question": "Of the patients referred for dental access and evaluated at WH-OUTSIDE-DENTAL-3 in 2028, which had visible gingival inflammation documented?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'outside_dental_care_access' AND n.organization_id = 'WH-OUTSIDE-DENTAL-3' AND n.event_date BETWEEN '2028-01-01' AND '2028-12-31'",
+   "statement": "The dental evaluation documents visible gingival inflammation.",
+   "aggregate": "list_patients",
+   "sources": [
+    "outside dental evaluation notes"
+   ],
+   "why_notes": "Oral examination findings are recorded only in the dental note."
+  },
+  {
+   "id": "M035",
+   "domain": "lab monitoring / access barriers",
+   "question": "For patients with statin fills, how many lipid monitoring lab review notes at WH-PRACTICE-3 from May 2027 onward document that the patient postponed or declined the proposed blood test?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n WHERE n.note_type = 'condition_specific_laboratory_review' AND n.organization_id = 'WH-PRACTICE-3' AND n.event_date >= '2027-05-01' AND n.patient_id IN (SELECT patient_id FROM fill WHERE drug_class = 'statin')",
+   "statement": "The note documents that the patient postponed or declined the proposed blood test (for any reason).",
+   "aggregate": "count_documents",
+   "sources": [
+    "pharmacy fills",
+    "laboratory review notes"
+   ],
+   "why_notes": "An unordered lab leaves no structured trace; the patient's decision is only in the note."
+  },
+  {
+   "id": "M036",
+   "domain": "heart failure / hospital medicine",
+   "question": "For heart failure admissions (principal diagnosis heart failure) at WH-HOSPITAL-1 and WH-HOSPITAL-2 in 2028, how many admission history and physicals report a sodium below 135 mmol/L?",
+   "scope_sql": "SELECT n.record_id, n.patient_id FROM clinical_note n JOIN encounter_diagnosis d ON d.encounter_id = n.encounter_id AND d.rank = 1 WHERE n.note_type = 'admission_history_and_physical' AND n.organization_id IN ('WH-HOSPITAL-1','WH-HOSPITAL-2') AND d.icd10 LIKE 'I50%' AND n.event_date BETWEEN '2028-01-01' AND '2028-12-31'",
+   "statement": "The admission history and physical reports a sodium value below 135 mmol/L.",
+   "aggregate": "count_documents",
+   "sources": [
+    "encounter diagnoses",
+    "admission history and physicals"
+   ],
+   "why_notes": "The admitting team's quoted ED results are in the H&P text; the threshold must be read from it."
+  },
+  {
+   "id": "M037",
+   "domain": "outside records / heart failure",
+   "question": "For patients with a heart failure diagnosis (I50) on claims, which patients have a faxed or scanned outside echocardiogram report showing an ejection fraction of 40% or lower?",
+   "scope_sql": "SELECT s.record_id, s.patient_id FROM scanned_document s JOIN scanned_document_text t ON t.record_id = s.record_id WHERE s.readable = 1 AND length(t.text) > 0 AND (t.text LIKE '%echocardiogram%' OR t.text LIKE '%LVEF%') AND s.patient_id IN (SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'I50%')",
+   "statement": "The outside echocardiogram report states a left ventricular ejection fraction whose upper bound is 40% or lower.",
+   "aggregate": "list_patients",
+   "sources": [
+    "claims diagnoses",
+    "faxed/scanned outside imaging reports"
+   ],
+   "why_notes": "Ejection fraction from outside echos arrives only as text in a scanned report."
+  },
+  {
+   "id": "M038",
+   "domain": "outside records / colorectal screening quality",
+   "question": "Of the faxed or scanned outside colonoscopy procedure reports received for procedures from January 2027 through March 2028, how many document an inadequate bowel preparation?",
+   "scope_sql": "SELECT s.record_id, s.patient_id FROM scanned_document s JOIN scanned_document_text t ON t.record_id = s.record_id WHERE s.readable = 1 AND length(t.text) > 0 AND s.document_title = 'Colonoscopy Procedure Report' AND s.event_date BETWEEN '2027-01-01' AND '2028-03-31'",
+   "statement": "The colonoscopy report documents that the bowel preparation was inadequate.",
+   "aggregate": "count_documents",
+   "sources": [
+    "faxed/scanned outside procedure reports"
+   ],
+   "why_notes": "Bowel preparation quality is only written in the outside procedure report."
+  },
+  {
+   "id": "M039",
+   "domain": "outside records / incidental findings",
+   "question": "For patients aged 50 or older, how many patients have a faxed or scanned outside CT report for a scan done in the first half of 2028 describing a lung nodule with a recommendation for follow-up?",
+   "scope_sql": "SELECT s.record_id, s.patient_id FROM scanned_document s JOIN scanned_document_text t ON t.record_id = s.record_id WHERE s.readable = 1 AND length(t.text) > 0 AND t.text LIKE '%EXAM: CT%' AND s.event_date BETWEEN '2028-01-01' AND '2028-06-30' AND s.patient_id IN (SELECT patient_id FROM patient WHERE age_latest >= 50)",
+   "statement": "The CT report describes a pulmonary nodule and recommends follow-up (for example per Fleischner guidelines).",
+   "aggregate": "count_patients",
+   "sources": [
+    "member demographics",
+    "faxed/scanned outside CT reports"
+   ],
+   "why_notes": "Incidental nodule findings and follow-up recommendations exist only in the report impression."
+  },
+  {
+   "id": "M040",
+   "domain": "outside records / metabolic liver disease",
+   "question": "For patients with a type 2 diabetes diagnosis (E11) on claims, which patients have a faxed or scanned outside ultrasound report from 2029 showing hepatic steatosis (fatty liver)?",
+   "scope_sql": "SELECT s.record_id, s.patient_id FROM scanned_document s JOIN scanned_document_text t ON t.record_id = s.record_id WHERE s.readable = 1 AND length(t.text) > 0 AND t.text LIKE '%ULTRASOUND NON OB%' AND s.event_date BETWEEN '2029-01-01' AND '2029-12-31' AND s.patient_id IN (SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'E11%')",
+   "statement": "The ultrasound report describes hepatic steatosis (fatty liver).",
+   "aggregate": "list_patients",
+   "sources": [
+    "claims diagnoses",
+    "faxed/scanned outside ultrasound reports"
+   ],
+   "why_notes": "Fatty liver seen on an outside ultrasound is rarely coded; it is in the report impression."
+  },
+  {
+   "id": "M041",
+   "domain": "outside records / diabetes",
+   "question": "For patients with a type 2 diabetes diagnosis (E11) on claims, how many faxed or scanned outside endocrinology consultation letters for 2029 visits recommend a change to diabetes medication?",
+   "scope_sql": "SELECT s.record_id, s.patient_id FROM scanned_document s JOIN scanned_document_text t ON t.record_id = s.record_id WHERE s.readable = 1 AND length(t.text) > 0 AND (s.document_title = 'Endocrinology Consultation' OR t.text LIKE '%ENDOCRINOLOGY CONSULTATION%') AND s.event_date BETWEEN '2029-01-01' AND '2029-12-31' AND s.patient_id IN (SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'E11%')",
+   "statement": "The endocrinology letter recommends starting, stopping or changing the dose of a diabetes medication.",
+   "aggregate": "count_documents",
+   "sources": [
+    "claims diagnoses",
+    "faxed/scanned specialist letters"
+   ],
+   "why_notes": "Specialist recommendations arrive as a scanned letter; nothing structured records them until the PCP acts."
+  },
+  {
+   "id": "M042",
+   "domain": "outside records / home health",
+   "question": "Which patients have a faxed home health plan of care from an outside agency, for a certification starting in 2029 or 2030, that lists heart failure or COPD as the primary diagnosis?",
+   "scope_sql": "SELECT s.record_id, s.patient_id FROM scanned_document s JOIN scanned_document_text t ON t.record_id = s.record_id WHERE s.readable = 1 AND length(t.text) > 0 AND s.document_type = 'Home Health Orders' AND s.event_date BETWEEN '2029-01-01' AND '2030-12-31'",
+   "statement": "The home health plan of care lists heart failure or COPD as the primary diagnosis.",
+   "aggregate": "list_patients",
+   "sources": [
+    "faxed home health orders"
+   ],
+   "why_notes": "The agency's certified primary diagnosis is only on the scanned plan of care."
+  },
+  {
+   "id": "M043",
+   "domain": "outside records / colorectal cancer prevention",
+   "question": "Of the faxed or scanned outside surgical pathology reports for colon or rectal polyps received for 2027 and 2028 specimens, how many recommend a surveillance colonoscopy in 1 year?",
+   "scope_sql": "SELECT s.record_id, s.patient_id FROM scanned_document s JOIN scanned_document_text t ON t.record_id = s.record_id WHERE s.readable = 1 AND length(t.text) > 0 AND t.text LIKE '%PATHOLOGY REPORT%' AND t.text LIKE '%POLYP%' AND s.event_date BETWEEN '2027-01-01' AND '2028-12-31'",
+   "statement": "The pathology report recommends surveillance colonoscopy in 1 year.",
+   "aggregate": "count_documents",
+   "sources": [
+    "faxed/scanned outside pathology reports"
+   ],
+   "why_notes": "The surveillance recommendation from an outside lab is only in the scanned report addendum."
+  },
+  {
+   "id": "M044",
+   "domain": "outside records / behavioral health",
+   "question": "For patients with an SSRI pharmacy claim (sertraline, escitalopram, fluoxetine, citalopram or paroxetine), how many faxed or scanned outside psychiatry consultation letters for visits in the first half of 2028 recommend a medication change?",
+   "scope_sql": "SELECT s.record_id, s.patient_id FROM scanned_document s JOIN scanned_document_text t ON t.record_id = s.record_id WHERE s.readable = 1 AND length(t.text) > 0 AND (s.document_title = 'Psychiatry Consultation' OR t.text LIKE '%PSYCHIATRY CONSULTATION%') AND s.event_date BETWEEN '2028-01-01' AND '2028-06-30' AND s.patient_id IN (SELECT patient_id FROM payer_pharmacy_claim WHERE lower(drug_name) LIKE '%sertraline%' OR lower(drug_name) LIKE '%escitalopram%' OR lower(drug_name) LIKE '%fluoxetine%' OR lower(drug_name) LIKE '%citalopram%' OR lower(drug_name) LIKE '%paroxetine%')",
+   "statement": "The psychiatry letter recommends starting, stopping or changing the dose of a medication.",
+   "aggregate": "count_documents",
+   "sources": [
+    "pharmacy claims",
+    "faxed/scanned specialist letters"
+   ],
+   "why_notes": "Specialist medication recommendations are only in the scanned letter."
+  },
+  {
+   "id": "M045",
+   "domain": "outside records / cardiology",
+   "question": "Which patients have a faxed or scanned outside cardiology consultation letter for a visit between January and September 2029 in which the cardiologist recommended starting a new medication?",
+   "scope_sql": "SELECT s.record_id, s.patient_id FROM scanned_document s JOIN scanned_document_text t ON t.record_id = s.record_id WHERE s.readable = 1 AND length(t.text) > 0 AND (s.document_title = 'Cardiology Consultation' OR t.text LIKE '%CARDIOLOGY CONSULTATION%' OR t.text LIKE '%CARDIOLOGYCONSULTATION%') AND s.event_date BETWEEN '2029-01-01' AND '2029-09-30'",
+   "statement": "The cardiology letter recommends starting a new medication (for example a beta blocker).",
+   "aggregate": "list_patients",
+   "sources": [
+    "faxed/scanned specialist letters"
+   ],
+   "why_notes": "The cardiologist's medication recommendation is only in the scanned letter."
+  },
+  {
+   "id": "M046",
+   "domain": "outside records / pneumonia",
+   "question": "For Medicare members, how many faxed or scanned outside X-ray reports from the first half of 2029 report a possible lung infiltrate?",
+   "scope_sql": "SELECT s.record_id, s.patient_id FROM scanned_document s JOIN scanned_document_text t ON t.record_id = s.record_id WHERE s.readable = 1 AND length(t.text) > 0 AND t.text LIKE '%EXAM: XRAY%' AND s.event_date BETWEEN '2029-01-01' AND '2029-06-30' AND s.patient_id IN (SELECT patient_id FROM patient WHERE line_of_business = 'medicare')",
+   "statement": "The X-ray report impression describes a possible or definite lung infiltrate.",
+   "aggregate": "count_documents",
+   "sources": [
+    "member eligibility",
+    "faxed/scanned outside radiology reports"
+   ],
+   "why_notes": "The imaging impression is only in the outside report text."
+  },
+  {
+   "id": "M047",
+   "domain": "outside records / GI",
+   "question": "For patients with an abdominal pain diagnosis (R10) on claims, which patients have a faxed or scanned outside CT report from the first half of 2029 showing diverticulitis?",
+   "scope_sql": "SELECT s.record_id, s.patient_id FROM scanned_document s JOIN scanned_document_text t ON t.record_id = s.record_id WHERE s.readable = 1 AND length(t.text) > 0 AND t.text LIKE '%EXAM: CT%' AND s.event_date BETWEEN '2029-01-01' AND '2029-06-30' AND s.patient_id IN (SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'R10%')",
+   "statement": "The CT report impression describes diverticulitis.",
+   "aggregate": "list_patients",
+   "sources": [
+    "claims diagnoses",
+    "faxed/scanned outside CT reports"
+   ],
+   "why_notes": "The CT finding that explains the pain is only in the outside report."
+  },
+  {
+   "id": "M048",
+   "domain": "outside records / colorectal screening follow-up",
+   "question": "Of the faxed or scanned outside colonoscopy reports for procedures from July 2029 through 2030, how many were done to follow up a positive FIT (stool) test?",
+   "scope_sql": "SELECT s.record_id, s.patient_id FROM scanned_document s JOIN scanned_document_text t ON t.record_id = s.record_id WHERE s.readable = 1 AND length(t.text) > 0 AND t.text LIKE '%PROCEDURE: Colonoscopy%' AND s.event_date BETWEEN '2029-07-01' AND '2030-12-31'",
+   "statement": "The colonoscopy report gives a positive FIT test as the indication for the procedure.",
+   "aggregate": "count_documents",
+   "sources": [
+    "faxed/scanned outside procedure reports"
+   ],
+   "why_notes": "The procedure indication is only in the outside report; claims carry a generic screening code."
+  },
+  {
+   "id": "M049",
+   "domain": "post-acute care / exchange documents",
+   "question": "For Medicare members with an institutional inpatient claim, how many health information exchange discharge summaries from outside hospitals in Texas for the first half of 2028 show discharge to a skilled nursing facility, inpatient rehab or home health rather than home?",
+   "scope_sql": "SELECT h.record_id, h.patient_id FROM hie_document h JOIN record r ON r.record_id = h.record_id WHERE length(json_extract(r.payload,'$.text')) > 0 AND h.document_type = 'Discharge summary' AND h.event_date BETWEEN '2028-01-01' AND '2028-06-30' AND h.patient_id IN (SELECT patient_id FROM patient WHERE line_of_business = 'medicare') AND h.patient_id IN (SELECT patient_id FROM payer_claim WHERE claim_type = 'institutional') AND (h.author_organization_id LIKE 'WHN-HOSPITAL-TX-%')",
+   "statement": "The discharge summary gives a discharge disposition of skilled nursing facility, inpatient rehabilitation facility or home health (not plain home).",
+   "aggregate": "count_documents",
+   "sources": [
+    "member eligibility",
+    "institutional claims",
+    "exchange discharge summaries"
+   ],
+   "why_notes": "The outside hospital's disposition arrives in the exchange document; the claim's discharge status may lag or be missing."
+  },
+  {
+   "id": "M050",
+   "domain": "heart failure / outside ED use",
+   "question": "For patients with a heart failure diagnosis (I50) on claims, how many outside ED summaries received through the health information exchange from North Carolina hospitals in 2029 show the patient was admitted rather than treated and released?",
+   "scope_sql": "SELECT h.record_id, h.patient_id FROM hie_document h JOIN record r ON r.record_id = h.record_id WHERE length(json_extract(r.payload,'$.text')) > 0 AND h.document_type = 'ED summary' AND h.event_date BETWEEN '2029-01-01' AND '2029-12-31' AND h.patient_id IN (SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'I50%') AND (h.author_organization_id LIKE 'WHN-HOSPITAL-NC-%')",
+   "statement": "The ED summary states the patient was admitted for further management (not treated and released).",
+   "aggregate": "count_documents",
+   "sources": [
+    "claims diagnoses",
+    "exchange ED summaries"
+   ],
+   "why_notes": "The ED disposition in an outside summary is free text in the exchange document."
+  },
+  {
+   "id": "M051",
+   "domain": "transitions of care / medication reconciliation",
+   "question": "Of the health information exchange discharge summaries from outside hospitals for discharges in January 2027, how many do not actually list the discharge medications (only refer to a separate medication list)?",
+   "scope_sql": "SELECT h.record_id, h.patient_id FROM hie_document h JOIN record r ON r.record_id = h.record_id WHERE length(json_extract(r.payload,'$.text')) > 0 AND h.document_type = 'Discharge summary' AND h.event_date BETWEEN '2027-01-01' AND '2027-01-31'",
+   "statement": "The discharge summary does not list the discharge medications by name and only refers to a separate medication list.",
+   "aggregate": "count_documents",
+   "sources": [
+    "exchange discharge summaries"
+   ],
+   "why_notes": "Whether the medication list is present is only visible by reading the exchange document."
+  },
+  {
+   "id": "M052",
+   "domain": "atrial fibrillation / anticoagulation",
+   "question": "For patients with an atrial fibrillation diagnosis (I48) on claims, which patients have a discharge summary from an outside hospital in North Carolina (via the health information exchange) whose discharge medication list includes an anticoagulant?",
+   "scope_sql": "SELECT h.record_id, h.patient_id FROM hie_document h JOIN record r ON r.record_id = h.record_id WHERE length(json_extract(r.payload,'$.text')) > 0 AND h.document_type = 'Discharge summary' AND h.patient_id IN (SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'I48%') AND (h.author_organization_id LIKE 'WHN-HOSPITAL-NC-%')",
+   "statement": "The discharge medication list includes an oral anticoagulant (warfarin, apixaban, rivaroxaban, dabigatran or edoxaban).",
+   "aggregate": "list_patients",
+   "sources": [
+    "claims diagnoses",
+    "exchange discharge summaries"
+   ],
+   "why_notes": "Outside discharge prescriptions may never be filled under this payer; the list is in the exchange document."
+  },
+  {
+   "id": "M053",
+   "domain": "readmissions / VBC",
+   "question": "For patients who had an ED visit within 30 days after a hospital discharge, how many patients have an outside ED summary (health information exchange) from a New York hospital in 2029 that explicitly flags the visit as a return within 30 days of the prior discharge?",
+   "scope_sql": "SELECT h.record_id, h.patient_id FROM hie_document h JOIN record r ON r.record_id = h.record_id WHERE length(json_extract(r.payload,'$.text')) > 0 AND h.document_type = 'ED summary' AND h.event_date BETWEEN '2029-01-01' AND '2029-12-31' AND (h.author_organization_id LIKE 'WHN-HOSPITAL-NY-%') AND EXISTS (SELECT 1 FROM stay s WHERE s.patient_id = h.patient_id AND substr(s.discharge_date,1,10) BETWEEN date(h.event_date,'-30 days') AND date(h.event_date,'-1 days'))",
+   "statement": "The ED summary states that this visit is a readmission or return within 30 days of a prior discharge.",
+   "aggregate": "count_patients",
+   "sources": [
+    "hospital stays",
+    "exchange ED summaries"
+   ],
+   "why_notes": "The outside hospital's readmission flag is only in the exchange text."
+  },
+  {
+   "id": "M054",
+   "domain": "behavioral health / crisis care",
+   "question": "For patients with an anxiety disorder diagnosis (F41) on claims, which patients had an outside ED visit at a California hospital in 2027 (health information exchange ED summary) for anxiety with suicidal ideation?",
+   "scope_sql": "SELECT h.record_id, h.patient_id FROM hie_document h JOIN record r ON r.record_id = h.record_id WHERE length(json_extract(r.payload,'$.text')) > 0 AND h.document_type = 'ED summary' AND h.event_date BETWEEN '2027-01-01' AND '2027-12-31' AND h.patient_id IN (SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'F41%') AND (h.author_organization_id LIKE 'WHN-HOSPITAL-CA-%')",
+   "statement": "The ED summary documents a presentation for anxiety with suicidal ideation.",
+   "aggregate": "list_patients",
+   "sources": [
+    "claims diagnoses",
+    "exchange ED summaries"
+   ],
+   "why_notes": "The reason for the outside ED visit is narrative in the exchange document."
+  },
+  {
+   "id": "M055",
+   "domain": "falls / older adults",
+   "question": "For members aged 65 and older, how many patients had an outside ED summary from a California hospital (health information exchange) in the first quarter of 2028 for a fall with an extremity injury?",
+   "scope_sql": "SELECT h.record_id, h.patient_id FROM hie_document h JOIN record r ON r.record_id = h.record_id WHERE length(json_extract(r.payload,'$.text')) > 0 AND h.document_type = 'ED summary' AND h.event_date BETWEEN '2028-01-01' AND '2028-03-31' AND h.patient_id IN (SELECT patient_id FROM patient WHERE age_latest >= 65) AND (h.author_organization_id LIKE 'WHN-HOSPITAL-CA-%')",
+   "statement": "The ED summary documents that the visit was for a fall with an extremity injury.",
+   "aggregate": "count_patients",
+   "sources": [
+    "member demographics",
+    "exchange ED summaries"
+   ],
+   "why_notes": "The mechanism of injury (a fall) is only described in the ED narrative."
+  },
+  {
+   "id": "M056",
+   "domain": "cardiology / transitions of care",
+   "question": "For patients with coronary artery disease (I25) on claims, how many discharge summaries from outside North Carolina hospitals (health information exchange) arrange cardiology follow-up in addition to primary care?",
+   "scope_sql": "SELECT h.record_id, h.patient_id FROM hie_document h JOIN record r ON r.record_id = h.record_id WHERE length(json_extract(r.payload,'$.text')) > 0 AND h.document_type = 'Discharge summary' AND h.patient_id IN (SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'I25%') AND (h.author_organization_id LIKE 'WHN-HOSPITAL-NC-%')",
+   "statement": "The discharge summary arranges a cardiology follow-up visit.",
+   "aggregate": "count_documents",
+   "sources": [
+    "claims diagnoses",
+    "exchange discharge summaries"
+   ],
+   "why_notes": "Specialty follow-up instructions are only in the discharge summary text."
+  },
+  {
+   "id": "M057",
+   "domain": "diabetes / transitions of care",
+   "question": "For patients with a type 2 diabetes diagnosis (E11) on claims, looking at each patient's first outside hospital discharge summary received through the health information exchange for a 2027 discharge, how many patients had follow-up arranged with a surgeon or cardiologist in addition to primary care?",
+   "scope_sql": "SELECT h.record_id, h.patient_id FROM hie_document h JOIN record r ON r.record_id = h.record_id WHERE length(json_extract(r.payload,'$.text')) > 0 AND h.document_type = 'Discharge summary' AND h.patient_id IN (SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'E11%') AND h.event_date = (SELECT MIN(h2.event_date) FROM hie_document h2 WHERE h2.patient_id = h.patient_id AND h2.document_type = 'Discharge summary' AND h2.event_date BETWEEN '2027-01-01' AND '2027-12-31')",
+   "statement": "The discharge summary arranges follow-up with a surgeon or a cardiologist in addition to primary care.",
+   "aggregate": "count_patients",
+   "sources": [
+    "claims diagnoses",
+    "exchange discharge summaries"
+   ],
+   "why_notes": "Follow-up instructions from outside hospitals arrive only as exchange text."
+  },
+  {
+   "id": "M058",
+   "domain": "pediatrics / injury prevention",
+   "question": "For Medicaid members under 18, looking at each child's first outside ED visit in January through March 2029 reported through the health information exchange, how many children were seen after a fall?",
+   "scope_sql": "SELECT h.record_id, h.patient_id FROM hie_document h JOIN record r ON r.record_id = h.record_id WHERE length(json_extract(r.payload,'$.text')) > 0 AND h.document_type = 'ED summary' AND h.patient_id IN (SELECT patient_id FROM patient WHERE age_latest < 18 AND line_of_business = 'medicaid') AND h.event_date = (SELECT MIN(h2.event_date) FROM hie_document h2 WHERE h2.patient_id = h.patient_id AND h2.document_type = 'ED summary' AND h2.event_date BETWEEN '2029-01-01' AND '2029-03-31')",
+   "statement": "The ED summary documents that the visit followed a fall.",
+   "aggregate": "count_patients",
+   "sources": [
+    "member demographics",
+    "exchange ED summaries"
+   ],
+   "why_notes": "The mechanism of injury is only in the ED narrative."
+  },
+  {
+   "id": "M059",
+   "domain": "surgical care / post-acute",
+   "question": "For patients with knee osteoarthritis (M17) on claims, looking at each patient's first outside hospital discharge summary (health information exchange) for a discharge in January through May 2027, how many patients had a surgical procedure during that stay?",
+   "scope_sql": "SELECT h.record_id, h.patient_id FROM hie_document h JOIN record r ON r.record_id = h.record_id WHERE length(json_extract(r.payload,'$.text')) > 0 AND h.document_type = 'Discharge summary' AND h.patient_id IN (SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'M17%') AND h.event_date = (SELECT MIN(h2.event_date) FROM hie_document h2 WHERE h2.patient_id = h.patient_id AND h2.document_type = 'Discharge summary' AND h2.event_date BETWEEN '2027-01-01' AND '2027-05-31')",
+   "statement": "The discharge summary documents that a surgical procedure (for example a joint replacement) was performed during the stay.",
+   "aggregate": "count_patients",
+   "sources": [
+    "claims diagnoses",
+    "exchange discharge summaries"
+   ],
+   "why_notes": "The procedure performed at an outside hospital is described in the exchange summary text."
+  },
+  {
+   "id": "M060",
+   "domain": "ED utilization / Medicare",
+   "question": "For dual-eligible members, looking at each member's first outside ED visit in the first half of 2029 reported through the health information exchange, how many were admitted rather than treated and released?",
+   "scope_sql": "SELECT h.record_id, h.patient_id FROM hie_document h JOIN record r ON r.record_id = h.record_id WHERE length(json_extract(r.payload,'$.text')) > 0 AND h.document_type = 'ED summary' AND h.patient_id IN (SELECT patient_id FROM patient WHERE line_of_business = 'dual') AND h.event_date = (SELECT MIN(h2.event_date) FROM hie_document h2 WHERE h2.patient_id = h.patient_id AND h2.document_type = 'ED summary' AND h2.event_date BETWEEN '2029-01-01' AND '2029-06-30')",
+   "statement": "The ED summary states the patient was admitted for further management (not treated and released).",
+   "aggregate": "count_patients",
+   "sources": [
+    "member eligibility",
+    "exchange ED summaries"
+   ],
+   "why_notes": "The disposition of an outside ED visit is in the exchange narrative."
+  }
+ ]
+}
