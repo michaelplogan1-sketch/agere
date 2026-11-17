@@ -52,7 +52,7 @@ function presentationTable(rows,a,opt={}){
  return h;
 }
 function answerSummary(a,opt={}){
- const facts=Object.entries(a.facts||{}).filter(([k,v])=>typeof v==='string'&&v.trim()),rows=a.table||[],ids=a.patient_ids||[],unique=new Set(ids.length?ids:rows.map(r=>r.patient_id).filter(Boolean));
+ const facts=Object.entries(a.facts||{}).filter(([k,v])=>!['answered_by','summary_written_by'].includes(k)&&typeof v==='string'&&v.trim()),rows=a.table||[],ids=a.patient_ids||[],unique=new Set(ids.length?ids:rows.map(r=>r.patient_id).filter(Boolean));
  const scalar=a.answer_type==='count'?a.count:a.answer_type==='value'?a.value:null;
  const count=scalar!=null&&isNum(scalar)?scalar:unique.size||rows.length;
  const unit=scalar!=null?(a.unit||(a.answer_type==='count'?'Count returned':'Computed value')):unique.size?'Patients in returned result':'Records returned';
@@ -77,6 +77,7 @@ function sourceDetails(a){
  if(sources.length)h+='<details><summary>Sources ('+sources.length+')</summary><ul>'+sources.map(s=>'<li>'+esc(typeof s==='string'?s:s.title||s.label||JSON.stringify(s))+(s.url&&/^https?:\/\//.test(s.url)?' <a href="'+esc(s.url)+'" target="_blank" rel="noopener noreferrer">Open source ↗</a>':'')+'</li>').join('')+'</ul></details>';
  if(a.table_binding)h+='<details><summary>Returned table and native computation</summary><pre>'+esc(JSON.stringify(a.table_binding,null,2))+'</pre></details>';
  if(a.verification||a.investigation_review)h+='<details><summary>Verification record · '+esc(a.verification||a.investigation_review?.status||'not recorded')+'</summary><p>'+esc(a.investigation_review?.feedback||'')+'</p><pre>'+esc(JSON.stringify({verification:a.verification,review:a.investigation_review},null,2))+'</pre></details>';
+ h+='<details class="original-answer-data"><summary>Complete returned answer · original data</summary><pre>'+esc(JSON.stringify(a,null,2))+'</pre></details>';
  return h;
 }
 
@@ -96,11 +97,33 @@ function decisionState(t){
 }
 function briefIcon(kind){const paths={arrow:'<path d="M5 12h14m-5-5 5 5-5 5"/>',evidence:'<path d="M14 3H5v18h14V8zM14 3v6h5M8 13h7M8 17h5"/>',options:'<path d="M4 7h16M8 3v8M4 17h16M16 13v8"/>',work:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16M15 4v16M6 9v3M12 8v7M18 11v4"/>',spark:'<path d="m12 3 2.7 6.3L21 12l-6.3 2.7L12 21l-2.7-6.3L3 12l6.3-2.7z"/>'};return '<svg class="brief-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[kind]||paths.arrow)+'</svg>'}
 function decisionHero(t){
- const s=decisionState(t),a=s.a,rows=a.table||[],ids=new Set(a.patient_ids?.length?a.patient_ids:rows.map(r=>r.patient_id).filter(Boolean));
- const value=['count','patient_set'].includes(a.answer_type)?a.count:a.answer_type==='value'?a.value:ids.size||rows.length||null;
- const unit=a.unit||(s.patient?'patients in result':a.answer_type==='count'?'computed count':a.answer_type==='value'?'computed value':'returned rows');
- const headline=String(a.headline||a.interpretation||'The saved result is available below.'),boundary=headline.search(/[.!?](?=\s+[A-Z0-9])/),intro=headline.length>250&&boundary>0?headline.slice(0,boundary+1):headline;
- return '<section class="decision-hero" aria-label="Result summary">'+(value!=null||['count','patient_set','value'].includes(a.answer_type)?'<div class="result-metric"><strong>'+esc(value==null?'—':isNum(value)?fmt(value,Number.isInteger(value)?0:4):value)+'</strong><span>'+esc(unit)+'</span></div>':'')+'<div class="result-story"><p>'+esc(intro)+'</p>'+(intro!==headline?'<details><summary>Full answer</summary><p>'+esc(headline)+'</p></details>':'')+'</div></section>';
+ const s=decisionState(t),a=s.a;
+ const value=['count','patient_set'].includes(a.answer_type)?a.count:a.answer_type==='value'?a.value:null;
+ const unit=a.unit||(s.patient?'patients in result':a.answer_type==='count'?'computed count':'computed value');
+ const headline=String(a.headline||a.interpretation||a.message||'No answer text was returned.'),boundary=headline.search(/[.!?](?=\s+[A-Z0-9])/),short=headline.length>280&&boundary>0?headline.slice(0,boundary+1):headline;
+ return '<section class="decision-hero" aria-label="Result summary">'+(value!=null||['count','patient_set','value'].includes(a.answer_type)?'<div class="result-metric"><strong>'+esc(value==null?'—':String(value))+'</strong><span>'+esc(unit)+'</span></div>':'')+'<div class="result-story"><h1>'+esc(short)+'</h1>'+(short!==headline?'<details><summary>Read complete answer</summary><p>'+esc(headline)+'</p></details>':'')+'</div></section>';
+}
+
+/* Project explicit response fields. Never recover figures by parsing model prose. */
+function answerExecution(t){
+ const d=t.data||{},a=d.answer||{},p=d.planner_receipt||{},core=d.tiered_core||{};
+ const tier=core.final_tier||p.final_tier||d.final_tier||null;
+ const seconds=core.seconds??p.seconds??null;
+ const usd=p.api_cost_known===true?p.known_api_estimate_usd:d.planning_economics?.total_cost_known===true?d.planning_economics.new_api_estimate_usd:null;
+ return {tier,seconds,usd,unchecked:tier==='takeover'||a.verification==='unverified',record:a.facts?.answered_by||null};
+}
+function answerProvenance(t){
+ const e=answerExecution(t),a=t.data?.answer||{};
+ const names={bottles:'Saved recipe',recipes:'Deterministic recipe',system1:'System One',slm:'Small model',llm:'Frontier recipe',takeover:'Frontier takeover'};
+ const status=e.unchecked?'Unchecked':a.verification==='checked'?'Code checks passed':'Verification not returned';
+ return '<section class="answer-provenance" aria-label="Answer provenance"><div class="provenance-line"><span class="verification-stamp '+(e.unchecked?'unchecked':'')+'">'+(e.unchecked?'◌':a.verification==='checked'?'✓':'?')+' '+esc(status)+'</span><span class="tier-stamp">Tier: '+esc(names[e.tier]||e.tier||'Not returned')+'</span>'+(e.seconds!=null?'<span>'+esc(String(e.seconds))+' s · tier time</span>':!e.record?'<span>Time not returned</span>':'')+(e.usd!=null?'<span>Model estimate $'+esc(String(e.usd))+'</span>':!e.record?'<span>Cost not returned</span>':'')+'<button class="text-button" data-open-answer-tab="method">Sources &amp; method ↗</button></div>'+(e.unchecked?'<p class="verification-explanation">'+(e.tier==='takeover'?'The final tier wrote this answer. It has not been verified by code.':'The stack returned this answer as unverified.')+'</p>':'')+(e.record&&e.seconds==null?'<p class="execution-record">'+esc(e.record)+'</p>':'')+'</section>';
+}
+function answerSnapshot(a){
+ if(a.answer_type==='composite')return '<div class="answer-sections">'+(a.sections||[]).map(s=>'<section class="answer-part"><h2>'+esc(s.title)+'</h2>'+decisionHero({data:{answer:s.answer||{}}})+answerSnapshot(s.answer||{})+resultLimitations(s.answer||{})+'</section>').join('')+'</div>';
+ if(['count','value','patient_set'].includes(a.answer_type)||(a.table||[]).length!==1)return '';
+ const row=a.table[0],spec=columnSpec(a).filter(c=>typeof row[c.key]==='number'&&!/(^|_)(id|code)$/.test(c.key));
+ if(!spec.length)return '';
+ return '<section class="answer-snapshot" aria-label="Returned figures">'+spec.map(c=>'<div><span>'+esc(c.label)+'</span><strong>'+esc(String(row[c.key]))+'</strong>'+(c.meta.unit?'<small>'+esc(c.meta.unit)+'</small>':'')+'</div>').join('')+'</section>';
 }
 function decisionActions(t){
  const s=decisionState(t),context=/^ANS-[0-9a-f]{24}$/.test(s.c.id||'')?s.c.id:null;
@@ -110,8 +133,8 @@ function decisionActions(t){
  return h+'<dialog id="decision-dialog" class="decision-dialog" aria-labelledby="decision-dialog-title"><button type="button" class="decision-dialog-close" data-close-decision-dialog aria-label="Close next-step details">×</button><div id="decision-dialog-body"></div></dialog>';
 }
 function requestProblem(t){
- const saved=t.action_context&&/^ANS-[0-9a-f]{24}$/.test(t.action_context.id||''),raw=String(t.error||'The request stopped.'),message=/prompt is too long|input.*(?:limit|size)/i.test(raw)?'The design request exceeded the model’s input limit.':/subscription.*limit|rate.limit|session limit/i.test(raw)?'The model service has reached its current usage limit.':'The request could not finish.';
- return '<div class="result-issue"><h2>'+esc(saved?'Work saved. The request stopped.':'This request needs attention.')+'</h2><p>'+esc(message)+'</p><details><summary>Error details</summary><pre>'+esc(raw)+'</pre></details>'+(saved?'<a class="btn primary" href="/ask?context='+encodeURIComponent(t.action_context.id)+'">Open saved work ↗</a>':'<button class="btn" data-edit-question="'+esc(t.question)+'">Edit request</button>')+'</div>';
+ const saved=t.action_context&&/^ANS-[0-9a-f]{24}$/.test(t.action_context.id||''),raw=String(t.error||'The request stopped.');
+ return '<div class="result-issue"><span class="brief-kicker">REQUEST STOPPED</span><h2>'+esc(saved?'Your completed work is saved.':'This question could not be answered.')+'</h2><p class="stack-message">'+esc(raw)+'</p><p class="hint">The request has not been retried.</p>'+(saved?'<a class="btn primary" href="/ask?context='+encodeURIComponent(t.action_context.id)+'">Open saved work ↗</a>':'<button class="btn" data-edit-question="'+esc(t.question)+'">Edit request</button>')+'</div>';
 }
 function suggestionDetails(t,index){
  const g=recordedActionGroups(t.data?.answer||{})[index];if(!g)return '';
