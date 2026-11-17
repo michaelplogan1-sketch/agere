@@ -115,7 +115,7 @@ class Conversation(unittest.TestCase):
         def answer(question, cohort=None, why=None, may_ask=False, **kw): seen.update(kw); return dict(ANSWER)
         with mock.patch.object(takeover, 'answer', answer), clarification.interaction('autonomous'):
             app.try_answer(self.stack, 'How many visits were avoidable?')
-            self.assertTrue(0 < seen['seconds'] <= app.QUESTION_SECONDS)
+            self.assertTrue(app.TAKEOVER_FLOOR <= seen['seconds'] <= max(app.QUESTION_SECONDS, app.TAKEOVER_FLOOR))
             seen.clear()
             app.DEADLINE.set(time.monotonic() + 5)  # five seconds of the question's budget left: the takeover still runs, bounded
             self.assertIsNotNone(app._takeover('How many visits were avoidable?', None, dict(UNANSWERED)))
