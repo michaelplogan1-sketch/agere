@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-17T15:24:50.555128+00:00",
+  "updated_at": "2026-11-17T15:46:36.311170+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -934,7 +934,7 @@
     "current_gate_id": "G7",
     "last_delivered_gate": "G5",
     "product_commit": "ecfa2d62",
-    "updated_at": "2026-11-17T15:24:50.555128+00:00",
+    "updated_at": "2026-11-17T15:46:36.311170+00:00",
     "user_behavior_delta": "An unclear question becomes a short conversation: a language model asks only what the customer's definitions, own facilities and the person's saved defaults leave open, remembers the answers, stops after three exchanges (then shows each open reading computed side by side), hands one explicit question to the stack and saves the person's choices so they are not asked again.",
     "measured_failure_reduction": "Clarifying conversation: built and tested with mocked models, development sets unchanged (53/53, 31/31, 13/13, 13/13); not yet measured with real askers. notes_v1 first run (2 runs): Agere readers on the same notes 94.0% at $0.004 a question; top-tier model alone 88.5% at $0.059; Agere whole stack from the question 54.5% at $0.066 (document selection, not reading, is the failure).",
     "evidence": [
@@ -7937,6 +7937,18 @@
         "tests/core/test_tiered_runout.py",
         "artifacts/agere-tiered-core/devsets-ibnr-regression.log",
         "artifacts/agere-tiered-core/devsets-ibnr-cohort-2.log"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T15:46:36.311170+00:00",
+      "decision": "First real use of the clarifying conversation in the app (8 unclear questions through /api/stack/compose and one in the page): it asks sensible questions with options, the card renders, a clear question is answered without asking (ED visits 2029: 4 s, $0.001), an unanswerable one gets an honest 'no survey data'. Fixed: (1) 'last year' was read as 2025 on data that runs to 2030; the conversation and the frontier SQL writer now get the data's own date; (2) the person's answers were not saved when the model listed no choices; code now saves each answered question; (3) periods are never saved as standing defaults. Test answers were removed from the saved defaults. Open: 'How many patients had a fall?' counted falls by diagnosis code and got 0 instead of reading notes.",
+      "reason": "Mike 2026-11-17: test it in the app and see how the stack goes back and forth with the person asking.",
+      "evidence": [
+        "clinical_core/agere/tiered/clarify.py",
+        "clinical_core/agere/tiered/models.py",
+        "tests/core/test_tiered_clarify.py",
+        "artifacts/agere-tiered-core/devsets-clock-regression.log"
       ],
       "scope_impact": "None."
     }

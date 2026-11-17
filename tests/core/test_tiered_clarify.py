@@ -43,7 +43,8 @@ class Base(unittest.TestCase):
         self.dir = tempfile.TemporaryDirectory()
         self.patches = [mock.patch.object(clarify, 'DEFAULTS', str(Path(self.dir.name) / 'defaults.sqlite3')),
                         mock.patch.object(customer, 'relevant', lambda q: [('Visit', 'A visit is an inpatient admission or an ED visit; certified by finance.')]),
-                        mock.patch.object(store, 'own_facilities', lambda: ['WH-HOSPITAL-0', 'WH-HOSPITAL-1'])]
+                        mock.patch.object(store, 'own_facilities', lambda: ['WH-HOSPITAL-0', 'WH-HOSPITAL-1']),
+                        mock.patch.object(clarify, '_clock', lambda: '2030-05-27')]
         for p in self.patches: p.start()
 
     def tearDown(self):
@@ -103,6 +104,22 @@ class Conversation(Base):
         turn = clarify.begin(QUESTION, READINGS)
         self.assertEqual(turn['action'], 'ready'); self.assertNotIn('4120', turn['question'])
         self.assertIn('4120', turn['state']['steps'][0]['reason'])
+
+    def test_the_datas_own_date_anchors_last_year(self):
+        m = self.model(slm=[ask('Which?', 'A', 'B')])
+        clarify.begin('How many visits last year?', READINGS)
+        self.assertIn("'last year' is 2029", m.calls[0][1])
+
+    def test_what_the_person_answered_is_saved_even_when_the_model_lists_no_choices(self):
+        self.model(slm=[ask('Which visits?', 'Hospital visits', 'Appointments'), ready('How many hospital visits were there in 2029?')])
+        turn = clarify.begin(QUESTION, READINGS)
+        clarify.reply(turn['state'], '', turn['options'][0])
+        self.assertEqual(clarify.defaults(), [{'about': 'which visits?', 'choice': 'Hospital visits'}])
+
+    def test_a_period_is_never_saved_as_a_default(self):
+        clarify.save_defaults([{'about': 'Which year?', 'choice': '2025'}, {'about': 'which visits', 'choice': 'hospital visits'},
+                               {'about': 'which stay', 'choice': 'The readmission must start in 2025'}])
+        self.assertEqual(clarify.defaults(), [{'about': 'which visits', 'choice': 'hospital visits'}])
 
     def test_choices_are_saved_as_defaults_and_settle_the_next_question_without_asking(self):
         self.model(slm=[ready('How many inpatient admissions were there at our hospitals in 2029?', [{'about': 'Which visits', 'choice': 'inpatient admissions'}])])

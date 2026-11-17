@@ -75,9 +75,27 @@ Return exactly one JSON object and nothing else:
  "choices": [{"about": "...", "choice": "..."}], "confident": true}'''
 
 
+def _clock():
+    """The data's own date, never today's: 'last year' is the year before it (the app's first real conversations read
+    'last year' as 2025 on data that runs to 2030 and answered from almost no rows)."""
+    from . import store
+    try:
+        db = store.connect()
+        try:
+            return store.as_of(db)
+        finally:
+            db.close()
+    except Exception:
+        return None
+
+
 def _context(question):
     from . import catalogue, customer, store
     lines = []
+    today = _clock()
+    if today:
+        lines.append(f"The data runs to {today}; treat that as today. 'This year' is {today[:4]}, 'last year' is {int(today[:4]) - 1}, and a "
+                     'relative period ("last quarter", "past 12 months") counts back from that date. Never offer a year after it.')
     theirs = customer.relevant(question)
     if theirs:
         lines.append("Customer's certified definitions (these win over the governed definitions):")
@@ -92,6 +110,9 @@ def _context(question):
     return '\n'.join(lines) or '(none apply to this question)'
 
 
+PERIOD = re.compile(r'(?i)\b(?:19|20)\d{2}\b|\b(?:year|month|quarter|period|date range|time frame|timeframe|so far|last|this|past|since)\b')
+
+
 def defaults(person=None):
     """-> [{'about', 'choice'}] the person's saved defaults, oldest first."""
     p = Path(DEFAULTS)
@@ -102,7 +123,8 @@ def defaults(person=None):
 
 def save_defaults(choices, person=None):
     """Save the person's decisions; a later decision on the same topic replaces the earlier one."""
-    good = [c for c in choices or [] if isinstance(c, dict) and str(c.get('about') or '').strip() and str(c.get('choice') or '').strip()]
+    good = [c for c in choices or [] if isinstance(c, dict) and str(c.get('about') or '').strip() and str(c.get('choice') or '').strip()
+            and not PERIOD.search(str(c['about']) + ' ' + str(c['choice']))]   # a period belongs to one question, never a standing default
     if not good: return 0
     p = Path(DEFAULTS)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -178,6 +200,13 @@ def _readings(turn, fallback):
     return got or fallback
 
 
+def _decided(state):
+    """What the person decided, to save as their defaults: the model's list, or, when it gives none, each question they
+    answered, by code (the model left the list empty in the app's first conversations and the person was asked again)."""
+    if state.get('choices'): return state['choices']
+    return [{'about': x['asked'], 'choice': x['reply']} for x in state['exchanges'] if x.get('asked') and x.get('reply')]
+
+
 def _next(state):
     turn, steps = _turn(state)
     state['steps'] = state.get('steps', []) + steps
@@ -185,10 +214,10 @@ def _next(state):
     state['readings'] = _readings(turn, state['readings'])
     state['choices'] = [c for c in turn.get('choices') or [] if isinstance(c, dict)]
     if turn['status'] == 'ready':
-        save_defaults(state['choices'])
+        state['choices'] = _decided(state); save_defaults(state['choices'])
         return {'action': 'ready', 'question': str(turn['question']).strip(), 'state': state, 'steps': steps}
     if len(state['exchanges']) >= MAX_EXCHANGES:   # out of exchanges: every reading still open is computed and shown
-        save_defaults(state['choices'])
+        state['choices'] = _decided(state); save_defaults(state['choices'])
         return {'action': 'side_by_side', 'readings': state['readings'], 'state': state, 'steps': steps}
     options = [{'id': f'c{len(state["exchanges"]) + 1}_{i}', 'label': str(o['label']).strip()[:120], 'meaning': str(o.get('meaning') or o['label']).strip()[:400]}
                for i, o in enumerate(turn['options'], 1)]

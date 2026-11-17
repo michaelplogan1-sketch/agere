@@ -296,6 +296,16 @@ def llm_recipe(question, error=None, model=None, examples=None):
                   'This question is already one reading of an earlier question: answer it; do not return readings.' if NO_READINGS.get() else '') + warehouse_vocabulary()
         governed = catalogue.block(question) if catalogue.enabled() else ''
     if governed: system += '\n\n' + governed
+    try:   # the data's own date, never today's: readings offered 2025 on data that runs to 2030 (the app's first conversations)
+        db = store.connect()
+        try:
+            today = store.as_of(db)
+        finally:
+            db.close()
+        system += (f"\n\nThe data runs to {today}; treat that as today. 'Last year' is {int(today[:4]) - 1}. A question with no period, or a "
+                   'reading you offer, uses periods the data covers, never one after that date or before the data begins.')
+    except Exception:
+        pass
     if examples is None and EXAMPLES and model in (None, LLM): examples = nearest_examples(question)
     shown = ''.join(f'\nSaved question: {t}\nIts verified SQL: {q}\n' for t, q in (examples or []))
     user = ('Verified saved queries for similar questions follow. They answer other questions: reuse their tables, joins and '
