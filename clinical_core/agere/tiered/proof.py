@@ -1078,7 +1078,7 @@ def run(runs=3, workers=4):
                 'frontier_tokens': sum(s.get('tokens', 0) for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
                 'checks_rejected': sum(1 for s in o['steps'] if 'Governed definition' in str(s.get('reason', ''))),
                 'rows': (o.get('rows') or [])[:3] if o.get('status') != 'needs_choice' else {x['id']: (x.get('rows') or [])[:3] for x in o.get('readings') or []},
-                'readings_checked': {k: v for k, v in (o.get('readings_checked') or {}).items() if k in ('agree', 'answered_as', 'voi')} or None,
+                'readings_checked': {k: v for k, v in (o.get('readings_checked') or {}).items() if k in ('agree', 'answered_as', 'voi', 'others')} or None,
                 'question': item['question']}
 
     arms = tuple(os.environ.get('AGERE_PROOF_ARMS', 'stack,stack_plain,frontier').split(','))
