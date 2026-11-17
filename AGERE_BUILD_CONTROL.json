@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-17T14:28:39.434266+00:00",
+  "updated_at": "2026-11-17T15:14:29.163513+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -934,7 +934,7 @@
     "current_gate_id": "G7",
     "last_delivered_gate": "G5",
     "product_commit": "ecfa2d62",
-    "updated_at": "2026-11-17T14:28:39.434266+00:00",
+    "updated_at": "2026-11-17T15:14:29.163513+00:00",
     "user_behavior_delta": "An unclear question becomes a short conversation: a language model asks only what the customer's definitions, own facilities and the person's saved defaults leave open, remembers the answers, stops after three exchanges (then shows each open reading computed side by side), hands one explicit question to the stack and saves the person's choices so they are not asked again.",
     "measured_failure_reduction": "Clarifying conversation: built and tested with mocked models, development sets unchanged (53/53, 31/31, 13/13, 13/13); not yet measured with real askers. notes_v1 first run (2 runs): Agere readers on the same notes 94.0% at $0.004 a question; top-tier model alone 88.5% at $0.059; Agere whole stack from the question 54.5% at $0.066 (document selection, not reading, is the failure).",
     "evidence": [
@@ -7914,6 +7914,17 @@
       "evidence": [
         "eval/tiered/notes_v1_results_whole_stack.json",
         "clinical_core/agere/tiered/narrative.py"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T15:14:29.163513+00:00",
+      "decision": "Declines removed from the whole stack: the frontier takeover is never skipped for time and always gets its full 150 s; note questions are not taken by structured-data methods; when nothing answers and a person is present, and when the takeover finds the question unclear, the clarifying conversation takes over. notes_v1 (seen set), the 16 declined answers re-run on the fixed stack and merged: 157 right, 42 wrong, 1 declined of 200 (78.5%), $0.066 a question; LLM connected to the records 163 right, 37 wrong (81.5%), $0.50. An empty answer table is now scored as 'none' (wrong where the key has some), not as a decline. The one left declined (N029 run 2) found nothing in the takeover's full time; with a person present it now goes to the conversation.",
+      "reason": "Mike 2026-11-17: nothing should be declined; it escalates to the frontier model, and ambiguity goes back to the person in conversation.",
+      "evidence": [
+        "clinical_core/agere/tiered/app.py",
+        "tests/core/test_tiered_clarify.py",
+        "artifacts/agere-tiered-core/devsets-converse-regression.log"
       ],
       "scope_impact": "None."
     }

@@ -39,7 +39,7 @@ class Conversation(unittest.TestCase):
             return None, {'route': 'fallback'}
         menu = {'ops': {'monitor': 'control charts of rates', 'demand': 'volume forecasts', 'vbc': 'value-based care measures'}, 'uses': {}, 'text': 'menu',
                 'examples': {'monitor': ['Detect anomalies in monthly ED visits'], 'demand': ['Forecast ED visits for the next 4 weeks'], 'vbc': ['What is the risk score of our population?']}}
-        self.patches = [mock.patch.dict(os.environ, {'AGERE_TIERED_CORE': 'on', 'AGERE_TIERED_METHODS': 'on', 'AGERE_TIERED_TAKEOVER': 'on', 'AGERE_TIERED_METHODS_ASSIST': 'off',
+        self.patches = [mock.patch.dict(os.environ, {'AGERE_TIERED_CORE': 'on', 'AGERE_TIERED_METHODS': 'on', 'AGERE_TIERED_TAKEOVER': 'on', 'AGERE_TIERED_METHODS_ASSIST': 'off', 'AGERE_TIERED_CLARIFY_CONVERSATION': 'off',
                                                      'AGERE_TIERED_LEDGER': str(Path(self.dir.name) / 'ledger.sqlite3'), 'AGERE_TIERED_BOTTLES': str(Path(self.dir.name) / 'b.sqlite3')}),
                         mock.patch.object(local_compiler, 'compile', compiled), mock.patch.object(source_profile, 'load', lambda path: {}),
                         mock.patch.object(recipes, 'match', lambda q, db=None: None), mock.patch.object(methods, '_menu', lambda s: menu),

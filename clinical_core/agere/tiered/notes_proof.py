@@ -315,6 +315,7 @@ def _value_from_rows(aggregate, columns, rows):
     """The figure an answer table gives for this kind of question, or None. Column-aware, the same for every question."""
     columns = [str(c).lower() for c in columns or []]
     rows = rows or []
+    if not rows: return [] if aggregate == 'list_patients' else 0   # an answer of no rows says "none": scored, not a decline
     def distinct(col): return sorted({str(r[columns.index(col)]) for r in rows if r[columns.index(col)] is not None})
     single = len(rows) == 1 and [v for v in rows[0] if isinstance(v, (int, float)) and not isinstance(v, bool)]
     if aggregate == 'list_patients':
@@ -489,7 +490,9 @@ def run(arms, runs=2, workers=4):
         have = {(r['qid'], int(r['run'])) for r in done}
         first = int(os.environ.get('AGERE_NOTES_FIRST', '0')) or len(data['questions'])   # a cost probe on the first N questions; the rest resume later
         only = os.environ.get('AGERE_NOTES_RUN_ONLY')   # one run per process (the app arm: each run starts from a fresh copy of the saved recipes)
-        jobs = [(q, r) for r in ([int(only)] if only else range(int(runs))) for q in data['questions'][:first] if q['id'] in keyed and (q['id'], r) not in have]
+        pick = set(filter(None, os.environ.get('AGERE_NOTES_QIDS', '').split(',')))   # re-run named questions only
+        jobs = [(q, r) for r in ([int(only)] if only else range(int(runs))) for q in data['questions'][:first]
+                if q['id'] in keyed and (q['id'], r) not in have and (not pick or q['id'] in pick)]
         print(f'{arm}: {len(have)} answers saved, {len(jobs)} to run', flush=True)
         stopped = []
 

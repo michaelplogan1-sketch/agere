@@ -174,6 +174,25 @@ class InTheApp(Base):
         self.assertEqual([s['answer']['count'] for s in got['answer']['sections']], [4120, 9001])
         self.assertIn('side by side', got['answer']['limitations'][0])
 
+    def test_when_no_tier_and_no_takeover_answers_a_person_is_talked_with_not_left_with_nothing(self):
+        from clinical_core.agere.tiered import takeover
+        unanswered = {'status': 'unanswered', 'final_tier': None, 'steps': [], 'escalations': [], 'seconds': 0.1, 'recipe': None, 'validation': None, 'missing': 'x'}
+        self.model(slm=[ask('Do you mean ED notes or nursing notes?', 'ED notes', 'Nursing notes')])
+        with mock.patch.object(router, 'answer', lambda *a, **k: dict(unanswered)), mock.patch.object(takeover, 'answer', lambda *a, **k: None), \
+                mock.patch.dict(os.environ, {'AGERE_TIERED_TAKEOVER': 'on'}):
+            got = app._single(self.stack, 'How many notes mention a fall?')
+        self.assertEqual(got['answer']['status'], 'clarify'); self.assertEqual(got['clarification_checkpoint']['tiered']['kind'], 'conversation')
+
+    def test_the_frontier_models_own_question_becomes_the_conversation(self):
+        from clinical_core.agere.tiered import takeover
+        unanswered = {'status': 'unanswered', 'final_tier': None, 'steps': [], 'escalations': [], 'seconds': 0.1, 'recipe': None, 'validation': None, 'missing': 'x'}
+        asked = {'ask': 'Which?', 'options': ['ED notes', 'Nursing notes'], 'steps': [], 'seconds': 1.0, 'usd': 0.0, 'tokens': 0, 'queries': [], 'model': 'm'}
+        m = self.model(slm=[ask('ED notes or nursing notes?', 'ED notes', 'Nursing notes')])
+        with mock.patch.object(router, 'answer', lambda *a, **k: dict(unanswered)), mock.patch.object(takeover, 'answer', lambda *a, **k: dict(asked)), \
+                mock.patch.dict(os.environ, {'AGERE_TIERED_TAKEOVER': 'on'}):
+            got = app._single(self.stack, 'How many notes mention a fall?')
+        self.assertEqual(got['clarification_checkpoint']['tiered']['kind'], 'conversation'); self.assertIn('- ED notes: ED notes', m.calls[0][1])
+
     def test_without_a_model_the_one_card_question_is_still_asked(self):
         self.model(slm=['x'], llm=['y'])
         got = app._single(self.stack, QUESTION)
