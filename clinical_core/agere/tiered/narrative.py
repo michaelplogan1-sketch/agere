@@ -45,9 +45,10 @@ def facts(columns, rows):
 def by_code(columns, rows, read=None, statement=None):
     """The sentence code can always write."""
     if read and read.get('mode') == 'count' and len(rows) == 1:
-        n, yes, no, open_ = rows[0]
-        return (f'{_show(yes)} of the {_show(n)} documents read state it' + (f' ({_show(open_)} could not be decided)' if open_ else '') +
-                (f': "{statement}"' if statement else '.'))
+        n, yes, no, open_ = rows[0][:4]
+        patients = dict(zip(columns, rows[0])).get('patients_stating')   # read.py adds it when the plan selects patient_id
+        return (f'{_show(yes)} of the {_show(n)} documents read state it' + (f', for {_show(patients)} patients' if patients is not None else '')
+                + (f' ({_show(open_)} could not be decided)' if open_ else '') + (f': "{statement}"' if statement else '.'))
     if read and read.get('mode') == 'extract':
         counts = {}
         for r in rows: counts[r[-1]] = counts.get(r[-1], 0) + 1

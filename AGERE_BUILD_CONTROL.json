@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-17T13:48:54.760498+00:00",
+  "updated_at": "2026-11-17T14:28:39.434266+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -934,7 +934,7 @@
     "current_gate_id": "G7",
     "last_delivered_gate": "G5",
     "product_commit": "ecfa2d62",
-    "updated_at": "2026-11-17T13:48:54.760498+00:00",
+    "updated_at": "2026-11-17T14:28:39.434266+00:00",
     "user_behavior_delta": "An unclear question becomes a short conversation: a language model asks only what the customer's definitions, own facilities and the person's saved defaults leave open, remembers the answers, stops after three exchanges (then shows each open reading computed side by side), hands one explicit question to the stack and saves the person's choices so they are not asked again.",
     "measured_failure_reduction": "Clarifying conversation: built and tested with mocked models, development sets unchanged (53/53, 31/31, 13/13, 13/13); not yet measured with real askers. notes_v1 first run (2 runs): Agere readers on the same notes 94.0% at $0.004 a question; top-tier model alone 88.5% at $0.059; Agere whole stack from the question 54.5% at $0.066 (document selection, not reading, is the failure).",
     "evidence": [
@@ -7904,6 +7904,16 @@
       "evidence": [
         "eval/tiered/notes_v1_results_fair.json",
         "artifacts/agere-tiered-core/devsets-notefix-regression.log"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T14:28:39.434266+00:00",
+      "decision": "notes_v1 with the WHOLE stack (app.try_answer, frontier takeover included; seen set, 2 runs): 73.0% right (73, 73), 38 wrong, 16 declined, $0.054 a question, 32 s; LLM connected to the records 81.5%, 37 wrong, $0.50, 41 s. Takeover answered 16 (8 right, $0.32 each); 9 questions got no tiered answer at all; 4 methods answers had no usable figure. Fixed a crash my note-selection change caused in the app's summary writer (narrative.py), which the development sets do not reach. Standing rule: comparisons test the whole stack through the app entry, never router.answer alone.",
+      "reason": "Mike 2026-11-17: 'when you are comparing our stack to an LLM please test the entire thing'.",
+      "evidence": [
+        "eval/tiered/notes_v1_results_whole_stack.json",
+        "clinical_core/agere/tiered/narrative.py"
       ],
       "scope_impact": "None."
     }
