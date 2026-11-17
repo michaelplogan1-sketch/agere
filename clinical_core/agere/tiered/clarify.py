@@ -89,6 +89,9 @@ def _context(question):
     if governed:
         lines.append('Governed definitions:')
         lines += [f'- {name}: {text}' for name, text in governed]
+    from . import knowledge   # cited clinical definitions: what the sources settle, and where they differ (worth asking)
+    clinical = knowledge.context(question)
+    if clinical: lines.append(clinical)
     return '\n'.join(lines) or '(none apply to this question)'
 
 

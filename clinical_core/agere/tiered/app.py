@@ -381,6 +381,11 @@ def _climb(stack, question, cohort, takeover_ok, near):
     from . import catalogue
     rule = catalogue.stated(question) if catalogue.enabled() else None
     if rule: answer['facts']['definitions_used'] = rule
+    from . import knowledge
+    clinical = knowledge.stated(question)   # the cited clinical definitions the answer relied on
+    if clinical:
+        answer['facts']['clinical_definitions_used'] = clinical
+        answer['sources'] = answer['sources'] + [f"{s['citation']}: {s['title']} ({s['url']})" for c in knowledge.cited(question) for s in c['sources']]
     checked = outcome.get('readings_checked') or {}
     if checked.get('agree'):
         answer['facts']['two_readings'] = f"This question can be read as {' or '.join(r.lower() for r in checked['readings'])}; both were computed and give the same answer."

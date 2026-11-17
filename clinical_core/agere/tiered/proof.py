@@ -1042,14 +1042,17 @@ def run(runs=3, workers=4):
         if not hasattr(local, 'b'): local.b = bottle_store.Bottles(scratch / 'bottles.sqlite3')
         return local.b
 
-    from . import catalogue, governed, readings
+    from . import catalogue, governed, knowledge, readings
 
     def one(job):
         item, arm, r = job
-        catalogue.ENABLED.set(arm in ('stack', 'stack_unchecked', 'stack_guess'))   # the governed definitions are the stack's; the other arms run without them
-        governed.ENABLED.set(arm in ('stack', 'stack_plain', 'stack_guess'))   # so are the definition checks; stack_unchecked measures them by their absence
-        readings.ENABLED.set(arm in ('stack', 'stack_plain', 'stack_unchecked'))   # stack_guess is the stack answering one reading, as before readings.py
-        ladder = arm in ('stack', 'stack_plain', 'stack_unchecked', 'stack_guess')
+        # *_knowledge arms add the clinical knowledge layer with its unreviewed candidates (an evaluation of the candidates);
+        # every other arm runs without it, whatever the environment says.
+        knowledge.ENABLED.set('candidates' if arm.endswith('_knowledge') else 'off')
+        catalogue.ENABLED.set(arm in ('stack', 'stack_unchecked', 'stack_guess', 'stack_knowledge'))   # the governed definitions are the stack's; the other arms run without them
+        governed.ENABLED.set(arm in ('stack', 'stack_plain', 'stack_guess', 'stack_knowledge'))   # so are the definition checks; stack_unchecked measures them by their absence
+        readings.ENABLED.set(arm in ('stack', 'stack_plain', 'stack_unchecked', 'stack_knowledge'))   # stack_guess is the stack answering one reading, as before readings.py
+        ladder = arm in ('stack', 'stack_plain', 'stack_unchecked', 'stack_guess', 'stack_knowledge')
         try:
             if arm == 'assistant':   # the comparison at its strongest: top-tier model, SQL tool, the definitions document (assistant.py)
                 from . import assistant
@@ -1121,6 +1124,8 @@ def report(results, items, runs, wall, data):
     names = {'stack': 'Agere stack (with the governed definitions and their code checks)', 'stack_unchecked': 'Agere stack with the governed definitions but without their code checks',
              'stack_plain': 'Agere stack without the governed definitions', 'stack_guess': 'Agere stack answering one reading of every question (no two-reading check)',
              'frontier': "frontier model writing its own SQL from the schema (run through the stack's checks, no governed definitions)",
+             'stack_knowledge': 'Agere stack with the clinical knowledge layer (cited candidate definitions, their code checks and declines)',
+             'frontier_knowledge': 'frontier model writing its own SQL with the clinical knowledge layer only (no governed definitions)',
              'assistant': 'general-purpose assistant at its best: top-tier model, read-only SQL tool (up to 8 steps), the whole definitions document, no Agere checks'}
     for arm, name in names.items():
         rs = [r for r in results if r['arm'] == arm]
