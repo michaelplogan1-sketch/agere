@@ -13,7 +13,10 @@ Arms, cheapest first, each run `runs` times so run-to-run consistency is measure
   readers    Agere's readers on the scope's documents (System One, then the small model, the frontier reader where they are
              unsure; code counts). Isolates reading.
   stack      Agere's whole stack from the question alone: the router (SQL selects the documents, the readers read, code counts).
-  llm_alone  the top-tier model given the question and the text of every document in scope, answering in one call.
+  llm_alone  the top-tier model handed the text of every document in scope (a reading diagnostic: it never has to find them).
+  emr_assistant  THE COMPARISON (the sales question): a general LLM connected straight to the same records, given only the
+             question, with a read-only SQL tool and a document reader, as a hospital would connect one. It pays for every
+             token it reads. Agere's 'stack' arm also starts from the question alone.
 Every answer is written to a journal as it is produced; a run stopped at a provider limit resumes where it stopped.
 
     python -m clinical_core.agere.tiered.notes_proof key [workers]
@@ -317,6 +320,7 @@ def _value_from_rows(aggregate, columns, rows):
         if 'documents_stating' in columns and len(rows) == 1: return rows[0][columns.index('documents_stating')]
         if 'record_id' in columns: return len(distinct('record_id'))
         return single[0] if single and len(single) == 1 else None
+    if 'patients_stating' in columns and len(rows) == 1: return rows[0][columns.index('patients_stating')]
     if 'patient_id' in columns: return len(distinct('patient_id'))
     if 'documents_stating' in columns and len(rows) == 1: return rows[0][columns.index('documents_stating')]
     return single[0] if single and len(single) == 1 else None
@@ -349,7 +353,80 @@ def _alone_arm(q, scratch, run):
             'answer': str(got.get('answer') or '')[:400]}
 
 
-ARMS = {'readers': _readers_arm, 'stack': _stack_arm, 'llm_alone': _alone_arm}
+EMR_STEPS = int(os.environ.get('AGERE_NOTES_EMR_STEPS', '12'))
+EMR_READ = 40   # documents one read may return
+EMR_SYSTEM = '''You are an AI assistant connected directly to a health system's records (a read-only SQLite database with its
+clinical notes, scanned documents and exchange documents). A colleague asks a question; you answer it yourself from the
+records. Find the documents the question is about, read them, and decide each one yourself. A negated, ruled-out,
+merely planned, historical-only or family-member mention does not count unless the question says it does.
+
+Each reply is ONE JSON object and nothing else, one of:
+  {"action": "query", "sql": "<one SELECT>", "why": "<what you are checking>"}
+      run a read-only query; you see its columns and up to 30 rows. The table "document" lists every document
+      (record_id, patient_id, source, document_type, event_date, organization_id, text_chars).
+  {"action": "read", "record_ids": ["<id>", ...]}
+      the full text of up to 40 documents.
+  {"action": "answer", "record_ids": ["<every document the question wants counted>"], "patient_ids": ["<their patients>"],
+   "count": <the number the question asks for>, "answer": "<one sentence>"}
+  {"action": "cannot_answer", "reason": "<why>"}
+You have at most %(steps)d replies in all, so leave yourself one for the answer. SQLite dialect only.'''
+
+
+def _emr_arm(q, scratch, run):
+    """A general LLM connected straight to the records: question only, a SQL tool and a document reader, and nothing of Agere."""
+    from . import assistant
+    db = store.connect()
+    steps, transcript, usd, tokens = [], [], 0.0, 0
+    try:
+        context = store.schema_text(db)
+        for i in range(EMR_STEPS):
+            user = (f'{context}\n\nQuestion: {q["question"]}\n\n' + '\n\n'.join(transcript) +
+                    f'\n\nReply {i + 1} of {EMR_STEPS}' + (' (your last: answer or cannot_answer).' if i == EMR_STEPS - 1 else '.'))
+            text, meta = models._claude(ALONE_MODEL, EMR_SYSTEM % {'steps': EMR_STEPS}, user, timeout=300)
+            usd += meta['usd']; tokens += meta['tokens']; steps.append(meta)
+            try:
+                move = models._json(text)
+            except Exception:
+                transcript.append(f'Your reply {i + 1} was not one JSON object.'); continue
+            act = move.get('action')
+            if act == 'cannot_answer':
+                return {'value': None, 'status': 'unanswered', 'usd': usd, 'tokens': tokens, 'steps': len(steps), 'reason': str(move.get('reason'))[:300]}
+            if act == 'query':
+                try:
+                    out = assistant._shown(*assistant._run(db, move.get('sql')))
+                except Exception as exc:
+                    out = f'error: {exc}'
+                transcript.append(f'Your reply {i + 1}: {json.dumps(move)[:3000]}\nResult: {out[:12000]}'); continue
+            if act == 'read':
+                ids = [str(r) for r in (move.get('record_ids') or [])][:EMR_READ]
+                texts = store.texts(ids, db)
+                shown = '\n\n---\n\n'.join(f'Document {r} ({texts[r]["source"]}, {texts[r]["event_date"]})\n{texts[r]["text"]}' for r in ids if r in texts)
+                transcript.append(f'Your reply {i + 1}: read {len(ids)} documents\n{shown or "no such documents"}'); continue
+            if act == 'answer':
+                count, patients = move.get('count'), sorted({str(p) for p in move.get('patient_ids') or []})
+                chosen = [str(r) for r in move.get('record_ids') or []]
+                if q['aggregate'] == 'list_patients': value = patients
+                elif isinstance(count, (int, float)) and not isinstance(count, bool): value = int(count)
+                else: value = len(set(chosen)) if q['aggregate'] == 'count_documents' else len(patients)
+                scope = keyed_documents(q['id'])
+                return {'value': value, 'status': 'answered', 'usd': usd, 'tokens': tokens, 'steps': len(steps),
+                        'labels': {r: ('yes' if r in chosen else 'no') for r in scope}, 'answer': str(move.get('answer') or '')[:400]}
+            transcript.append(f'Your reply {i + 1} had no known action.')
+        return {'value': None, 'status': 'partial', 'usd': usd, 'tokens': tokens, 'steps': len(steps)}
+    finally:
+        db.close()
+
+
+_KEYED = {}
+
+
+def keyed_documents(qid):
+    if not _KEYED: _KEYED.update({k: list(v['documents']) for k, v in json.loads(KEY.read_text())['questions'].items()})
+    return _KEYED.get(qid, [])
+
+
+TAG = ('-' + os.environ['AGERE_NOTES_TAG']) if os.environ.get('AGERE_NOTES_TAG') else ''   # a later version of an arm (a re-score) keeps its own journal
+ARMS = {'readers': _readers_arm, 'stack': _stack_arm, 'llm_alone': _alone_arm, 'emr_assistant': _emr_arm}
 
 
 def estimate():
@@ -375,9 +452,10 @@ def run(arms, runs=2, workers=4):
         shutil.copy(os.environ.get('AGERE_TIERED_BOTTLES', bottle_store.DEFAULT), scratch / 'bottles.sqlite3')
     out = []
     for arm in arms:
-        path, done = _journal(f'journal-{data["version"]}-{arm}.jsonl')
+        path, done = _journal(f'journal-{data["version"]}-{arm}{TAG}.jsonl')
         have = {(r['qid'], int(r['run'])) for r in done}
-        jobs = [(q, r) for r in range(int(runs)) for q in data['questions'] if q['id'] in keyed and (q['id'], r) not in have]
+        first = int(os.environ.get('AGERE_NOTES_FIRST', '0')) or len(data['questions'])   # a cost probe on the first N questions; the rest resume later
+        jobs = [(q, r) for r in range(int(runs)) for q in data['questions'][:first] if q['id'] in keyed and (q['id'], r) not in have]
         print(f'{arm}: {len(have)} answers saved, {len(jobs)} to run', flush=True)
         stopped = []
 
@@ -417,7 +495,7 @@ def report():
              f"Key agreement before adjudication {keyed['agreement']['share']:.1%} (kappa {keyed['agreement']['kappa']}), {keyed['agreement']['adjudicated']} adjudicated.",
              'Scoring: +1 right, 0 declined, -10 wrong. A count must be exact; a patient list must match exactly.', '']
     summary = {}
-    for arm in ARMS:
+    for arm in [a + t for a in ARMS for t in ('', *sorted({p.name.split(a, 1)[1][:-6] for p in OUT.glob(f'journal-{data["version"]}-{a}-*.jsonl')}))]:
         path = OUT / f'journal-{data["version"]}-{arm}.jsonl'
         if not path.exists(): continue
         rows = [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
