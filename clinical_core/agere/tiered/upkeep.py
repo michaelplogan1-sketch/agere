@@ -171,10 +171,8 @@ def _second_params(second_sql, detail, values):
     for name in _placeholders(second_sql):
         if name in recorded: out[name] = recorded[name]
         elif name in values: out[name] = str(values[name])
-        else:
-            same = [k for k, v in values.items() if str(v) in [str(x) for x in recorded.values()]] or ([next(iter(values))] if len(values) == 1 else [])
-            if not same: return None, {}
-            out[name] = str(values[same[0]])
+        else:   # a parameter of the second query whose value was not recorded: the check cannot be replayed
+            return None, {}
         follow = [k for k, v in values.items() if k == name] or [k for k, v in values.items() if str(v) == out[name]]
         if len(follow) == 1: link[name] = follow[0]
     return out, link
