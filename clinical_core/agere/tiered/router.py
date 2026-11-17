@@ -13,16 +13,33 @@ TOKEN_CEILING = 60000
 def answer(question, **kw):
     """-> {'status','final_tier','columns','rows','recipe','validation','steps','seconds','escalations'}.
 
-    A question with two plain readings (readings.py) is answered both ways. When the readings agree the answer is given
-    once; when they differ the status is 'needs_choice' with each reading's answer under 'readings', and nothing is guessed."""
+    A question with two plain readings is answered each way: readings found by rule (readings.py) before any model, or
+    readings the frontier model returns when the question is unclear in a way no governed definition settles. When the
+    readings agree the answer is given once; when they differ the status is 'needs_choice' with each reading's answer under
+    'readings', and the person is asked. Nothing is guessed."""
     from . import readings
     two = readings.detect(question)
-    if not two: return _ladder(question, **kw)
+    if two: return _each_reading(question, two, kw)
+    out = _ladder(question, **kw)
+    if out['status'] == 'needs_readings':   # the frontier model found readings the rules do not know
+        two = {'rule': 'model', 'ask': 'This question can be read more than one way, and the answers differ. Which do you mean?',
+               'readings': [{'id': f'reading{i + 1}', 'label': r['label'], 'question': r['question'], 'meaning': r['question']}
+                            for i, r in enumerate(out['readings'])]}
+        return _each_reading(question, two, kw, prior=out)
+    return out
+
+
+def _each_reading(question, two, kw, prior=None):
+    from . import models, readings
     started = time.monotonic()
-    outs = [(r, _ladder(r['question'], **kw)) for r in two['readings']]
-    steps = [{**s, 'reading': r['id']} for r, o in outs for s in o['steps']]
-    escalations = [e for _, o in outs for e in o['escalations']]
-    seconds = round(time.monotonic() - started, 2)
+    token = models.NO_READINGS.set(True)   # each reading is answered as asked, never split again
+    try:
+        outs = [(r, _ladder(r['question'], **kw)) for r in two['readings']]
+    finally:
+        models.NO_READINGS.reset(token)
+    steps = (prior['steps'] if prior else []) + [{**s, 'reading': r['id']} for r, o in outs for s in o['steps']]
+    escalations = (prior['escalations'] if prior else []) + [e for _, o in outs for e in o['escalations']]
+    seconds = round(time.monotonic() - started + (prior['seconds'] if prior else 0.0), 2)
     answered = [(r, o) for r, o in outs if o['status'] == 'answered']
     if len(answered) == len(outs) and all(readings.same(answered[0][1]['rows'], o['rows'], question) for _, o in answered[1:]):
         r, o = answered[0]
@@ -265,6 +282,8 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
         return done('partial', None, missing=f'Token ceiling {token_ceiling} reached before the frontier model was called')
     recipe, step = models.llm_recipe(question)
     steps.append(step)
+    if recipe is None and step.get('outcome') == 'readings':   # unclear in a way no definition settles: answer each reading (answer())
+        return done('needs_readings', 'llm', readings=step['readings'])
     if recipe is None and step.get('outcome') == 'cannot_answer':
         escalations.append({'from': 'llm', 'reason': 'one query over the semantic tables cannot answer this: ' + str(step.get('reason'))[:200]})
         return done('unanswered', None, missing=step.get('reason'))

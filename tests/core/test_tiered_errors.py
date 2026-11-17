@@ -47,3 +47,28 @@ class Errors(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+@needs_warehouse
+class ModelReadings(unittest.TestCase):
+    """The frontier model returns readings for an unclear question; each is answered; the person is asked only if they differ."""
+    def run_with(self, a_sql, b_sql):
+        two = {'tier': 'llm', 'outcome': 'readings', 'tokens': 0, 'usd': 0.0,
+               'readings': [{'label': 'Our four hospitals', 'question': 'Q at our own hospitals'}, {'label': 'Every hospital', 'question': 'Q at every hospital'}]}
+        def llm(question, **kw):
+            if models.NO_READINGS.get():
+                sql = a_sql if 'own' in question else b_sql
+                return {'sql': sql, 'params': {}, 'grain': []}, {'tier': 'llm', 'outcome': 'proposed', 'tokens': 0, 'usd': 0.0}
+            return None, two
+        with mock.patch.object(models, 'llm_recipe', side_effect=llm):
+            return router.answer(Q, tiers=('llm',))
+
+    def test_different_answers_ask(self):
+        o = self.run_with('SELECT 116 AS n', 'SELECT 459 AS n')
+        self.assertEqual(o['status'], 'needs_choice')
+        self.assertEqual([r['label'] for r in o['readings']], ['Our four hospitals', 'Every hospital'])
+
+    def test_same_answer_is_given(self):
+        o = self.run_with('SELECT 7 AS n', 'SELECT 7 AS n')
+        self.assertEqual((o['status'], o['rows']), ('answered', [[7]]))
+        self.assertTrue(o['readings_checked']['agree'])

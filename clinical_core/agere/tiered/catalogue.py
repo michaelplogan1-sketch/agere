@@ -111,6 +111,12 @@ DEFINITIONS = (
     ('immunizations', r'vaccin|immuniz|\bflu\b|influenza|\bshots?\b',
      "Vaccinations are in immunization, one row per dose, dated by event_date. A flu shot is vaccine 'influenza' or "
      "'influenza high-dose': count both unless the question names one."),
+    # Added 2026-11-16 after the independent proof_v13: "our hospitals" is the customer's own facilities, a setting.
+    ('our facilities', r'\bour (?:[a-z-]+ ){0,2}(?:hospitals?|facilit|eds?\b|emergency|inpatient|admissions|beds|units?|ors?\b|operating)|\b(?:at|in|across) our\b|\bwe (?:admit|discharg|treat|see)',
+     "'Our hospitals', 'our EDs', 'our admissions' and the like mean the customer's own facilities: rows whose organization_id "
+     "is in own_organization (stays, hospital_visit, utilization_event, encounter; claim.service_organization_id). Without "
+     "'our', or when the question says all hospitals, every facility the population used, and our members or patients means "
+     "the whole population wherever they were seen."),
     # Added 2026-11-16: revenue cycle (HFMA Claim Integrity Task Force) and perioperative (AACD) definitions.
     ('revenue cycle', r'deni|overturn|appeal|days to (?:pay|payment|submit|bill)|payment lag|clean claim|revenue cycle|\bcarc\b|write[- ]off',
      "For the hospital's own revenue cycle (our denials, initial or final denials, overturns, days to payment or to submit), the "

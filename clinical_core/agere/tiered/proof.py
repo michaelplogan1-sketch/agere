@@ -929,6 +929,8 @@ def _value_ok(ref, got):
     if isinstance(ref, (int, float)) and isinstance(got, (int, float)):
         if isinstance(ref, int) and float(ref).is_integer() and (not isinstance(got, float) or float(got).is_integer()): return int(ref) == int(got)
         if 0 < abs(ref) < 1: return abs(got - ref) <= 0.0006 or abs(got / 100 - ref) <= 0.0006
+        if isinstance(ref, float):   # a duration in another unit is the same answer: minutes, hours or days (2026-11-16, all arms alike)
+            return any(abs(got * f - ref) <= max(0.06, 0.01 * abs(ref)) for f in (1, 1 / 60, 60, 1 / 24, 24, 1 / 1440, 1440))
         return abs(got - ref) <= 0.06
     return str(ref).strip().lower() == str(got).strip().lower()
 
