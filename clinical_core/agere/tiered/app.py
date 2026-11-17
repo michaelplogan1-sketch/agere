@@ -327,6 +327,9 @@ def _climb(stack, question, cohort, takeover_ok, near):
         learn.spawn_auto()  # a new recipe was saved: check and promote it in the background, with no manual step
     ledger_store.Ledger().write('app', question, outcome, config={'tiers': list(TIERS), **({'cohort_patients': len(cohort)} if cohort is not None else {})})
     if outcome['status'] == 'needs_clarification':   # unclear, and a person is here: ask them before computing anything
+        from . import clarify
+        held = _converse(stack, question, clarify.begin(question, outcome['readings']), outcome['steps'], outcome['seconds'])
+        if held is not None: return held   # a language model holds the conversation; without one, the one-card question below
         options = [{'id': r['id'], 'label': r['label'], 'meaning': r.get('meaning') or r['question']} for r in outcome['readings']]
         return _clarify(stack, question, 'reading', outcome['ask'],
                         'The question can be read more than one way and nothing in it or in the governed definitions settles which; '
@@ -494,7 +497,7 @@ def _clarify(stack, question, kind, ask, reason, options, context=None, steps=()
     the conversation and shows it as a card with the options and a free-text box; the reply comes back to resume()."""
     from ..clinical import clarification
     usd, calls = sum(s.get('usd', 0.0) for s in steps), sum(1 for s in steps if s.get('model'))
-    slot = {'needs_input': 'missing_input', 'reading': 'intended_reading', 'closest': 'closest_analysis'}[kind]
+    slot = {'needs_input': 'missing_input', 'reading': 'intended_reading', 'closest': 'closest_analysis', 'conversation': 'intended_reading'}[kind]
     spec = clarification.validate({'slot': slot, 'kind': 'input' if kind == 'needs_input' else 'goal', 'question': ask, 'reason': reason,
                                    'options': [{'id': o['id'], 'label': o['label'], 'meaning': o['meaning']} for o in options]})
     ledger_store.Ledger().write('app_clarify', question, {'status': 'clarify', 'final_tier': None, 'steps': list(steps), 'seconds': seconds,
@@ -513,6 +516,61 @@ def _clarify(stack, question, kind, ask, reason, options, context=None, steps=()
                                 'frontier_called': kind == 'reading', 'clarification': {'kind': kind, 'asked': ask}},
             'planning_economics': {'new_api_estimate_usd': usd, 'known_api_estimate_usd': usd, 'total_cost_known': True, 'scope': 'Tiered core model calls only.'},
             'tiered_core': {'final_tier': 'clarify', 'seconds': seconds, 'escalations': [], 'bottled': None, 'asked': ask}}
+
+
+def _converse(stack, question, turn, steps=(), seconds=0.0):
+    """One turn of the clarifying conversation (clarify.py) as the app's result. -> result dict, or None to fall back.
+    'ask': the model's question goes to the person as a card, the conversation saved with it; 'ready': the one explicit
+    question runs through the normal stack; 'side_by_side': each reading still open is computed and shown together."""
+    if turn is None: return None
+    from . import clarify, models
+    from ..clinical import clarification
+    state = turn['state']
+    if turn['action'] == 'ask':
+        n = len(state['exchanges']) + 1
+        return _clarify(stack, question, 'conversation', turn['ask'],
+                        f'Question {n} of at most {clarify.MAX_EXCHANGES}: the customer\'s definitions, its own facilities and your saved defaults do not settle this, '
+                        'and the answers would differ. Pick one, or say what you mean.', turn['options'],
+                        context={'conversation': state}, steps=list(steps) + turn['steps'], seconds=seconds)
+    asked = state['readings'] if turn['action'] == 'side_by_side' else [{'id': 'explicit', 'label': 'As clarified', 'question': turn['question']}]
+    results = []
+    with clarification.interaction('autonomous'):
+        settled = models.NO_READINGS.set(True)   # the person has said what they mean: answered as worded, never split or asked again
+        try:
+            for r in asked:
+                got = try_answer(stack, r['question'])
+                if got is None and turn['action'] == 'ready':
+                    got = _takeover(r['question'], None, {'status': 'unanswered', 'steps': [], 'escalations': [{'from': 'clarification', 'reason': 'clarified question'}],
+                                                          'seconds': 0.0, 'missing': 'The person clarified the question in conversation; answer it exactly as worded.'})
+                if got is not None: results.append((r, got))
+        finally:
+            models.NO_READINGS.reset(settled)
+    if turn['action'] == 'side_by_side':   # a reading answered only by "needs an input" has no computation to set beside the others
+        results = [(r, g) for r, g in results if (g.get('graph') or {}).get('nodes')]
+    if not results: return None
+    usd, calls = clarify.spent(state)
+    talk = ' | '.join(f'Asked: "{x["asked"]}" Replied: "{x["reply"]}"' for x in state['exchanges']) or 'no question was needed; your saved defaults settled it'
+    if len(results) == 1:
+        r, result = results[0]
+    else:
+        how = {'method': 'clarification_side_by_side', 'usd': 0.0, 'tokens': 0, 'seconds': 0.0}
+        result = _combine(question, [x['question'] for x, _ in results], [g for _, g in results], how)
+        result['answer']['limitations'][0] = (f'After {len(state["exchanges"])} questions the reading was still open, so each remaining reading was '
+                                              'computed by the stack and is shown side by side. Agere does not choose between them for you.')
+        result['answer']['headline'] = 'Each reading still open, side by side. ' + result['answer']['headline']
+    receipt, econ = result.setdefault('planner_receipt', {}), result.setdefault('planning_economics', {})
+    receipt['known_api_estimate_usd'] = round((receipt.get('known_api_estimate_usd') or 0.0) + usd + sum(s.get('usd', 0.0) for s in steps), 6)
+    econ['known_api_estimate_usd'] = econ['new_api_estimate_usd'] = receipt['known_api_estimate_usd']
+    result['new_paid_api_calls'] = (result.get('new_paid_api_calls') or 0) + calls
+    receipt['clarifying_conversation'] = {'exchanges': state['exchanges'], 'outcome': turn['action'], 'read_as': [x['question'] for x, _ in results],
+                                          'defaults_applied': state['defaults'], 'defaults_saved': state.get('choices') or [], 'usd': usd,
+                                          'models': list(dict.fromkeys(s['model'] for s in state['steps'] if s.get('model'))), 'authority': 'user_intent_only'}
+    facts = result['answer'].setdefault('facts', {})
+    result['answer']['facts'] = {'clarified': f'{talk}. Read as: ' + ' / '.join(f'"{x["question"]}"' for x, _ in results)
+                                              + f'. The conversation cost ${usd:.4f} in model calls; the language model only clarified, the stack computed the answer.'
+                                              + (' Your choices were saved as your defaults: ' + '; '.join(f'{c["about"]}: {c["choice"]}' for c in state['choices']) + '.'
+                                                 if state.get('choices') else ''), **facts}
+    return result
 
 
 def _figure(columns, rows):
@@ -582,6 +640,10 @@ def resume(stack, saved, reply):
     said = text or option.get('meaning') or option.get('label') or ''
     EARLIER.set(tuple(context.get('earlier') or ())[-4:])
     result, read_as = None, None
+    if context.get('kind') == 'conversation':   # the clarifying conversation goes on: the model reads the reply and asks, or hands over
+        from . import clarify
+        held = _converse(stack, original, clarify.reply(context['conversation'], text, option))
+        if held is not None: return held
     with clarification.interaction('autonomous'):
         picked = (context.get('questions') or {}).get(option.get('id'))
         if picked:
