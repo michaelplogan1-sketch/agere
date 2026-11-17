@@ -85,7 +85,13 @@ def estimate(claims, valuation, months, history=24):
             if _add_months(m, k + 1) <= vm:   # both ages observed by the valuation date
                 num += cum(m, k + 1); den += cum(m, k)
         factors[k] = num / den if den else 1.0
-    out = {'paid_to_date': {}, 'chain_ladder': {}, 'settlement': {}}
+    out = {'paid_to_date': {}, 'chain_ladder': {}, 'settlement': {}, 'bornhuetter_ferguson': {}}
+    # Bornhuetter-Ferguson (research row, 2026-11-17): ultimate = paid + (1 - 1/CDF) x prior expected ultimate; the prior is
+    # the mean chain-ladder ultimate of incurred months 7-18 before the valuation month (mature by then).
+    def cdf(k):
+        d = 1.0
+        for j in range(k, maxlag): d *= factors[j]
+        return d
     # Settlement: payment ratio and payment chance of claims pending at each age, from incurred months 13-24 back (settled by now).
     old_lo, old_hi = _add_months(vm, -history), _add_months(vm, -13)
     ratio = {a: [0.0, 0.0] for a in AGES}
@@ -120,6 +126,9 @@ def estimate(claims, valuation, months, history=24):
         paid = cum(m, k)
         dev = 1.0
         for j in range(k, maxlag): dev *= factors[j]
+        mature = [_add_months(vm, -j) for j in range(7, 19)]
+        prior = sum(cum(x, (int(vm[:4]) - int(x[:4])) * 12 + int(vm[5:]) - int(x[5:])) * cdf((int(vm[:4]) - int(x[:4])) * 12 + int(vm[5:]) - int(x[5:])) for x in mature) / len(mature)
+        out['bornhuetter_ferguson'][m] = round(paid + (1 - 1 / dev) * prior, 2) if dev else round(paid, 2)
         out['paid_to_date'][m] = round(paid, 2)
         out['chain_ladder'][m] = round(paid * dev, 2)
         paid_b = cum(m, k, tri_b); dev_b = 1.0
