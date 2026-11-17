@@ -109,7 +109,8 @@ def tables(db=None):
             return tuple(r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite%' ORDER BY name"))
         finally:
             if own: db.close()
-    return TABLES
+    from . import customer
+    return TABLES + tuple(customer.view_names())   # the customer's definition views are read like the layer's tables
 
 
 # Tables whose rows belong to one patient. Restricting these restricts every recipe: the document catalog is built
@@ -152,6 +153,8 @@ def connect(cohort=None):
         aco.install(db, cohort)
         readiness.install(db)
         install_own_facilities(db)
+        from . import customer
+        customer.install(db)   # the customer's own certified definitions, as views (onboarding)
     db.execute('PRAGMA query_only=ON')
     return db
 

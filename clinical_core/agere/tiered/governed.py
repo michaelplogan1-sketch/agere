@@ -190,4 +190,10 @@ def check(question, sql, params=None):
         if isinstance(value, dict): value = value.get('value')
         if isinstance(value, str): text = re.sub(rf':{re.escape(name)}\b', "'" + value.replace("'", "''") + "'", text)
     q, s = ' ' + str(question) + ' ', ' '.join(text.split())
+    # SQL that reads a customer definition view this question calls for follows the customer's certified definition, which
+    # overrides the built-in ones (customer.py): the built-in checks do not apply to it.
+    from . import customer
+    applying = {d['view']['name'].lower() for d in customer.definitions() if isinstance(d.get('view'), dict) and d['view'].get('name')
+                and re.search(d.get('applies_when') or r'(?!)', q, re.I)}
+    if any(_reads(s, v) for v in applying): return []
     return [m for m in (c(q, s) for c in CHECKS) if m]

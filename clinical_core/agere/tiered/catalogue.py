@@ -169,10 +169,18 @@ def block(question):
     """The text the SQL writer is given: the governed definitions this question calls for, then its vocabulary. Empty when none apply."""
     # Only the definitions the question's words call for: proof_v5 found the whole catalogue in every prompt added about half
     # to the frontier rung's cost for a gain of three right answers in 288.
+    from . import customer
+    theirs = customer.relevant(question)
     found = relevant(question)
-    if not found and not vocabulary(question): return ''
-    lines = ['Governed definitions (follow these; they decide between plausible readings):']
-    lines += [f'- {name}: {text}' for name, text in found]
+    if not found and not theirs and not vocabulary(question): return ''
+    lines = []
+    if theirs:
+        lines.append("The customer's own definitions (certified by their teams; follow these first: where they differ from the governed "
+                     'definitions below, these win):')
+        lines += [f'- {name}: {text}' for name, text in theirs]
+    if found:
+        lines.append('Governed definitions (follow these; they decide between plausible readings):')
+        lines += [f'- {name}: {text}' for name, text in found]
     words = vocabulary(question)
     if words:
         lines.append("This question's words in the warehouse's own vocabulary: " + '; '.join(f'{value} ({where})' for value, where in words))
@@ -181,5 +189,6 @@ def block(question):
 
 def stated(question):
     """One line for an answer: the governed definitions that apply to this question."""
-    found = relevant(question)
+    from . import customer
+    found = customer.relevant(question) + relevant(question)
     return ('Definitions used: ' + ' '.join(f'{name[0].upper() + name[1:]}: {text}' for name, text in found[:3])) if found else None
