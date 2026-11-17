@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-17T10:54:05.724093+00:00",
+  "updated_at": "2026-11-17T12:32:38.003807+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -7862,6 +7862,23 @@
         "clinical_core/agere/tiered/router.py"
       ],
       "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T12:32:38.003807+00:00",
+      "decision": "Clinical knowledge is a governed, cited layer retrieved at question time; a literature-proposed concept is a candidate until its tests pass and Mike approves its exact content; nothing is learned or enforced unreviewed. Not activated by default.",
+      "reason": "Mike asked why the stack does not learn from academic literature; the agreed answer was a cited layer with review rather than unsupervised learning. clinical_v1 shows a modest gain (+4 and +7 right, ~20% lower cost) within single-run noise, so default activation waits for review and a repeated run.",
+      "evidence": [
+        "clinical_core/agere/tiered/knowledge.py",
+        "config/agere/clinical_knowledge/sources.json",
+        "config/agere/clinical_knowledge/concepts.json",
+        "tests/core/test_tiered_knowledge.py",
+        "eval/tiered/clinical_v1.json",
+        "eval/tiered/clinical_v1_references.py",
+        "artifacts/agere-tiered-core/clinical-v1-frontier-arms-2.log",
+        "artifacts/agere-tiered-core/clinical-v1-stack-arms-2.log",
+        "artifacts/agere-tiered-core/clinical-v1-assistant.log"
+      ],
+      "scope_impact": "Adds a clinical knowledge acceptance strand under G7; no acceptance area removed."
     }
   ],
   "unsealed_work": {
@@ -8404,5 +8421,26 @@
   },
   "latest_continuity_receipt": "artifacts/agere-source-obligations-2026-11-11/current-integrated-recovery-delivery-receipt.json",
   "usage_diagnosis": "artifacts/agere-source-escalation-2026-11-11/reset-continuation/usage-diagnosis.json",
-  "continuation_session": "Paused for user-requested Claude handoff; no provider work or automatic continuation."
+  "continuation_session": "Paused for user-requested Claude handoff; no provider work or automatic continuation.",
+  "clinical_knowledge_layer": {
+    "at": "2026-11-17T12:32:38.003807+00:00",
+    "branch": "claude/determined-tharp-a05a2c",
+    "commit": "eb4a90c8",
+    "status": "candidate (not active by default)",
+    "user_behavior_delta": "A cited clinical knowledge layer: 34 curated sources (citation, licence, what is kept) and 31 candidate clinical concepts (codes bound to the warehouse by LOINC/ICD-10/drug class, thresholds, readings where sources differ, what cannot be computed, test cases). The SQL writer, the clarifying conversation and the document readers are given the relevant concept with its citation; answers cite it; an enforced concept rejects a query that contradicts it and declines questions needing absent data. A concept is enforced only when its tests pass and Mike approves its exact content (python -m clinical_core.agere.tiered.knowledge review ID --decision approve --by NAME, refused when run through an agent); an edit returns it to candidate. Default mode serves only enforced concepts, so live behaviour is unchanged until review.",
+    "measured_failure_reduction": "clinical_v1 (41 questions written by an independent evaluator without access to the store, frozen at eb4a90c8 before its first run; strict; 1 run; both phrasings): frontier alone 17 right / 33 wrong / 28 declined, $0.118 an answer; frontier with the layer 21 / 33 / 26, $0.081; Agere stack 16 / 36 / 28, $0.105; stack with the layer 23 / 34 / 21, $0.083. Answers far from the key (outside 5%): stack 21 -> 15, frontier 19 -> 17. Assistant (top-tier model, SQL tool, plain wording only) 10 right + 2 two-reading questions answered both ways / 15 wrong / 5 declined of 41, $0.62 an answer; stack with the layer on plain wording 10 / 21 / 8. Single runs: per-question flips go both ways (frontier +7 / -3), so the gain is modest and not yet established beyond run noise.",
+    "evidence": [
+      "clinical_core/agere/tiered/knowledge.py",
+      "config/agere/clinical_knowledge/sources.json",
+      "config/agere/clinical_knowledge/concepts.json",
+      "tests/core/test_tiered_knowledge.py",
+      "eval/tiered/clinical_v1.json",
+      "eval/tiered/clinical_v1_references.py",
+      "artifacts/agere-tiered-core/clinical-v1-frontier-arms-2.log",
+      "artifacts/agere-tiered-core/clinical-v1-stack-arms-2.log",
+      "artifacts/agere-tiered-core/clinical-v1-assistant.log"
+    ],
+    "remaining_gap": "Every arm scores far below zero (-309 to -344 of 82) because it answers rather than declines when unsure; many wrong answers are within 5% of the key and come from data conventions (result_current, outpatient-only BP, qualifying visits, adults only) the evaluator chose and the stack does not know, which belong in customer definitions, not literature. No concept is reviewed; no source has been checked against its published text (downloads await Mike's approval); the set has one run per arm and no clinician spot-check of the key.",
+    "next_action": "Mike: review concepts (knowledge status / show ID) and approve or reject; approve downloads of the cited public sources so each summary is checked against its text. Then: certify the evaluator's data conventions as customer definitions and re-score clinical_v1 (3 runs) so clinical misses are separated from convention misses; extend the store to the uncovered concepts the set exposed (CKD chronicity, last-result rules, high-intensity statin, low HDL by sex, microcytic anaemia, URI antibiotic measure, QTc, cystatin C, ABI, metabolic syndrome declines)."
+  }
 }
