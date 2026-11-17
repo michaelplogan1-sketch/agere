@@ -2,339 +2,1660 @@
  "schema": "agere-clinical-concepts/1",
  "note": "Clinical concepts proposed from the literature. Every concept starts as a candidate. A candidate is never shown to a live answer and never enforced. It becomes enforced only when (1) its test cases pass at its current content (knowledge.py test) and (2) the clinical reviewer approves that exact content (knowledge.py review). Any edit to a concept's content after review returns it to candidate. Codes and thresholds are stated so they can be checked; the summary is in our own words.",
  "concepts": [
-  {"id": "ckd_egfr_categories", "name": "CKD GFR categories (G1 to G5)", "domain": "kidney",
+  {
+   "id": "ckd_egfr_categories",
+   "name": "CKD GFR categories (G1 to G5)",
+   "domain": "kidney",
    "triggers": "\\bckd\\b|chronic kidney|kidney function|\\begfr\\b|\\bgfr\\b|\\bstage [1-5] (?:ckd|kidney)|\\bg3[ab]?\\b|\\bg[45]\\b",
-   "summary": "KDIGO GFR categories in mL/min/1.73 m2: G1 90 or more, G2 60-89, G3a 45-59, G3b 30-44, G4 15-29, G5 under 15. CKD stage 3 is eGFR 30-59 (G3a plus G3b). A CKD diagnosis needs the abnormality to last more than 3 months (for example two eGFR results under 60 at least 90 days apart); a single low eGFR is reduced kidney function, not CKD. Unless the question says otherwise, use each patient's eGFR results in the period; say whether a single result or two results 90 days apart were required.",
-   "measures": [{"concept": "egfr", "loinc": ["98979-8", "62238-1", "33914-3", "48642-3", "48643-1"], "unit": "mL/min/1.73m2"}],
-   "icd10": ["N18.1", "N18.2", "N18.3", "N18.4", "N18.5", "N18.6", "N18.9"],
-   "check": {"when_question": "\\bstage 3\\b|\\bg3\\b|stage iii", "when_sql": "egfr|98979-8|62238-1|33914-3", "needs": [["30"], ["60", "59"]]},
-   "sources": [{"id": "KDIGO-CKD-2024", "where": "Chapter 1, GFR and albuminuria categories"}, {"id": "LOINC"}, {"id": "ICD10CM-2026", "where": "N18"}],
-   "tests": {"retrieves": ["How many patients have stage 3 CKD by eGFR?", "Patients with an eGFR under 30 in 2028"], "ignores": ["How many ED visits in 2028?"],
-             "check_passes": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'egfr' AND value_canonical >= 30 AND value_canonical < 60"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'egfr' AND value_canonical < 45"],
-             "check_question": "How many patients had stage 3 CKD by eGFR in 2028?"}},
-
-  {"id": "albuminuria_categories", "name": "Albuminuria categories (A1 to A3)", "domain": "kidney",
+   "summary": "KDIGO GFR categories in mL/min/1.73 m2: G1 90 or more, G2 60-89, G3a 45-59, G3b 30-44, G4 15-29, G5 under 15; G1 and G2 are not CKD without markers of kidney damage. CKD stage 3 is eGFR 30-59 (G3a plus G3b). CKD requires the abnormality to last at least 3 months; KDIGO says not to assume chronicity from a single abnormal eGFR (it may be acute kidney injury). Agere's operational test (not KDIGO wording) is two eGFR results under 60 at least 90 days apart. Unless the question says otherwise, use each patient's eGFR results in the period; say whether a single result or two results 90 days apart were required.",
+   "measures": [
+    {
+     "concept": "egfr",
+     "loinc": [
+      "98979-8",
+      "62238-1",
+      "33914-3",
+      "77147-7",
+      "48642-3",
+      "48643-1"
+     ],
+     "unit": "mL/min/1.73m2"
+    }
+   ],
+   "icd10": [
+    "N18.1",
+    "N18.2",
+    "N18.3",
+    "N18.4",
+    "N18.5",
+    "N18.6",
+    "N18.9"
+   ],
+   "check": {
+    "when_question": "\\bstage 3\\b|\\bg3\\b|stage iii",
+    "when_sql": "egfr|98979-8|62238-1|33914-3",
+    "needs": [
+     [
+      "30"
+     ],
+     [
+      "60",
+      "59"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "KDIGO-CKD-2024",
+     "where": "Chapter 1, GFR and albuminuria categories"
+    },
+    {
+     "id": "LOINC"
+    },
+    {
+     "id": "ICD10CM-2026",
+     "where": "N18"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients have stage 3 CKD by eGFR?",
+     "Patients with an eGFR under 30 in 2028"
+    ],
+    "ignores": [
+     "How many ED visits in 2028?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'egfr' AND value_canonical >= 30 AND value_canonical < 60"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'egfr' AND value_canonical < 45"
+    ],
+    "check_question": "How many patients had stage 3 CKD by eGFR in 2028?"
+   }
+  },
+  {
+   "id": "albuminuria_categories",
+   "name": "Albuminuria categories (A1 to A3)",
+   "domain": "kidney",
    "triggers": "albuminuria|\\buacr\\b|\\bacr\\b|albumin[- ]to[- ]creatinine|albumin/creatinine|microalbumin|proteinuria",
-   "summary": "KDIGO albuminuria categories by urine albumin-to-creatinine ratio (uACR) in mg/g: A1 under 30 (normal to mildly increased), A2 30-300 (moderately increased, once called microalbuminuria), A3 over 300 (severely increased). Albuminuria means uACR 30 mg/g or more. A uACR is a ratio; a urine albumin concentration alone (mg/L) is not a uACR.",
-   "measures": [{"concept": "uacr", "loinc": ["9318-7", "14959-1", "32294-1"], "unit": "mg/g"}],
-   "check": {"when_question": "albuminuria|microalbuminuria|\\ba2\\b|\\ba3\\b", "when_sql": "uacr|9318-7|14959-1", "needs": [["30", "300"]]},
-   "sources": [{"id": "KDIGO-CKD-2024", "where": "albuminuria categories"}, {"id": "LOINC"}],
-   "tests": {"retrieves": ["How many patients with diabetes have albuminuria?", "patients with a UACR over 300"], "ignores": ["How many flu shots were given in 2028?"],
-             "check_passes": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'uacr' AND value_canonical >= 30"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'uacr' AND value_canonical > 20"],
-             "check_question": "How many patients have albuminuria?"}},
-
-  {"id": "aki_kdigo", "name": "Acute kidney injury (KDIGO creatinine criteria)", "domain": "kidney",
+   "summary": "KDIGO albuminuria categories by urine albumin-to-creatinine ratio (uACR) in mg/g (mg/mmol): A1 under 30 (under 3), normal to mildly increased; A2 30-300 (3-30), moderately increased; A3 over 300 (over 30), severely increased. Albuminuria means uACR 30 mg/g or more. KDIGO advises reporting the ratio, not a urine albumin concentration (mg/L) alone. A2 was formerly called 'microalbuminuria', a general term KDIGO 2024 does not use.",
+   "measures": [
+    {
+     "concept": "uacr",
+     "loinc": [
+      "9318-7",
+      "14959-1",
+      "32294-1"
+     ],
+     "unit": "mg/g (32294-1 is a unitless ratio: check its unit)"
+    }
+   ],
+   "check": {
+    "when_question": "albuminuria|microalbuminuria|\\ba2\\b|\\ba3\\b",
+    "when_sql": "uacr|9318-7|14959-1",
+    "needs": [
+     [
+      "30",
+      "300"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "KDIGO-CKD-2024",
+     "where": "albuminuria categories"
+    },
+    {
+     "id": "LOINC"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients with diabetes have albuminuria?",
+     "patients with a UACR over 300"
+    ],
+    "ignores": [
+     "How many flu shots were given in 2028?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'uacr' AND value_canonical >= 30"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'uacr' AND value_canonical > 20"
+    ],
+    "check_question": "How many patients have albuminuria?"
+   }
+  },
+  {
+   "id": "aki_kdigo",
+   "name": "Acute kidney injury (KDIGO creatinine criteria)",
+   "domain": "kidney",
    "triggers": "acute kidney injury|\\baki\\b|acute renal failure|creatinine (?:rise|increase|jump)|kidney injur",
-   "summary": "KDIGO AKI by serum creatinine: a rise of 0.3 mg/dL or more within 48 hours, or a rise to 1.5 times baseline or more within 7 days (baseline = the lowest creatinine in the prior 7 days when no earlier baseline is known); urine output under 0.5 mL/kg/h for 6 hours also qualifies but is rarely in claims or lab tables. Stages by creatinine: 1 = 1.5-1.9 times baseline or +0.3; 2 = 2.0-2.9 times; 3 = 3 times or more, or 4.0 mg/dL or more, or dialysis started. With dates only (no times), 48 hours is approximated by results up to 2 days apart; say so. A coded diagnosis of AKI is ICD-10-CM N17.",
-   "measures": [{"concept": "creatinine", "loinc": ["2160-0", "38483-4"], "unit": "mg/dL"}],
-   "icd10": ["N17"],
-   "check": {"when_question": "acute kidney injury|\\baki\\b", "when_sql": "creatinine|2160-0", "needs": [["0.3", "1.5"]]},
-   "sources": [{"id": "KDIGO-AKI-2012", "where": "Recommendations 2.1.1 and 2.1.2"}, {"id": "ICD10CM-2026", "where": "N17"}],
-   "tests": {"retrieves": ["How many patients had acute kidney injury by creatinine in 2028?", "AKI events by lab criteria"], "ignores": ["How many patients had a creatinine test in 2028?"],
-             "check_passes": ["SELECT COUNT(*) FROM measurement a JOIN measurement b ON a.patient_id = b.patient_id WHERE a.concept = 'creatinine' AND b.concept = 'creatinine' AND b.value_canonical - a.value_canonical >= 0.3"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'creatinine' AND value_canonical > 1.2"],
-             "check_question": "How many patients had acute kidney injury by creatinine in 2028?"}},
-
-  {"id": "diabetes_diagnosis_ada", "name": "Diabetes and prediabetes by HbA1c and glucose (ADA)", "domain": "diabetes",
+   "summary": "KDIGO AKI by serum creatinine: a rise of 0.3 mg/dL or more within 48 hours, or a rise to 1.5 times or more a baseline known or presumed to be from the prior 7 days; urine output under 0.5 mL/kg/h for 6 hours also qualifies but is rarely in claims or lab tables. Stages by creatinine: 1 = 1.5-1.9 times baseline or +0.3; 2 = 2.0-2.9 times; 3 = 3.0 times or more, or 4.0 mg/dL or more, or renal replacement started (or, under 18, eGFR under 35). KDIGO gives no rule for a missing baseline; Agere's convention (state it) is the lowest result in the prior 7 days. With dates only (no times), 48 hours is approximated by results up to 2 days apart; say so. A coded diagnosis of AKI is ICD-10-CM N17.",
+   "measures": [
+    {
+     "concept": "creatinine",
+     "loinc": [
+      "2160-0",
+      "38483-4"
+     ],
+     "unit": "mg/dL"
+    }
+   ],
+   "icd10": [
+    "N17"
+   ],
+   "check": {
+    "when_question": "acute kidney injury|\\baki\\b",
+    "when_sql": "creatinine|2160-0",
+    "needs": [
+     [
+      "0.3",
+      "1.5"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "KDIGO-AKI-2012",
+     "where": "Recommendations 2.1.1 and 2.1.2"
+    },
+    {
+     "id": "ICD10CM-2026",
+     "where": "N17"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients had acute kidney injury by creatinine in 2028?",
+     "AKI events by lab criteria"
+    ],
+    "ignores": [
+     "How many patients had a creatinine test in 2028?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(*) FROM measurement a JOIN measurement b ON a.patient_id = b.patient_id WHERE a.concept = 'creatinine' AND b.concept = 'creatinine' AND b.value_canonical - a.value_canonical >= 0.3"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'creatinine' AND value_canonical > 1.2"
+    ],
+    "check_question": "How many patients had acute kidney injury by creatinine in 2028?"
+   }
+  },
+  {
+   "id": "diabetes_diagnosis_ada",
+   "name": "Diabetes and prediabetes by HbA1c and glucose (ADA)",
+   "domain": "diabetes",
    "triggers": "undiagnosed diabetes|prediabet|pre-diabet|diabetic range|meets? (?:the )?(?:criteria|definition) for diabetes|diabetes (?:by|on) (?:lab|a1c|hba1c|glucose)|could have diabetes|likely diabet",
-   "summary": "ADA diagnostic thresholds: diabetes is HbA1c 6.5% or more, fasting plasma glucose 126 mg/dL or more, 2-hour glucose 200 mg/dL or more on an oral glucose tolerance test, or a random glucose 200 mg/dL or more with symptoms; without symptoms, two abnormal results are needed. Prediabetes is HbA1c 5.7-6.4% or fasting glucose 100-125 mg/dL. A random (non-fasting) glucose below 200 does not diagnose anything; lab tables usually do not say whether a glucose was fasting. 'Undiagnosed diabetes' means a diabetic-range result in a patient with no diabetes diagnosis on record (ICD-10-CM E08-E13).",
-   "measures": [{"concept": "hba1c", "loinc": ["4548-4", "17856-6"], "unit": "%"}, {"concept": "glucose", "loinc": ["2345-7", "1558-6"], "unit": "mg/dL"}],
-   "icd10": ["E08", "E09", "E10", "E11", "E13", "R73.03", "R73.09"],
-   "check": {"when_question": "undiagnosed diabetes|diabetic range", "when_sql": "hba1c|4548-4", "needs": [["6.5"]]},
-   "sources": [{"id": "ADA-SOC-2025", "where": "Section 2, Table 2.1 and 2.2"}, {"id": "ICD10CM-2026", "where": "E08-E13, R73"}],
-   "tests": {"retrieves": ["How many patients have an HbA1c in the diabetic range but no diabetes diagnosis?", "How many patients have prediabetes by A1c?"], "ignores": ["How many patients filled metformin in 2028?"],
-             "check_passes": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'hba1c' AND value_canonical >= 6.5"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'hba1c' AND value_canonical >= 7"],
-             "check_question": "How many patients have undiagnosed diabetes?"}},
-
-  {"id": "hypoglycemia_ada", "name": "Hypoglycemia levels (ADA)", "domain": "diabetes",
+   "summary": "ADA diagnostic thresholds: diabetes is HbA1c 6.5% or more, fasting plasma glucose 126 mg/dL or more, 2-hour glucose 200 mg/dL or more on an oral glucose tolerance test, or a random glucose 200 mg/dL or more with classic symptoms or a hyperglycemic crisis. Otherwise two abnormal results are needed: two different tests (which may be from the same sample) or the same test on two occasions. Prediabetes is HbA1c 5.7-6.4%, fasting glucose 100-125 mg/dL, or 2-hour OGTT glucose 140-199 mg/dL. A random (non-fasting) glucose below 200 does not diagnose anything; lab tables usually do not say whether a glucose was fasting. 'Undiagnosed diabetes' means a diabetic-range result in a patient with no diabetes diagnosis on record (ICD-10-CM E08-E13).",
+   "measures": [
+    {
+     "concept": "hba1c",
+     "loinc": [
+      "4548-4",
+      "17856-6"
+     ],
+     "unit": "%"
+    },
+    {
+     "concept": "glucose",
+     "loinc": [
+      "2345-7",
+      "1558-6"
+     ],
+     "unit": "mg/dL"
+    }
+   ],
+   "icd10": [
+    "E08",
+    "E09",
+    "E10",
+    "E11",
+    "E13",
+    "R73.01",
+    "R73.02",
+    "R73.03",
+    "R73.09"
+   ],
+   "check": {
+    "when_question": "undiagnosed diabetes|diabetic range",
+    "when_sql": "hba1c|4548-4",
+    "needs": [
+     [
+      "6.5"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "ADA-SOC-2025",
+     "where": "Section 2, Table 2.1 and 2.2"
+    },
+    {
+     "id": "ICD10CM-2026",
+     "where": "E08-E13, R73"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients have an HbA1c in the diabetic range but no diabetes diagnosis?",
+     "How many patients have prediabetes by A1c?"
+    ],
+    "ignores": [
+     "How many patients filled metformin in 2028?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'hba1c' AND value_canonical >= 6.5"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'hba1c' AND value_canonical >= 7"
+    ],
+    "check_question": "How many patients have undiagnosed diabetes?"
+   }
+  },
+  {
+   "id": "hypoglycemia_ada",
+   "name": "Hypoglycemia levels (ADA)",
+   "domain": "diabetes",
    "triggers": "hypoglyc|low (?:blood )?(?:glucose|sugar)",
-   "summary": "ADA hypoglycemia levels: level 1 is glucose under 70 mg/dL and at or above 54; level 2 (clinically significant) is under 54 mg/dL; level 3 is a severe event needing another person's help, with no glucose threshold. 'Hypoglycemia' by lab means glucose under 70 mg/dL unless a level is named. Coded hypoglycemia: ICD-10-CM E16.0-E16.2, E10.649, E11.649.",
-   "measures": [{"concept": "glucose", "loinc": ["2345-7", "2339-0", "1558-6"], "unit": "mg/dL"}],
-   "icd10": ["E16.0", "E16.1", "E16.2", "E10.64", "E11.64", "E13.64"],
-   "check": {"when_question": "hypoglyc", "when_sql": "glucose|2345-7|2339-0", "needs": [["70", "54"]]},
-   "sources": [{"id": "ADA-SOC-2025", "where": "Section 6, Table 6.4 classification of hypoglycemia"}, {"id": "ICD10CM-2026", "where": "E16"}],
-   "tests": {"retrieves": ["How many patients had a hypoglycemic glucose result in 2028?"], "ignores": ["Average HbA1c in 2028"],
-             "check_passes": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'glucose' AND value_canonical < 70"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'glucose' AND value_canonical < 80"],
-             "check_question": "How many patients had hypoglycemia by lab in 2028?"}},
-
-  {"id": "cms122_glycemic_poor_control", "name": "CMS122 glycemic status above 9% (poor control)", "domain": "diabetes",
+   "summary": "ADA hypoglycemia levels: level 1 is glucose under 70 mg/dL and at or above 54; level 2 (clinically significant) is under 54 mg/dL; level 3 is a severe event needing another person's help, with no glucose threshold. 'Hypoglycemia' by lab means glucose under 70 mg/dL unless a level is named. Coded hypoglycemia: ICD-10-CM E16.0-E16.2 and E10.64x, E11.64x, E13.64x (.641 with coma, .649 without).",
+   "measures": [
+    {
+     "concept": "glucose",
+     "loinc": [
+      "2345-7",
+      "2339-0",
+      "1558-6"
+     ],
+     "unit": "mg/dL"
+    }
+   ],
+   "icd10": [
+    "E16.0",
+    "E16.1",
+    "E16.2",
+    "E10.64",
+    "E11.64",
+    "E13.64"
+   ],
+   "check": {
+    "when_question": "hypoglyc",
+    "when_sql": "glucose|2345-7|2339-0",
+    "needs": [
+     [
+      "70",
+      "54"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "ADA-SOC-2025",
+     "where": "Section 6, Table 6.4 classification of hypoglycemia"
+    },
+    {
+     "id": "ICD10CM-2026",
+     "where": "E16"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients had a hypoglycemic glucose result in 2028?"
+    ],
+    "ignores": [
+     "Average HbA1c in 2028"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'glucose' AND value_canonical < 70"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'glucose' AND value_canonical < 80"
+    ],
+    "check_question": "How many patients had hypoglycemia by lab in 2028?"
+   }
+  },
+  {
+   "id": "cms122_glycemic_poor_control",
+   "name": "CMS122 glycemic status above 9% (poor control)",
+   "domain": "diabetes",
    "triggers": "poor(?:ly)? (?:glycemic )?control|uncontrolled diabet|a1c (?:over|above|greater than|>) ?9|hba1c (?:over|above|greater than|>) ?9|cms ?122|glycemic status|diabetes control",
-   "summary": "CMS122 (an inverse measure; lower is better): patients 18-75 with diabetes and a qualifying visit in the year. Numerator: the most recent glycemic status result in the year (HbA1c, or glucose management indicator) is above 9.0%, OR there is no result in the year. A patient with no HbA1c in the year counts as poorly controlled. Exclusions include hospice, palliative care, and 66 or older with frailty and advanced illness. 'Above 9' is strictly greater than 9.0.",
-   "measures": [{"concept": "hba1c", "loinc": ["4548-4", "17856-6"], "unit": "%"}],
-   "icd10": ["E10", "E11", "E13"],
-   "check": {"when_question": "poor(?:ly)? (?:glycemic )?control|uncontrolled diabet|cms ?122", "when_sql": "hba1c|4548-4", "needs": [["9"]]},
-   "sources": [{"id": "CMS122", "where": "Denominator, numerator and exclusions"}],
-   "tests": {"retrieves": ["What share of our diabetic patients are poorly controlled (A1c over 9) in 2028?", "CMS122 rate for 2028"], "ignores": ["How many patients have hypertension?"],
-             "check_passes": ["SELECT COUNT(*) FROM measurement WHERE concept = 'hba1c' AND value_canonical > 9"],
-             "check_fails": ["SELECT COUNT(*) FROM measurement WHERE concept = 'hba1c' AND value_canonical > 8"],
-             "check_question": "What share of diabetic patients are poorly controlled in 2028?"}},
-
-  {"id": "bp_categories_accaha", "name": "Blood pressure categories (2017 ACC/AHA)", "domain": "cardiovascular",
+   "summary": "CMS122 (inverse measure; lower is better): patients 18-75 by the end of the measurement period with diabetes and a visit in the period. Numerator: the most recent glycemic status assessment in the period (HbA1c or GMI, as %) is above 9.0%, or is missing, or none was done; a patient with no result in the year counts as poorly controlled. If several results share the latest date, use the lowest. Exclusions: hospice or palliative care during the period; age 66 and older living long term in a nursing home; age 66 and older with frailty plus advanced illness or dementia medication (period or prior year). 'Above 9' is strictly greater than 9.0.",
+   "measures": [
+    {
+     "concept": "hba1c",
+     "loinc": [
+      "4548-4",
+      "17856-6"
+     ],
+     "unit": "%"
+    }
+   ],
+   "icd10": [
+    "E10",
+    "E11",
+    "E13"
+   ],
+   "check": {
+    "when_question": "poor(?:ly)? (?:glycemic )?control|uncontrolled diabet|cms ?122",
+    "when_sql": "hba1c|4548-4",
+    "needs": [
+     [
+      "9"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "CMS122",
+     "where": "Denominator, numerator and exclusions"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "What share of our diabetic patients are poorly controlled (A1c over 9) in 2028?",
+     "CMS122 rate for 2028"
+    ],
+    "ignores": [
+     "How many patients have hypertension?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(*) FROM measurement WHERE concept = 'hba1c' AND value_canonical > 9"
+    ],
+    "check_fails": [
+     "SELECT COUNT(*) FROM measurement WHERE concept = 'hba1c' AND value_canonical > 8"
+    ],
+    "check_question": "What share of diabetic patients are poorly controlled in 2028?"
+   }
+  },
+  {
+   "id": "bp_categories_accaha",
+   "name": "Blood pressure categories (2017 ACC/AHA)",
+   "domain": "cardiovascular",
    "triggers": "stage [12] hypertension|elevated blood pressure|blood pressure categor|hypertensive (?:urgency|crisis|emergency)|severe(?:ly)? (?:high|elevated) (?:blood pressure|bp)|severe hypertension|\\bbp (?:of|over|above) 1[4-8]0|blood pressure (?:of|over|above) 1[4-8]0",
-   "summary": "2017 ACC/AHA adult categories (mmHg): normal under 120 and under 80; elevated 120-129 and under 80; stage 1 hypertension 130-139 or 80-89; stage 2 hypertension 140 or more or 90 or more. Severe hypertension (hypertensive urgency or emergency range) is over 180 systolic and/or over 120 diastolic. A category uses systolic OR diastolic, whichever puts the patient higher.",
-   "measures": [{"concept": "systolic_bp", "loinc": ["8480-6"], "unit": "mmHg"}, {"concept": "diastolic_bp", "loinc": ["8462-4"], "unit": "mmHg"}],
-   "check": {"when_question": "severe(?:ly)? (?:high|elevated) (?:blood pressure|bp)|severe hypertension|hypertensive (?:urgency|crisis|emergency)", "when_sql": "systolic|8480-6", "needs": [["180"]]},
-   "sources": [{"id": "ACCAHA-BP-2017", "where": "Section 3.2, Table 6 categories of BP in adults; Section 11.2 hypertensive crises"}],
-   "tests": {"retrieves": ["How many patients had stage 2 hypertension readings in 2028?", "patients with severe high blood pressure readings"], "ignores": ["How many patients have heart failure?"],
-             "check_passes": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'systolic_bp' AND value_canonical > 180"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'systolic_bp' AND value_canonical >= 160"],
-             "check_question": "How many patients had a severely high blood pressure reading in 2028?"}},
-
-  {"id": "cms165_bp_control", "name": "CMS165 controlling high blood pressure", "domain": "cardiovascular",
+   "summary": "2017 ACC/AHA adult categories (mmHg), based on the average of two or more readings on two or more occasions: normal under 120 and under 80; elevated 120-129 and under 80; stage 1 hypertension 130-139 or 80-89; stage 2 hypertension 140 or more or 90 or more. When systolic and diastolic fall in different categories, use the higher. Hypertensive crisis is BP over 180 systolic and/or over 120 diastolic: an emergency if there is new or worsening target-organ damage, an urgency if not. A single reading in a range is a reading, not a diagnosis.",
+   "measures": [
+    {
+     "concept": "systolic_bp",
+     "loinc": [
+      "8480-6"
+     ],
+     "unit": "mmHg"
+    },
+    {
+     "concept": "diastolic_bp",
+     "loinc": [
+      "8462-4"
+     ],
+     "unit": "mmHg"
+    }
+   ],
+   "check": {
+    "when_question": "severe(?:ly)? (?:high|elevated) (?:blood pressure|bp)|severe hypertension|hypertensive (?:urgency|crisis|emergency)",
+    "when_sql": "systolic|8480-6",
+    "needs": [
+     [
+      "180"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "ACCAHA-BP-2017",
+     "where": "Section 3.1, Table 6; Section 11.2"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients had stage 2 hypertension readings in 2028?",
+     "patients with severe high blood pressure readings"
+    ],
+    "ignores": [
+     "How many patients have heart failure?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'systolic_bp' AND value_canonical > 180"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'systolic_bp' AND value_canonical >= 160"
+    ],
+    "check_question": "How many patients had a severely high blood pressure reading in 2028?"
+   }
+  },
+  {
+   "id": "cms165_bp_control",
+   "name": "CMS165 controlling high blood pressure",
+   "domain": "cardiovascular",
    "triggers": "controll?(?:ed|ing) (?:high )?(?:blood pressure|bp|hypertension)|blood pressure control|bp control|cms ?165|hypertension (?:is |are )?(?:controlled|under control)|uncontrolled (?:hypertension|blood pressure|bp)",
-   "summary": "CMS165: patients 18-85 with essential hypertension diagnosed before or during the first six months of the year, with a visit in the year. Numerator: the most recent blood pressure in the year is adequately controlled, systolic under 140 AND diastolic under 90. When several readings share the most recent date, use the lowest systolic and the lowest diastolic of that day. No reading in the year counts as not controlled. Exclusions include hospice, palliative care, end-stage renal disease, dialysis, kidney transplant, pregnancy, and 66 or older with frailty and advanced illness.",
-   "measures": [{"concept": "systolic_bp", "loinc": ["8480-6"], "unit": "mmHg"}, {"concept": "diastolic_bp", "loinc": ["8462-4"], "unit": "mmHg"}],
-   "icd10": ["I10"],
-   "check": {"when_question": "controll?(?:ed|ing) (?:high )?(?:blood pressure|bp|hypertension)|blood pressure control|bp control|cms ?165", "when_sql": "systolic|8480-6", "needs": [["140"], ["90"]]},
-   "sources": [{"id": "CMS165", "where": "Initial population, numerator guidance on multiple same-day readings, exclusions"}],
-   "tests": {"retrieves": ["What percent of our hypertensive patients had their blood pressure controlled in 2028?", "CMS165 for 2028"], "ignores": ["How many stays in 2028?"],
-             "check_passes": ["SELECT COUNT(*) FROM measurement WHERE concept = 'systolic_bp' AND value_canonical < 140 AND diastolic < 90"],
-             "check_fails": ["SELECT COUNT(*) FROM measurement WHERE concept = 'systolic_bp' AND value_canonical < 130"],
-             "check_question": "What share of hypertensive patients had controlled blood pressure in 2028?"}},
-
-  {"id": "ldl_190_severe", "name": "Severe hypercholesterolemia (LDL 190 or more)", "domain": "cardiovascular",
+   "summary": "CMS165: patients 18-85 by the end of the year with essential hypertension starting before and continuing into, or starting in the first six months of, the year, and a visit in the year. Numerator: the most recent blood pressure in the year is adequately controlled, systolic under 140 AND diastolic under 90. When several readings share the most recent date, use the lowest systolic and the lowest diastolic of that day. Readings from acute inpatient stays or ED visits do not count, both a systolic and a diastolic value are required (ranges do not count), and patient-reported readings from automated devices are accepted. No reading in the year counts as not controlled. Exclusions: hospice or palliative care in the year; ESRD, dialysis or kidney transplant before or during the year; pregnancy in the year; age 66 or older living long-term in a nursing home; age 66-80 with frailty plus advanced illness or dementia medication (this year or last); age 81 or older with frailty.",
+   "measures": [
+    {
+     "concept": "systolic_bp",
+     "loinc": [
+      "8480-6"
+     ],
+     "unit": "mmHg"
+    },
+    {
+     "concept": "diastolic_bp",
+     "loinc": [
+      "8462-4"
+     ],
+     "unit": "mmHg"
+    }
+   ],
+   "icd10": [
+    "I10"
+   ],
+   "check": {
+    "when_question": "controll?(?:ed|ing) (?:high )?(?:blood pressure|bp|hypertension)|blood pressure control|bp control|cms ?165",
+    "when_sql": "systolic|8480-6",
+    "needs": [
+     [
+      "140"
+     ],
+     [
+      "90"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "CMS165",
+     "where": "Initial population, numerator guidance on multiple same-day readings, exclusions"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "What percent of our hypertensive patients had their blood pressure controlled in 2028?",
+     "CMS165 for 2028"
+    ],
+    "ignores": [
+     "How many stays in 2028?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(*) FROM measurement WHERE concept = 'systolic_bp' AND value_canonical < 140 AND diastolic < 90"
+    ],
+    "check_fails": [
+     "SELECT COUNT(*) FROM measurement WHERE concept = 'systolic_bp' AND value_canonical < 130"
+    ],
+    "check_question": "What share of hypertensive patients had controlled blood pressure in 2028?"
+   }
+  },
+  {
+   "id": "ldl_190_severe",
+   "name": "Severe hypercholesterolemia (LDL 190 or more)",
+   "domain": "cardiovascular",
    "triggers": "ldl (?:of |over |above |>= ?|at least )?190|severe (?:primary )?hypercholesterol|very high ldl|familial hypercholesterol",
-   "summary": "2018 AHA/ACC cholesterol guideline: an LDL cholesterol of 190 mg/dL or more is severe primary hypercholesterolemia, a statin benefit group (high-intensity statin, ages 20-75) without risk calculation. 'LDL of 190 or more' includes 190.",
-   "measures": [{"concept": "ldl", "loinc": ["13457-7", "18262-6", "2089-1"], "unit": "mg/dL"}],
-   "check": {"when_question": "190|severe (?:primary )?hypercholesterol", "when_sql": "ldl|13457-7|2089-1|18262-6", "needs": [["190"]]},
-   "sources": [{"id": "AHA-CHOL-2018", "where": "Top 10 take-home messages; statin benefit groups"}, {"id": "CMS347", "where": "Population 2"}],
-   "tests": {"retrieves": ["How many patients have severe hypercholesterolemia?", "patients with an LDL of 190 or more not on a statin"], "ignores": ["How many patients had an LDL test?"],
-             "check_passes": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'ldl' AND value_canonical >= 190"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'ldl' AND value_canonical >= 160"],
-             "check_question": "How many patients have severe hypercholesterolemia?"}},
-
-  {"id": "cms347_statin_benefit", "name": "CMS347 statin therapy benefit groups", "domain": "cardiovascular",
+   "summary": "2018 AHA/ACC cholesterol guideline: an LDL cholesterol of 190 mg/dL (4.9 mmol/L) or more is severe primary hypercholesterolemia; start a high-intensity statin without calculating 10-year ASCVD risk. CMS347 applies this group to ages 20-75. 'LDL of 190 or more' includes 190.",
+   "measures": [
+    {
+     "concept": "ldl",
+     "loinc": [
+      "13457-7",
+      "18262-6",
+      "2089-1"
+     ],
+     "unit": "mg/dL"
+    }
+   ],
+   "check": {
+    "when_question": "190|severe (?:primary )?hypercholesterol",
+    "when_sql": "ldl|13457-7|2089-1|18262-6",
+    "needs": [
+     [
+      "190"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "AHA-CHOL-2018",
+     "where": "Top 10 take-home message 4; Section 4.2"
+    },
+    {
+     "id": "CMS347",
+     "where": "Population 2"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients have severe hypercholesterolemia?",
+     "patients with an LDL of 190 or more not on a statin"
+    ],
+    "ignores": [
+     "How many patients had an LDL test?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'ldl' AND value_canonical >= 190"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'ldl' AND value_canonical >= 160"
+    ],
+    "check_question": "How many patients have severe hypercholesterolemia?"
+   }
+  },
+  {
+   "id": "cms347_statin_benefit",
+   "name": "CMS347 statin therapy benefit groups",
+   "domain": "cardiovascular",
    "triggers": "statin benefit|should be on a statin|eligible for (?:a )?statin|statin therapy for (?:the )?prevention|cms ?347|statin gap|missing (?:a )?statin",
-   "summary": "CMS347 counts patients in any of three statin benefit groups who were prescribed or were on statin therapy in the year: (1) clinical atherosclerotic cardiovascular disease (coronary disease, myocardial infarction, stroke or TIA, peripheral arterial disease, revascularization), any adult age; (2) age 20 or older with any LDL of 190 mg/dL or more, or familial hypercholesterolemia; (3) age 40-75 with diabetes. Exclusions include statin allergy or adverse effect, rhabdomyolysis, pregnancy or breastfeeding, end-stage renal disease, cirrhosis, hospice and palliative care.",
-   "drug_classes": ["statin"],
-   "icd10": ["I20", "I21", "I22", "I24", "I25", "I63", "I70.2", "Z95.1", "E10", "E11", "E13"],
-   "sources": [{"id": "CMS347", "where": "Denominator populations 1-3 and exclusions"}, {"id": "AHA-CHOL-2018"}],
-   "tests": {"retrieves": ["How many patients eligible for a statin under CMS347 have no statin fill in 2028?"], "ignores": ["How many no-shows in 2028?"]}},
-
-  {"id": "hfref_gdmt", "name": "HFrEF and guideline-directed medical therapy (four classes)", "domain": "heart failure",
+   "summary": "CMS347 (v8, 2025) counts patients in any of four groups who were taking or were prescribed a statin in the year: (1) clinical ASCVD (acute coronary syndrome, prior MI, stable or unstable angina, coronary or other arterial revascularization, stroke or TIA, atherosclerotic peripheral arterial disease), any age; (2) age 20-75 with any LDL-C of 190 mg/dL or more ever, or familial hypercholesterolemia; (3) age 40-75 with type 1 or type 2 diabetes; (4) age 40-75 with a 10-year ASCVD risk of 20% or more. A qualifying encounter is required. Denominator exclusions: breastfeeding and rhabdomyolysis. Denominator exceptions: statin-associated muscle symptoms or statin allergy, palliative or hospice care, active liver disease or hepatic insufficiency, ESRD, or a documented medical reason. Adherence and intensity are not scored.",
+   "drug_classes": [
+    "statin"
+   ],
+   "icd10": [
+    "I20",
+    "I21",
+    "I22",
+    "I24",
+    "I25",
+    "I63",
+    "G45",
+    "I70.2",
+    "Z95.1",
+    "E10",
+    "E11"
+   ],
+   "sources": [
+    {
+     "id": "CMS347",
+     "where": "Denominator populations 1-3 and exclusions"
+    },
+    {
+     "id": "AHA-CHOL-2018"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients eligible for a statin under CMS347 have no statin fill in 2028?"
+    ],
+    "ignores": [
+     "How many no-shows in 2028?"
+    ]
+   }
+  },
+  {
+   "id": "hfref_gdmt",
+   "name": "HFrEF and guideline-directed medical therapy (four classes)",
+   "domain": "heart failure",
    "triggers": "\\bgdmt\\b|guideline[- ]directed|hfref|reduced ejection fraction|reduced ef|four pillars|quadruple therapy|optimal medical therapy for heart failure",
-   "summary": "HFrEF is heart failure with LVEF 40% or less (2022 AHA/ACC/HFSA). Guideline-directed medical therapy for HFrEF is four classes: (1) a renin-angiotensin inhibitor - ARNI (sacubitril/valsartan) preferred, else ACE inhibitor or ARB; (2) an evidence-based beta blocker - carvedilol, metoprolol succinate or bisoprolol only (other beta blockers do not count); (3) a mineralocorticoid receptor antagonist (spironolactone, eplerenone); (4) an SGLT2 inhibitor (dapagliflozin, empagliflozin). 'On GDMT' or 'quadruple therapy' means all four classes; say if a looser count (any one, or three of four) is used. Coded HFrEF is ICD-10-CM I50.2x (systolic) or I50.4x (combined).",
-   "drug_classes": ["arni", "ace_inhibitor", "arb", "hf_evidence_based_beta_blocker", "mra", "sglt2_inhibitor"],
-   "icd10": ["I50.2", "I50.4"],
-   "check": {"when_question": "\\bgdmt\\b|guideline[- ]directed|quadruple|four pillars", "when_sql": "beta_blocker", "needs": [["hf_evidence_based_beta_blocker"]]},
-   "sources": [{"id": "AHA-HF-2022", "where": "Section 7.3, stage C HFrEF pharmacological treatment"}, {"id": "ICD10CM-2026", "where": "I50.2, I50.4"}],
-   "tests": {"retrieves": ["How many HFrEF patients are on all four GDMT classes?", "patients with heart failure with reduced ejection fraction on guideline-directed therapy"], "ignores": ["How many heart failure admissions in 2028?"],
-             "check_passes": ["SELECT COUNT(DISTINCT patient_id) FROM fill WHERE drug_class = 'hf_evidence_based_beta_blocker'"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM fill WHERE drug_class = 'beta_blocker'"],
-             "check_question": "How many HFrEF patients are on GDMT?"}},
-
-  {"id": "ntprobnp_hf", "name": "Natriuretic peptide thresholds for heart failure (ESC)", "domain": "heart failure",
+   "summary": "HFrEF is heart failure with LVEF 40% or less (2022 AHA/ACC/HFSA). Guideline-directed medical therapy for HFrEF is four classes: (1) a renin-angiotensin inhibitor: ARNI (sacubitril/valsartan) recommended in NYHA class II-III, an ACE inhibitor when ARNI is not feasible, or an ARB when the ACE inhibitor is not tolerated; (2) an evidence-based beta blocker: carvedilol, metoprolol succinate or bisoprolol only (other beta blockers do not count); (3) a mineralocorticoid receptor antagonist (spironolactone, eplerenone); (4) an SGLT2 inhibitor (class recommendation; dapagliflozin and empagliflozin are the dosed agents). 'On GDMT' means all four classes (the guideline's 'all 4 drug classes'); say if a looser count is used. Patients with improved EF (previous HFrEF, now LVEF above 40%) stay on HFrEF therapy. Coded HFrEF is ICD-10-CM I50.2x (systolic) or I50.4x (combined).",
+   "drug_classes": [
+    "arni",
+    "ace_inhibitor",
+    "arb",
+    "hf_evidence_based_beta_blocker",
+    "mra",
+    "sglt2_inhibitor"
+   ],
+   "icd10": [
+    "I50.2",
+    "I50.4"
+   ],
+   "check": {
+    "when_question": "\\bgdmt\\b|guideline[- ]directed|quadruple|four pillars",
+    "when_sql": "beta_blocker",
+    "needs": [
+     [
+      "hf_evidence_based_beta_blocker"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "AHA-HF-2022",
+     "where": "Section 7.3, stage C HFrEF pharmacological treatment"
+    },
+    {
+     "id": "ICD10CM-2026",
+     "where": "I50.2, I50.4"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many HFrEF patients are on all four GDMT classes?",
+     "patients with heart failure with reduced ejection fraction on guideline-directed therapy"
+    ],
+    "ignores": [
+     "How many heart failure admissions in 2028?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT patient_id) FROM fill WHERE drug_class = 'hf_evidence_based_beta_blocker'"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM fill WHERE drug_class = 'beta_blocker'"
+    ],
+    "check_question": "How many HFrEF patients are on GDMT?"
+   }
+  },
+  {
+   "id": "ntprobnp_hf",
+   "name": "Natriuretic peptide thresholds for heart failure (ESC)",
+   "domain": "heart failure",
    "triggers": "nt[- ]?pro[- ]?bnp|natriuretic|\\bbnp\\b",
-   "summary": "2021 ESC: heart failure is unlikely in a non-acute setting with NT-proBNP under 125 pg/mL (BNP under 35); in an acute setting the rule-out is NT-proBNP under 300 pg/mL (BNP under 100). 'Elevated NT-proBNP' therefore means 125 pg/mL or more out of hospital, 300 or more in acute care; say which.",
-   "measures": [{"concept": "nt_probnp", "loinc": ["33762-6"], "unit": "pg/mL"}],
-   "sources": [{"id": "ESC-HF-2021", "where": "Section 4.1, diagnostic algorithm; Section 11, acute HF"}],
-   "tests": {"retrieves": ["How many patients had an elevated NT-proBNP in 2028?"], "ignores": ["How many patients had a troponin test?"]}},
-
-  {"id": "iron_deficiency_hf", "name": "Iron deficiency (general and in heart failure)", "domain": "hematology",
+   "summary": "2021 ESC: heart failure is unlikely in a non-acute setting with NT-proBNP under 125 pg/mL (BNP under 35); in an acute setting the rule-out is NT-proBNP under 300 pg/mL (BNP under 100). These are rule-out thresholds: values above them are not diagnostic of heart failure (natriuretic peptides rise in other cardiac and non-cardiac conditions and can be low in obesity). 'Elevated NT-proBNP' therefore means 125 pg/mL or more out of hospital, 300 or more in acute care; say which.",
+   "measures": [
+    {
+     "concept": "nt_probnp",
+     "loinc": [
+      "33762-6"
+     ],
+     "unit": "pg/mL"
+    }
+   ],
+   "sources": [
+    {
+     "id": "ESC-HF-2021",
+     "where": "Sections 4.1-4.2; Section 11.1, Figure 6"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients had an elevated NT-proBNP in 2028?"
+    ],
+    "ignores": [
+     "How many patients had a troponin test?"
+    ]
+   }
+  },
+  {
+   "id": "iron_deficiency_hf",
+   "name": "Iron deficiency (general and in heart failure)",
+   "domain": "hematology",
    "triggers": "iron deficien|iron[- ]deficient|low iron|iron stores|ferritin|transferrin saturation|\\btsat\\b",
-   "summary": "In heart failure (2021 ESC) iron deficiency is ferritin under 100 ng/mL, or ferritin 100-299 ng/mL with transferrin saturation (TSAT) under 20%. Outside heart failure, ferritin under 30 ng/mL is a common adult cutoff for iron deficiency (WHO uses under 15 in healthy adults); inflammation raises ferritin. Sources differ outside heart failure: state the cutoff used. TSAT is LOINC 2502-3 (iron / total iron-binding capacity).",
-   "measures": [{"concept": "ferritin", "loinc": ["2276-4"], "unit": "ng/mL"}, {"concept": "transferrin_saturation", "loinc": ["2502-3"], "unit": "%"}],
-   "icd10": ["D50"],
-   "check": {"when_question": "heart failure|\\bhf\\b|hfref", "when_sql": "ferritin|2276-4", "needs": [["100"]]},
-   "sources": [{"id": "ESC-HF-2021", "where": "Section 13.2, iron deficiency"}, {"id": "LOINC"}],
-   "tests": {"retrieves": ["How many heart failure patients are iron deficient?", "patients with low ferritin"], "ignores": ["How many patients are anemic?"],
-             "check_passes": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'ferritin' AND (value_canonical < 100 OR value_canonical < 300)"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'ferritin' AND value_canonical < 30"],
-             "check_question": "How many heart failure patients are iron deficient?"}},
-
-  {"id": "anemia_who", "name": "Anaemia by haemoglobin (WHO adult cutoffs)", "domain": "hematology",
+   "summary": "In heart failure (2021 ESC) iron deficiency is ferritin under 100 ng/mL, or ferritin 100-299 ng/mL with transferrin saturation (TSAT) under 20%; inflammation raises ferritin. Outside heart failure the cutoffs differ by source and no outside-HF source is in the store yet: state the cutoff used. TSAT is LOINC 2502-3 (iron / total iron-binding capacity).",
+   "measures": [
+    {
+     "concept": "ferritin",
+     "loinc": [
+      "2276-4"
+     ],
+     "unit": "ng/mL"
+    },
+    {
+     "concept": "transferrin_saturation",
+     "loinc": [
+      "2502-3"
+     ],
+     "unit": "%"
+    }
+   ],
+   "icd10": [
+    "D50"
+   ],
+   "check": {
+    "when_question": "heart failure|\\bhf\\b|hfref",
+    "when_sql": "ferritin|2276-4",
+    "needs": [
+     [
+      "100"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "ESC-HF-2021",
+     "where": "Section 13.5"
+    },
+    {
+     "id": "LOINC"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many heart failure patients are iron deficient?",
+     "patients with low ferritin"
+    ],
+    "ignores": [
+     "How many patients are anemic?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'ferritin' AND (value_canonical < 100 OR value_canonical < 300)"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'ferritin' AND value_canonical < 30"
+    ],
+    "check_question": "How many heart failure patients are iron deficient?"
+   }
+  },
+  {
+   "id": "anemia_who",
+   "name": "Anaemia by haemoglobin (WHO adult cutoffs)",
+   "domain": "hematology",
    "triggers": "\\ban(?:a)?emi(?:a|c)\\b|low h(?:a)?emoglobin|h(?:a)?emoglobin (?:under|below|less than)",
-   "summary": "WHO 2024 adult cutoffs: anaemia is haemoglobin under 13.0 g/dL in men and under 12.0 g/dL in non-pregnant women (ages 15-65; the same cutoffs are used for older adults). The cutoff depends on sex: a single cutoff for everyone is wrong. Severity (non-pregnant adults): mild 11.0 to just under the cutoff, moderate 8.0-10.9, severe under 8.0 g/dL. A coded anaemia diagnosis is ICD-10-CM D50-D64.",
-   "measures": [{"concept": "hemoglobin", "loinc": ["718-7"], "unit": "g/dL"}],
-   "icd10": ["D50", "D51", "D52", "D53", "D55", "D56", "D57", "D58", "D59", "D60", "D61", "D62", "D63", "D64"],
-   "check": {"when_question": "\\ban(?:a)?emi(?:a|c)\\b", "when_sql": "hemoglobin|718-7", "needs": [["13"], ["12"]]},
-   "sources": [{"id": "WHO-HB-2024", "where": "Recommendation 1 and Table 1"}, {"id": "ICD10CM-2026", "where": "D50-D64"}],
-   "tests": {"retrieves": ["How many patients were anemic by hemoglobin in 2028?"], "ignores": ["How many patients had a platelet count?"],
-             "check_passes": ["SELECT COUNT(DISTINCT m.patient_id) FROM measurement m JOIN patient p USING (patient_id) WHERE m.concept = 'hemoglobin' AND ((p.sex_reported = 'M' AND m.value_canonical < 13) OR (p.sex_reported = 'F' AND m.value_canonical < 12))"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'hemoglobin' AND value_canonical < 12"],
-             "check_question": "How many patients were anemic by hemoglobin in 2028?"}},
-
-  {"id": "hyperkalemia", "name": "Hyperkalaemia thresholds (sources differ)", "domain": "electrolytes",
+   "summary": "WHO 2024 cutoffs: anaemia is haemoglobin under 13.0 g/dL in men and under 12.0 g/dL in non-pregnant women, ages 15-65, at sea level (the guideline adjusts for elevation and smoking). WHO gives no separate cutoff above 65 and lists older adults as a research gap; applying the 15-65 cutoffs to older adults is an assumption to state. The cutoff depends on sex: a single cutoff for everyone is wrong. Severity (non-pregnant adults): mild 11.0 to just under the cutoff, moderate 8.0-10.9, severe under 8.0 g/dL. A coded anaemia diagnosis is ICD-10-CM D50-D64 (sickle-cell trait D57.3 is not anaemia; thalassaemia minor and pancytopenia codes often are not).",
+   "measures": [
+    {
+     "concept": "hemoglobin",
+     "loinc": [
+      "718-7"
+     ],
+     "unit": "g/dL"
+    }
+   ],
+   "icd10": [
+    "D50",
+    "D51",
+    "D52",
+    "D53",
+    "D55",
+    "D56",
+    "D57.0",
+    "D57.1",
+    "D57.2",
+    "D57.4",
+    "D57.8",
+    "D58",
+    "D59",
+    "D60",
+    "D61",
+    "D62",
+    "D63",
+    "D64"
+   ],
+   "check": {
+    "when_question": "\\ban(?:a)?emi(?:a|c)\\b",
+    "when_sql": "hemoglobin|718-7",
+    "needs": [
+     [
+      "13"
+     ],
+     [
+      "12"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "WHO-HB-2024",
+     "where": "Normative statements 1.a and 1.b; Tables 2 and 3"
+    },
+    {
+     "id": "ICD10CM-2026",
+     "where": "D50-D64"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients were anemic by hemoglobin in 2028?"
+    ],
+    "ignores": [
+     "How many patients had a platelet count?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT m.patient_id) FROM measurement m JOIN patient p USING (patient_id) WHERE m.concept = 'hemoglobin' AND ((p.sex_reported = 'M' AND m.value_canonical < 13) OR (p.sex_reported = 'F' AND m.value_canonical < 12))"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'hemoglobin' AND value_canonical < 12"
+    ],
+    "check_question": "How many patients were anemic by hemoglobin in 2028?"
+   }
+  },
+  {
+   "id": "hyperkalemia",
+   "name": "Hyperkalaemia thresholds (sources differ)",
+   "domain": "electrolytes",
    "triggers": "hyperkal|high potassium|elevated potassium|potassium (?:over|above|greater than)",
-   "summary": "Sources differ on the threshold. Many laboratories and the KDIGO controversies conference treat potassium above 5.0 mmol/L as hyperkalaemia; the European Resuscitation Council uses 5.5 mmol/L or more, with 6.5 or more severe (6.0-6.4 moderate). When a question says 'hyperkalemia' without a number and no customer definition settles it, the two cutoffs are two readings: ask which, or give both.",
-   "measures": [{"concept": "potassium", "loinc": ["2823-3", "6298-4"], "unit": "mmol/L"}],
-   "icd10": ["E87.5"],
-   "readings": [{"label": "potassium above 5.0 mmol/L", "rule": "value_canonical > 5.0"}, {"label": "potassium 5.5 mmol/L or more", "rule": "value_canonical >= 5.5"}],
-   "check": {"when_question": "hyperkal|high potassium|elevated potassium", "when_sql": "potassium|2823-3", "needs": [["5.0", "5.5", "5"]]},
-   "sources": [{"id": "KDIGO-K-2020", "where": "Definitions"}, {"id": "ERC-2021", "where": "Hyperkalaemia section"}, {"id": "ICD10CM-2026", "where": "E87.5"}],
-   "tests": {"retrieves": ["How many patients had hyperkalemia in 2028?"], "ignores": ["Average sodium in 2028"],
-             "check_passes": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'potassium' AND value_canonical > 5.0"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'potassium' AND value_canonical > 6"],
-             "check_question": "How many patients had hyperkalemia in 2028?"}},
-
-  {"id": "hyponatremia", "name": "Hyponatraemia (European guideline)", "domain": "electrolytes",
+   "summary": "Sources differ on the threshold. The KDIGO controversies conference (2020) defines hyperkalaemia as potassium above the laboratory upper limit of normal; its severity grid starts at 5.0 mmol/L (or the upper limit of normal): 5.0-5.9 mild, 6.0-6.4 moderate, 6.5 or more severe, each moved up one level with ECG changes. The European Resuscitation Council (2021) is reported to use 5.5 mmol/L as the threshold (not yet confirmed against its text). When a question says 'hyperkalemia' without a number and no customer definition settles it, the two cutoffs are two readings: ask which, or give both.",
+   "measures": [
+    {
+     "concept": "potassium",
+     "loinc": [
+      "2823-3",
+      "6298-4"
+     ],
+     "unit": "mmol/L"
+    }
+   ],
+   "icd10": [
+    "E87.5"
+   ],
+   "readings": [
+    {
+     "label": "potassium 5.0 mmol/L or more (KDIGO grid)",
+     "rule": "value_canonical >= 5.0"
+    },
+    {
+     "label": "potassium 5.5 mmol/L or more (ERC)",
+     "rule": "value_canonical >= 5.5"
+    }
+   ],
+   "check": {
+    "when_question": "hyperkal|high potassium|elevated potassium",
+    "when_sql": "potassium|2823-3",
+    "needs": [
+     [
+      "5.0",
+      "5.5",
+      "5"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "KDIGO-K-2020",
+     "where": "Definitions"
+    },
+    {
+     "id": "ERC-2021",
+     "where": "Hyperkalaemia section"
+    },
+    {
+     "id": "ICD10CM-2026",
+     "where": "E87.5"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients had hyperkalemia in 2028?"
+    ],
+    "ignores": [
+     "Average sodium in 2028"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'potassium' AND value_canonical > 5.0"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'potassium' AND value_canonical > 6"
+    ],
+    "check_question": "How many patients had hyperkalemia in 2028?"
+   }
+  },
+  {
+   "id": "hyponatremia",
+   "name": "Hyponatraemia (European guideline)",
+   "domain": "electrolytes",
    "triggers": "hyponat|low sodium|sodium (?:under|below|less than)",
-   "summary": "European clinical practice guideline (2014): hyponatraemia is serum sodium under 135 mmol/L; mild 130-134, moderate 125-129, profound under 125 mmol/L. Coded hyponatraemia is ICD-10-CM E87.1.",
-   "measures": [{"concept": "sodium", "loinc": ["2951-2", "2947-0"], "unit": "mmol/L"}],
-   "icd10": ["E87.1"],
-   "check": {"when_question": "hyponat|low sodium", "when_sql": "sodium|2951-2", "needs": [["135", "125", "130"]]},
-   "sources": [{"id": "HYPONA-2014", "where": "Section 4, classification"}, {"id": "ICD10CM-2026", "where": "E87.1"}],
-   "tests": {"retrieves": ["How many patients had hyponatremia in 2028?", "patients with profound hyponatremia"], "ignores": ["Average potassium in 2028"],
-             "check_passes": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'sodium' AND value_canonical < 135"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'sodium' AND value_canonical < 136"],
-             "check_question": "How many patients had hyponatremia in 2028?"}},
-
-  {"id": "sepsis_definitions", "name": "Sepsis: Sepsis-3, SIRS and coded sepsis", "domain": "sepsis",
+   "summary": "European clinical practice guideline (2014): hyponatraemia is serum sodium under 135 mmol/L measured by ion-specific electrode; mild 130 to under 135, moderate 125-129, profound under 125 mmol/L. Coded hyponatraemia is ICD-10-CM E87.1.",
+   "measures": [
+    {
+     "concept": "sodium",
+     "loinc": [
+      "2951-2",
+      "2947-0"
+     ],
+     "unit": "mmol/L"
+    }
+   ],
+   "icd10": [
+    "E87.1"
+   ],
+   "check": {
+    "when_question": "hyponat|low sodium",
+    "when_sql": "sodium|2951-2",
+    "needs": [
+     [
+      "135",
+      "125",
+      "130"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "HYPONA-2014",
+     "where": "Section 6.1.1, biochemical severity"
+    },
+    {
+     "id": "ICD10CM-2026",
+     "where": "E87.1"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients had hyponatremia in 2028?",
+     "patients with profound hyponatremia"
+    ],
+    "ignores": [
+     "Average potassium in 2028"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'sodium' AND value_canonical < 135"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'sodium' AND value_canonical < 136"
+    ],
+    "check_question": "How many patients had hyponatremia in 2028?"
+   }
+  },
+  {
+   "id": "sepsis_definitions",
+   "name": "Sepsis: Sepsis-3, SIRS and coded sepsis",
+   "domain": "sepsis",
    "triggers": "sepsis|septic|\\bsirs\\b|\\bsofa\\b|qsofa",
-   "summary": "Sepsis-3 (2016): life-threatening organ dysfunction from a dysregulated response to infection, operationalised as suspected infection plus a rise in SOFA score of 2 or more; septic shock is sepsis needing vasopressors to keep mean arterial pressure 65 mmHg or more with lactate above 2 mmol/L despite fluids. SIRS (1992, used by SEP-1): two or more of temperature over 38 or under 36 C, heart rate over 90, respiratory rate over 20 (or PaCO2 under 32 mmHg), white count over 12 or under 4 x10^3/uL (or over 10% bands). SOFA needs PaO2/FiO2, platelets, bilirubin, vasopressors, Glasgow score and creatinine or urine output; most warehouses cannot compute it, so a Sepsis-3 count from data usually rests on coded sepsis: ICD-10-CM A40, A41, R65.20 (severe sepsis) and R65.21 (septic shock), and A02.1, A22.7, A26.7, A32.7, A39.4, B37.7 for organism-specific sepsis.",
-   "measures": [{"concept": "lactate", "loinc": ["2524-7", "32693-4"], "unit": "mmol/L"}, {"concept": "wbc", "loinc": ["6690-2"], "unit": "10^3/uL"}],
-   "icd10": ["A40", "A41", "R65.2", "A02.1", "A22.7", "A26.7", "A32.7", "A39.4", "B37.7"],
-   "not_computable": {"when_question": "\\bsofa\\b|qsofa|sepsis-3 (?:criteria|definition)|by sepsis-3", "needs": "SOFA components (PaO2/FiO2, bilirubin, vasopressor doses, Glasgow Coma Scale, urine output) with times; the warehouse has none of the respiratory, neurological or vasopressor parts"},
-   "sources": [{"id": "SEPSIS3-2016", "where": "Box 3 and Table 1"}, {"id": "SIRS-1992", "where": "Table 1"}, {"id": "ICD10CM-2026", "where": "A40, A41, R65.2"}],
-   "tests": {"retrieves": ["How many septic shock admissions in 2028?", "How many patients met SIRS criteria?"], "ignores": ["How many flu shots in 2028?"],
-             "not_computable_question": "How many patients met Sepsis-3 criteria by SOFA score in 2028?"}},
-
-  {"id": "lactate_sep1", "name": "Lactate thresholds in sepsis (SEP-1, Sepsis-3)", "domain": "sepsis",
+   "summary": "Sepsis-3 (2016): life-threatening organ dysfunction from a dysregulated host response to infection, operationalised as suspected infection plus an acute rise in SOFA score of 2 or more (baseline SOFA may be assumed zero without known organ dysfunction); septic shock is sepsis needing vasopressors to keep mean arterial pressure 65 mmHg or more with lactate above 2 mmol/L despite adequate fluids. SIRS (1992): two or more of temperature over 38 or under 36 C, heart rate over 90, respiratory rate over 20 (or PaCO2 under 32 mmHg), white count over 12 or under 4 x10^3/uL (or over 10% bands). SEP-1 uses a modified SIRS: temperature over 38.3 or under 36.0 C, heart rate over 90, respiratory rate over 20 (no PaCO2 criterion), white count over 12 or under 4 or over 10% bands, with separate thresholds in pregnancy. SOFA needs PaO2/FiO2, platelets, bilirubin, vasopressors, Glasgow score and creatinine or urine output; most warehouses cannot compute it. Sepsis-3 recommends R65.20/R65.21 as primary ICD-10 codes and, for data, identifies suspected infection by a body-fluid culture plus antibiotics within a set window; A40, A41 and the organism-specific sepsis codes are a broader coded proxy (our choice, not Sepsis-3's).",
+   "measures": [
+    {
+     "concept": "lactate",
+     "loinc": [
+      "2524-7",
+      "32693-4"
+     ],
+     "unit": "mmol/L"
+    },
+    {
+     "concept": "wbc",
+     "loinc": [
+      "6690-2"
+     ],
+     "unit": "10^3/uL"
+    }
+   ],
+   "icd10": [
+    "A40",
+    "A41",
+    "R65.2",
+    "A02.1",
+    "A22.7",
+    "A26.7",
+    "A32.7",
+    "A39.2",
+    "A39.3",
+    "A39.4",
+    "A42.7",
+    "A54.86",
+    "B37.7"
+   ],
+   "not_computable": {
+    "when_question": "\\bsofa\\b|qsofa|sepsis-3 (?:criteria|definition)|by sepsis-3",
+    "needs": "SOFA components (PaO2/FiO2, bilirubin, vasopressor doses, Glasgow Coma Scale, urine output) with times; the warehouse has none of the respiratory, neurological or vasopressor parts"
+   },
+   "sources": [
+    {
+     "id": "SEPSIS3-2016",
+     "where": "Box 3, Table 1 (SOFA), Table 2 (coding)"
+    },
+    {
+     "id": "SIRS-1992",
+     "where": "criteria as reproduced in Sepsis-3 Box 1"
+    },
+    {
+     "id": "ICD10CM-2026",
+     "where": "A40, A41, R65.2"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many septic shock admissions in 2028?",
+     "How many patients met SIRS criteria?"
+    ],
+    "ignores": [
+     "How many flu shots in 2028?"
+    ],
+    "not_computable_question": "How many patients met Sepsis-3 criteria by SOFA score in 2028?"
+   }
+  },
+  {
+   "id": "lactate_sep1",
+   "name": "Lactate thresholds in sepsis (SEP-1, Sepsis-3)",
+   "domain": "sepsis",
    "triggers": "lactate|lactic acid|hyperlactat",
-   "summary": "Lactate is reported in mmol/L. SEP-1: an initial lactate above 2 mmol/L requires a repeat lactate within 6 hours of severe sepsis presentation; a lactate of 4 mmol/L or more requires 30 mL/kg of crystalloid within 3 hours. Sepsis-3 septic shock uses lactate above 2 mmol/L. 'Elevated lactate' means above 2 mmol/L unless 4 or more is named. In lab tables lactate is LOINC 2524-7 (serum or plasma) or 32693-4 (blood).",
-   "measures": [{"concept": "lactate", "loinc": ["2524-7", "32693-4"], "unit": "mmol/L"}],
-   "check": {"when_question": "elevated lactate|high lactate|lactate (?:over|above)|hyperlactat", "when_sql": "lactate|2524-7|32693-4", "needs": [["2", "4"]]},
-   "sources": [{"id": "SEP1", "where": "Data element Initial Lactate Level Result; Repeat Lactate"}, {"id": "SEPSIS3-2016"}, {"id": "LOINC"}],
-   "tests": {"retrieves": ["How many patients had an elevated lactate in 2028?"], "ignores": ["How many patients had a sodium test?"],
-             "check_passes": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE loinc = '2524-7' AND value_canonical > 2"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE loinc = '2524-7' AND value_canonical > 1"],
-             "check_question": "How many patients had an elevated lactate in 2028?"}},
-
-  {"id": "sep1_bundle_compliance", "name": "SEP-1 bundle compliance needs times", "domain": "sepsis",
+   "summary": "Lactate is reported in mmol/L. SEP-1: a lactate above 2 mmol/L is a sign of organ dysfunction for severe sepsis, and an initial lactate above 2 calls for a repeat lactate (within 6 hours of severe sepsis presentation per older specifications; confirm the current manual); initial hypotension or a lactate of 4 mmol/L or more (septic shock) requires 30 mL/kg crystalloid (a lesser documented volume with a reason is accepted). Sepsis-3 septic shock uses lactate above 2 mmol/L. 'Elevated lactate' means above 2 mmol/L unless 4 or more is named. In lab tables lactate is LOINC 2524-7 (serum or plasma), 32693-4 (blood), 2518-9 (arterial), 2519-7 (venous blood) or 32133-1 (venous plasma).",
+   "measures": [
+    {
+     "concept": "lactate",
+     "loinc": [
+      "2524-7",
+      "32693-4",
+      "2518-9",
+      "2519-7",
+      "32133-1"
+     ],
+     "unit": "mmol/L"
+    }
+   ],
+   "check": {
+    "when_question": "elevated lactate|high lactate|lactate (?:over|above)|hyperlactat",
+    "when_sql": "lactate|2524-7|32693-4",
+    "needs": [
+     [
+      "2",
+      "4"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "SEP1",
+     "where": "Data element Initial Lactate Level Result; Repeat Lactate"
+    },
+    {
+     "id": "SEPSIS3-2016"
+    },
+    {
+     "id": "LOINC"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients had an elevated lactate in 2028?"
+    ],
+    "ignores": [
+     "How many patients had a sodium test?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE loinc = '2524-7' AND value_canonical > 2"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE loinc = '2524-7' AND value_canonical > 1"
+    ],
+    "check_question": "How many patients had an elevated lactate in 2028?"
+   }
+  },
+  {
+   "id": "sep1_bundle_compliance",
+   "name": "SEP-1 bundle compliance needs times",
+   "domain": "sepsis",
    "triggers": "sep-?1|sepsis bundle|bundle complian|time to antibiotic|antibiotics? within (?:1|one|3|three) hours?",
-   "summary": "SEP-1 compliance needs the time of severe sepsis presentation and the times of each bundle element (lactate drawn, blood cultures before antibiotics, broad-spectrum antibiotics within 3 hours, repeat lactate within 6 hours, fluids and vasopressors for shock, repeat volume status assessment). It is abstracted from charts. Without order and administration times it cannot be computed.",
-   "not_computable": {"when_question": "sep-?1|sepsis bundle|bundle complian|time to antibiotic|antibiotics? within", "needs": "times of severe sepsis presentation, cultures, antibiotic administration and fluid volumes; the warehouse holds dates of results and fills, not inpatient administration times"},
-   "sources": [{"id": "SEP1", "where": "Measure algorithm"}],
-   "tests": {"retrieves": ["What was our SEP-1 bundle compliance in 2028?"], "ignores": ["How many sepsis admissions in 2028?"],
-             "not_computable_question": "What was our SEP-1 bundle compliance in 2028?"}},
-
-  {"id": "nhsn_hai", "name": "NHSN device-associated infections (CAUTI, CLABSI) need device days and cultures", "domain": "infection",
+   "summary": "SEP-1 compliance needs the time of severe sepsis presentation and the times of each bundle element: lactate drawn, blood cultures before antibiotics, broad-spectrum antibiotics, a repeat lactate within 6 hours of severe sepsis presentation if the initial lactate was above 2; for septic shock, 30 mL/kg crystalloid within 3 hours, and vasopressors for persistent hypotension and a repeat volume status and perfusion assessment within 6 hours of shock presentation. The denominator is inpatients 18 and older with a sepsis, severe sepsis or septic shock code. It is abstracted from charts. Without order and administration times it cannot be computed.",
+   "not_computable": {
+    "when_question": "sep-?1|sepsis bundle|bundle complian|time to antibiotic|antibiotics? within",
+    "needs": "times of severe sepsis presentation, cultures, antibiotic administration and fluid volumes; the warehouse holds dates of results and fills, not inpatient administration times"
+   },
+   "sources": [
+    {
+     "id": "SEP1",
+     "where": "Measure algorithm"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "What was our SEP-1 bundle compliance in 2028?"
+    ],
+    "ignores": [
+     "How many sepsis admissions in 2028?"
+    ],
+    "not_computable_question": "What was our SEP-1 bundle compliance in 2028?"
+   }
+  },
+  {
+   "id": "nhsn_hai",
+   "name": "NHSN device-associated infections (CAUTI, CLABSI) need device days and cultures",
+   "domain": "infection",
    "triggers": "\\bcauti\\b|\\bclabsi\\b|catheter[- ]associated|central line[- ]associated|device[- ]associated|\\bnhsn\\b|hospital[- ]acquired infection|\\bhai\\b|standardi[sz]ed infection ratio|\\bsir\\b",
-   "summary": "NHSN CAUTI and CLABSI are surveillance definitions: an infection window with a positive culture meeting organism and colony-count criteria, a device in place more than 2 consecutive days, symptoms, and a hospital-onset date (day 3 or later). Rates are per 1,000 device days; the standardized infection ratio (SIR) divides observed by NHSN-predicted infections. Diagnosis codes are not a substitute. Without device days, culture results and NHSN predicted counts it cannot be computed.",
-   "not_computable": {"when_question": "\\bcauti\\b|\\bclabsi\\b|catheter[- ]associated|central line[- ]associated|standardi[sz]ed infection ratio", "needs": "device days (urinary catheter or central line), culture results with organisms and dates, and NHSN predicted counts; the warehouse has none of them"},
-   "sources": [{"id": "NHSN-PSC-2025", "where": "Chapters 2, 4 and 7"}],
-   "tests": {"retrieves": ["What was our CAUTI rate in 2028?", "CLABSI per 1,000 central line days"], "ignores": ["How many urinary tract infection visits?"],
-             "not_computable_question": "What was our CAUTI rate per 1,000 catheter days in 2028?"}},
-
-  {"id": "beers_older_adults", "name": "Potentially inappropriate medications in older adults (AGS Beers 2023, selected classes)", "domain": "medication safety",
+   "summary": "NHSN CAUTI and CLABSI are surveillance definitions, not diagnosis codes. CAUTI: an indwelling urethral catheter (not suprapubic or straight) in place more than 2 consecutive days in an inpatient location and still in place on the date of event or the day before; a urine culture with no more than two species, at least one a bacterium at 100,000 CFU/mL or more (yeasts alone do not count); and symptoms (symptomatic UTI) or a blood culture matching the urine organism (asymptomatic bacteremic UTI). Rates are per 1,000 device days counted by calendar day; the standardized infection ratio (SIR) divides observed by NHSN-predicted infections. CLABSI needs central line days and blood culture rules (pathogen versus common commensal). Without device days, culture results and NHSN predicted counts it cannot be computed.",
+   "not_computable": {
+    "when_question": "\\bcauti\\b|\\bclabsi\\b|catheter[- ]associated|central line[- ]associated|standardi[sz]ed infection ratio",
+    "needs": "device days (urinary catheter or central line), culture results with organisms and dates, and NHSN predicted counts; the warehouse has none of them"
+   },
+   "sources": [
+    {
+     "id": "NHSN-PSC-2025",
+     "where": "Chapters 2, 4 and 7"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "What was our CAUTI rate in 2028?",
+     "CLABSI per 1,000 central line days"
+    ],
+    "ignores": [
+     "How many urinary tract infection visits?"
+    ],
+    "not_computable_question": "What was our CAUTI rate per 1,000 catheter days in 2028?"
+   }
+  },
+  {
+   "id": "beers_older_adults",
+   "name": "Potentially inappropriate medications in older adults (AGS Beers 2023, selected classes)",
+   "domain": "medication safety",
    "triggers": "beers|potentially inappropriate|inappropriate medication|high[- ]risk medication(?:s)? (?:in|for) (?:the )?(?:elderly|older)|elderly (?:on|taking|using)|older adults? (?:on|taking|using)",
-   "summary": "The AGS Beers Criteria (2023) list medications older adults (65 and older) should generally avoid. Classes the warehouse can see by drug class include: benzodiazepines; first-generation antihistamines; skeletal muscle relaxants; sulfonylureas (avoid as first- or second-line therapy); chronic NSAIDs unless alternatives fail; proton pump inhibitors beyond 8 weeks unless high risk; antipsychotics except for schizophrenia or bipolar disorder. Beers is criteria, not a single measure: name which classes are counted. Age is 65 or older at the fill date.",
-   "drug_classes": ["benzodiazepine", "first_generation_antihistamine", "skeletal_muscle_relaxant", "sulfonylurea", "nsaid", "proton_pump_inhibitor", "antipsychotic"],
-   "sources": [{"id": "BEERS-2023", "where": "Table 2"}],
-   "tests": {"retrieves": ["How many patients 65 and older filled a Beers list medication in 2028?", "elderly on potentially inappropriate medications"], "ignores": ["How many statin fills in 2028?"]}},
-
-  {"id": "opioid_benzo_concurrent", "name": "Concurrent opioid and benzodiazepine use", "domain": "medication safety",
+   "summary": "The AGS Beers Criteria (2023) list medications that adults 65 and older (outside hospice and end-of-life care) should generally avoid. Classes the warehouse can see by drug class include: benzodiazepines; first-generation antihistamines; skeletal muscle relaxants (not those used for spasticity); sulfonylureas (avoid as first- or second-line monotherapy or add-on therapy); chronic use of oral non-COX-2-selective NSAIDs unless alternatives are not effective and a gastroprotective agent can be taken; scheduled proton pump inhibitor use beyond 8 weeks unless high risk or another listed indication; antipsychotics except FDA-approved indications such as schizophrenia, bipolar disorder, Parkinson disease psychosis, adjunctive treatment of major depression or short-term antiemetic use. Beers is criteria, not a single measure: name which classes are counted. Here age is taken as 65 or older at the fill date (our rule).",
+   "drug_classes": [
+    "benzodiazepine",
+    "first_generation_antihistamine",
+    "skeletal_muscle_relaxant",
+    "sulfonylurea",
+    "nsaid",
+    "proton_pump_inhibitor",
+    "antipsychotic"
+   ],
+   "sources": [
+    {
+     "id": "BEERS-2023",
+     "where": "Table 2"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients 65 and older filled a Beers list medication in 2028?",
+     "elderly on potentially inappropriate medications"
+    ],
+    "ignores": [
+     "How many statin fills in 2028?"
+    ]
+   }
+  },
+  {
+   "id": "opioid_benzo_concurrent",
+   "name": "Concurrent opioid and benzodiazepine use",
+   "domain": "medication safety",
    "triggers": "opioids? (?:and|with|plus|\\+) (?:a )?benzo|benzodiazepines? (?:and|with|plus|\\+) (?:an )?opioid|concurrent (?:opioid|benzo)|co-?prescri.*(?:opioid|benzo)|\\bcob\\b",
-   "summary": "FDA (2016 boxed warning) and CDC (2022 guideline) warn against combining opioids and benzodiazepines (respiratory depression and death). Concurrent use means the days' supply of an opioid fill and a benzodiazepine fill overlap (each fill covers fill date through fill date plus days supplied minus 1). The PQA COB measure is stricter: adults 18 and older with 2 or more fills of each on different dates and 30 or more cumulative days of overlap, excluding cancer, sickle cell disease, hospice and palliative care. Overlap of any day and the 30-day measure are two readings; say which.",
-   "drug_classes": ["opioid", "benzodiazepine"],
-   "readings": [{"label": "any day of overlapping supply", "rule": "supplies overlap by at least one day"}, {"label": "PQA COB: 30 or more days of overlap, 2 or more fills each", "rule": "cumulative overlap >= 30 days"}],
-   "check": {"when_question": "opioids? (?:and|with|plus) (?:a )?benzo|benzodiazepines? (?:and|with|plus) (?:an )?opioid|concurrent", "when_sql": "opioid", "needs": [["days_supply", "supply_end"]]},
-   "sources": [{"id": "FDA-OPIOID-BZD-2016"}, {"id": "CDC-OPIOID-2022", "where": "Recommendation 11"}, {"id": "PQA-COB"}],
-   "tests": {"retrieves": ["How many patients had overlapping opioid and benzodiazepine prescriptions in 2028?"], "ignores": ["How many opioid fills in 2028?"],
-             "check_passes": ["SELECT COUNT(DISTINCT a.patient_id) FROM fill a JOIN fill b ON a.patient_id = b.patient_id WHERE a.drug_class = 'opioid' AND b.drug_class = 'benzodiazepine' AND a.fill_date <= b.supply_end AND b.fill_date <= a.supply_end"],
-             "check_fails": ["SELECT COUNT(DISTINCT a.patient_id) FROM fill a JOIN fill b ON a.patient_id = b.patient_id WHERE a.drug_class = 'opioid' AND b.drug_class = 'benzodiazepine' AND substr(a.fill_date,1,4) = substr(b.fill_date,1,4)"],
-             "check_question": "How many patients had concurrent opioid and benzodiazepine use in 2028?"}},
-
-  {"id": "triple_whammy", "name": "'Triple whammy': NSAID with a RAS blocker and a diuretic", "domain": "medication safety",
+   "summary": "FDA (2016) added boxed warnings to opioid pain and cough medicines and to benzodiazepines because combining them can cause slowed or difficult breathing, sedation and death; it advises limiting co-prescribing to patients without adequate alternatives. CDC's 2022 guideline (Recommendation 11) says to use particular caution when prescribing them together. Concurrent use means the days' supply of an opioid fill and a benzodiazepine fill overlap (here each fill covers fill date through fill date plus days supplied minus 1). The PQA COB measure (a CMS Part D Star Ratings measure from 2027, measurement year 2025) is stricter: beneficiaries 18 and older with 2 or more opioid claims on different dates and 15 or more days' opioid supply (denominator), counted when they also have 2 or more benzodiazepine claims on different dates and 30 or more cumulative days of overlapping supply; hospice, palliative care, cancer, cancer-related pain treatment and sickle cell disease are excluded. Overlap of any day and the COB measure are two readings; say which.",
+   "drug_classes": [
+    "opioid",
+    "benzodiazepine"
+   ],
+   "readings": [
+    {
+     "label": "any day of overlapping supply",
+     "rule": "supplies overlap by at least one day"
+    },
+    {
+     "label": "PQA/CMS COB: 2+ opioid claims and 15+ opioid days, 2+ benzodiazepine claims, 30+ days of overlap",
+     "rule": "cumulative overlap >= 30 days"
+    }
+   ],
+   "check": {
+    "when_question": "opioids? (?:and|with|plus) (?:a )?benzo|benzodiazepines? (?:and|with|plus) (?:an )?opioid|concurrent",
+    "when_sql": "opioid",
+    "needs": [
+     [
+      "days_supply",
+      "supply_end"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "FDA-OPIOID-BZD-2016"
+    },
+    {
+     "id": "CDC-OPIOID-2022",
+     "where": "Recommendation 11"
+    },
+    {
+     "id": "PQA-COB"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients had overlapping opioid and benzodiazepine prescriptions in 2028?"
+    ],
+    "ignores": [
+     "How many opioid fills in 2028?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT a.patient_id) FROM fill a JOIN fill b ON a.patient_id = b.patient_id WHERE a.drug_class = 'opioid' AND b.drug_class = 'benzodiazepine' AND a.fill_date <= b.supply_end AND b.fill_date <= a.supply_end"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT a.patient_id) FROM fill a JOIN fill b ON a.patient_id = b.patient_id WHERE a.drug_class = 'opioid' AND b.drug_class = 'benzodiazepine' AND substr(a.fill_date,1,4) = substr(b.fill_date,1,4)"
+    ],
+    "check_question": "How many patients had concurrent opioid and benzodiazepine use in 2028?"
+   }
+  },
+  {
+   "id": "triple_whammy",
+   "name": "'Triple whammy': NSAID with a RAS blocker and a diuretic",
+   "domain": "medication safety",
    "triggers": "triple whammy|nsaids? (?:with|and|plus) (?:an? )?(?:ace|arb|diuretic)|nephrotoxic (?:combination|triple)",
-   "summary": "The 'triple whammy' is concurrent use of an NSAID, an ACE inhibitor or ARB, and a diuretic (loop or thiazide). In a nested case-control study (Lapi 2013) it raised the rate of acute kidney injury by about 31%, most in the first 30 days. Concurrent means the three days' supplies overlap on at least one day (fill date through fill date plus days supplied minus 1). Potassium-sparing MRAs are not counted as the diuretic unless the question says so.",
-   "drug_classes": ["nsaid", "ace_inhibitor", "arb", "loop_diuretic", "thiazide_diuretic"],
-   "check": {"when_question": "triple whammy", "when_sql": "nsaid", "needs": [["days_supply", "supply_end"], ["arb"], ["diuretic"]]},
-   "sources": [{"id": "LAPI-2013", "where": "Methods (exposure definition) and Results"}],
-   "tests": {"retrieves": ["How many patients were on a triple whammy combination in 2028?"], "ignores": ["How many NSAID fills in 2028?"],
-             "check_passes": ["SELECT COUNT(DISTINCT n.patient_id) FROM fill n JOIN fill r ON r.patient_id = n.patient_id AND r.drug_class IN ('ace_inhibitor','arb') JOIN fill d ON d.patient_id = n.patient_id AND d.drug_class IN ('loop_diuretic','thiazide_diuretic') WHERE n.drug_class = 'nsaid' AND n.fill_date <= r.supply_end AND r.fill_date <= n.supply_end"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM fill WHERE drug_class = 'nsaid'"],
-             "check_question": "How many patients were on a triple whammy combination in 2028?"}},
-
-  {"id": "metformin_egfr", "name": "Metformin and reduced eGFR (FDA)", "domain": "medication safety",
+   "summary": "The 'triple whammy' is concurrent use of an NSAID, an ACE inhibitor or ARB, and a diuretic. In a nested case-control study of UK antihypertensive users (Lapi 2013), current triple therapy was associated with a 31% higher rate of acute kidney injury (rate ratio 1.31, 95% CI 1.12-1.53), highest in the first 30 days (1.82, 1.35-2.46). The study counted drugs as concurrent when prescribed the same day or when their supplies overlapped by at least one day. Here supply runs from the fill date through fill date plus days supplied minus 1. Lapi did not split diuretics by type; counting loop and thiazide diuretics, and leaving out potassium-sparing MRAs unless the question asks, is our rule.",
+   "drug_classes": [
+    "nsaid",
+    "ace_inhibitor",
+    "arb",
+    "loop_diuretic",
+    "thiazide_diuretic"
+   ],
+   "check": {
+    "when_question": "triple whammy",
+    "when_sql": "nsaid",
+    "needs": [
+     [
+      "days_supply",
+      "supply_end"
+     ],
+     [
+      "arb"
+     ],
+     [
+      "diuretic"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "LAPI-2013",
+     "where": "Methods (exposure definition) and Results"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients were on a triple whammy combination in 2028?"
+    ],
+    "ignores": [
+     "How many NSAID fills in 2028?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT n.patient_id) FROM fill n JOIN fill r ON r.patient_id = n.patient_id AND r.drug_class IN ('ace_inhibitor','arb') JOIN fill d ON d.patient_id = n.patient_id AND d.drug_class IN ('loop_diuretic','thiazide_diuretic') WHERE n.drug_class = 'nsaid' AND n.fill_date <= r.supply_end AND r.fill_date <= n.supply_end"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM fill WHERE drug_class = 'nsaid'"
+    ],
+    "check_question": "How many patients were on a triple whammy combination in 2028?"
+   }
+  },
+  {
+   "id": "metformin_egfr",
+   "name": "Metformin and reduced eGFR (FDA)",
+   "domain": "medication safety",
    "triggers": "metformin.*(?:egfr|kidney|renal|ckd|contraindicat)|(?:egfr|kidney|renal|ckd).*metformin",
-   "summary": "FDA (2016): metformin is contraindicated with eGFR under 30 mL/min/1.73 m2; starting it with eGFR 30-45 is not recommended; reassess the benefit if eGFR falls below 45 in a patient already taking it. 'On metformin with eGFR under 30' means a metformin supply covering a date on or after an eGFR under 30, or a fill after it.",
-   "drug_classes": ["metformin"],
-   "measures": [{"concept": "egfr", "loinc": ["98979-8", "62238-1", "33914-3"], "unit": "mL/min/1.73m2"}],
-   "check": {"when_question": "contraindicat", "when_sql": "egfr|98979-8", "needs": [["30"]]},
-   "sources": [{"id": "FDA-METFORMIN-2016"}],
-   "tests": {"retrieves": ["How many patients were on metformin with an eGFR under 30?", "metformin contraindicated by kidney function"], "ignores": ["How many metformin fills in 2028?"],
-             "check_passes": ["SELECT COUNT(DISTINCT f.patient_id) FROM fill f JOIN measurement m ON m.patient_id = f.patient_id WHERE f.drug_class = 'metformin' AND m.concept = 'egfr' AND m.value_canonical < 30"],
-             "check_fails": ["SELECT COUNT(DISTINCT f.patient_id) FROM fill f JOIN measurement m ON m.patient_id = f.patient_id WHERE f.drug_class = 'metformin' AND m.concept = 'egfr' AND m.value_canonical < 45"],
-             "check_question": "How many patients were on metformin while contraindicated by eGFR?"}},
-
-  {"id": "sglt2_t2d_ckd", "name": "SGLT2 inhibitors in type 2 diabetes with CKD (KDIGO)", "domain": "kidney",
+   "summary": "FDA (2016): kidney function for metformin is judged by eGFR, not serum creatinine, checked before starting and at least yearly; metformin is contraindicated with eGFR under 30 mL/min/1.73 m2, starting it at 30-45 is not recommended, and the benefit should be reassessed if eGFR falls below 45 (these thresholds not yet confirmed against FDA's text); stop it before iodinated contrast when eGFR is 30-60. KDIGO 2022 (PP 4.1.3) separately advises adjusting the dose below eGFR 45. Agere's operational rule (not FDA's): 'on metformin with eGFR under 30' means a metformin supply covering a date on or after an eGFR under 30, or a fill after it.",
+   "drug_classes": [
+    "metformin"
+   ],
+   "measures": [
+    {
+     "concept": "egfr",
+     "loinc": [
+      "98979-8",
+      "62238-1",
+      "33914-3"
+     ],
+     "unit": "mL/min/1.73m2"
+    }
+   ],
+   "check": {
+    "when_question": "contraindicat",
+    "when_sql": "egfr|98979-8",
+    "needs": [
+     [
+      "30"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "FDA-METFORMIN-2016"
+    },
+    {
+     "id": "KDIGO-DM-CKD-2022",
+     "where": "PP 4.1.3"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients were on metformin with an eGFR under 30?",
+     "metformin contraindicated by kidney function"
+    ],
+    "ignores": [
+     "How many metformin fills in 2028?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT f.patient_id) FROM fill f JOIN measurement m ON m.patient_id = f.patient_id WHERE f.drug_class = 'metformin' AND m.concept = 'egfr' AND m.value_canonical < 30"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT f.patient_id) FROM fill f JOIN measurement m ON m.patient_id = f.patient_id WHERE f.drug_class = 'metformin' AND m.concept = 'egfr' AND m.value_canonical < 45"
+    ],
+    "check_question": "How many patients were on metformin while contraindicated by eGFR?"
+   }
+  },
+  {
+   "id": "sglt2_t2d_ckd",
+   "name": "SGLT2 inhibitors in type 2 diabetes with CKD (KDIGO)",
+   "domain": "kidney",
    "triggers": "sglt2.*(?:ckd|kidney)|(?:ckd|kidney).*sglt2|diabet(?:es|ic) kidney disease",
-   "summary": "KDIGO 2022: adults with type 2 diabetes, CKD and eGFR 20 mL/min/1.73 m2 or more should be treated with an SGLT2 inhibitor (with metformin when eGFR is 30 or more). The eligible group is type 2 diabetes plus CKD (eGFR under 60 or albuminuria uACR 30 mg/g or more, persistent) with eGFR 20 or more.",
-   "drug_classes": ["sglt2_inhibitor"],
-   "measures": [{"concept": "egfr", "loinc": ["98979-8", "62238-1"], "unit": "mL/min/1.73m2"}, {"concept": "uacr", "loinc": ["9318-7", "14959-1"], "unit": "mg/g"}],
-   "icd10": ["E11", "N18", "E11.2"],
-   "sources": [{"id": "KDIGO-DM-CKD-2022", "where": "Recommendation 1.3.1"}],
-   "tests": {"retrieves": ["How many type 2 diabetics with CKD are not on an SGLT2 inhibitor?"], "ignores": ["How many SGLT2 fills in 2028?"]}},
-
-  {"id": "kidney_health_evaluation", "name": "CMS951 kidney health evaluation in diabetes", "domain": "kidney",
+   "summary": "KDIGO 2022 (Rec 1.3.1): treat adults with type 2 diabetes, CKD and eGFR 20 mL/min/1.73 m2 or more with an SGLT2 inhibitor (1A); Rec 4.1.1 adds metformin when eGFR is 30 or more (1B). Once started, an SGLT2 inhibitor may continue below eGFR 20 unless not tolerated or kidney replacement therapy starts; the recommendation does not apply to kidney transplant recipients. Eligible group: type 2 diabetes plus CKD (eGFR under 60 and/or uACR 30 mg/g or more, persisting more than 3 months) with eGFR 20 or more.",
+   "drug_classes": [
+    "sglt2_inhibitor"
+   ],
+   "measures": [
+    {
+     "concept": "egfr",
+     "loinc": [
+      "98979-8",
+      "62238-1"
+     ],
+     "unit": "mL/min/1.73m2"
+    },
+    {
+     "concept": "uacr",
+     "loinc": [
+      "9318-7",
+      "14959-1"
+     ],
+     "unit": "mg/g"
+    }
+   ],
+   "icd10": [
+    "E11",
+    "N18",
+    "E11.2"
+   ],
+   "sources": [
+    {
+     "id": "KDIGO-DM-CKD-2022",
+     "where": "Rec 1.3.1, Rec 4.1.1, PP 1.3.6-1.3.7"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many type 2 diabetics with CKD are not on an SGLT2 inhibitor?"
+    ],
+    "ignores": [
+     "How many SGLT2 fills in 2028?"
+    ]
+   }
+  },
+  {
+   "id": "kidney_health_evaluation",
+   "name": "CMS951 kidney health evaluation in diabetes",
+   "domain": "kidney",
    "triggers": "kidney health evaluation|cms ?951|kidney (?:screening|testing) (?:for|in|of) (?:our )?diabet|diabet\\w* (?:kidney|renal) (?:screening|testing)",
-   "summary": "CMS951: patients 18-85 with diabetes and a visit in the year. Numerator: BOTH an eGFR AND a urine albumin-creatinine ratio (uACR) during the year; either one alone does not count. Exclusions include CKD stage 5 or end-stage renal disease, hospice and palliative care.",
-   "measures": [{"concept": "egfr", "loinc": ["98979-8", "62238-1"], "unit": "mL/min/1.73m2"}, {"concept": "uacr", "loinc": ["9318-7", "14959-1"], "unit": "mg/g"}],
-   "icd10": ["E10", "E11", "E13"],
-   "check": {"when_question": "kidney health evaluation|cms ?951", "when_sql": "egfr", "needs": [["uacr", "9318-7"]]},
-   "sources": [{"id": "CMS951", "where": "Denominator and numerator"}],
-   "tests": {"retrieves": ["What share of our diabetic patients had a kidney health evaluation in 2028?"], "ignores": ["How many patients had an eGFR test?"],
-             "check_passes": ["SELECT COUNT(DISTINCT e.patient_id) FROM measurement e JOIN measurement u ON u.patient_id = e.patient_id WHERE e.concept = 'egfr' AND u.concept = 'uacr'"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'egfr'"],
-             "check_question": "What share of diabetic patients had a kidney health evaluation in 2028?"}},
-
-  {"id": "phq9_severity", "name": "PHQ-9 severity, positive screen and remission", "domain": "behavioral health",
+   "summary": "CMS951 (2025, v3): patients 18-85 with diabetes at the start of the measurement period and a visit during it. Numerator: BOTH an eGFR AND a urine albumin-creatinine ratio (uACR) in the period; either alone does not count. From 2026 (v4), an eGFR plus a urine albumin and a urine creatinine resulted no more than 4 days apart also counts. Exclusions: end-stage renal disease or CKD stage 5 active during the period; hospice or palliative care.",
+   "measures": [
+    {
+     "concept": "egfr",
+     "loinc": [
+      "98979-8",
+      "62238-1"
+     ],
+     "unit": "mL/min/1.73m2"
+    },
+    {
+     "concept": "uacr",
+     "loinc": [
+      "9318-7",
+      "14959-1"
+     ],
+     "unit": "mg/g"
+    }
+   ],
+   "icd10": [
+    "E10",
+    "E11",
+    "E13"
+   ],
+   "check": {
+    "when_question": "kidney health evaluation|cms ?951",
+    "when_sql": "egfr",
+    "needs": [
+     [
+      "uacr",
+      "9318-7"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "CMS951",
+     "where": "Denominator and numerator"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "What share of our diabetic patients had a kidney health evaluation in 2028?"
+    ],
+    "ignores": [
+     "How many patients had an eGFR test?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT e.patient_id) FROM measurement e JOIN measurement u ON u.patient_id = e.patient_id WHERE e.concept = 'egfr' AND u.concept = 'uacr'"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'egfr'"
+    ],
+    "check_question": "What share of diabetic patients had a kidney health evaluation in 2028?"
+   }
+  },
+  {
+   "id": "phq9_severity",
+   "name": "PHQ-9 severity, positive screen and remission",
+   "domain": "behavioral health",
    "triggers": "phq|depression (?:screen|score|severity|remission|response)|moderate(?:ly severe)? depression|severe depression|depressive symptoms|depression remission",
-   "summary": "PHQ-9 total score bands (Kroenke 2001): 0-4 minimal, 5-9 mild, 10-14 moderate, 15-19 moderately severe, 20-27 severe. A score of 10 or more is the usual positive screen for major depression. CMS159 depression remission: patients with an index PHQ-9 above 9 whose PHQ-9 12 months later (plus or minus 60 days) is under 5. Response is a 50% or greater drop.",
-   "measures": [{"concept": "phq9", "loinc": ["44261-6"], "unit": "points"}],
-   "icd10": ["F32", "F33"],
-   "check": {"when_question": "screen(?:ed|s)? positive|positive (?:depression )?screen|moderate(?:ly severe)? depression|severe depression|depression remission|remission", "when_sql": "phq9|44261-6", "needs": [["10", "9", "15", "20", "5"]]},
-   "sources": [{"id": "PHQ9-2001", "where": "Table 4"}, {"id": "CMS159"}],
-   "tests": {"retrieves": ["How many patients screened positive for depression on the PHQ-9 in 2028?", "patients with moderately severe depression scores"], "ignores": ["How many patients have anxiety?"],
-             "check_passes": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'phq9' AND value_canonical >= 10"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'phq9' AND value_canonical >= 12"],
-             "check_question": "How many patients screened positive for depression on the PHQ-9 in 2028?"}},
-
-  {"id": "obesity_bmi", "name": "Obesity by BMI (CDC adult categories)", "domain": "metabolic",
+   "summary": "PHQ-9 total score bands (Kroenke 2001): 0-4 none-minimal, 5-9 mild, 10-14 moderate, 15-19 moderately severe, 20-27 severe. A score of 10 or more is the usual positive screen for major depression (88% sensitivity and specificity in the validation study). CMS159 depression remission: patients aged 12 and older with major depression or dysthymia and an index PHQ-9 or PHQ-9M above 9, whose most recent PHQ-9 at 12 months (plus or minus 60 days) is under 5.",
+   "measures": [
+    {
+     "concept": "phq9",
+     "loinc": [
+      "44261-6"
+     ],
+     "unit": "points"
+    }
+   ],
+   "icd10": [
+    "F32",
+    "F33"
+   ],
+   "check": {
+    "when_question": "screen(?:ed|s)? positive|positive (?:depression )?screen|moderate(?:ly severe)? depression|severe depression|depression remission|remission",
+    "when_sql": "phq9|44261-6",
+    "needs": [
+     [
+      "10",
+      "9",
+      "15",
+      "20",
+      "5"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "PHQ9-2001",
+     "where": "Abstract (severity cutoffs and the 10+ screen)"
+    },
+    {
+     "id": "CMS159"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many patients screened positive for depression on the PHQ-9 in 2028?",
+     "patients with moderately severe depression scores"
+    ],
+    "ignores": [
+     "How many patients have anxiety?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'phq9' AND value_canonical >= 10"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'phq9' AND value_canonical >= 12"
+    ],
+    "check_question": "How many patients screened positive for depression on the PHQ-9 in 2028?"
+   }
+  },
+  {
+   "id": "obesity_bmi",
+   "name": "Obesity by BMI (CDC adult categories)",
+   "domain": "metabolic",
    "triggers": "obes|\\bbmi\\b|body mass|overweight|severe obesity|class (?:1|2|3|i|ii|iii) obesity|morbid",
-   "summary": "CDC adult BMI categories (kg/m2): underweight under 18.5; healthy 18.5 to under 25; overweight 25 to under 30; obesity 30 or more, subdivided class 1 30 to under 35, class 2 35 to under 40, class 3 (severe) 40 or more. BMI = weight in kg divided by height in metres squared; a weight alone does not give BMI. Height is LOINC 8302-2 (cm), weight 29463-7 (kg), BMI 39156-5. For adults use a height from any date (heights are stable) with each weight. Coded obesity: ICD-10-CM E66 and BMI Z codes Z68.30-Z68.45.",
-   "measures": [{"concept": "weight", "loinc": ["29463-7", "3141-9"], "unit": "kg"}, {"concept": "height", "loinc": ["8302-2"], "unit": "cm"}, {"concept": "bmi", "loinc": ["39156-5"], "unit": "kg/m2"}],
-   "icd10": ["E66", "Z68.3", "Z68.4"],
-   "check": {"when_question": "obes|\\bbmi\\b|body mass", "when_sql": "weight|29463-7", "needs": [["8302-2", "height"]]},
-   "sources": [{"id": "CDC-BMI"}, {"id": "LOINC"}, {"id": "ICD10CM-2026", "where": "E66, Z68"}],
-   "tests": {"retrieves": ["How many adults are obese by BMI?", "patients with class 3 obesity"], "ignores": ["Average weight in 2028"],
-             "check_passes": ["SELECT COUNT(DISTINCT w.patient_id) FROM measurement w JOIN measurement h ON h.patient_id = w.patient_id AND h.loinc = '8302-2' WHERE w.concept = 'weight' AND w.value_canonical / ((h.value / 100.0) * (h.value / 100.0)) >= 30"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'weight' AND value_canonical > 100"],
-             "check_question": "How many adults are obese by BMI?"}},
-
-  {"id": "af_anticoagulation", "name": "Atrial fibrillation and oral anticoagulation", "domain": "cardiovascular",
+   "summary": "CDC adult BMI categories (ages 20 and older, kg/m2): underweight under 18.5; healthy 18.5 to under 25; overweight 25 to under 30; obesity 30 or more, subdivided class 1 30 to under 35, class 2 35 to under 40, class 3 (severe) 40 or more. BMI = weight in kg divided by height in metres squared; a weight alone does not give BMI. Height is LOINC 8302-2 (cm), weight 29463-7 (kg), BMI 39156-5. For adults use a height from any date (heights are stable) with each weight. Coded obesity: ICD-10-CM E66 except E66.3 (overweight), and BMI Z codes Z68.30-Z68.45.",
+   "measures": [
+    {
+     "concept": "weight",
+     "loinc": [
+      "29463-7",
+      "3141-9"
+     ],
+     "unit": "kg"
+    },
+    {
+     "concept": "height",
+     "loinc": [
+      "8302-2"
+     ],
+     "unit": "cm"
+    },
+    {
+     "concept": "bmi",
+     "loinc": [
+      "39156-5"
+     ],
+     "unit": "kg/m2"
+    }
+   ],
+   "icd10": [
+    "E66.0",
+    "E66.1",
+    "E66.2",
+    "E66.81",
+    "E66.89",
+    "E66.9",
+    "Z68.3",
+    "Z68.4"
+   ],
+   "check": {
+    "when_question": "obes|\\bbmi\\b|body mass",
+    "when_sql": "weight|29463-7",
+    "needs": [
+     [
+      "8302-2",
+      "height"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "CDC-BMI"
+    },
+    {
+     "id": "LOINC"
+    },
+    {
+     "id": "ICD10CM-2026",
+     "where": "E66, Z68"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many adults are obese by BMI?",
+     "patients with class 3 obesity"
+    ],
+    "ignores": [
+     "Average weight in 2028"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT w.patient_id) FROM measurement w JOIN measurement h ON h.patient_id = w.patient_id AND h.loinc = '8302-2' WHERE w.concept = 'weight' AND w.value_canonical / ((h.value / 100.0) * (h.value / 100.0)) >= 30"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM measurement WHERE concept = 'weight' AND value_canonical > 100"
+    ],
+    "check_question": "How many adults are obese by BMI?"
+   }
+  },
+  {
+   "id": "af_anticoagulation",
+   "name": "Atrial fibrillation and oral anticoagulation",
+   "domain": "cardiovascular",
    "triggers": "atrial fib|\\bafib\\b|\\ba-?fib\\b|\\baf\\b.*(?:anticoag|stroke)|anticoagula.*(?:atrial|afib)|cha2ds2|chads",
-   "summary": "2023 ACC/AHA/ACCP/HRS: oral anticoagulation (warfarin or a direct oral anticoagulant: apixaban, rivaroxaban, edoxaban, dabigatran) is recommended for atrial fibrillation with an annual stroke risk of 2% or more, commonly CHA2DS2-VASc 2 or more in men and 3 or more in women. Aspirin or other antiplatelet drugs are not an alternative to anticoagulation for stroke prevention and do not count as anticoagulation. Coded atrial fibrillation is ICD-10-CM I48.",
-   "drug_classes": ["anticoagulant"],
-   "icd10": ["I48"],
-   "check": {"when_question": "anticoag", "when_sql": "antiplatelet", "needs": [["anticoagulant"]]},
-   "sources": [{"id": "AF-2023", "where": "Section 6.1 and 6.3"}, {"id": "ICD10CM-2026", "where": "I48"}],
-   "tests": {"retrieves": ["How many atrial fibrillation patients have no anticoagulant fill?"], "ignores": ["How many antiplatelet fills in 2028?"],
-             "check_passes": ["SELECT COUNT(DISTINCT patient_id) FROM fill WHERE drug_class = 'anticoagulant'"],
-             "check_fails": ["SELECT COUNT(DISTINCT patient_id) FROM fill WHERE drug_class = 'antiplatelet'"],
-             "check_question": "How many atrial fibrillation patients are anticoagulated?"}},
-
-  {"id": "pqi_08_heart_failure", "name": "AHRQ PQI 08 heart failure admission rate", "domain": "population health",
+   "summary": "2023 ACC/AHA/ACCP/HRS: oral anticoagulation is recommended for atrial fibrillation with an annual thromboembolic risk of 2% or more (for example CHA2DS2-VASc 2 or more in men, 3 or more in women; other validated scores are allowed), and is reasonable at 1% to under 2%. Direct oral anticoagulants (apixaban, dabigatran, edoxaban, rivaroxaban) are preferred over warfarin except in moderate-to-severe rheumatic mitral stenosis or with a mechanical heart valve. Aspirin alone or aspirin plus clopidogrel is not an alternative to anticoagulation (Class 3: Harm) and does not count as anticoagulation. Coded atrial fibrillation is ICD-10-CM I48.0, I48.1x, I48.2x and I48.91; I48.3, I48.4 and I48.92 are atrial flutter.",
+   "drug_classes": [
+    "anticoagulant"
+   ],
+   "icd10": [
+    "I48.0",
+    "I48.1",
+    "I48.2",
+    "I48.91"
+   ],
+   "check": {
+    "when_question": "anticoag",
+    "when_sql": "antiplatelet",
+    "needs": [
+     [
+      "anticoagulant"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "AF-2023",
+     "where": "Sections 6.1, 6.2 and 6.3.1"
+    },
+    {
+     "id": "ICD10CM-2026",
+     "where": "I48"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many atrial fibrillation patients have no anticoagulant fill?"
+    ],
+    "ignores": [
+     "How many antiplatelet fills in 2028?"
+    ],
+    "check_passes": [
+     "SELECT COUNT(DISTINCT patient_id) FROM fill WHERE drug_class = 'anticoagulant'"
+    ],
+    "check_fails": [
+     "SELECT COUNT(DISTINCT patient_id) FROM fill WHERE drug_class = 'antiplatelet'"
+    ],
+    "check_question": "How many atrial fibrillation patients are anticoagulated?"
+   }
+  },
+  {
+   "id": "pqi_08_heart_failure",
+   "name": "AHRQ PQI 08 heart failure admission rate",
+   "domain": "population health",
    "triggers": "\\bpqi\\b|prevention quality|ambulatory care[- ]sensitive|avoidable (?:hospitali|admission)|preventable (?:hospitali|admission)",
-   "summary": "AHRQ Prevention Quality Indicators count admissions for ambulatory care sensitive conditions per 100,000 adult residents (18 and older) per year. PQI 08 (heart failure): admissions of adults with a principal diagnosis of heart failure (I50 codes, and hypertensive heart or heart-and-kidney disease with heart failure, I11.0, I13.0, I13.2), excluding transfers in from another facility and admissions with cardiac procedures. PQI 01 (diabetes short-term complications): principal diagnosis of diabetes with ketoacidosis, hyperosmolarity or coma. The denominator is the adult population, not the admitted patients; the rate is per 100,000.",
-   "icd10": ["I50", "I11.0", "I13.0", "I13.2"],
-   "check": {"when_question": "\\bpqi\\b|prevention quality", "when_sql": "count", "needs": [["100000", "100,000", "1e5"]]},
-   "sources": [{"id": "AHRQ-PQI", "where": "PQI 08 and PQI 01 technical specifications"}, {"id": "ICD10CM-2026"}],
-   "tests": {"retrieves": ["What is our PQI 08 heart failure admission rate for 2028?"], "ignores": ["How many heart failure patients are there?"],
-             "check_passes": ["SELECT 100000.0 * COUNT(*) / (SELECT COUNT(*) FROM patient) FROM hospital_visit WHERE is_heart_failure = 1"],
-             "check_fails": ["SELECT COUNT(*) FROM hospital_visit WHERE is_heart_failure = 1"],
-             "check_question": "What is our PQI 08 heart failure admission rate for 2028?"}},
-
-  {"id": "polypharmacy", "name": "Polypharmacy (definitions vary)", "domain": "medication safety",
+   "summary": "AHRQ Prevention Quality Indicators (v2024) are area-level rates: admissions per 100,000 residents aged 18 and older of a county or metro area, assigned by patient residence. PQI 08 (heart failure): discharges aged 18 and older with a principal diagnosis of heart failure (I50.x, I09.81, I11.0, I13.0, I13.2), excluding any cardiac procedure, transfers in from another hospital or facility, ungroupable DRG and records missing key data. PQI 01 (diabetes short-term complications): principal diagnosis of type 1, type 2 or other specified diabetes with ketoacidosis, hyperosmolarity or coma (including hypoglycemic coma), excluding transfers. The software reports a rate per person; multiply by 100,000. The denominator is the resident adult population, not admitted or enrolled patients; a health system's enrolled members are a stated substitute.",
+   "icd10": [
+    "I50",
+    "I09.81",
+    "I11.0",
+    "I13.0",
+    "I13.2"
+   ],
+   "check": {
+    "when_question": "\\bpqi\\b|prevention quality",
+    "when_sql": "count",
+    "needs": [
+     [
+      "100000",
+      "100,000",
+      "1e5"
+     ]
+    ]
+   },
+   "sources": [
+    {
+     "id": "AHRQ-PQI",
+     "where": "PQI 08 and PQI 01 technical specifications"
+    },
+    {
+     "id": "ICD10CM-2026"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "What is our PQI 08 heart failure admission rate for 2028?"
+    ],
+    "ignores": [
+     "How many heart failure patients are there?"
+    ],
+    "check_passes": [
+     "SELECT 100000.0 * COUNT(*) / (SELECT COUNT(*) FROM patient) FROM hospital_visit WHERE is_heart_failure = 1"
+    ],
+    "check_fails": [
+     "SELECT COUNT(*) FROM hospital_visit WHERE is_heart_failure = 1"
+    ],
+    "check_question": "What is our PQI 08 heart failure admission rate for 2028?"
+   }
+  },
+  {
+   "id": "polypharmacy",
+   "name": "Polypharmacy (definitions vary)",
+   "domain": "medication safety",
    "triggers": "polypharm|five or more (?:medications|drugs)|5\\+? (?:medications|drugs)|many medications",
-   "summary": "A systematic review (Masnoon 2017) found the most common definition of polypharmacy is five or more medications used at the same time; ten or more is often called hyperpolypharmacy. Definitions differ on whether medications are counted at one point in time or over a period, and on whether classes or individual drugs are counted. Count concurrent supplies (overlapping days' supply) of distinct drugs or classes, and say which.",
+   "summary": "A systematic review (Masnoon 2017) found the most common definition of polypharmacy is five or more medications daily (46.4% of studies; definitions ranged from two or more to 11 or more). Ten or more was labelled 'excessive polypharmacy' in some studies, and 'hyperpolypharmacy' or 'severe polypharmacy' in single studies. Most definitions are simple counts; a minority add a duration of therapy or a care setting, and only one study counted drug classes rather than drugs. Count concurrent supplies (overlapping days' supply) of distinct drugs or classes, and say which.",
    "drug_classes": [],
-   "sources": [{"id": "MASNOON-2017", "where": "Results"}],
-   "tests": {"retrieves": ["How many older patients have polypharmacy?"], "ignores": ["How many fills in 2028?"]}}
+   "sources": [
+    {
+     "id": "MASNOON-2017",
+     "where": "Results"
+    }
+   ],
+   "tests": {
+    "retrieves": [
+     "How many older patients have polypharmacy?"
+    ],
+    "ignores": [
+     "How many fills in 2028?"
+    ]
+   }
+  }
  ]
 }
