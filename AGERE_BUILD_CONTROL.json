@@ -8467,5 +8467,26 @@
     ],
     "remaining_gap": "Every arm scores far below zero (-309 to -344 of 82) because it answers rather than declines when unsure; many wrong answers are within 5% of the key and come from data conventions (result_current, outpatient-only BP, qualifying visits, adults only) the evaluator chose and the stack does not know, which belong in customer definitions, not literature. No concept is reviewed; no source has been checked against its published text (downloads await Mike's approval); the set has one run per arm and no clinician spot-check of the key.",
     "next_action": "Mike: review concepts (knowledge status / show ID) and approve or reject; approve downloads of the cited public sources so each summary is checked against its text. Then: certify the evaluator's data conventions as customer definitions and re-score clinical_v1 (3 runs) so clinical misses are separated from convention misses; extend the store to the uncovered concepts the set exposed (CKD chronicity, last-result rules, high-intensity statin, low HDL by sex, microcytic anaemia, URI antibiotic measure, QTc, cystatin C, ABI, metabolic syndrome declines)."
-  }
+  },
+  "triage_trials": [
+    {
+      "at": "2026-11-17T11:55:00Z",
+      "gate": "G7",
+      "session": "triage trials (branch claude/zen-goldberg-4e958c)",
+      "user_behavior_delta": "None by default: every candidate is behind an off switch (AGERE_TIERED_VOI, AGERE_TIERED_EQUIVALENCE, AGERE_TIERED_FITTED_THRESHOLDS, AGERE_TIERED_FRESHNESS); runout.py, freshness.py and trial scripts are new and unwired.",
+      "measured_failure_reduction": "None switched on. Measured: VOI fails (skipped 24 material asks, denial 4.9% vs 1.0%); cut-offs nothing to fit (v13 small-model rung 19/20 wrong at any confidence; v14 wrong answers all frontier); equivalence finds 6 real defects in 759 promoted recipes the gate passed (203, 211, 221, 390, 758, 750); stale registry 9/9 changed numbers flagged vs row count 3/9, 182 false flags; runout chain-ladder 3.5%, LLM alone 2.2%, settlement candidate 8.2%, BF 5.4%; credibility beats raw PMPM by about 16% RMSE; plain PDC overstates adherence 3-12 points.",
+      "evidence": [
+        "artifacts/agere-tiered-core/trials/ (worktree)",
+        "eval/tiered/trial_voi_v1.json",
+        "eval/tiered/trial_equivalence_v1.json",
+        "eval/tiered/trial_stale_v1.json",
+        "eval/tiered/trial_runout_v1.json",
+        "https://claude.ai/artifact/FdGHFryPdENtqJeMEx3A4D (Trial results section)"
+      ],
+      "development_sets": "53/53, 31/31, 13/13, 13/13 in the trial worktree before changes; candidates are off, so unchanged by default (not rerun after the last commit).",
+      "remaining_gap": "Not run: RS(10) agreement-gated abstention (~$13), PHI route guard test, prompt-caching trial, CMS settlement, comparison group, stop-loss, staggered DiD; equivalence check not wired into learn.promote.",
+      "next_action": "After the limit resets: rerun eval/tiered/trial_llm_alone.py equivalence and stale, and the proof_v14 stack_plain ablation (journals resume); then Mike decides on wiring the equivalence check into promotion, suspending recipes 203/211/221, a chain-ladder runout recipe, a PDC recipe from therapy_courses, credibility PMPM.",
+      "resumed": "2026-11-17 after the limit reset: LLM alone, recipe check 60/60 ($2.87): 3 of 6 real defects, 7 of 30 passing recipes called wrong; LLM alone, stale 39 pairs ($1.18): 7/8 changed, 0/31 false (registry 8/8, 2 false); proof_v14 without governed definitions 55/14/31, -85, $0.117 (with: 69/4/28, +29); paired +1.13 a question [+0.16,+2.49]. Paired cluster-bootstrap re-check (eval/tiered/trial_stats.py): credibility and Agere-vs-assistant differences do not hold; VOI, PDC, runout, equivalence-recall hold. Definition dependency by trigger words: 40/40 readmission recipes, 0 false; by tables 32/40, 62 false."
+    }
+  ]
 }

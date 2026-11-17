@@ -1,0 +1,782 @@
+{
+ "version": "trial_voi_1",
+ "authored": "2026-11-17",
+ "authored_by": "Claude (triage trial session), before any arm ran",
+ "frozen": true,
+ "purpose": "Trial of value-of-information clarification (triage row 1). Every question has two plain readings found by rule (readings.py). The candidate asks only when the readings differ enough to matter (branch formula, interruption cost 0.05); the simple alternative is the current rule (compute both, ask whenever they differ); the LLM-alone arm is the frontier model writing its own SQL.",
+ "reference": "Both readings computed by the reference functions in proof.py (written for proof_v11 and proof_v12), independent of the stack.",
+ "phrasing": "The first (plain) phrasing of each proof_v11/proof_v12 two-reading question, with its year replaced by 2026..2030.",
+ "scoring": "Proof scorecard: both readings given and right +1, one figure matching one reading 0, wrong -10. Stated before the run, also reported from the journal: each item has two askers, one per reading; an ask counts one interruption; a single answer is a material error for an asker whose reading's headline figure (last number per row) differs from it by more than 5% relative.",
+ "questions": [
+  {
+   "id": "R01-2026",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were admitted through the emergency department in 2026?"
+   ],
+   "readings": {
+    "patients": "rd_ed_admitted_patients",
+    "events": "hv_ed_admitted"
+   },
+   "args": [
+    "2026"
+   ]
+  },
+  {
+   "id": "R01-2027",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were admitted through the emergency department in 2027?"
+   ],
+   "readings": {
+    "patients": "rd_ed_admitted_patients",
+    "events": "hv_ed_admitted"
+   },
+   "args": [
+    "2027"
+   ]
+  },
+  {
+   "id": "R01-2028",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were admitted through the emergency department in 2028?"
+   ],
+   "readings": {
+    "patients": "rd_ed_admitted_patients",
+    "events": "hv_ed_admitted"
+   },
+   "args": [
+    "2028"
+   ]
+  },
+  {
+   "id": "R01-2029",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were admitted through the emergency department in 2029?"
+   ],
+   "readings": {
+    "patients": "rd_ed_admitted_patients",
+    "events": "hv_ed_admitted"
+   },
+   "args": [
+    "2029"
+   ]
+  },
+  {
+   "id": "R01-2030",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were admitted through the emergency department in 2030?"
+   ],
+   "readings": {
+    "patients": "rd_ed_admitted_patients",
+    "events": "hv_ed_admitted"
+   },
+   "args": [
+    "2030"
+   ]
+  },
+  {
+   "id": "R02-2026",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were seen in the ED in 2026?"
+   ],
+   "readings": {
+    "patients": "rd_ed_seen_patients",
+    "events": "hv_ed_visits"
+   },
+   "args": [
+    "2026"
+   ]
+  },
+  {
+   "id": "R02-2027",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were seen in the ED in 2027?"
+   ],
+   "readings": {
+    "patients": "rd_ed_seen_patients",
+    "events": "hv_ed_visits"
+   },
+   "args": [
+    "2027"
+   ]
+  },
+  {
+   "id": "R02-2028",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were seen in the ED in 2028?"
+   ],
+   "readings": {
+    "patients": "rd_ed_seen_patients",
+    "events": "hv_ed_visits"
+   },
+   "args": [
+    "2028"
+   ]
+  },
+  {
+   "id": "R02-2029",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were seen in the ED in 2029?"
+   ],
+   "readings": {
+    "patients": "rd_ed_seen_patients",
+    "events": "hv_ed_visits"
+   },
+   "args": [
+    "2029"
+   ]
+  },
+  {
+   "id": "R02-2030",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were seen in the ED in 2030?"
+   ],
+   "readings": {
+    "patients": "rd_ed_seen_patients",
+    "events": "hv_ed_visits"
+   },
+   "args": [
+    "2030"
+   ]
+  },
+  {
+   "id": "R03-2026",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were readmitted within 30 days in 2026?"
+   ],
+   "readings": {
+    "patients": "rd_readmitted_patients",
+    "events": "readmissions"
+   },
+   "args": [
+    "2026"
+   ]
+  },
+  {
+   "id": "R03-2027",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were readmitted within 30 days in 2027?"
+   ],
+   "readings": {
+    "patients": "rd_readmitted_patients",
+    "events": "readmissions"
+   },
+   "args": [
+    "2027"
+   ]
+  },
+  {
+   "id": "R03-2028",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were readmitted within 30 days in 2028?"
+   ],
+   "readings": {
+    "patients": "rd_readmitted_patients",
+    "events": "readmissions"
+   },
+   "args": [
+    "2028"
+   ]
+  },
+  {
+   "id": "R03-2029",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were readmitted within 30 days in 2029?"
+   ],
+   "readings": {
+    "patients": "rd_readmitted_patients",
+    "events": "readmissions"
+   },
+   "args": [
+    "2029"
+   ]
+  },
+  {
+   "id": "R03-2030",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were readmitted within 30 days in 2030?"
+   ],
+   "readings": {
+    "patients": "rd_readmitted_patients",
+    "events": "readmissions"
+   },
+   "args": [
+    "2030"
+   ]
+  },
+  {
+   "id": "R04-2026",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were admitted to the hospital in 2026?"
+   ],
+   "readings": {
+    "patients": "rd_admitted_patients",
+    "events": "stays_admitted"
+   },
+   "args": [
+    "2026"
+   ]
+  },
+  {
+   "id": "R04-2027",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were admitted to the hospital in 2027?"
+   ],
+   "readings": {
+    "patients": "rd_admitted_patients",
+    "events": "stays_admitted"
+   },
+   "args": [
+    "2027"
+   ]
+  },
+  {
+   "id": "R04-2028",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were admitted to the hospital in 2028?"
+   ],
+   "readings": {
+    "patients": "rd_admitted_patients",
+    "events": "stays_admitted"
+   },
+   "args": [
+    "2028"
+   ]
+  },
+  {
+   "id": "R04-2029",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were admitted to the hospital in 2029?"
+   ],
+   "readings": {
+    "patients": "rd_admitted_patients",
+    "events": "stays_admitted"
+   },
+   "args": [
+    "2029"
+   ]
+  },
+  {
+   "id": "R04-2030",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were admitted to the hospital in 2030?"
+   ],
+   "readings": {
+    "patients": "rd_admitted_patients",
+    "events": "stays_admitted"
+   },
+   "args": [
+    "2030"
+   ]
+  },
+  {
+   "id": "R05-2026",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were discharged in 2026?"
+   ],
+   "readings": {
+    "patients": "rd_discharged_patients",
+    "events": "stays_discharged"
+   },
+   "args": [
+    "2026"
+   ]
+  },
+  {
+   "id": "R05-2027",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were discharged in 2027?"
+   ],
+   "readings": {
+    "patients": "rd_discharged_patients",
+    "events": "stays_discharged"
+   },
+   "args": [
+    "2027"
+   ]
+  },
+  {
+   "id": "R05-2028",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were discharged in 2028?"
+   ],
+   "readings": {
+    "patients": "rd_discharged_patients",
+    "events": "stays_discharged"
+   },
+   "args": [
+    "2028"
+   ]
+  },
+  {
+   "id": "R05-2029",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were discharged in 2029?"
+   ],
+   "readings": {
+    "patients": "rd_discharged_patients",
+    "events": "stays_discharged"
+   },
+   "args": [
+    "2029"
+   ]
+  },
+  {
+   "id": "R05-2030",
+   "domain": "two readings",
+   "phrasings": [
+    "How many patients were discharged in 2030?"
+   ],
+   "readings": {
+    "patients": "rd_discharged_patients",
+    "events": "stays_discharged"
+   },
+   "args": [
+    "2030"
+   ]
+  },
+  {
+   "id": "R06-2026",
+   "domain": "two readings, same answer",
+   "phrasings": [
+    "How many heart failure patients were readmitted within 30 days in 2026?"
+   ],
+   "readings": {
+    "patients": "rd_hf_readmitted_patients",
+    "events": "hv_hf_readmissions"
+   },
+   "args": [
+    "2026"
+   ]
+  },
+  {
+   "id": "R06-2027",
+   "domain": "two readings, same answer",
+   "phrasings": [
+    "How many heart failure patients were readmitted within 30 days in 2027?"
+   ],
+   "readings": {
+    "patients": "rd_hf_readmitted_patients",
+    "events": "hv_hf_readmissions"
+   },
+   "args": [
+    "2027"
+   ]
+  },
+  {
+   "id": "R06-2028",
+   "domain": "two readings, same answer",
+   "phrasings": [
+    "How many heart failure patients were readmitted within 30 days in 2028?"
+   ],
+   "readings": {
+    "patients": "rd_hf_readmitted_patients",
+    "events": "hv_hf_readmissions"
+   },
+   "args": [
+    "2028"
+   ]
+  },
+  {
+   "id": "R06-2029",
+   "domain": "two readings, same answer",
+   "phrasings": [
+    "How many heart failure patients were readmitted within 30 days in 2029?"
+   ],
+   "readings": {
+    "patients": "rd_hf_readmitted_patients",
+    "events": "hv_hf_readmissions"
+   },
+   "args": [
+    "2029"
+   ]
+  },
+  {
+   "id": "R06-2030",
+   "domain": "two readings, same answer",
+   "phrasings": [
+    "How many heart failure patients were readmitted within 30 days in 2030?"
+   ],
+   "readings": {
+    "patients": "rd_hf_readmitted_patients",
+    "events": "hv_hf_readmissions"
+   },
+   "args": [
+    "2030"
+   ]
+  },
+  {
+   "id": "R07-2026",
+   "domain": "two readings",
+   "phrasings": [
+    "How many sepsis patients were hospitalized in 2026?"
+   ],
+   "readings": {
+    "patients": "rd_sepsis_patients",
+    "events": "hv_sepsis_hospitalizations"
+   },
+   "args": [
+    "2026"
+   ]
+  },
+  {
+   "id": "R07-2027",
+   "domain": "two readings",
+   "phrasings": [
+    "How many sepsis patients were hospitalized in 2027?"
+   ],
+   "readings": {
+    "patients": "rd_sepsis_patients",
+    "events": "hv_sepsis_hospitalizations"
+   },
+   "args": [
+    "2027"
+   ]
+  },
+  {
+   "id": "R07-2028",
+   "domain": "two readings",
+   "phrasings": [
+    "How many sepsis patients were hospitalized in 2028?"
+   ],
+   "readings": {
+    "patients": "rd_sepsis_patients",
+    "events": "hv_sepsis_hospitalizations"
+   },
+   "args": [
+    "2028"
+   ]
+  },
+  {
+   "id": "R07-2029",
+   "domain": "two readings",
+   "phrasings": [
+    "How many sepsis patients were hospitalized in 2029?"
+   ],
+   "readings": {
+    "patients": "rd_sepsis_patients",
+    "events": "hv_sepsis_hospitalizations"
+   },
+   "args": [
+    "2029"
+   ]
+  },
+  {
+   "id": "R07-2030",
+   "domain": "two readings",
+   "phrasings": [
+    "How many sepsis patients were hospitalized in 2030?"
+   ],
+   "readings": {
+    "patients": "rd_sepsis_patients",
+    "events": "hv_sepsis_hospitalizations"
+   },
+   "args": [
+    "2030"
+   ]
+  },
+  {
+   "id": "R08-2026",
+   "domain": "two readings",
+   "phrasings": [
+    "What percent of patients discharged in 2026 were readmitted within 30 days?"
+   ],
+   "readings": {
+    "patients": "rd_readmitted_share_patients",
+    "events": "readmission_rate"
+   },
+   "args": [
+    "2026"
+   ]
+  },
+  {
+   "id": "R08-2027",
+   "domain": "two readings",
+   "phrasings": [
+    "What percent of patients discharged in 2027 were readmitted within 30 days?"
+   ],
+   "readings": {
+    "patients": "rd_readmitted_share_patients",
+    "events": "readmission_rate"
+   },
+   "args": [
+    "2027"
+   ]
+  },
+  {
+   "id": "R08-2028",
+   "domain": "two readings",
+   "phrasings": [
+    "What percent of patients discharged in 2028 were readmitted within 30 days?"
+   ],
+   "readings": {
+    "patients": "rd_readmitted_share_patients",
+    "events": "readmission_rate"
+   },
+   "args": [
+    "2028"
+   ]
+  },
+  {
+   "id": "R08-2029",
+   "domain": "two readings",
+   "phrasings": [
+    "What percent of patients discharged in 2029 were readmitted within 30 days?"
+   ],
+   "readings": {
+    "patients": "rd_readmitted_share_patients",
+    "events": "readmission_rate"
+   },
+   "args": [
+    "2029"
+   ]
+  },
+  {
+   "id": "R08-2030",
+   "domain": "two readings",
+   "phrasings": [
+    "What percent of patients discharged in 2030 were readmitted within 30 days?"
+   ],
+   "readings": {
+    "patients": "rd_readmitted_share_patients",
+    "events": "readmission_rate"
+   },
+   "args": [
+    "2030"
+   ]
+  },
+  {
+   "id": "D01-2026",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "What was our denial rate in 2026?"
+   ],
+   "readings": {
+    "initial": "rc_initial_rate",
+    "final": "rc_final_rate"
+   },
+   "args": [
+    "2026"
+   ]
+  },
+  {
+   "id": "D01-2027",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "What was our denial rate in 2027?"
+   ],
+   "readings": {
+    "initial": "rc_initial_rate",
+    "final": "rc_final_rate"
+   },
+   "args": [
+    "2027"
+   ]
+  },
+  {
+   "id": "D01-2028",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "What was our denial rate in 2028?"
+   ],
+   "readings": {
+    "initial": "rc_initial_rate",
+    "final": "rc_final_rate"
+   },
+   "args": [
+    "2028"
+   ]
+  },
+  {
+   "id": "D01-2029",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "What was our denial rate in 2029?"
+   ],
+   "readings": {
+    "initial": "rc_initial_rate",
+    "final": "rc_final_rate"
+   },
+   "args": [
+    "2029"
+   ]
+  },
+  {
+   "id": "D01-2030",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "What was our denial rate in 2030?"
+   ],
+   "readings": {
+    "initial": "rc_initial_rate",
+    "final": "rc_final_rate"
+   },
+   "args": [
+    "2030"
+   ]
+  },
+  {
+   "id": "D02-2026",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "How many of our claims were denied in 2026?"
+   ],
+   "readings": {
+    "initial": "rc_initial_count",
+    "final": "rc_final_count"
+   },
+   "args": [
+    "2026"
+   ]
+  },
+  {
+   "id": "D02-2027",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "How many of our claims were denied in 2027?"
+   ],
+   "readings": {
+    "initial": "rc_initial_count",
+    "final": "rc_final_count"
+   },
+   "args": [
+    "2027"
+   ]
+  },
+  {
+   "id": "D02-2028",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "How many of our claims were denied in 2028?"
+   ],
+   "readings": {
+    "initial": "rc_initial_count",
+    "final": "rc_final_count"
+   },
+   "args": [
+    "2028"
+   ]
+  },
+  {
+   "id": "D02-2029",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "How many of our claims were denied in 2029?"
+   ],
+   "readings": {
+    "initial": "rc_initial_count",
+    "final": "rc_final_count"
+   },
+   "args": [
+    "2029"
+   ]
+  },
+  {
+   "id": "D02-2030",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "How many of our claims were denied in 2030?"
+   ],
+   "readings": {
+    "initial": "rc_initial_count",
+    "final": "rc_final_count"
+   },
+   "args": [
+    "2030"
+   ]
+  },
+  {
+   "id": "D03-2026",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "What were our denial rates by payer in 2026?"
+   ],
+   "readings": {
+    "initial": "rc_initial_by_payer",
+    "final": "rc_final_by_payer"
+   },
+   "args": [
+    "2026"
+   ]
+  },
+  {
+   "id": "D03-2027",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "What were our denial rates by payer in 2027?"
+   ],
+   "readings": {
+    "initial": "rc_initial_by_payer",
+    "final": "rc_final_by_payer"
+   },
+   "args": [
+    "2027"
+   ]
+  },
+  {
+   "id": "D03-2028",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "What were our denial rates by payer in 2028?"
+   ],
+   "readings": {
+    "initial": "rc_initial_by_payer",
+    "final": "rc_final_by_payer"
+   },
+   "args": [
+    "2028"
+   ]
+  },
+  {
+   "id": "D03-2029",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "What were our denial rates by payer in 2029?"
+   ],
+   "readings": {
+    "initial": "rc_initial_by_payer",
+    "final": "rc_final_by_payer"
+   },
+   "args": [
+    "2029"
+   ]
+  },
+  {
+   "id": "D03-2030",
+   "domain": "denials, two readings",
+   "phrasings": [
+    "What were our denial rates by payer in 2030?"
+   ],
+   "readings": {
+    "initial": "rc_initial_by_payer",
+    "final": "rc_final_by_payer"
+   },
+   "args": [
+    "2030"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,17 @@
+{
+ "version": "trial_runout_1",
+ "authored": "2026-11-17",
+ "authored_by": "Claude (triage trial session), before any method ran",
+ "purpose": "Trial of an ultimate-claims settlement forecast (triage row 13) against paid-to-date and chain-ladder completion factors.",
+ "valuations": [
+  "2027-06-30",
+  "2027-12-31",
+  "2028-06-30",
+  "2028-12-31",
+  "2029-03-31",
+  "2029-06-30"
+ ],
+ "months": 6,
+ "truth": "Net payer paid by the end of the data (2030-05-27), at least 11 months after each valuation date.",
+ "scoring": "Signed and absolute percentage error of the six most recent incurred months taken together, per valuation date; mean absolute error across the six."
+}

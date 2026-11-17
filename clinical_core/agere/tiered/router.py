@@ -20,6 +20,9 @@ def answer(question, ask_first=False, **kw):
     from . import models, readings
     two = None if models.NO_READINGS.get() else readings.detect(question)   # a reading the person chose is answered as worded
     if two:
+        if ask_first and readings.voi_enabled():   # candidate: compute the readings first; ask only if they differ enough to matter
+            out = _each_reading(question, two, kw)
+            return _clarification(question, two, prior=out) if out['status'] == 'needs_choice' else out
         return _clarification(question, two) if ask_first else _each_reading(question, two, kw)
     out = _ladder(question, **kw)
     if out['status'] == 'needs_readings':   # the frontier model found readings the rules do not know
@@ -61,6 +64,13 @@ def _each_reading(question, two, kw, prior=None):
     if not answered:
         o = outs[0][1]
         return {**o, 'steps': steps, 'escalations': escalations, 'seconds': seconds}
+    if readings.voi_enabled() and len(answered) == len(outs):   # candidate, off by default: ask only when the readings differ enough to matter
+        v = readings.value_of_asking([o['rows'] for _, o in outs])
+        if not v['ask']:
+            r, o = outs[v['assume']]
+            return {**o, 'steps': steps, 'escalations': escalations, 'seconds': seconds,
+                    'readings_checked': {'rule': two['rule'], 'agree': False, 'answered_as': r['label'], 'question': r['question'], 'voi': v,
+                                         'others': [{'label': x['label'], 'rows': (p['rows'] or [])[:5]} for x, p in outs if x is not r]}}
     return {'status': 'needs_choice', 'final_tier': 'readings', 'recipe': None, 'columns': None, 'rows': None, 'validation': None,
             'steps': steps, 'escalations': escalations, 'seconds': seconds, 'ask': two['ask'], 'rule': two['rule'],
             'readings': [{**r, 'status': o['status'], 'final_tier': o['final_tier'], 'columns': o['columns'], 'rows': o['rows'],
