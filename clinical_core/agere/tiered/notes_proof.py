@@ -44,23 +44,25 @@ ALONE_MODEL = os.environ.get('AGERE_NOTES_ALONE_MODEL', 'claude-opus-5-5')
 PENALTY = 10
 SPOT_N = 30
 
-READER_A = '''You are a careful clinical documentation reviewer building an answer key. Decide whether ONE document states ONE
-thing. Read the whole document before deciding. A finding that is negated, ruled out, only planned or considered, only
-historical when the statement is about the present, or about someone other than the patient does not count unless the
-statement says it does. Judge meaning, not spelling: scanned text can contain character-recognition errors.
-Return exactly one JSON object and nothing else:
-{"answer": "yes" or "no", "quote": "<the exact words that decide it, or empty>", "reason": "<one sentence>"}'''
+READER_A = '''You are a careful clinical documentation reviewer building an answer key. For EACH document below, decide on
+its own whether that document states one thing. Read each whole document before deciding it, and never let one document
+decide another. A finding that is negated, ruled out, only planned or considered, only historical when the statement is
+about the present, carried forward from an earlier document only as quoted context, or about someone other than the
+patient does not count unless the statement says it does. Judge meaning, not spelling: scanned text can contain
+character-recognition errors. Return exactly one JSON object and nothing else, with one entry for every document:
+{"documents": [{"record_id": "<id>", "answer": "yes" or "no", "quote": "<the exact words that decide it, or empty>",
+ "reason": "<one sentence>"}]}'''
 
-READER_B = '''You are the second, independent reviewer for an answer key. You decide whether a document makes a statement true.
-First find every passage in the document that bears on the statement, for or against (including negations, plans,
-history, family members, and values that fall either side of a threshold). Then decide strictly by what the document
-says about this patient. Do not assume anything the document does not say.
-Return exactly one JSON object and nothing else:
-{"passages": ["<exact words>", ...], "answer": "yes" or "no", "reason": "<one sentence>"}'''
+READER_B = '''You are the second, independent reviewer for an answer key. For EACH document below, separately, decide whether it
+makes a statement true. For each one, first find every passage that bears on the statement, for or against (negations,
+plans, history, quoted earlier documents, family members, values either side of a threshold); then decide strictly by
+what that document says about this patient now. Do not assume anything a document does not say, and judge every
+document on its own. Return exactly one JSON object and nothing else, with one entry for every document:
+{"documents": [{"record_id": "<id>", "passages": ["<exact words>"], "answer": "yes" or "no", "reason": "<one sentence>"}]}'''
 
 ADJUDICATOR = '''Two careful reviewers disagreed on whether a document states something. Read the document yourself, weigh both
-reviews, and decide. A negated, ruled-out, merely planned, historical-only or family-member mention does not count unless
-the statement says it does. Return exactly one JSON object and nothing else:
+reviews, and decide. A negated, ruled-out, merely planned, historical-only, quoted-from-an-earlier-document or
+family-member mention does not count unless the statement says it does. Return exactly one JSON object and nothing else:
 {"answer": "yes" or "no", "reason": "<one or two sentences>"}'''
 
 ALONE_SYSTEM = '''You answer a hospital analytics question by reading the documents you are given; they are every document
@@ -152,38 +154,55 @@ def key(workers=6):
     stopped = []
 
     def read(job):
-        q, d, reader = job
+        """Reader A or B reads one question's documents in one call (each judged on its own); B sees them in reverse order.
+        The adjudicator reads one document. A document a batch leaves out is read again on its own."""
+        q, docs, reader = job
         if stopped: return
-        user = f"Statement: {q['statement']}\n\n{_doc_block(d)}"
-        if reader == 'adj':
-            a, b = have[(q['id'], d['record_id'], 'A')], have[(q['id'], d['record_id'], 'B')]
-            user += (f"\n\nReviewer 1 said {a['answer']}: {a.get('reason')} Quote: \"{a.get('quote') or ''}\"\n"
-                     f"Reviewer 2 said {b['answer']}: {b.get('reason')} Passages: {json.dumps(b.get('passages') or [])[:1500]}")
         system = {'A': READER_A, 'B': READER_B, 'adj': ADJUDICATOR}[reader]
+        if reader == 'adj':
+            d = docs[0]
+            a, b = have[(q['id'], d['record_id'], 'A')], have[(q['id'], d['record_id'], 'B')]
+            user = (f"Statement: {q['statement']}\n\n{_doc_block(d)}\n\nReviewer 1 said {a['answer']}: {a.get('reason')} Quote: \"{a.get('quote') or ''}\"\n"
+                    f"Reviewer 2 said {b['answer']}: {b.get('reason')} Passages: {json.dumps(b.get('passages') or [])[:1500]}")
+        else:
+            order = docs if reader == 'A' else list(reversed(docs))
+            user = f"Statement: {q['statement']}\n\n{len(order)} documents:\n\n" + '\n\n---\n\n'.join(_doc_block(d) for d in order)
         for attempt in range(2):
             try:
                 got, step = _call(KEY_MODEL, system, user)
-                answer = str(got.get('answer') or '').strip().lower()
-                if answer not in ('yes', 'no'): raise ValueError('no yes/no')
+                entries = [got] if reader == 'adj' else got.get('documents')
+                if not isinstance(entries, list): raise ValueError('no documents list')
                 break
             except models.ProviderLimit as exc:
                 stopped.append(str(exc)); return
             except Exception as exc:
-                if attempt: print(f'key read failed {q["id"]} {d["record_id"]} {reader}: {exc}', file=sys.stderr, flush=True); return
-        row = {'qid': q['id'], 'record_id': d['record_id'], 'reader': reader, 'answer': answer, 'quote': got.get('quote'), 'passages': got.get('passages'),
-               'reason': got.get('reason'), 'model': KEY_MODEL, 'usd': step['usd'], 'tokens': step['tokens']}
-        have[(q['id'], d['record_id'], reader)] = row
-        _append(path, row)
+                if attempt: print(f'key read failed {q["id"]} {reader}: {exc}', file=sys.stderr, flush=True); return
+        ids = {d['record_id'] for d in docs}
+        good = []
+        for e in entries:
+            rid = docs[0]['record_id'] if reader == 'adj' else str(e.get('record_id'))
+            answer = str(e.get('answer') or '').strip().lower()
+            if rid in ids and answer in ('yes', 'no') and (q['id'], rid, reader) not in have: good.append((rid, answer, e))
+        for rid, answer, e in good:
+            row = {'qid': q['id'], 'record_id': rid, 'reader': reader, 'answer': answer, 'quote': e.get('quote'), 'passages': e.get('passages'),
+                   'reason': e.get('reason'), 'model': KEY_MODEL, 'usd': step['usd'] / len(good), 'tokens': step['tokens'] // len(good), 'batch': len(docs)}
+            have[(q['id'], rid, reader)] = row
+            _append(path, row)
 
-    for readers in (('A', 'B'), ('adj',)):
+    for readers in (('A', 'B'), ('A', 'B'), ('adj',)):   # the second pass reads one by one whatever a batch left out
         jobs = []
-        for q, d in pairs:
+        for q in data['questions']:
+            docs = [d for qq, d in pairs if qq['id'] == q['id']]
             for reader in readers:
-                if (q['id'], d['record_id'], reader) in have: continue
+                left = [d for d in docs if (q['id'], d['record_id'], reader) not in have]
                 if reader == 'adj':
-                    a, b = have.get((q['id'], d['record_id'], 'A')), have.get((q['id'], d['record_id'], 'B'))
-                    if not a or not b or a['answer'] == b['answer']: continue
-                jobs.append((q, d, reader))
+                    for d in docs:
+                        a, b = have.get((q['id'], d['record_id'], 'A')), have.get((q['id'], d['record_id'], 'B'))
+                        if a and b and a['answer'] != b['answer'] and (q['id'], d['record_id'], 'adj') not in have: jobs.append((q, [d], 'adj'))
+                elif left and len(left) == len(docs):
+                    jobs.append((q, left, reader))
+                else:
+                    jobs += [(q, [d], reader) for d in left]
         print(f'key: {len(jobs)} reads to make ({"+".join(readers)})', flush=True)
         with ThreadPoolExecutor(int(workers)) as pool: list(pool.map(read, jobs))
         if stopped: return f'STOPPED AT A PROVIDER LIMIT: {stopped[0]}. The reads made so far are saved in {path}; run key again to finish.'
@@ -219,8 +238,9 @@ def _write_key(data, pairs, have):
         entry['reference'] = reference(entry['aggregate'], {rid: (x['patient_id'], x['label']) for rid, x in entry['documents'].items()})
     agree = sum(x == y for x, y in zip(a_all, b_all))
     key = {'version': data['version'] + '_key', 'made': time.strftime('%Y-%m-%d'),
-           'method': (f'Every document in scope read twice, independently, by careful readers with different instructions ({KEY_MODEL}, one document '
-                      'per read, a quote required); disagreements adjudicated by a third careful read. The product was not used.'),
+           'method': (f'Every document in scope read twice, independently, by careful readers with different instructions ({KEY_MODEL}; each reader '
+                      "reads one question's documents in one call and judges each on its own with a quote, the second in reverse order); "
+                      'disagreements adjudicated by a third careful read of that one document. The product was not used.'),
            'agreement': {'documents': len(a_all), 'agree_before_adjudication': agree, 'share': round(agree / len(a_all), 4), 'kappa': _kappa(a_all, b_all),
                          'adjudicated': len(a_all) - agree, 'yes_share': round(sum(1 for q in questions.values() for x in q['documents'].values() if x['label'] == 'yes') / len(a_all), 4),
                          'by_source': {s: {'documents': n, 'agree': k, 'share': round(k / n, 4)} for s, (n, k) in sorted(by_source.items())}},
