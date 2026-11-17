@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-17T16:50:10.174345+00:00",
+  "updated_at": "2026-11-17T16:56:42.723099+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -7976,6 +7976,15 @@
         "tests/core/test_tiered_adherence.py",
         "artifacts/agere-tiered-core/devsets-research2-regression.log",
         "artifacts/agere-tiered-core/void/bottles-before-equivalence-suspend-20261117.sqlite3"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T16:56:42.723099+00:00",
+      "decision": "Stack audit and blueprint published (https://claude.ai/artifact/WY6Ub46oqfeyQuv6bZkJzR). Audit: proven = cost (about 4x cheaper on structured, 8x on notes, similar wrong-answer count), note reading (94% vs 88.5% held-out), definition enforcement, no dead ends; weak = raw accuracy 3-8 points behind a general model on seen sets, note-type names hidden from the SQL writer (only 12 most common shown), conversation untested by a real person, small-model rewrite wobble, clinician spot-check of the key not done; not built = PHI route guard, savings comparison group, paired statistics, fresh held-out sets v15 and notes_v2, push.",
+      "reason": "Mike 2026-11-17: audit where the stack is and draw how a question flows through it.",
+      "evidence": [
+        "artifacts/agere-blueprint/agere-blueprint.html"
       ],
       "scope_impact": "None."
     }
