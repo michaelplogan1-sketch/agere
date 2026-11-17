@@ -213,6 +213,9 @@ def execute(question, sql, params, read, db, *, readers=READERS, s1_ledger=None)
     if mode == 'count':
         out_columns = ['documents_read', 'documents_stating', 'documents_not_stating', 'documents_undecided']
         rows = [[len(evidence), len(yes), len(evidence) - len(yes) - len(undecided), len(undecided)]]
+        if 'patient_id' in columns:   # "how many patients" is the patients whose documents state it, counted by code
+            pat = {r[at]: r[columns.index('patient_id')] for r in selected}
+            out_columns, rows[0] = out_columns + ['patients_stating'], rows[0] + [len({pat[e['record_id']] for e in yes})]
     elif mode == 'extract':
         values = {e['record_id']: e['value'] for e in yes}
         out_columns, rows = columns + ['value'], [r + [values[r[at]]] for r in selected if r[at] in values]

@@ -425,6 +425,7 @@ def keyed_documents(qid):
     return _KEYED.get(qid, [])
 
 
+TAG = ('-' + os.environ['AGERE_NOTES_TAG']) if os.environ.get('AGERE_NOTES_TAG') else ''   # a later version of an arm (a re-score) keeps its own journal
 ARMS = {'readers': _readers_arm, 'stack': _stack_arm, 'llm_alone': _alone_arm, 'emr_assistant': _emr_arm}
 
 
@@ -451,7 +452,7 @@ def run(arms, runs=2, workers=4):
         shutil.copy(os.environ.get('AGERE_TIERED_BOTTLES', bottle_store.DEFAULT), scratch / 'bottles.sqlite3')
     out = []
     for arm in arms:
-        path, done = _journal(f'journal-{data["version"]}-{arm}.jsonl')
+        path, done = _journal(f'journal-{data["version"]}-{arm}{TAG}.jsonl')
         have = {(r['qid'], int(r['run'])) for r in done}
         first = int(os.environ.get('AGERE_NOTES_FIRST', '0')) or len(data['questions'])   # a cost probe on the first N questions; the rest resume later
         jobs = [(q, r) for r in range(int(runs)) for q in data['questions'][:first] if q['id'] in keyed and (q['id'], r) not in have]
@@ -494,7 +495,7 @@ def report():
              f"Key agreement before adjudication {keyed['agreement']['share']:.1%} (kappa {keyed['agreement']['kappa']}), {keyed['agreement']['adjudicated']} adjudicated.",
              'Scoring: +1 right, 0 declined, -10 wrong. A count must be exact; a patient list must match exactly.', '']
     summary = {}
-    for arm in ARMS:
+    for arm in [a + t for a in ARMS for t in ('', *sorted({p.name.split(a, 1)[1][:-6] for p in OUT.glob(f'journal-{data["version"]}-{a}-*.jsonl')}))]:
         path = OUT / f'journal-{data["version"]}-{arm}.jsonl'
         if not path.exists(): continue
         rows = [json.loads(l) for l in path.read_text().splitlines() if l.strip()]

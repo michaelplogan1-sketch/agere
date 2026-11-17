@@ -142,7 +142,7 @@ Return exactly one JSON object and nothing else:
 
 If the question asks what documents, notes, reports or letters say, and no listed column already holds exactly that,
 the documents must be read. Return a reading plan instead; code will read every selected document:
-{"sql": "<one SELECT from the document table whose first column is record_id, selecting exactly the documents the question is about>",
+{"sql": "<one SELECT from the document table whose first two columns are record_id and patient_id, selecting exactly the documents the question is about>",
  "params": {"<name>": {"type": "year|month|int|text", "value": "<value from the question>"}},
  "read": {"statement": "<one self-contained sentence that is true of a document exactly when the question wants it counted or listed>",
           "mode": "count" or "list" or "extract",
@@ -152,6 +152,11 @@ Use count for how many documents say something, list for which documents say it,
 what each document says (one row per document that gives the value); for extract the statement is that the document
 gives that value. A count or list plan may select at most 3000 documents and an extract plan at most 150, so filter by patient, document type and period as the question does.
 Never match document content with LIKE on type or title columns, and never select document text.
+Select exactly the documents the question names, no wider: its document kind (the document_type values that are that kind,
+and the source when it names scanned or outside documents), its facility, its dates, and its patient group (join the
+tables that define the group, such as a stay or a condition). The statement carries only what must be read in each
+document; every condition a column can decide goes in the SQL. When the question asks which patients, use list; when it
+asks how many patients, use count: code also counts the patients whose documents state it.
 
 If neither one SELECT nor one reading plan can fully answer every part of the question (it needs several separate
 result tables, a statistical method, a judgment across documents, or data that is not in these tables), do not
