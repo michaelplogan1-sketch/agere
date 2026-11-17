@@ -12,6 +12,9 @@ from . import store
 KINDS = {'ed_visit': ('ed visits', 'emergency department visits', 'emergency visits', 'er visits'),
          'inpatient': ('inpatient admissions', 'inpatient stays', 'hospital admissions', 'hospitalizations', 'inpatient discharges'),
          'observation': ('observation stays', 'observation visits')}
+ADHERENCE_CLASSES = {c: (c.replace('_', ' '), c.replace('_', ' ') + 's') for c in ('metformin', 'sulfonylurea', 'dpp4_inhibitor', 'sglt2_inhibitor', 'glp1_agonist',
+                     'thiazolidinedione', 'insulin', 'ace_inhibitor', 'arb', 'arni', 'calcium_channel_blocker', 'thiazide_diuretic', 'beta_blocker', 'mra',
+                     'statin', 'ssri', 'snri', 'bupropion', 'mirtazapine', 'tricyclic_antidepressant')}   # therapy_courses.AREAS
 PATIENT_GROUPS = {'sex_reported': ('sex', 'gender'), 'coverage_type': ('coverage type', 'insurance type', 'coverage')}
 YEAR = r'(?P<year>20\d{2})'
 MONTH = r'(?P<month>20\d{2}-\d{2})'
@@ -897,6 +900,19 @@ RECIPES = {
                "OFFSET ((SELECT COUNT(*) FROM d) - 1) / 2)) AS median_days, :year AS year FROM d",
         'grain': ['year'],
         'patterns': [r'how (?:many days|long) (?:does it take|did it take) (?:us )?to (?:submit|bill|drop) (?:a )?claims? (?:in|for) ' + YEAR, r'(?:average|median) days to (?:submit|bill) (?:in|for) ' + YEAR]},
+    # ---- medication adherence by PDC (2026-11-17, research triage): the therapy-course code, not plain SQL (adherence.py)
+    'adherence_pdc': {
+        'title': 'Medication adherence by drug class in one year: patients with two or more fills, adherent (PDC 80% or more) and the adherent share, by the therapy-course method',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT MIN(fill_date) FROM fill", 'compute': 'adherence', 'grain': ['drug_class'],
+        'patterns': [r'(?:what (?:is|was) (?:our |the )?)?(?:medication )?adherence (?:\(pdc\) )?(?:by (?:drug )?class )?(?:in|for) ' + YEAR,
+                     r'(?:what share of|how many) patients (?:were|are) adherent to (?:their )?medications? (?:by (?:drug )?class )?(?:in|for) ' + YEAR]},
+    'adherence_pdc_class': {
+        'title': 'Medication adherence for one drug class in one year: patients with two or more fills, adherent (PDC 80% or more) and the adherent share, by the therapy-course method',
+        'params': {'drug_class': {'type': 'enum', 'values': list(ADHERENCE_CLASSES)}, 'year': {'type': 'year'}},
+        'sql': "SELECT MIN(fill_date) FROM fill", 'compute': 'adherence', 'grain': ['drug_class'],
+        'patterns': [r'(?:what (?:is|was) (?:our |the )?)?' + _alt(ADHERENCE_CLASSES) % 'drug_class' + r' adherence (?:\(pdc\) )?(?:in|for) ' + YEAR,
+                     r'(?:what share of|how many) patients (?:on|taking) ' + _alt(ADHERENCE_CLASSES) % 'drug_class' + r' (?:were|are) adherent(?: \(pdc[^)]*\))? (?:in|for) ' + YEAR]},
     # ---- claims runout / IBNR (2026-11-17, Mike approved after the trial): chain-ladder completion factors, computed by code
     'claims_runout': {
         'title': 'Estimated ultimate paid claims and IBNR (incurred but not yet paid) for the most recent incurred months as of a valuation date, by chain-ladder completion factors',
@@ -936,7 +952,7 @@ RECIPES = {
         'grain': ['year'],
         'patterns': [r'how many (?:or|operating room|surgical) cases (?:started|were done) after hours (?:in|during) ' + YEAR, r'what share of (?:or|operating room|surgical) cases (?:started|were) after hours (?:in|during) ' + YEAR]},
 }
-ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS}
+ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS, 'drug_class': ADHERENCE_CLASSES}
 def vocabulary(spec, db=None):
     cache = store.scoped('recipe_vocabulary')   # per warehouse: a live one-patient layer has its own values
     if spec['query'] not in cache:
@@ -1156,9 +1172,9 @@ def match(question, db=None):
 def execute(recipe_id, params, db=None):
     recipe = RECIPES[recipe_id]
     sql = recipe['sql']
-    if recipe.get('compute') == 'runout':   # the SQL selects the inputs; code computes the answer (runout.py)
-        from . import runout
-        columns, rows = runout.compute(sql, params, db or store.connect())
+    if recipe.get('compute'):   # the SQL selects the inputs; code computes the answer (runout.py, adherence.py)
+        from . import adherence, runout
+        columns, rows = {'runout': runout, 'adherence': adherence}[recipe['compute']].compute(sql, params, db or store.connect())
         return sql, columns, rows
     bound = dict(params)
     for name, spec in recipe['params'].items():

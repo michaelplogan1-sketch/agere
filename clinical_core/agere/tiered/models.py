@@ -105,7 +105,7 @@ def nearest_definitions(question, k=None):
     import math
     k = NEAREST if k is None else k
     docs = {rid: _words(rid + ' ' + r['title'] + ' ' + ' '.join(r['params']) + ' ' + ' '.join(sorted(recipes.reads(r['sql']))))
-            for rid, r in recipes.RECIPES.items() if recipes.runnable(rid)}
+            for rid, r in recipes.RECIPES.items() if recipes.runnable(rid) and not r.get('compute')}   # a computed recipe's SQL only selects inputs
     df = {}
     for words in docs.values():
         for w in words: df[w] = df.get(w, 0) + 1
@@ -119,7 +119,8 @@ def definitions(question=None):
     """The reference SQL the frontier writer is shown. 'all' sends every applicable recipe's SQL (about 98,000 characters
     with 51 recipes); 'nearest' sends every applicable recipe's name and title on one line each and the SQL of only the
     few closest to the question, as case-based text-to-SQL work retrieves the nearest solved cases."""
-    usable = [rid for rid in recipes.RECIPES if recipes.runnable(rid)] if store.mapping() else list(recipes.RECIPES)
+    usable = [rid for rid in recipes.RECIPES if (recipes.runnable(rid) or not store.mapping())
+              and not recipes.RECIPES[rid].get('compute')]
     if DEFINITIONS != 'nearest' or question is None:
         return '\n'.join(f"- {rid}: {recipes.RECIPES[rid]['title']}\n  {recipes.RECIPES[rid]['sql']}" for rid in usable)
     close = nearest_definitions(question)

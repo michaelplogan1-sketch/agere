@@ -8,6 +8,13 @@ from . import bottles as bottle_store, governed, models, read as reader, recipes
 
 ALL_TIERS = ('bottles', 'recipes', 'system1', 'slm', 'near', 'llm')
 TOKEN_CEILING = 60000
+# The small-model rung (System One picks a built-in recipe, the small model fills its values) is off by default from 2026-11-17
+# (Mike approved after the trials): on proof_v13 it answered 20 questions and 19 were wrong, no System One cut-off separated
+# them, and on proof_v14 it answered none. Every one of those wrong answers filled a structured-data recipe; on the development
+# sets it fills document-reading recipes correctly (D04, D05, D06, D10), so it stays on for those. AGERE_TIERED_SLM_RUNG=on
+# restores it for every recipe, so it can be retested.
+import os as _os
+SLM_RUNG = _os.environ.get('AGERE_TIERED_SLM_RUNG', 'off') == 'on'
 
 
 def answer(question, ask_first=False, **kw):
@@ -244,7 +251,8 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
         if step is not None: steps.append(step)
         if chosen is None and step is not None:
             escalations.append({'from': 'system1', 'reason': step['outcome'] + f" (confidence {step.get('confidence')})"})
-    if 'slm' in tiers and 'recipes' in tiers and spent() < token_ceiling:
+    reads_documents = chosen is not None and bool(recipes.RECIPES.get(chosen, {}).get('read'))
+    if 'slm' in tiers and 'recipes' in tiers and (SLM_RUNG or reads_documents) and spent() < token_ceiling:
         if chosen is not None:
             try:
                 params, step = model_rung('slm', models.slm_slots, question, chosen, lookup, fallback=(None, None))

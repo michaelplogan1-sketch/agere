@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-17T16:34:09.809843+00:00",
+  "updated_at": "2026-11-17T16:50:10.174345+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -934,7 +934,7 @@
     "current_gate_id": "G7",
     "last_delivered_gate": "G5",
     "product_commit": "ecfa2d62",
-    "updated_at": "2026-11-17T16:34:09.809843+00:00",
+    "updated_at": "2026-11-17T16:50:10.174345+00:00",
     "user_behavior_delta": "An unclear question becomes a short conversation: a language model asks only what the customer's definitions, own facilities and the person's saved defaults leave open, remembers the answers, stops after three exchanges (then shows each open reading computed side by side), hands one explicit question to the stack and saves the person's choices so they are not asked again.",
     "measured_failure_reduction": "Clarifying conversation: built and tested with mocked models, development sets unchanged (53/53, 31/31, 13/13, 13/13); not yet measured with real askers. notes_v1 first run (2 runs): Agere readers on the same notes 94.0% at $0.004 a question; top-tier model alone 88.5% at $0.059; Agere whole stack from the question 54.5% at $0.066 (document selection, not reading, is the failure).",
     "evidence": [
@@ -7961,6 +7961,21 @@
         "clinical_core/agere/tiered/app.py",
         "tests/core/test_tiered_absent_codes.py",
         "artifacts/agere-tiered-core/devsets-fall-regression.log"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T16:50:10.174345+00:00",
+      "decision": "Research items built (Mike approved): (1) bounded equivalence check (upkeep.bounded, from the research branch) on by default at the promotion gate; a counterexample keeps a candidate provisional; the 6 defects it found (203, 211, 221 return 0 on other parameter values; 390, 758 report unknown as negative; 750 differs in 2026) reproduced and suspended. (2) 4 saved recipes answering readmission questions from utilization_event.readmitted_30d retired (16, 268, 589, 687); 4 that name the column in their own wording kept. (3) Medication adherence answered by the therapy-course PDC code (adherence.py; adherence_pdc, adherence_pdc_class): follows PQA, not independently adjudicated; plain SQL overstated by +6.2 points in the trial. (4) Small-model rung off for structured-data recipes (AGERE_TIERED_SLM_RUNG=on restores it): all its wrong proof_v13 answers were structured recipes, and switched off entirely it lost dev items D04, D05, D10 (document-reading recipes it fills correctly), so it stays on for document-reading recipes. Development sets 53/53, 31/31, 13/13, 13/13. Not built yet: comparison-group guard, PHI route guard, paired statistics as acceptance, the three check-first items, the IBNR LLM cross-check.",
+      "reason": "Research triage relayed Mike's approval; Mike: 'Yes, start them'.",
+      "evidence": [
+        "clinical_core/agere/tiered/upkeep.py",
+        "clinical_core/agere/tiered/learn.py",
+        "clinical_core/agere/tiered/adherence.py",
+        "clinical_core/agere/tiered/router.py",
+        "tests/core/test_tiered_adherence.py",
+        "artifacts/agere-tiered-core/devsets-research2-regression.log",
+        "artifacts/agere-tiered-core/void/bottles-before-equivalence-suspend-20261117.sqlite3"
       ],
       "scope_impact": "None."
     }
