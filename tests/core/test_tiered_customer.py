@@ -52,6 +52,15 @@ class Customer(unittest.TestCase):
         self.assertEqual(governed.check(q, 'SELECT COUNT(*) FROM cust_own_admission'), [])
         self.assertTrue(catalogue.stated(q).startswith('Definitions used: Inpatient admission (Test Health)'))
 
+    def test_every_rung_gives_way_to_a_customer_definition(self):
+        from clinical_core.agere.tiered import router
+        q = 'How many hospital admissions did we have in 2028?'   # the built-in stays_admitted_in_year recipe's own wording
+        self.assertTrue(governed.check(q, 'SELECT COUNT(*) FROM stay_episode')[0].startswith('Customer definition'))
+        from clinical_core.agere.tiered import recipes
+        self.assertIsNone(recipes.match(q, store.connect()))   # the built-in admissions recipe is not offered: it ignores the customer's definition
+        o = router.answer(q, tiers=('recipes',))
+        self.assertNotEqual(o['status'], 'answered')
+
 
 if __name__ == '__main__':
     unittest.main()

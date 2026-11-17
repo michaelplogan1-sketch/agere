@@ -196,4 +196,7 @@ def check(question, sql, params=None):
     applying = {d['view']['name'].lower() for d in customer.definitions() if isinstance(d.get('view'), dict) and d['view'].get('name')
                 and re.search(d.get('applies_when') or r'(?!)', q, re.I)}
     if any(_reads(s, v) for v in applying): return []
+    if applying:   # a customer definition governs this question and the SQL reads none of its views: it does not answer
+        return ['Customer definition: this question is governed by the customer\'s certified definition; read '
+                + ' or '.join(sorted(applying)) + ' instead of re-deriving it.']
     return [m for m in (c(q, s) for c in CHECKS) if m]
