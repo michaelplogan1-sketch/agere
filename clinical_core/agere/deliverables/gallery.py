@@ -18,6 +18,16 @@ ARTIFACT = re.compile(r'DLV-[0-9A-F]{12}')
 GENERIC = {'Evidence and next steps', 'Evidence review brief', 'Explore the saved evidence'}
 
 
+def presentation_experience(context_id, title, request):
+    """Choose a screen for an explicitly requested program, never clinical fit."""
+    text = ' '.join(str(s or '') for s in (title, request)).lower()
+    if re.search(r'\bckd\b', text) and re.search(r'program|nephrolog', text):
+        return {'kind': 'ckd', 'availability': 'population_workspace',
+                'url': '/ask?app=ckd&context='+context_id+'#program',
+                'agent_execution_available': False}
+    return None
+
+
 def _folder(path, context_id, artifact_id):
     if not CONTEXT.fullmatch(context_id or '') or not ARTIFACT.fullmatch(artifact_id or ''):
         raise ValueError('Choose an exact saved creation')
@@ -67,7 +77,8 @@ def catalog(path):
                 'failure': spec.get('failure') if not saved else None,
                 'formats': list((spec.get('formats') or {}).keys()) if saved else [],
                 'answer_url': '/ask?context='+context_id,
-                'url': '/ask?context='+context_id+'&artifact='+artifact_id+'#gallery'})
+                'url': '/ask?context='+context_id+'&artifact='+artifact_id+'#gallery',
+                'experience': presentation_experience(context_id, title, spec.get('request'))})
         except (OSError, ValueError, TypeError, KeyError):
             continue  # A malformed attempt cannot hide other saved creations.
     items.sort(key=lambda s: (s.get('created_at') or '', s['id']), reverse=True)

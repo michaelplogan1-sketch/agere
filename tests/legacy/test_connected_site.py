@@ -11,6 +11,37 @@ from clinical_core.agere.deliverables import action_center
 
 
 class ConnectedSite(unittest.TestCase):
+    def test_ckd_screen_keeps_the_population_bound_and_never_fabricates_agent_runs(self):
+        source=Path('clinical_core/agere/assets/command_center.js').read_text()
+        script=r'''
+const assert=require('node:assert/strict'),esc=s=>String(s??''),recordName=r=>r.patient_id;
+const elements={},$=id=>elements[id]||(elements[id]={innerHTML:'',focus(){}}),document={body:{dataset:{}},querySelectorAll:()=>[]};
+const columnSpec=()=>[];
+'''+source+r'''
+const c={id:'ANS-'+'a'.repeat(24),invalidated:true,source:{as_of:'2030-05-27'},original_question:'The original CKD request.',answer:{count:308,table:[{patient_id:'P-1',egfr:null},{patient_id:'P-2',egfr:0}]},patient_profiles:{patients:{'P-1':{display_name:'Synthetic Example'}}}};
+const before=JSON.stringify(c);ckdWorkspace.context=c;ckdWorkspace.response={programs:{pharmd:{label:'Other workflow'}},items:[]};
+ckdWorkspace.view='agents';renderCKDView();const html=$('#ckd-view').innerHTML;
+assert.match(html,/disabled aria-describedby="ckd-agent-reason"/);assert.match(html,/Mock agents are not connected/);assert.doesNotMatch(html,/Patient reached|Enrollment complete|Agent running/);
+ckdWorkspace.view='patients';renderCKDView();assert.match($('#ckd-patient-browser').innerHTML,/Synthetic Example/);
+assert.equal(ckdFilteredRows()[0],c.answer.table[0]);ckdWorkspace.search='P-2';assert.deepEqual(ckdFilteredRows(),[c.answer.table[1]]);ckdWorkspace.search='no match';assert.equal(ckdFilteredRows().length,0);ckdWorkspace.search='';
+assert.match(ckdPatientPreview(c),/Synthetic Example/);assert.match(ckdPatientPreview(c),/Unknown/);assert.match(ckdPatientPreview(c),/>0</);
+ckdWorkspace.stage='labs';ckdWorkspace.view='pathway';renderCKDView();
+assert.match($('#ckd-view').innerHTML,/data-ckd-stage="labs" aria-pressed="true"/);
+assert.match($('#ckd-view').innerHTML,/Separate lab-completion and pickup states/);
+assert.match($('#ckd-view').innerHTML,/No mock run has been created/);
+assert.match($('#ckd-view').innerHTML,/disabled>Mock service unavailable/);
+assert.equal(JSON.stringify(c),before);assert.equal(ckdIsContext('../other'),false);
+assert.ok(ckdURL(c.id).includes('?app=ckd&context='+c.id));
+const wrong={patient_profiles:{patients:{'P-1':{patient_id:'P-2',display_name:'Wrong person'}}}};assert.equal(ckdIdentity(wrong,{patient_id:'P-1'}),'P-1');
+'''
+        r=subprocess.run([shutil.which('node'),'-e',script],capture_output=True,text=True)
+        self.assertEqual(r.returncode,0,r.stderr)
+        self.assertNotIn("method:'POST'",source)
+        self.assertNotIn('/api/stack/action-simulate',source)
+        self.assertIn('id="page-program"',ask_view.page())
+        navigation=Path('clinical_core/agere/assets/explore.js').read_text()
+        self.assertIn("closest('button[data-page],a[data-page]",navigation)
+
     def test_primary_navigation_is_available_across_product_pages(self):
         pages=[ask_view.page(),action_center.page(),learning_workbench.page()]
         for page in pages:
