@@ -44,7 +44,15 @@ You have at most %(steps)d replies in all, so leave yourself one for the answer.
 
 def document():
     """The written definitions document: every governed definition and vocabulary note, as a health system would hand it over."""
-    lines = ['Definitions document (the organisation\'s written metric definitions):']
+    from . import customer
+    lines = []
+    theirs = customer.definitions()
+    if theirs:   # the customer's own certified definitions, and the views that encode them, as the hospital would hand them over
+        lines.append("The organisation's certified definitions (these come first):")
+        for d in theirs:
+            v = d.get('view') if isinstance(d.get('view'), dict) else {}
+            lines.append(f"- {d.get('name') or d['id']}: {d['text']}" + (f" View: {v['name']} ({v.get('columns', '')})." if v.get('name') else ''))
+    lines.append('Definitions document (the organisation\'s written metric definitions):')
     lines += [f'- {name}: {text}' for name, _, text in catalogue.DEFINITIONS]
     voc = getattr(catalogue, 'VOCABULARY', ())
     if voc:

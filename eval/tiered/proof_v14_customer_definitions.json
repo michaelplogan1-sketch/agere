@@ -1,0 +1,226 @@
+{
+ "schema": "agere-customer-definitions/1",
+ "organization": "Synthetic health system (proof_v14 evaluator)",
+ "definitions": [
+  {
+   "id": "inpatient_admission",
+   "name": "Inpatient admissions at our hospitals",
+   "applies_when": "\\binpatient\\b|\\badmissions?\\b|\\badmits?\\b|\\badmitted\\b|\\bhospitali[sz]ations?\\b|\\binpatient stays?\\b",
+   "text": "Our hospitals are the four facilities WH-HOSPITAL-0, WH-HOSPITAL-1, WH-HOSPITAL-2 and WH-HOSPITAL-3. Source: the hospital EHR encounter feed (encounter table, source_table 'encounters'). Each encounter arrives as an in_progress version and a completed version with the same encounter_id; we merge them into one row per encounter_id. The start date is the earliest event_date across versions (the completed version's event_date is sometimes overwritten with the end date and is not used); the end date and disposition come from the completed version. ADT messages and payer claims are not used to count hospital encounters. An inpatient admission is one merged encounter of type 'inpatient' (observation and ED visits are not admissions). An admission belongs to the period of its admit date. Principal diagnosis is the rank-1 EHR encounter diagnosis. Payer line of business is the patient's health-plan line of business in our eligibility file (member_month) for the admit month; patients with no eligibility that month are 'uninsured'.",
+   "view": {
+    "name": "cust_inpatient_admissions",
+    "sql": "WITH ver AS (SELECT encounter_id, patient_id, organization_id, status, event_date, end_date, disposition, record_id FROM encounter WHERE source_table = 'encounters' AND type = 'inpatient' AND organization_id IN ('WH-HOSPITAL-0','WH-HOSPITAL-1','WH-HOSPITAL-2','WH-HOSPITAL-3')), st AS (SELECT encounter_id, MIN(patient_id) AS patient_id, MIN(organization_id) AS organization_id, MIN(event_date) AS admit_date, MAX(CASE WHEN status = 'completed' THEN end_date END) AS discharge_date, MAX(CASE WHEN status = 'completed' THEN disposition END) AS disposition, MAX(CASE WHEN status = 'completed' THEN record_id END) AS completed_record_id FROM ver GROUP BY encounter_id), dx AS (SELECT encounter_id, MIN(icd10) AS icd10 FROM encounter_diagnosis WHERE source = 'ehr' AND rank = 1 GROUP BY encounter_id) SELECT st.encounter_id, st.patient_id, st.organization_id, st.admit_date, st.discharge_date, CASE WHEN julianday(st.discharge_date) - julianday(st.admit_date) < 1 THEN 1 ELSE CAST(julianday(st.discharge_date) - julianday(st.admit_date) AS INTEGER) END AS length_of_stay_days, st.disposition, CASE WHEN st.disposition = 'expired' THEN 1 ELSE 0 END AS expired, dx.icd10 AS principal_icd10, UPPER(SUBSTR(REPLACE(dx.icd10, '.', ''), 1, 3)) AS principal_dx_category, COALESCE(mm.line_of_business, 'uninsured') AS payer_line_of_business FROM st LEFT JOIN dx ON dx.encounter_id = st.encounter_id LEFT JOIN member_month mm ON mm.patient_id = st.patient_id AND mm.month = SUBSTR(st.admit_date, 1, 7)",
+    "columns": "encounter_id; patient_id; organization_id (hospital); admit_date; discharge_date; length_of_stay_days (discharge date minus admit date, minimum 1); disposition (raw discharge disposition); expired (1 if disposition expired); principal_icd10; principal_dx_category (ICD-10 3-character category); payer_line_of_business (commercial, medicare, medicaid, dual, medigap, cob_secondary or uninsured)"
+   }
+  },
+  {
+   "id": "length_of_stay",
+   "name": "Inpatient length of stay",
+   "applies_when": "\\blength of stay\\b|\\bLOS\\b|\\bALOS\\b|\\baverage stay\\b|\\bdays in (the )?hospital\\b|\\bhow long\\b.*\\bstay",
+   "text": "Our hospitals are the four facilities WH-HOSPITAL-0, WH-HOSPITAL-1, WH-HOSPITAL-2 and WH-HOSPITAL-3. Length of stay is measured for inpatient admissions at our hospitals (merged as in inpatient_admission) as discharge date minus admit date in days, with a same-day stay counted as 1 day. Average length of stay (ALOS) is the mean over inpatient discharges whose discharge date falls in the period (a discharge-based measure). Observation and ED time are not inpatient days.",
+   "view": {
+    "name": "cust_length_of_stay",
+    "sql": "WITH ver AS (SELECT encounter_id, patient_id, organization_id, status, event_date, end_date, disposition, record_id FROM encounter WHERE source_table = 'encounters' AND type = 'inpatient' AND organization_id IN ('WH-HOSPITAL-0','WH-HOSPITAL-1','WH-HOSPITAL-2','WH-HOSPITAL-3')), st AS (SELECT encounter_id, MIN(patient_id) AS patient_id, MIN(organization_id) AS organization_id, MIN(event_date) AS admit_date, MAX(CASE WHEN status = 'completed' THEN end_date END) AS discharge_date, MAX(CASE WHEN status = 'completed' THEN disposition END) AS disposition, MAX(CASE WHEN status = 'completed' THEN record_id END) AS completed_record_id FROM ver GROUP BY encounter_id), dx AS (SELECT encounter_id, MIN(icd10) AS icd10 FROM encounter_diagnosis WHERE source = 'ehr' AND rank = 1 GROUP BY encounter_id) SELECT st.encounter_id, st.patient_id, st.organization_id, st.admit_date, st.discharge_date, CASE WHEN julianday(st.discharge_date) - julianday(st.admit_date) < 1 THEN 1 ELSE CAST(julianday(st.discharge_date) - julianday(st.admit_date) AS INTEGER) END AS length_of_stay_days, st.disposition, dx.icd10 AS principal_icd10, UPPER(SUBSTR(REPLACE(dx.icd10, '.', ''), 1, 3)) AS principal_dx_category FROM st LEFT JOIN dx ON dx.encounter_id = st.encounter_id",
+    "columns": "encounter_id; patient_id; organization_id; admit_date; discharge_date (puts the stay in a period); length_of_stay_days; disposition; principal_icd10; principal_dx_category"
+   }
+  },
+  {
+   "id": "discharge_disposition",
+   "name": "Inpatient discharges and discharge disposition",
+   "applies_when": "\\bdischarges?\\b|\\bdischarged\\b|\\bdisposition\\b|\\bdischarged? to\\b|\\bSNF\\b|\\bskilled nursing\\b",
+   "text": "Our hospitals are the four facilities WH-HOSPITAL-0, WH-HOSPITAL-1, WH-HOSPITAL-2 and WH-HOSPITAL-3. An inpatient discharge is a merged inpatient encounter at our hospitals counted in the period of its discharge date (end date of the completed version). Disposition is from the completed version. Disposition groups: home (home, home_with_guardian, home_with_followup, home_with_arranged_assistance), skilled_nursing_facility, expired, other. Deaths are discharges with disposition expired.",
+   "view": {
+    "name": "cust_inpatient_discharges",
+    "sql": "WITH ver AS (SELECT encounter_id, patient_id, organization_id, status, event_date, end_date, disposition, record_id FROM encounter WHERE source_table = 'encounters' AND type = 'inpatient' AND organization_id IN ('WH-HOSPITAL-0','WH-HOSPITAL-1','WH-HOSPITAL-2','WH-HOSPITAL-3')), st AS (SELECT encounter_id, MIN(patient_id) AS patient_id, MIN(organization_id) AS organization_id, MIN(event_date) AS admit_date, MAX(CASE WHEN status = 'completed' THEN end_date END) AS discharge_date, MAX(CASE WHEN status = 'completed' THEN disposition END) AS disposition, MAX(CASE WHEN status = 'completed' THEN record_id END) AS completed_record_id FROM ver GROUP BY encounter_id), dx AS (SELECT encounter_id, MIN(icd10) AS icd10 FROM encounter_diagnosis WHERE source = 'ehr' AND rank = 1 GROUP BY encounter_id) SELECT st.encounter_id, st.patient_id, st.organization_id, st.discharge_date, st.admit_date, st.disposition, CASE WHEN st.disposition IN ('home','home_with_guardian','home_with_followup','home_with_arranged_assistance') THEN 'home' WHEN st.disposition = 'skilled_nursing_facility' THEN 'skilled_nursing_facility' WHEN st.disposition = 'expired' THEN 'expired' ELSE 'other' END AS disposition_group FROM st",
+    "columns": "encounter_id; patient_id; organization_id; discharge_date; admit_date; disposition (raw); disposition_group (home, skilled_nursing_facility, expired, other)"
+   }
+  },
+  {
+   "id": "readmission_30d",
+   "name": "30-day all-cause readmission",
+   "applies_when": "\\breadmi(t|ssion|ssions|tted)\\b|\\bbounce[- ]?backs?\\b|\\b30[- ]day\\b",
+   "text": "Our hospitals are the four facilities WH-HOSPITAL-0, WH-HOSPITAL-1, WH-HOSPITAL-2 and WH-HOSPITAL-3. Index stays are inpatient discharges at our hospitals (merged as in inpatient_admission) with any disposition except expired, counted in the period of the index discharge date. An index stay is readmitted when the same patient has another inpatient admission at any of our four hospitals with an admit date 1 to 30 days (inclusive) after the index discharge date, for any cause. Readmissions to other hospitals are not visible and not counted. No planned-readmission exclusion is applied. Readmission rate = readmitted index stays / index stays. A heart failure index stay has principal diagnosis category I50.",
+   "view": {
+    "name": "cust_readmissions_30d",
+    "sql": "WITH ver AS (SELECT encounter_id, patient_id, organization_id, status, event_date, end_date, disposition, record_id FROM encounter WHERE source_table = 'encounters' AND type = 'inpatient' AND organization_id IN ('WH-HOSPITAL-0','WH-HOSPITAL-1','WH-HOSPITAL-2','WH-HOSPITAL-3')), st AS (SELECT encounter_id, MIN(patient_id) AS patient_id, MIN(organization_id) AS organization_id, MIN(event_date) AS admit_date, MAX(CASE WHEN status = 'completed' THEN end_date END) AS discharge_date, MAX(CASE WHEN status = 'completed' THEN disposition END) AS disposition, MAX(CASE WHEN status = 'completed' THEN record_id END) AS completed_record_id FROM ver GROUP BY encounter_id), dx AS (SELECT encounter_id, MIN(icd10) AS icd10 FROM encounter_diagnosis WHERE source = 'ehr' AND rank = 1 GROUP BY encounter_id), nx AS (SELECT a.encounter_id, MIN(julianday(b.admit_date) - julianday(a.discharge_date)) AS days_to_readmission FROM st a JOIN st b ON b.patient_id = a.patient_id AND b.encounter_id <> a.encounter_id AND julianday(b.admit_date) - julianday(a.discharge_date) BETWEEN 1 AND 30 GROUP BY a.encounter_id) SELECT st.encounter_id AS index_encounter_id, st.patient_id, st.organization_id, st.admit_date, st.discharge_date, dx.icd10 AS principal_icd10, UPPER(SUBSTR(REPLACE(dx.icd10, '.', ''), 1, 3)) AS principal_dx_category, CASE WHEN UPPER(SUBSTR(REPLACE(dx.icd10, '.', ''), 1, 3)) = 'I50' THEN 1 ELSE 0 END AS heart_failure_index, CASE WHEN nx.days_to_readmission IS NOT NULL THEN 1 ELSE 0 END AS readmitted_30d, CAST(nx.days_to_readmission AS INTEGER) AS days_to_readmission, COALESCE(mm.line_of_business, 'uninsured') AS payer_line_of_business FROM st LEFT JOIN dx ON dx.encounter_id = st.encounter_id LEFT JOIN nx ON nx.encounter_id = st.encounter_id LEFT JOIN member_month mm ON mm.patient_id = st.patient_id AND mm.month = SUBSTR(st.admit_date, 1, 7) WHERE st.disposition <> 'expired'",
+    "columns": "index_encounter_id; patient_id; organization_id; admit_date; discharge_date (index discharge, puts the row in a period); principal_icd10; principal_dx_category; heart_failure_index (1 if principal I50); readmitted_30d (1/0); days_to_readmission (to the first readmission); payer_line_of_business"
+   }
+  },
+  {
+   "id": "ed_visit",
+   "name": "Emergency department visits and ED length of stay at our hospitals",
+   "applies_when": "\\bED\\b|\\bemergency\\b|\\bER\\b|\\bemergency department\\b|\\bED (visits?|time|length of stay|LOS|throughput)\\b|\\bdoor[- ]to\\b|\\barrival to departure\\b",
+   "text": "Our hospitals are the four facilities WH-HOSPITAL-0, WH-HOSPITAL-1, WH-HOSPITAL-2 and WH-HOSPITAL-3. Source: the hospital EHR encounter feed (encounter table, source_table 'encounters'). Each encounter arrives as an in_progress version and a completed version with the same encounter_id; we merge them into one row per encounter_id. The start date is the earliest event_date across versions (the completed version's event_date is sometimes overwritten with the end date and is not used); the end date and disposition come from the completed version. ADT messages and payer claims are not used to count hospital encounters. An ED visit is one merged encounter of type 'emergency' at our hospitals, counted in the period of its arrival date. ED length of stay (ED time) is the time from arrival (start_time on the completed EHR record) to departure (end_time on the completed record) in hours; the standard summary is the median over visits in the period (CMS OP-18 style, all ED visits including admitted patients unless the question says otherwise). An ED visit resulted in admission when its disposition is 'admitted' or 'inpatient_admission'; in observation when its disposition is observation, hospital_observation or observation_for_mobility. ED visits seen in payer claims at other hospitals are not our ED visits (see member_utilization).",
+   "view": {
+    "name": "cust_ed_visits",
+    "sql": "WITH ver AS (SELECT encounter_id, patient_id, organization_id, status, event_date, end_date, disposition, record_id FROM encounter WHERE source_table = 'encounters' AND type = 'emergency' AND organization_id IN ('WH-HOSPITAL-0','WH-HOSPITAL-1','WH-HOSPITAL-2','WH-HOSPITAL-3')), st AS (SELECT encounter_id, MIN(patient_id) AS patient_id, MIN(organization_id) AS organization_id, MIN(event_date) AS arrival_date, MAX(CASE WHEN status = 'completed' THEN end_date END) AS departure_date, MAX(CASE WHEN status = 'completed' THEN disposition END) AS disposition, MAX(CASE WHEN status = 'completed' THEN record_id END) AS completed_record_id FROM ver GROUP BY encounter_id), dx AS (SELECT encounter_id, MIN(icd10) AS icd10 FROM encounter_diagnosis WHERE source = 'ehr' AND rank = 1 GROUP BY encounter_id) SELECT st.encounter_id, st.patient_id, st.organization_id, st.arrival_date, st.departure_date, json_extract(r.payload, '$.start_time') AS arrival_time, json_extract(r.payload, '$.end_time') AS departure_time, (julianday(json_extract(r.payload, '$.end_time')) - julianday(json_extract(r.payload, '$.start_time'))) * 24.0 AS ed_hours, st.disposition, CASE WHEN st.disposition IN ('admitted','inpatient_admission') THEN 1 ELSE 0 END AS admitted, CASE WHEN st.disposition IN ('observation','hospital_observation','observation_for_mobility') THEN 1 ELSE 0 END AS to_observation, dx.icd10 AS principal_icd10, UPPER(SUBSTR(REPLACE(dx.icd10, '.', ''), 1, 3)) AS principal_dx_category, COALESCE(mm.line_of_business, 'uninsured') AS payer_line_of_business FROM st JOIN record r ON r.record_id = st.completed_record_id LEFT JOIN dx ON dx.encounter_id = st.encounter_id LEFT JOIN member_month mm ON mm.patient_id = st.patient_id AND mm.month = SUBSTR(st.arrival_date, 1, 7)",
+    "columns": "encounter_id; patient_id; organization_id; arrival_date (puts the visit in a period); departure_date; arrival_time; departure_time; ed_hours (arrival to departure, hours); disposition; admitted (1/0); to_observation (1/0); principal_icd10; principal_dx_category; payer_line_of_business"
+   }
+  },
+  {
+   "id": "observation_stay",
+   "name": "Observation stays at our hospitals",
+   "applies_when": "\\bobservation\\b|\\bobs stays?\\b|\\bobs\\b",
+   "text": "Our hospitals are the four facilities WH-HOSPITAL-0, WH-HOSPITAL-1, WH-HOSPITAL-2 and WH-HOSPITAL-3. Source: the hospital EHR encounter feed (encounter table, source_table 'encounters'). Each encounter arrives as an in_progress version and a completed version with the same encounter_id; we merge them into one row per encounter_id. The start date is the earliest event_date across versions (the completed version's event_date is sometimes overwritten with the end date and is not used); the end date and disposition come from the completed version. ADT messages and payer claims are not used to count hospital encounters. An observation stay is one merged encounter of type 'observation' at our hospitals, counted in the period of its start date. Observation hours run from start_time to end_time on the completed record. Observation stays are not inpatient admissions.",
+   "view": {
+    "name": "cust_observation_stays",
+    "sql": "WITH ver AS (SELECT encounter_id, patient_id, organization_id, status, event_date, end_date, disposition, record_id FROM encounter WHERE source_table = 'encounters' AND type = 'observation' AND organization_id IN ('WH-HOSPITAL-0','WH-HOSPITAL-1','WH-HOSPITAL-2','WH-HOSPITAL-3')), st AS (SELECT encounter_id, MIN(patient_id) AS patient_id, MIN(organization_id) AS organization_id, MIN(event_date) AS start_date, MAX(CASE WHEN status = 'completed' THEN end_date END) AS end_date, MAX(CASE WHEN status = 'completed' THEN disposition END) AS disposition, MAX(CASE WHEN status = 'completed' THEN record_id END) AS completed_record_id FROM ver GROUP BY encounter_id), dx AS (SELECT encounter_id, MIN(icd10) AS icd10 FROM encounter_diagnosis WHERE source = 'ehr' AND rank = 1 GROUP BY encounter_id) SELECT st.encounter_id, st.patient_id, st.organization_id, st.start_date, st.end_date, (julianday(json_extract(r.payload, '$.end_time')) - julianday(json_extract(r.payload, '$.start_time'))) * 24.0 AS observation_hours, st.disposition, dx.icd10 AS principal_icd10, UPPER(SUBSTR(REPLACE(dx.icd10, '.', ''), 1, 3)) AS principal_dx_category FROM st JOIN record r ON r.record_id = st.completed_record_id LEFT JOIN dx ON dx.encounter_id = st.encounter_id",
+    "columns": "encounter_id; patient_id; organization_id; start_date (puts the stay in a period); end_date; observation_hours; disposition; principal_icd10; principal_dx_category"
+   }
+  },
+  {
+   "id": "inpatient_mortality",
+   "name": "Inpatient mortality",
+   "applies_when": "\\bmortality\\b|\\bdeaths?\\b|\\bdied\\b|\\bexpired\\b|\\bin-hospital death",
+   "text": "Our hospitals are the four facilities WH-HOSPITAL-0, WH-HOSPITAL-1, WH-HOSPITAL-2 and WH-HOSPITAL-3. Inpatient mortality rate = inpatient discharges at our hospitals with disposition 'expired' / all inpatient discharges, both counted in the period of the discharge date. Crude (not risk-adjusted). Deaths after discharge, ED deaths and deaths reported only by payers or the death registry are not inpatient deaths.",
+   "view": {
+    "name": "cust_inpatient_mortality",
+    "sql": "WITH ver AS (SELECT encounter_id, patient_id, organization_id, status, event_date, end_date, disposition, record_id FROM encounter WHERE source_table = 'encounters' AND type = 'inpatient' AND organization_id IN ('WH-HOSPITAL-0','WH-HOSPITAL-1','WH-HOSPITAL-2','WH-HOSPITAL-3')), st AS (SELECT encounter_id, MIN(patient_id) AS patient_id, MIN(organization_id) AS organization_id, MIN(event_date) AS admit_date, MAX(CASE WHEN status = 'completed' THEN end_date END) AS discharge_date, MAX(CASE WHEN status = 'completed' THEN disposition END) AS disposition, MAX(CASE WHEN status = 'completed' THEN record_id END) AS completed_record_id FROM ver GROUP BY encounter_id), dx AS (SELECT encounter_id, MIN(icd10) AS icd10 FROM encounter_diagnosis WHERE source = 'ehr' AND rank = 1 GROUP BY encounter_id) SELECT st.encounter_id, st.patient_id, st.organization_id, st.discharge_date, st.admit_date, st.disposition, CASE WHEN st.disposition = 'expired' THEN 1 ELSE 0 END AS died_in_hospital, dx.icd10 AS principal_icd10, UPPER(SUBSTR(REPLACE(dx.icd10, '.', ''), 1, 3)) AS principal_dx_category FROM st LEFT JOIN dx ON dx.encounter_id = st.encounter_id",
+    "columns": "encounter_id; patient_id; organization_id; discharge_date (puts the row in a period); admit_date; disposition; died_in_hospital (1/0); principal_icd10; principal_dx_category"
+   }
+  },
+  {
+   "id": "sepsis_stay",
+   "name": "Sepsis inpatient stays",
+   "applies_when": "\\bsepsis\\b|\\bseptic\\b|\\bsepticemia\\b",
+   "text": "Our hospitals are the four facilities WH-HOSPITAL-0, WH-HOSPITAL-1, WH-HOSPITAL-2 and WH-HOSPITAL-3. A sepsis stay is an inpatient admission at our hospitals (merged as in inpatient_admission) with any EHR encounter diagnosis, in any position, in ICD-10 A40.*, A41.* or R65.2*. Counted in the period of the admit date; sepsis mortality uses the discharge date and disposition expired. This is a coded-diagnosis cohort, not the CMS SEP-1 abstraction.",
+   "view": {
+    "name": "cust_sepsis_stays",
+    "sql": "WITH ver AS (SELECT encounter_id, patient_id, organization_id, status, event_date, end_date, disposition, record_id FROM encounter WHERE source_table = 'encounters' AND type = 'inpatient' AND organization_id IN ('WH-HOSPITAL-0','WH-HOSPITAL-1','WH-HOSPITAL-2','WH-HOSPITAL-3')), st AS (SELECT encounter_id, MIN(patient_id) AS patient_id, MIN(organization_id) AS organization_id, MIN(event_date) AS admit_date, MAX(CASE WHEN status = 'completed' THEN end_date END) AS discharge_date, MAX(CASE WHEN status = 'completed' THEN disposition END) AS disposition, MAX(CASE WHEN status = 'completed' THEN record_id END) AS completed_record_id FROM ver GROUP BY encounter_id), dx AS (SELECT encounter_id, MIN(icd10) AS icd10 FROM encounter_diagnosis WHERE source = 'ehr' AND rank = 1 GROUP BY encounter_id), sx AS (SELECT encounter_id, MIN(rank) AS best_rank FROM encounter_diagnosis WHERE source = 'ehr' AND (REPLACE(icd10, '.', '') LIKE 'A40%' OR REPLACE(icd10, '.', '') LIKE 'A41%' OR REPLACE(icd10, '.', '') LIKE 'R652%') GROUP BY encounter_id) SELECT st.encounter_id, st.patient_id, st.organization_id, st.admit_date, st.discharge_date, CASE WHEN julianday(st.discharge_date) - julianday(st.admit_date) < 1 THEN 1 ELSE CAST(julianday(st.discharge_date) - julianday(st.admit_date) AS INTEGER) END AS length_of_stay_days, st.disposition, CASE WHEN st.disposition = 'expired' THEN 1 ELSE 0 END AS expired, CASE WHEN sx.best_rank = 1 THEN 1 ELSE 0 END AS sepsis_principal FROM st JOIN sx ON sx.encounter_id = st.encounter_id",
+    "columns": "encounter_id; patient_id; organization_id; admit_date; discharge_date; length_of_stay_days; disposition; expired (1/0); sepsis_principal (1 if the sepsis code is the principal diagnosis)"
+   }
+  },
+  {
+   "id": "heart_failure_stay",
+   "name": "Heart failure inpatient stays",
+   "applies_when": "\\bheart failure\\b|\\bHF\\b|\\bCHF\\b|\\bcardiac failure\\b",
+   "text": "Our hospitals are the four facilities WH-HOSPITAL-0, WH-HOSPITAL-1, WH-HOSPITAL-2 and WH-HOSPITAL-3. A heart failure (HF) stay is an inpatient admission at our hospitals (merged as in inpatient_admission) whose principal (rank-1) EHR diagnosis is in ICD-10 category I50. HF admissions count by admit date; HF length of stay, mortality and readmission count by discharge date. HF 30-day readmission: index HF stays not ending in death, readmitted for any cause to any of our four hospitals 1 to 30 days after discharge.",
+   "view": {
+    "name": "cust_heart_failure_stays",
+    "sql": "WITH ver AS (SELECT encounter_id, patient_id, organization_id, status, event_date, end_date, disposition, record_id FROM encounter WHERE source_table = 'encounters' AND type = 'inpatient' AND organization_id IN ('WH-HOSPITAL-0','WH-HOSPITAL-1','WH-HOSPITAL-2','WH-HOSPITAL-3')), st AS (SELECT encounter_id, MIN(patient_id) AS patient_id, MIN(organization_id) AS organization_id, MIN(event_date) AS admit_date, MAX(CASE WHEN status = 'completed' THEN end_date END) AS discharge_date, MAX(CASE WHEN status = 'completed' THEN disposition END) AS disposition, MAX(CASE WHEN status = 'completed' THEN record_id END) AS completed_record_id FROM ver GROUP BY encounter_id), dx AS (SELECT encounter_id, MIN(icd10) AS icd10 FROM encounter_diagnosis WHERE source = 'ehr' AND rank = 1 GROUP BY encounter_id), nx AS (SELECT a.encounter_id, MIN(julianday(b.admit_date) - julianday(a.discharge_date)) AS d FROM st a JOIN st b ON b.patient_id = a.patient_id AND b.encounter_id <> a.encounter_id AND julianday(b.admit_date) - julianday(a.discharge_date) BETWEEN 1 AND 30 GROUP BY a.encounter_id) SELECT st.encounter_id, st.patient_id, st.organization_id, st.admit_date, st.discharge_date, CASE WHEN julianday(st.discharge_date) - julianday(st.admit_date) < 1 THEN 1 ELSE CAST(julianday(st.discharge_date) - julianday(st.admit_date) AS INTEGER) END AS length_of_stay_days, st.disposition, CASE WHEN st.disposition = 'expired' THEN 1 ELSE 0 END AS expired, CASE WHEN st.disposition <> 'expired' THEN 1 ELSE 0 END AS readmission_index, CASE WHEN st.disposition <> 'expired' AND nx.d IS NOT NULL THEN 1 ELSE 0 END AS readmitted_30d, dx.icd10 AS principal_icd10 FROM st JOIN dx ON dx.encounter_id = st.encounter_id LEFT JOIN nx ON nx.encounter_id = st.encounter_id WHERE UPPER(SUBSTR(REPLACE(dx.icd10, '.', ''), 1, 3)) = 'I50'",
+    "columns": "encounter_id; patient_id; organization_id; admit_date; discharge_date; length_of_stay_days; disposition; expired (1/0); readmission_index (1 if not expired); readmitted_30d (1/0, any-cause readmission within 30 days); principal_icd10"
+   }
+  },
+  {
+   "id": "payer_mix",
+   "name": "Payer mix of hospital encounters",
+   "applies_when": "\\bpayer mix\\b|\\bpayor mix\\b|\\bby payer\\b|\\bby insurance\\b|\\bline of business\\b|\\buninsured\\b|\\bself[- ]pay\\b|\\bcoverage\\b",
+   "text": "Our hospitals are the four facilities WH-HOSPITAL-0, WH-HOSPITAL-1, WH-HOSPITAL-2 and WH-HOSPITAL-3. Payer mix assigns each merged hospital encounter (inpatient, emergency or observation) the line of business of the patient's eligibility in our member_month file for the month of the encounter's start date (commercial, medicare, medicaid, dual, medigap, cob_secondary); with no eligibility that month the encounter is 'uninsured'. Mix is the share of encounters in each line of business, by start date. For payer mix of plan spend use payer_claim line_of_business.",
+   "view": {
+    "name": "cust_hospital_payer_mix",
+    "sql": "WITH ver AS (SELECT encounter_id, patient_id, organization_id, type, event_date FROM encounter WHERE source_table = 'encounters' AND type IN ('inpatient','emergency','observation') AND organization_id IN ('WH-HOSPITAL-0','WH-HOSPITAL-1','WH-HOSPITAL-2','WH-HOSPITAL-3')), st AS (SELECT encounter_id, MIN(patient_id) AS patient_id, MIN(organization_id) AS organization_id, MIN(type) AS setting, MIN(event_date) AS start_date FROM ver GROUP BY encounter_id) SELECT st.encounter_id, st.patient_id, st.organization_id, st.setting, st.start_date, COALESCE(mm.line_of_business, 'uninsured') AS payer_line_of_business, mm.payer_id, mm.product FROM st LEFT JOIN member_month mm ON mm.patient_id = st.patient_id AND mm.month = SUBSTR(st.start_date, 1, 7)",
+    "columns": "encounter_id; patient_id; organization_id; setting (inpatient, emergency, observation); start_date; payer_line_of_business; payer_id; product"
+   }
+  },
+  {
+   "id": "member_months",
+   "name": "Health plan members and member months",
+   "applies_when": "\\bmembers?\\b|\\bmember[- ]months?\\b|\\benrollees?\\b|\\benrolled\\b|\\benrollment\\b|\\bcovered lives\\b|\\bpopulation\\b|\\bmembership\\b",
+   "text": "Members are people in our health plan / ACO eligibility file. Source: member_month, one row per member per covered month (it equals the months touched by enrollment_span coverage, with open-ended spans running through the data end 2030-05). Member months in a period = rows with month in the period. Members in a period = distinct patient_id with at least one member month in the period. Line of business, product and payer are those on the member month. Member-years = member months / 12.",
+   "view": {
+    "name": "cust_member_months",
+    "sql": "SELECT patient_id, month, SUBSTR(month, 1, 4) AS year, payer_id, product, line_of_business, attribution_practice_id FROM member_month",
+    "columns": "patient_id (member); month (YYYY-MM); year; payer_id; product; line_of_business; attribution_practice_id"
+   }
+  },
+  {
+   "id": "payer_claim",
+   "name": "Health plan medical claims (dedup and void rules) and paid amounts",
+   "applies_when": "\\bclaims?\\b|\\bpaid\\b|\\bspend\\b|\\bspending\\b|\\bcost of care\\b|\\btotal cost\\b|\\ballowed\\b|\\bin[- ]network\\b|\\bout[- ]of[- ]network\\b|\\bleakage\\b",
+   "text": "Plan-side medical claims come from payer_claim (all care our members receive anywhere). A claim counts when it is not a void (claim_frequency_code 8), not a duplicate submission (duplicate_submission = 1) and not superseded by a replacement (superseded_by_payer_claim_id is set); the replacement (frequency 7) counts instead. Paid amount is the claim's net paid_cents (recoupments and reversals carry negative or adjusted values; denied claims pay 0). Claims are placed in a period by service_from. Pharmacy is separate (pharmacy_claim). Principal diagnosis category is the ICD-10 3-character category.",
+   "view": {
+    "name": "cust_payer_claims",
+    "sql": "SELECT payer_claim_id, patient_id, payer_id, product, line_of_business, claim_type, type_of_bill, place_of_service, service_from, service_to, final_status, network_status, charge_cents / 100.0 AS charge_dollars, allowed_cents / 100.0 AS allowed_dollars, paid_cents / 100.0 AS paid_dollars, principal_diagnosis AS principal_icd10, UPPER(SUBSTR(REPLACE(principal_diagnosis, '.', ''), 1, 3)) AS principal_dx_category, drg FROM payer_claim WHERE claim_frequency_code <> '8' AND duplicate_submission = 0 AND superseded_by_payer_claim_id IS NULL",
+    "columns": "payer_claim_id; patient_id; payer_id; product; line_of_business (on the claim); claim_type (professional/institutional); type_of_bill; place_of_service; service_from (period date); service_to; final_status; network_status; charge_dollars; allowed_dollars; paid_dollars; principal_icd10; principal_dx_category; drg"
+   }
+  },
+  {
+   "id": "pmpm",
+   "name": "PMPM spend",
+   "applies_when": "\\bPMPM\\b|\\bper member per month\\b|\\bper[- ]member\\b|\\bcost per member\\b",
+   "text": "PMPM = paid dollars incurred by members in months they were enrolled / member months. Medical paid uses counted payer claims (payer_claim rules) attributed to the patient and the month of service_from; pharmacy paid uses net plan paid on counted pharmacy claims (pharmacy_claim rules) by fill month. Paid amounts in months without eligibility are excluded from PMPM. Total PMPM = medical + pharmacy. Line of business is from the member month.",
+   "view": {
+    "name": "cust_member_month_spend",
+    "sql": "WITH med AS (SELECT patient_id, SUBSTR(service_from, 1, 7) AS month, SUM(paid_cents) AS c FROM payer_claim WHERE claim_frequency_code <> '8' AND duplicate_submission = 0 AND superseded_by_payer_claim_id IS NULL GROUP BY 1, 2), rxv AS (SELECT rx_claim_id, patient_id, fill_date, plan_paid_cents, claim_status, ROW_NUMBER() OVER (PARTITION BY rx_claim_id ORDER BY available_date DESC, record_id DESC) AS rn FROM payer_pharmacy_claim), rx AS (SELECT patient_id, SUBSTR(fill_date, 1, 7) AS month, SUM(plan_paid_cents) AS c FROM rxv WHERE rn = 1 AND claim_status IN ('paid','recouped') GROUP BY 1, 2) SELECT m.patient_id, m.month, SUBSTR(m.month, 1, 4) AS year, m.payer_id, m.product, m.line_of_business, COALESCE(med.c, 0) / 100.0 AS medical_paid_dollars, COALESCE(rx.c, 0) / 100.0 AS pharmacy_paid_dollars, (COALESCE(med.c, 0) + COALESCE(rx.c, 0)) / 100.0 AS total_paid_dollars FROM member_month m LEFT JOIN med ON med.patient_id = m.patient_id AND med.month = m.month LEFT JOIN rx ON rx.patient_id = m.patient_id AND rx.month = m.month",
+    "columns": "patient_id; month; year; payer_id; product; line_of_business; medical_paid_dollars; pharmacy_paid_dollars; total_paid_dollars (one row per member month)"
+   }
+  },
+  {
+   "id": "pharmacy_claim",
+   "name": "Pharmacy claims, fills and pharmacy spend",
+   "applies_when": "\\bpharmacy\\b|\\bprescriptions?\\b|\\bfills?\\b|\\bdrugs?\\b|\\bgeneric\\b|\\bbrand\\b|\\bRx\\b|\\bscripts?\\b|\\bmedication spend\\b",
+   "text": "Plan pharmacy claims come from payer_pharmacy_claim. Keep one row per rx_claim_id (the latest available_date). Rejected claims and B2 reversals are excluded. A fill is a claim with status paid; net plan paid = plan_paid_cents over paid and recouped claims (recoupments are negative). Placed in a period by fill_date. Generic dispensing rate = paid fills with formulary_tier generic / paid fills with a recorded tier (generic, brand or specialty).",
+   "view": {
+    "name": "cust_pharmacy_claims",
+    "sql": "WITH rxv AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY rx_claim_id ORDER BY available_date DESC, record_id DESC) AS rn FROM payer_pharmacy_claim) SELECT rx_claim_id, patient_id, payer_id, fill_date, drug_name, ndc, days_supply, claim_status, CASE WHEN claim_status = 'paid' THEN 1 ELSE 0 END AS is_fill, plan_paid_cents / 100.0 AS plan_paid_dollars, patient_pay_cents / 100.0 AS patient_pay_dollars, formulary_tier, pharmacy_type FROM rxv WHERE rn = 1 AND claim_status IN ('paid','recouped')",
+    "columns": "rx_claim_id; patient_id; payer_id; fill_date; drug_name; ndc; days_supply; claim_status (paid or recouped); is_fill (1 for paid); plan_paid_dollars; patient_pay_dollars; formulary_tier; pharmacy_type"
+   }
+  },
+  {
+   "id": "billed_claim_denial",
+   "name": "Our billed claims and denials (initial, final, overturn)",
+   "applies_when": "\\bdenials?\\b|\\bdenied\\b|\\boverturn(ed|s)?\\b|\\bappeal(s|ed)?\\b|\\brevenue cycle\\b|\\bbilled\\b|\\bour claims\\b|\\bcollections?\\b|\\bwrite[- ]?offs?\\b",
+   "text": "Our billed claims are the claims our health system's billing office submits (claim_adjudication rows with claim_source 'medical_claims', all our billing entities: the four hospitals plus our practices, labs, urgent care and other sites; 'our hospitals' restricts to the four). One row per claim_id, ordered by sequence. Initial status = status of the first adjudication; final status = status of the last adjudication that is not a 'reversed' entry (a reversal undoes a prior payment that is then re-adjudicated). Initial denial rate = claims first adjudicated denied / claims; final denial rate = claims whose final status is denied / claims; overturn rate = initially denied claims finally paid / initially denied claims. Net paid = sum of payer_paid_delta_cents. Billed = billed_cents. Claims are placed in a period by date of service (service_date). Payer is the payer on the first adjudication.",
+   "view": {
+    "name": "cust_billed_claims",
+    "sql": "WITH a AS (SELECT claim_id, patient_id, sequence, status, event_date, service_date, payer, billed_cents, payer_paid_delta_cents FROM claim_adjudication WHERE claim_source = 'medical_claims'), f AS (SELECT claim_id, MIN(sequence) AS s1, MAX(CASE WHEN status <> 'reversed' THEN sequence END) AS sl, SUM(payer_paid_delta_cents) AS paid FROM a GROUP BY claim_id) SELECT f.claim_id, a1.patient_id, a1.payer, a1.service_date, c.service_organization_id AS organization_id, CASE WHEN c.service_organization_id IN ('WH-HOSPITAL-0','WH-HOSPITAL-1','WH-HOSPITAL-2','WH-HOSPITAL-3') THEN 1 ELSE 0 END AS our_hospital, a1.billed_cents / 100.0 AS billed_dollars, a1.event_date AS first_adjudication_date, a1.status AS initial_status, al.status AS final_status, CASE WHEN a1.status = 'denied' THEN 1 ELSE 0 END AS initial_denied, CASE WHEN al.status = 'denied' THEN 1 ELSE 0 END AS final_denied, CASE WHEN a1.status = 'denied' AND al.status = 'paid' THEN 1 ELSE 0 END AS overturned, f.paid / 100.0 AS net_paid_dollars FROM f JOIN a a1 ON a1.claim_id = f.claim_id AND a1.sequence = f.s1 JOIN a al ON al.claim_id = f.claim_id AND al.sequence = f.sl LEFT JOIN claim c ON c.claim_id = f.claim_id",
+    "columns": "claim_id; patient_id; payer; service_date (period date); organization_id (billing site); our_hospital (1 if one of the four hospitals); billed_dollars; first_adjudication_date; initial_status; final_status; initial_denied; final_denied; overturned; net_paid_dollars"
+   }
+  },
+  {
+   "id": "member_utilization",
+   "name": "Member acute admissions and ED visits from claims (per 1,000)",
+   "applies_when": "\\bper (1,?000|thousand)\\b|\\butilization\\b|\\badmits per\\b|\\bmembers?\\b.*\\b(admissions?|ED visits?|emergency)\\b|\\b(admissions?|ED visits?)\\b.*\\bmembers?\\b",
+   "text": "For the health plan population, utilization is measured from counted payer claims (payer_claim rules), wherever the care happened. An acute inpatient admission is a distinct patient + admission date (admission_date, else service_from) on institutional claims with type of bill 011x. An ED visit is a distinct patient + service_from on a counted claim with place of service 23, or with a line carrying revenue code 045x or CPT 99281-99285. Only events in months the patient is enrolled (member_month) count toward rates. Rate per 1,000 = events / member months x 12,000, by event date.",
+   "view": {
+    "name": "cust_member_utilization",
+    "sql": "WITH cc AS (SELECT * FROM payer_claim WHERE claim_frequency_code <> '8' AND duplicate_submission = 0 AND superseded_by_payer_claim_id IS NULL), edl AS (SELECT DISTINCT l.payer_claim_id FROM payer_claim_line l JOIN cc ON cc.payer_claim_id = l.payer_claim_id WHERE l.revenue_code LIKE '045%' OR l.cpt IN ('99281','99282','99283','99284','99285')), ev AS (SELECT DISTINCT patient_id, COALESCE(admission_date, service_from) AS event_date, 'acute_inpatient_admission' AS event_type FROM cc WHERE type_of_bill LIKE '011%' UNION SELECT DISTINCT patient_id, service_from AS event_date, 'ed_visit' AS event_type FROM cc WHERE place_of_service = '23' OR payer_claim_id IN (SELECT payer_claim_id FROM edl)) SELECT ev.patient_id, ev.event_date, SUBSTR(ev.event_date, 1, 4) AS year, ev.event_type, CASE WHEN mm.patient_id IS NOT NULL THEN 1 ELSE 0 END AS enrolled, mm.line_of_business, mm.payer_id FROM ev LEFT JOIN member_month mm ON mm.patient_id = ev.patient_id AND mm.month = SUBSTR(ev.event_date, 1, 7)",
+    "columns": "patient_id; event_date; year; event_type (acute_inpatient_admission or ed_visit); enrolled (1 if a member that month); line_of_business; payer_id"
+   }
+  },
+  {
+   "id": "diagnosis_category",
+   "name": "Diagnosis grouping level",
+   "applies_when": "\\bdiagnos(is|es|ed)\\b|\\bdx\\b|\\bconditions?\\b|\\bICD\\b|\\bcategor(y|ies)\\b",
+   "text": "When we group diagnoses we use the ICD-10-CM 3-character category: remove the dot, upper-case, take the first three characters (I50.9 and I50.32 are both I50). Hospital encounters use the principal (rank-1) EHR encounter diagnosis; plan claims use payer_claim_diagnosis on counted claims (any rank unless the question says principal). A member 'has' a diagnosis in a year when at least one counted claim with a service date in that year carries it.",
+   "view": {
+    "name": "cust_claim_diagnoses",
+    "sql": "SELECT d.payer_claim_id, d.patient_id, d.service_from, d.rank, d.icd10, UPPER(SUBSTR(REPLACE(d.icd10, '.', ''), 1, 3)) AS icd10_category, UPPER(SUBSTR(REPLACE(d.icd10, '.', ''), 1, 1)) AS icd10_letter FROM payer_claim_diagnosis d JOIN payer_claim c ON c.payer_claim_id = d.payer_claim_id WHERE c.claim_frequency_code <> '8' AND c.duplicate_submission = 0 AND c.superseded_by_payer_claim_id IS NULL",
+    "columns": "payer_claim_id; patient_id; service_from; rank (1 = principal); icd10; icd10_category (3-character); icd10_letter (chapter letter); counted claims only"
+   }
+  },
+  {
+   "id": "appointment_no_show",
+   "name": "Appointments and no-shows",
+   "applies_when": "\\bappointments?\\b|\\bno[- ]shows?\\b|\\bmissed appointments?\\b|\\bscheduled visits?\\b|\\bcancell?ations?\\b|\\bkept\\b",
+   "text": "Appointments come from the appointment table (already one row per appointment_id at its latest version). Outcome from final_status: kept = fulfilled, arrived or attended; no_show = no_show; cancelled = cancelled; other = booked, rescheduled or unassigned. No-show rate = no_show / (kept + no_show), counted by scheduled_date. Cancellations and still-booked appointments are not in the denominator.",
+   "view": {
+    "name": "cust_appointments",
+    "sql": "SELECT appointment_id, patient_id, organization_id, clinician_id, scheduled_date, booked_date, final_status, CASE WHEN final_status IN ('fulfilled','arrived','attended') THEN 'kept' WHEN final_status = 'no_show' THEN 'no_show' WHEN final_status = 'cancelled' THEN 'cancelled' ELSE 'other' END AS outcome_group, purpose, lead_time_days FROM appointment",
+    "columns": "appointment_id; patient_id; organization_id; clinician_id; scheduled_date (period date); booked_date; final_status; outcome_group (kept, no_show, cancelled, other); purpose; lead_time_days"
+   }
+  },
+  {
+   "id": "social_need",
+   "name": "Social needs screening (health-related social needs)",
+   "applies_when": "\\bsocial needs?\\b|\\bSDOH\\b|\\bsocial determinants\\b|\\bfood insecurity\\b|\\bhousing\\b|\\btransportation\\b|\\butilities\\b|\\bHRSN\\b|\\bscreen(ed|ing)? positive\\b",
+   "text": "Social need screening results come from social_need (one row per patient, need and screening/documentation event). A patient was screened in a period if they have any row dated in it; a patient is positive for a need if any row for that need in the period has positive = 1. Rates are patients positive / patients screened (distinct patients), or for a specific need, patients positive for that need / patients with any row for that need. Needs: food, housing, transport, utilities, safety, cost_of_care.",
+   "view": {
+    "name": "cust_social_needs",
+    "sql": "SELECT patient_id, need, positive, instrument, source_stream, event_date, SUBSTR(event_date, 1, 4) AS year FROM social_need",
+    "columns": "patient_id; need; positive (1/0); instrument; source_stream; event_date; year"
+   }
+  },
+  {
+   "id": "diabetes_care",
+   "name": "Diabetes population and HbA1c measures",
+   "applies_when": "\\bdiabet(es|ic|ics)\\b|\\bHbA1c\\b|\\bA1c\\b|\\bglycemic\\b",
+   "text": "Diabetic members in a year: members (at least one member month in the year) with at least one counted payer claim dated in the year carrying a diagnosis in ICD-10 category E10, E11 or E13 (any position). HbA1c testing: a counted payer claim line with CPT 83036 or 83037 dated in the year. Latest HbA1c: the last current lab result (measurement concept hba1c, source labs, result_current = 1, value present) in the year; if several on that date, the lowest. Poor control (HEDIS-style, inverse): latest HbA1c > 9.0% or no result in the year.",
+   "view": {
+    "name": "cust_diabetes_care",
+    "sql": "WITH cc AS (SELECT payer_claim_id, patient_id, service_from FROM payer_claim WHERE claim_frequency_code <> '8' AND duplicate_submission = 0 AND superseded_by_payer_claim_id IS NULL), dm AS (SELECT DISTINCT cc.patient_id, SUBSTR(cc.service_from, 1, 4) AS year FROM payer_claim_diagnosis d JOIN cc ON cc.payer_claim_id = d.payer_claim_id WHERE UPPER(SUBSTR(REPLACE(d.icd10, '.', ''), 1, 3)) IN ('E10','E11','E13')), mem AS (SELECT DISTINCT patient_id, SUBSTR(month, 1, 4) AS year FROM member_month), tst AS (SELECT DISTINCT cc.patient_id, SUBSTR(l.service_date, 1, 4) AS year FROM payer_claim_line l JOIN cc ON cc.payer_claim_id = l.payer_claim_id WHERE l.cpt IN ('83036','83037')), lab AS (SELECT patient_id, SUBSTR(event_date, 1, 4) AS year, value_canonical, ROW_NUMBER() OVER (PARTITION BY patient_id, SUBSTR(event_date, 1, 4) ORDER BY event_date DESC, value_canonical ASC) AS rn FROM measurement WHERE concept = 'hba1c' AND source_table = 'labs' AND result_current = 1 AND value_canonical IS NOT NULL) SELECT dm.patient_id, dm.year, CASE WHEN tst.patient_id IS NOT NULL THEN 1 ELSE 0 END AS a1c_test_claim, lab.value_canonical AS latest_a1c, CASE WHEN lab.value_canonical IS NULL OR lab.value_canonical > 9.0 THEN 1 ELSE 0 END AS a1c_poor_control FROM dm JOIN mem ON mem.patient_id = dm.patient_id AND mem.year = dm.year LEFT JOIN tst ON tst.patient_id = dm.patient_id AND tst.year = dm.year LEFT JOIN lab ON lab.patient_id = dm.patient_id AND lab.year = dm.year AND lab.rn = 1",
+    "columns": "patient_id; year; a1c_test_claim (1/0); latest_a1c (percent, null if none); a1c_poor_control (1 if > 9.0 or missing)"
+   }
+  }
+ ]
+}

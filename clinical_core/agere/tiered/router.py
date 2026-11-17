@@ -165,6 +165,12 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
 
     def run_recipe(tier, recipe_id, params):
         recipe = recipes.RECIPES[recipe_id]
+        if tier == 'recipes':   # even a reviewed built-in recipe gives way to a customer's certified definition for the question
+            mine = governed.check(question, recipe['sql'], params) if governed.enabled() else []
+            if mine and mine[0].startswith('Customer definition'):
+                steps.append({'tier': tier, 'outcome': 'customer_definition_governs', 'recipe': recipe_id, 'tokens': 0, 'usd': 0.0})
+                escalations.append({'from': tier, 'reason': mine[0][:160]})
+                return None
         if recipe_id in reported:
             steps.append({'tier': tier, 'outcome': 'reported_wrong_for_this_question', 'recipe': recipe_id, 'tokens': 0, 'usd': 0.0})
             escalations.append({'from': tier, 'reason': f'{recipe_id} was reported wrong for this question; the report is open'})
