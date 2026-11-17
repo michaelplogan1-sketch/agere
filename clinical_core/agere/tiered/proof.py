@@ -1008,6 +1008,14 @@ def run(runs=3, workers=4):
         module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
         table = {n[4:]: f for n, f in vars(module).items() if n.startswith('ref_') and callable(f)}
         reference_db = reference_db or str(store.path())
+    if data.get('customer_definitions'):
+        # The set's customer definitions are loaded for this run as onboarding would load them (proof_v14 on): every arm that
+        # reads definitions sees them; the product's own config folder is not touched.
+        from . import customer
+        onboard = scratch / 'customer'; onboard.mkdir(exist_ok=True)
+        shutil.copy(data['customer_definitions'], onboard / Path(data['customer_definitions']).name)
+        customer.DIRECTORY = onboard
+        store.clear_caches()
     db = sqlite3.connect(Path(reference_db).resolve().as_uri() + '?mode=ro', uri=True) if reference_db else store.connect()
     items = []
     # AGERE_PROOF_PHRASINGS=0 scores only the first (plain) phrasing of every question, in every arm alike: the way users ask,
