@@ -99,8 +99,8 @@ def _answers(path='eval/tiered/trial_stale_v1.json'):
     out = []
     for item in frozen['answers']:
         sql, params = b.db.execute('SELECT sql, params_json FROM bottle WHERE id = ?', (item['bottle'],)).fetchone()
-        values = json.loads(b.db.execute('SELECT params_json FROM bottle_event WHERE id = ?', (item['check_event'],)).fetchone()[0] or '{}')
-        out.append({**item, 'sql': sql, 'values': values})
+        question, values = b.db.execute('SELECT question, params_json FROM bottle_event WHERE id = ?', (item['check_event'],)).fetchone()
+        out.append({**item, 'sql': sql, 'values': json.loads(values or '{}'), 'question': question})
     return frozen, out
 
 
