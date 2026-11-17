@@ -1,0 +1,397 @@
+{
+ "version": "clinical_trial_1",
+ "authored": "2026-11-17",
+ "authored_by": "Claude (triage trial session), before any arm ran",
+ "frozen": true,
+ "purpose": "Mike's direction (2026-11-17): realistic questions a sepsis readmission committee, a heart-failure program and a value-based care team ask, all answerable from EHR, claims, pharmacy and lab data; the hospital's own certified definitions only.",
+ "reference_module": "eval/tiered/clinical_trial_v1_references.py",
+ "customer_definitions": "eval/tiered/proof_v14_customer_definitions.json",
+ "phrasing": "One plain phrasing each.",
+ "scoring": "Proof scorecard, strict: +1 right, 0 declined, -10 wrong; cost per answer. Arms: stack (the full stack: hospital certified definitions and Agere governed definitions) and assistant (LLM alone at its best: top-tier model, SQL tool, the definitions document).",
+ "questions": [
+  {
+   "id": "C01",
+   "domain": "readmission committee",
+   "reference": "readmit_rate",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was our 30-day all-cause readmission rate in 2029?"
+   ]
+  },
+  {
+   "id": "C02",
+   "domain": "readmission committee",
+   "reference": "readmit_count",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many 30-day readmissions did we have in 2029?"
+   ]
+  },
+  {
+   "id": "C03",
+   "domain": "readmission committee",
+   "reference": "readmit_rate_by_hospital",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "Show the 2029 30-day readmission rate for each of our hospitals."
+   ]
+  },
+  {
+   "id": "C04",
+   "domain": "readmission committee",
+   "reference": "readmit_rate_by_payer",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was the 2029 readmission rate by payer type?"
+   ]
+  },
+  {
+   "id": "C05",
+   "domain": "readmission committee",
+   "reference": "median_days_to_readmit",
+   "args": [
+    "2028",
+    "2029"
+   ],
+   "phrasings": [
+    "For discharges in 2028 and 2029, what was the median number of days from discharge to readmission?"
+   ]
+  },
+  {
+   "id": "C06",
+   "domain": "readmission committee",
+   "reference": "readmit_rate_by_disposition",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "Compare 2029 readmission rates for patients discharged home, to a skilled nursing facility and elsewhere."
+   ]
+  },
+  {
+   "id": "C07",
+   "domain": "readmission committee",
+   "reference": "discharge_disposition_mix",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "Where were our inpatients discharged to in 2029?"
+   ]
+  },
+  {
+   "id": "S01",
+   "domain": "sepsis",
+   "reference": "sepsis_stays",
+   "args": [
+    "2026",
+    "2030"
+   ],
+   "phrasings": [
+    "How many sepsis hospitalizations did we have from 2026 through 2030?"
+   ]
+  },
+  {
+   "id": "S03",
+   "domain": "sepsis",
+   "reference": "sepsis_alos",
+   "args": [
+    "2026",
+    "2030"
+   ],
+   "phrasings": [
+    "What was the average length of stay for sepsis hospitalizations from 2026 through 2030?"
+   ]
+  },
+  {
+   "id": "S04",
+   "domain": "sepsis",
+   "reference": "sepsis_readmit_rate",
+   "args": [
+    "2026",
+    "2030"
+   ],
+   "phrasings": [
+    "What was the 30-day readmission rate after sepsis hospitalizations discharged from 2026 through 2030?"
+   ]
+  },
+  {
+   "id": "S09",
+   "domain": "sepsis",
+   "reference": "sepsis_stays",
+   "args": [
+    "2029",
+    "2029"
+   ],
+   "phrasings": [
+    "How many sepsis hospitalizations did we have in 2029?"
+   ]
+  },
+  {
+   "id": "H01",
+   "domain": "heart failure",
+   "reference": "hf_admissions",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many heart failure admissions did we have in 2029?"
+   ]
+  },
+  {
+   "id": "H02",
+   "domain": "heart failure",
+   "reference": "hf_readmit_rate",
+   "args": [
+    "2029",
+    "2029"
+   ],
+   "phrasings": [
+    "What was our heart failure 30-day readmission rate in 2029?"
+   ]
+  },
+  {
+   "id": "H03",
+   "domain": "heart failure",
+   "reference": "hf_alos",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was the average length of stay for heart failure admissions in 2029?"
+   ]
+  },
+  {
+   "id": "H04",
+   "domain": "heart failure",
+   "reference": "hf_mortality",
+   "args": [
+    "2029",
+    "2029"
+   ],
+   "phrasings": [
+    "What was in-hospital mortality for heart failure patients in 2029?"
+   ]
+  },
+  {
+   "id": "H05",
+   "domain": "heart failure",
+   "reference": "hf_repeat_patients",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many patients had two or more heart failure admissions in 2029?"
+   ]
+  },
+  {
+   "id": "H06",
+   "domain": "heart failure",
+   "reference": "hf_readmit_rate_by_hospital",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "Show the heart failure readmission rate by hospital for 2029."
+   ]
+  },
+  {
+   "id": "H07",
+   "domain": "heart failure",
+   "reference": "hf_potassium_within",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What share of heart failure patients discharged alive in 2028 had a potassium checked within 14 days of discharge?"
+   ]
+  },
+  {
+   "id": "H08",
+   "domain": "heart failure",
+   "reference": "hf_beta_blocker_fill_30d",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What share of heart failure patients discharged alive in 2028 filled an evidence-based beta-blocker within 30 days?"
+   ]
+  },
+  {
+   "id": "H09",
+   "domain": "heart failure",
+   "reference": "hf_sglt2_fill_30d",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What share of heart failure patients discharged alive in 2028 filled an SGLT2 inhibitor within 30 days?"
+   ]
+  },
+  {
+   "id": "H10",
+   "domain": "heart failure",
+   "reference": "hf_share_of_admissions",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What share of our 2029 admissions were for heart failure?"
+   ]
+  },
+  {
+   "id": "H11",
+   "domain": "heart failure",
+   "reference": "members_with_dx_category",
+   "args": [
+    "2029",
+    "I50"
+   ],
+   "phrasings": [
+    "How many health plan members had a heart failure diagnosis on a claim in 2029?"
+   ]
+  },
+  {
+   "id": "V01",
+   "domain": "value-based care",
+   "reference": "members",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many members did we cover in 2029?"
+   ]
+  },
+  {
+   "id": "V02",
+   "domain": "value-based care",
+   "reference": "pmpm",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What was medical spend per member per month in 2029?"
+   ]
+  },
+  {
+   "id": "V03",
+   "domain": "value-based care",
+   "reference": "pmpm_by_lob",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "Break down 2029 medical PMPM by line of business."
+   ]
+  },
+  {
+   "id": "V04",
+   "domain": "value-based care",
+   "reference": "ed_per_1000",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What were ED visits per 1,000 members in 2029?"
+   ]
+  },
+  {
+   "id": "V05",
+   "domain": "value-based care",
+   "reference": "admits_per_1000",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What were acute admissions per 1,000 members in 2029?"
+   ]
+  },
+  {
+   "id": "V06",
+   "domain": "value-based care",
+   "reference": "diabetic_members",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many members with diabetes did we have in 2029?"
+   ]
+  },
+  {
+   "id": "V07",
+   "domain": "value-based care",
+   "reference": "a1c_testing_rate",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What share of our diabetic members had an HbA1c test in 2029?"
+   ]
+  },
+  {
+   "id": "V08",
+   "domain": "value-based care",
+   "reference": "a1c_poor_control_rate",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What share of diabetic members were in poor control (HbA1c above 9 or untested) in 2029?"
+   ]
+  },
+  {
+   "id": "V09",
+   "domain": "value-based care",
+   "reference": "top_dx_by_paid",
+   "args": [
+    "2029",
+    "5"
+   ],
+   "phrasings": [
+    "What were the top five diagnoses by medical spend in 2029?"
+   ]
+  },
+  {
+   "id": "V10",
+   "domain": "value-based care",
+   "reference": "top5pct_spend_share",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What share of 2029 medical spend went to our costliest 5% of members?"
+   ]
+  },
+  {
+   "id": "V11",
+   "domain": "value-based care",
+   "reference": "frequent_ed_members",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many members had four or more ED visits in 2029?"
+   ]
+  },
+  {
+   "id": "V12",
+   "domain": "value-based care",
+   "reference": "sdoh_any_positive_rate",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "What share of members screened for social needs in 2029 screened positive for at least one need?"
+   ]
+  }
+ ],
+ "data_notes": "Only 7 sepsis stays at our hospitals in 2026-2030 (sepsis questions pooled); plan pharmacy claims thin after 2028 (heart-failure fill questions use 2028)."
+}

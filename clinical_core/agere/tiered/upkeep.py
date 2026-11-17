@@ -142,13 +142,14 @@ def check(bottle, question, params, model):
         db.close()
 
 
-# ---- candidate (off by default): a bounded equivalence check before a saved recipe is reused -------------------------------
+# ---- a bounded equivalence check before a saved recipe is reused (on by default from 2026-11-17, after its trial) ---------------
 # The gate above compares the saved recipe with a second model's query for ONE set of parameter values (full data and patient
 # subsets). A recipe can agree for 2029 and be wrong for 2027, or agree only because the data has no NULL where the two
 # queries treat NULL differently. This check searches for a counterexample, code only: the same two queries for every
 # parameter value the data holds (one parameter varied at a time, up to MAX_CASES) and on a copy of the tables they read
 # with one value in twenty set to NULL. It is a bounded search, not a proof of equivalence; passing means no counterexample
-# was found in these cases. Switch: AGERE_TIERED_EQUIVALENCE=on (promotion keeps a recipe provisional when it fails).
+# was found in these cases. Trial (2026-11-17): it found 6 real defects in promoted recipes, which an LLM alone caught 3 of.
+# On by default (AGERE_TIERED_EQUIVALENCE=off switches it off); promotion keeps a recipe provisional when it fails.
 import os as _os
 import re as _re
 
@@ -156,7 +157,19 @@ MAX_CASES = 12
 
 
 def equivalence_enabled():
-    return _os.environ.get('AGERE_TIERED_EQUIVALENCE', 'off') == 'on'
+    return _os.environ.get('AGERE_TIERED_EQUIVALENCE', 'on') == 'on'
+
+
+def gate(bottles, bottle):
+    """The promotion gate's equivalence step for one candidate. -> the bounded() result, or None when no second query was recorded
+    for it (nothing to compare; the rest of the gate decides)."""
+    if not equivalence_enabled(): return None
+    row = bottles.db.execute("SELECT params_json, detail_json FROM bottle_event WHERE bottle_id = ? AND kind = 'check_agree' "
+                             "AND detail_json LIKE '%second_sql%' ORDER BY id DESC LIMIT 1", (bottle['id'],)).fetchone()
+    if not row: return None
+    detail = json.loads(row[1] or '{}')
+    if len(detail.get('second_sql', '')) >= 600: return {'verdict': 'skipped', 'why': 'second query was truncated when recorded'}
+    return bounded(bottle['sql'], bottle.get('params') or {}, json.loads(row[0] or '{}'), detail['second_sql'], detail)
 
 
 def _placeholders(sql):

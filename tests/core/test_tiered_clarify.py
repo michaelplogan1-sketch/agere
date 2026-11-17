@@ -43,7 +43,8 @@ class Base(unittest.TestCase):
         self.dir = tempfile.TemporaryDirectory()
         self.patches = [mock.patch.object(clarify, 'DEFAULTS', str(Path(self.dir.name) / 'defaults.sqlite3')),
                         mock.patch.object(customer, 'relevant', lambda q: [('Visit', 'A visit is an inpatient admission or an ED visit; certified by finance.')]),
-                        mock.patch.object(store, 'own_facilities', lambda: ['WH-HOSPITAL-0', 'WH-HOSPITAL-1'])]
+                        mock.patch.object(store, 'own_facilities', lambda: ['WH-HOSPITAL-0', 'WH-HOSPITAL-1']),
+                        mock.patch.object(clarify, '_clock', lambda: '2030-05-27')]
         for p in self.patches: p.start()
 
     def tearDown(self):
@@ -103,6 +104,22 @@ class Conversation(Base):
         turn = clarify.begin(QUESTION, READINGS)
         self.assertEqual(turn['action'], 'ready'); self.assertNotIn('4120', turn['question'])
         self.assertIn('4120', turn['state']['steps'][0]['reason'])
+
+    def test_the_datas_own_date_anchors_last_year(self):
+        m = self.model(slm=[ask('Which?', 'A', 'B')])
+        clarify.begin('How many visits last year?', READINGS)
+        self.assertIn("'last year' is 2029", m.calls[0][1])
+
+    def test_what_the_person_answered_is_saved_even_when_the_model_lists_no_choices(self):
+        self.model(slm=[ask('Which visits?', 'Hospital visits', 'Appointments'), ready('How many hospital visits were there in 2029?')])
+        turn = clarify.begin(QUESTION, READINGS)
+        clarify.reply(turn['state'], '', turn['options'][0])
+        self.assertEqual(clarify.defaults(), [{'about': 'which visits?', 'choice': 'Hospital visits'}])
+
+    def test_a_period_is_never_saved_as_a_default(self):
+        clarify.save_defaults([{'about': 'Which year?', 'choice': '2025'}, {'about': 'which visits', 'choice': 'hospital visits'},
+                               {'about': 'which stay', 'choice': 'The readmission must start in 2025'}])
+        self.assertEqual(clarify.defaults(), [{'about': 'which visits', 'choice': 'hospital visits'}])
 
     def test_choices_are_saved_as_defaults_and_settle_the_next_question_without_asking(self):
         self.model(slm=[ready('How many inpatient admissions were there at our hospitals in 2029?', [{'about': 'Which visits', 'choice': 'inpatient admissions'}])])
@@ -173,6 +190,34 @@ class InTheApp(Base):
         self.assertEqual(got['answer']['answer_type'], 'composite')
         self.assertEqual([s['answer']['count'] for s in got['answer']['sections']], [4120, 9001])
         self.assertIn('side by side', got['answer']['limitations'][0])
+
+    def test_when_no_tier_and_no_takeover_answers_a_person_is_talked_with_not_left_with_nothing(self):
+        from clinical_core.agere.tiered import takeover
+        unanswered = {'status': 'unanswered', 'final_tier': None, 'steps': [], 'escalations': [], 'seconds': 0.1, 'recipe': None, 'validation': None, 'missing': 'x'}
+        self.model(slm=[ask('Do you mean ED notes or nursing notes?', 'ED notes', 'Nursing notes')])
+        with mock.patch.object(router, 'answer', lambda *a, **k: dict(unanswered)), mock.patch.object(takeover, 'answer', lambda *a, **k: None), \
+                mock.patch.dict(os.environ, {'AGERE_TIERED_TAKEOVER': 'on'}):
+            got = app._single(self.stack, 'How many notes mention a fall?')
+        self.assertEqual(got['answer']['status'], 'clarify'); self.assertEqual(got['clarification_checkpoint']['tiered']['kind'], 'conversation')
+
+    def test_the_frontier_models_own_question_becomes_the_conversation(self):
+        from clinical_core.agere.tiered import takeover
+        unanswered = {'status': 'unanswered', 'final_tier': None, 'steps': [], 'escalations': [], 'seconds': 0.1, 'recipe': None, 'validation': None, 'missing': 'x'}
+        asked = {'ask': 'Which?', 'options': ['ED notes', 'Nursing notes'], 'steps': [], 'seconds': 1.0, 'usd': 0.0, 'tokens': 0, 'queries': [], 'model': 'm'}
+        m = self.model(slm=[ask('ED notes or nursing notes?', 'ED notes', 'Nursing notes')])
+        with mock.patch.object(router, 'answer', lambda *a, **k: dict(unanswered)), mock.patch.object(takeover, 'answer', lambda *a, **k: dict(asked)), \
+                mock.patch.dict(os.environ, {'AGERE_TIERED_TAKEOVER': 'on'}):
+            got = app._single(self.stack, 'How many notes mention a fall?')
+        self.assertEqual(got['clarification_checkpoint']['tiered']['kind'], 'conversation'); self.assertIn('- ED notes: ED notes', m.calls[0][1])
+
+    def test_too_many_documents_to_read_asks_the_person_to_narrow_it(self):
+        wide = {'status': 'unanswered', 'final_tier': None, 'steps': [], 'seconds': 0.1, 'recipe': None, 'validation': None, 'missing': 'x',
+                'escalations': [{'from': 'llm', 'reason': 'execution error: The plan selects 73529 documents; this tier reads at most 150 per question'}]}
+        m = self.model(slm=[ask('Which period and which notes?', 'ED notes in 2029', 'All notes in 2029')])
+        with mock.patch.object(router, 'answer', lambda *a, **k: dict(wide)):
+            got = app._single(self.stack, 'How many patients had a fall?')
+        self.assertEqual(got['clarification_checkpoint']['tiered']['kind'], 'conversation')
+        self.assertIn('73529 documents', m.calls[0][1])
 
     def test_without_a_model_the_one_card_question_is_still_asked(self):
         self.model(slm=['x'], llm=['y'])

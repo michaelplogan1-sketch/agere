@@ -10,6 +10,7 @@ read adjudicates. Agreement before adjudication is reported, and 30 labels are s
 key is frozen in git before any arm runs.
 
 Arms, cheapest first, each run `runs` times so run-to-run consistency is measured:
+  app        THE AGERE ARM for comparisons: the whole stack as the app runs it (app.try_answer), frontier takeover included.
   readers    Agere's readers on the scope's documents (System One, then the small model, the frontier reader where they are
              unsure; code counts). Isolates reading.
   stack      Agere's whole stack from the question alone: the router (SQL selects the documents, the readers read, code counts).
@@ -288,6 +289,9 @@ def _setup():
     load_keys(); os.environ.pop('ANTHROPIC_API_KEY', None)
     os.environ.update({k: v for k, v in model_policy.ECONOMICAL_RUNTIME.items() if isinstance(v, str)})
     os.environ['AGERE_TIERED_AUTO_LEARN'] = 'off'
+    scratch = OUT / 'scratch'
+    os.environ.setdefault('AGERE_TIERED_BOTTLES', str(scratch / 'bottles.sqlite3'))   # the copy: the set never teaches the stack
+    os.environ.setdefault('AGERE_TIERED_LEDGER', str(scratch / 'ledger.sqlite3'))
 
 
 def _readers_arm(q, scratch, run):
@@ -311,6 +315,7 @@ def _value_from_rows(aggregate, columns, rows):
     """The figure an answer table gives for this kind of question, or None. Column-aware, the same for every question."""
     columns = [str(c).lower() for c in columns or []]
     rows = rows or []
+    if not rows: return [] if aggregate == 'list_patients' else 0   # an answer of no rows says "none": scored, not a decline
     def distinct(col): return sorted({str(r[columns.index(col)]) for r in rows if r[columns.index(col)] is not None})
     single = len(rows) == 1 and [v for v in rows[0] if isinstance(v, (int, float)) and not isinstance(v, bool)]
     if aggregate == 'list_patients':
@@ -417,6 +422,35 @@ def _emr_arm(q, scratch, run):
         db.close()
 
 
+_STACK = []
+
+
+def _app_arm(q, scratch, run):
+    """THE WHOLE STACK, as the app runs it (app.try_answer): methods, split, every router tier and the frontier takeover when
+    no tier answers. No person is present, so it never stops to ask; it answers or the takeover answers."""
+    from . import app
+    from ..clinical import clarification
+    with _lock:
+        if not _STACK:
+            from ..local_release import validate_config
+            from ..clinical.stack_runtime import Stack
+            config = os.environ.get('AGERE_TIERED_STACK_CONFIG') or 'artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/active-config.json'
+            _STACK.append(Stack(Path(validate_config(config)['build']) / 'stack', allow_live=False))
+    with clarification.interaction('autonomous'):
+        result = app.try_answer(_STACK[0], q['question'])
+    if result is None:
+        return {'value': None, 'status': 'no_tiered_answer', 'usd': 0.0, 'tokens': 0, 'tier': None}
+    answer, receipt = result.get('answer') or {}, result.get('planner_receipt') or {}
+    table = answer.get('table') or []
+    columns = list(table[0]) if table else []
+    rows = [[r.get(c) for c in columns] for r in table]
+    status = 'answered' if answer.get('status') in ('answered', 'partial') else str(answer.get('status'))
+    value = _value_from_rows(q['aggregate'], columns, rows) if status == 'answered' else None
+    steps = receipt.get('steps') or []
+    return {'value': value, 'status': status, 'tier': receipt.get('final_tier'), 'usd': (result.get('planning_economics') or {}).get('known_api_estimate_usd') or 0.0,
+            'tokens': sum(st.get('tokens', 0) for st in steps if isinstance(st, dict)), 'columns': columns, 'rows': rows[:40], 'headline': str(answer.get('headline') or '')[:300]}
+
+
 _KEYED = {}
 
 
@@ -426,7 +460,7 @@ def keyed_documents(qid):
 
 
 TAG = ('-' + os.environ['AGERE_NOTES_TAG']) if os.environ.get('AGERE_NOTES_TAG') else ''   # a later version of an arm (a re-score) keeps its own journal
-ARMS = {'readers': _readers_arm, 'stack': _stack_arm, 'llm_alone': _alone_arm, 'emr_assistant': _emr_arm}
+ARMS = {'readers': _readers_arm, 'stack': _stack_arm, 'app': _app_arm, 'llm_alone': _alone_arm, 'emr_assistant': _emr_arm}
 
 
 def estimate():
@@ -455,7 +489,10 @@ def run(arms, runs=2, workers=4):
         path, done = _journal(f'journal-{data["version"]}-{arm}{TAG}.jsonl')
         have = {(r['qid'], int(r['run'])) for r in done}
         first = int(os.environ.get('AGERE_NOTES_FIRST', '0')) or len(data['questions'])   # a cost probe on the first N questions; the rest resume later
-        jobs = [(q, r) for r in range(int(runs)) for q in data['questions'][:first] if q['id'] in keyed and (q['id'], r) not in have]
+        only = os.environ.get('AGERE_NOTES_RUN_ONLY')   # one run per process (the app arm: each run starts from a fresh copy of the saved recipes)
+        pick = set(filter(None, os.environ.get('AGERE_NOTES_QIDS', '').split(',')))   # re-run named questions only
+        jobs = [(q, r) for r in ([int(only)] if only else range(int(runs))) for q in data['questions'][:first]
+                if q['id'] in keyed and (q['id'], r) not in have and (not pick or q['id'] in pick)]
         print(f'{arm}: {len(have)} answers saved, {len(jobs)} to run', flush=True)
         stopped = []
 
