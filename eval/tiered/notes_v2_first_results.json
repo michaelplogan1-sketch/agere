@@ -1,0 +1,64 @@
+{
+ "key_agreement": {
+  "documents": 811,
+  "agree_before_adjudication": 810,
+  "share": 0.9988,
+  "kappa": 0.997,
+  "adjudicated": 1,
+  "yes_share": 0.3958,
+  "by_source": {
+   "clinical_note": {
+    "documents": 463,
+    "agree": 462,
+    "share": 0.9978
+   },
+   "hie_document": {
+    "documents": 182,
+    "agree": 182,
+    "share": 1.0
+   },
+   "scanned_document": {
+    "documents": 166,
+    "agree": 166,
+    "share": 1.0
+   }
+  }
+ },
+ "arms": {
+  "app": {
+   "runs": 2,
+   "answers": 120,
+   "right": 70,
+   "wrong": 36,
+   "declined": 14,
+   "accuracy": 0.5833,
+   "score": -290,
+   "usd_per_question": 0.1338,
+   "seconds_per_question": 48.3,
+   "same_answer_every_run": "45 of 60",
+   "document_reads_right": null,
+   "right_per_run": [
+    35,
+    35
+   ],
+   "errors": 0
+  },
+  "emr_assistant": {
+   "runs": 1,
+   "answers": 32,
+   "right": 29,
+   "wrong": 3,
+   "declined": 0,
+   "accuracy": 0.9062,
+   "score": -1,
+   "usd_per_question": 0.592,
+   "seconds_per_question": 52.0,
+   "same_answer_every_run": null,
+   "document_reads_right": 0.9881,
+   "right_per_run": [
+    29
+   ],
+   "errors": 0
+  }
+ }
+}
