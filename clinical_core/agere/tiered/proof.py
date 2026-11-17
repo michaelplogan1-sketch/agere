@@ -922,6 +922,8 @@ def _right(reference, rows):
 # decimals within 0.06; text labels matched case-insensitively. Each reference row must be found in its own answer row, and
 # the row counts must agree. Used for the assistant comparison and for regrading every arm's stored answers alike.
 STRICT = os.environ.get('AGERE_PROOF_STRICT', 'off') == 'on'
+# AGERE_PROOF_TIERS limits the ladder arms to some rungs (a trial of one rung's decisions, e.g. recipes,system1,slm).
+LADDER = tuple(t for t in os.environ.get('AGERE_PROOF_TIERS', '').split(',') if t)
 
 
 def _value_ok(ref, got):
@@ -985,6 +987,13 @@ def outcome_kind(item, o):
     return 'right' if any(_right(ref, o['rows']) for ref in item.get('references') or [item['reference']]) else 'wrong'
 
 
+def candidate_switches():
+    """Trial arms: arm name -> the context switch of a candidate that is off by default. Each arm is the full stack ('stack')
+    with that one candidate on; every other arm runs with it off."""
+    from . import models, readings
+    return {'stack_voi': readings.VOI, 'stack_prefix': models.STABLE_PREFIX}
+
+
 def run(runs=3, workers=4):
     from .. import model_policy
     os.environ.pop('ANTHROPIC_API_KEY', None)
@@ -1044,8 +1053,12 @@ def run(runs=3, workers=4):
 
     from . import catalogue, governed, knowledge, readings
 
+    switches = candidate_switches()
+
     def one(job):
         item, arm, r = job
+        for name, var in switches.items(): var.set(arm == name)   # a trial arm is the stack with one candidate switched on
+        arm_name, arm = arm, ('stack' if arm in switches else arm)
         # *_knowledge arms add the clinical knowledge layer with its unreviewed candidates (an evaluation of the candidates);
         # every other arm runs without it, whatever the environment says.
         knowledge.ENABLED.set('candidates' if arm.endswith('_knowledge') else 'off')
@@ -1058,18 +1071,22 @@ def run(runs=3, workers=4):
                 from . import assistant
                 o = assistant.answer(item['question'])
             else:
-                o = router.answer(item['question'], tiers=router.ALL_TIERS if ladder else ('llm',), bottles=bottles() if ladder else None,
+                o = router.answer(item['question'], tiers=(LADDER or router.ALL_TIERS) if ladder else ('llm',), bottles=bottles() if ladder else None,
                               s1_ledger=str(scratch / 's1.sqlite3'))
         except Exception as exc:
             if 'limit' in str(exc).lower(): raise
             o = {'status': 'error', 'final_tier': None, 'rows': None, 'steps': [], 'seconds': 0.0}
-        return {'id': item['id'], 'phrasing': item['phrasing'], 'domain': item['domain'], 'arm': arm, 'run': r, 'unanswerable': item['unanswerable'],
+        return {'id': item['id'], 'phrasing': item['phrasing'], 'domain': item['domain'], 'arm': arm_name, 'run': r, 'unanswerable': item['unanswerable'],
                 'kind': outcome_kind(item, o), 'tier': o.get('final_tier'), 'usd': sum(s.get('usd', 0.0) for s in o['steps']), 'seconds': o.get('seconds', 0.0),
                 # frontier calls and the tokens sent: cost that does not depend on the transport's caching
                 'frontier_calls': sum(1 for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
                 'frontier_tokens': sum(s.get('tokens', 0) for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
+                'cache_read': sum(s.get('cache_read', 0) for s in o['steps'] if s.get('model')), 'cache_write': sum(s.get('cache_write', 0) for s in o['steps'] if s.get('model')),
+                'input_uncached': sum(s.get('input', 0) for s in o['steps'] if s.get('model')),
                 'checks_rejected': sum(1 for s in o['steps'] if 'Governed definition' in str(s.get('reason', ''))),
                 'rows': (o.get('rows') or [])[:3] if o.get('status') != 'needs_choice' else {x['id']: (x.get('rows') or [])[:3] for x in o.get('readings') or []},
+                's1': [[s.get('check') or 'classify', s.get('label'), s.get('confidence'), s.get('model')] for s in o['steps'] if s.get('tier') == 'system1' and 'confidence' in s] or None,
+                'readings_checked': {k: v for k, v in (o.get('readings_checked') or {}).items() if k in ('agree', 'answered_as', 'voi', 'others')} or None,
                 'question': item['question']}
 
     arms = tuple(os.environ.get('AGERE_PROOF_ARMS', 'stack,stack_plain,frontier').split(','))
@@ -1077,7 +1094,7 @@ def run(runs=3, workers=4):
     # Every result is written the moment it is scored, to a journal named for the set, its arms and grading. A run stopped by a
     # provider's usage limit keeps what it answered, and the next run with the same settings answers only what is missing
     # (2026-11-16: a three-arm run on proof_v13 hit the weekly limit and, saving only at the end, lost every answer).
-    tag = '-'.join([str(data.get('version')), '+'.join(arms), f'runs{runs}', 'strict' if STRICT else 'standard',
+    tag = '-'.join([str(data.get('version')), '+'.join(arms), *(['tiers' + '+'.join(LADDER)] if LADDER else []), *(['s1collect'] if os.environ.get('AGERE_TIERED_S1_COLLECT') == 'on' else []), f'runs{runs}', 'strict' if STRICT else 'standard',
                     'phrasings' + (os.environ.get('AGERE_PROOF_PHRASINGS') or 'all').replace(',', '+')])
     journal = OUT / f'journal-{tag}.jsonl'
     OUT.mkdir(parents=True, exist_ok=True)
@@ -1126,6 +1143,8 @@ def report(results, items, runs, wall, data):
              'frontier': "frontier model writing its own SQL from the schema (run through the stack's checks, no governed definitions)",
              'stack_knowledge': 'Agere stack with the clinical knowledge layer (cited candidate definitions, their code checks and declines)',
              'frontier_knowledge': 'frontier model writing its own SQL with the clinical knowledge layer only (no governed definitions)',
+             'stack_prefix': 'Agere stack with the stable prompt prefix (candidate: question-specific text moved out of the system prompt)',
+             'stack_voi': 'Agere stack with value-of-information clarification (candidate: asks only when the readings differ enough to matter)',
              'assistant': 'general-purpose assistant at its best: top-tier model, read-only SQL tool (up to 8 steps), the whole definitions document, no Agere checks'}
     for arm, name in names.items():
         rs = [r for r in results if r['arm'] == arm]

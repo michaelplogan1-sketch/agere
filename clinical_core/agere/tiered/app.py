@@ -389,6 +389,10 @@ def _climb(stack, question, cohort, takeover_ok, near):
     checked = outcome.get('readings_checked') or {}
     if checked.get('agree'):
         answer['facts']['two_readings'] = f"This question can be read as {' or '.join(r.lower() for r in checked['readings'])}; both were computed and give the same answer."
+    elif checked.get('voi'):   # value-of-information candidate: the readings differ too little to be worth asking
+        others = '; '.join(f"{x['label'].lower()}: {x['rows'][0][-1] if x['rows'] else 'none'}" for x in checked.get('others') or [])
+        answer['facts']['two_readings'] = (f"This question can be read more than one way. The readings differ too little to change the answer, so Agere "
+                                           f"did not ask: shown as \"{checked['answered_as'].lower()}\"; the other reading gives {others}.")
     elif checked.get('answered_as'):
         answer['facts']['two_readings'] = f"This question can be read more than one way; only the reading \"{checked['answered_as'].lower()}\" could be answered, and that is what is shown."
     elif outcome.get('two_readings'):

@@ -142,6 +142,136 @@ def check(bottle, question, params, model):
         db.close()
 
 
+# ---- candidate (off by default): a bounded equivalence check before a saved recipe is reused -------------------------------
+# The gate above compares the saved recipe with a second model's query for ONE set of parameter values (full data and patient
+# subsets). A recipe can agree for 2029 and be wrong for 2027, or agree only because the data has no NULL where the two
+# queries treat NULL differently. This check searches for a counterexample, code only: the same two queries for every
+# parameter value the data holds (one parameter varied at a time, up to MAX_CASES) and on a copy of the tables they read
+# with one value in twenty set to NULL. It is a bounded search, not a proof of equivalence; passing means no counterexample
+# was found in these cases. Switch: AGERE_TIERED_EQUIVALENCE=on (promotion keeps a recipe provisional when it fails).
+import os as _os
+import re as _re
+
+MAX_CASES = 12
+
+
+def equivalence_enabled():
+    return _os.environ.get('AGERE_TIERED_EQUIVALENCE', 'off') == 'on'
+
+
+def _placeholders(sql):
+    return list(dict.fromkeys(_re.findall(r'(?<![:\w]):([A-Za-z_]\w*)', sql or '')))
+
+
+def _second_params(second_sql, detail, values):
+    """-> (the second query's values, link: its parameter -> the saved recipe's parameter it follows), or (None, {}).
+    Values as recorded when the check recorded them; otherwise matched to the saved recipe's by name, then by value."""
+    recorded = {k: str(v) for k, v in (detail.get('second_params') or {}).items()}
+    out, link = {}, {}
+    for name in _placeholders(second_sql):
+        if name in recorded: out[name] = recorded[name]
+        elif name in values: out[name] = str(values[name])
+        else:   # a parameter of the second query whose value was not recorded: the check cannot be replayed
+            return None, {}
+        follow = [k for k, v in values.items() if k == name] or [k for k, v in values.items() if str(v) == out[name]]
+        if len(follow) == 1: link[name] = follow[0]
+    return out, link
+
+
+def _text_domain(db, sql, name, current, limit=4):
+    col = _re.search(rf'(\w+)\s*(?:=|IN\s*\()\s*:{name}\b', sql, _re.I)
+    if not col: return [current]
+    col = col.group(1)
+    for (table,) in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view') UNION SELECT name FROM sqlite_temp_master WHERE type IN ('table','view')"):
+        if not _re.search(rf'\b{_re.escape(table)}\b', sql): continue
+        try:
+            vals = [r[0] for r in db.execute(f'SELECT "{col}", COUNT(*) FROM "{table}" WHERE "{col}" IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT {limit}')]
+        except Exception:
+            continue
+        if vals: return list(dict.fromkeys([current] + [str(v) for v in vals]))
+    return [current]
+
+
+def parameter_cases(db, sql, params, values):
+    """-> [values]: the original values, then one parameter varied at a time over the values the data holds."""
+    cases = [dict(values)]
+    for name, spec in (params or {}).items():
+        t, cur = spec.get('type'), values.get(name)
+        if cur is None: continue
+        if t == 'year': alt = [str(y) for y in range(2026, 2031)]
+        elif t == 'month': alt = [f'{y}-{m:02d}' for y, m in ((2026, 7), (2027, 3), (2028, 12), (2029, 1), (2030, 6))]
+        elif t == 'int':
+            n = int(cur); alt = sorted({1, 3, max(1, n // 2), n * 2, 10})
+        elif t == 'text': alt = _text_domain(db, sql, name, str(cur))
+        else: alt = []
+        for v in alt:
+            if str(v) != str(cur): cases.append({**values, name: int(v) if t == 'int' else str(v)})
+    return cases[:MAX_CASES]
+
+
+def _with_nulls(db, sql):
+    """Shadow each table the query reads with a TEMP copy where one non-key value in twenty is NULL (the main file stays
+    read-only)."""
+    names = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type = 'table'")]
+    used = [t for t in names if _re.search(rf'\b{_re.escape(t)}\b', sql)]
+    db.execute('PRAGMA query_only=OFF')
+    try:
+        for t in used:
+            db.execute(f'DROP TABLE IF EXISTS temp."{t}"')
+            db.execute(f'CREATE TEMP TABLE "{t}" AS SELECT * FROM main."{t}"')
+            cols = [r[1] for r in db.execute(f'PRAGMA main.table_info("{t}")') if not (r[1] == 'id' or r[1].endswith('_id') or r[5])]
+            for i, c in enumerate(cols):
+                db.execute(f'UPDATE temp."{t}" SET "{c}" = NULL WHERE (rowid + {i}) % 20 = 7')
+    finally:
+        db.execute('PRAGMA query_only=ON')
+    return used
+
+
+def bounded(saved_sql, saved_params, values, second_sql, detail):
+    """-> {'verdict': 'agree' | 'differ_parameters' | 'differ_nulls' | 'skipped', 'cases', 'counterexample'}. Code only."""
+    second, link = _second_params(second_sql, detail, values)
+    if second is None: return {'verdict': 'skipped', 'why': 'second query parameters could not be matched'}
+    db = store.connect()
+    try:
+        cases = parameter_cases(db, saved_sql, saved_params, values)
+        def both(v):
+            other = {k: (v[link[k]] if k in link else second[k]) for k in second}
+            a = store.run(saved_sql, v, db)[1]; b = store.run(second_sql, other, db)[1]
+            return _same(a, b, loose=True), a, b
+        for v in cases:
+            ok, a, b = both(v)
+            if not ok: return {'verdict': 'differ_parameters', 'cases': len(cases), 'counterexample': {'values': v, 'saved': str(a[:3])[:200], 'second': str(b[:3])[:200]}}
+        _with_nulls(db, saved_sql + ' ' + second_sql)
+        ok, a, b = both(values)
+        if not ok: return {'verdict': 'differ_nulls', 'cases': len(cases) + 1, 'counterexample': {'values': values, 'saved': str(a[:3])[:200], 'second': str(b[:3])[:200]}}
+        return {'verdict': 'agree', 'cases': len(cases) + 1}
+    except store.RecipeError as exc:
+        return {'verdict': 'skipped', 'why': str(exc)[:160]}
+    finally:
+        db.close()
+
+
+def equivalence_sweep(out='artifacts/agere-tiered-core/trials/equivalence-journal.jsonl', only=None):
+    """Every promoted recipe with a recorded second-model query, checked by bounded(); each result is appended as it is scored,
+    and a rerun skips recipes already in the journal."""
+    bottles = bottle_store.Bottles()
+    path = Path(out); path.parent.mkdir(parents=True, exist_ok=True)
+    done = {json.loads(l)['bottle'] for l in path.read_text().splitlines() if l.strip()} if path.exists() else set()
+    rows = bottles.db.execute("SELECT e.bottle_id, e.question, e.params_json, e.detail_json, b.sql, b.params_json, b.template FROM bottle_event e JOIN bottle b ON b.id = e.bottle_id "
+                              "WHERE b.status = 'promoted' AND e.kind = 'check_agree' AND e.detail_json LIKE '%second_sql%' ORDER BY e.id").fetchall()
+    first = {}
+    for r in rows: first.setdefault(r[0], r)   # the check that promoted it
+    counts = Counter()
+    for bid, question, values, detail, sql, params, template in first.values():
+        if (only and bid not in only) or bid in done: continue
+        detail = json.loads(detail or '{}')
+        if len(detail.get('second_sql', '')) >= 600: res = {'verdict': 'skipped', 'why': 'second query was truncated when recorded'}
+        else: res = bounded(sql, json.loads(params or '{}'), json.loads(values or '{}'), detail['second_sql'], detail)
+        counts[res['verdict']] += 1
+        with open(path, 'a') as f: f.write(json.dumps({'bottle': bid, 'template': template, 'question': question, **res}, default=str) + '\n')
+    return dict(counts)
+
+
 def recheck_doubtful(workers=4):
     """Recipes with any recorded disagreement are checked again with the current comparison. Their earlier checks are kept
     in the record but marked superseded, so the rule reads only the new ones; a suspended recipe that now agrees is restored."""
@@ -275,6 +405,8 @@ def report(ledger_path='artifacts/agere-tiered-core/ledger.sqlite3'):
 
 
 def main(argv):
+    if argv[:1] == ['equivalence']:
+        print(equivalence_sweep()); return
     if argv[:1] == ['backfill']: print(json.dumps(backfill())); return
     if argv[:1] == ['sweep']: print(json.dumps(sweep(int(argv[1]) if len(argv) > 1 else None, int(argv[2]) if len(argv) > 2 else 4), indent=1)); return
     if argv[:1] == ['recheck']: print(json.dumps(recheck_doubtful(int(argv[1]) if len(argv) > 1 else 4), indent=1)); return

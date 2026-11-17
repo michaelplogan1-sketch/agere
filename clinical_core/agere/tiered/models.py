@@ -10,12 +10,28 @@ import os
 import re
 import sqlite3
 import time
+from pathlib import Path
 
 from . import ledger, recipes, store
 
 LLM = os.environ.get('AGERE_TIERED_LLM', 'claude-sonnet-5-5')
 SLM = os.environ.get('AGERE_TIERED_SLM', 'claude-haiku-5-5')
 S1_THRESHOLD = 0.8
+# Candidate (off by default): fitted cut-offs per System One decision type, from config/agere/s1_thresholds.json
+# ({"classify": 0.x, "exact_fit": 0.y}); AGERE_TIERED_FITTED_THRESHOLDS=on uses them, a type not in the file keeps 0.8.
+# AGERE_TIERED_S1_COLLECT=on accepts every label (cut-off 0) so a trial can record what each cut-off would have done; the
+# provider fallback (Perplexity, then Jev below 0.8) is unchanged in both.
+S1_THRESHOLDS_FILE = 'config/agere/s1_thresholds.json'
+
+
+def s1_threshold(kind):
+    if os.environ.get('AGERE_TIERED_S1_COLLECT', 'off') == 'on': return 0.0
+    if os.environ.get('AGERE_TIERED_FITTED_THRESHOLDS', 'off') == 'on':
+        try:
+            return float(json.loads(Path(S1_THRESHOLDS_FILE).read_text()).get(kind, S1_THRESHOLD))
+        except (OSError, ValueError):
+            return S1_THRESHOLD
+    return S1_THRESHOLD
 
 
 def _json(text):
@@ -63,6 +79,7 @@ class ProviderUnavailable(RuntimeError):
 
 # Set while one reading of an ambiguous question is answered, so that reading is answered, not split again.
 NO_READINGS = contextvars.ContextVar('agere_no_readings', default=False)
+STABLE_PREFIX = contextvars.ContextVar('agere_stable_prefix', default=None)   # candidate switch; None follows AGERE_TIERED_STABLE_PREFIX
 
 
 def is_limit(exc):
@@ -71,6 +88,8 @@ def is_limit(exc):
 
 def _claude(model, system, user, timeout=180):
     started = time.monotonic()
+    from .. import phi_route
+    route = phi_route.check(phi_route.route_for(os.environ.get('AGERE_CLAUDE_TRANSPORT', '')))   # candidate guard, off by default
     try:
         if os.environ.get('AGERE_CLAUDE_TRANSPORT', '').strip().lower() == 'api':
             text, usage = _api(model, system, user)
@@ -82,7 +101,9 @@ def _claude(model, system, user, timeout=180):
         raise
     except Exception as exc:   # one of two kinds, so callers decide by type, not by reading the message
         raise (ProviderLimit if is_limit(exc) else ProviderUnavailable)(f'{type(exc).__name__}: {str(exc)[:300]}') from exc
-    return text, {'model': model, 'tokens': ledger.tokens(usage), 'usd': ledger.claude_usd(model, usage), 'seconds': round(time.monotonic() - started, 2)}
+    return text, {'model': model, 'tokens': ledger.tokens(usage), 'usd': ledger.claude_usd(model, usage), 'seconds': round(time.monotonic() - started, 2),
+                  'route': route, 'cache_read': int(usage.get('cache_read_input_tokens') or 0), 'cache_write': int(usage.get('cache_creation_input_tokens') or 0),
+                  'input': int(usage.get('input_tokens') or 0)}
 
 
 DEFINITIONS = os.environ.get('AGERE_TIERED_DEFINITIONS', 'nearest')   # 'nearest' (default from 2026-11-16, proof_v6): the closest few recipes' SQL; 'all': every recipe's
@@ -278,6 +299,7 @@ def llm_recipe(question, error=None, model=None, examples=None):
     """Tier 4. -> (recipe dict or None, step). error: one SQL execution error to correct, if any.
     model: a different model for an independent second query (curriculum.confirm); the frontier model by default."""
     from . import catalogue
+    stable = False
     if store.foreign():
         # A warehouse that is not this semantic layer and has no mapping: the same rules, its own tables and vocabulary, and
         # none of this layer's recipes, vocabulary or governed definitions, which name tables it does not have.
@@ -287,9 +309,17 @@ def llm_recipe(question, error=None, model=None, examples=None):
             conditions = ', '.join(r[0] for r in store.run("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition' ORDER BY 1")[1])
         except store.RecipeError:
             conditions = '(not listed: this mapped warehouse has no concept_patient table)'
-        system = (LLM_SYSTEM % (store.schema_text(), definitions(question), conditions)).replace('NO_READINGS_NOTE',
+        # Candidate (off by default, AGERE_TIERED_STABLE_PREFIX): the system prompt holds only what is the same for every question
+        # (rules, schema, vocabulary), so the provider's prompt cache can reuse it; the reference SQL chosen for this question and
+        # the governed definitions it brings move to the start of the message.
+        stable = STABLE_PREFIX.get() if STABLE_PREFIX.get() is not None else os.environ.get('AGERE_TIERED_STABLE_PREFIX', 'off') == 'on'
+        moved = definitions(question)
+        system = (LLM_SYSTEM % (store.schema_text(), '(given at the start of the message)' if stable else moved, conditions)).replace('NO_READINGS_NOTE',
                   'This question is already one reading of an earlier question: answer it; do not return readings.' if NO_READINGS.get() else '') + warehouse_vocabulary()
         governed = catalogue.block(question) if catalogue.enabled() else ''
+        if stable:
+            prefix_user = 'Existing definitions (reference SQL):\n' + moved + ('\n\n' + governed if governed else '') + '\n\n'
+            governed = ''
     if governed: system += '\n\n' + governed
     from . import knowledge   # cited clinical definitions (enforced ones; candidates only in an evaluation run)
     clinical = knowledge.block(question)
@@ -299,6 +329,7 @@ def llm_recipe(question, error=None, model=None, examples=None):
     user = ('Verified saved queries for similar questions follow. They answer other questions: reuse their tables, joins and '
             'definitions only where this question asks the same thing, and write your own SQL for what differs.\n' + shown + '\n' if shown else '') + \
            'Question: ' + question + ('\n\nYour previous SQL failed to execute: ' + error + '\nReturn a corrected JSON object.' if error else '')
+    if not store.foreign() and stable: user = prefix_user + user
     text, step = _claude(model or LLM, system, user)
     try:
         out = _json(text)
@@ -403,8 +434,9 @@ def s1_classify(question, ledger_path=None):
         if label and p >= S1_THRESHOLD: break
     step = {'tier': 'system1', 'model': provider, 'tokens': 0, 'usd': steps_cost, 'seconds': round(time.monotonic() - started, 2),
             'confidence': round(p, 4), 'label': label, **({'error': error} if error and not provider else {})}
-    if not label or label == 'none' or p < S1_THRESHOLD or label not in recipes.RECIPES:
-        return None, p, {**step, 'outcome': 'low_confidence' if label and label != 'none' and p < S1_THRESHOLD else 'no_matching_shape'}
+    cut = s1_threshold('classify')
+    if not label or label == 'none' or p < cut or label not in recipes.RECIPES:
+        return None, p, {**step, 'outcome': 'low_confidence' if label and label != 'none' and p < cut else 'no_matching_shape'}
     return label, p, {**step, 'outcome': 'classified'}
 
 
@@ -432,6 +464,6 @@ def s1_fit(question, recipe_id, params, ledger_path=None):
         usd += out.get('cost_usd') or 0.0
         label = out.get('label'); p = float((out.get('probabilities') or {}).get(label, 0.0)) if label else 0.0; provider = name
         if label and p >= S1_THRESHOLD: break
-    ok = label == 'exact' and p >= S1_THRESHOLD
+    ok = label == 'exact' and p >= s1_threshold('exact_fit')
     return ok, {'tier': 'system1', 'check': 'exact_fit', 'model': provider, 'tokens': 0, 'usd': usd, 'seconds': round(time.monotonic() - started, 2),
                 'label': label, 'confidence': round(p, 4), 'outcome': 'fits' if ok else 'not_exact_fit', **({'error': error} if error and not provider else {})}

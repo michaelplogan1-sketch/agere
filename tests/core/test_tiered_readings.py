@@ -76,5 +76,42 @@ class Router(unittest.TestCase):
         self.assertEqual(m.call_count, 1)
 
 
+class ValueOfInformation(unittest.TestCase):
+    """Candidate (off by default): ask only when the readings differ enough to matter (research branch formula)."""
+    Q = Router.Q
+
+    def run_with(self, by_reading, ask_first=False):
+        def ladder(question, **kw):
+            return by_reading['patients' if 'each patient once' in question else 'events']
+        token = readings.VOI.set(True)
+        try:
+            with mock.patch.object(router, '_ladder', side_effect=ladder):
+                return router.answer(self.Q, ask_first=ask_first)
+        finally:
+            readings.VOI.reset(token)
+
+    def test_off_by_default(self):
+        self.assertFalse(readings.voi_enabled())
+
+    def test_small_difference_is_answered_and_says_so(self):
+        o = self.run_with({'patients': outcome([[0.1626]]), 'events': outcome([[0.1625]])})
+        self.assertEqual(o['status'], 'answered')
+        self.assertEqual(o['readings_checked']['others'][0]['rows'], [[0.1625]])
+        self.assertFalse(o['readings_checked']['voi']['ask'])
+
+    def test_large_difference_asks(self):
+        o = self.run_with({'patients': outcome([[175]]), 'events': outcome([[261]])})
+        self.assertEqual(o['status'], 'needs_choice')
+
+    def test_ask_first_computes_then_asks_only_when_it_matters(self):
+        self.assertEqual(self.run_with({'patients': outcome([[175]]), 'events': outcome([[261]])}, ask_first=True)['status'], 'needs_clarification')
+        self.assertEqual(self.run_with({'patients': outcome([[11]]), 'events': outcome([[11]])}, ask_first=True)['status'], 'answered')
+
+    def test_branch_arithmetic(self):
+        v = readings.value_of_asking([[[100]], [[150]]])   # distance 50/150; uniform prior; gross = half of it
+        self.assertAlmostEqual(v['gross'], 1 / 6, places=5)
+        self.assertTrue(v['ask'])
+
+
 if __name__ == '__main__':
     unittest.main()
