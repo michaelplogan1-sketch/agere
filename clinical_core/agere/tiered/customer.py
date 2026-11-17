@@ -60,9 +60,10 @@ def install(db):
         v = d.get('view')
         if not isinstance(v, dict): continue
         name, sql = str(v.get('name', '')), str(v.get('sql', '')).strip().rstrip(';')
-        if not re.fullmatch(r'cust_[a-z0-9_]+', name) or ';' in sql or not re.match(r'(?is)^\s*(select|with)\b', sql) \
-                or re.search(r'(?i)\b(attach|pragma|insert|update|delete|drop|alter|create|replace|vacuum)\b', sql):
-            _problems.append(f"{d['id']}: view must be named cust_* and be one read-only SELECT"); continue
+        # A view's body can only be a SELECT (SQLite refuses anything else) and connections are read-only, so no keyword list:
+        # one rejected REPLACE(), a text function, in 11 of an evaluator's 20 definitions (proof_v14).
+        if not re.fullmatch(r'cust_[a-z0-9_]+', name) or ';' in sql or not re.match(r'(?is)^\s*(select|with)\b', sql):
+            _problems.append(f"{d['id']}: view must be named cust_* and be one SELECT"); continue
         try:
             db.execute(f'CREATE TEMP VIEW {name} AS {sql}')
             db.execute(f'SELECT * FROM {name} LIMIT 0').fetchall()

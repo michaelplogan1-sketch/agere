@@ -428,7 +428,9 @@ def run(sql, params=None, db=None):
     # any read of document text in a recipe, however the query is written; documents are read only through texts().
     if re.search(r'(?i)\b(concept|drug_class)\s*\)?\s+(not\s+)?(like|glob)\b', text):
         raise RecipeError('Compare concept and drug_class with = or IN against exact vocabulary values; LIKE would also match other values (diabetes matches prediabetes)')
-    if re.search(r'(?i)\b(attach|pragma|insert|update|delete|drop|alter|create|replace|vacuum)\b', text):
+    # Statements that write or change the database (REPLACE alone is also a text function, allowed as one); the connection is
+    # read-only and query_only besides.
+    if re.search(r'(?i)\b(attach|pragma|insert|update|delete|drop|alter|create|vacuum)\b|\breplace\s+into\b|^\s*replace\b', text):
         raise RecipeError('A recipe may only read')
     own = db is None
     db = db or connect()
