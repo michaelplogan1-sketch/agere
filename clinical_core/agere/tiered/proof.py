@@ -929,6 +929,8 @@ def _value_ok(ref, got):
     if isinstance(ref, (int, float)) and isinstance(got, (int, float)):
         if isinstance(ref, int) and float(ref).is_integer() and (not isinstance(got, float) or float(got).is_integer()): return int(ref) == int(got)
         if 0 < abs(ref) < 1: return abs(got - ref) <= 0.0006 or abs(got / 100 - ref) <= 0.0006
+        if isinstance(ref, float):   # a duration in another unit is the same answer: minutes, hours or days (2026-11-16, all arms alike)
+            return any(abs(got * f - ref) <= max(0.06, 0.01 * abs(ref)) for f in (1, 1 / 60, 60, 1 / 24, 24, 1 / 1440, 1440))
         return abs(got - ref) <= 0.06
     return str(ref).strip().lower() == str(got).strip().lower()
 
@@ -997,17 +999,30 @@ def run(runs=3, workers=4):
     # (AGERE_TIERED_DB, with or without a mapping) holding the same facts; AGERE_PROOF_REFERENCE_DB names the original.
     reference_db = os.environ.get('AGERE_PROOF_REFERENCE_DB')
     import sqlite3
+    table = REFERENCES
+    if data.get('reference_module'):
+        # A set written independently (proof_v13 on) brings its own answer key: functions in its own module, computed on the raw
+        # warehouse file with no Agere view or definition in between.
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('proof_references', Path(data['reference_module']))
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+        table = {n[4:]: f for n, f in vars(module).items() if n.startswith('ref_') and callable(f)}
+        reference_db = reference_db or str(store.path())
     db = sqlite3.connect(Path(reference_db).resolve().as_uri() + '?mode=ro', uri=True) if reference_db else store.connect()
     items = []
+    # AGERE_PROOF_PHRASINGS=0 scores only the first (plain) phrasing of every question, in every arm alike: the way users ask,
+    # at half the cost of a full run (used for the independent set with the costly assistant arm).
+    only = {int(x) for x in os.environ.get('AGERE_PROOF_PHRASINGS', '').split(',') if x.strip()}
     for q in data['questions']:
         for k, phrasing in enumerate(q['phrasings']):
+            if only and k not in only: continue
             # A phrasing may accept more than one reading (recorded in the question file's audit notes); each is computed here.
             names = (q.get('accept_by_phrasing') or {}).get(str(k)) or ([q['reference']] if q.get('reference') else [])
-            refs = [] if q.get('unanswerable') else [[list(r) for r in REFERENCES[n](db, *q.get('args', []))] for n in names]
+            refs = [] if q.get('unanswerable') else [[list(r) for r in table[n](db, *q.get('args', []))] for n in names]
             if q.get('numbers_only'):   # labels may rightly be the warehouse's own codes; only the numbers are compared
                 refs = [[[v for v in row if isinstance(v, (int, float))] for row in ref] for ref in refs]
             # A question with two plain readings names a reference for each ({"patients": "ref name", "events": "ref name"}).
-            reading_refs = {rid: [list(r) for r in REFERENCES[n](db, *q.get('args', []))] for rid, n in (q.get('readings') or {}).items()}
+            reading_refs = {rid: [list(r) for r in table[n](db, *q.get('args', []))] for rid, n in (q.get('readings') or {}).items()}
             if reading_refs and not refs: refs = list(reading_refs.values())
             items.append({'id': q['id'], 'phrasing': k, 'question': phrasing, 'domain': q['domain'], 'reference': refs[0] if refs else None, 'references': refs,
                           'unanswerable': q.get('unanswerable', False), 'reading_refs': reading_refs})
@@ -1048,10 +1063,45 @@ def run(runs=3, workers=4):
 
     arms = tuple(os.environ.get('AGERE_PROOF_ARMS', 'stack,stack_plain,frontier').split(','))
     jobs = [(it, arm, r) for r in range(int(runs)) for it in items for arm in arms]
+    # Every result is written the moment it is scored, to a journal named for the set, its arms and grading. A run stopped by a
+    # provider's usage limit keeps what it answered, and the next run with the same settings answers only what is missing
+    # (2026-11-16: a three-arm run on proof_v13 hit the weekly limit and, saving only at the end, lost every answer).
+    tag = '-'.join([str(data.get('version')), '+'.join(arms), f'runs{runs}', 'strict' if STRICT else 'standard',
+                    'phrasings' + (os.environ.get('AGERE_PROOF_PHRASINGS') or 'all').replace(',', '+')])
+    journal = OUT / f'journal-{tag}.jsonl'
+    OUT.mkdir(parents=True, exist_ok=True)
+    done = {}
+    if journal.exists():
+        for line in journal.read_text().splitlines():
+            if line.strip():
+                r = json.loads(line); done[(r['id'], int(r['phrasing']), r['arm'], int(r['run']))] = r
+    todo = [j for j in jobs if (j[0]['id'], j[0]['phrasing'], j[1], j[2]) not in done]
+    print(f'{len(done)} answers already in {journal.name}; {len(todo)} to run', flush=True)
+    import threading as _threading
+    write_lock, stopped = _threading.Lock(), []
+
+    def one_saved(job):
+        if stopped: return None
+        try:
+            r = one(job)
+        except Exception as exc:   # a usage limit: stop taking new jobs, keep what is saved
+            if 'limit' in str(exc).lower():
+                stopped.append(str(exc)[:200]); return None
+            raise
+        with write_lock:
+            with open(journal, 'a') as f: f.write(json.dumps(r, default=str) + '\n')
+        return r
+
     started = time.monotonic()
     with ThreadPoolExecutor(int(workers)) as pool:
-        results = list(pool.map(one, jobs))
-    return report(results, items, runs, round(time.monotonic() - started, 1), data)
+        fresh = [r for r in pool.map(one_saved, todo) if r is not None]
+    results = list(done.values()) + fresh
+    wall = round(time.monotonic() - started, 1)
+    if stopped:
+        text = report(results, items, runs, wall, data)
+        return (f'STOPPED AT A PROVIDER LIMIT: {stopped[0]}\n{len(results)} of {len(jobs)} answers are saved in {journal}; '
+                f'run again with the same settings to finish. The partial scorecard below is not a result.\n\n' + text)
+    return report(results, items, runs, wall, data)
 
 
 def report(results, items, runs, wall, data):

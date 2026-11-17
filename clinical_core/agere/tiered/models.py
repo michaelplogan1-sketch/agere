@@ -4,6 +4,7 @@ Tier 2  System One (Perplexity, then Jev): which recipe shape is this question? 
 Tier 3  small model (Haiku): fill one recipe's typed parameters from the question.
 Tier 4  frontier model (Sonnet): write a new parameterised recipe from schema and definitions. It never sees rows.
 """
+import contextvars
 import json
 import os
 import re
@@ -58,6 +59,10 @@ class ProviderLimit(RuntimeError):
 class ProviderUnavailable(RuntimeError):
     """A provider failed for any other reason (outage, timeout, refusal, bad response): the rung is skipped and recorded, and the
     question climbs to the next rung."""
+
+
+# Set while one reading of an ambiguous question is answered, so that reading is answered, not split again.
+NO_READINGS = contextvars.ContextVar('agere_no_readings', default=False)
 
 
 def is_limit(exc):
@@ -151,6 +156,15 @@ Never match document content with LIKE on type or title columns, and never selec
 If neither one SELECT nor one reading plan can fully answer every part of the question (it needs several separate
 result tables, a statistical method, a judgment across documents, or data that is not in these tables), do not
 approximate. Return instead: {"cannot_answer": "<what is needed that these tables or one query cannot give>"}
+
+If the question can plainly be read two or three ways that would give different answers, and neither the question nor the
+governed definitions above settle which one is meant (for example: which facilities count, which unit of time, which
+grouping level, distinct patients or events, which date puts a record in the period, initial or final status), do not
+choose. Return instead the readings, each restated as a complete explicit question that settles the point:
+{"readings": [{"label": "<two to five words naming this reading>", "question": "<the question restated so it has one reading>"}, ...]}
+Code will answer each reading and ask the person only if the answers differ. Do not return readings for differences the
+governed definitions already decide, for wording that is merely informal, or for a question that has one ordinary reading.
+NO_READINGS_NOTE
 
 Rules:
 - Exactly one SELECT (WITH is allowed). No semicolons. Only the listed tables and columns.
@@ -273,7 +287,8 @@ def llm_recipe(question, error=None, model=None, examples=None):
             conditions = ', '.join(r[0] for r in store.run("SELECT DISTINCT concept FROM concept_patient WHERE kind = 'condition' ORDER BY 1")[1])
         except store.RecipeError:
             conditions = '(not listed: this mapped warehouse has no concept_patient table)'
-        system = LLM_SYSTEM % (store.schema_text(), definitions(question), conditions) + warehouse_vocabulary()
+        system = (LLM_SYSTEM % (store.schema_text(), definitions(question), conditions)).replace('NO_READINGS_NOTE',
+                  'This question is already one reading of an earlier question: answer it; do not return readings.' if NO_READINGS.get() else '') + warehouse_vocabulary()
         governed = catalogue.block(question) if catalogue.enabled() else ''
     if governed: system += '\n\n' + governed
     if examples is None and EXAMPLES and model in (None, LLM): examples = nearest_examples(question)
@@ -286,6 +301,12 @@ def llm_recipe(question, error=None, model=None, examples=None):
         out = _json(text)
         if out.get('cannot_answer'):
             return None, {**step, 'tier': 'llm', 'outcome': 'cannot_answer', 'reason': str(out['cannot_answer'])[:300]}
+        if out.get('readings') and not NO_READINGS.get():
+            readings = [{'label': str(r.get('label'))[:60], 'question': str(r.get('question'))[:600]} for r in out['readings'][:3]
+                        if isinstance(r, dict) and r.get('question')]
+            if len(readings) >= 2:
+                return None, {**step, 'tier': 'llm', 'outcome': 'readings', 'readings': readings}
+            raise ValueError('readings need at least two restated questions')
         if not isinstance(out.get('sql'), str) or not isinstance(out.get('params', {}), dict): raise ValueError('Recipe needs sql and params')
         recipe = {'sql': out['sql'], 'params': {k: v for k, v in (out.get('params') or {}).items()},
                   'grain': [g for g in out.get('grain') or [] if isinstance(g, str)], 'question_template': out.get('question_template')}

@@ -1,0 +1,7 @@
+{
+ "schema": "agere-own-facilities/1",
+ "organization_name": "Synthetic health system (demonstration)",
+ "authored_synthetic": true,
+ "note": "Which facilities are this customer's own, so 'our hospitals', 'our EDs' and 'our admissions' mean these and not every facility its patients or members used. Set once per customer during onboarding. For the synthetic warehouse: the four WH-HOSPITAL facilities.",
+ "own_organization_ids": ["WH-HOSPITAL-0", "WH-HOSPITAL-1", "WH-HOSPITAL-2", "WH-HOSPITAL-3"]
+}

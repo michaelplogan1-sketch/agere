@@ -23,10 +23,10 @@ DEFAULT_DB = 'artifacts/agere-full-stack-rerun-2026-10-30/focused/runtime/stack/
 TABLES = ('document', 'note_fact', 'note_therapy_change', 'therapy_barrier', 'utilization_event', 'stay', 'stay_episode', 'appointment', 'visit', 'fill',
           'hospital_visit', 'payer_claim', 'claim', 'patient', 'concept_patient', 'member_month', 'measurement', 'measurement_latest', 'immunization', 'death',
           'organization', 'clinician', 'enrollment_span', 'condition', 'encounter', 'prescription', 'allergy_entry', 'smoking_status', 'social_need',
-          'wellness_visit', 'cancer_screening', 'medication_administration', 'encounter_location', 'encounter_diagnosis', 'procedure_event', 'risk_score', 'patient_hcc', 'aco_contract', 'measure_readiness', 'measure_requirement')
+          'wellness_visit', 'cancer_screening', 'medication_administration', 'encounter_location', 'encounter_diagnosis', 'procedure_event', 'risk_score', 'patient_hcc', 'aco_contract', 'measure_readiness', 'measure_requirement', 'own_organization')
 # Governed views: definitions the semantic layer computes once, so a query reads them instead of re-deriving them. Each is
 # created on every connection over the (possibly mapped or cohort-restricted) tables it reads.
-GOVERNED = ('stay_episode', 'hospital_visit', 'risk_score', 'patient_hcc', 'aco_contract', 'measure_readiness', 'measure_requirement', 'measure_alias')   # the last three: aco.py
+GOVERNED = ('stay_episode', 'hospital_visit', 'risk_score', 'patient_hcc', 'aco_contract', 'measure_readiness', 'measure_requirement', 'measure_alias', 'own_organization')   # the last three: aco.py
 SECONDS = 20.0
 
 
@@ -151,6 +151,7 @@ def connect(cohort=None):
         from . import aco, readiness
         aco.install(db, cohort)
         readiness.install(db)
+        install_own_facilities(db)
     db.execute('PRAGMA query_only=ON')
     return db
 
@@ -211,11 +212,32 @@ def _literal(v):
     return "'" + str(v).replace("'", "''") + "'"
 
 
+OWN_FACILITIES = Path('config/agere/organization')
+
+
+def own_facilities():
+    """-> [(organization_id, display name)] the customer's own facilities, from config/agere/organization/*.json."""
+    out = []
+    for f in sorted(OWN_FACILITIES.glob('*.json')) if OWN_FACILITIES.is_dir() else []:
+        try:
+            c = json.loads(f.read_text())
+        except (OSError, ValueError):
+            continue
+        if c.get('schema') == 'agere-own-facilities/1': out += [str(i) for i in c.get('own_organization_ids') or []]
+    return out
+
+
+def install_own_facilities(db):
+    """own_organization: the customer's own facilities (onboarding setting), so "our hospitals" has one meaning."""
+    db.execute('CREATE TEMP TABLE own_organization(organization_id TEXT PRIMARY KEY)')
+    db.executemany('INSERT OR IGNORE INTO own_organization VALUES (?)', [(i,) for i in own_facilities()])
+
+
 def portable(sql, cohort=None, params=None):
     """portable_sql (below) plus the governed tables Agere computes (aco_contract, risk_score, patient_hcc), inlined as
     VALUES so the saved SQL runs on the warehouse file alone. Risk rows are limited to the year the answer was asked for."""
     text = _portable(sql, cohort)
-    reads = [t for t in ('aco_contract', 'risk_score', 'patient_hcc') if re.search(rf'(?i)(?<![.\w]){t}\b', text)]
+    reads = [t for t in ('aco_contract', 'risk_score', 'patient_hcc', 'own_organization') if re.search(rf'(?i)(?<![.\w]){t}\b', text)]
     if not reads: return text
     year = (params or {}).get('year')
     year = year.get('value') if isinstance(year, dict) else year
@@ -224,7 +246,7 @@ def portable(sql, cohort=None, params=None):
         ctes = []
         for table in reads:
             cols = [c[1] for c in db.execute(f'PRAGMA table_info("{table}")')]
-            where = ' WHERE year = ?' if year and table != 'aco_contract' else ''
+            where = ' WHERE year = ?' if year and table not in ('aco_contract', 'own_organization') else ''
             rows = db.execute(f'SELECT * FROM "{table}"{where}', (str(year),) if where else ()).fetchall()
             body = ('VALUES ' + ', '.join('(' + ', '.join(_literal(v) for v in r) + ')' for r in rows)) if rows else \
                    'SELECT ' + ', '.join('NULL' for _ in cols) + ' WHERE 0'
