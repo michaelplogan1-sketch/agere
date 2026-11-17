@@ -14,6 +14,7 @@ from . import VERSION, bottles as bottle_store, ledger as ledger_store, router, 
 # rungs finish in seconds; what is left when the last rung starts is all it gets, and it is skipped if too little is left.
 QUESTION_SECONDS = float(os.environ.get('AGERE_TIERED_QUESTION_SECONDS', '90'))
 TAKEOVER_NEEDS = 20.0
+TAKEOVER_FLOOR = float(os.environ.get('AGERE_TIERED_TAKEOVER_FLOOR', '60'))   # seconds the takeover always gets
 DEADLINE = contextvars.ContextVar('tiered_question_deadline', default=None)
 
 
@@ -710,10 +711,9 @@ def _takeover(question, cohort, outcome, stack=None):
     if earlier and 'previous question in the conversation' not in why:
         why += ' | Earlier questions in this conversation, oldest first (use them only if this question refers to them): ' + ' / '.join(f'"{q}"' for q in earlier)
     left = (DEADLINE.get() - __import__('time').monotonic()) if DEADLINE.get() is not None else None
-    if left is not None and left < TAKEOVER_NEEDS:
-        import sys
-        print(f'tiered takeover skipped: {left:.0f} seconds of the question budget left', file=sys.stderr, flush=True)
-        return None
+    # The last rung is never skipped for time (Mike 2026-11-17: an unanswered question goes to the frontier model). When the
+    # cheaper rungs used the question's budget, the takeover still gets TAKEOVER_FLOOR seconds of its own; it stays bounded.
+    if left is not None: left = max(left, TAKEOVER_FLOOR)
     try:
         got = takeover.answer(question, cohort, why=why, **({'may_ask': True} if stack is not None else {}), **({'seconds': left} if left is not None else {}))
     except Exception as exc:
