@@ -26,11 +26,11 @@ const ideas=[
 ];
 let savedAnalyses=[],sourceAtlas=null,sourceError=null,currentPage='explore',activeContext=null,activeTab='overview',lastDialogFocus=null,conversationEpoch=0;
 function showPage(name,focus=false){
- if(!['explore','gallery','saved','patients','data'].includes(name))name='explore';
+ if(!['explore','gallery','saved','patients','data','program'].includes(name))name='explore';
  currentPage=name;document.body.dataset.page=name;
- ['explore','gallery','saved','patients','data'].forEach(n=>$('#page-'+n).hidden=n!==name);
+ ['explore','gallery','saved','patients','data','program'].forEach(n=>$('#page-'+n).hidden=n!==name);
  document.querySelectorAll('.app-nav [data-page]').forEach(e=>{if(e.dataset.page===name)e.setAttribute('aria-current','page');else e.removeAttribute('aria-current')});
- $('#page-name').textContent={explore:'Ask your data',gallery:'Gallery',saved:'Saved answers',patients:'Patients',data:'Sources'}[name];
+ $('#page-name').textContent={explore:'Ask your data',gallery:'Gallery',saved:'Saved answers',patients:'Patients',data:'Sources',program:'CKD program'}[name];
  if(name==='gallery')loadGallery(true).catch(()=>{});if(name==='saved')renderSaved();if(name==='data')loadSources();if(name==='patients')renderPatientLibrary();syncAppLinks();
  if(focus){$('#main').focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'})}
 }
@@ -52,7 +52,7 @@ function renderPatientLibrary(){
 function setResultMode(on){document.body.classList.toggle('has-result',on);$('#answer').hidden=!on;showPage('explore')}
 function renderIdeas(topic='All topics'){
  $('#topic-filters').innerHTML=['All topics','Patients','Costs','Operations','Outcomes'].map(t=>'<button type="button" data-topic="'+esc(t)+'" aria-pressed="'+(topic===t)+'">'+esc(t)+'</button>').join('');
- $('#examples').innerHTML=ideas.map((x,i)=>(topic==='All topics'?i<3:topic===x.topic)?'<button type="button" class="question-card" data-idea="'+i+'" data-color="'+x.color+'"><span class="tile-icon">'+uiIcon(x.icon)+'</span><span class="card-arrow" aria-hidden="true">↗</span><strong>'+esc(x.title)+'</strong><span class="question-detail">'+esc(x.detail)+'</span></button>':'').join('');
+ $('#examples').innerHTML=ideas.map((x,i)=>(topic==='All topics'?[0,2,4].includes(i):topic===x.topic)?'<button type="button" class="question-card" data-idea="'+i+'" data-color="'+x.color+'"><span class="tile-icon">'+uiIcon(x.icon)+'</span><span class="card-arrow" aria-hidden="true">↗</span><strong>'+esc(x.title)+'</strong><span class="question-detail">'+esc(x.detail)+'</span></button>':'').join('');
 }
 function draftQuestion(q){if(state.busy)return;newConversation();$('#q').value=q;$('#q').focus();$('#q').scrollIntoView({block:'center',behavior:'smooth'})}
 function shortDate(s){return s?new Date(s).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}):'Saved answer'}
@@ -103,17 +103,19 @@ function syncScope(t){
 function updateScopeNote(){
  const scope=$('#question-scope').value;
  $('#q').placeholder=activeContext&&!state.turns[state.active]?.archiveBlocked?'Ask a follow-up about this answer…':'Ask anything about your data…';
- $('#composer-status').textContent=scope==='saved'?'Exact saved patient set':scope==='warehouse'?'Across your connected sources':'Scope selected above';
+ $('#composer-status').textContent=state.cid?'Follow-up · same conversation':'New conversation';
  $('#population-members').hidden=!activeContext||!scope.startsWith('population:')||!!state.turns[state.active]?.archiveBlocked;
- $('#scope-note').textContent=scope==='input'?'Uses the original question’s saved input patients. These are not necessarily patients selected by its answer, and this choice does not authorize work.':scope==='saved'?'This follow-up keeps the exact saved patient set. Choose “Entire warehouse” to start a broader question.':scope==='auto'?'Ask about this analysis. For a patient follow-up, choose the population behind the count you mean.':scope.startsWith('population:')?'Follows this source-defined population, keeping its original period and filters.':'Use your own words. Add a date range, comparison, or filter.';
+ const unavailable=!!state.turns[state.active]?.savedConversationUnavailable;
+ $('#scope-note').textContent=unavailable?'This saved answer has no conversation link. Start a new conversation to ask a question.':state.cid?'Follow-ups stay in this conversation. Start a new conversation for a fresh context.':'Ask in your own words. Include the population and period when they matter.';
+ $('#askb').disabled=unavailable||state.busy;$('#q').readOnly=unavailable||state.busy;
 }
 async function openSavedContext(id){
  const epoch=++conversationEpoch;
  setResultMode(true);$('#answer').innerHTML='<div class="working-state"><div class="working-title"><span class="working-ring"></span>Opening saved analysis…</div></div>';
  try{
   const d=await fetchJSON('/api/stack/action-context?context='+encodeURIComponent(id));if(epoch!==conversationEpoch)return;
-  const c=d.context;state.cid=null;store.set('agere-conversation',null);
-  const t={question:c.original_question||c.question,resolved:c.question,archive:true,archiveBlocked:c.stale||c.invalidated,data:{workflow:d.workflow?.steps||[],review_programs:d.programs||{},patient_profiles:c.patient_profiles||{},source:c.source,answer:c.answer,verification_progress:c.verification_progress,graph:c.graph,results:c.results,planner_receipt:c.planner_receipt,planning_economics:c.planning_economics,action_context:{id:c.id,stale:c.stale,invalidated:c.invalidated,source_review_required:c.source_review_required,supports_patient_work:c.supports_patient_work,supports_evidence_review:c.supports_evidence_review,patients:c.patient_ids.length,input_patients:c.input_patients,result_scope_available:c.result_scope_available,population_scopes:c.population_scopes,population_scope_discovery_available:c.population_scope_discovery_available},new_paid_api_calls:c.planner_receipt?.new_paid_api_calls}};
+  const c=d.context;state.cid=d.conversation?.id||c.conversation_id||null;store.set('agere-conversation',state.cid);
+  const t={question:c.original_question||c.question,resolved:c.question,archive:true,savedConversationUnavailable:!state.cid||c.stale||c.invalidated,archiveBlocked:c.stale||c.invalidated,data:{workflow:d.workflow?.steps||[],review_programs:d.programs||{},patient_profiles:c.patient_profiles||{},source:c.source,answer:c.answer,tiered_core:c.tiered_core,cost_receipt:c.cost_receipt,cost_telemetry:c.cost_telemetry,verification_progress:c.verification_progress,graph:c.graph,results:c.results,planner_receipt:c.planner_receipt,planning_economics:c.planning_economics,action_context:{id:c.id,stale:c.stale,invalidated:c.invalidated,source_review_required:c.source_review_required,supports_patient_work:c.supports_patient_work,supports_evidence_review:c.supports_evidence_review,patients:c.patient_ids.length,input_patients:c.input_patients,result_scope_available:c.result_scope_available,population_scopes:c.population_scopes,population_scope_discovery_available:c.population_scope_discovery_available},new_paid_api_calls:c.planner_receipt?.new_paid_api_calls}};
   t.archiveNotice=c.invalidated?'This saved answer was invalidated. Its history is available, but it cannot be used for new work or scoped follow-ups.':c.stale?'The warehouse has changed since this answer. Start a new analysis to use current data.':null;
   state.turns=[t];renderTurn(0);
  }catch(e){if(epoch!==conversationEpoch)return;$('#answer').innerHTML='<h2 class="headline">This analysis couldn’t open.</h2><p>'+esc(e.message)+'</p><button class="btn" data-page="saved">Back to saved analyses</button>'}
@@ -150,9 +152,9 @@ function renderResultData(term='',page=0){
 }
 function openAppDialog(id){lastDialogFocus=document.activeElement;$('#'+id).showModal()}
 function setupExplorer(){
- hydrateUI();renderIdeas();loadSaved();setupExperience();setupGallery();
+ hydrateUI();renderIdeas();loadSaved();setupExperience();setupGallery();setupCommandCenter();
  document.addEventListener('click',e=>{
-  const b=e.target.closest('[data-page],[data-topic],[data-idea],[data-close-dialog],[data-answer-tab],[data-reload-saved],[data-reload-sources],[data-source-question]');
+  const b=e.target.closest('button[data-page],a[data-page],[data-topic],[data-idea],[data-close-dialog],[data-answer-tab],[data-reload-saved],[data-reload-sources],[data-source-question]');
   if(!b)return;
   if(b.dataset.page){showPage(b.dataset.page,true);history.replaceState(null,'','/ask'+(activeContext?'?context='+encodeURIComponent(activeContext.id):'')+(b.dataset.page==='explore'?'':'#'+b.dataset.page))}
   if(b.dataset.topic)renderIdeas(b.dataset.topic);
@@ -232,5 +234,7 @@ function setupExplorer(){
  $('#patient-library-answer').addEventListener('change',async e=>{if(!e.target.value)return;await openSavedContext(e.target.value);showPage('patients',true);history.replaceState(null,'','/ask?context='+encodeURIComponent(e.target.value)+'#patients')});
  $('#patient-library-back').onclick=()=>{showPage('explore',true);history.replaceState(null,'','/ask?context='+encodeURIComponent(activeContext.id))};
  const params=new URLSearchParams(location.search),initialPage=location.hash.slice(1)||'explore',patient=params.get('patient');
+ if(params.get('app')==='ckd'){openCommandCenter(params.get('context'));return}
+ if(params.get('draft')){draftQuestion(params.get('draft'));return}
  if(initialPage==='gallery'){showPage('gallery');if(params.get('artifact'))loadGallery().then(()=>openCreation(params.get('context'),params.get('artifact'))).catch(()=>{});}else if(params.get('context'))openSavedContext(params.get('context')).then(()=>{showPage(initialPage);const url=new URL(location.href);url.hash=initialPage==='explore'?'':initialPage;if(patient)url.searchParams.set('patient',patient);history.replaceState(null,'',url);if(patient&&initialPage==='patients')state.patientLibrary?.openPatient(patient)});else{loadConversation();showPage(initialPage)}
 }
