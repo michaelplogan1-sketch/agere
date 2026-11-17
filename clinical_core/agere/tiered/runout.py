@@ -62,10 +62,22 @@ def estimate(claims, valuation, months, history=24):
     first = _add_months(vm, -history)
     # Paid triangle: incurred month x development lag, cumulative, as known on the valuation date.
     tri = defaultdict(lambda: defaultdict(float))
-    for s, _, p, n, _ in claims:
-        if p and p <= v and s <= v and _month(s) >= first: tri[_month(s)][_lag(s, p)] += n
-    def cum(m, k): return sum(x for lag, x in tri[m].items() if lag <= k)
+    tri_b = defaultdict(lambda: defaultdict(float))   # claims with no submission record: visible only once paid
+    for s, sub, p, n, _ in claims:
+        if p and p <= v and s <= v and _month(s) >= first:
+            tri[_month(s)][_lag(s, p)] += n
+            if not sub: tri_b[_month(s)][_lag(s, p)] += n
+    def cum(m, k, t=None): return sum(x for lag, x in (t if t is not None else tri)[m].items() if lag <= k)
+    def chain(t):
+        f = {}
+        for k in range(maxlag):
+            num = den = 0.0
+            for m in t:
+                if _add_months(m, k + 1) <= vm: num += cum(m, k + 1, t); den += cum(m, k, t)
+            f[k] = num / den if den else 1.0
+        return f
     maxlag = 18
+    factors_b = chain(tri_b)
     factors = {}
     for k in range(maxlag):
         num = den = 0.0
@@ -82,13 +94,12 @@ def estimate(claims, valuation, months, history=24):
         if not (old_lo <= _month(s) <= old_hi) or not sub: continue
         billed_old += b
         sub_lag[(sub - s).days] += b
-        for a in AGES:   # pending at age a: submitted by then and not yet paid
-            at = s + timedelta(days=min(a, 400))
+        for i, a in enumerate(AGES):   # pending at the start of age bucket a: submitted by then and not yet paid
+            at = s + timedelta(days=(0 if i == 0 else AGES[i - 1] + 1))
             if sub <= at and (p is None or p > at):
                 ratio[a][0] += n if p else 0.0; ratio[a][1] += b
-                break
     r = {a: (x / y if y else 0.0) for a, (x, y) in ratio.items()}
-    r_all = sum(n for s, sub, p, n, b in claims if old_lo <= _month(s) <= old_hi and p) / max(1.0, billed_old)
+    r_all = sum(n for s, sub, p, n, b in claims if old_lo <= _month(s) <= old_hi and p and sub) / max(1.0, billed_old)
     def submitted_share(age):   # share of billed dollars submitted within `age` days of service, historically
         return sum(x for d, x in sub_lag.items() if d <= age) / max(1.0, sum(sub_lag.values()))
     pending = defaultdict(float); billed_sub = defaultdict(float); ibnr = defaultdict(float)
@@ -111,7 +122,10 @@ def estimate(claims, valuation, months, history=24):
         for j in range(k, maxlag): dev *= factors[j]
         out['paid_to_date'][m] = round(paid, 2)
         out['chain_ladder'][m] = round(paid * dev, 2)
-        out['settlement'][m] = round(paid + pending[m] + ibnr[m], 2)
+        paid_b = cum(m, k, tri_b); dev_b = 1.0
+        for j in range(k, maxlag): dev_b *= factors_b[j]
+        # submitted claims: paid + expected payment of the pending inventory + not-yet-submitted; the rest: chain-ladder
+        out['settlement'][m] = round((paid - paid_b) + pending[m] + ibnr[m] + paid_b * dev_b, 2)
     return out
 
 
