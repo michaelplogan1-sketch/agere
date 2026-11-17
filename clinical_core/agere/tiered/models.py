@@ -87,6 +87,8 @@ def is_limit(exc):
 
 def _claude(model, system, user, timeout=180):
     started = time.monotonic()
+    from .. import phi_route
+    route = phi_route.check(phi_route.route_for(os.environ.get('AGERE_CLAUDE_TRANSPORT', '')))   # candidate guard, off by default
     try:
         if os.environ.get('AGERE_CLAUDE_TRANSPORT', '').strip().lower() == 'api':
             text, usage = _api(model, system, user)
@@ -98,7 +100,9 @@ def _claude(model, system, user, timeout=180):
         raise
     except Exception as exc:   # one of two kinds, so callers decide by type, not by reading the message
         raise (ProviderLimit if is_limit(exc) else ProviderUnavailable)(f'{type(exc).__name__}: {str(exc)[:300]}') from exc
-    return text, {'model': model, 'tokens': ledger.tokens(usage), 'usd': ledger.claude_usd(model, usage), 'seconds': round(time.monotonic() - started, 2)}
+    return text, {'model': model, 'tokens': ledger.tokens(usage), 'usd': ledger.claude_usd(model, usage), 'seconds': round(time.monotonic() - started, 2),
+                  'route': route, 'cache_read': int(usage.get('cache_read_input_tokens') or 0), 'cache_write': int(usage.get('cache_creation_input_tokens') or 0),
+                  'input': int(usage.get('input_tokens') or 0)}
 
 
 DEFINITIONS = os.environ.get('AGERE_TIERED_DEFINITIONS', 'nearest')   # 'nearest' (default from 2026-11-16, proof_v6): the closest few recipes' SQL; 'all': every recipe's
