@@ -1061,10 +1061,45 @@ def run(runs=3, workers=4):
 
     arms = tuple(os.environ.get('AGERE_PROOF_ARMS', 'stack,stack_plain,frontier').split(','))
     jobs = [(it, arm, r) for r in range(int(runs)) for it in items for arm in arms]
+    # Every result is written the moment it is scored, to a journal named for the set, its arms and grading. A run stopped by a
+    # provider's usage limit keeps what it answered, and the next run with the same settings answers only what is missing
+    # (2026-11-16: a three-arm run on proof_v13 hit the weekly limit and, saving only at the end, lost every answer).
+    tag = '-'.join([str(data.get('version')), '+'.join(arms), f'runs{runs}', 'strict' if STRICT else 'standard',
+                    'phrasings' + (os.environ.get('AGERE_PROOF_PHRASINGS') or 'all').replace(',', '+')])
+    journal = OUT / f'journal-{tag}.jsonl'
+    OUT.mkdir(parents=True, exist_ok=True)
+    done = {}
+    if journal.exists():
+        for line in journal.read_text().splitlines():
+            if line.strip():
+                r = json.loads(line); done[(r['id'], int(r['phrasing']), r['arm'], int(r['run']))] = r
+    todo = [j for j in jobs if (j[0]['id'], j[0]['phrasing'], j[1], j[2]) not in done]
+    print(f'{len(done)} answers already in {journal.name}; {len(todo)} to run', flush=True)
+    import threading as _threading
+    write_lock, stopped = _threading.Lock(), []
+
+    def one_saved(job):
+        if stopped: return None
+        try:
+            r = one(job)
+        except Exception as exc:   # a usage limit: stop taking new jobs, keep what is saved
+            if 'limit' in str(exc).lower():
+                stopped.append(str(exc)[:200]); return None
+            raise
+        with write_lock:
+            with open(journal, 'a') as f: f.write(json.dumps(r, default=str) + '\n')
+        return r
+
     started = time.monotonic()
     with ThreadPoolExecutor(int(workers)) as pool:
-        results = list(pool.map(one, jobs))
-    return report(results, items, runs, round(time.monotonic() - started, 1), data)
+        fresh = [r for r in pool.map(one_saved, todo) if r is not None]
+    results = list(done.values()) + fresh
+    wall = round(time.monotonic() - started, 1)
+    if stopped:
+        text = report(results, items, runs, wall, data)
+        return (f'STOPPED AT A PROVIDER LIMIT: {stopped[0]}\n{len(results)} of {len(jobs)} answers are saved in {journal}; '
+                f'run again with the same settings to finish. The partial scorecard below is not a result.\n\n' + text)
+    return report(results, items, runs, wall, data)
 
 
 def report(results, items, runs, wall, data):
