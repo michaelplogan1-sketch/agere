@@ -299,9 +299,10 @@ def _climb(stack, question, cohort, takeover_ok, near):
     try:
         # A question in the vocabulary of the analysis methods goes through the cheap tiers first, then the methods rung
         # (small model restates, code and System One check), and only then to a recipe written by the frontier model.
+        ask_first = cohort is None and _interactive(stack)   # a person is in the conversation: an unclear question goes back to them
         outcome = router.answer(question, tiers=tuple(t for t in TIERS if t != 'llm') if assist else TIERS, bottles=bottles, bottle_new=not ledger_store.hosted(),
-                                s1_ledger=s1_ledger, cohort=cohort)
-        if assist and outcome['status'] != 'answered':
+                                s1_ledger=s1_ledger, cohort=cohort, ask_first=ask_first)
+        if assist and outcome['status'] not in ('answered', 'needs_clarification'):
             try:
                 restated, how = methods.assisted(stack, question, s1_ledger, prefer=prefer)
             except Exception as exc:
@@ -314,7 +315,8 @@ def _climb(stack, question, cohort, takeover_ok, near):
                 if how.get('method') == 'restatement_not_confirmed' and how.get('restated'): near.update(restated=how['restated'], picked=how.get('picked'))
                 ledger_store.Ledger().write('app_method', question, {'status': 'declined', 'final_tier': None, 'steps': [how], 'seconds': how['seconds'],
                                                                      'validation': {'ok': False, 'reason': how['method']}, 'recipe': None}, config={'tiers': list(ORDER)})
-            later = router.answer(question, tiers=('llm',), bottles=bottles, bottle_new=not ledger_store.hosted(), s1_ledger=s1_ledger, cohort=cohort)
+            later = router.answer(question, tiers=('llm',), bottles=bottles, bottle_new=not ledger_store.hosted(), s1_ledger=s1_ledger, cohort=cohort,
+                                  ask_first=ask_first)
             outcome = {**later, 'steps': outcome['steps'] + ([how] if how else []) + later['steps'], 'escalations': outcome['escalations'] + later['escalations'],
                        'seconds': round(outcome['seconds'] + (how['seconds'] if how else 0.0) + later['seconds'], 2)}
     except Exception as exc:  # the bridge never blocks a question: any failure falls through to the existing path
@@ -324,6 +326,12 @@ def _climb(stack, question, cohort, takeover_ok, near):
         from . import learn
         learn.spawn_auto()  # a new recipe was saved: check and promote it in the background, with no manual step
     ledger_store.Ledger().write('app', question, outcome, config={'tiers': list(TIERS), **({'cohort_patients': len(cohort)} if cohort is not None else {})})
+    if outcome['status'] == 'needs_clarification':   # unclear, and a person is here: ask them before computing anything
+        options = [{'id': r['id'], 'label': r['label'], 'meaning': r.get('meaning') or r['question']} for r in outcome['readings']]
+        return _clarify(stack, question, 'reading', outcome['ask'],
+                        'The question can be read more than one way and nothing in it or in the governed definitions settles which; '
+                        'Agere asks rather than guesses. Pick one, or type what you mean.', options,
+                        context={'questions': {r['id']: r['question'] for r in outcome['readings']}}, steps=outcome['steps'], seconds=outcome['seconds'])
     if outcome['status'] == 'needs_choice':   # two plain readings with different answers (readings.py): the user picks
         outcome = _two_readings(stack, question, outcome)
         if 'answer' in outcome: return outcome
@@ -582,8 +590,15 @@ def resume(stack, saved, reply):
             read_as = text  # the user said it another way: that is the question now
         elif text and context.get('kind') == 'needs_input':
             read_as = original.rstrip(' ?.') + ', ' + text
+        elif text and context.get('kind') == 'reading':   # they said what they mean in their own words
+            read_as = original.rstrip(' ?.') + ' (' + text + ')'
         if read_as:
-            result = try_answer(stack, read_as)
+            from . import models
+            settled = models.NO_READINGS.set(True)   # the person has said which reading: it is answered, not split or asked again
+            try:
+                result = try_answer(stack, read_as)
+            finally:
+                models.NO_READINGS.reset(settled)
             if result is not None and (result.get('tiered_core') or {}).get('needs_input'): result = None  # still short of an input: the frontier model answers
         if result is None:
             if context.get('kind') == 'needs_input' and option.get('id') == 'explain':

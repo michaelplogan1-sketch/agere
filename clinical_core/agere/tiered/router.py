@@ -10,23 +10,32 @@ ALL_TIERS = ('bottles', 'recipes', 'system1', 'slm', 'near', 'llm')
 TOKEN_CEILING = 60000
 
 
-def answer(question, **kw):
+def answer(question, ask_first=False, **kw):
     """-> {'status','final_tier','columns','rows','recipe','validation','steps','seconds','escalations'}.
 
     A question with two plain readings is answered each way: readings found by rule (readings.py) before any model, or
     readings the frontier model returns when the question is unclear in a way no governed definition settles. When the
     readings agree the answer is given once; when they differ the status is 'needs_choice' with each reading's answer under
     'readings', and the person is asked. Nothing is guessed."""
-    from . import readings
-    two = readings.detect(question)
-    if two: return _each_reading(question, two, kw)
+    from . import models, readings
+    two = None if models.NO_READINGS.get() else readings.detect(question)   # a reading the person chose is answered as worded
+    if two:
+        return _clarification(question, two) if ask_first else _each_reading(question, two, kw)
     out = _ladder(question, **kw)
     if out['status'] == 'needs_readings':   # the frontier model found readings the rules do not know
-        two = {'rule': 'model', 'ask': 'This question can be read more than one way, and the answers differ. Which do you mean?',
+        two = {'rule': 'model', 'ask': 'This question can be read more than one way. Which do you mean?',
                'readings': [{'id': f'reading{i + 1}', 'label': r['label'], 'question': r['question'], 'meaning': r['question']}
                             for i, r in enumerate(out['readings'])]}
-        return _each_reading(question, two, kw, prior=out)
+        return _clarification(question, two, prior=out) if ask_first else _each_reading(question, two, kw, prior=out)
     return out
+
+
+def _clarification(question, two, prior=None):
+    """With a person in the conversation (ask_first), an unclear question is put back to them before anything is computed:
+    each reading is an option, and they may type what they mean instead. -> status 'needs_clarification'."""
+    return {'status': 'needs_clarification', 'final_tier': 'clarify', 'recipe': None, 'columns': None, 'rows': None, 'validation': None,
+            'steps': (prior or {}).get('steps', []), 'escalations': (prior or {}).get('escalations', []), 'seconds': (prior or {}).get('seconds', 0.0),
+            'ask': two['ask'], 'rule': two['rule'], 'readings': two['readings']}
 
 
 def _each_reading(question, two, kw, prior=None):
