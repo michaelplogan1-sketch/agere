@@ -1,0 +1,119 @@
+{
+ "key_agreement": {
+  "documents": 1649,
+  "agree_before_adjudication": 1640,
+  "share": 0.9945,
+  "kappa": 0.988,
+  "adjudicated": 9,
+  "yes_share": 0.3414,
+  "by_source": {
+   "clinical_note": {
+    "documents": 977,
+    "agree": 975,
+    "share": 0.998
+   },
+   "hie_document": {
+    "documents": 330,
+    "agree": 330,
+    "share": 1.0
+   },
+   "scanned_document": {
+    "documents": 342,
+    "agree": 335,
+    "share": 0.9795
+   }
+  }
+ },
+ "arms": {
+  "readers": {
+   "runs": 2,
+   "answers": 200,
+   "right": 188,
+   "wrong": 12,
+   "declined": 0,
+   "accuracy": 0.94,
+   "score": 68,
+   "usd_per_question": 0.0041,
+   "seconds_per_question": 2.8,
+   "same_answer_every_run": "97 of 100",
+   "document_reads_right": 0.9851,
+   "right_per_run": [
+    94,
+    94
+   ],
+   "errors": 0
+  },
+  "stack": {
+   "runs": 2,
+   "answers": 200,
+   "right": 109,
+   "wrong": 44,
+   "declined": 47,
+   "accuracy": 0.545,
+   "score": -331,
+   "usd_per_question": 0.0663,
+   "seconds_per_question": 17.0,
+   "same_answer_every_run": "81 of 100",
+   "document_reads_right": null,
+   "right_per_run": [
+    53,
+    56
+   ],
+   "errors": 0
+  },
+  "stack-notefix": {
+   "runs": 2,
+   "answers": 200,
+   "right": 141,
+   "wrong": 35,
+   "declined": 24,
+   "accuracy": 0.705,
+   "score": -209,
+   "usd_per_question": 0.0597,
+   "seconds_per_question": 13.9,
+   "same_answer_every_run": "83 of 100",
+   "document_reads_right": null,
+   "right_per_run": [
+    68,
+    73
+   ],
+   "errors": 0
+  },
+  "llm_alone": {
+   "runs": 2,
+   "answers": 200,
+   "right": 177,
+   "wrong": 23,
+   "declined": 0,
+   "accuracy": 0.885,
+   "score": -53,
+   "usd_per_question": 0.0593,
+   "seconds_per_question": 9.1,
+   "same_answer_every_run": "97 of 100",
+   "document_reads_right": 0.9818,
+   "right_per_run": [
+    87,
+    90
+   ],
+   "errors": 0
+  },
+  "emr_assistant": {
+   "runs": 2,
+   "answers": 200,
+   "right": 163,
+   "wrong": 37,
+   "declined": 0,
+   "accuracy": 0.815,
+   "score": -207,
+   "usd_per_question": 0.4975,
+   "seconds_per_question": 41.3,
+   "same_answer_every_run": "91 of 100",
+   "document_reads_right": 0.9851,
+   "right_per_run": [
+    83,
+    80
+   ],
+   "errors": 0
+  }
+ }
+}
