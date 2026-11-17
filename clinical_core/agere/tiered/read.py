@@ -40,6 +40,13 @@ If the document does not give the value for the patient, return {"found": false}
 complete a value: copy it character for character, even when scanned text looks misspelled.'''
 
 
+def _clinical(statement):
+    """The cited clinical definition behind a statement (knowledge.py), for the model readers; '' when none is served."""
+    from . import knowledge
+    note = knowledge.reader_note(statement)
+    return ('\n' + note) if note else ''
+
+
 def _flat(text):
     return ' '.join(str(text).split()).lower()
 
@@ -66,7 +73,7 @@ def _system_one(statement, doc, ledger_path, as_of):
 def _model(tier, statement, doc):
     model = models.SLM if tier == 'slm' else models.LLM
     try:
-        text, step = models._claude(model, READER_SYSTEM, 'Statement: ' + statement + '\n\nDocument:\n' + doc['text'])
+        text, step = models._claude(model, READER_SYSTEM, 'Statement: ' + statement + _clinical(statement) + '\n\nDocument:\n' + doc['text'])
     except Exception as exc:
         if 'limit' in str(exc).lower(): raise
         return {'label': None, 'by': tier, 'model': model, 'usd': 0.0, 'tokens': 0, 'reason': f'{type(exc).__name__}: {exc}'[:160]}
@@ -84,7 +91,7 @@ def _model(tier, statement, doc):
 def _extract(tier, wanted, doc):
     model = models.SLM if tier == 'slm' else models.LLM
     try:
-        text, step = models._claude(model, EXTRACT_SYSTEM, 'Value wanted: ' + wanted + '\n\nDocument:\n' + doc['text'])
+        text, step = models._claude(model, EXTRACT_SYSTEM, 'Value wanted: ' + wanted + _clinical(wanted) + '\n\nDocument:\n' + doc['text'])
     except Exception as exc:
         if 'limit' in str(exc).lower(): raise
         return {'label': None, 'by': tier, 'model': model, 'usd': 0.0, 'tokens': 0, 'reason': f'{type(exc).__name__}: {exc}'[:160]}

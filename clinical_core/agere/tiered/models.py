@@ -291,6 +291,9 @@ def llm_recipe(question, error=None, model=None, examples=None):
                   'This question is already one reading of an earlier question: answer it; do not return readings.' if NO_READINGS.get() else '') + warehouse_vocabulary()
         governed = catalogue.block(question) if catalogue.enabled() else ''
     if governed: system += '\n\n' + governed
+    from . import knowledge   # cited clinical definitions (enforced ones; candidates only in an evaluation run)
+    clinical = knowledge.block(question)
+    if clinical: system += '\n\n' + clinical
     if examples is None and EXAMPLES and model in (None, LLM): examples = nearest_examples(question)
     shown = ''.join(f'\nSaved question: {t}\nIts verified SQL: {q}\n' for t, q in (examples or []))
     user = ('Verified saved queries for similar questions follow. They answer other questions: reuse their tables, joins and '

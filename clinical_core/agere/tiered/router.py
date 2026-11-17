@@ -4,7 +4,7 @@ with its reason. The frontier model is the last rung; its answer is returned eve
 labelled partial with the failed checks."""
 import time
 
-from . import bottles as bottle_store, governed, models, read as reader, recipes, store
+from . import bottles as bottle_store, governed, knowledge, models, read as reader, recipes, store
 
 ALL_TIERS = ('bottles', 'recipes', 'system1', 'slm', 'near', 'llm')
 TOKEN_CEILING = 60000
@@ -87,6 +87,8 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
         db.close()
         if lookup is not db: lookup.close()
         if evidence: extra = {**extra, 'documents': evidence['documents']}
+        clinical = knowledge.cited(question)   # the cited clinical definitions this question used, shown with the answer
+        if clinical: extra = {**extra, 'clinical_sources': clinical}
         return {'status': status, 'final_tier': tier, 'recipe': recipe, 'columns': columns, 'rows': rows, 'validation': validation,
                 'steps': steps, 'escalations': escalations, 'seconds': round(time.monotonic() - started, 2), **extra}
     evidence = {}
@@ -104,6 +106,8 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
                 if whole: raise store.RecipeError(whole)
                 broken = governed.check(question, sql, params)   # a reading the governed definitions rule out never answers
                 if broken: raise store.RecipeError(' '.join(broken))
+                clinical = knowledge.check(question, sql, params)   # an enforced clinical definition the query contradicts
+                if clinical: raise store.RecipeError(' '.join(clinical))
             if read:
                 columns, rows, validation, read_steps, evidence['documents'] = reader.execute(
                     question, sql, params, read, db, readers=readers, s1_ledger=s1_ledger)
@@ -138,6 +142,14 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
         steps.append({'tier': 'scope', 'outcome': 'measure_not_computable', 'measures': [m for m, _, _ in blocked], 'tokens': 0, 'usd': 0.0})
         escalations.append({'from': 'scope', 'reason': 'this warehouse cannot compute it: ' + why})
         return done('unanswered', None, missing='This warehouse cannot compute it: ' + why + '. See measure_readiness.')
+
+    # A question a cited clinical definition says needs data this warehouse does not hold (SOFA, device days, bundle times)
+    # is declined with what is missing, before any rung: a count of nearby codes would look like the measure.
+    lacking = knowledge.not_computable(question)
+    if lacking:
+        steps.append({'tier': 'scope', 'outcome': 'clinical_definition_not_computable', 'tokens': 0, 'usd': 0.0})
+        escalations.append({'from': 'scope', 'reason': 'this warehouse cannot compute it: ' + '; '.join(lacking)})
+        return done('unanswered', None, missing='This warehouse cannot compute it: ' + '; '.join(lacking) + '.')
 
     from . import corrections
     reported = corrections.blocked(question)   # recipes a person reported wrong for this wording, until a reviewer settles it
@@ -186,6 +198,11 @@ def _ladder(question, *, tiers=ALL_TIERS, bottles=None, bottle_new=False, token_
             if broken:
                 steps.append({'tier': tier, 'outcome': 'recipe_contradicts_a_governed_definition', 'recipe': recipe_id, 'reason': ' '.join(broken)[:200], 'tokens': 0, 'usd': 0.0})
                 escalations.append({'from': tier, 'reason': ' '.join(broken)[:160]})
+                return None
+            clinical = knowledge.check(question, recipe['sql'], params)
+            if clinical:
+                steps.append({'tier': tier, 'outcome': 'recipe_contradicts_a_clinical_definition', 'recipe': recipe_id, 'reason': ' '.join(clinical)[:200], 'tokens': 0, 'usd': 0.0})
+                escalations.append({'from': tier, 'reason': ' '.join(clinical)[:160]})
                 return None
             missing = near.named_but_unused(question, recipe, params)
             if missing:
