@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-17T12:20:39.458414+00:00",
+  "updated_at": "2026-11-17T13:23:44.469514+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -7885,6 +7885,15 @@
       "evidence": [
         "eval/tiered/notes_v1_first_results.json",
         "clinical_core/agere/tiered/clarify.py"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T13:23:44.469514+00:00",
+      "decision": "notes_v1 fair comparison (emr_assistant: a general LLM connected to the records, question only, SQL and document tools) stopped at the weekly provider limit with 143 of 200 answers: 86.7% right, $0.48 a question, 39 s; Agere's stack from the question 54.5% at $0.066. Candidate fix for Agere's note selection (models.py reading-plan scope rules, read.py patients_stating) is uncommitted and not yet measured; development sets not rerun on it.",
+      "reason": "Mike 2026-11-17: the pitch is Agere on top of the EMR or data platform vs an LLM connected to it, on token cost and accuracy; the earlier llm_alone arm was handed the notes and did not answer that.",
+      "evidence": [
+        "clinical_core/agere/tiered/notes_proof.py"
       ],
       "scope_impact": "None."
     }
