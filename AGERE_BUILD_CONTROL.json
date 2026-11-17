@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-17T16:56:42.723099+00:00",
+  "updated_at": "2026-11-17T17:13:44.124522+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -934,9 +934,9 @@
     "current_gate_id": "G7",
     "last_delivered_gate": "G5",
     "product_commit": "ecfa2d62",
-    "updated_at": "2026-11-17T16:50:10.174345+00:00",
+    "updated_at": "2026-11-17T17:13:44.124522+00:00",
     "user_behavior_delta": "An unclear question becomes a short conversation: a language model asks only what the customer's definitions, own facilities and the person's saved defaults leave open, remembers the answers, stops after three exchanges (then shows each open reading computed side by side), hands one explicit question to the stack and saves the person's choices so they are not asked again.",
-    "measured_failure_reduction": "Clarifying conversation: built and tested with mocked models, development sets unchanged (53/53, 31/31, 13/13, 13/13); not yet measured with real askers. notes_v1 first run (2 runs): Agere readers on the same notes 94.0% at $0.004 a question; top-tier model alone 88.5% at $0.059; Agere whole stack from the question 54.5% at $0.066 (document selection, not reading, is the failure).",
+    "measured_failure_reduction": "notes_v1 (seen set): Agere whole stack 85% right, 14 wrong per 100, $0.10 a question; LLM connected to the records 81.5%, 18.5 wrong, $0.50. proof_v14 (seen set): Agere 69/4 at $0.089 vs assistant 77/6 at $0.39. Development sets unchanged.",
     "evidence": [
       "clinical_core/agere/tiered/clarify.py",
       "tests/core/test_tiered_clarify.py",
@@ -7985,6 +7985,17 @@
       "reason": "Mike 2026-11-17: audit where the stack is and draw how a question flows through it.",
       "evidence": [
         "artifacts/agere-blueprint/agere-blueprint.html"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T17:13:44.124522+00:00",
+      "decision": "Note finding fixed: the SQL writer is shown every document type by source (102 values; it saw only the 12 most common and guessed names). notes_v1 whole stack through the app entry (seen set, one run): 85 right, 14 wrong, 1 declined of 100, $0.103 a question, 25 s (before: 73% right per run, 19 wrong per run, $0.054). LLM connected to the records: 81.5% right, 18.5 wrong per 100, $0.50. Development sets 53/53, 31/31, 13/13, 13/13. Run-to-run consistency not measured on this change (one run); a fresh held-out notes set is needed to confirm.",
+      "reason": "Mike 2026-11-17: fix note finding (the audit's biggest gap).",
+      "evidence": [
+        "clinical_core/agere/tiered/models.py",
+        "eval/tiered/notes_v1_results_doctypes.json",
+        "artifacts/agere-tiered-core/devsets-doctypes-regression.log"
       ],
       "scope_impact": "None."
     }

@@ -261,6 +261,19 @@ def warehouse_vocabulary(limit=40):
         lines = []
         try:
             for table, col in VOCABULARY_COLUMNS:
+                if (table, col) == ('document', 'document_type'):
+                    # Every document type, by source: with only the 12 most common shown, the writer guessed names ("ED Note" for
+                    # ed_note), selected no documents, and note questions went unanswered (notes_v1, 2026-11-17).
+                    try:
+                        by = {}
+                        for src, kind in db.execute('SELECT DISTINCT source, document_type FROM document WHERE document_type IS NOT NULL ORDER BY 1, 2'):
+                            by.setdefault(src, []).append(str(kind))
+                    except sqlite3.Error:
+                        by = {}
+                    if by and sum(len(v) for v in by.values()) <= 300:
+                        lines.append('document.document_type, every value by source (use these exact values): '
+                                     + ' | '.join(f'{src}: ' + ', '.join(kinds) for src, kinds in by.items()) + '.')
+                        continue
                 try:
                     values = [r[0] for r in db.execute(f'SELECT DISTINCT "{col}" FROM "{table}" WHERE "{col}" IS NOT NULL LIMIT {limit + 1}')]
                 except sqlite3.Error:
