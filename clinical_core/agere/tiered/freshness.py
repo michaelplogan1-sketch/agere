@@ -25,7 +25,8 @@ from pathlib import Path
 from . import store
 
 LAG_DAYS = 31
-EVENT_DATE = {   # feeds with an event date; appointments are left out (scheduled dates run into the future)'encounter': 'event_date', 'utilization_event': 'event_date', 'measurement': 'event_date', 'claim': 'service_date',
+# Feeds with an event date; appointments are left out (scheduled dates run into the future).
+EVENT_DATE = {'encounter': 'event_date', 'utilization_event': 'event_date', 'measurement': 'event_date', 'claim': 'service_date',
               'payer_claim': 'service_date', 'prescription_fill': 'fill_date', 'fill': 'fill_date', 'visit': 'event_date', 'stay': 'admit_date',
               'condition': 'event_date', 'clinical_note': 'event_date'}
 
@@ -75,6 +76,16 @@ DELIVERIES = {
     'identical_redelivery': {'table': 'claim', 'sql': [],
                              'said': 'the 2029 claims file was delivered again with identical rows; nothing changed'},
 }
+# Run 2 (added after run 1, disclosed): the same events, also applied to the derived tables the streaming splice rebuilds for the
+# touched patients, since saved recipes mostly read derived tables (condition, stay, fill, member_month, measurement_latest).
+DERIVED = {
+    'corrected_lab': {'measurement_latest': ["UPDATE temp.measurement_latest SET value_canonical = value_canonical * 1.1 WHERE substr(event_date, 1, 4) = '2029' "
+                                             "AND value_canonical IS NOT NULL AND rowid % 15 = 9"]},
+    'retro_termination': {'member_month': ["DELETE FROM temp.member_month WHERE month > '2029-06' AND patient_id IN "
+                                           "(SELECT patient_id FROM temp.enrollment_span WHERE termination_reason = 'retro')"]},
+    'feed_stopped': {'visit': ["DELETE FROM temp.visit WHERE event_date >= '2030-04-01'"],
+                     'utilization_event': ["DELETE FROM temp.utilization_event WHERE event_date >= '2030-04-01' AND in_ehr = 1 AND sources NOT LIKE '%claim%'"]},
+}
 # The feed that stopped: the warehouse as delivered lacks the EHR encounter feed after 2030-03-31; the truth is the full feed.
 STOPPED = {'table': 'encounter', 'cut': '2030-04-01', 'said': 'the EHR encounter feed has delivered nothing dated after 2030-03-31; every other feed continues to 2030-05'}
 
@@ -104,13 +115,13 @@ def _answers(path='eval/tiered/trial_stale_v1.json'):
     return frozen, out
 
 
-def trial(path='eval/tiered/trial_stale_v1.json', out_dir='artifacts/agere-tiered-core/trials'):
+def trial(path='eval/tiered/trial_stale_v1.json', out_dir='artifacts/agere-tiered-core/trials', derived=False):
     """Code only. Journals one line per (delivery, answer) as scored; a rerun skips lines already written."""
     from ..streaming import replay, ticks
     from . import upkeep
     frozen, answers = _answers(path)
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
-    journal = out / 'stale-journal.jsonl'
+    journal = out / ('stale-journal-derived.jsonl' if derived else 'stale-journal.jsonl')
     done = {(r['delivery'], r['bottle']) for r in map(json.loads, journal.read_text().splitlines())} if journal.exists() else set()
     ws = out / 'stale-ws'
     shutil.rmtree(ws, ignore_errors=True); ws.mkdir(parents=True)
@@ -135,14 +146,17 @@ def trial(path='eval/tiered/trial_stale_v1.json', out_dir='artifacts/agere-tiere
             # As delivered: the feed lacks its last weeks. Truth: the full feed (the base result). Answers are computed on the
             # delivered data, so an answer is wrong when the delivered result differs from the full one.
             _shadow(db, d['table'], [f"DELETE FROM temp.\"{d['table']}\" WHERE event_date >= '{d['cut']}'"])
+            for t, st in (DERIVED.get(name, {}) if derived else {}).items(): _shadow(db, t, st)
             lagging = feed_lag(db)
             changed_tables, count_changed = set(), set()      # nothing arrived: no row changed since the last delivery
         else:
-            _shadow(db, d['table'], d['sql'])
-            rows = _diff(db, d['table'])
-            changed_tables = {d['table']} if rows else set()
-            n = db.execute(f"SELECT count(*) FROM temp.\"{d['table']}\"").fetchone()[0]
-            count_changed = {d['table']} if n != counts[d['table']] else set()
+            touched = {d['table']: d['sql'], **(DERIVED.get(name, {}) if derived else {})}
+            changed_tables, count_changed = set(), set()
+            for t, st in touched.items():
+                before = db.execute(f'SELECT count(*) FROM main."{t}"').fetchone()[0]
+                _shadow(db, t, st)
+                if _diff(db, t): changed_tables.add(t)
+                if db.execute(f'SELECT count(*) FROM temp."{t}"').fetchone()[0] != before: count_changed.add(t)
             lagging = {}
         # The candidate: a tick with the exact table diff, then the registry's own stale marking.
         rdb = replay.connect(ws)
@@ -194,6 +208,6 @@ def report(journal):
 
 
 if __name__ == '__main__':
-    if sys.argv[1:2] == ['trial']: print(trial())
-    elif sys.argv[1:2] == ['report']: print(report('artifacts/agere-tiered-core/trials/stale-journal.jsonl'))
+    if sys.argv[1:2] == ['trial']: print(trial(derived='--derived' in sys.argv))
+    elif sys.argv[1:2] == ['report']: print(report(sys.argv[2] if len(sys.argv) > 2 else 'artifacts/agere-tiered-core/trials/stale-journal.jsonl'))
     else: print(__doc__)
