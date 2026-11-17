@@ -922,6 +922,8 @@ def _right(reference, rows):
 # decimals within 0.06; text labels matched case-insensitively. Each reference row must be found in its own answer row, and
 # the row counts must agree. Used for the assistant comparison and for regrading every arm's stored answers alike.
 STRICT = os.environ.get('AGERE_PROOF_STRICT', 'off') == 'on'
+# AGERE_PROOF_TIERS limits the ladder arms to some rungs (a trial of one rung's decisions, e.g. recipes,system1,slm).
+LADDER = tuple(t for t in os.environ.get('AGERE_PROOF_TIERS', '').split(',') if t)
 
 
 def _value_ok(ref, got):
@@ -1066,7 +1068,7 @@ def run(runs=3, workers=4):
                 from . import assistant
                 o = assistant.answer(item['question'])
             else:
-                o = router.answer(item['question'], tiers=router.ALL_TIERS if ladder else ('llm',), bottles=bottles() if ladder else None,
+                o = router.answer(item['question'], tiers=(LADDER or router.ALL_TIERS) if ladder else ('llm',), bottles=bottles() if ladder else None,
                               s1_ledger=str(scratch / 's1.sqlite3'))
         except Exception as exc:
             if 'limit' in str(exc).lower(): raise
@@ -1078,6 +1080,7 @@ def run(runs=3, workers=4):
                 'frontier_tokens': sum(s.get('tokens', 0) for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
                 'checks_rejected': sum(1 for s in o['steps'] if 'Governed definition' in str(s.get('reason', ''))),
                 'rows': (o.get('rows') or [])[:3] if o.get('status') != 'needs_choice' else {x['id']: (x.get('rows') or [])[:3] for x in o.get('readings') or []},
+                's1': [[s.get('check') or 'classify', s.get('label'), s.get('confidence'), s.get('model')] for s in o['steps'] if s.get('tier') == 'system1' and 'confidence' in s] or None,
                 'readings_checked': {k: v for k, v in (o.get('readings_checked') or {}).items() if k in ('agree', 'answered_as', 'voi', 'others')} or None,
                 'question': item['question']}
 
@@ -1086,7 +1089,7 @@ def run(runs=3, workers=4):
     # Every result is written the moment it is scored, to a journal named for the set, its arms and grading. A run stopped by a
     # provider's usage limit keeps what it answered, and the next run with the same settings answers only what is missing
     # (2026-11-16: a three-arm run on proof_v13 hit the weekly limit and, saving only at the end, lost every answer).
-    tag = '-'.join([str(data.get('version')), '+'.join(arms), f'runs{runs}', 'strict' if STRICT else 'standard',
+    tag = '-'.join([str(data.get('version')), '+'.join(arms), *(['tiers' + '+'.join(LADDER)] if LADDER else []), *(['s1collect'] if os.environ.get('AGERE_TIERED_S1_COLLECT') == 'on' else []), f'runs{runs}', 'strict' if STRICT else 'standard',
                     'phrasings' + (os.environ.get('AGERE_PROOF_PHRASINGS') or 'all').replace(',', '+')])
     journal = OUT / f'journal-{tag}.jsonl'
     OUT.mkdir(parents=True, exist_ok=True)

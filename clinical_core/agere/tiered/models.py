@@ -10,12 +10,28 @@ import os
 import re
 import sqlite3
 import time
+from pathlib import Path
 
 from . import ledger, recipes, store
 
 LLM = os.environ.get('AGERE_TIERED_LLM', 'claude-sonnet-5-5')
 SLM = os.environ.get('AGERE_TIERED_SLM', 'claude-haiku-5-5')
 S1_THRESHOLD = 0.8
+# Candidate (off by default): fitted cut-offs per System One decision type, from config/agere/s1_thresholds.json
+# ({"classify": 0.x, "exact_fit": 0.y}); AGERE_TIERED_FITTED_THRESHOLDS=on uses them, a type not in the file keeps 0.8.
+# AGERE_TIERED_S1_COLLECT=on accepts every label (cut-off 0) so a trial can record what each cut-off would have done; the
+# provider fallback (Perplexity, then Jev below 0.8) is unchanged in both.
+S1_THRESHOLDS_FILE = 'config/agere/s1_thresholds.json'
+
+
+def s1_threshold(kind):
+    if os.environ.get('AGERE_TIERED_S1_COLLECT', 'off') == 'on': return 0.0
+    if os.environ.get('AGERE_TIERED_FITTED_THRESHOLDS', 'off') == 'on':
+        try:
+            return float(json.loads(Path(S1_THRESHOLDS_FILE).read_text()).get(kind, S1_THRESHOLD))
+        except (OSError, ValueError):
+            return S1_THRESHOLD
+    return S1_THRESHOLD
 
 
 def _json(text):
@@ -400,8 +416,9 @@ def s1_classify(question, ledger_path=None):
         if label and p >= S1_THRESHOLD: break
     step = {'tier': 'system1', 'model': provider, 'tokens': 0, 'usd': steps_cost, 'seconds': round(time.monotonic() - started, 2),
             'confidence': round(p, 4), 'label': label, **({'error': error} if error and not provider else {})}
-    if not label or label == 'none' or p < S1_THRESHOLD or label not in recipes.RECIPES:
-        return None, p, {**step, 'outcome': 'low_confidence' if label and label != 'none' and p < S1_THRESHOLD else 'no_matching_shape'}
+    cut = s1_threshold('classify')
+    if not label or label == 'none' or p < cut or label not in recipes.RECIPES:
+        return None, p, {**step, 'outcome': 'low_confidence' if label and label != 'none' and p < cut else 'no_matching_shape'}
     return label, p, {**step, 'outcome': 'classified'}
 
 
@@ -429,6 +446,6 @@ def s1_fit(question, recipe_id, params, ledger_path=None):
         usd += out.get('cost_usd') or 0.0
         label = out.get('label'); p = float((out.get('probabilities') or {}).get(label, 0.0)) if label else 0.0; provider = name
         if label and p >= S1_THRESHOLD: break
-    ok = label == 'exact' and p >= S1_THRESHOLD
+    ok = label == 'exact' and p >= s1_threshold('exact_fit')
     return ok, {'tier': 'system1', 'check': 'exact_fit', 'model': provider, 'tokens': 0, 'usd': usd, 'seconds': round(time.monotonic() - started, 2),
                 'label': label, 'confidence': round(p, 4), 'outcome': 'fits' if ok else 'not_exact_fit', **({'error': error} if error and not provider else {})}
