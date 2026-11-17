@@ -897,6 +897,19 @@ RECIPES = {
                "OFFSET ((SELECT COUNT(*) FROM d) - 1) / 2)) AS median_days, :year AS year FROM d",
         'grain': ['year'],
         'patterns': [r'how (?:many days|long) (?:does it take|did it take) (?:us )?to (?:submit|bill|drop) (?:a )?claims? (?:in|for) ' + YEAR, r'(?:average|median) days to (?:submit|bill) (?:in|for) ' + YEAR]},
+    # ---- claims runout / IBNR (2026-11-17, Mike approved after the trial): chain-ladder completion factors, computed by code
+    'claims_runout': {
+        'title': 'Estimated ultimate paid claims and IBNR (incurred but not yet paid) for the most recent incurred months as of a valuation date, by chain-ladder completion factors',
+        'params': {'valuation_date': {'type': 'date'}, 'months': {'type': 'int', 'min': 1, 'max': 12, 'default': 6}},
+        # The governed definition of paid amounts (payer_claim, counts_in_metrics = 1, dated by service_from), paid by the valuation date.
+        'sql': "SELECT service_from, paid_date, paid_cents FROM payer_claim WHERE counts_in_metrics = 1 AND service_from IS NOT NULL AND paid_date IS NOT NULL "
+               "AND paid_date <= :valuation_date",
+        'compute': 'runout',
+        'grain': ['incurred_month'],
+        'patterns': [r'(?:what (?:is|are) (?:our |the )?)?(?:estimated )?(?:ibnr|incurred but not (?:yet )?(?:reported|paid)(?: claims)?|claims? runout|ultimate (?:paid )?claims)'
+                     r'(?: for the (?:last|most recent) (?P<months>\d{1,2}) (?:incurred )?months)? (?:as of|at) (?P<valuation_date>20\d{2}-\d{2}-\d{2})',
+                     r'(?:estimate|project) (?:the )?(?:ibnr|claims? runout|ultimate (?:paid )?claims)(?: for the (?:last|most recent) (?P<months>\d{1,2}) (?:incurred )?months)? '
+                     r'(?:as of|at) (?P<valuation_date>20\d{2}-\d{2}-\d{2})']},
     # ---- perioperative (2026-11-16), over an EMR's procedure record (fhir_import.py): a case is a procedure_event in the OR, its minutes
     # patient in room to out of room (AACD). After hours is outside 07:00 to 17:00, Monday to Friday (a local definition, stated).
     'or_volume': {
@@ -1132,6 +1145,10 @@ def match(question, db=None):
 def execute(recipe_id, params, db=None):
     recipe = RECIPES[recipe_id]
     sql = recipe['sql']
+    if recipe.get('compute') == 'runout':   # the SQL selects the inputs; code computes the answer (runout.py)
+        from . import runout
+        columns, rows = runout.compute(sql, params, db or store.connect())
+        return sql, columns, rows
     bound = dict(params)
     for name, spec in recipe['params'].items():
         if spec['type'] == 'identifier':  # a whitelisted column name; never free text

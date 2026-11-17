@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-17T15:14:29.163513+00:00",
+  "updated_at": "2026-11-17T15:24:50.555128+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -934,7 +934,7 @@
     "current_gate_id": "G7",
     "last_delivered_gate": "G5",
     "product_commit": "ecfa2d62",
-    "updated_at": "2026-11-17T15:14:29.163513+00:00",
+    "updated_at": "2026-11-17T15:24:50.555128+00:00",
     "user_behavior_delta": "An unclear question becomes a short conversation: a language model asks only what the customer's definitions, own facilities and the person's saved defaults leave open, remembers the answers, stops after three exchanges (then shows each open reading computed side by side), hands one explicit question to the stack and saves the person's choices so they are not asked again.",
     "measured_failure_reduction": "Clarifying conversation: built and tested with mocked models, development sets unchanged (53/53, 31/31, 13/13, 13/13); not yet measured with real askers. notes_v1 first run (2 runs): Agere readers on the same notes 94.0% at $0.004 a question; top-tier model alone 88.5% at $0.059; Agere whole stack from the question 54.5% at $0.066 (document selection, not reading, is the failure).",
     "evidence": [
@@ -7925,6 +7925,18 @@
         "clinical_core/agere/tiered/app.py",
         "tests/core/test_tiered_clarify.py",
         "artifacts/agere-tiered-core/devsets-converse-regression.log"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T15:24:50.555128+00:00",
+      "decision": "Built-in claims runout / IBNR recipe (claims_runout, runout.py): chain-ladder completion factors computed by code from payer_claim (counts_in_metrics = 1, service_from, paid_date by the valuation date, the governed paid-amount definition). On the trial's 6 valuation dates, six most recent incurred months together: chain-ladder 3.41% mean absolute error, paid-to-date 20.40% (trial on the claim table: 3.5% vs 20.5%). Truth is payer_claim paid by the end of data; counts_in_metrics is each claim's final-version flag, a small use of later knowledge. The LLM cross-check beside it is not built. Development sets 53/53, 31/31, 13/13, 13/13 (cohort G11 failed once on a small-model rewrite and passed on rerun: run-to-run variance, not this change).",
+      "reason": "Mike approved the IBNR recipe (relayed by the research session) and asked for it before opening the app.",
+      "evidence": [
+        "clinical_core/agere/tiered/runout.py",
+        "tests/core/test_tiered_runout.py",
+        "artifacts/agere-tiered-core/devsets-ibnr-regression.log",
+        "artifacts/agere-tiered-core/devsets-ibnr-cohort-2.log"
       ],
       "scope_impact": "None."
     }
