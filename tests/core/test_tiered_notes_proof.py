@@ -33,5 +33,12 @@ class Scoring(unittest.TestCase):
         self.assertEqual(n._kappa(['yes', 'no'], ['no', 'yes']), -1.0)
 
 
+class Summary(unittest.TestCase):
+    def test_a_count_with_patients_is_summarised(self):   # the app's summary writer broke on the fifth column (2026-11-17)
+        from clinical_core.agere.tiered import narrative
+        cols = ['documents_read', 'documents_stating', 'documents_not_stating', 'documents_undecided', 'patients_stating']
+        self.assertEqual(narrative.by_code(cols, [[10, 4, 6, 0, 3]], {'mode': 'count'}), '4 of the 10 documents read state it, for 3 patients.')
+
+
 if __name__ == '__main__':
     unittest.main()

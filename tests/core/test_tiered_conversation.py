@@ -39,7 +39,7 @@ class Conversation(unittest.TestCase):
             return None, {'route': 'fallback'}
         menu = {'ops': {'monitor': 'control charts of rates', 'demand': 'volume forecasts', 'vbc': 'value-based care measures'}, 'uses': {}, 'text': 'menu',
                 'examples': {'monitor': ['Detect anomalies in monthly ED visits'], 'demand': ['Forecast ED visits for the next 4 weeks'], 'vbc': ['What is the risk score of our population?']}}
-        self.patches = [mock.patch.dict(os.environ, {'AGERE_TIERED_CORE': 'on', 'AGERE_TIERED_METHODS': 'on', 'AGERE_TIERED_TAKEOVER': 'on', 'AGERE_TIERED_METHODS_ASSIST': 'off',
+        self.patches = [mock.patch.dict(os.environ, {'AGERE_TIERED_CORE': 'on', 'AGERE_TIERED_METHODS': 'on', 'AGERE_TIERED_TAKEOVER': 'on', 'AGERE_TIERED_METHODS_ASSIST': 'off', 'AGERE_TIERED_CLARIFY_CONVERSATION': 'off',
                                                      'AGERE_TIERED_LEDGER': str(Path(self.dir.name) / 'ledger.sqlite3'), 'AGERE_TIERED_BOTTLES': str(Path(self.dir.name) / 'b.sqlite3')}),
                         mock.patch.object(local_compiler, 'compile', compiled), mock.patch.object(source_profile, 'load', lambda path: {}),
                         mock.patch.object(recipes, 'match', lambda q, db=None: None), mock.patch.object(methods, '_menu', lambda s: menu),
@@ -109,17 +109,17 @@ class Conversation(unittest.TestCase):
             app.resume(self.stack, asked['clarification_checkpoint'], {'text': 'Were ED visits unusually high in March 2029?'})
         self.assertEqual(seen, ['Detect anomalies in monthly ED visits', 'Were ED visits unusually high in March 2029?'])
 
-    def test_one_time_budget_per_question_is_passed_to_the_last_rung_and_skips_it_when_spent(self):
+    def test_one_time_budget_per_question_is_passed_to_the_last_rung_and_it_is_never_skipped_when_spent(self):
         import time
         seen = {}
         def answer(question, cohort=None, why=None, may_ask=False, **kw): seen.update(kw); return dict(ANSWER)
         with mock.patch.object(takeover, 'answer', answer), clarification.interaction('autonomous'):
             app.try_answer(self.stack, 'How many visits were avoidable?')
-            self.assertTrue(0 < seen['seconds'] <= app.QUESTION_SECONDS)
+            self.assertTrue(app.TAKEOVER_FLOOR <= seen['seconds'] <= max(app.QUESTION_SECONDS, app.TAKEOVER_FLOOR))
             seen.clear()
-            app.DEADLINE.set(time.monotonic() + 5)  # five seconds of the question's budget left
-            self.assertIsNone(app._takeover('How many visits were avoidable?', None, dict(UNANSWERED)))
-            self.assertEqual(seen, {})
+            app.DEADLINE.set(time.monotonic() + 5)  # five seconds of the question's budget left: the takeover still runs, bounded
+            self.assertIsNotNone(app._takeover('How many visits were avoidable?', None, dict(UNANSWERED)))
+            self.assertEqual(seen['seconds'], app.TAKEOVER_FLOOR)
 
     def test_a_restatement_system_one_rejects_is_offered_as_a_next_question_not_used(self):
         how = {'tier': 'methods', 'model': 'm', 'method': 'restatement_not_confirmed', 'picked': 'vbc', 'restated': 'What are our shared savings under MSSP ENHANCED?',

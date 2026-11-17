@@ -14,6 +14,7 @@ from . import VERSION, bottles as bottle_store, ledger as ledger_store, router, 
 # rungs finish in seconds; what is left when the last rung starts is all it gets, and it is skipped if too little is left.
 QUESTION_SECONDS = float(os.environ.get('AGERE_TIERED_QUESTION_SECONDS', '90'))
 TAKEOVER_NEEDS = 20.0
+TAKEOVER_FLOOR = float(os.environ.get('AGERE_TIERED_TAKEOVER_FLOOR', '150'))   # the takeover always gets its full time (takeover.MAX_SECONDS)
 DEADLINE = contextvars.ContextVar('tiered_question_deadline', default=None)
 
 
@@ -341,8 +342,23 @@ def _climb(stack, question, cohort, takeover_ok, near):
     if outcome['status'] != 'answered':
         if not takeover_ok: return None
         asking = cohort is None and _interactive(stack)
+        wide = next((e['reason'] for e in outcome.get('escalations') or [] if 'documents; this tier reads at most' in str(e.get('reason'))), None)
+        if asking and wide:   # the answer is in more documents than can be read: the person narrows it, nothing is guessed
+            from . import clarify
+            held = _converse(stack, question, clarify.begin(question, [{'id': 'reading1', 'label': 'As asked', 'question': question}],
+                                                            why='Answering needs reading the documents, and as asked it covers too many to read ('
+                                                                + wide.replace('execution error: ', '') + '). Ask the person to narrow it: the period, '
+                                                                'the kind of note or document, the facility or the patient group.'),
+                             outcome['steps'], outcome['seconds'])
+            if held is not None: return held
         done = _takeover(question, cohort, outcome, stack=stack if asking else None)
-        return done if done is not None or not asking else _closest(stack, question)
+        if done is not None or not asking: return done
+        # Nothing answered and a person is here: talk it through with them (clarify.py), never a dead end; the menu of
+        # closest analyses only when no model can hold the conversation.
+        from . import clarify
+        held = _converse(stack, question, clarify.begin(question, [{'id': 'reading1', 'label': 'As asked', 'question': question}]),
+                         outcome['steps'], outcome['seconds'])
+        return held if held is not None else _closest(stack, question)
     columns, rows, tier = outcome['columns'], outcome['rows'], outcome['final_tier']
     usd = sum(s.get('usd', 0.0) for s in outcome['steps'])
     calls = sum(1 for s in outcome['steps'] if s.get('model'))
@@ -719,10 +735,9 @@ def _takeover(question, cohort, outcome, stack=None):
     if earlier and 'previous question in the conversation' not in why:
         why += ' | Earlier questions in this conversation, oldest first (use them only if this question refers to them): ' + ' / '.join(f'"{q}"' for q in earlier)
     left = (DEADLINE.get() - __import__('time').monotonic()) if DEADLINE.get() is not None else None
-    if left is not None and left < TAKEOVER_NEEDS:
-        import sys
-        print(f'tiered takeover skipped: {left:.0f} seconds of the question budget left', file=sys.stderr, flush=True)
-        return None
+    # The last rung is never skipped for time (Mike 2026-11-17: an unanswered question goes to the frontier model). When the
+    # cheaper rungs used the question's budget, the takeover still gets its full TAKEOVER_FLOOR seconds (notes_v1: 60 s ran out on note questions); it stays bounded.
+    if left is not None: left = max(left, TAKEOVER_FLOOR)
     try:
         got = takeover.answer(question, cohort, why=why, **({'may_ask': True} if stack is not None else {}), **({'seconds': left} if left is not None else {}))
     except Exception as exc:
@@ -731,7 +746,12 @@ def _takeover(question, cohort, outcome, stack=None):
         print(f'tiered takeover failed: {type(exc).__name__}: {str(exc)[:200]}', file=sys.stderr, flush=True)
         return None
     if got is None: return None
-    if got.get('ask'):  # the frontier model asked the user instead of guessing between readings
+    if got.get('ask'):  # the frontier model found the question unclear: the clarifying conversation takes it from here
+        from . import clarify
+        held = _converse(stack, question, clarify.begin(question, [{'id': f'reading{i}', 'label': o[:120], 'question': o}
+                                                                    for i, o in enumerate(got['options'], 1)]),
+                         outcome['steps'] + got['steps'], round(outcome['seconds'] + got['seconds'], 2))
+        if held is not None: return held
         return _clarify(stack, question, 'reading', got['ask'], 'The question can be read in more than one way, or depends on something only you know; the answers would differ.',
                         [{'id': f'r{i}', 'label': o[:120], 'meaning': o} for i, o in enumerate(got['options'], 1)],
                         steps=outcome['steps'] + got['steps'], seconds=round(outcome['seconds'] + got['seconds'], 2))

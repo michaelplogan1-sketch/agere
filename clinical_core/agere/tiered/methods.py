@@ -72,9 +72,15 @@ def needs(stack, question, bottles=None):
     return wanted
 
 
+READS_DOCUMENTS = re.compile(r'(?i)\b(notes?|documents?|letters?|discharge summar(?:y|ies)|scanned|reports? (?:say|state|document|mention))\b')
+
+
 def claims(stack, question, bottles=None):
     """Code only: does this rung take the question before the recipe tiers? Not when a recipe or saved recipe matches."""
     from . import recipes
+    # A question about what notes, documents or letters say is for the reading tiers: the methods compute from structured
+    # fields and would answer something else (notes_v1, 2026-11-17: an ED-note question went to the ED timing method).
+    if READS_DOCUMENTS.search(str(question)): return False
     if plan(stack, question) is None: return False
     if recipes.match(question) is not None: return False
     return not (bottles is not None and bottles.match(question, statuses=('promoted',)) is not None)

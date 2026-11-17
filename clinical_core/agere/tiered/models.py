@@ -126,7 +126,7 @@ def nearest_definitions(question, k=None):
     import math
     k = NEAREST if k is None else k
     docs = {rid: _words(rid + ' ' + r['title'] + ' ' + ' '.join(r['params']) + ' ' + ' '.join(sorted(recipes.reads(r['sql']))))
-            for rid, r in recipes.RECIPES.items() if recipes.runnable(rid)}
+            for rid, r in recipes.RECIPES.items() if recipes.runnable(rid) and not r.get('compute')}   # a computed recipe's SQL only selects inputs
     df = {}
     for words in docs.values():
         for w in words: df[w] = df.get(w, 0) + 1
@@ -140,7 +140,8 @@ def definitions(question=None):
     """The reference SQL the frontier writer is shown. 'all' sends every applicable recipe's SQL (about 98,000 characters
     with 51 recipes); 'nearest' sends every applicable recipe's name and title on one line each and the SQL of only the
     few closest to the question, as case-based text-to-SQL work retrieves the nearest solved cases."""
-    usable = [rid for rid in recipes.RECIPES if recipes.runnable(rid)] if store.mapping() else list(recipes.RECIPES)
+    usable = [rid for rid in recipes.RECIPES if (recipes.runnable(rid) or not store.mapping())
+              and not recipes.RECIPES[rid].get('compute')]
     if DEFINITIONS != 'nearest' or question is None:
         return '\n'.join(f"- {rid}: {recipes.RECIPES[rid]['title']}\n  {recipes.RECIPES[rid]['sql']}" for rid in usable)
     close = nearest_definitions(question)
@@ -281,6 +282,19 @@ def warehouse_vocabulary(limit=40):
         lines = []
         try:
             for table, col in VOCABULARY_COLUMNS:
+                if (table, col) == ('document', 'document_type'):
+                    # Every document type, by source: with only the 12 most common shown, the writer guessed names ("ED Note" for
+                    # ed_note), selected no documents, and note questions went unanswered (notes_v1, 2026-11-17).
+                    try:
+                        by = {}
+                        for src, kind in db.execute('SELECT DISTINCT source, document_type FROM document WHERE document_type IS NOT NULL ORDER BY 1, 2'):
+                            by.setdefault(src, []).append(str(kind))
+                    except sqlite3.Error:
+                        by = {}
+                    if by and sum(len(v) for v in by.values()) <= 300:
+                        lines.append('document.document_type, every value by source (use these exact values): '
+                                     + ' | '.join(f'{src}: ' + ', '.join(kinds) for src, kinds in by.items()) + '.')
+                        continue
                 try:
                     values = [r[0] for r in db.execute(f'SELECT DISTINCT "{col}" FROM "{table}" WHERE "{col}" IS NOT NULL LIMIT {limit + 1}')]
                 except sqlite3.Error:
@@ -329,6 +343,16 @@ def llm_recipe(question, error=None, model=None, examples=None):
     from . import knowledge   # cited clinical definitions (enforced ones; candidates only in an evaluation run)
     clinical = knowledge.block(question)
     if clinical: system += '\n\n' + clinical
+    try:   # the data's own date, never today's: readings offered 2025 on data that runs to 2030 (the app's first conversations)
+        db = store.connect()
+        try:
+            today = store.as_of(db)
+        finally:
+            db.close()
+        system += (f"\n\nThe data runs to {today}; treat that as today. 'Last year' is {int(today[:4]) - 1}. A question with no period, or a "
+                   'reading you offer, uses periods the data covers, never one after that date or before the data begins.')
+    except Exception:
+        pass
     if examples is None and EXAMPLES and model in (None, LLM): examples = nearest_examples(question)
     shown = ''.join(f'\nSaved question: {t}\nIts verified SQL: {q}\n' for t, q in (examples or []))
     user = ('Verified saved queries for similar questions follow. They answer other questions: reuse their tables, joins and '

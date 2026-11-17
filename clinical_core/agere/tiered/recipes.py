@@ -12,6 +12,9 @@ from . import store
 KINDS = {'ed_visit': ('ed visits', 'emergency department visits', 'emergency visits', 'er visits'),
          'inpatient': ('inpatient admissions', 'inpatient stays', 'hospital admissions', 'hospitalizations', 'inpatient discharges'),
          'observation': ('observation stays', 'observation visits')}
+ADHERENCE_CLASSES = {c: (c.replace('_', ' '), c.replace('_', ' ') + 's') for c in ('metformin', 'sulfonylurea', 'dpp4_inhibitor', 'sglt2_inhibitor', 'glp1_agonist',
+                     'thiazolidinedione', 'insulin', 'ace_inhibitor', 'arb', 'arni', 'calcium_channel_blocker', 'thiazide_diuretic', 'beta_blocker', 'mra',
+                     'statin', 'ssri', 'snri', 'bupropion', 'mirtazapine', 'tricyclic_antidepressant')}   # therapy_courses.AREAS
 PATIENT_GROUPS = {'sex_reported': ('sex', 'gender'), 'coverage_type': ('coverage type', 'insurance type', 'coverage')}
 YEAR = r'(?P<year>20\d{2})'
 MONTH = r'(?P<month>20\d{2}-\d{2})'
@@ -897,6 +900,32 @@ RECIPES = {
                "OFFSET ((SELECT COUNT(*) FROM d) - 1) / 2)) AS median_days, :year AS year FROM d",
         'grain': ['year'],
         'patterns': [r'how (?:many days|long) (?:does it take|did it take) (?:us )?to (?:submit|bill|drop) (?:a )?claims? (?:in|for) ' + YEAR, r'(?:average|median) days to (?:submit|bill) (?:in|for) ' + YEAR]},
+    # ---- medication adherence by PDC (2026-11-17, research triage): the therapy-course code, not plain SQL (adherence.py)
+    'adherence_pdc': {
+        'title': 'Medication adherence by drug class in one year: patients with two or more fills, adherent (PDC 80% or more) and the adherent share, by the therapy-course method',
+        'params': {'year': {'type': 'year'}},
+        'sql': "SELECT MIN(fill_date) FROM fill", 'compute': 'adherence', 'grain': ['drug_class'],
+        'patterns': [r'(?:what (?:is|was) (?:our |the )?)?(?:medication )?adherence (?:\(pdc\) )?(?:by (?:drug )?class )?(?:in|for) ' + YEAR,
+                     r'(?:what share of|how many) patients (?:were|are) adherent to (?:their )?medications? (?:by (?:drug )?class )?(?:in|for) ' + YEAR]},
+    'adherence_pdc_class': {
+        'title': 'Medication adherence for one drug class in one year: patients with two or more fills, adherent (PDC 80% or more) and the adherent share, by the therapy-course method',
+        'params': {'drug_class': {'type': 'enum', 'values': list(ADHERENCE_CLASSES)}, 'year': {'type': 'year'}},
+        'sql': "SELECT MIN(fill_date) FROM fill", 'compute': 'adherence', 'grain': ['drug_class'],
+        'patterns': [r'(?:what (?:is|was) (?:our |the )?)?' + _alt(ADHERENCE_CLASSES) % 'drug_class' + r' adherence (?:\(pdc\) )?(?:in|for) ' + YEAR,
+                     r'(?:what share of|how many) patients (?:on|taking) ' + _alt(ADHERENCE_CLASSES) % 'drug_class' + r' (?:were|are) adherent(?: \(pdc[^)]*\))? (?:in|for) ' + YEAR]},
+    # ---- claims runout / IBNR (2026-11-17, Mike approved after the trial): chain-ladder completion factors, computed by code
+    'claims_runout': {
+        'title': 'Estimated ultimate paid claims and IBNR (incurred but not yet paid) for the most recent incurred months as of a valuation date, by chain-ladder completion factors',
+        'params': {'valuation_date': {'type': 'date'}, 'months': {'type': 'int', 'min': 1, 'max': 12, 'default': 6}},
+        # The governed definition of paid amounts (payer_claim, counts_in_metrics = 1, dated by service_from), paid by the valuation date.
+        'sql': "SELECT service_from, paid_date, paid_cents FROM payer_claim WHERE counts_in_metrics = 1 AND service_from IS NOT NULL AND paid_date IS NOT NULL "
+               "AND paid_date <= :valuation_date",
+        'compute': 'runout',
+        'grain': ['incurred_month'],
+        'patterns': [r'(?:what (?:is|are) (?:our |the )?)?(?:estimated )?(?:ibnr|incurred but not (?:yet )?(?:reported|paid)(?: claims)?|claims? runout|ultimate (?:paid )?claims)'
+                     r'(?: for the (?:last|most recent) (?P<months>\d{1,2}) (?:incurred )?months)? (?:as of|at) (?P<valuation_date>20\d{2}-\d{2}-\d{2})',
+                     r'(?:estimate|project) (?:the )?(?:ibnr|claims? runout|ultimate (?:paid )?claims)(?: for the (?:last|most recent) (?P<months>\d{1,2}) (?:incurred )?months)? '
+                     r'(?:as of|at) (?P<valuation_date>20\d{2}-\d{2}-\d{2})']},
     # ---- perioperative (2026-11-16), over an EMR's procedure record (fhir_import.py): a case is a procedure_event in the OR, its minutes
     # patient in room to out of room (AACD). After hours is outside 07:00 to 17:00, Monday to Friday (a local definition, stated).
     'or_volume': {
@@ -923,7 +952,7 @@ RECIPES = {
         'grain': ['year'],
         'patterns': [r'how many (?:or|operating room|surgical) cases (?:started|were done) after hours (?:in|during) ' + YEAR, r'what share of (?:or|operating room|surgical) cases (?:started|were) after hours (?:in|during) ' + YEAR]},
 }
-ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS}
+ENUM_WORDS = {'kind': KINDS, 'group': PATIENT_GROUPS, 'drug_class': ADHERENCE_CLASSES}
 def vocabulary(spec, db=None):
     cache = store.scoped('recipe_vocabulary')   # per warehouse: a live one-patient layer has its own values
     if spec['query'] not in cache:
@@ -1011,6 +1040,17 @@ def unknown_filter_values(sql, params, db=None):
     for m in re.finditer(r"(?<!not )\b(?:[a-z_][a-z0-9_]*\.)?([a-z_][a-z0-9_]*)\s+in\s*\(([^()]*)\)", text, re.I):
         for item in re.findall(r"'([^']*)'|:([a-z_][a-z0-9_]*)", m.group(2)):
             pairs.append((m.group(1), item[0] or params.get(item[1])))
+    # A code pattern (GLOB or LIKE) that matches nothing: "patients with a fall" counted ICD-10 W00-W19, which this warehouse never
+    # codes, and returned 0 as if nobody fell; falls are recorded only in the notes (the app's first conversations, 2026-11-17).
+    for m in re.finditer(r"(?<!not )\b(?:[a-z_][a-z0-9_]*\.)?([a-z_][a-z0-9_]*)\s+(glob|like)\s+(?::([a-z_][a-z0-9_]*)|'([^']*)')", text, re.I):
+        column, op, value = m.group(1), m.group(2).upper(), params.get(m.group(3)) if m.group(3) else m.group(4)
+        if not isinstance(value, str) or not value.strip('%*?_ ') or len(value) > 80: continue
+        tables = [t for t in read if column.lower() in columns(t)]
+        if not tables: continue
+        if any(q(f'SELECT 1 FROM "{t}" WHERE "{column}" {op} ? LIMIT 1', (value,)) for t in tables): continue
+        return (f"No row of {tables[0]}.{column} matches {op} '{value}': this warehouse does not record that in coded data, so a count "
+                'of 0 would be wrong. If the question is about something notes or documents describe, return a reading plan over the '
+                'document table instead.')
     for column, value in pairs:
         if not isinstance(value, str) or not value.strip() or len(value) > 80: continue
         if re.fullmatch(r'[\d\-.:/ ]+', value): continue                     # numbers, years, months, dates
@@ -1132,6 +1172,10 @@ def match(question, db=None):
 def execute(recipe_id, params, db=None):
     recipe = RECIPES[recipe_id]
     sql = recipe['sql']
+    if recipe.get('compute'):   # the SQL selects the inputs; code computes the answer (runout.py, adherence.py)
+        from . import adherence, runout
+        columns, rows = {'runout': runout, 'adherence': adherence}[recipe['compute']].compute(sql, params, db or store.connect())
+        return sql, columns, rows
     bound = dict(params)
     for name, spec in recipe['params'].items():
         if spec['type'] == 'identifier':  # a whitelisted column name; never free text

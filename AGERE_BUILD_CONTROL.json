@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-17T13:48:54.760498+00:00",
+  "updated_at": "2026-11-17T17:13:44.124522+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -934,9 +934,9 @@
     "current_gate_id": "G7",
     "last_delivered_gate": "G5",
     "product_commit": "ecfa2d62",
-    "updated_at": "2026-11-17T13:48:54.760498+00:00",
+    "updated_at": "2026-11-17T17:13:44.124522+00:00",
     "user_behavior_delta": "An unclear question becomes a short conversation: a language model asks only what the customer's definitions, own facilities and the person's saved defaults leave open, remembers the answers, stops after three exchanges (then shows each open reading computed side by side), hands one explicit question to the stack and saves the person's choices so they are not asked again.",
-    "measured_failure_reduction": "Clarifying conversation: built and tested with mocked models, development sets unchanged (53/53, 31/31, 13/13, 13/13); not yet measured with real askers. notes_v1 first run (2 runs): Agere readers on the same notes 94.0% at $0.004 a question; top-tier model alone 88.5% at $0.059; Agere whole stack from the question 54.5% at $0.066 (document selection, not reading, is the failure).",
+    "measured_failure_reduction": "notes_v1 (seen set): Agere whole stack 85% right, 14 wrong per 100, $0.10 a question; LLM connected to the records 81.5%, 18.5 wrong, $0.50. proof_v14 (seen set): Agere 69/4 at $0.089 vs assistant 77/6 at $0.39. Development sets unchanged.",
     "evidence": [
       "clinical_core/agere/tiered/clarify.py",
       "tests/core/test_tiered_clarify.py",
@@ -7921,6 +7921,98 @@
       "evidence": [
         "eval/tiered/notes_v1_results_fair.json",
         "artifacts/agere-tiered-core/devsets-notefix-regression.log"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T14:28:39.434266+00:00",
+      "decision": "notes_v1 with the WHOLE stack (app.try_answer, frontier takeover included; seen set, 2 runs): 73.0% right (73, 73), 38 wrong, 16 declined, $0.054 a question, 32 s; LLM connected to the records 81.5%, 37 wrong, $0.50, 41 s. Takeover answered 16 (8 right, $0.32 each); 9 questions got no tiered answer at all; 4 methods answers had no usable figure. Fixed a crash my note-selection change caused in the app's summary writer (narrative.py), which the development sets do not reach. Standing rule: comparisons test the whole stack through the app entry, never router.answer alone.",
+      "reason": "Mike 2026-11-17: 'when you are comparing our stack to an LLM please test the entire thing'.",
+      "evidence": [
+        "eval/tiered/notes_v1_results_whole_stack.json",
+        "clinical_core/agere/tiered/narrative.py"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T15:14:29.163513+00:00",
+      "decision": "Declines removed from the whole stack: the frontier takeover is never skipped for time and always gets its full 150 s; note questions are not taken by structured-data methods; when nothing answers and a person is present, and when the takeover finds the question unclear, the clarifying conversation takes over. notes_v1 (seen set), the 16 declined answers re-run on the fixed stack and merged: 157 right, 42 wrong, 1 declined of 200 (78.5%), $0.066 a question; LLM connected to the records 163 right, 37 wrong (81.5%), $0.50. An empty answer table is now scored as 'none' (wrong where the key has some), not as a decline. The one left declined (N029 run 2) found nothing in the takeover's full time; with a person present it now goes to the conversation.",
+      "reason": "Mike 2026-11-17: nothing should be declined; it escalates to the frontier model, and ambiguity goes back to the person in conversation.",
+      "evidence": [
+        "clinical_core/agere/tiered/app.py",
+        "tests/core/test_tiered_clarify.py",
+        "artifacts/agere-tiered-core/devsets-converse-regression.log"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T15:24:50.555128+00:00",
+      "decision": "Built-in claims runout / IBNR recipe (claims_runout, runout.py): chain-ladder completion factors computed by code from payer_claim (counts_in_metrics = 1, service_from, paid_date by the valuation date, the governed paid-amount definition). On the trial's 6 valuation dates, six most recent incurred months together: chain-ladder 3.41% mean absolute error, paid-to-date 20.40% (trial on the claim table: 3.5% vs 20.5%). Truth is payer_claim paid by the end of data; counts_in_metrics is each claim's final-version flag, a small use of later knowledge. The LLM cross-check beside it is not built. Development sets 53/53, 31/31, 13/13, 13/13 (cohort G11 failed once on a small-model rewrite and passed on rerun: run-to-run variance, not this change).",
+      "reason": "Mike approved the IBNR recipe (relayed by the research session) and asked for it before opening the app.",
+      "evidence": [
+        "clinical_core/agere/tiered/runout.py",
+        "tests/core/test_tiered_runout.py",
+        "artifacts/agere-tiered-core/devsets-ibnr-regression.log",
+        "artifacts/agere-tiered-core/devsets-ibnr-cohort-2.log"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T15:46:36.311170+00:00",
+      "decision": "First real use of the clarifying conversation in the app (8 unclear questions through /api/stack/compose and one in the page): it asks sensible questions with options, the card renders, a clear question is answered without asking (ED visits 2029: 4 s, $0.001), an unanswerable one gets an honest 'no survey data'. Fixed: (1) 'last year' was read as 2025 on data that runs to 2030; the conversation and the frontier SQL writer now get the data's own date; (2) the person's answers were not saved when the model listed no choices; code now saves each answered question; (3) periods are never saved as standing defaults. Test answers were removed from the saved defaults. Open: 'How many patients had a fall?' counted falls by diagnosis code and got 0 instead of reading notes.",
+      "reason": "Mike 2026-11-17: test it in the app and see how the stack goes back and forth with the person asking.",
+      "evidence": [
+        "clinical_core/agere/tiered/clarify.py",
+        "clinical_core/agere/tiered/models.py",
+        "tests/core/test_tiered_clarify.py",
+        "artifacts/agere-tiered-core/devsets-clock-regression.log"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T16:34:09.809843+00:00",
+      "decision": "Fall question fixed. Cause: the clarified question became 'ICD-10 W00-W19', codes this warehouse never uses (falls are only in notes: 634 notes, 524 patients), and the count of 0 was returned as the answer. Fix 1: a GLOB/LIKE code pattern that matches no row is refused like an unknown value, pointing the SQL writer to a reading plan. Fix 2: a reading plan over more documents than can be read (73,529 for 'ever') now starts the clarifying conversation, which asks the person to narrow by period, note type, facility or patient group. In the app: asked period then hospitals, then read 491 notes: 36 patients, 69 notes (2030 to date, own hospitals), $0.23, about 70 s; not verified against a key. Development sets unchanged.",
+      "reason": "Mike 2026-11-17: fix the fall question.",
+      "evidence": [
+        "clinical_core/agere/tiered/recipes.py",
+        "clinical_core/agere/tiered/app.py",
+        "tests/core/test_tiered_absent_codes.py",
+        "artifacts/agere-tiered-core/devsets-fall-regression.log"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T16:50:10.174345+00:00",
+      "decision": "Research items built (Mike approved): (1) bounded equivalence check (upkeep.bounded, from the research branch) on by default at the promotion gate; a counterexample keeps a candidate provisional; the 6 defects it found (203, 211, 221 return 0 on other parameter values; 390, 758 report unknown as negative; 750 differs in 2026) reproduced and suspended. (2) 4 saved recipes answering readmission questions from utilization_event.readmitted_30d retired (16, 268, 589, 687); 4 that name the column in their own wording kept. (3) Medication adherence answered by the therapy-course PDC code (adherence.py; adherence_pdc, adherence_pdc_class): follows PQA, not independently adjudicated; plain SQL overstated by +6.2 points in the trial. (4) Small-model rung off for structured-data recipes (AGERE_TIERED_SLM_RUNG=on restores it): all its wrong proof_v13 answers were structured recipes, and switched off entirely it lost dev items D04, D05, D10 (document-reading recipes it fills correctly), so it stays on for document-reading recipes. Development sets 53/53, 31/31, 13/13, 13/13. Not built yet: comparison-group guard, PHI route guard, paired statistics as acceptance, the three check-first items, the IBNR LLM cross-check.",
+      "reason": "Research triage relayed Mike's approval; Mike: 'Yes, start them'.",
+      "evidence": [
+        "clinical_core/agere/tiered/upkeep.py",
+        "clinical_core/agere/tiered/learn.py",
+        "clinical_core/agere/tiered/adherence.py",
+        "clinical_core/agere/tiered/router.py",
+        "tests/core/test_tiered_adherence.py",
+        "artifacts/agere-tiered-core/devsets-research2-regression.log",
+        "artifacts/agere-tiered-core/void/bottles-before-equivalence-suspend-20261117.sqlite3"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T16:56:42.723099+00:00",
+      "decision": "Stack audit and blueprint published (https://claude.ai/artifact/WY6Ub46oqfeyQuv6bZkJzR). Audit: proven = cost (about 4x cheaper on structured, 8x on notes, similar wrong-answer count), note reading (94% vs 88.5% held-out), definition enforcement, no dead ends; weak = raw accuracy 3-8 points behind a general model on seen sets, note-type names hidden from the SQL writer (only 12 most common shown), conversation untested by a real person, small-model rewrite wobble, clinician spot-check of the key not done; not built = PHI route guard, savings comparison group, paired statistics, fresh held-out sets v15 and notes_v2, push.",
+      "reason": "Mike 2026-11-17: audit where the stack is and draw how a question flows through it.",
+      "evidence": [
+        "artifacts/agere-blueprint/agere-blueprint.html"
+      ],
+      "scope_impact": "None."
+    },
+    {
+      "at": "2026-11-17T17:13:44.124522+00:00",
+      "decision": "Note finding fixed: the SQL writer is shown every document type by source (102 values; it saw only the 12 most common and guessed names). notes_v1 whole stack through the app entry (seen set, one run): 85 right, 14 wrong, 1 declined of 100, $0.103 a question, 25 s (before: 73% right per run, 19 wrong per run, $0.054). LLM connected to the records: 81.5% right, 18.5 wrong per 100, $0.50. Development sets 53/53, 31/31, 13/13, 13/13. Run-to-run consistency not measured on this change (one run); a fresh held-out notes set is needed to confirm.",
+      "reason": "Mike 2026-11-17: fix note finding (the audit's biggest gap).",
+      "evidence": [
+        "clinical_core/agere/tiered/models.py",
+        "eval/tiered/notes_v1_results_doctypes.json",
+        "artifacts/agere-tiered-core/devsets-doctypes-regression.log"
       ],
       "scope_impact": "None."
     }
