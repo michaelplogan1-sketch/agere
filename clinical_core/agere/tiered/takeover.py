@@ -59,6 +59,40 @@ def enabled():
     return os.environ.get('AGERE_TIERED_TAKEOVER', 'off') == 'on'
 
 
+# Candidates (off by default), from the harness-cost research row (2026-11-17):
+#   AGERE_TIERED_TAKEOVER_COMPACT  results enter the log as tab-separated rows, not JSON; a row already shown by an earlier
+#                                  query is replaced by a pointer to it; document whitespace is collapsed. Code only.
+#   AGERE_TIERED_TAKEOVER_BATCH    one turn may run a list of up to 4 queries.
+def _compact():
+    return os.environ.get('AGERE_TIERED_TAKEOVER_COMPACT', 'off') == 'on'
+
+
+def _batch():
+    return os.environ.get('AGERE_TIERED_TAKEOVER_BATCH', 'off') == 'on'
+
+
+BATCH_RULE = '''
+
+You may also send {"sql": ["<SELECT>", "<SELECT>", ...]} with up to 4 queries when you already know you need all of them;
+each is run and shown as its own numbered query.'''
+
+
+def _render(n, sql, columns, rows, earlier):
+    """One query result as it enters the log. Compact form: tab-separated cells, and a row identical to one shown by an
+    earlier query is replaced by a pointer (earlier: {row text: 'Query k row i'}, updated here)."""
+    shown = [[_cell(v) for v in r] for r in rows[:MAX_ROWS_SHOWN]]
+    head = f'Query {n}: {sql}\n'
+    more = f', first {MAX_ROWS_SHOWN} shown' if len(rows) > MAX_ROWS_SHOWN else ''
+    if not _compact():
+        return head + f'Columns: {json.dumps(columns)}\nRows ({len(rows)} total{more}): {json.dumps(shown, default=str)}', shown
+    lines = []
+    for i, r in enumerate(shown, 1):
+        text = '\t'.join('' if v is None else str(v) for v in r)
+        lines.append(f'= {earlier[text]}' if text in earlier else text)
+        earlier.setdefault(text, f'Query {n} row {i}')
+    return head + '\t'.join(columns) + f'\n({len(rows)} rows{more})\n' + '\n'.join(lines), shown
+
+
 def _cell(v):
     return v if not isinstance(v, str) or len(v) <= MAX_CELL else v[:MAX_CELL] + '...'
 
@@ -85,7 +119,8 @@ def answer(question, cohort=None, why=None, may_ask=False, seconds=None):
     db = store.connect(cohort)
     try:
         system = SYSTEM % (MAX_DOCUMENTS, store.as_of(db), MAX_STEPS, store.schema_text(db), models.definitions(question))
-        system += NEXT + (ASK if may_ask else '')
+        system += NEXT + (ASK if may_ask else '') + (BATCH_RULE if _batch() else '')
+        earlier = {}
         log = ['Question: ' + question]
         if why: log.append('Why the automatic methods stopped: ' + str(why)[:1200])
         if cohort is not None: log.append(f'Every patient table is already restricted to the {len(cohort)} selected patients.')
@@ -108,16 +143,19 @@ def answer(question, cohort=None, why=None, may_ask=False, seconds=None):
                 if not isinstance(out, dict): raise ValueError('not an object')
             except (ValueError, json.JSONDecodeError):
                 log.append('Your last reply was not one JSON object. Return exactly one JSON object.'); continue
-            if isinstance(out.get('sql'), str):
-                try:
-                    columns, rows = store.run(out['sql'], db=db)
-                except store.RecipeError as exc:
-                    log.append(f'Query failed: {str(exc)[:300]}\nSQL: {out["sql"][:600]}'); continue
-                results.append({'sql': out['sql'], 'columns': columns, 'rows': rows})
-                shown = [[_cell(v) for v in r] for r in rows[:MAX_ROWS_SHOWN]]
-                seen.append(json.dumps([columns, shown], default=str))
-                log.append(f'Query {len(results)}: {out["sql"]}\nColumns: {json.dumps(columns)}\nRows ({len(rows)} total'
-                           + (f', first {MAX_ROWS_SHOWN} shown' if len(rows) > MAX_ROWS_SHOWN else '') + f'): {json.dumps(shown, default=str)}')
+            queries = out.get('sql') if isinstance(out.get('sql'), str) else None
+            if queries is None and _batch() and isinstance(out.get('sql'), list) and out['sql'] and all(isinstance(q, str) for q in out['sql']):
+                queries = out['sql'][:4]
+            if queries is not None:
+                for sql in ([queries] if isinstance(queries, str) else queries):
+                    try:
+                        columns, rows = store.run(sql, db=db)
+                    except store.RecipeError as exc:
+                        log.append(f'Query failed: {str(exc)[:300]}\nSQL: {sql[:600]}'); continue
+                    results.append({'sql': sql, 'columns': columns, 'rows': rows})
+                    text, shown = _render(len(results), sql, columns, rows, earlier)
+                    seen.append(json.dumps([columns, shown], default=str))
+                    log.append(text)
             elif isinstance(out.get('read'), list):
                 ids = [str(i) for i in out['read']][:MAX_DOCUMENTS]
                 found = store.texts(ids, db)
@@ -125,7 +163,8 @@ def answer(question, cohort=None, why=None, may_ask=False, seconds=None):
                     body = (found.get(rid) or {}).get('text')
                     if body is None: log.append(f'Document {rid}: not found'); continue
                     documents.append(rid); seen.append(body[:MAX_DOCUMENT_CHARS])
-                    log.append(f'Document {rid} ({found[rid]["event_date"]}):\n{body[:MAX_DOCUMENT_CHARS]}')
+                    body = ' '.join(body[:MAX_DOCUMENT_CHARS].split()) if _compact() else body[:MAX_DOCUMENT_CHARS]
+                    log.append(f'Document {rid} ({found[rid]["event_date"]}):\n{body}')
             elif may_ask and isinstance(out.get('ask'), str) and out['ask'].strip():
                 options = list(dict.fromkeys(' '.join(str(o).split()) for o in out.get('options') or [] if str(o).strip()))[:4]
                 if len(options) < 2:

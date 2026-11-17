@@ -1,0 +1,305 @@
+{
+ "version": "trial_takeover_1",
+ "authored": "2026-11-17",
+ "authored_by": "Claude (triage trial session), before any arm ran",
+ "frozen": "Written before any run of the product on it; to be committed before its first run and never edited after.",
+ "purpose": "Takeover-rung cost trial (harness-cost research row): the proof_v14 questions the tiers declined on run 0 of the 17 November three-run journal, which in the app go to the takeover loop. Arms: today, compact results, compact + batched queries.",
+ "reference": "Computed by eval/tiered/proof_v14_references.py from the raw tables, consistent with the customer definitions.",
+ "reference_module": "eval/tiered/proof_v14_references.py",
+ "customer_definitions": "eval/tiered/proof_v14_customer_definitions.json",
+ "phrasing": "The first phrasing is how an executive or analyst would ask; the second is explicit.",
+ "scoring": "Penalty rule (+1 right, 0 declined, -10 wrong) with the proof references; cost per answer, turns per answer, and cache read / write / uncached input per answer.",
+ "questions": [
+  {
+   "id": "V020",
+   "domain": "readmissions",
+   "reference": "readmit_rate",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How did our readmission rate come out in 2029?",
+    "30-day all-cause readmission rate for index discharges in 2029 at our four hospitals, by index discharge date, 4 decimals."
+   ]
+  },
+  {
+   "id": "V023",
+   "domain": "emergency department",
+   "reference": "ed_visits",
+   "args": [
+    "2027"
+   ],
+   "phrasings": [
+    "How many ED visits did our hospitals see in 2027?",
+    "Count of emergency department encounters (one per encounter_id, versions merged) at our four hospitals with arrival date in 2027."
+   ]
+  },
+  {
+   "id": "V024",
+   "domain": "emergency department",
+   "reference": "ed_visits",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What was ED volume for 2028?",
+    "Number of ED visits at WH-HOSPITAL-0 to WH-HOSPITAL-3 with arrival in 2028."
+   ]
+  },
+  {
+   "id": "V025",
+   "domain": "emergency department",
+   "reference": "ed_visits",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many emergency visits did we have in 2029?",
+    "Count ED encounters at our four hospitals arriving in calendar 2029."
+   ]
+  },
+  {
+   "id": "V026",
+   "domain": "emergency department",
+   "reference": "ed_median_hours",
+   "args": [
+    "2028",
+    "all"
+   ],
+   "phrasings": [
+    "What was median ED length of stay in 2028, in hours?",
+    "Median time from ED arrival to departure in hours across all ED visits at our four hospitals arriving in 2028, one decimal."
+   ]
+  },
+  {
+   "id": "V027",
+   "domain": "emergency department",
+   "reference": "ed_median_hours",
+   "args": [
+    "2029",
+    "all"
+   ],
+   "phrasings": [
+    "How long was the typical ED visit in 2029, in hours?",
+    "Median ED arrival-to-departure time in hours for all ED visits at our four hospitals in 2029, one decimal."
+   ]
+  },
+  {
+   "id": "V028",
+   "domain": "emergency department",
+   "reference": "ed_median_hours",
+   "args": [
+    "2029",
+    "admitted"
+   ],
+   "phrasings": [
+    "For ED patients who were admitted in 2029, what was the median ED time in hours?",
+    "Median ED arrival-to-departure hours for 2029 ED visits at our four hospitals with disposition admitted or inpatient_admission, one decimal."
+   ]
+  },
+  {
+   "id": "V029",
+   "domain": "emergency department",
+   "reference": "ed_median_hours",
+   "args": [
+    "2028",
+    "discharged"
+   ],
+   "phrasings": [
+    "Median ED time in hours for treat-and-release patients in 2028?",
+    "Median ED arrival-to-departure hours for 2028 ED visits at our four hospitals not admitted and not placed in observation, one decimal."
+   ]
+  },
+  {
+   "id": "V030",
+   "domain": "emergency department",
+   "reference": "ed_share_over_hours",
+   "args": [
+    "2029",
+    "6"
+   ],
+   "phrasings": [
+    "What share of 2029 ED visits lasted six hours or more?",
+    "Share of ED visits at our four hospitals arriving in 2029 with arrival-to-departure time of at least 6 hours, 4 decimals."
+   ]
+  },
+  {
+   "id": "V031",
+   "domain": "emergency department",
+   "reference": "ed_admit_rate",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "What percent of ED visits turned into admissions in 2028?",
+    "Share of 2028 ED visits at our four hospitals with disposition admitted or inpatient_admission, 4 decimals."
+   ]
+  },
+  {
+   "id": "V032",
+   "domain": "emergency department",
+   "reference": "ed_obs_rate",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How often did ED visits go to observation in 2029?",
+    "Share of 2029 ED visits at our four hospitals with disposition observation, hospital_observation or observation_for_mobility, 4 decimals."
+   ]
+  },
+  {
+   "id": "V033",
+   "domain": "emergency department",
+   "reference": "ed_top_dx",
+   "args": [
+    "2028",
+    "5"
+   ],
+   "phrasings": [
+    "What were the top five ED diagnoses in 2028?",
+    "Top 5 ICD-10 3-character categories of the principal diagnosis on ED visits at our four hospitals in 2028, with counts."
+   ]
+  },
+  {
+   "id": "V034",
+   "domain": "emergency department",
+   "reference": "obs_stays",
+   "args": [
+    "2029"
+   ],
+   "phrasings": [
+    "How many observation stays did we have in 2029?",
+    "Count of observation encounters (one per encounter_id) at our four hospitals starting in 2029."
+   ]
+  },
+  {
+   "id": "V035",
+   "domain": "emergency department",
+   "reference": "obs_mean_hours",
+   "args": [
+    "2028"
+   ],
+   "phrasings": [
+    "How long did observation patients stay on average in 2028, in hours?",
+    "Mean observation hours (start to end time) for observation stays at our four hospitals starting in 2028, one decimal."
+   ]
+  },
+  {
+   "id": "V087",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was nurse staffing in hours per patient day at our hospitals in 2028?",
+    "Compute nursing hours per patient day for our four hospitals in 2028 from staffing or timekeeping records."
+   ]
+  },
+  {
+   "id": "V088",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our OR first-case on-time start rate in 2029?",
+    "Share of first surgical cases of the day starting on schedule in our operating rooms in 2029, from OR scheduling data."
+   ]
+  },
+  {
+   "id": "V089",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our operating margin in 2028?",
+    "Operating income divided by operating revenue for the health system in 2028 from the general ledger."
+   ]
+  },
+  {
+   "id": "V090",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our HCAHPS top-box score for overall hospital rating in 2029?",
+    "Share of HCAHPS respondents rating our hospitals 9 or 10 in 2029."
+   ]
+  },
+  {
+   "id": "V092",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "How many inpatient admissions did our hospitals have in 2024?",
+    "Count inpatient admissions at our four hospitals with an admit date in 2024."
+   ]
+  },
+  {
+   "id": "V093",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our medical PMPM in 2032?",
+    "Medical paid dollars per member month for calendar 2032."
+   ]
+  },
+  {
+   "id": "V094",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our bed occupancy rate in 2029?",
+    "Inpatient patient days / (staffed beds x days) for our four hospitals in 2029."
+   ]
+  },
+  {
+   "id": "V095",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was nursing turnover in 2028?",
+    "Registered nurse separations / average RN headcount at our hospitals in 2028 from HR data."
+   ]
+  },
+  {
+   "id": "V097",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was the median door-to-provider time in our EDs in 2029?",
+    "Median minutes from ED arrival to first provider evaluation at our four hospitals in 2029."
+   ]
+  },
+  {
+   "id": "V098",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our central line infection rate (CLABSI SIR) in 2028?",
+    "NHSN CLABSI standardized infection ratio for our four hospitals in 2028."
+   ]
+  },
+  {
+   "id": "V099",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "How many wRVUs did our employed physicians generate in 2029?",
+    "Sum of work RVUs on professional services billed by our employed physicians in 2029."
+   ]
+  },
+  {
+   "id": "V100",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our ED left-without-being-seen rate in 2030 Q4?",
+    "Share of ED arrivals at our four hospitals in October-December 2030 who left before being seen."
+   ]
+  },
+  {
+   "id": "V101",
+   "domain": "cannot be answered",
+   "unanswerable": true,
+   "phrasings": [
+    "What was our Leapfrog hospital safety grade in 2029?",
+    "The Leapfrog safety grade assigned to each of our four hospitals in 2029."
+   ]
+  }
+ ]
+}
