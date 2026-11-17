@@ -97,3 +97,45 @@ def same(a, b, question=''):
         return [[round(float(v), 4) for v in r if isinstance(v, (int, float)) and not isinstance(v, bool) and not (isinstance(v, int) and v in years)]
                 for r in rows or []]
     return norm(a) == norm(b)
+
+
+# ---- candidate (off by default): value-of-information clarification ------------------------------------------------------
+# From the research branch codex/research-voi-20261106 (clinical/clarification.py score(), clinical_core/information_value.py),
+# ported unchanged in its arithmetic: ask only when a perfect reply is expected to remove more answer change than the
+# interruption costs. The readings' headline figures (the last number on each row) are the alternative outcomes, here
+# computed rather than projected; the prior over readings is uniform (no observed asker data); distance is the branch's
+# |a - b| / max(1, |a|, |b|), averaged over rows; INTERRUPTION_COST 0.05 is the branch's constant, set before this trial.
+# With two readings this asks when the distance is above 0.1. Switch: AGERE_TIERED_VOI=on (or VOI.set(True)).
+VOI = contextvars.ContextVar('agere_readings_voi', default=None)
+INTERRUPTION_COST = 0.05
+
+
+def voi_enabled():
+    v = VOI.get()
+    return v if v is not None else os.environ.get('AGERE_TIERED_VOI', 'off') == 'on'
+
+
+def _headline(rows):
+    out = []
+    for r in rows or []:
+        nums = [float(v) for v in r if isinstance(v, (int, float)) and not isinstance(v, bool)]
+        out.append(nums[-1] if nums else None)
+    return out
+
+
+def _distance(a, b):
+    ha, hb = _headline(a), _headline(b)
+    if len(ha) != len(hb) or None in ha or None in hb or not ha: return 1.0   # different shapes: the readings change the answer
+    return sum(abs(x - y) / max(1.0, abs(x), abs(y)) for x, y in zip(ha, hb)) / len(ha)
+
+
+def value_of_asking(rows_by_reading):
+    """-> {'gross', 'net', 'ask', 'assume', 'distances'}: the expected answer change a perfect reply removes, less the interruption
+    cost; 'assume' is the reading answered when not asking (the one with least expected change; the first on a tie)."""
+    k = len(rows_by_reading)
+    d = [[_distance(rows_by_reading[i], rows_by_reading[j]) for j in range(k)] for i in range(k)]
+    expected = [sum(d[i]) / k for i in range(k)]   # uniform prior over what the asker meant
+    assume = min(range(k), key=lambda i: (expected[i], i))
+    gross = expected[assume]
+    net = gross - INTERRUPTION_COST
+    return {'gross': round(gross, 6), 'net': round(net, 6), 'ask': net > 0, 'assume': assume, 'distances': [[round(x, 6) for x in row] for row in d]}

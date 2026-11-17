@@ -985,6 +985,13 @@ def outcome_kind(item, o):
     return 'right' if any(_right(ref, o['rows']) for ref in item.get('references') or [item['reference']]) else 'wrong'
 
 
+def candidate_switches():
+    """Trial arms: arm name -> the context switch of a candidate that is off by default. Each arm is the full stack ('stack')
+    with that one candidate on; every other arm runs with it off."""
+    from . import readings
+    return {'stack_voi': readings.VOI}
+
+
 def run(runs=3, workers=4):
     from .. import model_policy
     os.environ.pop('ANTHROPIC_API_KEY', None)
@@ -1044,8 +1051,12 @@ def run(runs=3, workers=4):
 
     from . import catalogue, governed, readings
 
+    switches = candidate_switches()
+
     def one(job):
         item, arm, r = job
+        for name, var in switches.items(): var.set(arm == name)   # a trial arm is the stack with one candidate switched on
+        arm_name, arm = arm, ('stack' if arm in switches else arm)
         catalogue.ENABLED.set(arm in ('stack', 'stack_unchecked', 'stack_guess'))   # the governed definitions are the stack's; the other arms run without them
         governed.ENABLED.set(arm in ('stack', 'stack_plain', 'stack_guess'))   # so are the definition checks; stack_unchecked measures them by their absence
         readings.ENABLED.set(arm in ('stack', 'stack_plain', 'stack_unchecked'))   # stack_guess is the stack answering one reading, as before readings.py
@@ -1060,13 +1071,14 @@ def run(runs=3, workers=4):
         except Exception as exc:
             if 'limit' in str(exc).lower(): raise
             o = {'status': 'error', 'final_tier': None, 'rows': None, 'steps': [], 'seconds': 0.0}
-        return {'id': item['id'], 'phrasing': item['phrasing'], 'domain': item['domain'], 'arm': arm, 'run': r, 'unanswerable': item['unanswerable'],
+        return {'id': item['id'], 'phrasing': item['phrasing'], 'domain': item['domain'], 'arm': arm_name, 'run': r, 'unanswerable': item['unanswerable'],
                 'kind': outcome_kind(item, o), 'tier': o.get('final_tier'), 'usd': sum(s.get('usd', 0.0) for s in o['steps']), 'seconds': o.get('seconds', 0.0),
                 # frontier calls and the tokens sent: cost that does not depend on the transport's caching
                 'frontier_calls': sum(1 for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
                 'frontier_tokens': sum(s.get('tokens', 0) for s in o['steps'] if s.get('tier') == 'llm' and s.get('model')),
                 'checks_rejected': sum(1 for s in o['steps'] if 'Governed definition' in str(s.get('reason', ''))),
                 'rows': (o.get('rows') or [])[:3] if o.get('status') != 'needs_choice' else {x['id']: (x.get('rows') or [])[:3] for x in o.get('readings') or []},
+                'readings_checked': {k: v for k, v in (o.get('readings_checked') or {}).items() if k in ('agree', 'answered_as', 'voi')} or None,
                 'question': item['question']}
 
     arms = tuple(os.environ.get('AGERE_PROOF_ARMS', 'stack,stack_plain,frontier').split(','))
@@ -1121,6 +1133,7 @@ def report(results, items, runs, wall, data):
     names = {'stack': 'Agere stack (with the governed definitions and their code checks)', 'stack_unchecked': 'Agere stack with the governed definitions but without their code checks',
              'stack_plain': 'Agere stack without the governed definitions', 'stack_guess': 'Agere stack answering one reading of every question (no two-reading check)',
              'frontier': "frontier model writing its own SQL from the schema (run through the stack's checks, no governed definitions)",
+             'stack_voi': 'Agere stack with value-of-information clarification (candidate: asks only when the readings differ enough to matter)',
              'assistant': 'general-purpose assistant at its best: top-tier model, read-only SQL tool (up to 8 steps), the whole definitions document, no Agere checks'}
     for arm, name in names.items():
         rs = [r for r in results if r['arm'] == arm]
